@@ -1,0 +1,8 @@
+# Makefile for CDFTOOLS : Nymphea (OSF1)
+#
+NCDF = -I/home/nymphea/services/bibli/netcdf-3.6.0/include -L/home/nymphea/services/bibli/netcdf-3.6.0/lib -lnetcdf
+
+F90=f90
+FFLAGS= -convert big_endian -assume byterecl $(NCDF)
+
+INSTALL=$(HOME)/bin

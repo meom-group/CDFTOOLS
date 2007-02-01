@@ -1,0 +1,8 @@
+# Makefile for CDFTOOLS
+#
+NCDF = -I/home1/molines/netcdf/include -L/home1/molines/netcdf/lib -lnetcdf
+
+F90=f90
+FFLAGS= -O  $(NCDF)   -warn unused
+ 
+INSTALL=$(HOME)/bin

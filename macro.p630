@@ -1,0 +1,9 @@
+# Makefile for CDFTOOLS : AIX (p630)
+#
+NCDF = -I/usr/local/netcdf-3.6.0-p1/include -L/usr/local/netcdf-3.6.0-p1/lib -lnetcdf
+
+F90=xlf90
+FFLAGS= -O4  -qsuffix=f=f90 -bmaxdata:500000000  $(NCDF)  -q64 -qsave
+
+INSTALL=/usr/local/bin
+ 

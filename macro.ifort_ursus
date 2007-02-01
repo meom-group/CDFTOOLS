@@ -1,0 +1,8 @@
+# Makefile for CDFTOOLS
+#
+NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
+ 
+F90=ifort
+FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
+
+INSTALL=$(HOME)/bin

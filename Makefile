@@ -1,0 +1,246 @@
+# Makefile for CDFTOOLS 
+
+# ( make.macro is a link that points to the file macro.xxx where 
+#   xxx is representative of your machine )
+
+
+include make.macro
+
+
+CDFTOOLS=CDFTOOLS-2.1
+
+EXEC = cdfmoy cdfmoy_sp cdfmoy_sal2_temp2  cdfvT cdfeke cdfrmsssh cdfstdevw cdfstdevts cdfimprovechk\
+       cdfbn2  cdfsig0 cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
+       cdfrhoproj cdfpv cdfpvor\
+       cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full cdfmasstrp \
+       cdfsigtrp cdfsigtrp-full\
+       cdfpsi cdfpsi-full cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
+       cdfheatc cdfzonalmean cdfhflx\
+       cdfmxlheatc cdfmxlsaltc \
+       cdfzonalsum cdficediags cdfzonalout\
+       cdfprofile  cdfwhereij cdffindij cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe \
+       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert
+
+
+all: $(EXEC)
+
+## Statistical programs
+cdfmoy: cdfio.o   cdfmoy.f90
+	$(F90) cdfmoy.f90 -o cdfmoy cdfio.o  $(FFLAGS)
+
+cdfmoy_sal2_temp2: cdfio.o   cdfmoy_sal2_temp2.f90
+	$(F90) cdfmoy_sal2_temp2.f90 -o cdfmoy_sal2_temp2 cdfio.o  $(FFLAGS)
+
+cdfmoy_sp: cdfio.o   cdfmoy_sp.f90
+	$(F90) cdfmoy_sp.f90 -o cdfmoy_sp cdfio.o  $(FFLAGS)
+
+cdfeke: cdfio.o  cdfeke.f90
+	$(F90) cdfeke.f90 -o cdfeke cdfio.o $(FFLAGS)
+
+cdfrmsssh: cdfio.o  cdfrmsssh.f90
+	$(F90) cdfrmsssh.f90 -o cdfrmsssh cdfio.o $(FFLAGS)
+
+cdfstdevw: cdfio.o  cdfstdevw.f90
+	$(F90) cdfstdevw.f90 -o cdfstdevw cdfio.o $(FFLAGS)
+
+cdfstdevts: cdfio.o  cdfstdevts.f90
+	$(F90) cdfstdevts.f90 -o cdfstdevts cdfio.o $(FFLAGS)
+
+cdfvT: cdfio.o  cdfvT.f90
+	$(F90) cdfvT.f90 -o cdfvT cdfio.o $(FFLAGS)
+
+cdfimprovechk: cdfio.o  cdfimprovechk.f90
+	$(F90) cdfimprovechk.f90 -o cdfimprovechk cdfio.o $(FFLAGS)
+
+## Derived quantities programs
+cdfbn2: cdfio.o  eos.o  cdfbn2.f90
+	$(F90) cdfbn2.f90 -o cdfbn2 cdfio.o eos.o  $(FFLAGS)
+
+cdfsig0: cdfio.o  eos.o  cdfsig0.f90
+	$(F90) cdfsig0.f90 -o cdfsig0 cdfio.o eos.o  $(FFLAGS)
+
+cdfbottomsig0: cdfio.o  eos.o  cdfbottomsig0.f90
+	$(F90) cdfbottomsig0.f90 -o cdfbottomsig0 cdfio.o eos.o  $(FFLAGS)
+
+cdfbottom: cdfio.o    cdfbottom.f90
+	$(F90) cdfbottom.f90 -o cdfbottom cdfio.o   $(FFLAGS)
+
+cdfets: cdfio.o  eos.o  cdfets.f90
+	$(F90) cdfets.f90 -o cdfets cdfio.o eos.o  $(FFLAGS)
+
+cdfmsk: cdfio.o  cdfmsk.f90
+	$(F90) cdfmsk.f90 -o cdfmsk cdfio.o $(FFLAGS)
+
+cdfmsksal: cdfio.o  cdfmsksal.f90
+	$(F90) cdfmsksal.f90 -o cdfmsksal cdfio.o $(FFLAGS)
+
+cdfcurl: cdfio.o  cdfcurl.f90
+	$(F90) cdfcurl.f90 -o cdfcurl cdfio.o $(FFLAGS)
+
+cdfw: cdfio.o  cdfw.f90
+	$(F90) cdfw.f90 -o cdfw cdfio.o $(FFLAGS)
+
+cdfmxl: cdfio.o eos.o  cdfmxl.f90
+	$(F90) cdfmxl.f90 -o cdfmxl cdfio.o eos.o $(FFLAGS)
+
+cdfmxl-full: cdfio.o eos.o  cdfmxl-full.f90
+	$(F90) cdfmxl-full.f90 -o cdfmxl-full cdfio.o eos.o $(FFLAGS)
+
+cdfrhoproj: cdfio.o  cdfrhoproj.f90
+	$(F90) cdfrhoproj.f90 -o cdfrhoproj cdfio.o  $(FFLAGS) 
+
+cdfpv: cdfio.o  cdfpv.f90
+	$(F90) cdfpv.f90 -o cdfpv cdfio.o eos.o  $(FFLAGS) 
+
+cdfpvor: cdfio.o  cdfpvor.f90
+	$(F90) cdfpvor.f90 -o cdfpvor cdfio.o eos.o  $(FFLAGS) 
+
+## Transport programs
+cdfmhst: cdfio.o  cdfmhst.f90
+	$(F90) cdfmhst.f90 -o cdfmhst cdfio.o $(FFLAGS)
+
+cdfmhst-full: cdfio.o  cdfmhst-full.f90
+	$(F90) cdfmhst-full.f90 -o cdfmhst-full cdfio.o $(FFLAGS)
+
+cdfvhst: cdfio.o  cdfvhst.f90
+	$(F90) cdfvhst.f90 -o cdfvhst cdfio.o $(FFLAGS)
+
+cdfvhst-full: cdfio.o  cdfvhst-full.f90
+	$(F90) cdfvhst-full.f90 -o cdfvhst-full cdfio.o $(FFLAGS)
+
+cdfpsi: cdfio.o  cdfpsi.f90
+	$(F90) cdfpsi.f90  -o cdfpsi cdfio.o $(FFLAGS)
+
+cdfpsi-full: cdfio.o  cdfpsi-full.f90
+	$(F90) cdfpsi-full.f90  -o cdfpsi-full cdfio.o $(FFLAGS)
+
+cdftransportiz: cdfio.o  cdftransportiz.f90
+	$(F90) cdftransportiz.f90 -o cdftransportiz cdfio.o $(FFLAGS)
+
+cdftransportiz_noheat: cdfio.o  cdftransportiz_noheat.f90
+	$(F90) cdftransportiz_noheat.f90 -o cdftransportiz_noheat cdfio.o $(FFLAGS)
+
+cdftransportiz-full: cdfio.o  cdftransportiz-full.f90
+	$(F90) cdftransportiz-full.f90 -o cdftransportiz-full cdfio.o $(FFLAGS)
+
+cdfmasstrp: cdfio.o  cdfmasstrp.f90
+	$(F90) cdfmasstrp.f90 -o cdfmasstrp cdfio.o $(FFLAGS)
+
+cdfmasstrp-julien: cdfio.o  cdfmasstrp-julien.f90
+	$(F90) cdfmasstrp-julien.f90 -o cdfmasstrp-julien cdfio.o $(FFLAGS)
+
+cdfsigtrp: cdfio.o  cdfsigtrp.f90
+	$(F90) cdfsigtrp.f90 -o cdfsigtrp cdfio.o eos.o $(FFLAGS)
+
+cdfsigtrp-full: cdfio.o  cdfsigtrp-full.f90
+	$(F90) cdfsigtrp-full.f90 -o cdfsigtrp-full cdfio.o eos.o $(FFLAGS)
+
+cdfmoc: cdfio.o  cdfmoc.f90
+	$(F90) cdfmoc.f90 -o cdfmoc cdfio.o $(FFLAGS)
+
+cdfmocsig: cdfio.o eos.o  cdfmocsig.f90
+	$(F90) cdfmocsig.f90 -o cdfmocsig cdfio.o eos.o $(FFLAGS)
+
+cdfmoc-full: cdfio.o  cdfmoc-full.f90
+	$(F90) cdfmoc-full.f90 -o cdfmoc-full cdfio.o $(FFLAGS)
+
+cdfmocatl: cdfio.o  cdfmocatl.f90
+	$(F90) cdfmocatl.f90 -o cdfmocatl cdfio.o $(FFLAGS)
+
+cdfmean: cdfio.o  cdfmean.f90
+	$(F90) cdfmean.f90 -o cdfmean cdfio.o $(FFLAGS)
+
+cdfmeanvar: cdfio.o  cdfmeanvar.f90
+	$(F90) cdfmeanvar.f90 -o cdfmeanvar cdfio.o $(FFLAGS)
+
+cdfmean-full: cdfio.o  cdfmean-full.f90
+	$(F90) cdfmean-full.f90 -o cdfmean-full cdfio.o $(FFLAGS)
+
+cdfheatc: cdfio.o  cdfheatc.f90
+	$(F90) cdfheatc.f90 -o cdfheatc cdfio.o $(FFLAGS)
+
+cdfmxlheatc: cdfio.o  cdfmxlheatc.f90
+	$(F90) cdfmxlheatc.f90 -o cdfmxlheatc cdfio.o $(FFLAGS)
+
+cdfmxlsaltc: cdfio.o  cdfmxlsaltc.f90
+	$(F90) cdfmxlsaltc.f90 -o cdfmxlsaltc cdfio.o $(FFLAGS)
+
+cdficediags: cdfio.o  cdficediags.f90
+	$(F90) cdficediags.f90 -o cdficediags cdfio.o $(FFLAGS)
+
+cdfzonalmean: cdfio.o  cdfzonalmean.f90
+	$(F90) cdfzonalmean.f90 -o cdfzonalmean cdfio.o $(FFLAGS) 
+
+cdfzonalsum: cdfio.o  cdfzonalsum.f90
+	$(F90) cdfzonalsum.f90 -o cdfzonalsum cdfio.o $(FFLAGS) 
+
+cdfzonalout: cdfio.o  cdfzonalout.f90
+	$(F90) cdfzonalout.f90 -o cdfzonalout cdfio.o $(FFLAGS) 
+
+cdfhflx: cdfio.o  cdfhflx.f90
+	$(F90) cdfhflx.f90 -o cdfhflx cdfio.o $(FFLAGS)
+
+## Extracting tools, information tools
+cdfprofile: cdfio.o  cdfprofile.f90
+	$(F90) cdfprofile.f90  -o cdfprofile cdfio.o $(FFLAGS)
+
+cdfwhereij: cdfio.o  cdfwhereij.f90
+	$(F90) cdfwhereij.f90  -o cdfwhereij cdfio.o $(FFLAGS)
+
+cdffindij: cdfio.o  cdffindij.f90
+	$(F90) cdffindij.f90  -o cdffindij cdfio.o $(FFLAGS)
+
+cdfmaxmoc: cdfio.o  cdfmaxmoc.f90
+	$(F90) cdfmaxmoc.f90  -o cdfmaxmoc cdfio.o $(FFLAGS)
+
+cdfcensus: cdfio.o eos.o cdfcensus.f90
+	$(F90) cdfcensus.f90  -o cdfcensus cdfio.o eos.o $(FFLAGS)
+
+cdfzoom: cdfio.o  cdfzoom.f90
+	$(F90) cdfzoom.f90  -o cdfzoom cdfio.o $(FFLAGS)
+
+cdfmax: cdfio.o  cdfmax.f90
+	$(F90) cdfmax.f90  -o cdfmax cdfio.o $(FFLAGS)
+
+cdfprobe: cdfio.o  cdfprobe.f90
+	$(F90) cdfprobe.f90  -o cdfprobe cdfio.o $(FFLAGS)
+
+## reformating programs
+cdf16bit: cdfio.o cdf16bit.f90
+	$(F90) cdf16bit.f90  -o cdf16bit cdfio.o $(FFLAGS)
+	
+cdfvita: cdfio.o cdfvita.f90
+	$(F90) cdfvita.f90  -o cdfvita cdfio.o $(FFLAGS)
+	
+cdfconvert: cdfio.o cdfconvert.f90
+	$(F90)  cdfconvert.f90  -o cdfconvert cdfio.o $(FFLAGS)
+	
+
+# OLD bimg/dimg stuff: use by the trpsig monitoring....
+bimgmoy4: bimgmoy4.f90
+	$(F90) bimgmoy4.f90  -o bimgmoy4 $(FFLAGS)
+
+bimgcaltrans: bimgcaltrans.f90
+	$(F90) bimgcaltrans.f90  -o bimgcaltrans $(FFLAGS)
+
+## Modules
+
+cdfio.o: cdfio.f90
+	$(F90) -c  cdfio.f90 $(FFLAGS)
+
+eos.o: eos.f90
+	$(F90) -c eos.f90 $(FFLAGS)
+## Utilities
+tar:
+	( cd ../ ; tar cf cdftools-2.1.tar $(CDFTOOLS)/*90 $(CDFTOOLS)/Make* \
+          $(CDFTOOLS)/section.dat $(CDFTOOLS)/JOBS $(CDFTOOLS)/DOC \
+          $(CDFTOOLS)/macro.* )
+
+clean:
+	\rm -f *.mod *.o  *~
+
+cleanexe: clean
+	\rm -f $(EXEC)
+
+install:
+	\cp $(EXEC)  $(INSTALL)

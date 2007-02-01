@@ -1,0 +1,10 @@
+netCDF version 3.5.0 (NETCDF, PATH, MANPATH).
+VERSION DU DCM : /homegpfs/rech/cli/rcli002/NEMODRAK_1.12
+./new_maskglo.nc : 542696 bytes received in 0.5127 seconds (1034 Kbytes/s)  - transfer Ok.
+mask.nc : 27119644 bytes received in 2.286 seconds (1.158e+04 Kbytes/s)  - transfer Ok.
+mesh_hgr.nc : 3907708 bytes received in 0.1969 seconds (1.938e+04 Kbytes/s)  - transfer Ok.
+mesh_zgr.nc : 27772088 bytes received in 0.6718 seconds (4.037e+04 Kbytes/s)  - transfer Ok.
+UX:mkdir: ERROR: Cannot create directory "ORCA2": File exists
+UX:mkdir: ERROR: Cannot create directory "ORCA2/ORCA2-G70-DIAGS": File exists
+/u/rech/cli/rcli544/ORCA2/ORCA2-G70-S/1990/ORCA2-G70_y1990m01d05_gridV.nc
+.//ORCA2-G70_y1990m01d05_gridV.nc : 3690044 bytes received in 0.2082 seconds (1.731e+04 Kbytes/s)  - transfer Ok.
