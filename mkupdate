@@ -1,1 +1,2 @@
- svn export --force svn://meolcar.hmg.inpg.fr/home/forge/REPOS_CDFTOOLS/CDFTOOLS/tags/CDFTOOLS-2.1 ./
+# svn export --force svn://meolcar.hmg.inpg.fr/home/forge/REPOS_CDFTOOLS/CDFTOOLS/tags/CDFTOOLS-2.1 ./
+svn export --force svn://meolcar.hmg.inpg.fr/home/forge/REPOS_CDFTOOLS/CDFTOOLS/trunk ./
