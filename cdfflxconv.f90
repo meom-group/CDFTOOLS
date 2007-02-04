@@ -178,8 +178,7 @@ PROGRAM cdfflxconv
 
   ! Ready for time loop on month
   icurrday=0
-  DO jmonth = 1, 1 
-     !   DO jmonth = 1, 12
+  DO jmonth = 1, 12
      WRITE(cflux,'(a,I4.4,a,I2.2,a)') 'ECMWF.Y',iyear,'.M',jmonth,'.FLUX.'//TRIM(config)//'.dimg'
      irecl=isdirect(cflux)  ; OPEN( numflx,FILE=cflux, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
      READ(numflx,REC=1) cver, cheader, ii, npiglo, npjglo, npk, nt, ndim
@@ -293,8 +292,7 @@ PROGRAM cdfflxconv
 
   ! Ready for time loop on month
   icurrday=0
-  DO jmonth = 1, 1 
-     !   DO jmonth = 1, 12
+  DO jmonth = 1, 12
      WRITE(ctau,'(a,I4.4,a,I2.2,a)') 'ECMWF.Y',iyear,'.M',jmonth,'.STRESS.'//TRIM(config)//'.dimg'
      irecl=isdirect(ctau)  ; OPEN( numtau,FILE=ctau, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
      READ(numtau,REC=1) cver, cheader, ii, npiglo, npjglo, npk, nt, ndim
