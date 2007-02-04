@@ -41,7 +41,8 @@ PROGRAM cdfflxconv
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE ::  glam, gphi, z2d, v2daily
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE ::  glamu, gphiu
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE ::  glamv, gphiv
-  REAL(KIND=4) , DIMENSION (:), ALLOCATABLE :: dep, timetag, timetagp,timetagn
+  REAL(KIND=4) , DIMENSION (:), ALLOCATABLE :: dep, timetab
+  REAL(KIND=8) , DIMENSION (:), ALLOCATABLE ::  timetag, timetagp,timetagn
   REAL(KIND=4) ,DIMENSION(1)                  :: timean 
 
   CHARACTER(LEN=80) :: ctag, confcase
@@ -201,16 +202,16 @@ PROGRAM cdfflxconv
   END DO ! loop on month
 
   ! update time_counter
-  ALLOCATE( timetag (icurrday) )
-  timetag=(/(jt,jt=1,icurrday)/)
-  istatus=putvar1d(ncoutemp,timetag,icurrday,'T')
-  istatus=putvar1d(ncoutqnet,timetag,icurrday,'T')
-  istatus=putvar1d(ncoutqsr,timetag,icurrday,'T')
+  ALLOCATE( timetab (icurrday) )
+  timetab=(/(jt,jt=1,icurrday)/)
+  istatus=putvar1d(ncoutemp,timetab,icurrday,'T')
+  istatus=putvar1d(ncoutqnet,timetab,icurrday,'T')
+  istatus=putvar1d(ncoutqsr,timetab,icurrday,'T')
   ! close fluxes files
   istatus=closeout(ncoutemp)
   istatus=closeout(ncoutqnet)
   istatus=closeout(ncoutqsr)
-  DEALLOCATE (v2d , dep, z2d , timetag )
+  DEALLOCATE (v2d , dep, z2d , timetab )
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!     .....    STRESSES    STRESSES    STRESSES   ......                                       !!!!!
@@ -312,14 +313,14 @@ PROGRAM cdfflxconv
   END DO ! loop on month
 
   ! update time_counter
-  ALLOCATE( timetag (icurrday) )
-  timetag=(/(jt,jt=1,icurrday)/)
-  istatus=putvar1d(ncouttaux,timetag,icurrday,'T')
-  istatus=putvar1d(ncouttauy,timetag,icurrday,'T')
+  ALLOCATE( timetab (icurrday) )
+  timetab=(/(jt,jt=1,icurrday)/)
+  istatus=putvar1d(ncouttaux,timetab,icurrday,'T')
+  istatus=putvar1d(ncouttauy,timetab,icurrday,'T')
   ! close fluxes files
   istatus=closeout(ncouttaux)
   istatus=closeout(ncouttauy)
-  DEALLOCATE (v2d , dep, z2d , timetag)
+  DEALLOCATE (v2d , dep, z2d , timetab)
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   !!     .....    SST    SST     SST     .....
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -338,12 +339,14 @@ PROGRAM cdfflxconv
 
   READ(numsst,REC=1) cver, cheader, ii, npiglo, npjglo, npk, nt
 
-  ALLOCATE (v2d(npiglo, npjglo,nt+2),itime(nt+2), dep(npk) ,timetag(nt) )
+  ALLOCATE (v2d(npiglo, npjglo,nt+2),itime(nt+2), dep(npk) ,timetab(nt), timetag(nt) )
   ALLOCATE (z2d(npiglo, npjglo) ,v2daily(npiglo,npjglo)  )
   READ(numsst,REC=1) cver, cheader, ii, npiglo, npjglo, npk, nt, ndim, &
        x1,y1,dx,dy,spval,   &
        (dep(jk),jk=1,npk), &
-       (timetag(jt), jt=1,nt)
+       (timetab(jt), jt=1,nt)
+       timetag=timetab ! convert to dble precision
+       DEALLOCATE(timetab)
 
   ! Build  cdf files output
   nvar = 1 ! 1 var but many files ... (OK  ... 3 actually )
@@ -367,7 +370,11 @@ PROGRAM cdfflxconv
   ! We want to interpolate the data for every day. (weekly in the file)
   ! if first day of the file is not 01/01, needs to read previous year
   !  Clipper SST files are not y2k compliant ...
-  IF (timetag (1) < 10000 ) timetag(:)=timetag(:)+20000000
+  IF (timetag (1) < 10000 ) THEN 
+     timetag(:)=timetag(:)+20000000.
+  ELSE
+     timetag(:)=timetag(:)+19000000.
+  ENDIF
   january1=iyear*10000+01*100+01
   december31=iyear*10000+12*100+31
   jul1=julday(january1)
@@ -379,12 +386,18 @@ PROGRAM cdfflxconv
      WRITE(csstrp ,'(a,I4.4,a,I2.2,a)') 'REYNOLDS.Y',iyear-1,'.SST.'//TRIM(config)//'.dimg'
      irecl=isdirect(csstrp)  ; OPEN( numsstp,FILE=csstrp, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
      READ(numsstp,REC=1) cver, cheader, ii, npiglo, npjglo, npk, ntp
-     ALLOCATE (timetagp (ntp) )
+     ALLOCATE (timetagp (ntp) ,timetab(ntp))
      READ(numsstp,REC=1) cver, cheader, ii, npiglo, npjglo, npk, ntp, ndim, &
           x1,y1,dx,dy,spval,   &
           (dep(jk),jk=1,npk), &
-          (timetagp(jt), jt=1,ntp)
-     IF (timetagp (1) < 10000 ) timetagp(:)=timetagp(:)+20000000
+          (timetab(jt), jt=1,ntp)
+         timetagp=timetab 
+         DEALLOCATE(timetab)
+     IF (timetagp (1) < 10000 ) THEN 
+        timetagp(:)=timetagp(:)+20000000.
+     ELSE
+        timetagp(:)=timetagp(:)+19000000.
+     ENDIF
      IF ( julday(INT(timetagp (ntp)))  <= jul1 ) THEN
         !read ntp sst as 1 data
         itt = itt +1
@@ -416,12 +429,18 @@ PROGRAM cdfflxconv
         WRITE(csstrn ,'(a,I4.4,a,I2.2,a)') 'REYNOLDS.Y',iyear+1,'.SST.'//TRIM(config)//'.dimg'
         irecl=isdirect(csstrn)  ; OPEN( numsstn,FILE=csstrn, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
         READ(numsstn,REC=1) cver, cheader, ii, npiglo, npjglo, npk, ntn
-        ALLOCATE (timetagn (ntn) )
+        ALLOCATE (timetagn (ntn) ,timetab(ntn))
         READ(numsstn,REC=1) cver, cheader, ii, npiglo, npjglo, npk, ntn, ndim, &
              x1,y1,dx,dy,spval,   &
              (dep(jk),jk=1,npk), &
-             (timetagn(jt), jt=1,ntn)
-        IF (timetagn (1) < 10000 ) timetagn(:)=timetagn(:)+20000000
+             (timetab(jt), jt=1,ntn)
+        timetagn=timetab
+        DEALLOCATE( timetab)
+        IF (timetagn (1) < 10000 ) THEN 
+           timetagn(:)=INT(timetagn(:))+20000000
+        ELSE
+           timetagn(:)=INT(timetagn(:))+19000000
+        ENDIF
 
         IF ( julday(INT(timetagn (1) )) >= jul2 ) THEN
            !read 1 sst as 1 data
@@ -432,10 +451,10 @@ PROGRAM cdfflxconv
            itt = itt +1
            READ(numsstn,REC=3) (( v2d(ji,jj,itt),ji=1,npiglo),jj=1,npjglo)
            itime(itt)=julday(INT( timetagn(2)) )
-        ELSE IF  ( julday(INT(timetagp (3))) >= jul2 ) THEN
+        ELSE IF  ( julday(INT(timetagn (3))) >= jul2 ) THEN
            itt = itt +1
            READ(numsstn,REC=4) (( v2d(ji,jj,itt),ji=1,npiglo),jj=1,npjglo)
-           itime(itt)=julday(INT(timetagp(3)) )
+           itime(itt)=julday(INT(timetagn(3)) )
         ELSE
            PRINT *,' Something is wrong in next file SST ' ; STOP
         ENDIF
@@ -455,10 +474,9 @@ PROGRAM cdfflxconv
      END DO
 
      ! update time_counter
-     DEALLOCATE (timetag ) 
-     ALLOCATE( timetag (icurrday) )
-     timetag=(/(jt,jt=1,icurrday)/)
-     istatus=putvar1d(ncoutsst,timetag,icurrday,'T')
+     ALLOCATE( timetab (icurrday) )
+     timetab=(/(jt,jt=1,icurrday)/)
+     istatus=putvar1d(ncoutsst,timetab,icurrday,'T')
      ! close fluxes files
      istatus=closeout(ncoutsst)
      istatus=closeout(ncoutsst)

@@ -89,8 +89,9 @@ while (( $year <= $year2 )) ; do
     for f in *.nc ; do
        expatrie  $f $IDIRNC $f
        # clean unnecessary files from tmpdir
-       \rm $f ECMWF*.dimg REYNOLDS.Y${ym1}.SST.${CONFIG}.dimg
+       \rm $f
     done
+       \rm  ECMWF*.dimg REYNOLDS.Y${ym1}.SST.${CONFIG}.dimg
     fi
    year=$(( year + 1 ))
 done
