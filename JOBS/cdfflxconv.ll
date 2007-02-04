@@ -45,7 +45,7 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
 
 CDFTOOLS=CDFTOOLS-2.1
 CONFIG=ATL3
-DIRCOO=/cache2/rost011/CLIPPER/GRID/
+DIRCOO=/cache2/rost011/CLIPPER/GRID
 COORD=coordinates.${CONFIG}
 IDIR=/cache3/rost005/rcli007/${CONFIG}-I
 IDIRNC=${CONFIG}/${CONFIG}-I
