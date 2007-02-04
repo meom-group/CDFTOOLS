@@ -19,7 +19,7 @@ EXEC = cdfmoy cdfmoy_sp cdfmoy_sal2_temp2  cdfvT cdfeke cdfrmsssh cdfstdevw cdfs
        cdfmxlheatc cdfmxlsaltc \
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe \
-       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert
+       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv
 
 
 all: $(EXEC)
@@ -214,6 +214,9 @@ cdfvita: cdfio.o cdfvita.f90
 	
 cdfconvert: cdfio.o cdfconvert.f90
 	$(F90)  cdfconvert.f90  -o cdfconvert cdfio.o $(FFLAGS)
+	
+cdfflxconv: cdfio.o cdfflxconv.f90
+	$(F90)   cdfflxconv.f90  -o cdfflxconv cdfio.o $(FFLAGS)
 	
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....

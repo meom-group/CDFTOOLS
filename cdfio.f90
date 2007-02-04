@@ -79,7 +79,7 @@ CONTAINS
            istatus=NF90_PUT_ATT(kcout, kidvar, 'time_origin', '0001-JAN-01 00:00:00')
            istatus=NF90_PUT_ATT(kcout, kidvar, 'title', 'Time')
            istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name', 'Time axis')
-        CASE ('deptht', 'depthu' ,'depthv' , 'depthw')
+        CASE ('deptht', 'depthu' ,'depthv' , 'depthw', 'dep')
            istatus=NF90_PUT_ATT(kcout, kidvar, 'units', 'm')
            istatus=NF90_PUT_ATT(kcout, kidvar, 'positive', 'unknown')
            istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', 0.)
