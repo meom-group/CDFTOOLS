@@ -145,13 +145,13 @@ PROGRAM cdf16bit
            IF ( typvar(jvar)%savelog10 == 0 ) THEN
              ! take care of not converting 'special values'
              WHERE( v2d /= spval ) 
-               i2d(:,:)=(v2d(:,:)-ao)/sf
+               i2d(:,:)=NINT((v2d(:,:)-ao)/sf)
              ELSEWHERE
                i2d(:,:)=0
              END WHERE
            ELSE  ! store log10  ao and sf refer to the log10 of the variable
              WHERE( v2d /= spval ) 
-               i2d(:,:)=(log10(v2d(:,:))-ao)/sf
+               i2d(:,:)=NINT((log10(v2d(:,:))-ao)/sf)
              ELSEWHERE
                i2d(:,:)=0
              END WHERE
