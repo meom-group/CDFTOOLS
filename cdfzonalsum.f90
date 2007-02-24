@@ -132,7 +132,7 @@ PROGRAM cdfzonalsum
   ipk(1:nvars) = getipk(cfilev,nvars)
 
   ! buildt output filename
-  ivar = 0
+  ivar = 0  ; mvar = 0
   DO jvar = 1,nvars
      ! skip variables such as nav_lon, nav_lat, time_counter deptht ...
      IF (ipk(jvar) == 0 ) THEN
