@@ -1,4 +1,8 @@
 # Makefile for CDFTOOLS (Linux with pgi)
+# !!  $Rev$
+# !!  $Date$
+# !!  $Id$
+# !!--------------------------------------------------------------
 #
 NCDF = -lnetcdf
  

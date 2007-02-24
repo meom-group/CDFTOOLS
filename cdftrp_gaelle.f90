@@ -25,6 +25,10 @@ PROGRAM cdfsigtrp
   !! history :
   !!   Original :  J.M. Molines March 2006
   !!---------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
   USE eos

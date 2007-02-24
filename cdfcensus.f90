@@ -33,6 +33,10 @@ PROGRAM cdfcensus
   !!     J.M. Molines 12/06 : output in netcdf, add sigma2 and sigma4 in output
   !!                          bimg output as option.
   !!-----------------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !!
   ! * Module used
   USE cdfio

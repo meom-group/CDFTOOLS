@@ -1,4 +1,8 @@
 # Makefile for CDFTOOLS : Nymphea (OSF1)
+# !!  $Rev$
+# !!  $Date$
+# !!  $Id$
+# !!--------------------------------------------------------------
 #
 NCDF = -I/home/nymphea/services/bibli/netcdf-3.6.0/include -L/home/nymphea/services/bibli/netcdf-3.6.0/lib -lnetcdf
 

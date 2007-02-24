@@ -15,6 +15,10 @@ PROGRAM cdfmhst
   !!                 J.M. Molines apr. 2005 : use modules
   !!                 A.M. Treguier (april 2006) adaptation to NATL4 case 
   !!--------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

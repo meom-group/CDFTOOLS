@@ -12,6 +12,10 @@ PROGRAM cdfmean_full
   !!  Original :  J.M. Molines (Oct. 2005) 
   !!              Adapted from Partial steps (october 2006)
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

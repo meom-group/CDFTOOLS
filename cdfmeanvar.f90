@@ -12,6 +12,10 @@ PROGRAM cdfmeanvar
   !!  Original :  J.M. Molines (Oct. 2005) 
   !!              J.M. Molines  Add variance Nov. 2006
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

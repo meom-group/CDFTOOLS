@@ -18,6 +18,10 @@ PROGRAM cdfmocsig
   !!  Original :  J.M. Molines (jul. 2005) 
   !!     moc in density : A.M. Treguier ( Nov. 2005)
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
   USE eos

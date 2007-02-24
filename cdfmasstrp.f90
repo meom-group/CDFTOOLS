@@ -23,6 +23,10 @@ PROGRAM cdfmasstrp
   !!               J.M. Molines Apr 2005 : use modules (cdftransportiz)
   !!               J.M. Molines March 2006 :  just mass transport
   !!---------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

@@ -1,4 +1,8 @@
 # Makefile for CDFTOOLS : AIX (p630)
+# !!  $Rev$
+# !!  $Date$
+# !!  $Id$
+# !!--------------------------------------------------------------
 #
 NCDF = -I/usr/local/netcdf-3.6.0-p1/include -L/usr/local/netcdf-3.6.0-p1/lib -lnetcdf
 

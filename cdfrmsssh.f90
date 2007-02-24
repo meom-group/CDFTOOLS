@@ -10,6 +10,10 @@ PROGRAM cdfrmsssh
   !!  Original :  J.M. Molines (Nov 2004 ) for ORCA025
   !!              J.M. Molines Apr 2005 : use modules
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

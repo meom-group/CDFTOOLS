@@ -24,6 +24,10 @@ PROGRAM cdftransportiz_full
   !!   Original :  J.M. Molines (jan. 2005)
   !!               J.M. Molines Apr 2005 : use modules
   !!---------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

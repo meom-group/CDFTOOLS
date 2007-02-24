@@ -1,5 +1,19 @@
 MODULE cdfio
-
+  !!---------------------------------------------------------------------------------------------------
+  !!                     ***  MODULE  cdfio  ***
+  !!
+  !!    ** Purpose : this module manage all the IO with Netcdf Library
+  !!
+  !!    ** Method : provide functions that are used in the different
+  !!                 subprograms for performing dedicated tasks
+  !!  
+  !!   history:
+  !!         Original : J.M. Molines (2005 )
+  !!------------------------------------------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   USE netcdf 
 
   IMPLICIT NONE

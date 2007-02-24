@@ -16,6 +16,10 @@ PROGRAM cdfmocatl
   !!  Original :  J.M. Molines (jul. 2005) 
   !!              Atlantic Only :  J.M. Molines (Nov. 2005) 
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

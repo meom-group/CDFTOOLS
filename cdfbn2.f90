@@ -15,7 +15,10 @@ PROGRAM cdfbn2
   !!     Original : J.M. Molines Nov 2004  
   !!                J.M. Molines Apr 2005 : introduction of module cdfio
   !!--------------------------------------------------------------------
-  !!
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
   USE eos

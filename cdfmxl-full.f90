@@ -18,6 +18,10 @@ PROGRAM cdfmxl_full
   !!   Original :  J.M. Molines (October 2005)
   !!   Full stp :  F. Castruccio, J.M. Molines (December 2006)
   !!---------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
   USE eos

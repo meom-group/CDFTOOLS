@@ -13,6 +13,10 @@ PROGRAM cdfmaxmoc
   !!              July 2005 : original : J.M. Molines
   !!              November :  modified and adapted to cdf output
   !!---------------------------------------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !!
   USE cdfio
   IMPLICIT NONE

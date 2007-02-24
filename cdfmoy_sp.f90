@@ -14,6 +14,10 @@ PROGRAM cdfmoy_sp
   !!                       J.M. Molines (Apr 2005 ) put all NCF stuff in module
   !!                              now valid for grid T U V W icemod
   !!-----------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio 
 

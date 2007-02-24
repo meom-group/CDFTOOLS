@@ -21,7 +21,6 @@ PROGRAM cdfcensus
   !!    volume is saved. 
   !!       Depending on the user purpose, limiting values tmin,tmax, and smin,smax
   !!    as well as the increments dt, ds can be adjusted. 
-
   !!    The ouput file is census.bimg and is always a bimg file. ---> to be changed
   !!
   !! history :
@@ -31,6 +30,10 @@ PROGRAM cdfcensus
   !!     Clothilde Langlais 01/06 CDF version and PS
   !!     J.M. Molines 03/06 : integration in CDFTOOLS-2.0
   !!-----------------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !!
   ! * Module used
   USE cdfio

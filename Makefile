@@ -2,6 +2,10 @@
 
 # ( make.macro is a link that points to the file macro.xxx where 
 #   xxx is representative of your machine )
+# !!  $Rev$
+# !!  $Date$
+# !!  $Id$
+# !!--------------------------------------------------------------
 
 
 include make.macro

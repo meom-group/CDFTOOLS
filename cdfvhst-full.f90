@@ -14,6 +14,10 @@ PROGRAM cdfvhst_full
   !!  Original :  J.M. Molines (jan. 2005) (known then as cdfheattrp-save.f90 )
   !!              J.M. Molines : use module
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
  

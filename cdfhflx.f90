@@ -17,6 +17,10 @@ PROGRAM cdfhflx
   !!  Original :  J.M. Molines (jul. 2005) 
   !!              A.M. Treguier (april 2006) adaptation to NATL4 case 
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

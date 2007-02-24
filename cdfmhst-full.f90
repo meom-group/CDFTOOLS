@@ -13,6 +13,10 @@ PROGRAM cdfmhst_full
   !!      Original : J.M. Molines (jan. 2005)
   !!                 J.M. Molines apr. 2005 : use modules
   !!--------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
 

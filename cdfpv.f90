@@ -24,6 +24,10 @@ PROGRAM cdfpv
   !!        Modif    : J.M. Molines for normalization Clipper (March 2000)
   !!                 : J.M. Molines in cdftools, f90 dor DRAKKAR (Nov. 2005)
   !! ---------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Used modules
   USE cdfio
   USE eos

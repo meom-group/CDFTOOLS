@@ -1,4 +1,7 @@
 # Makefile for CDFTOOLS
+#    $Rev$
+#    $Date$
+# --------------------------------------------------------------
 #
 NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
  

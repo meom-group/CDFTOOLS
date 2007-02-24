@@ -11,6 +11,10 @@ PROGRAM cdfbottomsig0
   !! history: 
   !!     Original :   J.M. Molines (Nov. 2005)
   !!-------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
   USE eos
