@@ -8,6 +8,10 @@ PROGRAM bimgcaltrans
   !!   History :
   !!       Original : J.M. Molines (22/03/2006)
   !!--------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
   IMPLICIT NONE
   INTEGER :: npi,npj,npk,npt, npdim
   INTEGER :: ji,jj,jdim
