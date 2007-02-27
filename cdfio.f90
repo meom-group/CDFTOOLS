@@ -138,9 +138,10 @@ CONTAINS
     istatus = NF90_DEF_DIM(icout,'y',ky, id_y)
 
     IF ( kz /= 0 ) THEN
+    ! try to find out the name I will use for depth dimension in the new file ...
     IF (PRESENT (cdep) ) THEN
       cldep = cdep
-      idum=getdim(cdfilref,'depth',cldepref)   ! look for depth dimension name in ref file
+      idum=getdim(cdfilref,cldep,cldepref)   ! look for depth dimension name in ref file
     ELSE 
       idum=getdim(cdfilref,'depth',cldep   )   ! look for depth dimension name in ref file
       cldepref=cldep
@@ -158,6 +159,7 @@ CONTAINS
     istatus = NF90_DEF_VAR(icout,'nav_lat',NF90_FLOAT,(/id_x,id_y/),id_lat)
     istatus = copyatt('nav_lat',id_lat,ncid,icout)
     IF ( kz /= 0 ) THEN
+       ! here we assume that dep variable has same name as dep dim .... jmm
        istatus = NF90_DEF_VAR(icout,TRIM(cldep),NF90_FLOAT,(/id_z/),id_dep)
        ! JMM bug fix : if cdep present, then chose attribute from cldepref
        istatus = copyatt(TRIM(cldepref),id_dep,ncid,icout)
@@ -429,7 +431,7 @@ CONTAINS
 
   END FUNCTION getnvar
 
-  FUNCTION  getipk (cdfile,knvars)
+  FUNCTION  getipk (cdfile,knvars,cdep)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  getipk  ***
     !!
@@ -446,15 +448,22 @@ CONTAINS
     !! * Arguments declarations
     CHARACTER(LEN=*), INTENT(in) :: cdfile   ! File to look at
     INTEGER, INTENT(in)  ::  knvars          ! Number of variables in cdfile
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep ! optional depth dim name
     INTEGER, DIMENSION(knvars) :: getipk     ! array (variables ) of levels
 
     !! * local declarations
     INTEGER :: ncid, ipk, jv, iipk
     INTEGER :: istatus
+    CHARACTER(LEN=80) :: cldep='dep'
 
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
-    iipk = getdim(cdfile,'dep')
+    IF (  PRESENT (cdep) ) cldep = cdep
+    iipk = getdim(cdfile,cldep,kstatus=istatus)
+       IF ( istatus /= 0 ) THEN
+         PRINT *,' getipk error : vertical dim not found ...'
+         STOP
+       ENDIF
     DO jv = 1, knvars
        istatus=NF90_INQUIRE_VARIABLE(ncid,jv, ndims=ipk)
        IF (ipk == 4 ) THEN
@@ -993,7 +1002,7 @@ CONTAINS
   END FUNCTION getvare3
 
  
-     FUNCTION putheadervar(kout, cdfile, kpi,kpj,kpk, pnavlon, pnavlat ,pdep)
+     FUNCTION putheadervar(kout, cdfile, kpi,kpj,kpk, pnavlon, pnavlat ,pdep,cdep)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  putheadervar  ***
     !!
@@ -1019,12 +1028,16 @@ CONTAINS
        REAL(KIND=4), OPTIONAL, DIMENSION(kpi,kpj), INTENT(in) :: pnavlon, pnavlat  ! array provided optionaly to overrid the
            !                                   !   corresponding arrays in cdfile
        REAL(KIND=4), OPTIONAL,DIMENSION(kpk), INTENT(in) :: pdep   ! dep array if not on cdfile
+       CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep     ! optional name of vertical variable
        INTEGER :: putheadervar                 ! return status
  
     !! * Local variables
-       INTEGER :: istatus, idept, idepu, idepv, idepw
+       INTEGER , PARAMETER :: jpdep=5
+       INTEGER :: istatus, idep, jj
        REAL(KIND=4), DIMENSION(kpi,kpj) :: z2d
        REAL(KIND=4), DIMENSION(kpk) :: z1d
+       CHARACTER(LEN=80),DIMENSION(jpdep ) :: cldept=(/'deptht','depthu','depthv','depthw','nav_lev'/)
+       CHARACTER(LEN=80) :: cldep
  
        IF (PRESENT(pnavlon) ) THEN 
           z2d = pnavlon
@@ -1042,26 +1055,27 @@ CONTAINS
        istatus = putvar(kout,id_lat,z2d,1,kpi,kpj)
 
        IF (kpk /= 0 ) THEN
-       IF (PRESENT(pdep) ) THEN
-          z1d = pdep
-       ELSE
-        z1d=getvar1d(cdfile,'deptht',kpk,idept)
-          IF ( idept /= NF90_NOERR ) THEN
-            z1d=getvar1d(cdfile,'depthu',kpk,idepu)
-            IF ( idepu /= NF90_NOERR ) THEN
-              z1d=getvar1d(cdfile,'depthv',kpk,idepv)
-              IF ( idepv /= NF90_NOERR ) THEN
-                z1d=getvar1d(cdfile,'depthw',kpk,idepw)
-                IF ( idepw /= NF90_NOERR ) THEN
-                  PRINT *,' No depth variable found in ', TRIM(cdfile)
-!                  PRINT *,' Assume depth = 0 as default '
-!                    z1d=0.
+        IF (PRESENT(pdep) ) THEN
+           z1d = pdep
+        ELSE
+         idep = NF90_NOERR
+         
+         IF ( PRESENT (cdep)) THEN
+            z1d=getvar1d(cdfile,cdep,kpk,idep)
+         ENDIF
+
+         IF ( .NOT. PRESENT(cdep) .OR. idep /= NF90_NOERR ) THEN  ! look for standard dep name
+            DO jj = 1,jpdep
+              cldep=cldept(jj)
+              z1d=getvar1d(cdfile,cldep,kpk,idep)
+              IF ( idep == NF90_NOERR )  EXIT
+            END DO
+            IF (jj == jpdep +1 ) THEN
+                   PRINT *,' No depth variable found in ', TRIM(cdfile)
                    STOP
-                ENDIF
-              ENDIF
             ENDIF
-          ENDIF
-       ENDIF
+         ENDIF
+        ENDIF
          
        istatus = putvar1d(kout,z1d,kpk,'D')
        ENDIF

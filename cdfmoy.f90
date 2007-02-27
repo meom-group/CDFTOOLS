@@ -37,6 +37,7 @@ PROGRAM cdfmoy
   REAL(KIND=4),DIMENSION(1)                   :: timean, tim
 
   CHARACTER(LEN=80) :: cfile ,cfileout, cfileout2           !: file name
+  CHARACTER(LEN=80) ::  cdep
   CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
   CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname2   !: array of var22 name for output
   
@@ -59,11 +60,13 @@ PROGRAM cdfmoy
 
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
-  npk   = getdim (cfile,'depth',kstatus=istatus)
+  npk   = getdim (cfile,'depth',cdtrue=cdep, kstatus=istatus)
 
   IF (istatus /= 0 ) THEN
-     npk   = getdim (cfile,'z',kstatus=istatus)
+     npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)
      IF (istatus /= 0 ) THEN
+       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
+        ELSE
 ! STOP 'depth dimension name not suported'
         PRINT *,' assume file with no depth'
         npk=0
@@ -112,7 +115,7 @@ PROGRAM cdfmoy
 
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk (cfile,nvars)
+  ipk(:)     = getipk (cfile,nvars,cdep=cdep)
   WHERE( ipk == 0 ) cvarname='none'
   typvar(:)%name=cvarname
   typvar2(:)%name=cvarname2
@@ -122,14 +125,14 @@ PROGRAM cdfmoy
   cfileout2='cdfmoy2.nc'
   ! create output file taking the sizes in cfile
 
-  ncout =create(cfileout, cfile,npiglo,npjglo,npk)
-  ncout2=create(cfileout2,cfile,npiglo,npjglo,npk)
+  ncout =create(cfileout, cfile,npiglo,npjglo,npk,cdep=cdep)
+  ncout2=create(cfileout2,cfile,npiglo,npjglo,npk,cdep=cdep)
 
   ierr= createvar(ncout , typvar,  nvars, ipk, id_varout )
   ierr= createvar(ncout2, typvar2, nvars, ipk, id_varout2)
 
-  ierr= putheadervar(ncout , cfile, npiglo, npjglo, npk)
-  ierr= putheadervar(ncout2, cfile, npiglo, npjglo, npk)
+  ierr= putheadervar(ncout , cfile, npiglo, npjglo, npk,cdep=cdep)
+  ierr= putheadervar(ncout2, cfile, npiglo, npjglo, npk,cdep=cdep)
 
   DO jvar = 1,nvars
      IF (cvarname(jvar) == 'nav_lon' .OR. &
