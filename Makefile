@@ -23,7 +23,7 @@ EXEC = cdfmoy cdfmoy_sp cdfmoy_sal2_temp2  cdfvT cdfeke cdfrmsssh cdfstdevw cdfs
        cdfmxlheatc cdfmxlsaltc \
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe \
-       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv
+       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip
 
 
 all: $(EXEC)
@@ -208,6 +208,9 @@ cdfmax: cdfio.o  cdfmax.f90
 
 cdfprobe: cdfio.o  cdfprobe.f90
 	$(F90) cdfprobe.f90  -o cdfprobe cdfio.o $(FFLAGS)
+
+cdfclip: cdfio.o  cdfclip.f90
+	$(F90) cdfclip.f90  -o cdfclip cdfio.o $(FFLAGS)
 
 ## reformating programs
 cdf16bit: cdfio.o cdf16bit.f90
