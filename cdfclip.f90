@@ -80,9 +80,11 @@ PROGRAM cdfclip
      IF (istatus /= 0 ) THEN
        npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
         ELSE
+          IF (istatus /= 0 ) THEN
 ! STOP 'depth dimension name not suported'
-        PRINT *,' assume file with no depth'
-        npk=0
+          PRINT *,' assume file with no depth'
+          npk=0
+        ENDIF
      ENDIF
   ENDIF
   
@@ -118,8 +120,10 @@ PROGRAM cdfclip
 
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+  IF ( npk /= 0 ) THEN
   ipk(:)     = getipk (cfile,nvars,cdep=cdep)
   WHERE( ipk == 0 ) cvarname='none'
+  ENDIF
   typvar(:)%name=cvarname
 
   ! create output fileset
