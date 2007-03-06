@@ -18,12 +18,12 @@ EXEC = cdfmoy cdfmoy_sp cdfmoy_sal2_temp2  cdfvT cdfeke cdfrmsssh cdfstdevw cdfs
        cdfrhoproj cdfpv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full cdfmasstrp \
        cdfsigtrp cdfsigtrp-full\
-       cdfpsi cdfpsi-open cdfpsi-full cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
+       cdfpsi cdfpsi-full cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
        cdfheatc cdfzonalmean cdfhflx\
        cdfmxlheatc cdfmxlsaltc \
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe \
-       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv
+       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv
 
 
 all: $(EXEC)
@@ -114,9 +114,6 @@ cdfvhst-full: cdfio.o  cdfvhst-full.f90
 
 cdfpsi: cdfio.o  cdfpsi.f90
 	$(F90) cdfpsi.f90  -o cdfpsi cdfio.o $(FFLAGS)
-
-cdfpsi-open: cdfio.o  cdfpsi-open.f90
-	$(F90) cdfpsi-open.f90  -o cdfpsi-open cdfio.o $(FFLAGS)
 
 cdfpsi-full: cdfio.o  cdfpsi-full.f90
 	$(F90) cdfpsi-full.f90  -o cdfpsi-full cdfio.o $(FFLAGS)
@@ -212,6 +209,9 @@ cdfmax: cdfio.o  cdfmax.f90
 cdfprobe: cdfio.o  cdfprobe.f90
 	$(F90) cdfprobe.f90  -o cdfprobe cdfio.o $(FFLAGS)
 
+cdfclip: cdfio.o  cdfclip.f90
+	$(F90) cdfclip.f90  -o cdfclip cdfio.o $(FFLAGS)
+
 ## reformating programs
 cdf16bit: cdfio.o cdf16bit.f90
 	$(F90) cdf16bit.f90  -o cdf16bit cdfio.o $(FFLAGS)
@@ -224,6 +224,12 @@ cdfconvert: cdfio.o cdfconvert.f90
 	
 cdfflxconv: cdfio.o cdfflxconv.f90
 	$(F90)   cdfflxconv.f90  -o cdfflxconv cdfio.o $(FFLAGS)
+	
+cdfsstconv: cdfio.o cdfsstconv.f90
+	$(F90)   cdfsstconv.f90  -o cdfsstconv cdfio.o $(FFLAGS)
+	
+cdfstrconv: cdfio.o cdfstrconv.f90
+	$(F90)   cdfstrconv.f90  -o cdfstrconv cdfio.o $(FFLAGS)
 	
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
