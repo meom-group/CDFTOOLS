@@ -6,7 +6,7 @@ MODULE eos
 
 IMPLICIT NONE
 PRIVATE
-PUBLIC sigma0, eosbn2, sigmai
+PUBLIC sigma0, eosbn2, sigmai, albet, beta
 
 CONTAINS
      FUNCTION sigma0 ( ptem, psal, kpi,kpj)
