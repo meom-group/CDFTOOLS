@@ -176,7 +176,7 @@ cdfzonalmean: cdfio.o  cdfzonalmean.f90
 	$(F90) cdfzonalmean.f90 -o cdfzonalmean cdfio.o $(FFLAGS) 
 
 cdfzonalsum: cdfio.o  cdfzonalsum.f90
-	$(F90) cdfzonalsum.f90 -o cdfzonalsum cdfio.o $(FFLAGS) 
+	$(F90) -CB  cdfzonalsum.f90 -o cdfzonalsum cdfio.o $(FFLAGS) 
 
 cdfzonalout: cdfio.o  cdfzonalout.f90
 	$(F90) cdfzonalout.f90 -o cdfzonalout cdfio.o $(FFLAGS) 

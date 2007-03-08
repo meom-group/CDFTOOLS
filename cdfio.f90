@@ -459,7 +459,8 @@ CONTAINS
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
     IF (  PRESENT (cdep) ) cldep = cdep
-    iipk = getdim(cdfile,cldep,kstatus=istatus)
+    ! Note the very important TRIM below : if not, getdim crashes as it never find the correct dim !
+    iipk = getdim(cdfile,TRIM(cldep),kstatus=istatus)
        IF ( istatus /= 0 ) THEN
          PRINT *,' getipk error : vertical dim not found ...'
          STOP
