@@ -115,7 +115,9 @@ PROGRAM cdfmoy_sp
   typvar2(:)%name=cvarname2
   ! get missing_value attribute
   spval(:) = 0.
-  spval = getatt( 'missing_value', cfile, nvars, id_var)
+  DO jvar=1,nvars
+    spval(jvar) = getatt( cfile,cvarname(jvar),'missing_value')
+  ENDDO
 
   ! create output fileset
   cfileout='cdfmoy.nc'

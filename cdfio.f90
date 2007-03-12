@@ -268,37 +268,40 @@ CONTAINS
 
   END FUNCTION putatt
 
-  FUNCTION getatt(cdatt,cdfile,knvars,kid_var)
+  FUNCTION getatt(cdfile,cdvar,cdatt)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  getatt  ***
     !!
-    !! ** Purpose : return a REAL array with the values of the 
-    !!              attribute cdatt for all the variables in cdfile
+    !! ** Purpose : return a REAL value with the values of the 
+    !!              attribute cdatt for all the variable cdvar  in cdfile
     !!  
     !! ** Method : open, read attribute close
     !!
     !! history:
     !!    27/04/2005 : Jean-Marc Molines : Original Code 
+    !!    12/03/2007 :  J.M. Molines : modif 
     !!-----------------------------------------------------------
     !! * Arguments declarations
 
     CHARACTER(LEN=*), INTENT(in) :: cdatt,   &   ! attribute name to look for
-         &                          cdfile       ! file to look at
-    INTEGER, INTENT(in) :: knvars
-    INTEGER, DIMENSION(*), INTENT(in) :: kid_var
+         &                          cdfile,  &   ! file to look at
+         &                          cdvar
 
-    REAL(KIND=4), DIMENSION(knvars) :: getatt
+    REAL(KIND=4) :: getatt
 
     !! * Local declarations
 
     INTEGER :: istatus, jv, ncid, idum
     !! ----------------------------------------------------------
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
-    istatus=NF90_INQUIRE(ncid,nvariables = idum)
-    !! JMM : ajouter lecture nvars et id_var, les enlever des arguments
-    DO jv=1,knvars
-       istatus = NF90_GET_ATT(ncid,kid_var(jv),cdatt,getatt(jv))
-    END DO
+    istatus=NF90_INQ_VARID(ncid,cdvar,idum)
+    istatus = NF90_GET_ATT(ncid, idum,cdatt, getatt)
+    IF ( istatus /= NF90_NOERR ) THEN
+      PRINT *,' getatt problem :',NF90_STRERROR(istatus)
+      PRINT *,' attribute :', TRIM(cdatt)
+      PRINT *,' return default 0 '
+      getatt=0.
+    ENDIF
     istatus=NF90_CLOSE(ncid)
 
   END FUNCTION getatt

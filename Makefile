@@ -22,7 +22,7 @@ EXEC = cdfmoy cdfmoy_sp cdfmoy_sal2_temp2  cdfvT cdfeke cdfrmsssh cdfstdevw cdfs
        cdfheatc cdfzonalmean cdfhflx\
        cdfmxlheatc cdfmxlsaltc \
        cdfzonalsum cdficediags cdfzonalout\
-       cdfprofile  cdfwhereij cdffindij cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe \
+       cdfprofile  cdfwhereij cdffindij cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv
 
 
@@ -205,6 +205,9 @@ cdfzoom: cdfio.o  cdfzoom.f90
 
 cdfmax: cdfio.o  cdfmax.f90
 	$(F90) cdfmax.f90  -o cdfmax cdfio.o $(FFLAGS)
+
+cdfmax_sp: cdfio.o  cdfmax_sp.f90
+	$(F90) cdfmax_sp.f90  -o cdfmax_sp cdfio.o $(FFLAGS)
 
 cdfprobe: cdfio.o  cdfprobe.f90
 	$(F90) cdfprobe.f90  -o cdfprobe cdfio.o $(FFLAGS)
