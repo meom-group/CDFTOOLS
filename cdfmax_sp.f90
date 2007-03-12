@@ -51,12 +51,13 @@ PROGRAM cdfmax_sp
   narg = iargc()
   IF (narg == 0) THEN
      PRINT *,'USAGE :cdfmax_sp -f file '// &
-          ' -var cdfvarname ' //&
-          ' [-lev kmin kmax ' //  &
+          ' -var cdfvarname ' 
+     PRINT *, '      [-lev kmin kmax ' //  &
           ' -zoom imin imax jmin jmax  -fact multfact -xy ]'
      PRINT *, '   -lev and -zoom limit the area for min/max computation'
      PRINT *, '    if not specified : the 3D data is taken '
      PRINT *, '    if either imin=imax or jmin=jmax a vertical slab is considered'
+     PRINT *, '     UNLESS -xy option is specified !!! '
      
      STOP
   END IF
