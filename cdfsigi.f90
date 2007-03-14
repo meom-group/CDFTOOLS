@@ -12,9 +12,9 @@ PROGRAM cdfsigi
   !!     Original :   J.M. Molines (Nov 2004 ) for ORCA025
   !!                  J.M. Molines Apr 2005 : use modules
   !!-------------------------------------------------------------------
-  !!  $Rev: 13 $
-  !!  $Date: 2007-02-24 22:15:22 +0100 (Sat, 24 Feb 2007) $
-  !!  $Id: cdfsigi.f90 13 2007-02-24 21:15:22Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
