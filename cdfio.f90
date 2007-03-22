@@ -342,15 +342,21 @@ CONTAINS
 
       id_var = 1
       ! Look for dim name containing at least 'cdim_name'
-      DO WHILE ( INDEX(clnam,cdim_name) == 0 .AND. id_var <= idims )
-       istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,name=clnam,len=getdim)
-       id_var = id_var + 1
-      END DO
+!     DO WHILE ( INDEX(clnam,cdim_name) == 0 .AND. id_var <= idims )
+!      istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,name=clnam,len=getdim)
+!      id_var = id_var + 1
+!     END DO
 
-      IF ( PRESENT(cdtrue) ) cdtrue=clnam
+      DO id_var = 1,idims
+       istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,name=clnam,len=getdim)
+       IF ( INDEX(clnam,cdim_name) /= 0 ) THEN
+          IF ( PRESENT(cdtrue) ) cdtrue=clnam
+          EXIT
+       ENDIF
+      ENDDO
     
       IF ( id_var > idims ) THEN
-       PRINT *,' warning: problem in getdim for ', TRIM(cdim_name),' in ', TRIM(cdfile)
+!      PRINT *,' warning: problem in getdim for ', TRIM(cdim_name),' in ', TRIM(cdfile)
        IF ( PRESENT(kstatus) ) kstatus=1    ! error send optionally to the calling program
        getdim=0
        IF ( PRESENT(cdtrue) ) cdtrue='unknown'
@@ -465,8 +471,8 @@ CONTAINS
     ! Note the very important TRIM below : if not, getdim crashes as it never find the correct dim !
     iipk = getdim(cdfile,TRIM(cldep),kstatus=istatus)
        IF ( istatus /= 0 ) THEN
-         PRINT *,' getipk error : vertical dim not found ...'
-         STOP
+         PRINT *,' getipk : vertical dim not found ...assume 1'
+         iipk=1
        ENDIF
     DO jv = 1, knvars
        istatus=NF90_INQUIRE_VARIABLE(ncid,jv, ndims=ipk)
