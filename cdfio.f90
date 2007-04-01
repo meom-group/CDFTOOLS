@@ -36,7 +36,7 @@ MODULE cdfio
   END TYPE variable
 
   INTERFACE putvar
-     MODULE PROCEDURE putvarr4, putvari2, putvarzo
+     MODULE PROCEDURE putvarr4, putvari2, putvarzo, reputvarr4
   END INTERFACE
 
 
@@ -1131,6 +1131,49 @@ CONTAINS
        putvarr4=istatus
  
      END FUNCTION putvarr4
+
+     FUNCTION reputvarr4 (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime,ptab)
+    !!-----------------------------------------------------------
+    !!                       ***  FUNCTION  putvar  ***
+    !!
+    !! ** Purpose :  Change an existing variable in inputfile
+    !!
+    !! ** Method  :  
+    !!
+    !! ** Action  : variable level written
+    !!
+    !! history:
+    !!    27/04/2005 : Jean-Marc Molines : Original Code
+    !!-----------------------------------------------------------
+    !! * Arguments declarations
+
+    CHARACTER(LEN=*), INTENT(in) :: cdfile,     &   ! file name to work with
+         &                          cdvar           ! variable name to work with
+    INTEGER, INTENT(in) :: kpi,kpj                  ! horizontal size of the 2D variable
+    INTEGER, OPTIONAL, INTENT(in) :: klev           ! Optional variable. If missing 1 is assumed
+    INTEGER, OPTIONAL, INTENT(in) :: kimin,kjmin    ! Optional variable. If missing 1 is assumed
+    INTEGER, OPTIONAL, INTENT(in) :: ktime          ! Optional variable. If missing 1 is assumed
+    REAL(KIND=4), DIMENSION(kpi,kpj) ::  ptab     ! 2D REAL 4 holding variable field at klev
+    INTEGER :: reputvarr4
+
+    !! * Local variables
+    INTEGER, DIMENSION(4) :: istart, icount
+    INTEGER :: ncid, id_var
+    INTEGER :: istatus, ilev, imin, jmin, itime
+
+       ilev=1  ; IF (PRESENT(klev)  ) ilev=klev
+       imin=1  ; IF (PRESENT(kimin) ) imin=kimin
+       jmin=1  ; IF (PRESENT(kjmin) ) jmin=kjmin
+       itime=1 ; IF (PRESENT(ktime) ) itime=ktime
+
+       istatus=NF90_OPEN(cdfile,NF90_WRITE,ncid)
+       istatus=NF90_INQ_VARID(ncid,cdvar,id_var)
+       istatus=NF90_PUT_VAR(ncid,id_var,ptab,start=(/imin,jmin,klev,itime/), count=(/kpi,kpj,1,1/) )
+       PRINT *,TRIM(NF90_STRERROR(istatus)),' in reputvar'
+       reputvarr4=istatus
+       istatus=NF90_CLOSE(ncid)
+ 
+     END FUNCTION reputvarr4
 
      FUNCTION putvarzo(kout, kid,ptab, klev, kpi, kpj,ktime)
     !!-----------------------------------------------------------
