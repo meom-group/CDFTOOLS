@@ -30,7 +30,7 @@ PROGRAM cdfbathy
   INTEGER, DIMENSION(:), ALLOCATABLE :: level
   INTEGER, DIMENSION (:,:), ALLOCATABLE :: mbathy, mask
   ! REAL(KIND=4) :: e3zps_min=25, e3zps_rat=0.2
-  REAL(KIND=4) :: e3zps_min=1000, e3zps_rat=1
+  REAL(KIND=4) :: e3zps_min=1000, e3zps_rat=1, depmin=600.
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: gdept, gdepw, e3t, e3w
   !
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE     :: h, rtime
@@ -40,7 +40,7 @@ PROGRAM cdfbathy
   CHARACTER(LEN=80) :: cvar='none', cdim
 
   LOGICAL :: lexist=.TRUE., lfill=.FALSE., lfullstep=.FALSE., lappend=.FALSE., lreplace=.FALSE.
-  LOGICAL :: ldump = .FALSE., lmodif=.FALSE., loverwrite=.false.
+  LOGICAL :: ldump = .FALSE., lmodif=.FALSE., loverwrite=.false., lraz=.false., ldumpn=.false.
   INTEGER :: iversion=1, iostat, ipos
   !!
   !! 1. Initializations:
@@ -49,7 +49,7 @@ PROGRAM cdfbathy
   narg = iargc()
   IF (narg == 0) THEN
      PRINT 9999,'USAGE :cdfbathy -f file '// &
-          '-zoom imin imax jmin jmax -fillzone -fullstep '
+          '-zoom imin imax jmin jmax -fillzone -fullstep depmin'
      PRINT 9999,'      -replace ''file'' -dumpzone ''file'' -a -o ' 
      PRINT 9999
      PRINT 9999, ' DESCRIPTION OF OPTIONS '
@@ -57,10 +57,12 @@ PROGRAM cdfbathy
      PRINT 9999, '   -file (or -f ) : name of bathy file '
      PRINT 9999, '   -zoom (or -z ) : sub area of the bathy file to work with (imin imax jmin jmax)'
      PRINT 9999, '   -fillzone (or -fz ) : sub area will be filled with 0 up to the first coast line '
-     PRINT 9999, '   -fullstep (or -fs ) : sub area will be reshaped as full-step'
+     PRINT 9999, '   -raz_zone (or -raz ) : sub area will be filled with 0 up '
+     PRINT 9999, '   -fullstep (or -fs ) : sub area will be reshaped as full-step, below depmin'
      PRINT 9999, '               requires the presence of the file zgr_bat.txt (from ocean.output, eg )'
      PRINT 9999, '   -dumpzone (or -d ): sub area will be output to an ascii file, which can be used by -replace'
      PRINT 9999, '               after manual editing '
+     PRINT 9999, '   -nicedumpzone (or -nd ): sub area will be output to an ascii file (nice output)'
      PRINT 9999, '   -replace (or -r ) : sub area defined by the file will replace the original bathy'
      PRINT 9999, '   -append (or -a )  : fortran log file (log.f90) will be append with actual modif'
      PRINT 9999, '              Standard behaviour is to overwrite/create log file'
@@ -89,8 +91,12 @@ PROGRAM cdfbathy
         READ(cline2,*) jmax
      ELSE IF (cline1 == '-fillzone' .OR. cline1 == '-fz' ) THEN
         lfill=.TRUE. ; lmodif=.TRUE.
+     ELSE IF (cline1 == '-raz_zone' .OR. cline1 == '-raz' ) THEN
+        lraz=.TRUE. ; lmodif=.TRUE.
      ELSE IF (cline1 == '-fullstep' .OR. cline1 == '-fs' ) THEN
         lfullstep=.TRUE. ; lmodif=.TRUE.
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
+        READ(cline2,*) depmin
      ELSE IF (cline1 == '-append' .OR. cline1 == '-a' ) THEN
         lappend=.TRUE.
      ELSE IF (cline1 == '-overwrite' .OR. cline1 == '-o' ) THEN
@@ -100,6 +106,9 @@ PROGRAM cdfbathy
         CALL getarg(jarg,creplace) ; jarg = jarg +1
      ELSE IF (cline1 == '-dumpzone' .OR. cline1 == '-d') THEN
         ldump=.TRUE.
+        CALL getarg(jarg,cdump) ; jarg = jarg +1
+     ELSE IF (cline1 == '-nicedumpzone' .OR. cline1 == '-nd') THEN
+        ldumpn=.TRUE.
         CALL getarg(jarg,cdump) ; jarg = jarg +1
      ELSE
         PRINT *, cline1,' : unknown option '
@@ -123,7 +132,7 @@ PROGRAM cdfbathy
         INQUIRE(FILE=ctmp,EXIST=lexist)
         iversion=iversion+1
      END DO
-     PRINT *, 'Working copy will be :', TRIM(ctmp)
+     PRINT *, 'Working copy will be : ' ,TRIM(ctmp)
      CALL system(' cp -f '//cfilein//' '//ctmp )
   ELSE
      ctmp=cfilein
@@ -145,10 +154,12 @@ PROGRAM cdfbathy
   bathyin=bathy  ! save original 
 
   IF (lfullstep ) THEN 
-     CALL zgr_read ; CALL zgr_zps
+     CALL zgr_read ; CALL zgr_zps(imin, imax, jmin, jmax)
   ENDIF
   IF (lfill ) CALL fillzone( imin, imax, jmin, jmax)
+  IF (lraz )  CALL raz_zone( imin, imax, jmin, jmax)
   IF (ldump)    CALL dumpzone(cdump,imin, imax, jmin, jmax)
+  IF (ldumpn)    CALL nicedumpzone(cdump,imin, imax, jmin, jmax)
   IF (lreplace) CALL replacezone(creplace)
 
   IF (lmodif ) THEN
@@ -157,7 +168,8 @@ PROGRAM cdfbathy
   ENDIF
 
 CONTAINS 
-  SUBROUTINE zgr_zps
+  SUBROUTINE zgr_zps ( kimin,kimax ,kjmin, kjmax )
+    INTEGER ,INTENT(in) :: kimin,kimax, kjmin,kjmax
     !! * Local declarations
     INTEGER  ::   ji, jj, jk    ! dummy loop indices
     INTEGER  ::   ik, it            ! temporary integers
@@ -175,21 +187,21 @@ CONTAINS
     zmin = gdepw(4)
 
     ! initialize mbathy to the maximum ocean level available
-    mbathy(:,:) = npk-1
+    mbathy(kimin:kimax,kjmin:kjmax) = npk-1
 
     ! storage of land and island's number (zero and negative values) in mbathy
-    WHERE (bathy(:,:) <= 0. ) mbathy(:,:)=INT( bathy(:,:) )
+    WHERE (bathy(kimin:kimax,kjmin:kjmax) <= 0. ) mbathy(kimin:kimax,kjmin:kjmax)=INT( bathy(kimin:kimax,kjmin:kjmax) )
 
     ! bounded value of bathy
     ! minimum depth == 3 levels
     ! maximum depth == gdepw(jpk)+e3t(jpk) 
     ! i.e. the last ocean level thickness cannot exceed e3t(jpkm1)+e3t(jpk)
-    WHERE (bathy <= 0 ) 
-       bathy=0.
-    ELSEWHERE (bathy < zmin ) 
-       bathy = zmin
-    ELSEWHERE (bathy >= zmax )
-       bathy = zmax
+    WHERE (bathy(kimin:kimax,kjmin:kjmax) <= 0 ) 
+       bathy(kimin:kimax,kjmin:kjmax)=0.
+    ELSEWHERE (bathy(kimin:kimax,kjmin:kjmax) < zmin ) 
+       bathy(kimin:kimax,kjmin:kjmax) = zmin
+    ELSEWHERE (bathy(kimin:kimax,kjmin:kjmax) >= zmax )
+       bathy(kimin:kimax,kjmin:kjmax) = zmax
     END WHERE
 
     ! Compute mbathy for ocean points (i.e. the number of ocean levels)
@@ -199,10 +211,19 @@ CONTAINS
     DO jk = npk-1, 1, -1
 !      zdepth = gdepw(jk) + MIN( e3zps_min, e3t(jk)*e3zps_rat )
        zdepth = gdept(jk)
-       WHERE ( bathy(:,:) > 0. .AND. bathy (:,:) <= zdepth )  
-          mbathy(:,:)=jk-1
-          e3_bot(:,:)= bathy(:,:) - gdepw(jk-1)
+       WHERE ( bathy(kimin:kimax,kjmin:kjmax) > 0. .AND. bathy (kimin:kimax,kjmin:kjmax) <= zdepth )  
+          mbathy(kimin:kimax,kjmin:kjmax)=jk-1
+          e3_bot(kimin:kimax,kjmin:kjmax)= bathy(kimin:kimax,kjmin:kjmax) - gdepw(jk-1)
        END WHERE
+    END DO
+
+    DO ji=kimin,kimax
+      DO jj=kjmin,kjmax
+        jk=mbathy(ji,jj)
+        IF (jk /= 0 ) THEN 
+           IF (gdepw(jk+1) > depmin ) bathy(ji,jj)=gdepw(jk+1)-0.1
+        ENDIF
+      ENDDO
     END DO
   END SUBROUTINE zgr_zps
 
@@ -263,7 +284,7 @@ CONTAINS
     INTEGER :: ji,jj
     DO jj=kjmin,kjmax
        ji=kimin
-       IF ( bathy(ji,jj)  /=0 ) THEN
+       IF ( bathy(ji,jj)  /= 0 ) THEN
           DO WHILE ( bathy(ji,jj)  /= 0 .AND. ji <= kimax )
              bathy(ji,jj) = 0.
              ji=ji+1
@@ -271,6 +292,13 @@ CONTAINS
        END IF
     END DO
   END SUBROUTINE fillzone
+
+  SUBROUTINE raz_zone(kimin,kimax,kjmin,kjmax)
+    ! * Fill subzone of the bathy file
+    INTEGER :: kimin, kimax, kjmin,kjmax
+    bathy(kimin:kimax, kjmin:kjmax) = 0.
+  END SUBROUTINE raz_zone
+
 
   SUBROUTINE dumpzone(cdumpf,kimin,kimax,kjmin,kjmax)
     CHARACTER(LEN=*), INTENT(in) :: cdumpf
@@ -292,6 +320,29 @@ CONTAINS
     ENDDO
     CLOSE(numdmp)
   END SUBROUTINE dumpzone
+
+  SUBROUTINE nicedumpzone(cdumpf,kimin,kimax,kjmin,kjmax)
+    CHARACTER(LEN=*), INTENT(in) :: cdumpf
+    INTEGER, INTENT(in) :: kimin,kimax,kjmin,kjmax
+    INTEGER :: ji,jj
+    INTEGER :: numdmp=20 , ni
+    CHARACTER(LEN=80) :: cfmtr, cfmti
+    ni=kimax-kimin+1
+    WRITE(cfmtr,99) ni
+    WRITE(cfmti,98) ni
+    OPEN(numdmp,FILE=cdumpf)
+    WRITE(numdmp,*) kimin,kimax,kjmin,kjmax, TRIM(cfmtr)
+99  FORMAT('(I5,',i4.4,'I5)')
+98  FORMAT('(5x,',i4.4,'I5)')
+    WRITE(numdmp,cfmti)(ji,ji=kimin,kimax)
+    DO jj= kjmax,kjmin,-1
+       WRITE(numdmp,cfmtr) jj, INT(bathy(kimin:kimax,jj))
+       WRITE(numdmp,*)
+       WRITE(numdmp,*)
+    ENDDO
+    CLOSE(numdmp)
+  END SUBROUTINE nicedumpzone
+
 
   SUBROUTINE replacezone(cdreplace)
     CHARACTER(LEN=*), INTENT(in) :: cdreplace
