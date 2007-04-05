@@ -29,6 +29,7 @@ PROGRAM cdffindij
   INTEGER :: npiglo, npjglo
 
   REAL(KIND=4)                              :: xmin, xmax, ymin, ymax, rdis
+  REAL(KIND=4)                              :: glamfound, glamin, glamax
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: glam, gphi
  
   CHARACTER(LEN=80) :: cdum, coord='coordinates.nc', ctype='F'
@@ -82,6 +83,11 @@ PROGRAM cdffindij
   CASE DEFAULT
      PRINT *,' ERROR : type of point not known: ', TRIM(ctype)
   END SELECT
+  ! work with longitude between 0 and 360 to avoid  the date line.
+    WHERE( glam < 0 ) glam=glam+360.
+    IF (xmin < 0.) xmin = xmin +360.
+    IF (xmax < 0.) xmax = xmax +360.
+    
 
   lagain = .TRUE.
   niter = 0
@@ -90,7 +96,8 @@ PROGRAM cdffindij
      rdis = (xmin - glam(iloc,jloc))**2 + (ymin - gphi(iloc,jloc))**2
      rdis = SQRT(rdis)
      IF (rdis  > 1 ) THEN
-        PRINT 9000, 'Long= ',glam(iloc,jloc),' Lat = ',gphi(iloc,jloc)&
+         glamfound=glam(iloc,jloc) ; IF (glamfound > 180.)  glamfound=glamfound -360.
+        PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc)&
              &               , iloc, jloc 
         PRINT *,' Algorithme ne converge pas ', rdis 
         IF ( niter >=  1 ) STOP ' pas de convergence apres iteration'
@@ -117,7 +124,8 @@ PROGRAM cdffindij
      rdis = (xmax - glam(iloc,jloc))**2 + (ymax - gphi(iloc,jloc))**2
      rdis = SQRT(rdis)
      IF (rdis >  1 ) THEN
-        PRINT 9000, 'Long= ',glam(iloc,jloc),' Lat = ',gphi(iloc,jloc) &
+         glamfound=glam(iloc,jloc) ; IF (glamfound > 180.)  glamfound=glamfound -360.
+        PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc) &
              &               , iloc, jloc
         PRINT *,' Algorithme ne converge pas ', rdis
         IF ( niter >= 1 ) STOP ' pas de convergence avres iteration'
@@ -137,7 +145,10 @@ PROGRAM cdffindij
      !      PRINT 9000, 'Long= ',glam(iloc,jloc),' lat = ',gphi(iloc,jloc), iloc, jloc
   ENDIF
   PRINT 9001, imin,imax, jmin, jmax
-  PRINT 9002, glam(imin,jmin), glam(imax,jmax), gphi(imin,jmin),gphi(imax,jmax)
+  glamin=glam(imin,jmin) ;glamax=glam(imax,jmax)
+  IF ( glamin > 180 ) glamin=glamin-360.
+  IF ( glamax > 180 ) glamax=glamax-360.
+  PRINT 9002, glamin, glamax, gphi(imin,jmin),gphi(imax,jmax)
 9000 FORMAT(a,f8.2,a,f8.2,2i5)
 9001 FORMAT(4i6)
 9002 FORMAT(4f10.2)
