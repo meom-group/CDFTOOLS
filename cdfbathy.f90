@@ -127,7 +127,7 @@ PROGRAM cdfbathy
      ENDIF
      iversion=iversion+1
 
-     DO WHILE ( lexist == .TRUE. )
+     DO WHILE ( lexist )
         WRITE(ctmp,'(a,a,i2.2)') TRIM(cfileroot),'.',iversion
         INQUIRE(FILE=ctmp,EXIST=lexist)
         iversion=iversion+1
@@ -261,7 +261,7 @@ CONTAINS
     INTEGER :: numlog=10
 
     IF (ldapp ) THEN 
-       OPEN (numlog, FILE='log.f90',ACCESS='append')
+       OPEN (numlog, FILE='log.f90', POSITION='append')
     ELSE
        OPEN (numlog, FILE='log.f90')
     ENDIF
