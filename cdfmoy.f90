@@ -21,11 +21,12 @@ PROGRAM cdfmoy
   USE cdfio 
 
   IMPLICIT NONE
-  INTEGER   :: jk,jt,jvar, jv                               !: dummy loop index
+  INTEGER   :: jk,jt,jvar, jv , jtt                         !: dummy loop index
   INTEGER   :: ierr                                         !: working integer
   INTEGER   :: narg, iargc                                  !: 
-  INTEGER   :: npiglo,npjglo, npk                           !: size of the domain
-  INTEGER   ::  nvars                                       !: Number of variables in a file
+  INTEGER   :: npiglo,npjglo, npk ,nt                       !: size of the domain
+  INTEGER   :: nvars                                        !: Number of variables in a file
+  INTEGER   :: ntframe                                      !: Cumul of time frame
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var , &         !: arrays of var id's
        &                             ipk    , &         !: arrays of vertical level for each var
        &                             id_varout,& 
@@ -34,7 +35,8 @@ PROGRAM cdfmoy
   REAL(KIND=8)                                :: total_time
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: v2d ,&       !: Array to read a layer of data
        &                                   rmean, rmean2
-  REAL(KIND=4),DIMENSION(1)                   :: timean, tim
+  REAL(KIND=4),DIMENSION(1)                   :: timean
+  REAL(KIND=4),DIMENSION(365)                   ::  tim
 
   CHARACTER(LEN=80) :: cfile ,cfileout, cfileout2           !: file name
   CHARACTER(LEN=80) ::  cdep
@@ -142,25 +144,29 @@ PROGRAM cdfmoy
         PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar)
         DO jk = 1, ipk(jvar)
            PRINT *,'level ',jk
-           tab(:,:) = 0.d0 ; tab2(:,:) = 0.d0 ; total_time = 0.
+           tab(:,:) = 0.d0 ; tab2(:,:) = 0.d0 ; total_time = 0.;  ntframe=0
            DO jt = 1, narg
-              IF (jk == 1 .AND. jvar == nvars )  THEN
-                 tim=getvar1d(cfile,'time_counter',1)
-                 total_time = total_time + tim(1)
-              END IF
               CALL getarg (jt, cfile)
-              v2d(:,:)= getvar(cfile, cvarname(jvar), jk ,npiglo, npjglo )
-              tab(:,:) = tab(:,:) + v2d(:,:)
-              IF (cvarname2(jvar) /= 'none' ) tab2(:,:) = tab2(:,:) + v2d(:,:)*v2d(:,:)
+              nt = getdim (cfile,'time_counter')
+              IF (jk == 1 .AND. jvar == nvars )  THEN
+                 tim=getvar1d(cfile,'time_counter',nt)
+                 total_time = total_time + SUM(tim(1:nt) )
+              END IF
+              DO jtt=1,nt
+                ntframe=ntframe+1
+                v2d(:,:)= getvar(cfile, cvarname(jvar), jk ,npiglo, npjglo,ktime=jtt )
+                tab(:,:) = tab(:,:) + v2d(:,:)
+                IF (cvarname2(jvar) /= 'none' ) tab2(:,:) = tab2(:,:) + v2d(:,:)*v2d(:,:)
+              ENDDO
            END DO
            ! finish with level jk ; compute mean (assume spval is 0 )
-           rmean(:,:) = tab(:,:)/narg
-           IF (cvarname2(jvar) /= 'none' ) rmean2(:,:) = tab2(:,:)/narg
+           rmean(:,:) = tab(:,:)/ntframe
+           IF (cvarname2(jvar) /= 'none' ) rmean2(:,:) = tab2(:,:)/ntframe
            ! store variable on outputfile
            ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo)
            IF (cvarname2(jvar) /= 'none' ) ierr = putvar(ncout2,id_varout2(jvar),rmean2, jk,npiglo, npjglo)
            IF (jk == 1 .AND. jvar == nvars )  THEN
-              timean(1)= total_time/narg
+              timean(1)= total_time/ntframe
               ierr=putvar1d(ncout,timean,1,'T')
               ierr=putvar1d(ncout2,timean,1,'T')
            END IF
