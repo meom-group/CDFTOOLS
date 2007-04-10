@@ -295,6 +295,7 @@ CONTAINS
     !! ----------------------------------------------------------
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
     istatus=NF90_INQ_VARID(ncid,cdvar,idum)
+    IF ( istatus /= NF90_NOERR) PRINT *, TRIM(NF90_STRERROR(istatus)),' when looking for ',TRIM(cdvar),' in getatt.'
     istatus = NF90_GET_ATT(ncid, idum,cdatt, getatt)
     IF ( istatus /= NF90_NOERR ) THEN
       PRINT *,' getatt problem :',NF90_STRERROR(istatus)
