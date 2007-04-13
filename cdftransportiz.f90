@@ -23,6 +23,7 @@ PROGRAM cdftransportiz
   !! history :
   !!   Original :  J.M. Molines (jan. 2005)
   !!               J.M. Molines Apr 2005 : use modules
+  !!               J.M. Molines Apr 2007 : merge with Julien Jouanno version (std + file output)
   !!---------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -40,6 +41,8 @@ PROGRAM cdftransportiz
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
   INTEGER   :: imin, imax, jmin, jmax, ik 
+  INTEGER   :: numout = 10, ncout
+  INTEGER, DIMENSION(4) ::  ipk, id_varout
 
   ! broken line stuff
   INTEGER, PARAMETER :: jpseg=10000
@@ -66,11 +69,13 @@ PROGRAM cdftransportiz
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku,zwkv,    zwkut,zwkvt,   zwkus,zwkvs
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
 
-  CHARACTER(LEN=80) :: cfilet , cfileu, cfilev, csection
+  CHARACTER(LEN=80) :: cfilet ,cfileout='section_trp.dat', &
+       &                       cfileu, cfilev, csection
   CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
+  CHARACTER(LEN=80) ,DIMENSION(4)   :: cvarname   !: array of var name for output
 
   INTEGER    ::  nxtarg
-  LOGICAL    :: ltest=.false.
+  LOGICAL    :: ltest=.FALSE.
 
   ! constants
   REAL(KIND=4)   ::  rau0=1000.,  rcp=4000.
@@ -81,28 +86,28 @@ PROGRAM cdftransportiz
      PRINT *,' Usage : cdftransportiz [-test  u v ]  VTfile gridUfile gridVfile   ''limit of level'' '
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc must be in te current directory'
      PRINT *,' Option -test vt u v is used for testing purposes, with constant flow field'
-     PRINT *,' Output on section_htrp.dat, section_strp.dat, section_vtrp.dat '
+     PRINT *,' Output on standard output and on an ascii file called section_trp.dat'
      STOP
   ENDIF
 
-  
+
   CALL getarg (1, cfilet)
   IF ( cfilet == '-test')  THEN
-    ltest = .true.
-    CALL getarg (2, cdum)
-    READ(cdum,*) udum
-    CALL getarg (3, cdum)
-    READ(cdum,*) vdum
-    CALL getarg (4, cfilet)
-    CALL getarg (5, cfileu)
-    CALL getarg (6, cfilev)
-    nxtarg=6
+     ltest = .TRUE.
+     CALL getarg (2, cdum)
+     READ(cdum,*) udum
+     CALL getarg (3, cdum)
+     READ(cdum,*) vdum
+     CALL getarg (4, cfilet)
+     CALL getarg (5, cfileu)
+     CALL getarg (6, cfilev)
+     nxtarg=6
   ELSE
-    CALL getarg (2, cfileu)
-    CALL getarg (3, cfilev)
-    nxtarg=3
+     CALL getarg (2, cfileu)
+     CALL getarg (3, cfilev)
+     nxtarg=3
   ENDIF
-    nclass = narg -nxtarg + 1
+  nclass = narg -nxtarg + 1
 
   ALLOCATE (  imeter(nclass -1), ilev0(nclass), ilev1(nclass) )
 
@@ -189,19 +194,19 @@ PROGRAM cdftransportiz
         PRINT *,'level ',jk
         ! Get velocities, temperature and salinity fluxes at jk
         IF ( ltest ) THEN
-          zu (:,:)= udum
-          zv (:,:)= vdum
-          zut(:,:)= udum
-          zvt(:,:)= vdum
-          zus(:,:)= udum
-          zvs(:,:)= vdum
+           zu (:,:)= udum
+           zv (:,:)= vdum
+           zut(:,:)= udum
+           zvt(:,:)= vdum
+           zus(:,:)= udum
+           zvs(:,:)= vdum
         ELSE
-          zu (:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
-          zv (:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
-          zut(:,:)= getvar(cfilet, 'vozout',  jk ,npiglo,npjglo)
-          zvt(:,:)= getvar(cfilet, 'vomevt',  jk ,npiglo,npjglo)
-          zus(:,:)= getvar(cfilet, 'vozous',  jk ,npiglo,npjglo)
-          zvs(:,:)= getvar(cfilet, 'vomevs',  jk ,npiglo,npjglo)
+           zu (:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
+           zv (:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
+           zut(:,:)= getvar(cfilet, 'vozout',  jk ,npiglo,npjglo)
+           zvt(:,:)= getvar(cfilet, 'vomevt',  jk ,npiglo,npjglo)
+           zus(:,:)= getvar(cfilet, 'vozous',  jk ,npiglo,npjglo)
+           zvs(:,:)= getvar(cfilet, 'vomevs',  jk ,npiglo,npjglo)
         ENDIF
 
         ! get e3u, e3v  at level jk
@@ -226,190 +231,171 @@ PROGRAM cdftransportiz
      END DO  ! loop to next level
   END DO    ! next class
 
-10 PRINT *, ' Give name of section '
-  READ(*,'(a)') csection
-  IF (TRIM(csection) == 'EOF' ) STOP ' End of program'
-  PRINT *, ' Give imin, imax, jmin, jmax '
-  READ(*,*) imin, imax, jmin, jmax
-  !! Find the broken line between P1 (imin,jmin) and P2 (imax, jmax)
-  !! ---------------------------------------------------------------
-  ! ... Initialization
-  i0=imin; j0=jmin; i1=imax;  j1=jmax
-  rxi1=i1;  ryj1=j1; rxi0=i0; ryj0=j0
+  OPEN(numout,FILE=cfileout)
+  DO 
+     PRINT *, ' Give name of section '
+     READ(*,'(a)') csection
+     IF (TRIM(csection) == 'EOF' ) CLOSE(numout) 
+     IF (TRIM(csection) == 'EOF' ) EXIT
+     PRINT *, ' Give imin, imax, jmin, jmax '
+     READ(*,*) imin, imax, jmin, jmax
+     !! Find the broken line between P1 (imin,jmin) and P2 (imax, jmax)
+     !! ---------------------------------------------------------------
+     ! ... Initialization
+     i0=imin; j0=jmin; i1=imax;  j1=jmax
+     rxi1=i1;  ryj1=j1; rxi0=i0; ryj0=j0
 
-  ! .. Compute equation:  ryj = aj rxi + bj
-  IF ( (rxi1 -rxi0) /=  0 ) THEN
-     aj = (ryj1 - ryj0 ) / (rxi1 -rxi0)
-     bj = ryj0 - aj * rxi0
-  ELSE
-     aj=10000.
-     bj=0.
-  END IF
-
-  ! .. Compute equation:  rxi = ai ryj + bi
-  IF ( (ryj1 -ryj0) /=  0 ) THEN
-     ai = (rxi1 - rxi0 ) / ( ryj1 -ryj0 )
-     bi = rxi0 - ai * ryj0
-  ELSE
-     ai=10000.
-     bi=0.
-  END IF
-
-  ! ..  Compute the integer pathway:
-  n=0
-  ! .. Chose the strait line with the smallest slope
-  IF (ABS(aj) <=  1 ) THEN
-     ! ... Here, the best line is y(x)
-     ! ... If i1 < i0 swap points and remember it has been swapped
-     IF (i1 <  i0 ) THEN
-        i  = i0 ; j  = j0
-        i0 = i1 ; j0 = j1
-        i1 = i  ; j1 = j
-     END IF
-
-     IF ( j1 >= j0 ) THEN
-        ist = 1     ; jst = 1
-        norm_u =  1 ;  norm_v = -1
+     ! .. Compute equation:  ryj = aj rxi + bj
+     IF ( (rxi1 -rxi0) /=  0 ) THEN
+        aj = (ryj1 - ryj0 ) / (rxi1 -rxi0)
+        bj = ryj0 - aj * rxi0
      ELSE
-        ist = 1     ; jst = 0
-        norm_u = -1 ; norm_v = -1
+        aj=10000.
+        bj=0.
      END IF
 
-     ! ... compute the nearest j point on the line crossing at i
-     DO i=i0,i1
-        n=n+1
-        IF (n > jpseg) STOP 'n > jpseg !'
-        j=NINT(aj*i + bj )
-        yypt(n) = CMPLX(i,j)
-     END DO
-  ELSE
-     ! ... Here, the best line is x(y)
-     ! ... If j1 < j0 swap points and remember it has been swapped
-     IF (j1 <  j0 ) THEN
-        i  = i0 ; j  = j0
-        i0 = i1 ; j0 = j1
-        i1 = i  ; j1 = j
-     END IF
-     IF ( i1 >=  i0 ) THEN
-        ist = 1    ;  jst = 1
-        norm_u = 1 ;  norm_v = -1
+     ! .. Compute equation:  rxi = ai ryj + bi
+     IF ( (ryj1 -ryj0) /=  0 ) THEN
+        ai = (rxi1 - rxi0 ) / ( ryj1 -ryj0 )
+        bi = rxi0 - ai * ryj0
      ELSE
-        ist = 0
-        jst = 1
-        norm_u = 1
-        norm_v = 1
+        ai=10000.
+        bi=0.
      END IF
 
-     ! ... compute the nearest i point on the line crossing at j
-     DO j=j0,j1
-        n=n+1
-        IF (n > jpseg) STOP 'n>jpseg !'
-        i=NINT(ai*j + bi)
-        yypt(n) = CMPLX(i,j)
-     END DO
-  END IF
+     ! ..  Compute the integer pathway:
+     n=0
+     ! .. Chose the strait line with the smallest slope
+     IF (ABS(aj) <=  1 ) THEN
+        ! ... Here, the best line is y(x)
+        ! ... If i1 < i0 swap points and remember it has been swapped
+        IF (i1 <  i0 ) THEN
+           i  = i0 ; j  = j0
+           i0 = i1 ; j0 = j1
+           i1 = i  ; j1 = j
+        END IF
 
-  !!
-  !! Look for intermediate points to be added.
-  !  ..  The final positions are saved in rxx,ryy
-  rxx(1)=REAL(yypt(1))
-  ryy(1)=IMAG(yypt(1))
-  nn=1
+        IF ( j1 >= j0 ) THEN
+           ist = 1     ; jst = 1
+           norm_u =  1 ;  norm_v = -1
+        ELSE
+           ist = 1     ; jst = 0
+           norm_u = -1 ; norm_v = -1
+        END IF
 
-  DO k=2,n
-     ! .. distance between 2 neighbour points
-     d=ABS(yypt(k)-yypt(k-1))
-     ! .. intermediate points required if d > 1
-     IF ( d > 1 ) THEN
-        CALL interm_pt(yypt,k,ai,bi,aj,bj,yypti)
+        ! ... compute the nearest j point on the line crossing at i
+        DO i=i0,i1
+           n=n+1
+           IF (n > jpseg) STOP 'n > jpseg !'
+           j=NINT(aj*i + bj )
+           yypt(n) = CMPLX(i,j)
+        END DO
+     ELSE
+        ! ... Here, the best line is x(y)
+        ! ... If j1 < j0 swap points and remember it has been swapped
+        IF (j1 <  j0 ) THEN
+           i  = i0 ; j  = j0
+           i0 = i1 ; j0 = j1
+           i1 = i  ; j1 = j
+        END IF
+        IF ( i1 >=  i0 ) THEN
+           ist = 1    ;  jst = 1
+           norm_u = 1 ;  norm_v = -1
+        ELSE
+           ist = 0
+           jst = 1
+           norm_u = 1
+           norm_v = 1
+        END IF
+
+        ! ... compute the nearest i point on the line crossing at j
+        DO j=j0,j1
+           n=n+1
+           IF (n > jpseg) STOP 'n>jpseg !'
+           i=NINT(ai*j + bi)
+           yypt(n) = CMPLX(i,j)
+        END DO
+     END IF
+
+     !!
+     !! Look for intermediate points to be added.
+     !  ..  The final positions are saved in rxx,ryy
+     rxx(1)=REAL(yypt(1))
+     ryy(1)=IMAG(yypt(1))
+     nn=1
+
+     DO k=2,n
+        ! .. distance between 2 neighbour points
+        d=ABS(yypt(k)-yypt(k-1))
+        ! .. intermediate points required if d > 1
+        IF ( d > 1 ) THEN
+           CALL interm_pt(yypt,k,ai,bi,aj,bj,yypti)
+           nn=nn+1
+           IF (nn > jpseg) STOP 'nn>jpseg !'
+           rxx(nn)=REAL(yypti)
+           ryy(nn)=IMAG(yypti)
+        END IF
         nn=nn+1
         IF (nn > jpseg) STOP 'nn>jpseg !'
-        rxx(nn)=REAL(yypti)
-        ryy(nn)=IMAG(yypti)
-     END IF
-     nn=nn+1
-     IF (nn > jpseg) STOP 'nn>jpseg !'
-     rxx(nn)=REAL(yypt(k))
-     ryy(nn)=IMAG(yypt(k))
-  END DO
+        rxx(nn)=REAL(yypt(k))
+        ryy(nn)=IMAG(yypt(k))
+     END DO
 
-  ! Now extract the transport through a section 
-  ! ... Check whether we need a u velocity or a v velocity
-  !   Think that the points are f-points and delimit either a U segment
-  !   or a V segment (ist and jst are set in order to look for the correct
-  !   velocity point on the C-grid
-  PRINT *, TRIM(csection)
-  PRINT *, 'IMIN IMAX JMIN JMAX', imin, imax, jmin, jmax
-  DO jclass=1,nclass
-     voltrpsum = 0.
-     heatrpsum = 0.
-     saltrpsum = 0.
+     ! Now extract the transport through a section 
+     ! ... Check whether we need a u velocity or a v velocity
+     !   Think that the points are f-points and delimit either a U segment
+     !   or a V segment (ist and jst are set in order to look for the correct
+     !   velocity point on the C-grid
+     PRINT *, TRIM(csection)
+     PRINT *, 'IMIN IMAX JMIN JMAX', imin, imax, jmin, jmax
+     WRITE(numout,*)'% Transport along a section by levels' ,TRIM(csection)
+     WRITE(numout,*) '% nada IMIN IMAX JMIN JMAX'
+     DO jclass=1,nclass
+        voltrpsum = 0.
+        heatrpsum = 0.
+        saltrpsum = 0.
 
-     DO jseg = 1, nn-1
-        i0=rxx(jseg)
-        j0=ryy(jseg)
-        IF ( rxx(jseg) ==  rxx(jseg+1) ) THEN
-           gla(jseg)=glamu(i0,j0+jst)   ; gphi(jseg)=gphiu(i0,j0+jst)
-           voltrp(jseg)= ztrpu (i0,j0+jst,jclass)*norm_u
-           heatrp(jseg)= ztrput(i0,j0+jst,jclass)*norm_u
-           saltrp(jseg)= ztrpus(i0,j0+jst,jclass)*norm_u
-        ELSE IF ( ryy(jseg) == ryy(jseg+1) ) THEN
-           gla(jseg)=glamv(i0+ist,j0)  ;  gphi(jseg)=gphiv(i0+ist,j0)
-           voltrp(jseg)=ztrpv (i0+ist,j0,jclass)*norm_v
-           heatrp(jseg)=ztrpvt(i0+ist,j0,jclass)*norm_v
-           saltrp(jseg)=ztrpvs(i0+ist,j0,jclass)*norm_v
-        ELSE
-           PRINT *,' ERROR :',  rxx(jseg),ryy(jseg),rxx(jseg+1),ryy(jseg+1)
-        END IF
-        voltrpsum = voltrpsum+voltrp(jseg)
-        heatrpsum = heatrpsum+heatrp(jseg)
-        saltrpsum = saltrpsum+saltrp(jseg)
-     END DO   ! next segment
-     IF (jclass == 1 ) PRINT *, 'FROM (LON LAT): ', gla(1),gphi(1),' TO (LON LAT)', gla(nn-1), gphi(nn-1)
-     PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
-     PRINT *, ' Mass transport : ', voltrpsum/1.e6,' SV'
-     PRINT *, ' Heat transport : ', heatrpsum/1.e15,' PW'
-     PRINT *, ' Salt transport : ', saltrpsum/1.e6,' kT/s'
+        DO jseg = 1, nn-1
+           i0=rxx(jseg)
+           j0=ryy(jseg)
+           IF ( rxx(jseg) ==  rxx(jseg+1) ) THEN
+              gla(jseg)=glamu(i0,j0+jst)   ; gphi(jseg)=gphiu(i0,j0+jst)
+              voltrp(jseg)= ztrpu (i0,j0+jst,jclass)*norm_u
+              heatrp(jseg)= ztrput(i0,j0+jst,jclass)*norm_u
+              saltrp(jseg)= ztrpus(i0,j0+jst,jclass)*norm_u
+           ELSE IF ( ryy(jseg) == ryy(jseg+1) ) THEN
+              gla(jseg)=glamv(i0+ist,j0)  ;  gphi(jseg)=gphiv(i0+ist,j0)
+              voltrp(jseg)=ztrpv (i0+ist,j0,jclass)*norm_v
+              heatrp(jseg)=ztrpvt(i0+ist,j0,jclass)*norm_v
+              saltrp(jseg)=ztrpvs(i0+ist,j0,jclass)*norm_v
+           ELSE
+              PRINT *,' ERROR :',  rxx(jseg),ryy(jseg),rxx(jseg+1),ryy(jseg+1)
+           END IF
+           voltrpsum = voltrpsum+voltrp(jseg)
+           heatrpsum = heatrpsum+heatrp(jseg)
+           saltrpsum = saltrpsum+saltrp(jseg)
+        END DO   ! next segment
+        IF (jclass == 1 ) PRINT *, 'FROM (LON LAT): ', gla(1),gphi(1),' TO (LON LAT)', gla(nn-1), gphi(nn-1)
+        PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
+        PRINT *, ' Mass transport : ', voltrpsum/1.e6,' SV'
+        PRINT *, ' Heat transport : ', heatrpsum/1.e15,' PW'
+        PRINT *, ' Salt transport : ', saltrpsum/1.e6,' kT/s'
+        IF (jclass == 1 ) THEN 
+           WRITE(numout,*)  '% nada LONmin LATmin LONmax LATmax'
+           WRITE(numout,*)  '% Top(m)  Bottom(m)  MassTrans(Sv) HeatTrans(PW) SaltTrans(kt/s)'
+           WRITE(numout,*) 0 ,imin, imax, jmin, jmax
+           WRITE(numout,9003) 0 ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
+        ENDIF
+        WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6, heatrpsum/1.e15, saltrpsum/1.e6
 
-  END DO ! next class
+     END DO ! next class
 
-
-
-  ! Output file
-  ! OPEN(numout,FILE=cfileout)
-  ! WRITE(numout,*)' Zonal heat transport (integrated alon I-model coordinate) (in Pw)'
-  ! WRITE(numout,*)' J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
-  !!               '  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234
-  ! DO jj=npjglo, 1, -1
-  !    WRITE(numout,9000) jj, &
-  !                       gphimean_glo(jj),  zonal_heat_glo(jj)/1e15 , &
-  !                       gphimean_atl(jj),  zonal_heat_atl(jj)/1e15, &
-  !                       gphimean_pac(jj),  zonal_heat_pac(jj)/1e15, &
-  !                       gphimean_ind(jj),  zonal_heat_ind(jj)/1e15, &
-  !                       gphimean_med(jj),  zonal_heat_med(jj)/1e15, &
-  !                       gphimean_aus(jj),  zonal_heat_aus(jj)/1e15
-  ! END DO
-  ! CLOSE(numout)
-  !
-  ! OPEN(numout,FILE=cfileouts)
-  ! WRITE(numout,*)' Zonal salt transport (integrated alon I-model coordinate) (in 10^6 kg/s)'
-  ! WRITE(numout,*)' J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
-  !!               '  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234  -89.123 -5.1234
-  ! DO jj=npjglo, 1, -1
-  !    WRITE(numout,9001) jj, &
-  !                       gphimean_glo(jj),  zonal_salt_glo(jj)/1e6 , &
-  !                       gphimean_atl(jj),  zonal_salt_atl(jj)/1e6, &
-  !                       gphimean_pac(jj),  zonal_salt_pac(jj)/1e6, &
-  !                       gphimean_ind(jj),  zonal_salt_ind(jj)/1e6, &
-  !                       gphimean_med(jj),  zonal_salt_med(jj)/1e6, &
-  !                       gphimean_aus(jj),  zonal_salt_aus(jj)/1e6
-  ! END DO
-  ! CLOSE(numout)
-  !
+  END DO ! infinite loop : gets out when input is EOF 
 
 9000 FORMAT(I4,6(f9.3,f8.4))
 9001 FORMAT(I4,6(f9.2,f9.3))
-  GOTO 10
+9002 FORMAT(f9.0,f9.0,f9.2,f9.2,f9.2)
+9003 FORMAT(f9.2,f9.2,f9.2,f9.2,f9.2)
 
 CONTAINS
   SUBROUTINE interm_pt (ydpt,k,pai,pbi,paj,pbj,ydpti)

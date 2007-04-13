@@ -7,7 +7,9 @@ PROGRAM cdfmax
   !!
   !!  ** Method:     Read command line, open the file get the variable and display the values
   !!
-  !!  ** Usage :  cdfmax -f file  -var cdfvarname  [-lev kmin kmax -zoom imin imax jmin jmax ]
+  !!  ** Usage :
+  !!    cdfmax -f file  -var cdfvarname  [-lev kmin kmax -zoom imin imax jmin jmax ]
+  !!           [-fact mutlfactor] [-xy]
   !!
   !!   History: 
   !!       2006 : J-M Molines :  from cdfzoom.
@@ -41,7 +43,7 @@ PROGRAM cdfmax
   CHARACTER(LEN=80), DIMENSION(:),ALLOCATABLE :: cvarnames
   TYPE(variable), DIMENSION(:),ALLOCATABLE :: typvar
   !
-  LOGICAL :: lvar=.false., lfil=.false.
+  LOGICAL :: lvar=.false., lfil=.false.,  lforcexy=.false.
   LOGICAL, DIMENSION(:,:), ALLOCATABLE :: lmask
   !!
   !! Initializations:
@@ -52,11 +54,12 @@ PROGRAM cdfmax
      PRINT *,'USAGE :cdfmax -f file '// &
           ' -var cdfvarname ' //&
           ' [-lev kmin kmax ' //  &
-          ' -zoom imin imax jmin jmax  -fact multfact]'
+          ' -zoom imin imax jmin jmax  -fact multfact -xy ]'
      PRINT *, '   -lev and -zoom limit the area for min/max computation'
      PRINT *, '    if not specified : the 3D data is taken '
      PRINT *, '    spval is assumed to be 0 (not taken into account)'
      PRINT *, '    if either imin=imax or jmin=jmax a vertical slab is considered'
+     PRINT *, '     UNLESS -xy option is specified !!! '
      
      STOP
   END IF
@@ -100,7 +103,8 @@ PROGRAM cdfmax
         lvar=.true.
         CALL getarg(ji,cvar)
         ji = ji + 1
-
+     ELSE IF ( cline1 == '-xy') THEN
+        lforcexy=.true.
      ELSE
         PRINT *, cline1,' : unknown option '
         STOP
@@ -181,7 +185,7 @@ PROGRAM cdfmax
   ! Allocate memory and define ntype : (1) = horizontal i-j slab eventually many layers.
   !                                    (2) = vertical j-k slab, at a given i
   !                                    (3) = vertical i-k slab, at a given j
-  IF ( niz /= 1 .AND. njz /= 1  ) THEN 
+  IF ( (niz /= 1 .AND. njz /= 1 ) .OR. lforcexy  ) THEN 
      ALLOCATE (v2d(niz,njz) ,lmask(niz,njz))
      ntype=1
   ELSE  
