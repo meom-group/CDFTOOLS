@@ -50,7 +50,7 @@ PROGRAM cdfpsi_open
   TYPE(variable), DIMENSION(1)  :: typvar         !: structure for attributes
 
   INTEGER    :: istatus
-  LOGICAL    :: lmask=.false.
+  LOGICAL    :: lmask=.FALSE.
 
   ! constants
 
@@ -68,14 +68,14 @@ PROGRAM cdfpsi_open
 
   CALL getarg (1, cfileu  )
   CALL getarg (2, cfilev  )
-  IF ( narg == 3 ) lmask=.true.
-    
+  IF ( narg == 3 ) lmask=.TRUE.
+
 
   npiglo= getdim (cfileu,'x')
   npjglo= getdim (cfileu,'y')
   npk   = getdim (cfileu,'depth')
 
- ! define new variables for output
+  ! define new variables for output
   typvar(1)%name= 'sobarstf'
   typvar(1)%units='m3/s'
   typvar(1)%missing_value=0.
@@ -120,32 +120,32 @@ PROGRAM cdfpsi_open
   ztrpv(:,:)= 0.d0
   DO jk = 1,npk
      ! Get  velocity  at jk
-        zu(:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
-        zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
+     zu(:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
+     zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
      ! get e3 at level jk
-        e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo)
-        e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
+     e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo)
+     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
      ! integrates vertically 
-        ztrpu(:,:) = ztrpu(:,:) + zu(:,:)*e2u(:,:)*e3u(:,:)  ! zonal transport of each grid cell
-        ztrpv(:,:) = ztrpv(:,:) + zv(:,:)*e1v(:,:)*e3v(:,:)  ! meridional transport of each grid cell
+     ztrpu(:,:) = ztrpu(:,:) + zu(:,:)*e2u(:,:)*e3u(:,:)  ! zonal transport of each grid cell
+     ztrpv(:,:) = ztrpv(:,:) + zv(:,:)*e1v(:,:)*e3v(:,:)  ! meridional transport of each grid cell
   END DO  ! loop to next level
 
   ! compute transport along line jj=2
   psi=0.d0
   psi(1,2) = 0.d0
-    DO ji=2,npiglo 
-      psi(ji,2) = psi(ji-1,2) + ztrpv(ji,2)
-    END DO
+  DO ji=2,npiglo 
+     psi(ji,2) = psi(ji-1,2) + ztrpv(ji,2)
+  END DO
   ! Then compute from S to N the transport using zonal contribution
-    DO ji=1,npiglo
-      DO jj=3,npjglo
+  DO ji=1,npiglo
+     DO jj=3,npjglo
         psi(ji,jj)=psi(ji,jj-1)  - ztrpu(ji,jj)
-      END DO
-    END DO
-   IF ( lmask ) psi=psi*zmask
-  
-   ierr = putvar(ncout, id_varout(1) ,SNGL(psi),   1, npiglo, npjglo)
+     END DO
+  END DO
+  IF ( lmask ) psi=psi*zmask
 
-   istatus = closeout (ncout)
+  ierr = putvar(ncout, id_varout(1) ,SNGL(psi),   1, npiglo, npjglo)
 
-   END PROGRAM cdfpsi_open
+  istatus = closeout (ncout)
+
+END PROGRAM cdfpsi_open

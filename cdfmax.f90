@@ -43,7 +43,7 @@ PROGRAM cdfmax
   CHARACTER(LEN=80), DIMENSION(:),ALLOCATABLE :: cvarnames
   TYPE(variable), DIMENSION(:),ALLOCATABLE :: typvar
   !
-  LOGICAL :: lvar=.false., lfil=.false.,  lforcexy=.false.
+  LOGICAL :: lvar=.FALSE., lfil=.FALSE.,  lforcexy=.FALSE.
   LOGICAL, DIMENSION(:,:), ALLOCATABLE :: lmask
   !!
   !! Initializations:
@@ -60,7 +60,7 @@ PROGRAM cdfmax
      PRINT *, '    spval is assumed to be 0 (not taken into account)'
      PRINT *, '    if either imin=imax or jmin=jmax a vertical slab is considered'
      PRINT *, '     UNLESS -xy option is specified !!! '
-     
+
      STOP
   END IF
   !
@@ -71,7 +71,7 @@ PROGRAM cdfmax
      CALL getarg(ji,cline1)
      ji = ji + 1
      IF (cline1 == '-f') THEN
-        lfil=.true.
+        lfil=.TRUE.
         CALL getarg(ji,cline2)
         ji = ji + 1
         cfilein=cline2
@@ -100,20 +100,20 @@ PROGRAM cdfmax
         ji = ji + 1
         READ(cline2,*) jmax
      ELSE IF ( cline1 == '-var') THEN
-        lvar=.true.
+        lvar=.TRUE.
         CALL getarg(ji,cvar)
         ji = ji + 1
      ELSE IF ( cline1 == '-xy') THEN
-        lforcexy=.true.
+        lforcexy=.TRUE.
      ELSE
         PRINT *, cline1,' : unknown option '
         STOP
      END IF
   END DO
-! IF ( .not. lvar .OR. .not. lfil ) THEN
-!       PRINT *,' ERROR : you must specify a variable name with -var option AND a filename (-f) '
-!       STOP
-! ENDIF
+  ! IF ( .not. lvar .OR. .not. lfil ) THEN
+  !       PRINT *,' ERROR : you must specify a variable name with -var option AND a filename (-f) '
+  !       STOP
+  ! ENDIF
   !
   ! Look for dimensions of the variables in the file
   ni=0 ; nj=0; nk=0; nt=0 
@@ -172,16 +172,16 @@ PROGRAM cdfmax
   ALLOCATE (cvarnames(nvars), typvar(nvars))
   cvarnames=getvarname(cfilein,nvars,typvar)
   DO jvar=1,nvars
-    idep=INDEX(cvarnames(jvar),'dep') + INDEX(cvarnames(jvar),'lev')
-    IF (idep /= 0 ) EXIT
+     idep=INDEX(cvarnames(jvar),'dep') + INDEX(cvarnames(jvar),'lev')
+     IF (idep /= 0 ) EXIT
   END DO
   IF ( jvar == nvars +1 ) THEN
-    ! no depth variable found ... we initialize it to levels
+     ! no depth variable found ... we initialize it to levels
      h=(/(ji,ji=1,nk)/)
   ELSE
-    h=getvar1d(cfilein,cvarnames(jvar),nk)
+     h=getvar1d(cfilein,cvarnames(jvar),nk)
   ENDIF
- 
+
   ! Allocate memory and define ntype : (1) = horizontal i-j slab eventually many layers.
   !                                    (2) = vertical j-k slab, at a given i
   !                                    (3) = vertical i-k slab, at a given j
@@ -198,11 +198,11 @@ PROGRAM cdfmax
      ENDIF
   ENDIF
 
-     ! read latitude, longitude from the header
-     rlon=getvar(cfilein,'nav_lon',1,niz,njz,imin,jmin)
-     rlat=getvar(cfilein,'nav_lat',1,niz,njz,imin,jmin)
+  ! read latitude, longitude from the header
+  rlon=getvar(cfilein,'nav_lon',1,niz,njz,imin,jmin)
+  rlat=getvar(cfilein,'nav_lat',1,niz,njz,imin,jmin)
 
-DO
+  DO
      ndim=getvdim(cfilein,cvar)+1   ! getvdim gives ndim-1 !
      PRINT *,TRIM(cvar),' with multiplying factor of ', rfact
      ! ndim <=3 corresponds to purely 2D variables (x,y) or (x,y,t)
@@ -215,20 +215,20 @@ DO
         ipmin=imin ; ipmax=imax; jpmin=jmin; jpmax=jmax
         SELECT CASE (ndim)
         CASE( 2,3,4 )  ! assume x,y variable
-     PRINT 9000,'time  level     dep  MAX:   i    long    j    lat   MaxValue   MIN:     i    long    j   lat    MinValue'
-        DO jt=1,nt
-          DO jk =kmin,kmax
-           v2d(:,:)=getvar(cfilein,cvar,jk,niz,njz,kimin=imin,kjmin=jmin,ktime=jt)
-           lmask(:,:)=.true. ; WHERE ( v2d == 0 ) lmask=.false.
-           ilmax=maxloc(v2d,lmask)
-           ilmin=minloc(v2d,lmask)
-           i1=ilmax(1) ; j1=ilmax(2)
-           i2=ilmin(1) ; j2=ilmin(2)
-           PRINT 9003, jt, jk, h(jk),i1+imin -1, rlon(i1,j1),j1+jmin -1,rlat(i1,j1),v2d(i1,j1)*rfact, &
-                   &             i2+imin -1, rlon(i2,j2),j2+jmin -1,rlat(i2,j2),v2d(i2,j2)*rfact
-          END DO
-         END DO
-          EXIT
+           PRINT 9000,'time  level     dep  MAX:   i    long    j    lat   MaxValue   MIN:     i    long    j   lat    MinValue'
+           DO jt=1,nt
+              DO jk =kmin,kmax
+                 v2d(:,:)=getvar(cfilein,cvar,jk,niz,njz,kimin=imin,kjmin=jmin,ktime=jt)
+                 lmask(:,:)=.TRUE. ; WHERE ( v2d == 0 ) lmask=.FALSE.
+                 ilmax=MAXLOC(v2d,lmask)
+                 ilmin=MINLOC(v2d,lmask)
+                 i1=ilmax(1) ; j1=ilmax(2)
+                 i2=ilmin(1) ; j2=ilmin(2)
+                 PRINT 9003, jt, jk, h(jk),i1+imin -1, rlon(i1,j1),j1+jmin -1,rlat(i1,j1),v2d(i1,j1)*rfact, &
+                      &             i2+imin -1, rlon(i2,j2),j2+jmin -1,rlat(i2,j2),v2d(i2,j2)*rfact
+              END DO
+           END DO
+           EXIT
 
         CASE DEFAULT
            PRINT *,' Non mapable variables x-y :('
@@ -236,19 +236,19 @@ DO
         END SELECT
 
      CASE (2)
-       SELECT CASE (ndim)
+        SELECT CASE (ndim)
         CASE( 4 )  ! assume x,y,z,t variable
-             ipmin=jmin ; ipmax=jmax; jpmin=kmin; jpmax=kmax
-             v2d(:,:)=getvaryz(cfilein,cvar,imin,njz,nkz,jmin,kmin)
-           lmask(:,:)=.true. ; WHERE ( v2d == 0 ) lmask=.false.
-           ilmax=maxloc(v2d,lmask)
-           ilmin=minloc(v2d,lmask)
+           ipmin=jmin ; ipmax=jmax; jpmin=kmin; jpmax=kmax
+           v2d(:,:)=getvaryz(cfilein,cvar,imin,njz,nkz,jmin,kmin)
+           lmask(:,:)=.TRUE. ; WHERE ( v2d == 0 ) lmask=.FALSE.
+           ilmax=MAXLOC(v2d,lmask)
+           ilmin=MINLOC(v2d,lmask)
            i1=ilmax(1) ; j1=ilmax(2)
            i2=ilmin(1) ; j2=ilmin(2)
-! sorry for nice identation but if not .. rhodes complains
-PRINT 9000,' i-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
-PRINT 9002, imin, imin, rlon(1,i1),i1+jmin -1,rlat(1,i1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
-         &             imin, rlon(1,i2),i2+jmin -1,rlat(1,i2),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
+           ! sorry for nice identation but if not .. rhodes complains
+           PRINT 9000,' i-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
+           PRINT 9002, imin, imin, rlon(1,i1),i1+jmin -1,rlat(1,i1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
+                &             imin, rlon(1,i2),i2+jmin -1,rlat(1,i2),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
            EXIT
         CASE DEFAULT
            PRINT *,' Non mapable variables x-z or y-z :('
@@ -256,28 +256,28 @@ PRINT 9002, imin, imin, rlon(1,i1),i1+jmin -1,rlat(1,i1),j1+kmin-1, h(j1+kmin-1)
         END SELECT
 
      CASE (3)
-       SELECT CASE (ndim)
+        SELECT CASE (ndim)
         CASE( 4 )  ! assume x,y,z,t variable
-             ipmin=imin ; ipmax=imax; jpmin=kmin; jpmax=kmax
-             v2d(:,:)=getvarxz(cfilein,cvar,jmin,niz,nkz,imin,kmin)
-           lmask(:,:)=.true. ; WHERE ( v2d == 0 ) lmask=.false.
-           ilmax=maxloc(v2d,lmask)
-           ilmin=minloc(v2d,lmask)
+           ipmin=imin ; ipmax=imax; jpmin=kmin; jpmax=kmax
+           v2d(:,:)=getvarxz(cfilein,cvar,jmin,niz,nkz,imin,kmin)
+           lmask(:,:)=.TRUE. ; WHERE ( v2d == 0 ) lmask=.FALSE.
+           ilmax=MAXLOC(v2d,lmask)
+           ilmin=MINLOC(v2d,lmask)
            i1=ilmax(1) ; j1=ilmax(2)
            i2=ilmin(1) ; j2=ilmin(2)
-PRINT 9000,' j-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
-PRINT 9002, jmin, i1, rlon(i1,1),jmin,rlat(i1,1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
-         &             i2, rlon(i2,1),jmin,rlat(i2,1),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
+           PRINT 9000,' j-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
+           PRINT 9002, jmin, i1, rlon(i1,1),jmin,rlat(i1,1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
+                &             i2, rlon(i2,1),jmin,rlat(i2,1),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
            EXIT
         CASE DEFAULT
            PRINT *,' Non mapable variables x-z or y-z :('
            cvar='none'
         END SELECT
-     
+
      CASE DEFAULT
         PRINT *,' ntype = ',ntype, '  is not defined ' ; STOP
      END SELECT ! ntype
- ENDDO
+  ENDDO
 
 9000 FORMAT(a)
 9001 FORMAT(i4,1x,f7.2,5x,i5,f8.2, i5, f7.2, e14.5, 5x,i5,f8.2, i5, f7.2, e14.5)

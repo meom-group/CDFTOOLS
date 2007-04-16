@@ -1,4 +1,4 @@
- PROGRAM cdfprobe
+PROGRAM cdfprobe
   !!----------------------------------------------------------------
   !!                 ***   Program cdfprobe   ***
   !!  
@@ -16,14 +16,14 @@
   USE cdfio
   IMPLICIT NONE
   INTEGER :: narg, iargc
-  INTEGER :: ilook, jlook
+  INTEGER :: ilook, jlook, ilevel
   CHARACTER(LEN=80) :: cfile, cdum , cvar
 
   narg=iargc()
   IF ( narg /= 4  ) THEN
-    PRINT *,' USAGE: cdfprobe cdf_file i j cdfvar '
-    PRINT *,'      Display a 2 columns output time(d) value '
-    STOP 
+     PRINT *,' USAGE: cdfprobe cdf_file i j cdfvar [level]'
+     PRINT *,'      Display a 2 columns output time(d) value '
+     STOP 
   ENDIF
 
   ! Browse command line
@@ -31,7 +31,11 @@
   CALL getarg(2, cdum) ; READ(cdum,*) ilook
   CALL getarg(3, cdum) ; READ(cdum,*) jlook
   CALL getarg(4, cvar) 
+  IF ( narg == 5 ) THEN
+     CALL getarg(5, cdum) ;  READ(cdum,*) ilevel
+     CALL gettimeseries(cfile,cvar,ilook,jlook,klev=ilevel)
+  ELSE
+     CALL gettimeseries(cfile,cvar,ilook,jlook)
+  ENDIF
 
-  CALL gettimeseries(cfile,cvar,ilook,jlook)
-
- END PROGRAM cdfprobe
+END PROGRAM cdfprobe

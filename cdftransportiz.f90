@@ -41,8 +41,7 @@ PROGRAM cdftransportiz
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
   INTEGER   :: imin, imax, jmin, jmax, ik 
-  INTEGER   :: numout = 10, ncout
-  INTEGER, DIMENSION(4) ::  ipk, id_varout
+  INTEGER   :: numout = 10
 
   ! broken line stuff
   INTEGER, PARAMETER :: jpseg=10000
