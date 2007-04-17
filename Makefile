@@ -160,10 +160,10 @@ cdfsigtrp-full: cdfio.o  cdfsigtrp-full.f90
 	$(F90) cdfsigtrp-full.f90 -o cdfsigtrp-full cdfio.o eos.o $(FFLAGS)
 
 cdftemptrp-full: cdfio.o  cdftemptrp-full.f90
-	$(F90) cdftemptrp-full.f90 -o cdftemptrp-full cdfio.o eos.o $(FFLAGS)
+	$(F90) cdftemptrp-full.f90 -o cdftemptrp-full cdfio.o  $(FFLAGS)
 
 cdftempvol-full: cdfio.o  cdftempvol-full.f90
-	$(F90) cdftempvol-full.f90 -o cdftempvol-full cdfio.o eos.o $(FFLAGS)
+	$(F90) cdftempvol-full.f90 -o cdftempvol-full cdfio.o  $(FFLAGS)
 
 cdfmoc: cdfio.o  cdfmoc.f90
 	$(F90) cdfmoc.f90 -o cdfmoc cdfio.o $(FFLAGS)

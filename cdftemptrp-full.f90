@@ -31,7 +31,6 @@ PROGRAM cdftemptrp_full
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
-  USE eos
 
   !! * Local variables
   IMPLICIT NONE
