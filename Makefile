@@ -16,14 +16,16 @@ CDFTOOLS=CDFTOOLS-2.1
 EXEC = cdfmoy cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfeke cdfrmsssh cdfstdevw cdfstdevts cdfimprovechk\
        cdfbn2  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
        cdfrhoproj cdfpv cdfpvor\
-       cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full cdfmasstrp \
-       cdfsigtrp cdfsigtrp-full\
+       cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
+       cdfmasstrp cdfmasstrp-full \
+       cdfsigtrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
-       cdfheatc cdfzonalmean cdfhflx\
+       cdfheatc cdfheatc-full cdfzonalmean cdfhflx\
        cdfmxlheatc cdfmxlsaltc \
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
-       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy
+       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
+       cdfcsp
 
 
 all: $(EXEC)
@@ -145,6 +147,9 @@ cdftransportiz-full: cdfio.o  cdftransportiz-full.f90
 cdfmasstrp: cdfio.o  cdfmasstrp.f90
 	$(F90) cdfmasstrp.f90 -o cdfmasstrp cdfio.o $(FFLAGS)
 
+cdfmasstrp-full: cdfio.o  cdfmasstrp-full.f90
+	$(F90) cdfmasstrp-full.f90 -o cdfmasstrp-full cdfio.o $(FFLAGS)
+
 cdfmasstrp-julien: cdfio.o  cdfmasstrp-julien.f90
 	$(F90) cdfmasstrp-julien.f90 -o cdfmasstrp-julien cdfio.o $(FFLAGS)
 
@@ -153,6 +158,12 @@ cdfsigtrp: cdfio.o  cdfsigtrp.f90
 
 cdfsigtrp-full: cdfio.o  cdfsigtrp-full.f90
 	$(F90) cdfsigtrp-full.f90 -o cdfsigtrp-full cdfio.o eos.o $(FFLAGS)
+
+cdftemptrp-full: cdfio.o  cdftemptrp-full.f90
+	$(F90) cdftemptrp-full.f90 -o cdftemptrp-full cdfio.o eos.o $(FFLAGS)
+
+cdftempvol-full: cdfio.o  cdftempvol-full.f90
+	$(F90) cdftempvol-full.f90 -o cdftempvol-full cdfio.o eos.o $(FFLAGS)
 
 cdfmoc: cdfio.o  cdfmoc.f90
 	$(F90) cdfmoc.f90 -o cdfmoc cdfio.o $(FFLAGS)
@@ -177,6 +188,9 @@ cdfmean-full: cdfio.o  cdfmean-full.f90
 
 cdfheatc: cdfio.o  cdfheatc.f90
 	$(F90) cdfheatc.f90 -o cdfheatc cdfio.o $(FFLAGS)
+
+cdfheatc-full: cdfio.o  cdfheatc-full.f90
+	$(F90) cdfheatc-full.f90 -o cdfheatc-full cdfio.o $(FFLAGS)
 
 cdfmxlheatc: cdfio.o  cdfmxlheatc.f90
 	$(F90) cdfmxlheatc.f90 -o cdfmxlheatc cdfio.o $(FFLAGS)
@@ -251,6 +265,9 @@ cdfstrconv: cdfio.o cdfstrconv.f90
 	
 cdfbathy: cdfio.o cdfbathy.f90
 	$(F90)   cdfbathy.f90  -o cdfbathy cdfio.o $(FFLAGS)
+	
+cdfcsp: cdfio.o cdfcsp.f90
+	$(F90)   cdfcsp.f90  -o cdfcsp cdfio.o $(FFLAGS)
 	
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....

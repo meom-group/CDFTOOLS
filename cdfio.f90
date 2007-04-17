@@ -41,12 +41,12 @@ MODULE cdfio
 
 
   PRIVATE 
-  PUBLIC  copyatt, create, createvar
+  PUBLIC  copyatt, create, createvar, getvaratt,cvaratt
   PUBLIC  putatt, putheadervar, putvar, putvar1d
-  PUBLIC  getatt, getdim, getvdim, getipk, getnvar, getvarname
+  PUBLIC  getatt, getdim, getvdim, getipk, getnvar, getvarname, getvarid, getspval
   PUBLIC  getvar, getvarxz, getvaryz, getvar1d, getvare3
   PUBLIC gettimeseries
-  PUBLIC closeout
+  PUBLIC closeout, ncopen
   PUBLIC ERR_HDL
 
 
@@ -232,6 +232,94 @@ CONTAINS
 
   END FUNCTION createvar
 
+  FUNCTION getvarid( cdfile, knvars )
+    !! ------------------------------------------------------------------------------------------
+    !! ***  return a real array with the nvar variable id
+    !!
+    !! ------------------------------------------------------------------------------------------
+    ! * Arguments
+    CHARACTER(LEN=*), INTENT(in) :: cdfile
+    INTEGER, INTENT(in)  ::  knvars                  ! Number of variables in cdfile
+    INTEGER, DIMENSION(knvars) :: getvarid
+
+    !! * local declarations
+    CHARACTER(LEN=80), DIMENSION(knvars) :: cdvar
+    INTEGER :: ncid, jv
+    INTEGER :: istatus
+
+
+    istatus = NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
+    DO jv = 1, knvars
+       istatus = NF90_INQUIRE_VARIABLE(ncid,jv,cdvar(jv) )
+       istatus = NF90_INQ_VARID(ncid,cdvar(jv),getvarid(jv))
+    ENDDO
+    istatus=NF90_CLOSE(ncid)
+
+  END FUNCTION getvarid
+
+  FUNCTION getvaratt (cdfile,cdvar,cdunits, pmissing_value, cdlong_name, cdshort_name)
+    !! ----------------------------------------------------------------------------------------------------
+    !!  ***  Change variable attributs in an existing variable
+    !!
+    !! ----------------------------------------------------------------------------------------------------
+    ! * Arguments
+    CHARACTER(LEN=80), INTENT(in) :: cdfile, cdvar
+    CHARACTER(LEN=80), INTENT(out) :: cdunits, cdlong_name, cdshort_name
+    REAL(KIND=4), INTENT(out) :: pmissing_value
+    INTEGER :: getvaratt
+
+    !! * local declarations
+    INTEGER :: istatus
+    INTEGER :: ncid, varid
+
+
+    istatus = NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
+    istatus = NF90_INQ_VARID(ncid,cdvar,varid)
+
+    istatus=NF90_GET_ATT(ncid, varid, 'units', cdunits)
+    istatus=NF90_GET_ATT(ncid, varid, 'missing_value', pmissing_value)
+    istatus=NF90_GET_ATT(ncid, varid, 'long_name', cdlong_name)
+    istatus=NF90_GET_ATT(ncid, varid, 'short_name', cdshort_name)
+
+    istatus = NF90_ENDDEF(ncid)
+    getvaratt=istatus
+    istatus=NF90_CLOSE(ncid)
+
+  END FUNCTION getvaratt
+
+
+  FUNCTION cvaratt (cdfile,cdvar,cdunits,pmissing_value, cdlong_name, cdshort_name)
+    !! ----------------------------------------------------------------------------------------------------
+    !!  ***  Change variable attributs in an existing variable
+    !!
+    !! ----------------------------------------------------------------------------------------------------
+    ! * Arguments
+    CHARACTER(LEN=80), INTENT(in) :: cdfile, cdvar
+    CHARACTER(LEN=80), INTENT(in) :: cdunits, cdlong_name, cdshort_name
+    INTEGER :: cvaratt
+    REAL(KIND=4) :: pmissing_value
+
+    !! * local declarations
+    INTEGER :: istatus
+    INTEGER :: ncid, varid
+
+
+    istatus = NF90_OPEN(cdfile,NF90_WRITE,ncid)
+    istatus = NF90_REDEF(ncid)
+    istatus = NF90_INQ_VARID(ncid,cdvar,varid)
+
+    istatus=NF90_RENAME_ATT(ncid, varid, 'units', cdunits)
+    istatus=NF90_PUT_ATT(ncid, varid, 'missing_value', pmissing_value)
+    istatus=NF90_RENAME_ATT(ncid, varid, 'long_name', cdlong_name)
+    istatus=NF90_RENAME_ATT(ncid, varid, 'short_name', cdshort_name)
+
+    istatus = NF90_ENDDEF(ncid)
+    cvaratt=istatus
+    istatus=NF90_CLOSE(ncid)
+
+  END FUNCTION cvaratt
+
+
   FUNCTION putatt (tyvar,kout,kid)
     !! ----------------------------------------------------------------------------------------------------
     !!  ***  Scan file att.txt for finding the line corresponding to cdvar, then read the attributes
@@ -369,6 +457,30 @@ CONTAINS
     ENDIF
 
   END FUNCTION getdim
+
+  FUNCTION  getspval (cdfile,cdvar)
+    !!-----------------------------------------------------------
+    !!                       ***  FUNCTION  getspval  ***
+    !!
+    !! ** Purpose : return the SPVAL value of the variable
+    !!              cdvar  in cdfile
+    !!
+    !!-----------------------------------------------------------
+    !! * Arguments declarations
+    CHARACTER(LEN=*), INTENT(in) :: cdfile , &  ! File name to look at
+         &                           cdvar      ! variable name
+    REAL(KIND=4) :: getspval                               ! the missing value for cdvar
+
+    ! * Local variables
+    INTEGER :: ncid, id_var
+    INTEGER :: istatus
+
+    istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
+    istatus=NF90_INQ_VARID ( ncid,cdvar,id_var)
+    istatus=NF90_GET_ATT(ncid,id_var,"missing_value",getspval)
+    istatus=NF90_CLOSE(ncid)
+
+  END FUNCTION getspval
 
   FUNCTION getvdim (cdfile, cdvar)
     !!-----------------------------------------------------------
@@ -1308,6 +1420,21 @@ CONTAINS
     INTEGER :: closeout          ! return status
     closeout=NF90_CLOSE(kout)
   END FUNCTION closeout
+
+  FUNCTION ncopen(cdfile)
+    !!----------------------------------------------------------
+    !!                       ***  FUNCTION  ncopen  ***
+    !!
+    !! ** Purpose : open file cdfile and return file ID
+    !!
+    !!-----------------------------------------------------------
+      CHARACTER(LEN=*), INTENT(in) :: cdfile ! file name
+      INTEGER :: ncopen                      ! return status
+    ! * Local variables
+      INTEGER :: istatus, ncid
+      istatus = NF90_OPEN(cdfile,NF90_WRITE,ncid)
+      ncopen=ncid
+  END FUNCTION ncopen
 
   SUBROUTINE ERR_HDL(kstatus)
     !! ----------------------------------------------------------

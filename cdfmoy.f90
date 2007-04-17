@@ -47,6 +47,7 @@ PROGRAM cdfmoy
 
   INTEGER    :: ncout, ncout2
   INTEGER    :: istatus
+  LOGICAL    :: lcaltmean
 
   !!
 
@@ -136,6 +137,7 @@ PROGRAM cdfmoy
   ierr= putheadervar(ncout , cfile, npiglo, npjglo, npk,cdep=cdep)
   ierr= putheadervar(ncout2, cfile, npiglo, npjglo, npk,cdep=cdep)
 
+  lcaltmean=.TRUE.
   DO jvar = 1,nvars
      IF (cvarname(jvar) == 'nav_lon' .OR. &
           cvarname(jvar) == 'nav_lat' ) THEN
@@ -148,7 +150,7 @@ PROGRAM cdfmoy
            DO jt = 1, narg
               CALL getarg (jt, cfile)
               nt = getdim (cfile,'time_counter')
-              IF (jk == 1 .AND. jvar == nvars )  THEN
+              IF ( lcaltmean )  THEN
                  tim=getvar1d(cfile,'time_counter',nt)
                  total_time = total_time + SUM(tim(1:nt) )
               END IF
@@ -165,11 +167,12 @@ PROGRAM cdfmoy
            ! store variable on outputfile
            ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo)
            IF (cvarname2(jvar) /= 'none' ) ierr = putvar(ncout2,id_varout2(jvar),rmean2, jk,npiglo, npjglo)
-           IF (jk == 1 .AND. jvar == nvars )  THEN
+           IF (lcaltmean )  THEN
               timean(1)= total_time/ntframe
               ierr=putvar1d(ncout,timean,1,'T')
               ierr=putvar1d(ncout2,timean,1,'T')
            END IF
+           lcaltmean=.FALSE. ! tmean already computed
         END DO  ! loop to next level
      END IF
   END DO ! loop to next var in file

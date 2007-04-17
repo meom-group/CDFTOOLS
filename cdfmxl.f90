@@ -46,6 +46,7 @@ PROGRAM cdfmxl
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE   :: gdepw     !: depth of w levels
 
   CHARACTER(LEN=80) :: cfilet,  coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=80) :: cbathy='bathy_level.nc'
 
   ! output stuff
   INTEGER                         :: ncout, ierr
@@ -55,17 +56,20 @@ PROGRAM cdfmxl
 
   TYPE(variable), DIMENSION(3)    :: typvar        !: structure for attributes
 
+  LOGICAL  :: lexist                               !: flag for existence of bathy_level file
+
   !! 0- Get started ..
   !!
   !  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg < 1  ) THEN
      PRINT *,' Usage : cdfmxl gridTfile '
-     PRINT *,' Files  mesh_zgr.nc must be in the current directory'
+     PRINT *,' Files  mesh_zgr.nc must be in the current directory ^**'
      PRINT *,' Output on mxl.nc '
      PRINT *,'          variable somxl010 = mld on density criterium 0.01'
      PRINT *,'          variable somxl030 = mld on density criterium 0.03'
      PRINT *,'          variable somxlt02 = mld on temperature criterium -0.2'
+     PRINT *,'  ^** : In case of FULL STEP run, bathy_level.nc must also be in the directory'
      STOP
   ENDIF
   CALL getarg (1, cfilet)
@@ -108,7 +112,12 @@ PROGRAM cdfmxl
   ALLOCATE ( gdepw(npk) )
   
   ! read mbathy and gdepw use real temp(:,:) as template (getvar is used for real only)
-  temp(:,:) = getvar(coordzgr,'mbathy',1, npiglo, npjglo)
+  INQUIRE (FILE=cbathy, EXIST=lexist)
+  IF ( lexist ) THEN
+    temp(:,:) = getvar(cbathy,'Bathy_level',1, npiglo, npjglo)
+  ELSE
+    temp(:,:) = getvar(coordzgr,'mbathy',1, npiglo, npjglo)
+  ENDIF
   mbathy(:,:) = temp(:,:)
   gdepw(:) = getvare3(coordzgr, 'gdepw',npk)
 

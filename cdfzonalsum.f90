@@ -3,7 +3,6 @@ PROGRAM cdfzonalsum
   !!               ***  PROGRAM cdfzonalsum  ***
   !!
   !!  **  Purpose  :  Compute the zonal sum 
-  !!                  PARTIAL STEPS
   !!  
   !!  **  Method   :  
   !!                  Results are saved on zonalsum.nc file with 
@@ -58,13 +57,14 @@ PROGRAM cdfzonalsum
   CHARACTER(LEN=10) :: ce1, ce2, cphi, cdep,cmask, cdepo
   CHARACTER(LEN=4),DIMENSION(5) :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/)
 
+  LOGICAL       :: lrevert_dep = .TRUE.             !: flag to revert depth order for plotting facility
+
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' Usage : cdfzonalsum  file  T | U | V | F | W [new_maskglo.nc]'
      PRINT *,' Computes the zonal sum '
      PRINT *,' If no new_maskglo specified, assume global '
-     PRINT *,' PARTIAL CELLS VERSION'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc '
      PRINT *,'  must be in the current directory'
      PRINT *,' Output on zonalsum.nc: '
@@ -73,6 +73,8 @@ PROGRAM cdfzonalsum
      PRINT *,'      variables zoixxxx_inp  : Indo Pacific '
      PRINT *,'      variables zoixxxx_ind  : Indian Ocean alone'
      PRINT *,'      variables zoixxxx_pac  : Pacific Ocean alone'
+     PRINT *,'  Depth variable output is negative (standard) unless '
+     PRINT *,'  you recompile the tool with lrevert_dep=.false.'
      STOP
   ENDIF
 
@@ -211,7 +213,7 @@ PROGRAM cdfzonalsum
   e2(:,:)   = getvar(coordhgr, ce2, 1,npiglo,npjglo) 
   gphi(:,:) = getvar(coordhgr, cphi, 1,npiglo,npjglo)
   gdep(:)   = getvare3(coordzgr, cdep ,npk)
-  gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
+  IF ( lrevert_dep ) gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
 
   ! Look for the i-index that go through the North Pole
   iloc        = MAXLOC(gphi)

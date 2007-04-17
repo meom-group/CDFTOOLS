@@ -1,9 +1,9 @@
-PROGRAM cdfmasstrp
+PROGRAM cdfmasstrp_full
   !!---------------------------------------------------------------------
   !!               ***  PROGRAM cdfmasstrp  ***
   !!
   !!  **  Purpose: Compute Mass Transports across a section
-  !!               PARTIAL STEPS version
+  !!               FULL STEPS version
   !!  
   !!  **  Method: Try to avoid 3 d arrays.
   !!             The begining and end point of the section are given in term of f-points index.
@@ -22,6 +22,7 @@ PROGRAM cdfmasstrp
   !!   Original :  J.M. Molines (jan. 2005)
   !!               J.M. Molines Apr 2005 : use modules (cdftransportiz)
   !!               J.M. Molines March 2006 :  just mass transport
+  !!               F. Castruccio (Fall 2006) : full step version
   !!---------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -56,10 +57,10 @@ PROGRAM cdfmasstrp
   REAL(KIND=8)                   :: voltrpsum
   COMPLEX yypt(jpseg), yypti
 
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e1v, e3v ,gphiv, zv, zvt, zvs !: mask, metrics
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e2u, e3u ,gphiu, zu, zut, zus !: mask, metrics
+  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e1v,gphiv, zv, zvt, zvs !: mask, metrics
+  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e2u,gphiu, zu, zut, zus !: mask, metrics
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         glamu, glamv
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::         gdepw
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::         gdepw, e3t
   REAL(KIND=4)                                 ::   rd1, rd2
   REAL(KIND=4)                                 ::  udum, vdum
 
@@ -124,8 +125,9 @@ PROGRAM cdfmasstrp
   !
   ALLOCATE ( ztrpu (npiglo,npjglo,nclass), ztrpv (npiglo,npjglo,nclass))
   !
-  ALLOCATE ( e1v(npiglo,npjglo),e3v(npiglo,npjglo))
-  ALLOCATE ( e2u(npiglo,npjglo),e3u(npiglo,npjglo))
+  ALLOCATE ( e1v(npiglo,npjglo) )
+  ALLOCATE ( e2u(npiglo,npjglo) )
+  ALLOCATE ( e3t(npk) )
   !
   ALLOCATE ( gphiu(npiglo,npjglo),  gphiv(npiglo,npjglo) )
   ALLOCATE ( glamu(npiglo,npjglo),  glamv(npiglo,npjglo) )
@@ -134,6 +136,8 @@ PROGRAM cdfmasstrp
 
   e1v(:,:) = getvar(coordhgr, 'e1v', 1,npiglo,npjglo)
   e2u(:,:) = getvar(coordhgr, 'e2u', 1,npiglo,npjglo)
+
+  e3t(:) = getvare3(coordzgr, 'e3t', npk)
 
   glamv(:,:) =  getvar(coordhgr, 'glamv', 1,npiglo,npjglo)
   glamu(:,:) =  getvar(coordhgr, 'glamu', 1,npiglo,npjglo)
@@ -185,12 +189,8 @@ PROGRAM cdfmasstrp
            zv (:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
         ENDIF
 
-        ! get e3u, e3v  at level jk
-        e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
-        e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo)
-
-        zwku (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
-        zwkv (:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)
+        zwku (:,:) = zu (:,:)*e2u(:,:)*e3t(jk)
+        zwkv (:,:) = zv (:,:)*e1v(:,:)*e3t(jk)
 
         ! integrates vertically 
         ztrpu (:,:,jclass) = ztrpu (:,:,jclass) + zwku (:,:)
@@ -466,4 +466,4 @@ CONTAINS
     END IF
   END SUBROUTINE interm_pt
 
-END PROGRAM cdfmasstrp
+END PROGRAM cdfmasstrp_full
