@@ -21,7 +21,7 @@ PROGRAM cdfcsp
   IMPLICIT NONE
   INTEGER   :: j,jk,jvar                                    !: dummy loop index
   INTEGER   :: ierr                                         !: working integer
-  INTEGER   :: ncid, narg                                   !: 
+  INTEGER   :: ncid, narg, iargc                            !: 
   INTEGER   :: npiglo,npjglo, npk                           !: size of the domain
   INTEGER   ::  nvars                                       !: Number of variables in a file
   INTEGER , DIMENSION(:), ALLOCATABLE :: ipk                !: arrays of vertical level for each var

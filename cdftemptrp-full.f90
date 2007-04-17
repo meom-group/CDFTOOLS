@@ -112,6 +112,8 @@ PROGRAM cdftemptrp_full
   END DO
   
   ! Initialise sections from file 
+  nsection=section_number(cfilesec)
+  ALLOCATE ( csection(nsection), imina(nsection), imaxa(nsection), jmina(nsection), jmaxa(nsection) )
   CALL section_init(cfilesec, csection,imina,imaxa,jmina,jmaxa, nsection)
 
   ! Allocate and build temp. levels and section array
@@ -373,13 +375,10 @@ PROGRAM cdftemptrp_full
 9006 FORMAT('# ',a)
 
 CONTAINS
-  SUBROUTINE section_init(cdfile,cdsection,kimin,kimax,kjmin,kjmax,knumber)
-    IMPLICIT NONE
+  FUNCTION section_number ( cdfile)
     ! Arguments
-    INTEGER, DIMENSION(:), ALLOCATABLE :: kimin,kimax, kjmin,kjmax
-    INTEGER, INTENT(OUT) :: knumber
-    CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cdsection
     CHARACTER(LEN=*), INTENT(IN) :: cdfile
+    INTEGER :: section_number
 
     ! Local variables
     INTEGER :: ii, numit=10, jsec
@@ -387,21 +386,34 @@ CONTAINS
 
     OPEN(numit, FILE=cdfile)
     ii=0
-
     DO
        READ(numit,'(a)') cline
        IF (INDEX(cline,'EOF') == 0 ) THEN
           READ(numit,*)    ! skip one line
           ii = ii + 1
        ELSE
+          section_number=ii
           EXIT
        ENDIF
     END DO
 
-    knumber=ii
-    ALLOCATE( cdsection(knumber) )
-    ALLOCATE( kimin(knumber), kimax(knumber), kjmin(knumber), kjmax(knumber) )
+  END FUNCTION section_number
+
+  SUBROUTINE section_init(cdfile,cdsection,kimin,kimax,kjmin,kjmax,knumber)
+    IMPLICIT NONE
+    ! Arguments
+    INTEGER, DIMENSION(:)    :: kimin,kimax, kjmin,kjmax
+    INTEGER, INTENT(IN)     :: knumber
+    CHARACTER(LEN=80), DIMENSION(:)  :: cdsection
+    CHARACTER(LEN=*), INTENT(IN) :: cdfile
+
+    ! Local variables
+    INTEGER :: ii, numit=10, jsec
+    CHARACTER(LEN=80) :: cline
+
+    OPEN(numit, FILE=cdfile)
     REWIND(numit)
+
     DO jsec=1,knumber
        READ(numit,'(a)') cdsection(jsec)
        READ(numit,*) kimin(jsec), kimax(jsec), kjmin(jsec), kjmax(jsec)
@@ -410,6 +422,5 @@ CONTAINS
     CLOSE(numit)
 
   END SUBROUTINE section_init
-
 
 END PROGRAM cdftemptrp_full
