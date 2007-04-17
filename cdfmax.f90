@@ -246,8 +246,8 @@ PROGRAM cdfmax
            i1=ilmax(1) ; j1=ilmax(2)
            i2=ilmin(1) ; j2=ilmin(2)
            ! sorry for nice identation but if not .. rhodes complains
-           PRINT 9000,' i-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
-           PRINT 9002, imin, imin, rlon(1,i1),i1+jmin -1,rlat(1,i1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
+ PRINT 9000,' i-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
+ PRINT 9002, imin, imin, rlon(1,i1),i1+jmin -1,rlat(1,i1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
                 &             imin, rlon(1,i2),i2+jmin -1,rlat(1,i2),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
            EXIT
         CASE DEFAULT
@@ -265,8 +265,8 @@ PROGRAM cdfmax
            ilmin=MINLOC(v2d,lmask)
            i1=ilmax(1) ; j1=ilmax(2)
            i2=ilmin(1) ; j2=ilmin(2)
-           PRINT 9000,' j-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
-           PRINT 9002, jmin, i1, rlon(i1,1),jmin,rlat(i1,1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
+ PRINT 9000,' j-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
+ PRINT 9002, jmin, i1, rlon(i1,1),jmin,rlat(i1,1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
                 &             i2, rlon(i2,1),jmin,rlat(i2,1),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
            EXIT
         CASE DEFAULT
