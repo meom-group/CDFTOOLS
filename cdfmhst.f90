@@ -14,6 +14,7 @@ PROGRAM cdfmhst
   !!      Original : J.M. Molines (jan. 2005)
   !!                 J.M. Molines apr. 2005 : use modules
   !!                 A.M. Treguier (april 2006) adaptation to NATL4 case 
+  !!                 J.M. Molines ( April 2007) : add netcdf output
   !!--------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -42,11 +43,26 @@ PROGRAM cdfmhst
   REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_heat_glo, zonal_heat_atl, zonal_heat_pac,&
        &                                       zonal_heat_ind, zonal_heat_aus, zonal_heat_med
   REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_salt_glo, zonal_salt_atl, zonal_salt_pac,&
-       &                                       zonal_salt_ind, zonal_salt_aus, zonal_salt_med
+       &                                       zonal_salt_ind, zonal_salt_aus, zonal_salt_med, zmtrp
 
   CHARACTER(LEN=80) :: cfilet ,cfileout='zonal_heat_trp.dat', cfileouts='zonal_salt_trp.dat'
   ! to be put in namelist eventually
   CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cbasinmask='new_maskglo.nc'
+  
+  ! NC output
+  INTEGER, PARAMETER :: jpvar=2
+  INTEGER            :: jbasins, js, jvar   !: dummy loop index
+  INTEGER            :: ncout,  nbasins, ierr
+  INTEGER, DIMENSION(:), ALLOCATABLE :: ipk, id_varout
+
+  REAL(KIND=4), PARAMETER :: rpspval=9999.99
+  REAL(KIND=4), DIMENSION(1) :: gdep
+  REAL(KIND=4), DIMENSION (1)                    ::  tim
+
+  CHARACTER(LEN=80) :: cfileoutnc='mhst.nc', cdum
+  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
+  CHARACTER(LEN=4),DIMENSION(5) :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/)
+  TYPE(variable), DIMENSION(:), ALLOCATABLE   :: typvar                  !: structure for attributes
 
   ! constants
   REAL(KIND=4),PARAMETER   ::  rau0=1000.,   rcp=4000.
@@ -56,7 +72,10 @@ PROGRAM cdfmhst
   IF ( narg == 0 ) THEN
      PRINT *,' Usage : cdfmhst  VTfile '
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc, new_maskglo.nc must be in te current directory'
-     PRINT *,' Output on zonal_heat_trp.dat and zonal_salt_trp.dat'
+     PRINT *,' ASCII Output on zonal_heat_trp.dat and zonal_salt_trp.dat'
+     PRINT *,' NetCDF Output on mhst.nc with variables :'
+     PRINT *,'                       zomht_glo, zomht_atl, zomht_inp, zomht_pac'
+     PRINT *,'                       zomst_glo, zomst_atl, zomst_inp, zomst_pac'
      STOP
   ENDIF
 
@@ -80,11 +99,13 @@ PROGRAM cdfmhst
   ALLOCATE ( zonal_heat_ind(npjglo), zonal_heat_aus(npjglo) , zonal_heat_med(npjglo) )
   ALLOCATE ( zonal_salt_glo(npjglo), zonal_salt_atl(npjglo), zonal_salt_pac(npjglo) )
   ALLOCATE ( zonal_salt_ind(npjglo), zonal_salt_aus(npjglo), zonal_salt_med(npjglo) )
+  ALLOCATE ( zmtrp(npjglo) )
   ALLOCATE ( dumlon(1,npjglo) , dumlat(1,npjglo))
 
   ! create output fileset
   e1v(:,:)   = getvar(coordhgr, 'e1v', 1,npiglo,npjglo)
   gphiv(:,:) = getvar(coordhgr, 'gphiv', 1,npiglo,npjglo)
+  gdep(:) = getvare3(coordzgr, 'depthv' ,1)
 
   iloc=maxloc(gphiv)
   dumlat(1,:) = gphiv(iloc(1),:)
@@ -120,7 +141,56 @@ PROGRAM cdfmhst
 
  !  Detects newmaskglo file 
   INQUIRE( FILE=cbasinmask, EXIST=llglo )
+ 
+  nbasins=1
+  IF ( llglo) THEN ! 5 basins
+       nbasins=5
+  ENDIF
   
+  ! Allocate output variables
+  ALLOCATE(typvar(nbasins*jpvar),cvarname(nbasins*jpvar))
+  ALLOCATE(ipk(nbasins*jpvar),id_varout(nbasins*jpvar))
+  ipk(:)=1               ! all output variables have only 1 level !
+  DO jbasins = 1,nbasins
+   SELECT CASE ( jpvar )
+   CASE ( 1 )   ! only MHT is output
+   cvarname(jbasins) = 'zomht'//TRIM(cbasin(jbasins))
+   typvar(jbasins)%name=cvarname(jbasins)
+   typvar(jbasins)%units='PW'
+   typvar(jbasins)%missing_value=rpspval
+   typvar(jbasins)%valid_min=-10.
+   typvar(jbasins)%valid_max=20
+   typvar(jbasins)%long_name='Meridional Heat Transport '//TRIM(cbasin(jbasins))
+   typvar(jbasins)%short_name=cvarname(jbasins)
+   typvar(jbasins)%online_operation='N/A'
+   typvar(jbasins)%axis='TY'
+   CASE ( 2 )   ! both MHT and MST (meridional Salt Transport )
+   cvarname(jbasins) = 'zomht'//TRIM(cbasin(jbasins))
+   typvar(jbasins)%name=cvarname(jbasins)
+   typvar(jbasins)%units='PW'
+   typvar(jbasins)%missing_value=rpspval
+   typvar(jbasins)%valid_min=-10.
+   typvar(jbasins)%valid_max=20
+   typvar(jbasins)%long_name='Meridional Heat Transport '//TRIM(cbasin(jbasins))
+   typvar(jbasins)%short_name=cvarname(jbasins)
+   typvar(jbasins)%online_operation='N/A'
+   typvar(jbasins)%axis='TY'
+   ! MST
+   cvarname(nbasins+jbasins) = 'zomst'//TRIM(cbasin(jbasins))
+   typvar(nbasins+jbasins)%name=cvarname(nbasins+jbasins)
+   typvar(nbasins+jbasins)%units='T/sec'
+   typvar(nbasins+jbasins)%missing_value=rpspval
+   typvar(nbasins+jbasins)%valid_min=-10.e9
+   typvar(nbasins+jbasins)%valid_max=20.e9
+   typvar(nbasins+jbasins)%long_name='Meridional Salt Transport '//TRIM(cbasin(jbasins))
+   typvar(nbasins+jbasins)%short_name=cvarname(nbasins+jbasins)
+   typvar(nbasins+jbasins)%online_operation='N/A'
+   typvar(nbasins+jbasins)%axis='TY'
+   CASE DEFAULT
+      PRINT * ,'   This program is not ready for jpvar > 2 ' ; STOP
+   END SELECT 
+  END DO
+
   IF ( llglo ) THEN
      ! Zonal mean with mask
      ! Atlantic 
@@ -170,6 +240,67 @@ PROGRAM cdfmhst
   ENDIF
 
   ! Output file
+  ! create output fileset
+  ncout = create(cfileoutnc, cfilet, 1,npjglo,1,cdep='depthv')
+  ierr  = createvar(ncout ,typvar,nbasins*jpvar, ipk,id_varout )
+  ierr  = putheadervar(ncout, cfilet,1,npjglo,1,pnavlon=dumlon,pnavlat=dumlat,pdep=gdep)
+  tim   = getvar1d(cfilet,'time_counter',1)
+  ierr  = putvar1d(ncout,tim,1,'T')
+
+  DO jvar=1,jpvar   !  MHT [ and MST ]  (1 or 2 )
+    IF ( jvar == 1 ) THEN
+       ! MHT
+       js=1
+       zmtrp(:)=zonal_heat_glo(:)/1.e15                        ! GLO
+       WHERE ( zmtrp == 0 ) zmtrp=rpspval
+       ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+       js=js+1
+       IF ( nbasins == 5 ) THEN
+         zmtrp(:)=zonal_heat_atl(:)/1.e15                      ! ATL
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval         
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+         js=js+1
+         zmtrp(:)=zonal_heat_ind(:) + zonal_heat_pac(:)/1.e15  ! INP
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+         js=js+1
+         zmtrp(:)=zonal_heat_ind(:)/1.e15                      ! IND
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+         js=js+1
+         zmtrp(:)=zonal_heat_pac(:)/1.e15                      ! PAC
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+         js=js+1
+       ENDIF
+    ELSE
+       ! MST
+       zmtrp(:)=zonal_salt_glo(:)/1.e6                        ! GLO
+       WHERE ( zmtrp == 0 ) zmtrp=rpspval
+       ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+       js = js + 1
+       IF ( nbasins == 5 ) THEN
+         zmtrp(:)=zonal_salt_atl(:)/1.e6                      ! ATL
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+         js = js + 1
+         zmtrp(:)=zonal_salt_ind(:) + zonal_salt_pac(:)/1.e6  ! INP
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+         js = js + 1
+         zmtrp(:)=zonal_salt_ind(:)/1.e6                      ! IND
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+         js = js + 1
+         zmtrp(:)=zonal_salt_pac(:)/1.e6                      ! PAC
+         WHERE ( zmtrp == 0 ) zmtrp=rpspval
+         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
+       js = js + 1
+       ENDIF
+    ENDIF
+  END DO 
+  ierr=closeout(ncout)
+
   OPEN(numout,FILE=cfileout)
   WRITE(numout,*)'! Zonal heat transport (integrated alon I-model coordinate) (in Pw)'
   IF ( llglo ) THEN
