@@ -155,7 +155,7 @@ PROGRAM cdfvT
         INQUIRE(FILE=cfilev,EXIST=lexist)
         IF ( .NOT. lexist ) THEN
           WRITE(cfileu,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfileu,EXIST=lexist)
+          INQUIRE(FILE=cfilev,EXIST=lexist)
           IF ( .NOT. lexist ) THEN
              PRINT *,' ERROR : missing gridV or even grid_V file '
              STOP
