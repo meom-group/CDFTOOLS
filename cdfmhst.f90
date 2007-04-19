@@ -50,7 +50,7 @@ PROGRAM cdfmhst
   CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cbasinmask='new_maskglo.nc'
   
   ! NC output
-  INTEGER, PARAMETER :: jpvar=2
+  INTEGER            :: npvar=1
   INTEGER            :: jbasins, js, jvar   !: dummy loop index
   INTEGER            :: ncout,  nbasins, ierr
   INTEGER, DIMENSION(:), ALLOCATABLE :: ipk, id_varout
@@ -70,11 +70,12 @@ PROGRAM cdfmhst
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmhst  VTfile '
+     PRINT *,' Usage : cdfmhst  VTfile  [MST] '
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc, new_maskglo.nc must be in te current directory'
      PRINT *,' ASCII Output on zonal_heat_trp.dat and zonal_salt_trp.dat'
      PRINT *,' NetCDF Output on mhst.nc with variables :'
      PRINT *,'                       zomht_glo, zomht_atl, zomht_inp, zomht_pac'
+     PRINT *,'    and in case of MST option :'
      PRINT *,'                       zomst_glo, zomst_atl, zomst_inp, zomst_pac'
      STOP
   ENDIF
@@ -83,6 +84,14 @@ PROGRAM cdfmhst
   npiglo= getdim (cfilet,'x')
   npjglo= getdim (cfilet,'y')
   npk   = getdim (cfilet,'depth')
+  npvar=1
+  IF ( narg == 2 ) THEN
+   CALL getarg(2,cdum)
+   IF ( cdum /= 'MST' ) THEN
+      PRINT *,' unknown option :', TRIM(cdum)  ; STOP
+   ENDIF
+   npvar=2
+  ENDIF
 
 
   PRINT *, 'npiglo=', npiglo
@@ -148,11 +157,11 @@ PROGRAM cdfmhst
   ENDIF
   
   ! Allocate output variables
-  ALLOCATE(typvar(nbasins*jpvar),cvarname(nbasins*jpvar))
-  ALLOCATE(ipk(nbasins*jpvar),id_varout(nbasins*jpvar))
+  ALLOCATE(typvar(nbasins*npvar),cvarname(nbasins*npvar))
+  ALLOCATE(ipk(nbasins*npvar),id_varout(nbasins*npvar))
   ipk(:)=1               ! all output variables have only 1 level !
   DO jbasins = 1,nbasins
-   SELECT CASE ( jpvar )
+   SELECT CASE ( npvar )
    CASE ( 1 )   ! only MHT is output
    cvarname(jbasins) = 'zomht'//TRIM(cbasin(jbasins))
    typvar(jbasins)%name=cvarname(jbasins)
@@ -187,7 +196,7 @@ PROGRAM cdfmhst
    typvar(nbasins+jbasins)%online_operation='N/A'
    typvar(nbasins+jbasins)%axis='TY'
    CASE DEFAULT
-      PRINT * ,'   This program is not ready for jpvar > 2 ' ; STOP
+      PRINT * ,'   This program is not ready for npvar > 2 ' ; STOP
    END SELECT 
   END DO
 
@@ -242,12 +251,12 @@ PROGRAM cdfmhst
   ! Output file
   ! create output fileset
   ncout = create(cfileoutnc, cfilet, 1,npjglo,1,cdep='depthv')
-  ierr  = createvar(ncout ,typvar,nbasins*jpvar, ipk,id_varout )
+  ierr  = createvar(ncout ,typvar,nbasins*npvar, ipk,id_varout )
   ierr  = putheadervar(ncout, cfilet,1,npjglo,1,pnavlon=dumlon,pnavlat=dumlat,pdep=gdep)
   tim   = getvar1d(cfilet,'time_counter',1)
   ierr  = putvar1d(ncout,tim,1,'T')
 
-  DO jvar=1,jpvar   !  MHT [ and MST ]  (1 or 2 )
+  DO jvar=1,npvar   !  MHT [ and MST ]  (1 or 2 )
     IF ( jvar == 1 ) THEN
        ! MHT
        js=1
