@@ -141,7 +141,14 @@ PROGRAM cdf16bit
            v2d(:,:)= getvar(cfile, cvarname(jvar), jk ,npiglo, npjglo )
            IF ( sf == 1. .AND. ao == 0 ) THEN
             ! write FLOATS
-            ierr = putvar(ncout, id_varout(jvar) ,v2d, jk, npiglo, npjglo)
+            IF ( typvar(jvar)%savelog10 == 1 ) THEN
+               WHERE ( v2d /= spval )
+                  v2d(:,:)= log10(v2d)
+               ELSEWHERE
+                  v2d = 0.
+               END WHERE
+            ENDIF
+              ierr = putvar(ncout, id_varout(jvar) ,v2d, jk, npiglo, npjglo)
             ! skip remaining of the do-loop, treat next level
             CYCLE
            ENDIF
@@ -427,6 +434,19 @@ PROGRAM cdf16bit
       typvar(kvar)%add_offset=(zvmin + zvmax) /2.
       typvar(kvar)%scale_factor= (zvmax-typvar(kvar)%add_offset)/32000.
       typvar(kvar)%savelog10=0.
+
+    ! TRC
+    CASE ('cfc11')               ! Concentration tracer 1
+      zvmin= 0.  ;  zvmax = 0.0001
+      typvar(kvar)%add_offset=0.
+      typvar(kvar)%scale_factor= 1.
+      typvar(kvar)%savelog10=1.
+
+    CASE ('bombc14')               ! Concentration tracer 1
+      zvmin= 0.  ;  zvmax = 0.0001
+      typvar(kvar)%add_offset=0.
+      typvar(kvar)%scale_factor= 1.
+      typvar(kvar)%savelog10=1.
 
     CASE DEFAULT
       PRINT *, TRIM(clvarname),'  is not recognized !'
