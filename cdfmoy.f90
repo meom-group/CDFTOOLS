@@ -108,6 +108,9 @@ PROGRAM cdfmoy
         typvar2(jvar)%missing_value = typvar(jvar)%missing_value        ! missing_value
         typvar2(jvar)%valid_min = 0.                                    ! valid_min = zero
         typvar2(jvar)%valid_max =  typvar(jvar)%valid_max**2            ! valid_max *valid_max
+        typvar2(jvar)%scale_factor= 1.
+        typvar2(jvar)%add_offset= 0.
+        typvar2(jvar)%savelog10= 0.
         typvar2(jvar)%long_name =TRIM(typvar(jvar)%long_name)//'_Squared'   ! 
         typvar2(jvar)%short_name = TRIM(typvar(jvar)%short_name)//'_sqd'     !
         typvar2(jvar)%online_operation = TRIM(typvar(jvar)%online_operation) 

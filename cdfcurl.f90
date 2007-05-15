@@ -66,9 +66,10 @@ PROGRAM cdfcurl
   ! check files and determines if the curl will be 2D of 3D
 
   ! create output fileset
-  ncout =create(cfileout, cfilu, npiglo,npjglo,1)
+  ncout =create(cfileout, cfilu, npiglo,npjglo,0)
   ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-  ierr= putheadervar(ncout, cfilu, npiglo, npjglo, 1)
+  ierr= putheadervar(ncout, cfilu, npiglo, npjglo, 0)
+
 
   ! Allocate the memory
   ALLOCATE ( e1u(npiglo,npjglo) , e1f(npiglo,npjglo) )

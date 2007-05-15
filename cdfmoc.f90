@@ -96,6 +96,9 @@ PROGRAM cdfmoc
   typvar%missing_value=99999.
   typvar%valid_min= -1000.
   typvar%valid_max= 1000.
+  typvar%scale_factor= 1.
+  typvar%add_offset= 0.
+  typvar%savelog10= 0.
   typvar(1)%long_name='Meridional_Overt.Cell_Global'
   typvar(1)%short_name='zomsfglo'
   typvar%online_operation='N/A'
