@@ -44,7 +44,7 @@ PROGRAM cdfweight
   CHARACTER(LEN=80) :: cdum, coord='coordinates.nc', ctype='F', cfile, czgr='mesh_zgr.nc'
   CHARACTER(LEN=80) :: cbin
 
-  LOGICAL  :: lagain, lbord
+  LOGICAL  :: lagain, lbord, ldebug=.false.
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg < 1 ) THEN
@@ -67,9 +67,7 @@ PROGRAM cdfweight
 
   npiglo= getdim (coord,'x')
   npjglo= getdim (coord,'y')
-  !  get dim (z) does not work with mesh_zgr because dim z_a exists ...
-  !  npk= getdim (coord,'z')
-  npk=46
+  npk=    getdim (czgr,'z')
 
   ALLOCATE (glam(npiglo,npjglo), gphi(npiglo,npjglo) )
   ALLOCATE (e1(npiglo,npjglo), e2(npiglo,npjglo),gdept(npk) )
@@ -126,12 +124,14 @@ PROGRAM cdfweight
            ENDIF
         ENDDO
         gamma=(idep - gdept(kloc))/(gdept(kloc+1)-gdept(kloc) )
+        IF (kloc == npk -1 ) gamma=0
+        IF ( ldebug) print '("DEP", f8.1,i8,f8.0,f8.4)', gdept(kloc), idep, gdept(kloc+1), gamma
         IF ( gamma < 0 ) THEN
            kloc=1
            gamma = 0.
         ENDIF
         IF ( gamma > 1 ) THEN
-           kloc=45
+           kloc=npk -1
            gamma = 0.
         ENDIF
 
@@ -227,7 +227,7 @@ PROGRAM cdfweight
           alpha=-1000. ; beta=-1000.
         ENDIF
         
-!       PRINT 9001, id, ymin, xmin, idep ,imin, jmin, rdis,  hP, hPp, hN, hE, hS, hW, iquadran, alpha, beta
+        IF (ldebug) PRINT 9001, id, ymin, xmin, idep ,imin, jmin, rdis,  hP, hPp, hN, hE, hS, hW, iquadran, alpha, beta
         PRINT 9002, id, ymin, xmin, idep ,imin, jmin, kloc, iquadran, alpha, beta, gamma
         WRITE(numbin) id, ymin, xmin, idep ,imin, jmin, kloc, iquadran, alpha, beta, gamma
      ENDIF
@@ -357,9 +357,10 @@ CONTAINS
     REAL(KIND=8) :: zdeta, zdalp, zdbet
     REAL(KIND=8) :: zdlam, zdphi, z1, z2, z3, z4
     REAL(KIND=8), DIMENSION(2,2):: za
+    REAL(KIND=8), DIMENSION(0:4):: zplam
     INTEGER :: itermax=200, niter=0
-    LOGICAL :: ldebug=.false.
 
+    zplam=plam
     IF ( ldebug ) THEN
     print *,plam(0), pphi(0)
     print *,9999,9999
@@ -370,19 +371,25 @@ CONTAINS
     print *,plam(1), pphi(1)
     print *,9999,9999
     ENDIF
-
+   IF ( ABS( zplam(1) -zplam(4) ) >= 180. .OR. ABS( zplam(1) -zplam(2) ) >=180.) THEN
+      ! then we are near the 0 deg line and we must work in the frame -180 180 
+      WHERE ( zplam >= 180. ) zplam=zplam -360.
+   ENDIF
     zres=1000.; zdlam=0.5; zdphi=0.5 ;  zalpha=0.d0 ; zbeta=0.d0; niter=0
     DO WHILE (zres > zresmax .AND. niter < itermax)
-     za(1,1) = plam(2)-plam(1) +  (plam(1) -plam(4) +plam(3) -plam(2))* zbeta 
-     za(1,2) = plam(4)-plam(1) +  (plam(1) -plam(4) +plam(3) -plam(2))* zalpha
+     z1=(zplam(2)- zplam(1) )
+     z2=(zplam(1) -zplam(4) )
+     z3=(zplam(3) -zplam(2) )
+!    za(1,1) = plam(2)-plam(1) +  (plam(1) -plam(4) +plam(3) -plam(2))* zbeta 
+!    za(1,2) = plam(4)-plam(1) +  (plam(1) -plam(4) +plam(3) -plam(2))* zalpha
+
+     za(1,1) =  z1 + (z2 + z3 )* zbeta 
+     za(1,2) = -z2 + (z2 + z3 )* zalpha
+
      za(2,1) = pphi(2)-pphi(1) +  (pphi(1) -pphi(4) +pphi(3) -pphi(2))* zbeta 
      za(2,2) = pphi(4)-pphi(1) +  (pphi(1) -pphi(4) +pphi(3) -pphi(2))* zalpha
 
      zdeta=det(za(1,1), za(1,2), za(2,1), za(2,2) )
-     z1=(plam(4) -plam(1) ) + (plam(1) -plam(4) +plam(3) -plam(2))*zalpha
-     z2=(pphi(4) -pphi(1) ) + (pphi(1) -pphi(4) +pphi(3) -pphi(2))*zalpha
-     z3=(plam(2) -plam(1) ) + (plam(1) -plam(4) +plam(3) -plam(2))*zbeta
-     z4=(pphi(2) -pphi(1) ) + (pphi(1) -pphi(4) +pphi(3) -pphi(2))*zbeta
 
      zdalp=det(zdlam,  za(1,2) , zdphi, za(2,2)  )/zdeta
      zdbet=det(za(1,1)  , zdlam, za(2,1)   ,zdphi)/zdeta
@@ -390,7 +397,7 @@ CONTAINS
      zres=sqrt(zdalp*zdalp + zdbet*zdbet )
      zalpha=zalpha + zdalp
      zbeta=zbeta + zdbet
-     zdlam=plam(0) - ((1.-zalpha)*(1-zbeta)*plam(1) + zalpha*(1-zbeta)*plam(2) + zalpha*zbeta*plam(3) + (1-zalpha)*zbeta*plam(4))
+     zdlam=zplam(0) - ((1.-zalpha)*(1-zbeta)*zplam(1) + zalpha*(1-zbeta)*zplam(2) + zalpha*zbeta*zplam(3) + (1-zalpha)*zbeta*zplam(4))
      zdphi=pphi(0) - ((1.-zalpha)*(1-zbeta)*pphi(1) + zalpha*(1-zbeta)*pphi(2) + zalpha*zbeta*pphi(3) + (1-zalpha)*zbeta*pphi(4))
      
 !    print *, plam, pphi
@@ -470,26 +477,31 @@ CONTAINS
 
   FUNCTION heading(plona, plonb, plata, platb)
     IMPLICIT NONE
-    ! Argument 
+    ! Argument
     REAL(KIND=8), INTENT(in) :: plata, plona, platb, plonb
     REAL(KIND=8) :: heading
     REAL(KIND=8) :: zpi, zconv
     REAL(KIND=8) ::  angled, pi,cut_dist
-    REAL(KIND=8) ::  xa,xb,ya,yb
+    REAL(KIND=8) ::  xa,xb,ya,yb, xb_xa
 
     zpi=ACOS(-1.d0)
     zconv=zpi/180.d0  ! for degree to radian conversion
 
+    ! there is a problem if the Greenwich meridian pass between a and b
+    IF ( ldebug) print *,' Plonb  Plona ' , plonb, plona
     xa=plona*zconv
-    IF (ABS(plonb -plona) > 5 ) xa=(plona-360.)*zconv
-!   IF (plona > 350 ) xa=(plona-360.)*zconv
     xb=plonb*zconv
 
     ya=-LOG(tand(45.d0-plata/2.d0))
     yb=-LOG(tand(45.d0-platb/2.d0))
-!   print *, 'yb -ya, xb_xa ',yb -ya , xb -xa
 
-    angled=ATAN2((xb-xa),(yb-ya))
+    IF (ldebug) PRINT *,' xa_xb , modulo 2pi', xb-xa, MOD((xb-xa),2*zpi)
+    xb_xa=MOD((xb-xa),2*zpi)
+   IF ( xb_xa >= zpi ) xb_xa = xb_xa -2*zpi
+   IF ( xb_xa <= - zpi ) xb_xa = xb_xa +2*zpi
+   IF (ldebug)  print *, 'yb -ya, xb_xa ',yb -ya , xb_xa
+
+    angled=ATAN2(xb_xa,(yb-ya))
     heading=angled*180.d0/zpi
     IF (heading < 0) heading=heading+360.d0
 !   print *, plona, plata, plonb, platb, heading
