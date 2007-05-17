@@ -229,7 +229,7 @@ PROGRAM cdfweight
         
         IF (ldebug) PRINT 9001, id, ymin, xmin, idep ,imin, jmin, rdis,  hP, hPp, hN, hE, hS, hW, iquadran, alpha, beta
         PRINT 9002, id, ymin, xmin, idep ,imin, jmin, kloc, iquadran, alpha, beta, gamma
-        WRITE(numbin) id, ymin, xmin, idep ,imin, jmin, kloc, iquadran, alpha, beta, gamma
+        WRITE(numbin) id, ymin, xmin, idep ,imin, jmin, kloc, iquadran, hN, alpha, beta, gamma
      ENDIF
   ENDDO
 9001 FORMAT(i10, 2f10.4,3i6,7f10.4,I4,2f8.4)
