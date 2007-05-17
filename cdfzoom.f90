@@ -104,6 +104,7 @@ PROGRAM cdfzoom
   niz=imax-imin+1
   njz=jmax-jmin+1
   nkz=kmax-kmin+1
+  kext=kmin
 
   IF (nkz > 1 ) THEN
      !working with vertical slab, either niz or njz must be 1
@@ -150,9 +151,8 @@ PROGRAM cdfzoom
      ENDIF
   ENDIF
 
-
-  IF (nk == 0 ) nk = 1 ; kext=1  ! assume a 2D variable
-  IF (nt == 0 ) nt = 1 ; itime=1 ! assume a 1 time frame file
+  IF (nk == 0 ) THEN ; nk = 1 ; kext=1  ; ENDIF  ! assume a 2D variable
+  IF (nt == 0 ) THEN ; nt = 1 ; itime=1 ; ENDIF! assume a 1 time frame file
   ALLOCATE (h(nk), rtime(nt))
 
   IF (nkz == 1 ) THEN 
@@ -167,7 +167,7 @@ PROGRAM cdfzoom
 
   DO 
      ndim=getvdim(cfilein,cvar)+1   ! getvdim gives ndim-1 !
-     PRINT *,TRIM(cvar), ndim
+     PRINT *,TRIM(cvar), ndim, kext
      SELECT CASE (nkz)
      CASE (1)
         ipmin=imin ; ipmax=imax; jpmin=jmin; jpmax=jmax
