@@ -52,7 +52,7 @@ PROGRAM cdfcoloc
   CHARACTER(LEN=3), DIMENSION(jptyp) :: ctype !:  all jptyp defined there
 
   !!
-  ctype=(/'U','V','Sx','Sy','H'/)
+  ctype=(/'U ','V ','Sx','Sy','H '/)
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg /= 4  ) THEN
@@ -93,7 +93,7 @@ PROGRAM cdfcoloc
 
   ! loop on all variables to collocate
   DO jtyp=1,jptyp
-     cctyp=ctype(jtyp)
+     cctyp=TRIM(ctype(jtyp))
 
      ! depending upon the type, set the weigth file, variable name, mask variable, data file
      !  vertical dimension of output variable and a scale factor

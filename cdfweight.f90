@@ -225,19 +225,19 @@ PROGRAM cdfweight
         SELECT CASE ( iquadran )         ! point 2 3 4 are counter clockwise in the respective sector
         CASE ( 1 ) 
           glami(2) = glamE ; gphii(2) = gphiE
-          glami(3) = MOD(glam(imin+1,jmin+1), 360.) ; gphii(3) = gphi(imin+1,jmin+1)
+          glami(3) = MOD(glam(imin+1,jmin+1), 360.d0) ; gphii(3) = gphi(imin+1,jmin+1)
           glami(4) = glamN ; gphii(4) = gphiN
         CASE ( 2 )
           glami(2) = glamS ; gphii(2) = gphiS
-          glami(3) = MOD(glam(imin+1,jmin-1), 360.) ; gphii(3) = gphi(imin+1,jmin-1)
+          glami(3) = MOD(glam(imin+1,jmin-1), 360.d0) ; gphii(3) = gphi(imin+1,jmin-1)
           glami(4) = glamE ; gphii(4) = gphiE
         CASE ( 3 )
           glami(2) = glamW ; gphii(2) = gphiW
-          glami(3) = MOD(glam(imin-1,jmin-1), 360.) ; gphii(3) = gphi(imin-1,jmin-1)
+          glami(3) = MOD(glam(imin-1,jmin-1), 360.d0) ; gphii(3) = gphi(imin-1,jmin-1)
           glami(4) = glamS ; gphii(4) = gphiS
         CASE ( 4 )
           glami(2) = glamN ; gphii(2) = gphiN
-          glami(3) = MOD(glam(imin-1,jmin+1), 360.) ; gphii(3) = gphi(imin-1,jmin+1)
+          glami(3) = MOD(glam(imin-1,jmin+1), 360.d0) ; gphii(3) = gphi(imin-1,jmin+1)
           glami(4) = glamW ; gphii(4) = gphiW
         END SELECT
 
