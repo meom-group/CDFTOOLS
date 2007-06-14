@@ -89,6 +89,9 @@ cdfmsk: cdfio.o  cdfmsk.f90
 cdfmsksal: cdfio.o  cdfmsksal.f90
 	$(F90) cdfmsksal.f90 -o cdfmsksal cdfio.o $(FFLAGS)
 
+cdfmltmask: cdfio.o  cdfmltmask.f90
+	$(F90) cdfmltmask.f90 -o cdfmltmask cdfio.o $(FFLAGS)
+
 cdfcurl: cdfio.o  cdfcurl.f90
 	$(F90) cdfcurl.f90 -o cdfcurl cdfio.o $(FFLAGS)
 

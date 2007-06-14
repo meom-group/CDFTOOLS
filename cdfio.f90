@@ -272,7 +272,6 @@ CONTAINS
     INTEGER :: istatus
     INTEGER :: ncid, varid
 
-
     istatus = NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
     istatus = NF90_INQ_VARID(ncid,cdvar,varid)
 
@@ -281,7 +280,7 @@ CONTAINS
     istatus=NF90_GET_ATT(ncid, varid, 'long_name', cdlong_name)
     istatus=NF90_GET_ATT(ncid, varid, 'short_name', cdshort_name)
 
-    istatus = NF90_ENDDEF(ncid)
+!   istatus = NF90_ENDDEF(ncid)
     getvaratt=istatus
     istatus=NF90_CLOSE(ncid)
 
@@ -303,7 +302,6 @@ CONTAINS
     INTEGER :: istatus
     INTEGER :: ncid, varid
 
-
     istatus = NF90_OPEN(cdfile,NF90_WRITE,ncid)
     istatus = NF90_REDEF(ncid)
     istatus = NF90_INQ_VARID(ncid,cdvar,varid)
@@ -313,7 +311,7 @@ CONTAINS
     istatus=NF90_RENAME_ATT(ncid, varid, 'long_name', cdlong_name)
     istatus=NF90_RENAME_ATT(ncid, varid, 'short_name', cdshort_name)
 
-    istatus = NF90_ENDDEF(ncid)
+    istatus=NF90_ENDDEF(ncid)
     cvaratt=istatus
     istatus=NF90_CLOSE(ncid)
 

@@ -19,7 +19,7 @@ PROGRAM cdfcsp
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: j,jk,jvar                                    !: dummy loop index
+  INTEGER   :: jf,jk,jvar                                    !: dummy loop index
   INTEGER   :: ierr                                         !: working integer
   INTEGER   :: ncid, narg, iargc                            !: 
   INTEGER   :: npiglo,npjglo, npk                           !: size of the domain
@@ -70,8 +70,8 @@ PROGRAM cdfcsp
   ipk(:)      = getipk(cfile,nvars)
   id_var(:)    = getvarid(cfile,nvars)
 
-  DO j = 1, narg
-     CALL getarg (j, cfile)
+  DO jf = 1, narg
+     CALL getarg (jf, cfile)
      PRINT *, 'Change spval on file ', cfile
      ncid = ncopen(cfile)
      DO jvar = 1,nvars
