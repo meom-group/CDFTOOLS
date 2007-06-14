@@ -21,7 +21,7 @@ EXEC = cdfmoy cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfeke cdf
        cdfsigtrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
        cdfheatc cdfheatc-full cdfzonalmean cdfhflx\
-       cdfmxlheatc cdfmxlsaltc \
+       cdfmxlheatc cdfmxlsaltc cdfmxlhcsc \
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
@@ -200,6 +200,9 @@ cdfmxlheatc: cdfio.o  cdfmxlheatc.f90
 
 cdfmxlsaltc: cdfio.o  cdfmxlsaltc.f90
 	$(F90) cdfmxlsaltc.f90 -o cdfmxlsaltc cdfio.o $(FFLAGS)
+
+cdfmxlhcsc: cdfio.o  eos.o cdfmxlhcsc.f90
+	$(F90) cdfmxlhcsc.f90 -o cdfmxlhcsc cdfio.o eos.o $(FFLAGS)
 
 cdficediags: cdfio.o  cdficediags.f90
 	$(F90) cdficediags.f90 -o cdficediags cdfio.o $(FFLAGS)
