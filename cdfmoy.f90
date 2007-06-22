@@ -21,7 +21,7 @@ PROGRAM cdfmoy
   USE cdfio 
 
   IMPLICIT NONE
-  INTEGER   :: jk,jt,jvar, jv , jtt                         !: dummy loop index
+  INTEGER   :: jk,jt,jvar, jv , jtt,jkk                     !: dummy loop index
   INTEGER   :: ierr                                         !: working integer
   INTEGER   :: narg, iargc                                  !: 
   INTEGER   :: npiglo,npjglo, npk ,nt                       !: size of the domain
@@ -158,8 +158,12 @@ PROGRAM cdfmoy
                  total_time = total_time + SUM(tim(1:nt) )
               END IF
               DO jtt=1,nt
+                ! PRINT *, 'nt =',jtt
                 ntframe=ntframe+1
-                v2d(:,:)= getvar(cfile, cvarname(jvar), jk ,npiglo, npjglo,ktime=jtt )
+                jkk=jk
+                IF (npk==0) jkk=jtt
+                v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jtt )
+                !PRINT *,v2d(150,
                 tab(:,:) = tab(:,:) + v2d(:,:)
                 IF (cvarname2(jvar) /= 'none' ) tab2(:,:) = tab2(:,:) + v2d(:,:)*v2d(:,:)
               ENDDO
