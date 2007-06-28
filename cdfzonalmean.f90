@@ -17,6 +17,7 @@ PROGRAM cdfzonalmean
   !!
   !! history ;
   !!  Original :  J.M. Molines (nov. 2005) 
+  !!  Modified :  P.   Mathiot (June 2007) Update for forcing fields
   !!-------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -57,6 +58,7 @@ PROGRAM cdfzonalmean
   CHARACTER(LEN=4),DIMENSION(5) :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/)
 
   LOGICAL :: lrevert_dep = .TRUE.         !: flag to revert the order of depth in the output file (plotting facility)
+  LOGICAL :: lforcing    = .FALSE.
 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
@@ -190,6 +192,10 @@ PROGRAM cdfzonalmean
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
+  ! if forcing fields, npk=0, assume 1
+  npk= 1 
+  lforcing= .TRUE.
+  PRINT *,' It is a forcing field, assume npk=1 and gdep=0'
 
   ! Allocate arrays
   ALLOCATE ( zmask(npbasins,npiglo,npjglo) )
@@ -204,7 +210,8 @@ PROGRAM cdfzonalmean
   e1(:,:)   = getvar(coordhgr, ce1, 1,npiglo,npjglo) 
   e2(:,:)   = getvar(coordhgr, ce2, 1,npiglo,npjglo) 
   gphi(:,:) = getvar(coordhgr, cphi, 1,npiglo,npjglo)
-  gdep(:)   = getvare3(coordzgr, cdep ,npk)
+  IF (lforcing== .FALSE.) gdep(:)   = getvare3(coordzgr, cdep ,npk)
+  IF (lforcing== .TRUE.)  gdep(:)   = 0
   IF ( lrevert_dep ) gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
 
   ! Look for the i-index that go through the North Pole

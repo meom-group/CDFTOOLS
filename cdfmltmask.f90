@@ -4,8 +4,10 @@ PROGRAM cdfmltmask
   !!
   !!  **  Purpose  : multiplication of file by a mask (0,1)
   !!                 
+  !!                 
   !!  * history:
   !!        Original :   Melanie JUZA  (june 2007) 
+  !!        Modified :   Pierre Mathiot(june 2007) update for forcing fields
   !!-------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -16,7 +18,7 @@ PROGRAM cdfmltmask
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: jk, jt
+  INTEGER   :: jk, jt, jkk
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk,npt              !: size of the domain
   INTEGER   :: nvpk                                !: vertical levels in working variable
@@ -28,6 +30,8 @@ PROGRAM cdfmltmask
   CHARACTER(LEN=80) :: cfilev , cfilemask, ctmp
   CHARACTER(LEN=80) :: cvar, cvartype, cdep
   CHARACTER(LEN=20) ::  cvmask
+  
+  LOGICAL :: lforcing= .FALSE.  ! PM
 
   INTEGER    :: istatus
 
@@ -56,11 +60,11 @@ PROGRAM cdfmltmask
 
   npiglo= getdim (cfilev,'x')
   npjglo= getdim (cfilev,'y')
-  npk   = getdim (cfilev,'depth',cdtrue=cdep, kstatus=istatus) ; print *, istatus
+  npk   = getdim (cfilev,'depth',cdtrue=cdep, kstatus=istatus) ; !print *, istatus
   IF (istatus /= 0 ) THEN
-     npk   = getdim (cfilev,'z',cdtrue=cdep,kstatus=istatus) ; print *, istatus
+     npk   = getdim (cfilev,'z',cdtrue=cdep,kstatus=istatus) ; !print *, istatus
      IF (istatus /= 0 ) THEN
-       npk   = getdim (cfilev,'sigma',cdtrue=cdep,kstatus=istatus) ; print *, istatus
+       npk   = getdim (cfilev,'sigma',cdtrue=cdep,kstatus=istatus) ; !print *, istatus
         IF ( istatus /= 0 ) THEN
           PRINT *,' assume file with no depth'
           npk=0
@@ -79,6 +83,12 @@ PROGRAM cdfmltmask
   PRINT *, 'npk   =', npk
   PRINT *, 'npt   =', npt
   PRINT *, 'nvpk  =', nvpk
+
+  IF (npk==0) THEN  ! PM
+     npk=1          ! PM
+     lforcing= .TRUE.  ! PM
+     PRINT *, 'it is a forcing field, assume npk=1'  ! PM
+  END IF  ! PM
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )
@@ -102,16 +112,19 @@ PROGRAM cdfmltmask
   END SELECT
 
   DO jt = 1, npt
-     DO jk = 1,nvpk
+     IF (MOD(jt,100)==0) PRINT *, jt,'/', npt
+     DO jkk = 1,nvpk
         ! Read cvar
+        IF (lforcing== .FALSE.)jk=jkk !PM 
+        IF (lforcing== .TRUE.) jk=jt  !PM
         zv(:,:)= getvar(cfilev, cvar, jk ,npiglo,npjglo, ktime=jt)
         ! Read mask
-        zmask(:,:)=getvar(cfilemask,cvmask,jk,npiglo,npjglo)
+        zmask(:,:)=getvar(cfilemask,cvmask,jkk,npiglo,npjglo)
         ! Multiplication of cvar by mask à level jk
         zvmask=zv*zmask
-        ! Writing  on the original file
+        ! Writing  on the original file                 
         istatus=putvar(cfilev,cvar,jk,npiglo,npjglo,1,1,ktime=jt, ptab=zvmask)
      END DO
   END DO
 
-END PROGRAM cdfmltmask
+END PROGRAM cdfmltmask 

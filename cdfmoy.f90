@@ -12,6 +12,7 @@ PROGRAM cdfmoy
   !!     Original code :   J.M. Molines (Nov 2004 ) for ORCA025
   !!                       J.M. Molines (Apr 2005 ) put all NCF stuff in module
   !!                              now valid for grid T U V W icemod
+  !!     Modified      :   P. Mathiot (June 2007) update for forcing fields
   !!-----------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -158,12 +159,11 @@ PROGRAM cdfmoy
                  total_time = total_time + SUM(tim(1:nt) )
               END IF
               DO jtt=1,nt
-                ! PRINT *, 'nt =',jtt
                 ntframe=ntframe+1
                 jkk=jk
-                IF (npk==0) jkk=jtt
+                ! If forcing fields is without depth dimension
+                IF (npk==0) jkk=jtt 
                 v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jtt )
-                !PRINT *,v2d(150,
                 tab(:,:) = tab(:,:) + v2d(:,:)
                 IF (cvarname2(jvar) /= 'none' ) tab2(:,:) = tab2(:,:) + v2d(:,:)*v2d(:,:)
               ENDDO
