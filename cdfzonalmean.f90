@@ -17,7 +17,8 @@ PROGRAM cdfzonalmean
   !!
   !! history ;
   !!  Original :  J.M. Molines (nov. 2005) 
-  !!  Modified :  P.   Mathiot (June 2007) Update for forcing fields
+  !!  Modified :  P.   Mathiot (June 2007) Update for forcing fields format
+  !!                                       + for many time steps
   !!-------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -29,10 +30,11 @@ PROGRAM cdfzonalmean
   !! * Local variables
   IMPLICIT NONE
   INTEGER   :: npbasins=1, ivar = 0                !: number of subbasin, number of output var
-  INTEGER   :: jbasin, jj, jk ,ji ,jvar ,jjvar     !: dummy loop index
+  INTEGER   :: jbasin, jj, jk ,ji ,jvar ,jjvar,jkk !: dummy loop index
+  INTEGER   :: jt                                  !: dummy loop index
   INTEGER   :: ierr                                !: working integer
   INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
+  INTEGER   :: npiglo,npjglo, npk, nt              !: size of the domain
   INTEGER   :: ncout
   INTEGER   :: nvars , mvar                        !: number of variables in the file
   INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, ijvar, ipko, id_varout    !: jpbasin x nvar
@@ -187,16 +189,18 @@ PROGRAM cdfzonalmean
   npiglo= getdim (cfilev,'x')
   npjglo= getdim (cfilev,'y')
   npk   = getdim (cfilev,'depth')
-
+  nt    = getdim (cfilev,'time_counter')
 
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
+  PRINT *, 'nt    =', nt
   ! if forcing fields, npk=0, assume 1
-  npk= 1 
-  lforcing= .TRUE.
-  PRINT *,' It is a forcing field, assume npk=1 and gdep=0'
-
+  IF (npk==0) THEN
+     npk = 1 
+     lforcing= .TRUE.
+     PRINT *,' It is a forcing field, assume npk=1 and gdep=0'
+  END IF
   ! Allocate arrays
   ALLOCATE ( zmask(npbasins,npiglo,npjglo) )
   ALLOCATE ( zv(npiglo,npjglo) )
@@ -242,36 +246,39 @@ PROGRAM cdfzonalmean
   ivar = 0
   DO jjvar = 1, mvar
      jvar = ijvar(jjvar)
-     DO jk = 1, ipk(jvar)
-        PRINT *,TRIM(cvarname(jvar)), ' level ',jk
-        ! Get variables and mask at level jk
-        zv(:,:)       = getvar(cfilev,   cvarname(jvar),  jk ,npiglo,npjglo)
-        zmaskvar(:,:) = getvar(cmaskfil, cmask,           jk ,npiglo,npjglo)
-
-        ! For all basins 
-        DO jbasin = 1, npbasins
-           zomsf(:,:) = 0.d0
-           area(:,:) = 0.d0
-           ! integrates 'zonally' (along i-coordinate)
-           DO ji=1,npiglo
-              DO jj=1,npjglo
-                 zomsf(jj,jk) = zomsf(jj,jk) + e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
-                 area(jj,jk)  =  area(jj,jk) + e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
+     DO jt = 1,nt
+        IF (MOD(jt,100)==0) PRINT *, jt,'/',nt
+        DO jkk = 1, ipk(jvar)
+           PRINT *,TRIM(cvarname(jvar)), ' level ',jkk
+           ! Get variables and mask at level jk
+           IF (lforcing== .FALSE.) jk=jkk
+           IF (lforcing== .TRUE.)  jk=jt
+           zv(:,:)       = getvar(cfilev,   cvarname(jvar),jk ,npiglo,npjglo)
+           zmaskvar(:,:) = getvar(cmaskfil, cmask,           jkk ,npiglo,npjglo)
+           
+           ! For all basins 
+           DO jbasin = 1, npbasins
+              zomsf(:,:) = 0.d0
+              area(:,:) = 0.d0
+              ! integrates 'zonally' (along i-coordinate)
+              DO ji=1,npiglo
+                 DO jj=1,npjglo
+                    zomsf(jj,jkk) = zomsf(jj,jkk) + e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
+                    area(jj,jkk)  =  area(jj,jkk) + e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
+                 END DO
               END DO
-           END DO
 
-           ! compute the mean value if the area is not 0, else assign spval
-           WHERE (area /= 0 ) 
-              zomsf=zomsf/area
-           ELSEWHERE
-              zomsf=99999.
-           ENDWHERE
-           ivar=  (jjvar-1)*npbasins + jbasin
-           ierr = putvar (ncout, id_varout(ivar),REAL(zomsf(:,jk)), jk,1,npjglo)
-
-        END DO  !next basin
-     END DO  ! next k 
-
+              ! compute the mean value if the area is not 0, else assign spval
+              WHERE (area /= 0 ) 
+                 zomsf=zomsf/area
+              ELSEWHERE
+                 zomsf=99999.
+              ENDWHERE
+              ivar=  (jjvar-1)*npbasins + jbasin
+              ierr = putvar (ncout, id_varout(ivar),REAL(zomsf(:,jkk)), jk,1,npjglo, ktime=jt)
+           END DO  !next basin
+        END DO  ! next k 
+     END DO ! next time
   END DO ! next variable
 
   ierr = closeout(ncout)
