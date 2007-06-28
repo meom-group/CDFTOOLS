@@ -1155,11 +1155,12 @@ CONTAINS
     !! * Local variables
     INTEGER , PARAMETER :: jpdep=5
     INTEGER :: istatus, idep, jj
-    REAL(KIND=4), DIMENSION(kpi,kpj) :: z2d
+    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: z2d
     REAL(KIND=4), DIMENSION(kpk) :: z1d
     CHARACTER(LEN=80),DIMENSION(jpdep ) :: cldept=(/'deptht ','depthu ','depthv ','depthw ','nav_lev'/)
     CHARACTER(LEN=80) :: cldep
 
+    ALLOCATE ( z2d (kpi,kpj) )
     IF (PRESENT(pnavlon) ) THEN 
        z2d = pnavlon
     ELSE
@@ -1201,6 +1202,7 @@ CONTAINS
        istatus = putvar1d(kout,z1d,kpk,'D')
     ENDIF
     putheadervar=istatus
+    DEALLOCATE (z2d)
 
   END FUNCTION putheadervar
 
