@@ -25,8 +25,7 @@ EXEC = cdfmoy cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfeke cdf
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
-       cdfcsp cdfcoloc cdfmltmask 
-
+       cdfcsp cdfcoloc cdfmltmask cdfstatcoord
 
 all: $(EXEC)
 
@@ -135,6 +134,9 @@ cdfpsi-full: cdfio.o  cdfpsi-full.f90
 cdfpsi-open: cdfio.o  cdfpsi-open.f90
 	$(F90) cdfpsi-open.f90  -o cdfpsi-open cdfio.o $(FFLAGS)
 
+cdfpsi-open-zap: cdfio.o  cdfpsi-open-zap.f90
+	$(F90) cdfpsi-open-zap.f90  -o cdfpsi-open-zap cdfio.o $(FFLAGS)
+
 cdfpsi-open_AM: cdfio.o  cdfpsi-open_AM.f90
 	$(F90) cdfpsi-open_AM.f90  -o cdfpsi-open_AM cdfio.o $(FFLAGS)
 
@@ -234,6 +236,9 @@ cdfweight: cdfio.o  cdfweight.f90
 
 cdfcoloc: cdfio.o  cdfcoloc.f90
 	$(F90) cdfcoloc.f90  -o cdfcoloc cdfio.o $(FFLAGS)
+
+cdfstatcoord: cdfio.o  cdfstatcoord.f90
+	$(F90) cdfstatcoord.f90  -o cdfstatcoord cdfio.o $(FFLAGS)
 
 cdfmaxmoc: cdfio.o  cdfmaxmoc.f90
 	$(F90) cdfmaxmoc.f90  -o cdfmaxmoc cdfio.o $(FFLAGS)
