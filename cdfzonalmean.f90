@@ -214,8 +214,8 @@ PROGRAM cdfzonalmean
   e1(:,:)   = getvar(coordhgr, ce1, 1,npiglo,npjglo) 
   e2(:,:)   = getvar(coordhgr, ce2, 1,npiglo,npjglo) 
   gphi(:,:) = getvar(coordhgr, cphi, 1,npiglo,npjglo)
-  IF (lforcing== .FALSE.) gdep(:)   = getvare3(coordzgr, cdep ,npk)
-  IF (lforcing== .TRUE.)  gdep(:)   = 0
+  IF (.NOT. lforcing) gdep(:)   = getvare3(coordzgr, cdep ,npk)
+  IF (lforcing)  gdep(:)   = 0
   IF ( lrevert_dep ) gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
 
   ! Look for the i-index that go through the North Pole
@@ -251,8 +251,8 @@ PROGRAM cdfzonalmean
         DO jkk = 1, ipk(jvar)
            PRINT *,TRIM(cvarname(jvar)), ' level ',jkk
            ! Get variables and mask at level jk
-           IF (lforcing== .FALSE.) jk=jkk
-           IF (lforcing== .TRUE.)  jk=jt
+           IF (.NOT. lforcing) jk=jkk
+           IF ( lforcing     ) jk=jt
            zv(:,:)       = getvar(cfilev,   cvarname(jvar),jk ,npiglo,npjglo)
            zmaskvar(:,:) = getvar(cmaskfil, cmask,           jkk ,npiglo,npjglo)
            

@@ -115,8 +115,8 @@ PROGRAM cdfmltmask
      IF (MOD(jt,100)==0) PRINT *, jt,'/', npt
      DO jkk = 1,nvpk
         ! Read cvar
-        IF (lforcing== .FALSE.)jk=jkk !PM 
-        IF (lforcing== .TRUE.) jk=jt  !PM
+        IF (.NOT. lforcing)jk=jkk !PM 
+        IF (lforcing) jk=jt  !PM
         zv(:,:)= getvar(cfilev, cvar, jk ,npiglo,npjglo, ktime=jt)
         ! Read mask
         zmask(:,:)=getvar(cfilemask,cvmask,jkk,npiglo,npjglo)

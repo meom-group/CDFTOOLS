@@ -124,7 +124,7 @@ PROGRAM cdfcurl
      ! begin PM
      IF (MOD(jt,100)==0) PRINT *, jt,'/',nt
      ! if files are forcing fields
-     IF ( lforcing == .TRUE. ) THEN
+     IF ( lforcing ) THEN
         jk = jt
         zun(:,:) =  getvar(cfilu, cvaru, jk ,npiglo,npjglo, ktime=jt)
         zvn(:,:) =  getvar(cfilv, cvarv, jk ,npiglo,npjglo, ktime=jt)
@@ -137,7 +137,7 @@ PROGRAM cdfcurl
            vn(:,jj) = 0.5*(zvn(:,jj) + zvn(:,jj+1))
         END DO
         ! end compute u and v on U and V point
-     ELSE IF (lforcing == .FALSE. ) THEN
+     ELSE
         jk = ilev
         un(:,:) =  getvar(cfilu, cvaru, jk ,npiglo,npjglo, ktime=jt)
         vn(:,:) =  getvar(cfilv, cvarv, jk ,npiglo,npjglo, ktime=jt)
@@ -165,9 +165,9 @@ PROGRAM cdfcurl
      END DO
      ! 
      ! write rotn on file at level k and at time jt
-     IF (lforcing== .TRUE. ) THEN
+     IF (lforcing ) THEN
         ierr = putvar(ncout, id_varout(1) ,rotn, jt ,npiglo, npjglo, jt)
-     ELSE IF (lforcing== .FALSE. ) THEN
+     ELSE
         ierr = putvar(ncout, id_varout(1) ,rotn, 1 ,npiglo, npjglo, jt)
      END IF
   END DO
