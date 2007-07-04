@@ -25,6 +25,9 @@ PROGRAM cdfpsi_open
   !! history ;
   !!  Original :  J.M. Molines (May 2005 )
   !!             open version   J.M. Molines (March 2007 )
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!-------------------------------------------------------------------
   !! * Modules used
   USE cdfio
