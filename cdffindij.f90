@@ -108,7 +108,7 @@ PROGRAM cdffindij
   lagain = .TRUE.
   niter = 0
   DO WHILE (lagain)
-     CALL Nearestpoint(xmin,ymin,npiglo,npjglo,gphi,glam,iloc,jloc,lbord)
+     CALL Nearestpoint(xmin,ymin,npiglo,npjglo,glam,gphi,iloc,jloc,lbord)
      ! distance between the target point and the nearest point
      rdis=dist(xmin,glam(iloc,jloc),ymin,gphi(iloc,jloc) ) ! in km
      ! typical grid size (diagonal) in the vicinity of nearest point
@@ -141,7 +141,7 @@ PROGRAM cdffindij
   lagain = .TRUE.
   niter = 0
   DO WHILE (lagain)
-     CALL Nearestpoint(xmax,ymax,npiglo,npjglo,gphi,glam,iloc,jloc,lbord)
+     CALL Nearestpoint(xmax,ymax,npiglo,npjglo,glam,gphi,iloc,jloc,lbord)
      ! distance between the target point and the nearest point
      rdis=dist(xmax,glam(iloc,jloc),ymax,gphi(iloc,jloc) ) ! in km
      ! typical grid size (diagonal) in the vicinity of nearest point
@@ -179,7 +179,7 @@ PROGRAM cdffindij
 9002 FORMAT(4f10.4)
 
 CONTAINS
-  SUBROUTINE Nearestpoint(pplon,pplat,kpi,kpj,pphi,plam,kpiloc,kpjloc,ldbord)
+  SUBROUTINE Nearestpoint(pplon,pplat,kpi,kpj,plam,pphi,kpiloc,kpjloc,ldbord)
     !!----------------------------------------------------------------------------
     !!            ***  SUBROUTINE NEARESTPOINT  ***
     !!
