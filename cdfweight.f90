@@ -523,8 +523,8 @@ CONTAINS
     xa=plona*zconv
     xb=plonb*zconv
 
-    ya=-LOG(tand(45.d0-plata/2.d0))
-    yb=-LOG(tand(45.d0-platb/2.d0))
+    ya=-LOG(tan(zpi/4.-zconv*plata/2.d0))
+    yb=-LOG(tan(zpi/4.-zconv*platb/2.d0))
 
     IF (ldebug) PRINT *,' xa_xb , modulo 2pi', xb-xa, MOD((xb-xa),2*zpi)
     xb_xa=MOD((xb-xa),2*zpi)
