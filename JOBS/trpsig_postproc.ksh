@@ -53,7 +53,7 @@ done
 #        we suppose that section name starts with 2 digits 01_ 02_ 03_ etc ...
 mean() {
 # section name are codes as 2 digit_Capitalized_Name (eg: 01_Denmark_Strait or 07_Bab_el_Mandeb )
-for stnam in [0-9][0-9]_[A-Z]* ; do
+for stnam in [0-9][0-9]_[a-zA-Z]* ; do
   cd $stnam
   printf "%s"  "Working for station $stnam  "
 
