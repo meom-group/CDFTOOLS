@@ -25,7 +25,7 @@ EXEC = cdfmoy cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfeke cdf
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
-       cdfcsp cdfcoloc cdfmltmask cdfstatcoord cdfpolymask
+       cdfcsp cdfcoloc cdfmltmask cdfstatcoord cdfpolymask cdfsmooth
 
 all: $(EXEC)
 
@@ -260,6 +260,9 @@ cdfprobe: cdfio.o  cdfprobe.f90
 
 cdfclip: cdfio.o  cdfclip.f90
 	$(F90) cdfclip.f90  -o cdfclip cdfio.o $(FFLAGS)
+
+cdfsmooth: cdfio.o  cdfsmooth.f90
+	$(F90) cdfsmooth.f90  -o cdfsmooth cdfio.o $(FFLAGS)
 
 ## reformating programs
 cdf16bit: cdfio.o cdf16bit.f90
