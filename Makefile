@@ -25,7 +25,7 @@ EXEC = cdfmoy cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfeke cdf
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
-       cdfcsp cdfcoloc cdfmltmask cdfstatcoord
+       cdfcsp cdfcoloc cdfmltmask cdfstatcoord cdfpolymask
 
 all: $(EXEC)
 
@@ -286,6 +286,9 @@ cdfbathy: cdfio.o cdfbathy.f90
 cdfcsp: cdfio.o cdfcsp.f90
 	$(F90)   cdfcsp.f90  -o cdfcsp cdfio.o $(FFLAGS)
 	
+cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
+	$(F90)   cdfpolymask.f90  -o cdfpolymask cdfio.o modpoly.o $(FFLAGS)
+	
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
 bimgmoy4: bimgmoy4.f90
@@ -301,6 +304,10 @@ cdfio.o: cdfio.f90
 
 eos.o: eos.f90
 	$(F90) -c eos.f90 $(FFLAGS)
+
+modpoly.o: modpoly.f90
+	$(F90) -c modpoly.f90 $(FFLAGS)
+
 ## Utilities
 tar:
 	( cd ../ ; tar cf cdftools-2.1.tar $(CDFTOOLS)/*90 $(CDFTOOLS)/Make* \
