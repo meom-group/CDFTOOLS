@@ -135,13 +135,14 @@ PROGRAM cdfsmooth
         ! skip these variables
      ELSE
         spval=typvar(jvar)%missing_value
+        print *,'VAR ',TRIM(cvarname(jvar)),' SVPAL=',spval
         DO jt=1,nt
            DO jk=1,ipk(jvar)
               v2d(:,:) = getvar(cfile,cvarname(jvar),jk,npiglo,npjglo,ktime=jt)
               iw(:,:) = 1
               WHERE ( v2d == spval ) iw =0
               CALL filter(nfilter,v2d,iw,w2d)
-!             CALL lislanczos2d(v2d,iw,w2d,npiglo,npjglo,fn,nband,npiglo,npjglo)
+              w2d=w2d*iw  ! mask filtered data
               ierr = putvar(ncout, id_varout(jvar) ,w2d, jk, npiglo, npjglo)
               !
            END DO
