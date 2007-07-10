@@ -24,6 +24,11 @@ MODULE modpoly
   !      Original code : late 80's trigrid (Walters et Al.)
   !        adaptation to model diagnostics : J.M. Molines (03/2006)
   !-----------------------------------------------------------------------
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
+  !!--------------------------------------------------------------
+
   ! Module Variables
   IMPLICIT NONE
   PRIVATE
