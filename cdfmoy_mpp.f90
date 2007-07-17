@@ -71,7 +71,6 @@ PROGRAM cdfmoy_mpp
   CALL mpi_comm_size(mpi_comm_world,nproc,ierror)
   narea = iproc + 1
   lwp=( narea == 1 )
-
   !!
 
   !!  Read command line
@@ -251,12 +250,12 @@ PROGRAM cdfmoy_mpp
               !          IF (cvarname2(jvar) /= 'none' ) rmean2(:,:) = tab2(:,:)/ntframe
               !          ! store variable on outputfile
               ! collect total number of frames 
-              CALL MPI_REDUCE(ntframe, ntframe_tot,1,MPI_INT,MPI_SUM,0,MPI_COMM_WORLD,ierr)
-              CALL MPI_REDUCE(total_time, total_timetot,1,MPI_DOUBLE,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+              CALL MPI_REDUCE(ntframe, ntframe_tot,1,MPI_INTEGER,MPI_SUM,0,MPI_COMM_WORLD,ierr)
+              CALL MPI_REDUCE(total_time, total_timetot,1,MPI_DOUBLE_PRECISION,MPI_SUM,0,MPI_COMM_WORLD,ierr)
               ! Collect sum of tab
-              CALL MPI_REDUCE(tab,tabtot,npiglo*npjglo,MPI_DOUBLE, MPI_SUM,0,MPI_COMM_WORLD,ierr)
+              CALL MPI_REDUCE(tab,tabtot,npiglo*npjglo,MPI_DOUBLE_PRECISION, MPI_SUM,0,MPI_COMM_WORLD,ierr)
               IF (cvarname2(jvar)  /= 'none' ) THEN
-                 CALL MPI_REDUCE(tab2,tab2tot,npiglo*npjglo,MPI_DOUBLE, MPI_SUM,0,MPI_COMM_WORLD,ierr)
+                 CALL MPI_REDUCE(tab2,tab2tot,npiglo*npjglo,MPI_DOUBLE_PRECISION, MPI_SUM,0,MPI_COMM_WORLD,ierr)
               ENDIF
               IF (lwp) THEN
                  rmean(:,:)=tabtot/ntframe_tot
@@ -278,6 +277,6 @@ PROGRAM cdfmoy_mpp
         istatus = closeout(ncout)
         istatus = closeout(ncout2)
      ENDIF
-
+     CALL mpi_finalize(ierror)
 
    END PROGRAM cdfmoy_mpp
