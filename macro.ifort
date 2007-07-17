@@ -6,6 +6,7 @@
 NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
  
 F90=ifort
+MPF90=mpif90
 FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
 
 INSTALL=/usr/local/bin

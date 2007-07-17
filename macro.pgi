@@ -7,6 +7,7 @@
 NCDF = -lnetcdf
  
 F90=pgf90
+MPF90=pgf90
 FFLAGS = -fast $(NCDF) -byteswapio
 
 INSTALL=/usr/local/bin
