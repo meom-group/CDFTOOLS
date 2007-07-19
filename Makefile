@@ -13,7 +13,8 @@ include make.macro
 
 CDFTOOLS=CDFTOOLS-2.1
 
-EXEC = cdfmoy cdfmoy_mpp cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfeke cdfrmsssh cdfstdevw cdfstdevts cdfimprovechk\
+EXEC = cdfmoy cdfmoy_mpp cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfvsig \
+       cdfeke cdfrmsssh cdfstdevw cdfstdevts cdfimprovechk\
        cdfbn2  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
        cdfrhoproj cdfpv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
@@ -62,6 +63,9 @@ cdfstdevts: cdfio.o  cdfstdevts.f90
 
 cdfvT: cdfio.o  cdfvT.f90
 	$(F90) cdfvT.f90 -o cdfvT cdfio.o $(FFLAGS)
+
+cdfvsig: cdfio.o eos.o  cdfvsig.f90
+	$(F90) cdfvsig.f90 -o cdfvsig cdfio.o eos.o $(FFLAGS)
 
 cdfimprovechk: cdfio.o  cdfimprovechk.f90
 	$(F90) cdfimprovechk.f90 -o cdfimprovechk cdfio.o $(FFLAGS)
