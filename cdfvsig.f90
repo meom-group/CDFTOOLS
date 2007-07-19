@@ -10,9 +10,9 @@ PROGRAM cdfvsig
   !!   Original : J.M. Molines (Nov 2004 ) for ORCA025
   !!              J.M. Molines  (apr 2005 ) : use of modules
   !!-------------------------------------------------------------------
-  !!  $Rev: 67 $
-  !!  $Date: 2007-06-14 17:59:30 +0200 (Thu, 14 Jun 2007) $
-  !!  $Id: cdfvsig.f90 67 2007-06-14 15:59:30Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
