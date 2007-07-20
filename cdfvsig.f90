@@ -127,6 +127,7 @@ PROGRAM cdfvsig
   ALLOCATE( ztemp(npiglo,npjglo) ,zsal(npiglo,npjglo) )
   ALLOCATE( ztempup(npiglo,npjglo) ,zsalup(npiglo,npjglo) )
   ALLOCATE( ztempu(npiglo,npjglo) ,zsalu(npiglo,npjglo) )
+  ALLOCATE( ztempv(npiglo,npjglo) ,zsalv(npiglo,npjglo) )
   ALLOCATE( ztempw(npiglo,npjglo) ,zsalw(npiglo,npjglo) )
   ALLOCATE( rmean(npiglo,npjglo))
   ALLOCATE( umask(npiglo,npjglo), vmask(npiglo,npjglo), wmask(npiglo,npjglo) )
