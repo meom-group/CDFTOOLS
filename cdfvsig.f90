@@ -73,16 +73,10 @@ PROGRAM cdfvsig
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   CALL getarg (1, config)
   CALL getarg (2, ctag)
-  WRITE(cfilet,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
-  INQUIRE(FILE=cfilet,EXIST=lexist)
-  IF ( .NOT. lexist ) THEN
-    WRITE(cfilet,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
-    INQUIRE(FILE=cfilet,EXIST=lexist)
-    IF ( .NOT. lexist ) THEN
-      PRINT *,' ERROR : missing gridT or even grid_T file '
-      STOP
-    ENDIF
-  ENDIF
+  cfilet=filnam(config, ctag,'T' )
+  cfileu=filnam(config, ctag,'U' )
+  cfilev=filnam(config, ctag,'V' )
+  cfilew=filnam(config, ctag,'W' )
 
   PRINT *,TRIM(cfilet)
   npiglo= getdim (cfilet,'x')
@@ -138,7 +132,7 @@ PROGRAM cdfvsig
   ALLOCATE( umask(npiglo,npjglo), vmask(npiglo,npjglo), wmask(npiglo,npjglo) )
 
 
-  ! create output fileset s ! JMM BUG : cfileu v w not defined here !
+  ! create output fileset 
 
   ncoutusig =create(cfilusig, cfileu, npiglo,npjglo,npk)
   ncoutvsig =create(cfilvsig, cfilev, npiglo,npjglo,npk)
@@ -165,50 +159,10 @@ PROGRAM cdfvsig
 
      DO jt = 2, narg
         CALL getarg (jt, ctag)
-
-        WRITE(cfilet,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
-        INQUIRE(FILE=cfilet,EXIST=lexist)
-        IF ( .NOT. lexist ) THEN
-          WRITE(cfilet,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfilet,EXIST=lexist)
-          IF ( .NOT. lexist ) THEN
-             PRINT *,' ERROR : missing gridT or even grid_T file '
-             STOP
-          ENDIF
-        ENDIF
-
-        WRITE(cfileu,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
-        INQUIRE(FILE=cfileu,EXIST=lexist)
-        IF ( .NOT. lexist ) THEN
-          WRITE(cfileu,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfileu,EXIST=lexist)
-          IF ( .NOT. lexist ) THEN
-             PRINT *,' ERROR : missing gridU or even grid_U file '
-             STOP
-          ENDIF
-        ENDIF
-
-        WRITE(cfilev,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
-        INQUIRE(FILE=cfilev,EXIST=lexist)
-        IF ( .NOT. lexist ) THEN
-          WRITE(cfilev,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfilev,EXIST=lexist)
-          IF ( .NOT. lexist ) THEN
-             PRINT *,' ERROR : missing gridV or even grid_V file '
-             STOP
-          ENDIF
-        ENDIF
-
-        WRITE(cfilew,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
-        INQUIRE(FILE=cfilew,EXIST=lexist)
-        IF ( .NOT. lexist ) THEN
-          WRITE(cfilew,'(a,"_",a,"_grid_W.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfilew,EXIST=lexist)
-          IF ( .NOT. lexist ) THEN
-             PRINT *,' ERROR : missing gridW or even grid_W file '
-             STOP
-          ENDIF
-        ENDIF
+        cfilet=filnam(config,ctag,'T')
+        cfileu=filnam(config,ctag,'U')
+        cfilev=filnam(config,ctag,'V')
+        cfilew=filnam(config,ctag,'W')
 
         IF (jk == 1  )  THEN
            tim=getvar1d(cfilet,'time_counter',1)
@@ -280,5 +234,24 @@ PROGRAM cdfvsig
   istatus = closeout(ncoutusig)
   istatus = closeout(ncoutvsig)
   istatus = closeout(ncoutwsig)
+
+  CONTAINS
+
+  CHARACTER(LEN=80) FUNCTION filnam(cdconf, cdtag, cdgrid)
+    !!------------------------------------------------------
+    !!   ** Purpose : build filename from config tag and grid 
+    !!------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdconf, cdtag, cdgrid
+  WRITE(filnam,'(a,"_",a,"_grid",a,".nc")') TRIM(config),TRIM(ctag),TRIM(cdgrid)
+  INQUIRE(FILE=filnam,EXIST=lexist)
+  IF ( .NOT. lexist ) THEN
+    WRITE(filnam,'(a,"_",a,"_grid_",a,".nc")') TRIM(config),TRIM(ctag), TRIM(cdgrid)
+    INQUIRE(FILE=filnam,EXIST=lexist)
+    IF ( .NOT. lexist ) THEN
+      PRINT *,' ERROR : missing grid',TRIM(cdgrid),'or even grid_',TRIM(cdgrid),' file '
+      STOP
+    ENDIF
+  ENDIF
+  END FUNCTION filnam
 
 END PROGRAM cdfvsig
