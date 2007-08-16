@@ -157,10 +157,10 @@ PROGRAM cdfsmooth
               PRINT *, jt,'/',nt,' and ',jk,'/',ipk(jvar)
               v2d(:,:) = getvar(cfile,cvarname(jvar),jk,npiglo,npjglo,ktime=jt)
               iw(:,:) = 1
-              !WHERE ( v2d == spval ) iw =0
+              WHERE ( v2d == spval ) iw =0
               IF ( ncoup .NE. 0 ) CALL filter(nfilter,v2d,iw,w2d)
               IF ( ncoup .EQ. 0 ) w2d=v2d
-              !w2d=w2d !*iw  ! mask filtered data
+              w2d=w2d *iw  ! mask filtered data
               ierr = putvar(ncout, id_varout(jvar) ,w2d, jk, npiglo, npjglo, jt)
               !
            END DO
