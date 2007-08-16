@@ -9,4 +9,4 @@ F90=ifort
 MPF90=ifort
 FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
 
-INSTALL=/usr/local/bin
+INSTALL=$(HOME)/bin

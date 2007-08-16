@@ -1282,7 +1282,7 @@ CONTAINS
     istatus=NF90_OPEN(cdfile,NF90_WRITE,ncid)
     istatus=NF90_INQ_VARID(ncid,cdvar,id_var)
     istatus=NF90_PUT_VAR(ncid,id_var,ptab,start=(/imin,jmin,klev,itime/), count=(/kpi,kpj,1,1/) )
-    PRINT *,TRIM(NF90_STRERROR(istatus)),' in reputvar'
+    !PRINT *,TRIM(NF90_STRERROR(istatus)),' in reputvar'
     reputvarr4=istatus
     istatus=NF90_CLOSE(ncid)
 

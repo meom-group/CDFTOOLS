@@ -105,7 +105,22 @@ PROGRAM cdfsmooth
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
   npk   = getdim (cfile,'depth',cdtrue=cdep, kstatus=ierr)
+  IF ( ierr /= 0 ) THEN
+     npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=ierr)
+     IF ( ierr /= 0 ) THEN
+       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=ierr)
+        IF ( ierr /= 0 ) THEN 
+          PRINT *,' assume file with no depth'
+          npk=0
+        ENDIF
+     ENDIF
+  ENDIF
   nt    = getdim (cfile,'time',cdtrue=ctim)
+  
+  PRINT *, 'npiglo = ',npiglo
+  PRINT *, 'npjglo = ',npjglo
+  PRINT *, 'npk    = ',npk
+  PRINT *, 'nt     = ',nt
 
   ALLOCATE ( h(npk), v2d(npiglo,npjglo),iw(npiglo,npjglo), w2d(npiglo,npjglo), tim(nt) )
   nvars = getnvar(cfile)
@@ -131,19 +146,22 @@ PROGRAM cdfsmooth
   !
   DO jvar =1,nvars
      IF (cvarname(jvar) == 'nav_lon' .OR. &
-          cvarname(jvar) == 'nav_lat' ) THEN
+          cvarname(jvar) == 'nav_lat' .OR. cvarname(jvar) == 'none' ) THEN
         ! skip these variables
      ELSE
         spval=typvar(jvar)%missing_value
         print *,'VAR ',TRIM(cvarname(jvar)),' SVPAL=',spval
+        !STOP
         DO jt=1,nt
            DO jk=1,ipk(jvar)
+              PRINT *, jt,'/',nt,' and ',jk,'/',ipk(jvar)
               v2d(:,:) = getvar(cfile,cvarname(jvar),jk,npiglo,npjglo,ktime=jt)
               iw(:,:) = 1
-              WHERE ( v2d == spval ) iw =0
-              CALL filter(nfilter,v2d,iw,w2d)
-              w2d=w2d*iw  ! mask filtered data
-              ierr = putvar(ncout, id_varout(jvar) ,w2d, jk, npiglo, npjglo)
+              !WHERE ( v2d == spval ) iw =0
+              IF ( ncoup .NE. 0 ) CALL filter(nfilter,v2d,iw,w2d)
+              IF ( ncoup .EQ. 0 ) w2d=v2d
+              !w2d=w2d !*iw  ! mask filtered data
+              ierr = putvar(ncout, id_varout(jvar) ,w2d, jk, npiglo, npjglo, jt)
               !
            END DO
         END DO
@@ -312,7 +330,8 @@ CONTAINS
              END IF
           END DO
 !         ztmpy(ji,jmx)=zyy/zden
-          py(ji,jmx)=zyy/zden
+          py(ji,jmx)=0.
+          IF (zden .NE. 0.) py(ji,jmx)=zyy/zden
        END DO
     END DO
 !     py=0.5*(ztmpx + ztmpy )
