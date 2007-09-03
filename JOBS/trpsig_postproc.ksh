@@ -16,7 +16,7 @@ if [ ${here##*-} != TRPSIG ] ; then
    exit 1
 fi
 
-CONFIG=${here%-TRPSIG}
+CONFCASE=${here%-TRPSIG}
 
 # Fonction reorganize : put the files in the right position
 reorganize() {
@@ -25,7 +25,7 @@ for year in $( ls -d ???? ) ; do
  cd $year
 
  for f in *.bimg ; do
-   tmp=${f#${CONFIG}_yy????m??_}
+   tmp=${f#${CONFCASE}_yy????m??_}
    dir=${tmp%_*.bimg}
    if [ ! -d ../$dir ] ; then
       mkdir ../$dir
@@ -61,10 +61,10 @@ for stnam in [0-9][0-9]_[a-zA-Z]* ; do
   for d in ???? ; do
     printf "%4d " $(( d ))
     cd $d
-    bimgmoy4 ${CONFIG}_y*trpsig.bimg > /dev/null
-    mv moy.bimg ${CONFIG}_y${d}_${stnam}_trpsig.bimg
+    bimgmoy4 ${CONFCASE}_y*trpsig.bimg > /dev/null
+    mv moy.bimg ${CONFCASE}_y${d}_${stnam}_trpsig.bimg
    # (2.2) : translate results into txt file foreach section
-    bimgcaltrans ${CONFIG}_y${d}_${stnam}_trpsig.bimg > $TMPDIR/${CONFIG}_y${d}_${stnam}_trpsig.txt
+    bimgcaltrans ${CONFCASE}_y${d}_${stnam}_trpsig.bimg > $TMPDIR/${CONFCASE}_y${d}_${stnam}_trpsig.txt
     
     \rm [mv]*bimg
    cd ../
