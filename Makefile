@@ -35,7 +35,7 @@ cdfmoy: cdfio.o   cdfmoy.f90
 	$(F90) cdfmoy.f90 -o cdfmoy cdfio.o  $(FFLAGS)
 
 cdfmoy_mpp: cdfio.o   cdfmoy_mpp.f90
-	$(MPF90) cdfmoy_mpp.f90 -o cdfmoy_mpp cdfio.o  $(FFLAGS) -lmpi
+	$(MPF90) cdfmoy_mpp.f90 -o cdfmoy_mpp cdfio.o  $(FFLAGS) $(LMPI)
 
 cdfmoy_sal2_temp2: cdfio.o   cdfmoy_sal2_temp2.f90
 	$(F90) cdfmoy_sal2_temp2.f90 -o cdfmoy_sal2_temp2 cdfio.o  $(FFLAGS)
