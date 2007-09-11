@@ -142,8 +142,8 @@ PROGRAM cdfpsi_open
      zu(:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
      zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
      ! get e3 at level jk
-     e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo)
-     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
+     e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
+     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
      ! integrates vertically 
      ztrpu(:,:) = ztrpu(:,:) + zu(:,:)*e2u(:,:)*e3u(:,:)  ! zonal transport of each grid cell
      ztrpv(:,:) = ztrpv(:,:) + zv(:,:)*e1v(:,:)*e3v(:,:)  ! meridional transport of each grid cell

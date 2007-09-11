@@ -150,8 +150,8 @@ PROGRAM cdfvhst
      zus(:,:)= getvar(cfilet, 'vozous',  jk ,npiglo,npjglo)
 
      ! get e3v at level jk
-     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
-     e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo)
+     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
+     e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
      zwk(:,:) = zvt(:,:)*e1v(:,:)*e3v(:,:)
      zwks(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)
      zwkut(:,:) = zut(:,:)*e2u(:,:)*e3u(:,:)

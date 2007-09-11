@@ -105,7 +105,7 @@ PROGRAM cdfbn2
      zsal(:,:,iup) = getvar(cfilet, 'vosaline',  jk-1 ,npiglo,npjglo)
 
      gdepw(:,:) = getvar(coordzgr, 'gdepw', jk, 1,1)
-     e3w(:,:)   = getvar(coordzgr, 'e3w_ps', jk,npiglo,npjglo)
+     e3w(:,:)   = getvar(coordzgr, 'e3w_ps', jk,npiglo,npjglo,ldiom=.true.)
 
      zwk(:,:,iup) = eosbn2 ( ztemp,zsal,gdepw(1,1),e3w, npiglo,npjglo ,iup,idown)* zmask(:,:)
 

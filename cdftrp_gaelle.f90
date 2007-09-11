@@ -48,7 +48,6 @@ PROGRAM cdfsigtrp
   INTEGER                            :: imin, imax, jmin, jmax      !: working section limits
   INTEGER                            :: npts                        !: working section number of h-points
 
-  REAL(KIND=4), DIMENSION (1,1)                 :: ztmp         !: used to read gdepx(1,1,k,1)
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdept, gdepw !: depth of T and W points 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zs, zt       !: salinity and temperature from file 
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: tmpm, tmpz   !: temporary arrays
@@ -121,12 +120,8 @@ PROGRAM cdfsigtrp
   ALLOCATE ( zwtrpsum  (nsection, 1), zwtrpsump (nsection, 1), zwtrpsumm (nsection, 1) )
   ALLOCATE ( heightvein(nsection, 1)) 
   ! read gdept, gdepw : it is OK even in partial cells, as we never use the bottom gdep
-  DO jk=1,npk
-     ztmp=getvar(coordzgr,'gdept',jk,1,1)
-     gdept(jk)=ztmp(1,1)
-     ztmp=getvar(coordzgr,'gdepw',jk,1,1)
-     gdepw(jk)=ztmp(1,1)
-  END DO
+  gdept(:) = getvare3(coordzgr,'gdept',npk)
+  gdepw(:) = getvare3(coordzgr,'gdepw',npk)
     print *, 'gdept', gdept
 
 	
@@ -174,10 +169,10 @@ PRINT*,'ok'
            gdepu(:,jk) = gdept(jk)
 
            ! vertical metrics (PS case)
-           tmpm(:,:,1)=getvar(coordzgr,'e3u_ps',jk,1,npts, kimin=imin, kjmin=jmin+1)
+           tmpm(:,:,1)=getvar(coordzgr,'e3u_ps',jk,1,npts, kimin=imin, kjmin=jmin+1, ldiom=.true.)
            e3(:,jk)=tmpm(1,:,1)
-           tmpm(:,:,1)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin, kjmin=jmin+1)
-           tmpm(:,:,2)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin+1, kjmin=jmin+1)
+           tmpm(:,:,1)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin, kjmin=jmin+1, ldiom=.true.)
+           tmpm(:,:,2)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin+1, kjmin=jmin+1, ldiom=.true.)
            IF (jk >= 2 ) THEN
               DO ji=1,npts
                  gdepu(ji,jk)= gdepu(ji,jk-1) + MIN(tmpm(1,ji,1), tmpm(1,ji,2))
@@ -212,10 +207,10 @@ PRINT*,'ok'
            gdepu(:,jk) = gdept(jk)
 
            ! vertical metrics (PS case)
-           tmpz(:,:,1)=getvar(coordzgr,'e3v_ps',jk, npts, 1, kimin=imin+1, kjmin=jmin)
+           tmpz(:,:,1)=getvar(coordzgr,'e3v_ps',jk, npts, 1, kimin=imin+1, kjmin=jmin, ldiom=.true.)
            e3(:,jk)=tmpz(:,1,1)
-           tmpz(:,:,1)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin)
-           tmpz(:,:,2)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin+1)
+           tmpz(:,:,1)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin, ldiom=.true.)
+           tmpz(:,:,2)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin+1, ldiom=.true.)
            IF (jk >= 2 ) THEN
               DO ji=1,npts
                  gdepu(ji,jk)= gdepu(ji,jk-1) + MIN(tmpz(ji,1,1), tmpz(ji,1,2))

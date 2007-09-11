@@ -221,7 +221,7 @@ PROGRAM cdfmxlhcsc
      zs(:,:)  = getvar(cfilet, 'vosaline',jk ,npiglo,npjglo)
      mask(:,:)= getvar(cmask,  'tmask',   jk ,npiglo,npjglo)
      ! Get e3 at level jk (ps...)
-     e3(:,:)  = getvar(coordzgr,'e3t_ps',  jk ,npiglo,npjglo)
+     e3(:,:)  = getvar(coordzgr,'e3t_ps',  jk ,npiglo,npjglo, ldiom=.true.)
      ! e3 is used as a flag for the mixed layer; it is 0 outside the mixed layer
      e3(:,:)=MAX(0.,MIN(e3,hmld-gdepw(jk)) + MIN(e3,gdepw(jk)+e3-hmin)-e3)
 

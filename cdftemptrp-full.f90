@@ -47,7 +47,6 @@ PROGRAM cdftemptrp_full
   INTEGER                            :: imin, imax, jmin, jmax      !: working section limits
   INTEGER                            :: npts                        !: working section number of h-points
 
-  REAL(KIND=4), DIMENSION (1,1)                :: ztmp         !: used to read gdepx(1,1,k,1)
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdept, gdepw !: depth of T and W points 
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: e3t          !: depth of T and W points 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zt           !: temperature from file 

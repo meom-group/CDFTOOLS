@@ -209,8 +209,8 @@ PROGRAM cdftransportiz
         ENDIF
 
         ! get e3u, e3v  at level jk
-        e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
-        e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo)
+        e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
+        e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
 
         zwku (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
         zwkv (:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)

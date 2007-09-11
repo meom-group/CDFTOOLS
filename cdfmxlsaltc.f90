@@ -28,7 +28,6 @@ PROGRAM cdfmxlsaltc
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e3,  zs   !:  metrics, salinity
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmxl              !:  mxl depth
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask             !:  npiglo x npjglo
-  REAL(KIND=4), DIMENSION (1,1)                ::  ztmp              !:  temporary array to read gdep
   REAL(KIND=4),DIMENSION(:), ALLOCATABLE       ::  gdepw             !:  
 
   REAL(KIND=8), PARAMETER :: rprho0=1020., rpcp=4000.
@@ -94,9 +93,7 @@ PROGRAM cdfmxlsaltc
   ierr=putvar1d(ncout,tim,1,'T')
 
   ! Read vertical depth at w point
-  DO jk=1,npk
-     ztmp=getvar(coordzgr,'gdepw',jk,1,1) ; gdepw(jk)=ztmp(1,1)
-  END DO
+  gdepw(:) = getvare3(coordzgr,'gdepw',npk)
 
   ! Read Mixed Layer Depth in the gridT file
   ! Note that it is usually a mean value (5-day mean for instance). Therefore,
@@ -112,7 +109,7 @@ PROGRAM cdfmxlsaltc
      zmask(:,:)=getvar(cmask,'tmask',jk,npiglo,npjglo)
 
      ! get e3 at level jk ( ps...)
-     e3(:,:) = getvar(coordzgr, 'e3t_ps', jk,npiglo,npjglo)
+     e3(:,:) = getvar(coordzgr, 'e3t_ps', jk,npiglo,npjglo, ldiom=.true.)
 
      !  e3 is used as a flag for the mixed layer; It is 0 outside the mixed layer
      e3(:,:)=MAX ( 0., MIN(e3,zmxl-gdepw(jk) ) )

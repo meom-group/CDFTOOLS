@@ -31,7 +31,7 @@ PROGRAM cdfw
   REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  :: e3u,e3v,e3t         !:   ""
   REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: glamt, gphit        !: longitude latitude
   REAL(kind=4), DIMENSION(:)  , ALLOCATABLE  :: gdepw               !: 
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: un, vn, ztmp
+  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: un, vn
   REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  ::  hdivn
   REAL(kind=4), DIMENSION(:,:,:), ALLOCATABLE  :: wn  !: vertical velocity on the top
   !                                              !: and bottom of a cell.
@@ -85,7 +85,7 @@ PROGRAM cdfw
   ALLOCATE ( e3u(npiglo,npjglo) ,e3v(npiglo,npjglo) ,e3t(npiglo,npjglo) )
   ALLOCATE ( glamt(npiglo,npjglo), gphit(npiglo,npjglo)  )
   ALLOCATE ( un(npiglo,npjglo)  , vn(npiglo,npjglo) ,hdivn(npiglo,npjglo) )
-  ALLOCATE ( wn(npiglo,npjglo,2) , gdepw(npk) ,ztmp(1,1))
+  ALLOCATE ( wn(npiglo,npjglo,2) , gdepw(npk) )
 
   ! Read the metrics from the mesh_hgr file
   e2u=  getvar(chgr, 'e2u', 1,npiglo,npjglo)
@@ -98,10 +98,7 @@ PROGRAM cdfw
   gphit = getvar(chgr, 'gphit', 1,npiglo,npjglo)
 
   ! Read the depth of the w points (in the file, it is not a vector but a 1x1xnpk array)
-  DO jk= 1, npk
-     ztmp= getvar(czgr,'gdepw',jk,1,1)
-     gdepw(jk)=ztmp(1,1)
-  END DO
+  gdepw(:) = getvare3(czgr,'gdepw',npk)
 
   ! create output fileset
   ncout =create(cfileout, cfilu, npiglo,npjglo,npk,cdep='depthw')
@@ -123,9 +120,9 @@ PROGRAM cdfw
      vn(:,:) =  getvar(cfilv, cvarv, jk ,npiglo,npjglo)
 
      ! e3 metrics at level jk ( Partial steps)
-     e3u(:,:) = getvar(czgr,'e3u_ps',jk ,npiglo,npjglo) 
-     e3v(:,:) = getvar(czgr,'e3v_ps',jk ,npiglo,npjglo) 
-     e3t(:,:) = getvar(czgr,'e3t_ps',jk ,npiglo,npjglo) 
+     e3u(:,:) = getvar(czgr,'e3u_ps',jk ,npiglo,npjglo, ldiom=.true.) 
+     e3v(:,:) = getvar(czgr,'e3v_ps',jk ,npiglo,npjglo, ldiom=.true.) 
+     e3t(:,:) = getvar(czgr,'e3t_ps',jk ,npiglo,npjglo, ldiom=.true.) 
 
      ! Compute divergence :
      DO jj = 2, npjglo -1

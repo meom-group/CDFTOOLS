@@ -126,7 +126,7 @@ PROGRAM cdfmocatl
      zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
 
      ! get e3v at level jk ( ps...)
-     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
+     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
      
      ! integrates 'zonally' (along i-coordinate)
      DO ji=1,npiglo

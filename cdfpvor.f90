@@ -194,7 +194,7 @@ PROGRAM cdfpvor
         WHERE(ztemp(:,:,idown) == 0 ) tmask = 0
         zsal(:,:,iup) = getvar(cfilet, 'vosaline',  jk-1 ,npiglo,npjglo,ktime=jt)
         IF (lprint) print *, ' read temperature and salinity  '
-        e3w(:,:)   = getvar(coordzgr, 'e3w_ps', jk,npiglo, npjglo )
+        e3w(:,:)   = getvar(coordzgr, 'e3w_ps', jk,npiglo, npjglo ,ldiom=.true.)
         WHERE (e3w == 0 ) e3w = 1.
         IF (lprint) print *, ' read   e3w_ps in file  ' , trim(coordzgr)
 

@@ -130,7 +130,7 @@ PROGRAM cdfmhst
      zvs(:,:)= getvar(cfilet, 'vomevs',  jk ,npiglo,npjglo)
 
      ! get e3v at level jk
-     e3v(:,:)  = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
+     e3v(:,:)  = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
      zwk(:,:)  = zvt(:,:)*e1v(:,:)*e3v(:,:)
      zwks(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)
 

@@ -46,7 +46,7 @@ PROGRAM cdfets
        &                                   zmask, e1u, e2v, e3w, ff  !: mask, metrics, and coriolis.
   REAL(KIND=4) ,DIMENSION(1)                    ::  tim
   REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE  :: buoy, dbu,dbv, zlda, M2, ets !: Double precision
-  REAL(KIND=4), DIMENSION (1,1)                 ::    gdepw   !: depth of w level here a 1x1 array to 
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE  :: gdepw   !: depth of w level here a 1x1 array to 
   !  be in agreement with mesh_zgr.nc
 
   CHARACTER(LEN=80) :: cfilet ,cfileout='ets.nc'                       !:
@@ -106,6 +106,7 @@ PROGRAM cdfets
   ALLOCATE (zn2(npiglo,npjglo), e1u(npiglo,npjglo), e2v(npiglo,npjglo) ,e3w(npiglo,npjglo))
   ALLOCATE (dbu(npiglo,npjglo), dbv(npiglo,npjglo),zlda(npiglo,npjglo) )
   ALLOCATE (buoy(npiglo,npjglo), M2(npiglo,npjglo),ets(npiglo,npjglo) ,ff(npiglo,npjglo) )
+  ALLOCATE ( gdepw(npk) )
 
   ! create output fileset
   ncout =create(cfileout, cfilet, npiglo,npjglo,npk)
@@ -123,6 +124,7 @@ PROGRAM cdfets
   e1u(:,:) = getvar(coordhgr, 'e1u', 1,npiglo,npjglo)
   e2v(:,:) = getvar(coordhgr, 'e2v', 1,npiglo,npjglo)
   ff(:,:)  = getvar(coordhgr, 'ff', 1,npiglo,npjglo)
+  gdepw(:) = getvare3(coordzgr,'gdepw',npk)
 
   ! eliminates zeros (which corresponds to land points where no procs were used)
   WHERE ( e1u == 0 ) 
@@ -162,12 +164,11 @@ PROGRAM cdfets
      WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
 
      ! get depthw and e3w at level jk
-     gdepw(:,:) = getvar(coordzgr, 'gdepw',jk ,1,1)
-     e3w(:,:)   = getvar(coordzgr, 'e3w_ps', jk,npiglo,npjglo)
+     e3w(:,:)   = getvar(coordzgr, 'e3w_ps', jk,npiglo,npjglo,ldiom=.true.)
      WHERE(e3w == 0. ) e3w = 0.1     ! avoid 0's in e3w (land points anyway)
 
         ! zwk will hold N2 at W level
-        zwk(:,:,iup) = eosbn2 ( ztemp,zsal,gdepw(1,1),e3w,npiglo,npjglo, iup, idown )   ! not masked 
+        zwk(:,:,iup) = eosbn2 ( ztemp,zsal,gdepw(jk),e3w,npiglo,npjglo, iup, idown )   ! not masked 
         WHERE( zwk(:,:,iup) < 0 ) zwk(:,:,iup) = 0.                         ! when < 0 set N2 = 0
         WHERE( zmask == 0 ) zwk(:,:,iup) = spval                            ! set to spval on land
 

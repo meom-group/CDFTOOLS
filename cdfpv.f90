@@ -153,7 +153,7 @@ PROGRAM cdfpv
      zsal(:,:)  =   getvar(cfilet,'vosaline',jk,npiglo,npjglo)
      un  (:,:)  =   getvar(cfileu,'vozocrtx',jk,npiglo,npjglo)
      vn  (:,:)  =   getvar(cfilev,'vomecrty',jk,npiglo,npjglo)
-     e3w (:,:)  =   getvar(coordzgr,'e3w_ps', jk, npiglo,npjglo)
+     e3w (:,:)  =   getvar(coordzgr,'e3w_ps', jk, npiglo,npjglo, ldiom=.true.)
      WHERE (e3w == 0 ) e3w = 1.
 
      ! compute the mask at level jk

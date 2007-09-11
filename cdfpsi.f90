@@ -121,13 +121,13 @@ PROGRAM cdfpsi
      PRINT *,'level ',jk
      IF ( coption == 'V' ) THEN
         zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
-        e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
+        e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
         ztrpv(:,:) = ztrpv(:,:) + zv(:,:)*e1v(:,:)*e3v(:,:)  ! meridional transport of each grid cell
      ELSE
      ! Get zonal velocity  at jk
         zu(:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
      ! get e3v at level jk
-        e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo)
+        e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
      ! integrates vertically 
         ztrpu(:,:) = ztrpu(:,:) + zu(:,:)*e2u(:,:)*e3u(:,:)  ! zonal transport of each grid cell
      ENDIF

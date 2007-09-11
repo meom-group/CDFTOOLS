@@ -233,7 +233,7 @@ PROGRAM cdfcensus
   DO jk=k1,k2
      t(:,:)=getvar(cfilTS, 'votemper',  jk ,npiglo, npjglo)
      s(:,:)=getvar(cfilTS, 'vosaline',  jk ,npiglo, npjglo)
-     e3t_ps(:,:) = getvar('mesh_zgr.nc','e3t_ps',jk,npiglo,npjglo)
+     e3t_ps(:,:) = getvar(czgr,'e3t_ps',jk,npiglo,npjglo,ldiom=.true.)
 
      DO ji=i1,i2
         DO jj=j1,j2

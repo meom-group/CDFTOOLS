@@ -695,7 +695,7 @@ CONTAINS
 
   END FUNCTION getvarname
 
-  FUNCTION  getvar (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime)
+  FUNCTION  getvar (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime,ldiom)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  getvar  ***
     !!
@@ -715,12 +715,15 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: klev           ! Optional variable. If missing 1 is assumed
     INTEGER, OPTIONAL, INTENT(in) :: kimin,kjmin    ! Optional variable. If missing 1 is assumed
     INTEGER, OPTIONAL, INTENT(in) :: ktime          ! Optional variable. If missing 1 is assumed
+    LOGICAL, OPTIONAL, INTENT(in) :: ldiom          ! Optional variable. If missing false is assumed
     REAL(KIND=4), DIMENSION(kpi,kpj) :: getvar      ! 2D REAL 4 holding variable field at klev
 
     !! * Local variables
     INTEGER, DIMENSION(4) :: istart, icount
     INTEGER :: ncid, id_var
     INTEGER :: istatus, ilev, imin, jmin, itime, ilog
+    LOGICAL :: lliom=.false.
+    CHARACTER(LEN=80) :: clvar
 
     LOGICAL :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
     REAL(KIND=4) :: sf=1., ao=0.        !: Scale factor and add_offset
@@ -750,6 +753,14 @@ CONTAINS
        itime=1
     ENDIF
 
+    IF (PRESENT(ldiom) ) THEN
+       lliom=ldiom
+    ELSE
+       lliom=.false.
+    ENDIF
+
+    clvar=cdvar
+
     ! Must reset the flags to false for every call to getvar
     llog=.FALSE.
     lsf=.FALSE.
@@ -765,9 +776,21 @@ CONTAINS
     icount(2)=kpj
     icount(3)=1
     icount(4)=1
-
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,ncid) )
-    CALL ERR_HDL(NF90_INQ_VARID ( ncid,cdvar,id_var))
+    IF ( lliom) THEN  ! try to detect if input file is a zgr IOM file, looking for e3t_0
+      istatus=NF90_INQ_VARID( ncid,'e3t_0', id_var)
+      IF ( istatus == NF90_NOERR ) THEN
+        ! iom file , change names
+      SELECT CASE ( clvar )
+        CASE ('e3t_ps')  ; clvar='e3t'
+        CASE ('e3u_ps')  ; clvar='e3u'
+        CASE ('e3v_ps')  ; clvar='e3v'
+        CASE ('e3w_ps')  ; clvar='e3w'
+      END SELECT
+      ENDIF
+    ENDIF
+
+    CALL ERR_HDL(NF90_INQ_VARID ( ncid,clvar,id_var))
 
     istatus=NF90_INQUIRE_ATTRIBUTE(ncid,id_var,'missing_value')
     IF (istatus == NF90_NOERR ) THEN
@@ -801,7 +824,7 @@ CONTAINS
 
     istatus=NF90_GET_VAR(ncid,id_var,getvar, start=istart,count=icount)
     IF ( istatus /= 0 ) THEN
-       PRINT *,' Problem in getvar for ', TRIM(cdvar)
+       PRINT *,' Problem in getvar for ', TRIM(clvar)
        CALL ERR_HDL(istatus)
        STOP
     ENDIF
@@ -1104,13 +1127,36 @@ CONTAINS
     INTEGER, DIMENSION(4) :: istart, icount
     INTEGER :: ncid, id_var
     INTEGER :: istatus
+    CHARACTER(LEN=80) :: clvar                      ! local name for cdf var (modified)
 
     istart(:) = 1
     icount(:) = 1
     icount(3)=kk
+    clvar=cdvar
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
-    istatus=NF90_INQ_VARID ( ncid,cdvar,id_var)
+    ! check for IOM style mesh_zgr or coordinates :
+    ! IOIPSL (x_a=y_a=1)               IOM 
+    ! gdept(time,z,y_a,x_a)            gdept_0(t,z)
+    ! gdepw(time,z,y_a,x_a)            gdepw_0(t,z)
+    !   e3t(time,z,y_a,x_a)            e3t_0(t,z)
+    !   e3w(time,z,y_a,x_a)            e3w_0(t,z)
+    istatus=NF90_INQ_VARID ( ncid,'e3t_0',id_var)
+    IF ( istatus == NF90_NOERR) THEN
+     icount(1)=kk ; icount(3)=1
+     SELECT CASE (clvar)
+        CASE ('gdepw') 
+           clvar='gdepw_0'
+        CASE ('gdept')
+           clvar='gdept_0'
+        CASE ('e3t')
+           clvar='e3t_0'
+        CASE ('e3w')
+           clvar='e3w_0'
+      END SELECT
+    ENDIF
+
+    istatus=NF90_INQ_VARID ( ncid,clvar,id_var)
     istatus=NF90_GET_VAR(ncid,id_var,getvare3,start=istart,count=icount)
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvare3 for ', TRIM(cdvar)

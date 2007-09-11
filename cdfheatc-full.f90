@@ -33,8 +33,7 @@ PROGRAM cdfheatc_full
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::  e3
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, zv   !:  metrics, velocity
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask             !:   npiglo x npjglo
-  REAL(KIND=4), DIMENSION (1,1)                ::  ztmp              !:   temporary array to read gdep
-  REAL(KIND=4)                                 ::  gdep              !:  depth at current level
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::  gdep              !:  depth 
 
   REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf
   CHARACTER(LEN=80) :: cfilev , cdum
@@ -103,6 +102,7 @@ PROGRAM cdfheatc_full
   ALLOCATE ( zv(npiglo,npjglo) )
   ALLOCATE ( e3(npk) )
   ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo) )
+  ALLOCATE ( gdep(npk) )
   SELECT CASE (TRIM(cvartype))
   CASE ( 'T' )
      ce1='e1t'
@@ -142,6 +142,7 @@ PROGRAM cdfheatc_full
   e1(:,:) = getvar(coordhgr, ce1, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
   e2(:,:) = getvar(coordhgr, ce2, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
   e3(:) = getvare3(coordzgr,ce3,npk)  
+  gdep(:) = getvare3(coordzgr,cdep,npk)
 
   zvol=0.d0
   zsum=0.d0
@@ -150,8 +151,6 @@ PROGRAM cdfheatc_full
      ! Get velocities v at ik
      zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
      zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
-     ztmp= getvar(coordzgr,cdep,ik,1,1)
-     gdep=ztmp(1,1)
 !    zmask(:,npjglo)=0.
      
      zsurf=sum(e1 * e2 * zmask)
@@ -160,9 +159,9 @@ PROGRAM cdfheatc_full
      zsum2d=sum(zv*e1*e2*e3(jk)*zmask)
      zsum=zsum+zsum2d
      IF (zvol2d /= 0 )THEN
-        PRINT *, ' Heat Content  at level ',ik,'(',gdep,' m) ',rprho0*rpcp*zsum2d, 'surface = ',zsurf/1.e6,' km^2'
+        PRINT *, ' Heat Content  at level ',ik,'(',gdep(ik),' m) ',rprho0*rpcp*zsum2d, 'surface = ',zsurf/1.e6,' km^2'
      ELSE
-        PRINT *, ' No points in the water at level ',ik,'(',gdep,' m) '
+        PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
      ENDIF
  
   END DO
