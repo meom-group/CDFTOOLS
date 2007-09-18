@@ -13,6 +13,10 @@ set -x
 # added to the PATH.
 
 #-------------------------------------------------------------------------------
+#  $Rev$
+#  $Date$
+#  $Id$
+#-------------------------------------------------------------------------------
 #  Define some functions to get/put file from/to gaya (can be easily customized)
 
 # rapatrie : Usage: rapatrie  remote_file directory local_file
