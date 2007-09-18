@@ -667,11 +667,17 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
 #^^^^^^^^^^^^^^^^^^^^
   if [ $MAXMOC == 1  ] ; then
    f=moc.nc
-   rapatrie ${CONFCASE}_y${YEAR}_MOC.nc $DIAGS $f
+   rapatrie ${CONFCASE}_y${YEAR}_MOC.nc $MEANY $f
+   # check if we have a NATL config or a ORCA config
+   atl=$( echo 1 | awk '{ ii=index (config,"NATL") ; print ii  }' config=$CONFIG )
 
    # Ascii output file
    fmaxmoc=${CONFCASE}_y${YEAR}_minmaxmoc.txt
    echo $YEAR > $fmaxmoc
+   fmaxmoc40=${CONFIG}-${CASE}_y${YEAR}_maxmoc40.txt
+   echo $YEAR > $fmaxmoc40
+
+   if (( atl == 0 )) ; then
    # GLO
    printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo 20 60 500 2000 | grep Maximum >> $fmaxmoc
    printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo -40 30 2000 5500 | grep Minimum >> $fmaxmoc
@@ -688,9 +694,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    expatrie $fmaxmoc $DIAGS $fmaxmoc
 
    # Max and Min of MOC at some specific latitudes
-   fmaxmoc40=${CONFIG}-${CASE}_y${YEAR}_maxmoc40.txt
-
-   echo $YEAR > $fmaxmoc40
    # GLO  MAX at 40 N and 30S
    printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo 40 40 500 2000 | grep Maximum >> $fmaxmoc40
    printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo -30 -30 500  5500 | grep Maximum >> $fmaxmoc40
@@ -703,6 +706,22 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    printf "%s" 'Aus ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo -50 -50 0 2000   | grep Maximum >> $fmaxmoc40
 
    expatrie $fmaxmoc40 $DIAGS $fmaxmoc40
+
+   else    # NATL configuration
+   # GLO
+   printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo 20 60 500 2000 | grep Maximum >> $fmaxmoc
+   printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo -40 30 2000 5500 | grep Minimum >> $fmaxmoc
+   expatrie $fmaxmoc $DIAGS $fmaxmoc
+
+   # Max and Min of MOC at some specific latitudes
+   # GLO  MAX at 40 N and 30S
+   printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo 40 40 500 2000 | grep Maximum >> $fmaxmoc40
+   printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo -15 -15 500  5500 | grep Maximum >> $fmaxmoc40
+
+   expatrie $fmaxmoc40 $DIAGS $fmaxmoc40
+
+   fi
+
 
 #### Append to matlab file
    # maxmoc
