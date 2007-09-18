@@ -3,7 +3,8 @@
 #    $Date$
 # --------------------------------------------------------------
 #
-NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
+#NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
+NCDF = -I/usr/local/netcdf-3.6.1/ifort/include -L /usr/local/netcdf-3.6.1/ifort/lib/ -lnetcdf
  
 F90=ifort
 MPF90=mpif90
