@@ -720,6 +720,8 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
 
    expatrie $fmaxmoc40 $DIAGS $fmaxmoc40
 
+   # clean for next year 
+   \rm moc.nc 
    fi
 
 
