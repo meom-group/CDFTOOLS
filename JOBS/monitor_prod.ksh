@@ -17,41 +17,11 @@ set -x
 #  $Date$
 #  $Id$
 #-------------------------------------------------------------------------------
+# define some config dependent variable 
+. ./config_def.ksh    # can be a link
 #  Define some functions to get/put file from/to gaya (can be easily customized)
 
-# rapatrie : Usage: rapatrie  remote_file directory local_file
-#   if local_file already here do nothing, else mfget it from gaya,
-#   directory/remote_file
-rapatrie() { if [ ! -f $3 ] ; then mfget $2/$1 $3 ; else echo $3 is already \
-            downloaded ; fi ; }
-
-# expatrie : Usage:  expatrie local_file directory remote_file
-#   put local file on gaya in directory/remote_file
-#
-expatrie() { mfput $1 $2/$3 ; }
-
-# cptoweb : Usage: cptoweb  file.mtl
-#    rcp the matlab file to the corresponding DATA dir of the website
-cptoweb() { rcp $1 \
-       apache@meolipc.hmg.inpg.fr:web/DRAKKAR/$CONFIG/$CONFCASE/DATA/ ; }
-
-# chkfile : Usage: chkfile gaya_file
-#    check if a file exists on gaya, return present or absent.
-chkfile() { rsh gaya " if [ -f $1 ] ; then echo present ;\
-                       else echo absent ; fi " ; }
-
-# chkdirg  : Usage: chkdirg gaya_directory
-#    check the existence of a directory on gaya. Create it if not present
-chkdirg() { rsh gaya " if [ ! -d $1 ] ; then mkdir $1 ; fi " ; }
-
-# chkdirw  : Usage: chkdirw web_site_directory
-#   check the existence of a dir. on the web site. Create it if not present
-chkdirw() { rsh meolipc.hmg.inpg.fr -l apache " if [ ! -d web/DRAKKAR/$1 ] ; \
-            then mkdir web/DRAKKAR/$1 ; fi " ; }
-
-# chkdir  : Usage: chkdir local_dir 
-#   check the existence of a directory. Create it if not present
-chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
+. ./function_def.ksh  # can be a link
 
 #------------------------------------------------------------------------------
 # directory name frequently used:
@@ -60,7 +30,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
   MEANY=$CONFIG/${CONFCASE}-MEAN/$YEAR
   SDIRY=$CONFIG/${CONFCASE}-S/$YEAR
   DIAGS=${CONFIG}/${CONFCASE}-DIAGS
-  MONITOR=${CONFIG}/${CONFCASE}-MONITORTEST
   IDIR=$CONFIG/${CONFIG}-I
 
   # on zahir
@@ -68,13 +37,7 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
 
   # check existence of some required directories
   # ... on gaya
-  chkdirg $MONITOR
   chkdirg $DIAGS
-
-  # ... on the web site
-  chkdirw $CONFIG/
-  chkdirw $CONFIG/$CONFCASE
-  chkdirw $CONFIG/$CONFCASE/DATA/
 
 #------------------------------------------------------------------------------
 # PATH:
@@ -234,45 +197,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    expatrie  $fsshmean  $DIAGS $fsshmean
    expatrie  $ftmean  $DIAGS $ftmean
    expatrie  $fsmean  $DIAGS $fsmean
-   
-####  Append corresponding line to the matlab files. If it does not exists, create it with header
-   # TMEAN
-   if [ $(chkfile $MONITOR/${CONFCASE}_TMEAN.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_TMEAN.mtl $MONITOR ${CONFCASE}_TMEAN.mtl
-   else
-    # first time : header
-    dep=$( cat $ftmean | grep -e 'Mean value at level' | awk '{ printf "%10.1f" ,  $7 }' )
-    echo 0000 0000 0000 $dep > ${CONFCASE}_TMEAN.mtl
-   fi
-   year=$( head -1 $ftmean )
-   mean=$( cat $ftmean | grep -e 'over' | awk '{ printf "%10.4f" ,  $6 }' )
-   tem=$( cat $ftmean | grep  -e 'Mean value at level' | awk '{ printf "%10.4f" ,  $9 }' )
-   sshmean=$( cat $fsshmean | grep ocean | awk '{ printf " %8.4f " , $6 }' )
-
-   echo $year $sshmean $mean $tem >>  ${CONFCASE}_TMEAN.mtl
-   expatrie ${CONFCASE}_TMEAN.mtl  $MONITOR ${CONFCASE}_TMEAN.mtl
- 
-   # SMEAN
-   if [ $(chkfile $MONITOR/${CONFCASE}_SMEAN.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_SMEAN.mtl $MONITOR ${CONFCASE}_SMEAN.mtl
-   else
-    # first time
-    dep=$( cat $fsmean | grep -e 'Mean value at level' | awk '{ printf "%10.1f" ,  $7 }' )
-    echo 0000 0000 0000 $dep > ${CONFCASE}_SMEAN.mtl
-   fi
-   year=$( head -1 $fsmean )
-   mean=$( cat $fsmean | grep -e 'over' | awk '{ printf "%10.4f" ,  $6 }' )
-   sal=$( cat $fsmean | grep  -e 'Mean value at level' | awk '{ printf "%10.4f" ,  $9 }' )
- 
-   echo $year $sshmean $mean $sal >>  ${CONFCASE}_SMEAN.mtl
-   expatrie ${CONFCASE}_SMEAN.mtl  $MONITOR ${CONFCASE}_SMEAN.mtl
- 
-#### cp to web site
-   cptoweb ${CONFCASE}_TMEAN.mtl
-   cptoweb ${CONFCASE}_SMEAN.mtl
- 
-   # clean up a little bit
-   \rm ${CONFCASE}_[TS]MEAN.mtl
   fi
 
 
@@ -303,34 +227,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    cdficediags ${CONFCASE}_y${YEAR}m09_icemod.nc  >> $fice
  
    expatrie $fice $DIAGS $fice 
- 
-#### Append corresponding lines to matlab file for time series
-   #ice
-   month='02 03 08 09 '
-   if [ $(chkfile $MONITOR/${CONFCASE}_ice.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_ice.mtl $MONITOR ${CONFCASE}_ice.mtl
-   else
-    # first time: create file and add header
-    echo 0000 $month  $month $month $month $month $month > ${CONFCASE}_ice.mtl
-   fi
- 
-   year=$( head -1 $fice | awk '{ print $2}' )
-   nvol=$(  cat $fice | grep -e 'NVolume' | grep -v NVolumet | awk '{ printf "%.0f  ", $4}' )
-   svol=$(  cat $fice | grep -e 'SVolume' | grep -v SVolumet | awk '{ printf "%.0f  ", $4}' )
-   narea=$(  cat $fice | grep -e 'NArea' | awk '{ printf "%.0f  ", $4}' )
-   sarea=$(  cat $fice | grep -e 'SArea' | awk '{ printf "%.0f  ", $4}' )
-   nextent=$(  cat $fice | grep -e 'NExtend' | awk '{ printf "%.0f  ", $4}' )
-   sextent=$(  cat $fice | grep -e 'SExtend' | awk '{ printf "%.0f  ", $4}' )
- 
-   echo $year $nvol $svol $narea $sarea $nextent $sextent >> ${CONFCASE}_ice.mtl
- 
-   expatrie ${CONFCASE}_ice.mtl  $MONITOR ${CONFCASE}_ice.mtl
- 
-#### cp to web site
-   cptoweb ${CONFCASE}_ice.mtl
- 
-   # clean up a little bit
-   \rm ${CONFCASE}_ice.mtl
   fi
 
 # Ice Volume area and extent for all months: input file : icemod, and mesh_mask
@@ -365,33 +261,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
  
    expatrie $fice $DIAGS $fice 
  
-#### Append corresponding lines to matlab file for time series
-   #ice
-   month='01 02 03 04 05 06 07 08 09 10 11'
-   if [ $(chkfile $MONITOR/${CONFCASE}_icemonth.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_icemonth.mtl $MONITOR ${CONFCASE}_icemonth.mtl
-   else
-    # first time: create file and add header
-    echo 0000 $month  $month $month $month $month $month > ${CONFCASE}_icemonth.mtl
-   fi
- 
-   year=$( head -1 $fice | awk '{ print $2}' )
-   nvol=$(  cat $fice | grep -e 'NVolume' | grep -v NVolumet | awk '{ printf "%.0f  ", $4}' )
-   svol=$(  cat $fice | grep -e 'SVolume' | grep -v SVolumet | awk '{ printf "%.0f  ", $4}' )
-   narea=$(  cat $fice | grep -e 'NArea' | awk '{ printf "%.0f  ", $4}' )
-   sarea=$(  cat $fice | grep -e 'SArea' | awk '{ printf "%.0f  ", $4}' )
-   nextent=$(  cat $fice | grep -e 'NExtend' | awk '{ printf "%.0f  ", $4}' )
-   sextent=$(  cat $fice | grep -e 'SExtend' | awk '{ printf "%.0f  ", $4}' )
- 
-   echo $year $nvol $svol $narea $sarea $nextent $sextent >> ${CONFCASE}_icemonth.mtl
- 
-   expatrie ${CONFCASE}_icemonth.mtl  $MONITOR ${CONFCASE}_icemonth.mtl
- 
-#### cp to web site
-   cptoweb ${CONFCASE}_icemonth.mtl
- 
-   # clean up a little bit
-   \rm ${CONFCASE}_icemonth.mtl
   fi
 
 # Vertical T-S profiles off the coast of Portugal for Gib monitoring: input file: gridT, mesh_mask
@@ -416,12 +285,8 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
  
    expatrie $ftgib $DIAGS $ftgib
    expatrie $fsgib $DIAGS $fsgib
- 
-#### Append corresponding lines to matlab file for time series
-   #GIB
-   if [ $(chkfile $MONITOR/${CONFCASE}_gib.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_gib.mtl $MONITOR ${CONFCASE}_gib.mtl
-   else
+
+   if [ $(chkfile $DIAGS/LEVITUS_y0000_TGIB.txt ) == absent ] ; then
     # first time : Create header with Levitus equivalent
     # requires  LEVITUS 'same' diags (from the ANNUAL mean )
     levitus=Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
@@ -430,29 +295,7 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
     cdfmean $levitus  vosaline T $GIBWIN  0 0  >  LEVITUS_y0000_SGIB.txt
     expatrie  LEVITUS_y0000_TGIB.txt $DIAGS  LEVITUS_y0000_TGIB.txt
     expatrie  LEVITUS_y0000_SGIB.txt $DIAGS  LEVITUS_y0000_SGIB.txt
-
-    dep=$( cat  LEVITUS_y0000_TGIB.txt | grep 'Mean value at level' | awk '{ printf "%8.1f",$7 }' )
-    Tlev=$( cat LEVITUS_y0000_TGIB.txt | grep 'Mean value at level' | awk '{ printf "%8.4f", $9 }' )
-    Slev=$( cat LEVITUS_y0000_SGIB.txt | grep 'Mean value at level' | awk '{ printf "%8.4f", $9 }' )
- 
-    echo 0000 $dep > ${CONFCASE}_gib.mtl
-    echo 0000 $Tlev >> ${CONFCASE}_gib.mtl
-    echo 0000 $Slev >> ${CONFCASE}_gib.mtl
    fi
- 
-    year=$( head -1 $ftgib )
-    Tcur=$( cat $ftgib | grep 'Mean value at level' | awk '{ printf "%8.4f", $9 }' )
-    Scur=$( cat $fsgib | grep 'Mean value at level' | awk '{ printf "%8.4f", $9 }' )
-    echo $year $Tcur >> ${CONFCASE}_gib.mtl
-    echo $year $Scur >> ${CONFCASE}_gib.mtl
- 
-    expatrie  ${CONFCASE}_gib.mtl $MONITOR  ${CONFCASE}_gib.mtl
- 
-#### cp to web site
-   cptoweb ${CONFCASE}_gib.mtl
- 
-   # clean up a little bit
-   \rm ${CONFCASE}_gib.mtl
   fi
 
 # El nino indexes : Input files : monthly gridT,  mesh mask
@@ -489,21 +332,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    done
  
    expatrie $fnino $DIAGS $fnino
- 
-#### Append corresponding lines to matlab file for time series
-   #NINO
-   if [ $(chkfile $MONITOR/${CONFCASE}_nino.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_nino.mtl $MONITOR ${CONFCASE}_nino.mtl
-   fi
- 
-   cat $fnino >> ${CONFCASE}_nino.mtl
-   expatrie  ${CONFCASE}_nino.mtl $MONITOR  ${CONFCASE}_nino.mtl
- 
-#### cp to web site
-   cptoweb ${CONFCASE}_nino.mtl
- 
-   # clean up a little bit
-   \rm ${CONFCASE}_nino.mtl
   fi
 
 # Transport: Input files: VT, gridU, gridV, mesh mask, section.dat
@@ -536,29 +364,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    mv -f tmp $fsection
    
    expatrie  $fsection $DIAGS $fsection
- 
-#### Append corresponding lines to matlab file for time series
-   #sections
-   if [ $(chkfile $MONITOR/${CONFCASE}_matrix.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_matrix.mtl $MONITOR ${CONFCASE}_matrix.mtl
-   fi
- 
-   year=$( head -1 $fsection )
-   mass=$( cat $fsection | grep Mass | awk '{ printf "%8.3f" ,  $4 }' )
-   heat=$( cat $fsection | grep Heat | awk '{ printf "%8.3f" ,  $4 }' )
-   salt=$( cat $fsection | grep Salt | awk '{ printf "%8.1f" ,  $4 *1. }' )
- 
-   echo $year $mass $heat $salt  >>  ${CONFCASE}_matrix.mtl
-   # JMM remark: previous monitoring added sshmean, tmean smean at the end of the
-   #     line but it is not used in the matlab script so I skip it 
- 
-   expatrie  ${CONFCASE}_matrix.mtl $MONITOR  ${CONFCASE}_matrix.mtl
- 
-#### cp to web site
-   cptoweb ${CONFCASE}_matrix.mtl
-
-   # clean up a little bit
-   \rm ${CONFCASE}_matrix.mtl
   fi
  
 # Heat and Salt Meridional Transport : Input files : VT, mesh mask, new_maskglo
@@ -592,74 +397,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
     cdfhflx  ${CONFCASE}_y${YEAR}_ANNUAL_gridT.nc
  
     expatrie hflx.out $DIAGS ${CONFCASE}_y${YEAR}_hflx.dat
- 
-#### Append corresponding lines to matlab file for time series
-   # Heat/salt transport
-   if [ $(chkfile $MONITOR/${CONFCASE}_heat.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_heat.mtl $MONITOR ${CONFCASE}_heat.mtl
-   else 
-   # first time 
-   # output latitude (North to South) on the first row
-     printf "%04d " 0000 > ${CONFCASE}_heat.mtl
-     cat zonal_heat_trp.dat  |\
-     awk 'BEGIN{s=0} \
-        { if (NR > 2) {printf " %8.3f ", $2} \
-        }\
-        END{ printf "\n" }'   >> ${CONFCASE}_heat.mtl
-   fi
- 
-   # Global Ocean
-   printf "%04d "  $YEAR >> ${CONFCASE}_heat.mtl
-   cat zonal_heat_trp.dat  |\
-   awk 'BEGIN{s=0} \
-        { if (NR > 2) {printf " %8.3f ", $3} \
-        }\
-        END{ printf "\n" }'   >> ${CONFCASE}_heat.mtl
- 
-   printf "%04d "  $YEAR >> ${CONFCASE}_heat.mtl
-   cat hflx.out  |\
-   awk 'BEGIN{s=0} \
-        { if (NR > 2) {printf " %8.3f ", $3} \
-        }\
-        END{ printf "\n" }'   >> ${CONFCASE}_heat.mtl
- 
- # Atlantic Ocean
-   printf "%04d "  $YEAR >> ${CONFCASE}_heat.mtl
-   cat zonal_heat_trp.dat  |\
-   awk 'BEGIN{s=0} \
-        { if (NR > 2) {printf " %8.3f ", $4} \
-        }\
-        END{ printf "\n" }'   >> ${CONFCASE}_heat.mtl
- 
-   printf "%04d "  $YEAR >> ${CONFCASE}_heat.mtl
-   cat hflx.out  |\
-   awk 'BEGIN{s=0} \
-        { if (NR > 2) {printf " %8.3f ", $4} \
-        }\
-        END{ printf "\n" }'   >> ${CONFCASE}_heat.mtl
- 
- # Indo-Pacific Ocean
-   printf "%04d "  $YEAR >> ${CONFCASE}_heat.mtl
-   cat zonal_heat_trp.dat  |\
-   awk 'BEGIN{s=0} \
-        { if (NR > 2) {printf " %8.3f ", $5 + $6 } \
-        }\
-        END{ printf "\n" }'   >> ${CONFCASE}_heat.mtl
- 
-   printf "%04d "  $YEAR >> ${CONFCASE}_heat.mtl
-   cat hflx.out  |\
-   awk 'BEGIN{s=0} \
-        { if (NR > 2) {printf " %8.3f ", $5 } \
-        }\
-        END{ printf "\n" }'   >> ${CONFCASE}_heat.mtl
- 
-   expatrie  ${CONFCASE}_heat.mtl $MONITOR  ${CONFCASE}_heat.mtl
- 
-#### cp to website
-   cptoweb ${CONFCASE}_heat.mtl
- 
-   # clean
-   \rm  ${CONFCASE}_heat.mtl
   fi
 
 
@@ -668,7 +405,7 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
   if [ $MAXMOC == 1  ] ; then
    f=moc.nc
    rapatrie ${CONFCASE}_y${YEAR}_MOC.nc $MEANY $f
-   # check if we have a NATL config or a ORCA config
+   # check if we have a NATL config or a ORCA config (to be improved ....)
    atl=$( echo 1 | awk '{ ii=index (config,"NATL") ; print ii  }' config=$CONFIG )
 
    # Ascii output file
@@ -723,79 +460,6 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    # clean for next year 
    \rm moc.nc 
    fi
-
-
-#### Append to matlab file
-   # maxmoc
-   if [ $(chkfile $MONITOR/${CONFCASE}_maxmoc.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_maxmoc.mtl $MONITOR ${CONFCASE}_maxmoc.mtl
-   fi
- 
-   year=$( head -1 $fmaxmoc )
-   mht=${CONFCASE}_y${YEAR}_heattrp.dat
-   # get mht file if necessary
-   rapatrie $mht $DIAGS $mht
- 
-   # GLO
-   maxglo=$( cat $fmaxmoc    | grep -e '^Glo' | grep Max | awk '{ printf "%8.3f" ,  $3 }' )
-   minglo=$( cat $fmaxmoc    | grep -e '^Glo' | grep Min | awk '{ printf "%8.3f" ,  $3 }' )
- 
-   # ATL
-   maxatl=$( cat $fmaxmoc    | grep -e '^Atl' | grep Max | awk '{ printf "%8.3f" ,  $3 }' )
-   minatl=$( cat $fmaxmoc    | grep -e '^Atl' | grep Min | awk '{ printf "%8.3f" ,  $3 }' )
- 
-   # INP : attention we have 2 Minimum for INP mininp1 and mininp2
-   tmp=$( cat $fmaxmoc    | grep -e '^Inp' | grep Min | awk '{ printf "%8.3f" ,  $3 }' )
-   mininp1=$( echo $tmp | awk '{print $1}' )
-   mininp2=$( echo $tmp | awk '{print $2}' )
- 
-   # AUS
-   maxaus=$( cat $fmaxmoc    | grep -e '^Aus' | grep Max | awk '{ printf "%8.3f" ,  $3 }' )
-   minaus=$( cat $fmaxmoc    | grep -e '^Aus' | grep Min | awk '{ printf "%8.3f" ,  $3 }' )
- 
-   # heattrp at 20 N
-   heattrp=$(  cat $mht | awk '{  if ( $2 >= 20 ) { atlmht=$4 ; glomht=$3 } } END { printf "%6.3f %6.3f ", glomht, atlmht }')
-   mhtglo=$( echo $heattrp | awk '{print $1}' )
-   mhtatl=$( echo $heattrp | awk '{print $2}' )
- 
-
-   echo $year $maxglo $minglo $mhtglo $maxatl $minatl $mhtatl  $mininp1 $mininp2 0000  \
-              $maxaus $minaus 0000 >>  ${CONFCASE}_maxmoc.mtl
-
-   expatrie ${CONFCASE}_maxmoc.mtl $MONITOR ${CONFCASE}_maxmoc.mtl
-
-#### send it to web site
-   cptoweb ${CONFCASE}_maxmoc.mtl
- 
-   #maxmoc40
-   if [ $(chkfile $MONITOR/${CONFCASE}_maxmoc40.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_maxmoc40.mtl $MONITOR ${CONFCASE}_maxmoc40.mtl
-   fi
-
-   year=$( head -1 $fmaxmoc40 )
- 
-   # GLO  max a 40 et -30
-   tmp=$( cat $fmaxmoc40    | grep -e '^Glo' | grep Max | awk '{ printf "%8.3f" ,  $3 }' )
-   maxglo40n=$( echo $tmp | awk '{print $1}' )
-   maxglo30s=$( echo $tmp | awk '{print $2}' )
- 
-   # ATL  max a 40 et -30
-   tmp=$( cat $fmaxmoc40    | grep -e '^Atl' | grep Max | awk '{ printf "%8.3f" ,  $3 }' )
-   maxatl40n=$( echo $tmp | awk '{print $1}' )
-   maxatl30s=$( echo $tmp | awk '{print $2}' )
- 
-   # INP : 1 Min at -30 S
-   mininp30s=$( cat $fmaxmoc40    | grep -e '^Inp' | grep Min | awk '{ printf "%8.3f" ,  $3 }' )
- 
-   # AUS 1 max at -50 S
-   maxaus50s=$( cat $fmaxmoc40    | grep -e '^Aus' | grep Max | awk '{ printf "%8.3f" ,  $3 }' )
-
-   echo $year $maxglo40n $maxglo30s  $maxatl40n $maxatl30s  $mininp30s $maxaus50s >>  ${CONFCASE}_maxmoc40.mtl
-
-   expatrie ${CONFCASE}_maxmoc40.mtl $MONITOR ${CONFCASE}_maxmoc40.mtl
-
-#### send it to web site
-   cptoweb ${CONFCASE}_maxmoc40.mtl
   fi
 
 
@@ -882,37 +546,10 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
     expatrie $f $DIAGS/TRPSIG/ $f
   done
 
-#### Append results to mtl file for denmark strait and faroes bank channel
-   #trpsig
-
-   # mini and maxi of sigma0
-   mini=25.2 ; maxi=28.5   # selected range convenient for DS and FBC
-   file=${CONFCASE}_y${YEAR}_01_Denmark_strait_trpsig.txt 
-   fil2=$( echo $file | sed -e 's/01_Denmark_strait/02_Faoes_Bank_Channel/' )
-
-   sig=$(   cat $file | grep -v -e '^#' | awk '{ if ( $1 > mini  && $1 < maxi ) {printf "%8.3f"  ,  $1 } }' mini=$mini  maxi=$maxi)
-   trp01=$( cat $file | grep -v -e '^#' | awk '{ if ( $1 > mini  && $1 < maxi ) {printf "%13.4e" ,  $2 } }' mini=$mini  maxi=$maxi)
-   trp02=$( cat $fil2 | grep -v -e '^#' | awk '{ if ( $1 > mini  && $1 < maxi ) {printf "%13.4e" ,  $2 } }' mini=$mini  maxi=$maxi)
-
-   if [ $(chkfile $MONITOR/${CONFCASE}_TRPSIG.mtl ) == present ] ; then
-     rapatrie ${CONFCASE}_TRPSIG.mtl $MONITOR ${CONFCASE}_TRPSIG.mtl
-   else
-    #first time : add header with sigma classes
-    echo 000000  $sig > ${CONFCASE}_TRPSIG.mtl 
-   fi
-   echo $YEAR $trp01 >> ${CONFCASE}_TRPSIG.mtl
-   echo $YEAR $trp02 >> ${CONFCASE}_TRPSIG.mtl
-
-   expatrie ${CONFCASE}_TRPSIG.mtl $MONITOR ${CONFCASE}_TRPSIG.mtl
-
-####  cp to web site
-   cptoweb ${CONFCASE}_TRPSIG.mtl
-  
    # return to tmpdir
    cd $TMPDIR
    # Erase the TRPSIG tree for this current year
    \rm -r ${CONFIG} \rm ${CONFCASE}_y*_trpsig.txt *.mtl
-
   fi
 
 # TRACER DIAGS (31/12 of each year) : Input files : ptrcT, mesh mask
@@ -973,8 +610,5 @@ chkdir() { if [ ! -d $1 ] ; then mkdir $1 ; fi  ; }
    expatrie zonalsum.dat $DIAGS ${CONFCASE}_y${YEAR}_TRCzonalsum.dat
    expatrie zonalsurf.dat $DIAGS ${CONFCASE}_y${YEAR}_TRCzonalsurf.dat
    \rm zonalsurf.nc
- 
-#### append to matlab file
-   # Not done already
  
   fi
