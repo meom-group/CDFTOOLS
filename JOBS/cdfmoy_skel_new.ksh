@@ -1,5 +1,5 @@
 #!/bin/ksh
-# @ cpu_limit  = 7200
+# @ cpu_limit  = 36000
 # @ data_limit = 1gb
 # Nom du travail LoadLeveler
 # @ job_name   = moy-YYYY
@@ -9,52 +9,57 @@
 # @ error      =  $(job_name).$(jobid)
 # @ queue                   
 
-# Example of script for time-average computation
-# This script produce monthly mean and annual mean. The annual mean is now a weighted mean of the monthly means.
-# This works for DRAKKAR output ( 5day average, no leap year).
+#################################################################################
+# This script is used to compute time mean averages for DRAKKAR model output.
+# It replaces an older script which was also computing quarterly means.
+# All customisable variable are set in Part I.
+# This script must be launched from metamoy.ksh which edit the years
+#
 # $Rev$
 # $Date$
 # $Id$
+################################################################################
 
 set -x
 
-CONFIG=NATL025
-CASE=GH01
+# Part I : setup config dependent names
+#--------------------------------------
+. ./config_def.ksh    # this file (or a link) must exist in the current directory
+#
+# Part II  define some usefull functions
+#---------------------------------------
+. ./function_def.ksh  # this file (or a link) must exist in the current directory
 
+# Part III : main loops : no more customization below
+#-----------------------------------------------------
+# set up list of years to process
+# Metamoy meta script will subtitute YYYY and YYYE with correct begining and ending years
 YEARS=YYYY
 YEARE=YYYE
-#
+
 YEARLST=""
 y=$YEARS
 while (( $y <= $YEARE )) ; do 
   YEARLST="$YEARLST $y "
   y=$(( y + 1 ))
 done
-# define some usefull functions
-chkdirg() { rsh gaya " if [ ! -d $1 ] ; then mkdir $1 ; fi " ; }
-getmonth() { for f  in $( rsh gaya ls $SDIR/${CONFCASE}_y${YEAR}m${1}\*_$2.nc )  ; do
-              mfget $f ./
-             done  ; }
-putmonth() { mfput cdfmoy.nc $MDIR/${CONFCASE}_y${YEAR}m${1}_$2.nc ; \rm ${CONFCASE}_y${YEAR}m${1}d??_$2.nc ; }
-putmonth2() { mfput cdfmoy2.nc $MDIR/${CONFCASE}_y${YEAR}m${1}_$2.nc ; }
 
-putannual() { mfput cdfmoy_annual.nc $MDIR/${CONFCASE}_y${YEAR}_ANNUAL_$1.nc ; \rm cdfmoy_annual.nc ;}
-
-
+# 
 CONFCASE=${CONFIG}-${CASE}
-CDFTOOLS=~rcli002/CDFTOOLS-2.1/
+
+# always work in TMPDIR ! not in the data dir as file will be erased at the end of the script !
 cd $TMPDIR
 mkdir MONTHLY
 
 for YEAR in $YEARLST ; do 
    SDIR=${CONFIG}/${CONFCASE}-S/$YEAR
-   MDIR=${CONFIG}/${CONFCASE}-MEAN/$YEAR
+   MDIR=$PREF/${CONFIG}/${CONFCASE}-MEAN/$YEAR
    chkdirg $MDIR
 
  # Monthly mean
  #
- for month in 01 02 03 04 05 06 07 08 09 10 11 12  ; do 
-   for grid in gridT gridU gridV gridW icemod  ; do 
+ for grid in gridT gridU gridV gridW icemod  ; do 
+   for month in 01 02 03 04 05 06 07 08 09 10 11 12  ; do 
     getmonth $month $grid
     $CDFTOOLS/cdfmoy ${CONFCASE}_y${YEAR}m${month}d??_$grid.nc
     case $grid in 
@@ -62,16 +67,19 @@ for YEAR in $YEARLST ; do
            *) putmonth $month $grid ;
               putmonth2 $month ${grid}2 ;;
     esac
+   \rm ${CONFCASE}_y${YEAR}m${month}d??_$grid.nc
    done
- done
- \rm -f cdfmoy*nc
-  # ANNUAL
-  # at this point all monthly averages are in MONTHLY
-  cd MONTHLY
-  for grid in gridT gridU gridV gridW icemod gridT2 gridU2 gridV2 gridW2 ; do
-    $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_$grid.nc
-    putannual  $grid ;
-    \rm ${CONFCASE}_y${YEAR}m??_$grid.nc
-  done
+
+   # all monthes done for given grid, can compute annual mean ...for grid and grid2
+   #  suppose 5 day averages when creating monthly mean
+   cd MONTHLY
+    case $grid in 
+      icemod) $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_$grid.nc    ; putannual $grid ;;
+           *) $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_$grid.nc    ; putannual $grid ;
+              $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_${grid}2.nc ; putannual ${grid}2 ;;
+    esac
+    # clean MONTHLY from grid and grid2 files
+    \rm ${CONFCASE}_y${YEAR}m??_$grid.nc ; \rm ${CONFCASE}_y${YEAR}m??_${grid}2.nc
   cd $TMPDIR
+ done
 done

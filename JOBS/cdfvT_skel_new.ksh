@@ -1,5 +1,5 @@
 #!/bin/ksh
-# @ cpu_limit  = 3600
+# @ cpu_limit  = 36000
 # @ data_limit = 1gb
 # Nom du travail LoadLeveler
 # @ job_name   = vt-YYYY
@@ -9,22 +9,34 @@
 # @ error      =  $(job_name).$(jobid)
 # @ queue                   
 
-# Example of script for time-average computation for VT files
-# This script produce monthly mean and annual mean. The annual mean is now a weighted mean of the monthly means.
-# This works for DRAKKAR output ( 5day average, no leap year).
+#################################################################################
+# This script is used to compute time mean averages for DRAKKAR model output.
+# It replaces an older script which was also computing quarterly means.
+# In this script mean quadratic terms US UT VS VT are computed from 5 days averages
+# All customisable variable are set in Part I.
+#
 # $Rev$
 # $Date$
 # $Id$
-
+################################################################################
 
 set -x
 
-CONFIG=NATL025
-CASE=GH01
+# Part I : setup config dependent names
+#--------------------------------------
+. ./config_def.ksh   # config_def.ksh may be a link to an existing configuration file
 
+# Part II  define some usefull functions
+#---------------------------------------
+. ./function_def.ksh # function_def.ksh may be a link to customizable function file
+
+# Part III : main loops : no more customization below
+#-----------------------------------------------------
+# set up list of years to process
+# Metamoy meta script will subtitute YYYY and YYYE with correct begining and ending years
 YEARS=YYYY
 YEARE=YYYE
-#
+
 YEARLST=""
 y=$YEARS
 
@@ -32,23 +44,17 @@ while (( $y <= $YEARE )) ; do
   YEARLST="$YEARLST $y "
   y=$(( y + 1 ))
 done
-# define some usefull functions
-chkdirg() { rsh gaya " if [ ! -d $1 ] ; then mkdir $1 ; fi " ; }
-getmonth() { for f  in $( rsh gaya ls $SDIR/${CONFCASE}_y${YEAR}m${1}\*_$2.nc )  ; do
-              mfget $f ./
-             done  ; }
-putmonth() { mfput vt.nc $MDIR/${CONFCASE}_y${YEAR}m${1}_VT.nc ; \rm ${CONFCASE}_y${YEAR}m${month}d??_grid[UVT].nc ; }
 
-putannual() { mfput cdfmoy_annual.nc $MDIR/${CONFCASE}_y${YEAR}_ANNUAL_VT.nc ; \rm cdfmoy_annual.nc ; }
 #
 CONFCASE=${CONFIG}-${CASE}
-CDFTOOLS=~rcli002/CDFTOOLS-2.1/
+
+# always work in TMPDIR ! not in the data dir as file will be erased at the end of the script !
 cd $TMPDIR
 mkdir MONTHLY
 
 for YEAR in $YEARLST ; do
    SDIR=${CONFIG}/${CONFCASE}-S/$YEAR
-   MDIR=${CONFIG}/${CONFCASE}-MEAN/$YEAR
+   MDIR=$PREF/${CONFIG}/${CONFCASE}-MEAN/$YEAR
    chkdirg $MDIR
 
  # Monthly mean
@@ -65,14 +71,16 @@ for YEAR in $YEARLST ; do
    done
 
    $CDFTOOLS/cdfvT $CONFCASE $list
-   putmonth $month
-   mv vt.nc MONTHLY/${CONFCASE}_y${YEAR}m${$month}_VT.nc
+   putvtmonth $month
+   \rm ${CONFCASE}_y${YEAR}m${month}d??_grid[UVT].nc
  done
 
- # annual mean  (uses a ponderation to compute the exact annual mean ).
+ # annual mean  (uses a ponderation to compute the exact annual mean ). ! suppose 5 day averages when creating monthly mean
  cd $TMPDIR/MONTHLY
  $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_VT.nc
- putannual
+ putvtannual
+ 
+ # clean directory for eventually next year:
+ \rm ${CONFCASE}_y${YEAR}m??_VT.nc
  cd $TMPDIR
-
 done
