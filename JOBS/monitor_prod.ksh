@@ -394,6 +394,7 @@ set -x
  
 # (b) from Surface Heat fluxes
 #-----------------------------
+    rapatrie ${CONFCASE}_y${YEAR}_ANNUAL_gridT.nc $MEANY  ${CONFCASE}_y${YEAR}_ANNUAL_gridT.nc
     cdfhflx  ${CONFCASE}_y${YEAR}_ANNUAL_gridT.nc
  
     expatrie hflx.out $DIAGS ${CONFCASE}_y${YEAR}_hflx.dat
