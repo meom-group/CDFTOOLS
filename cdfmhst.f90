@@ -114,7 +114,7 @@ PROGRAM cdfmhst
   ! create output fileset
   e1v(:,:)   = getvar(coordhgr, 'e1v', 1,npiglo,npjglo)
   gphiv(:,:) = getvar(coordhgr, 'gphiv', 1,npiglo,npjglo)
-  gdep(:) = getvare3(coordzgr, 'depthv' ,1)
+  gdep(:) = getvare3(coordzgr, 'nav_lev' ,1)
 
   iloc=maxloc(gphiv)
   dumlat(1,:) = gphiv(iloc(1),:)

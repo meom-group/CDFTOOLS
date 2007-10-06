@@ -383,7 +383,7 @@ PROGRAM cdftransportiz
            WRITE(numout,*)  '% nada LONmin LATmin LONmax LATmax'
            WRITE(numout,*)  '% Top(m)  Bottom(m)  MassTrans(Sv) HeatTrans(PW) SaltTrans(kt/s)'
            WRITE(numout,*) 0 ,imin, imax, jmin, jmax
-           WRITE(numout,9003) 0 ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
+           WRITE(numout,9003) 0. ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
         ENDIF
         WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6, heatrpsum/1.e15, saltrpsum/1.e6
 
