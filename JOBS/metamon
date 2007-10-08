@@ -65,6 +65,7 @@ cp function_def.ksh $TMPDIR
 
 CONFCASE=${CONFIG}-${CASE}
 cd $TMPDIR
+. ./config_def.ksh
 
 for   YEAR in  $YEARS ; do
    .  $CDFTOOLS/JOBS/monitor_prod.ksh
