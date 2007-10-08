@@ -127,13 +127,6 @@ CONTAINS
     CHARACTER(LEN=80) :: cldep, cldepref
 
     istatus = NF90_CREATE(cdfile,NF90_CLOBBER, icout)
-    ! Open reference file if any,  otherwise set ncid to flag value (for copy att)
-    IF ( TRIM(cdfilref) /= 'none' ) THEN
-       istatus = NF90_OPEN(cdfilref,NF90_NOWRITE,ncid)
-    ELSE
-       ncid = -9999
-    ENDIF
-
     istatus = NF90_DEF_DIM(icout,'x',kx, id_x)
     istatus = NF90_DEF_DIM(icout,'y',ky, id_y)
 
@@ -152,6 +145,13 @@ CONTAINS
     istatus = NF90_DEF_DIM(icout,'time_counter',NF90_UNLIMITED, id_t)
 
     nvdim(1) = id_x ; nvdim(2) = id_y ; nvdim(3) = id_z ; nvdim(4) = id_t
+
+    ! Open reference file if any,  otherwise set ncid to flag value (for copy att)
+    IF ( TRIM(cdfilref) /= 'none' ) THEN
+       istatus = NF90_OPEN(cdfilref,NF90_NOWRITE,ncid)
+    ELSE
+       ncid = -9999
+    ENDIF
 
     ! define variables and copy attributes
     istatus = NF90_DEF_VAR(icout,'nav_lon',NF90_FLOAT,(/id_x,id_y/),id_lon)
