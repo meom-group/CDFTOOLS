@@ -307,6 +307,12 @@ bimgmoy4: bimgmoy4.f90
 bimgcaltrans: bimgcaltrans.f90
 	$(F90) bimgcaltrans.f90  -o bimgcaltrans $(FFLAGS)
 
+coordinates2hgr: coordinates2hgr.f90
+	$(F90) coordinates2hgr.f90 -o coordinates2hgr $(FFLAGS)
+
+coordinates2zgr: coordinates2zgr.f90
+	$(F90) coordinates2zgr.f90 -o coordinates2zgr $(FFLAGS)
+
 ## Modules
 
 cdfio.o: cdfio.f90

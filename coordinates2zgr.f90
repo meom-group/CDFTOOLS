@@ -31,6 +31,7 @@ PROGRAM coordinates2zgr
   INTEGER(4) :: ngrid
   INTEGER(4) :: ni,nj, nk
   INTEGER(4) :: jj, jk, iim,ijm, il1, il2, ifreq, jn, ii, ji , ij
+  INTEGER(KIND=4) :: npiglo=1, npjglo=1, ierr=0, npi, npj, npizoom, npjzoom
   INTEGER(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: idata
 
   REAL(wp) , DIMENSION(:,:), ALLOCATABLE  ::  glamt,gphit
@@ -41,9 +42,10 @@ PROGRAM coordinates2zgr
   CHARACTER (len=21) ::        clname
   INTEGER                      ilev, itime, iargc, narg
   LOGICAL                      clog
-  CHARACTER(LEN=80)       :: cfilin, cfilout, cbathy, clexp, clfmt
+  CHARACTER(LEN=80)       :: cfilin, cfilout, cbathy, clexp, clfmt, cdum
 
   REAL(wp) , DIMENSION(:,:),  ALLOCATABLE ::  bathy  
+  LOGICAL :: ln_glo
 
  ! netcdf stuff
  INTEGER :: istatus, ncid
@@ -57,14 +59,20 @@ PROGRAM coordinates2zgr
   numbat = 12
   narg=iargc()
 
-  IF ( narg /= 2 ) THEN
-   PRINT *,' >>> Usage: coordinates2zgr ''coordinates file'' '' ascii bathy'' '
+  IF ( narg < 2 ) THEN
+   PRINT *,' >>> Usage: coordinates2zgr ''coordinates file'' '' ascii bathy'' [ jpizoom  jpjzoom]'
    PRINT *,'     Output is done on mesh_zgr.nc '
+   PRINT *,'  If optional arguments jpizoom and jpjzoom are given, bathy is extracted with regard to these values'
+   PRINT *,'  the global domain size is then read from the header of bathy file '
    STOP 
   END IF
 
   CALL getarg(1,cfilin)
   CALL getarg(2,cbathy)
+  IF ( narg > 2 ) THEN
+   CALL getarg(3, cdum) ; READ(cdum,*) npizoom
+   CALL getarg(4, cdum) ; READ(cdum,*) npjzoom
+  ENDIF
   cfilout='mesh_zgr.nc'
 
   ! Read ASCII BATHY_LEVEL
@@ -73,8 +81,25 @@ PROGRAM coordinates2zgr
          ! read bathymetry file
          REWIND numbat
          READ(numbat,9001) clexp, iim, ijm
-         print *, iim,ijm
-         ALLOCATE(idata(iim,ijm), bathy(iim,ijm), glamt(iim,ijm),gphit(iim,ijm) )
+         nrecl8 = 200
+         ! open and read header of coordinates files ( 
+         OPEN( numcoo, FILE = cfilin, status='old' & 
+         ,form = 'unformatted',      access ='direct',recl = nrecl8)
+         READ(numcoo, rec = 1)      cltextco, zrecl8, zjpiglo, zjpjglo
+         CLOSE(numcoo)
+         print *, iim,ijm, INT(zjpiglo), INT(zjpjglo)
+       
+         ! BATHY ASCII is alway on the full domain  
+         ! coordinates.diags may be on the full domain or on the zoomed domain: check dimensions !
+          npi=INT(zjpiglo) ; npj=INT(zjpjglo) ; ierr = 0
+         IF ( iim == npi  .AND. ijm == npj ) THEN
+          ln_glo=.true.
+         ELSE
+          ln_glo=.false.
+         ENDIF
+       
+         ! ALLOCATE bathy array
+         ALLOCATE(idata(iim,ijm), bathy(npi,npj), glamt(npi,npj),gphit(npi,npj) )
          READ(numbat,'(/)')
          clfmt =  '(i3,41i3)'
          IF ( ijm >= 1000 ) clfmt = '(i4,41i3)'
@@ -91,7 +116,7 @@ PROGRAM coordinates2zgr
             il1 = il1 + ifreq
          END DO
          CLOSE(numbat)
-         bathy(:,:)=idata(:,:)
+         bathy(:,:)=idata(npizoom:npizoom+npi-1, npjzoom:npjzoom+npj-1)
 
 9001     FORMAT(1x,a15,2i8)
 9002     FORMAT(3x,13(i3,12x))
