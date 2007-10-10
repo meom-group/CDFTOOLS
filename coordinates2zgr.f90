@@ -31,7 +31,7 @@ PROGRAM coordinates2zgr
   INTEGER(4) :: ngrid
   INTEGER(4) :: ni,nj, nk
   INTEGER(4) :: jj, jk, iim,ijm, il1, il2, ifreq, jn, ii, ji , ij
-  INTEGER(KIND=4) :: npiglo=1, npjglo=1, ierr=0, npi, npj, npizoom, npjzoom
+  INTEGER(KIND=4) :: ierr=0, npi, npj, npizoom=1, npjzoom=1
   INTEGER(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: idata
 
   REAL(wp) , DIMENSION(:,:), ALLOCATABLE  ::  glamt,gphit
