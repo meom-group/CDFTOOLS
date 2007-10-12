@@ -92,7 +92,7 @@ PROGRAM cdftransportizpm
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg < 3  ) THEN
-     PRINT *,' Usage : cdftransportiz [-test  u v ]  VTfile gridUfile gridVfile   ''limit of level'' '
+     PRINT *,' Usage : cdftransportizpm [-test  u v ]  VTfile gridUfile gridVfile   ''limit of level'' '
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc must be in te current directory'
      PRINT *,' Option -test vt u v is used for testing purposes, with constant flow field'
      PRINT *,' Output on standard output and on an ascii file called section_trp.dat'
@@ -231,6 +231,8 @@ PROGRAM cdftransportizpm
         e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
         e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
 
+        zwku_plus = 0.d0 ; zwku_minus = 0.d0
+        zwkv_plus = 0.d0 ; zwkv_minus = 0.d0
         WHERE (zu (:,:)>0) zwku_plus (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
         WHERE (zu (:,:)<0) zwku_minus(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
         zwku      (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
@@ -244,11 +246,11 @@ PROGRAM cdftransportizpm
 
         ! integrates vertically 
         ztrpu      (:,:,jclass) = ztrpu      (:,:,jclass) + zwku (:,:)
-        ztrpu_plus (:,:,jclass) = ztrpu_plus (:,:,jclass) + zwku (:,:)
-        ztrpu_minus(:,:,jclass) = ztrpu_minus(:,:,jclass) + zwku (:,:)
+        ztrpu_plus (:,:,jclass) = ztrpu_plus (:,:,jclass) + zwku_plus (:,:)
+        ztrpu_minus(:,:,jclass) = ztrpu_minus(:,:,jclass) + zwku_minus (:,:)
         ztrpv      (:,:,jclass) = ztrpv      (:,:,jclass) + zwkv (:,:)
-        ztrpv_plus (:,:,jclass) = ztrpv_plus (:,:,jclass) + zwkv (:,:)
-        ztrpv_minus(:,:,jclass) = ztrpv_minus(:,:,jclass) + zwkv (:,:)
+        ztrpv_plus (:,:,jclass) = ztrpv_plus (:,:,jclass) + zwkv_plus (:,:)
+        ztrpv_minus(:,:,jclass) = ztrpv_minus(:,:,jclass) + zwkv_minus (:,:)
         ztrput     (:,:,jclass) = ztrput     (:,:,jclass) + zwkut(:,:) * rau0*rcp
         ztrpvt     (:,:,jclass) = ztrpvt     (:,:,jclass) + zwkvt(:,:) * rau0*rcp
         ztrpus     (:,:,jclass) = ztrpus     (:,:,jclass) + zwkus(:,:)  
