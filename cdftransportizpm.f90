@@ -403,8 +403,8 @@ PROGRAM cdftransportizpm
            ELSE
               PRINT *,' ERROR :',  rxx(jseg),ryy(jseg),rxx(jseg+1),ryy(jseg+1)
            END IF
-           voltrpsum_plus  = voltrpsum_plus +voltrp(jseg)
-           voltrpsum_minus = voltrpsum_minus+voltrp(jseg)
+           voltrpsum_plus  = voltrpsum_plus +voltrp_plus(jseg)
+           voltrpsum_minus = voltrpsum_minus+voltrp_minus(jseg)
            voltrpsum       = voltrpsum      +voltrp(jseg)
            heatrpsum       = heatrpsum      +heatrp(jseg)
            saltrpsum       = saltrpsum      +saltrp(jseg)
