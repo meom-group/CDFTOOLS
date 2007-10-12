@@ -58,8 +58,8 @@ PROGRAM cdftransportizpm
 
   REAL(KIND=8), DIMENSION(jpseg) :: voltrp, heatrp, saltrp
   REAL(KIND=8), DIMENSION(jpseg) :: voltrp_plus,voltrp_minus
-  REAL(KIND=8), DIMENSION(jpseg) :: voltrpsum, heatrpsum, saltrpsum
-  REAL(KIND=8), DIMENSION(jpseg) :: voltrpsum_plus, voltrpsum_minus
+  REAL(KIND=8)                   :: voltrpsum, heatrpsum, saltrpsum
+  REAL(KIND=8)                   :: voltrpsum_plus, voltrpsum_minus
 
   COMPLEX yypt(jpseg), yypti
 
