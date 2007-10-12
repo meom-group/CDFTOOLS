@@ -18,6 +18,7 @@ EXEC = cdfmoy cdfmoy_mpp cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT
        cdfbn2  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
        cdfrhoproj cdfpv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
+       cdftransportizpm \
        cdfmasstrp cdfmasstrp-full \
        cdfsigtrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
@@ -149,6 +150,9 @@ cdfpsi-open_AM: cdfio.o  cdfpsi-open_AM.f90
 
 cdftransportiz: cdfio.o  cdftransportiz.f90
 	$(F90) cdftransportiz.f90 -o cdftransportiz cdfio.o $(FFLAGS)
+
+cdftransportizpm: cdfio.o  cdftransportizpm.f90
+	$(F90) cdftransportizpm.f90 -o cdftransportizpm cdfio.o $(FFLAGS)
 
 cdftransportiz_noheat: cdfio.o  cdftransportiz_noheat.f90
 	$(F90) cdftransportiz_noheat.f90 -o cdftransportiz_noheat cdfio.o $(FFLAGS)

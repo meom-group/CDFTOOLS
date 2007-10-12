@@ -1,8 +1,9 @@
-PROGRAM cdftransportiz
+PROGRAM cdftransportizpm
   !!---------------------------------------------------------------------
-  !!               ***  PROGRAM cdftransportiz  ***
+  !!               ***  PROGRAM cdftransportizpm  ***
   !!
   !!  **  Purpose: Compute Transports across a section
+  !!               In this version positive and negative contributions are separated
   !!               PARTIAL STEPS version
   !!  
   !!  **  Method: Try to avoid 3 d arrays.
@@ -24,10 +25,11 @@ PROGRAM cdftransportiz
   !!   Original :  J.M. Molines (jan. 2005)
   !!               J.M. Molines Apr 2005 : use modules
   !!               J.M. Molines Apr 2007 : merge with Julien Jouanno version (std + file output)
+  !!               G. Hervieux Oct 2007 : plus ans minus separation
   !!---------------------------------------------------------------------
-  !!  $Rev: 103 $
-  !!  $Date: 2007-10-06 21:10:14 +0200 (Sat, 06 Oct 2007) $
-  !!  $Id: cdftransportiz.f90 103 2007-10-06 19:10:14Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -55,9 +57,9 @@ PROGRAM cdftransportiz
   REAL(KIND=4), DIMENSION(jpseg) :: gla, gphi
 
   REAL(KIND=8), DIMENSION(jpseg) :: voltrp, heatrp, saltrp
-  REAL(KIND=8), DIMENSION(jpseg) :: voltrp_plus,voltrp_moins
+  REAL(KIND=8), DIMENSION(jpseg) :: voltrp_plus,voltrp_minus
   REAL(KIND=8), DIMENSION(jpseg) :: voltrpsum, heatrpsum, saltrpsum
-  REAL(KIND=8), DIMENSION(jpseg) :: voltrpsum_plus, voltrpsum_moins
+  REAL(KIND=8), DIMENSION(jpseg) :: voltrpsum_plus, voltrpsum_minus
 
   COMPLEX yypt(jpseg), yypti
 
@@ -70,11 +72,11 @@ PROGRAM cdftransportiz
 
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku,zwkv,    zwkut,zwkvt,   zwkus,zwkvs
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku_plus , zwkv_plus
-  REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku_moins, zwkv_moins
+  REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku_minus, zwkv_minus
 
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu_plus , ztrpv_plus
-  REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu_moins, ztrpv_moins
+  REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu_minus, ztrpv_minus
 
   CHARACTER(LEN=80) :: cfilet ,cfileout='section_trp.dat', &
        &                       cfileu, cfilev, csection
@@ -138,10 +140,10 @@ PROGRAM cdftransportiz
   ALLOCATE ( zwku (npiglo,npjglo), zwkut(npiglo,npjglo), zwkus(npiglo,npjglo) )
   ALLOCATE ( zwkv (npiglo,npjglo), zwkvt(npiglo,npjglo), zwkvs(npiglo,npjglo) )
   ALLOCATE ( zwku_plus  (npiglo,npjglo),zwkv_plus  (npiglo,npjglo))
-  ALLOCATE ( zwku_moins (npiglo,npjglo),zwkv_moins (npiglo,npjglo))
+  ALLOCATE ( zwku_minus (npiglo,npjglo),zwkv_minus (npiglo,npjglo))
  !
   ALLOCATE ( ztrpu_plus (npiglo,npjglo,nclass), ztrpv_plus (npiglo,npjglo,nclass))
-  ALLOCATE ( ztrpu_moins(npiglo,npjglo,nclass), ztrpv_moins(npiglo,npjglo,nclass))
+  ALLOCATE ( ztrpu_minus(npiglo,npjglo,nclass), ztrpv_minus(npiglo,npjglo,nclass))
   ALLOCATE ( ztrpu (npiglo,npjglo,nclass), ztrpv (npiglo,npjglo,nclass))
   ALLOCATE ( ztrput(npiglo,npjglo,nclass), ztrpvt(npiglo,npjglo,nclass))
   ALLOCATE ( ztrpus(npiglo,npjglo,nclass), ztrpvs(npiglo,npjglo,nclass))
@@ -194,8 +196,8 @@ PROGRAM cdftransportiz
   !! compute the transport
   ztrpu_plus (:,:,:)= 0
   ztrpv_plus (:,:,:)= 0
-  ztrpu_moins(:,:,:)= 0
-  ztrpv_moins(:,:,:)= 0
+  ztrpu_minus(:,:,:)= 0
+  ztrpv_minus(:,:,:)= 0
   ztrpu      (:,:,:)= 0
   ztrpv      (:,:,:)= 0
 
@@ -230,10 +232,10 @@ PROGRAM cdftransportiz
         e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
 
         WHERE (zu (:,:)>0) zwku_plus (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
-        WHERE (zu (:,:)<0) zwku_moins(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
+        WHERE (zu (:,:)<0) zwku_minus(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
         zwku      (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)
         WHERE (zv (:,:)>0) zwkv_plus (:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)
-        WHERE (zv (:,:)<0) zwkv_moins(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)
+        WHERE (zv (:,:)<0) zwkv_minus(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)
         zwkv      (:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)
         zwkut     (:,:) = zut(:,:)*e2u(:,:)*e3u(:,:)
         zwkvt     (:,:) = zvt(:,:)*e1v(:,:)*e3v(:,:)
@@ -243,10 +245,10 @@ PROGRAM cdftransportiz
         ! integrates vertically 
         ztrpu      (:,:,jclass) = ztrpu      (:,:,jclass) + zwku (:,:)
         ztrpu_plus (:,:,jclass) = ztrpu_plus (:,:,jclass) + zwku (:,:)
-        ztrpu_moins(:,:,jclass) = ztrpu_moins(:,:,jclass) + zwku (:,:)
+        ztrpu_minus(:,:,jclass) = ztrpu_minus(:,:,jclass) + zwku (:,:)
         ztrpv      (:,:,jclass) = ztrpv      (:,:,jclass) + zwkv (:,:)
         ztrpv_plus (:,:,jclass) = ztrpv_plus (:,:,jclass) + zwkv (:,:)
-        ztrpv_moins(:,:,jclass) = ztrpv_moins(:,:,jclass) + zwkv (:,:)
+        ztrpv_minus(:,:,jclass) = ztrpv_minus(:,:,jclass) + zwkv (:,:)
         ztrput     (:,:,jclass) = ztrput     (:,:,jclass) + zwkut(:,:) * rau0*rcp
         ztrpvt     (:,:,jclass) = ztrpvt     (:,:,jclass) + zwkvt(:,:) * rau0*rcp
         ztrpus     (:,:,jclass) = ztrpus     (:,:,jclass) + zwkus(:,:)  
@@ -376,7 +378,7 @@ PROGRAM cdftransportiz
      WRITE(numout,*) '% nada IMIN IMAX JMIN JMAX'
      DO jclass=1,nclass
         voltrpsum_plus  = 0.
-        voltrpsum_moins = 0.
+        voltrpsum_minus = 0.
         voltrpsum       = 0.
         heatrpsum       = 0.
         saltrpsum       = 0.
@@ -387,14 +389,14 @@ PROGRAM cdftransportiz
            IF ( rxx(jseg) ==  rxx(jseg+1) ) THEN
               gla(jseg)=glamu(i0,j0+jst)   ; gphi(jseg)=gphiu(i0,j0+jst)
               voltrp_plus (jseg)= ztrpu_plus  (i0,j0+jst,jclass)*norm_u
-              voltrp_moins(jseg)= ztrpu_moins (i0,j0+jst,jclass)*norm_u
+              voltrp_minus(jseg)= ztrpu_minus (i0,j0+jst,jclass)*norm_u
               voltrp      (jseg)= ztrpu       (i0,j0+jst,jclass)*norm_u
               heatrp      (jseg)= ztrput      (i0,j0+jst,jclass)*norm_u
               saltrp      (jseg)= ztrpus      (i0,j0+jst,jclass)*norm_u
            ELSE IF ( ryy(jseg) == ryy(jseg+1) ) THEN
               gla(jseg)=glamv(i0+ist,j0)  ;  gphi(jseg)=gphiv(i0+ist,j0)
               voltrp_plus (jseg)=ztrpv_plus  (i0+ist,j0,jclass)*norm_v
-              voltrp_moins(jseg)=ztrpv_moins (i0+ist,j0,jclass)*norm_v
+              voltrp_minus(jseg)=ztrpv_minus (i0+ist,j0,jclass)*norm_v
               voltrp      (jseg)=ztrpv       (i0+ist,j0,jclass)*norm_v
               heatrp      (jseg)=ztrpvt      (i0+ist,j0,jclass)*norm_v
               saltrp      (jseg)=ztrpvs      (i0+ist,j0,jclass)*norm_v
@@ -402,7 +404,7 @@ PROGRAM cdftransportiz
               PRINT *,' ERROR :',  rxx(jseg),ryy(jseg),rxx(jseg+1),ryy(jseg+1)
            END IF
            voltrpsum_plus  = voltrpsum_plus +voltrp(jseg)
-           voltrpsum_moins = voltrpsum_moins+voltrp(jseg)
+           voltrpsum_minus = voltrpsum_minus+voltrp(jseg)
            voltrpsum       = voltrpsum      +voltrp(jseg)
            heatrpsum       = heatrpsum      +heatrp(jseg)
            saltrpsum       = saltrpsum      +saltrp(jseg)
@@ -411,7 +413,7 @@ PROGRAM cdftransportiz
         PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
         PRINT *, ' Mass transport :     ', voltrpsum/1.e6      ,' SV'
         PRINT *, ' Mass transport PLUS: ', voltrpsum_plus/1.e6 ,' SV'
-        PRINT *, ' Mass transport MOINS:', voltrpsum_moins/1.e6,' SV'
+        PRINT *, ' Mass transport MINUS:', voltrpsum_minus/1.e6,' SV'
         PRINT *, ' Heat transport :     ', heatrpsum/1.e15     ,' PW'
         PRINT *, ' Salt transport :     ', saltrpsum/1.e6      ,' kT/s'
         IF (jclass == 1 ) THEN 
@@ -420,7 +422,7 @@ PROGRAM cdftransportiz
            WRITE(numout,*) 0 ,imin, imax, jmin, jmax
            WRITE(numout,9003) 0. ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
         ENDIF
-        WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6, voltrpsum_plus/1.e6, voltrpsum_moins/1.e6
+        WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6, voltrpsum_plus/1.e6, voltrpsum_minus/1.e6
 
      END DO ! next class
 
@@ -542,4 +544,4 @@ CONTAINS
     END IF
   END SUBROUTINE interm_pt
 
-END PROGRAM cdftransportiz
+END PROGRAM cdftransportizpm
