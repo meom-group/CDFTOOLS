@@ -61,6 +61,8 @@ set -x
 #=============================================================================
 #  PART I: Derived quantities, to be added to the -MEAN/YEAR directory
 #=============================================================================
+   # check if we have a NATL config or a ORCA config (to be improved ....)
+   atl=$( echo 1 | awk '{ ii=index (config,"NATL") ; print ii  }' config=$CONFIG )
 
 # EKE : Eddy Kinetic Energy: Input files gridU, gridV gridU2, gridV2 
 #^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -137,7 +139,7 @@ set -x
    rapatrie  ${MESH_MASK_ID}_byte_mask.nc $IDIR mask.nc
    rapatrie  ${MESH_MASK_ID}_mesh_hgr.nc $IDIR mesh_hgr.nc
    rapatrie  ${MESH_MASK_ID}_mesh_zgr.nc $IDIR mesh_zgr.nc
-   rapatrie  new_maskglo.nc $IDIR new_maskglo.nc
+   if (( $atl == 0 ) ; then rapatrie  new_maskglo.nc $IDIR new_maskglo.nc ; fi
  
    cdfmoc ${CONFCASE}_y${YEAR}_ANNUAL_gridV.nc
  
@@ -378,7 +380,7 @@ set -x
    rapatrie  ${MESH_MASK_ID}_byte_mask.nc $IDIR mask.nc
    rapatrie  ${MESH_MASK_ID}_mesh_hgr.nc $IDIR mesh_hgr.nc
    rapatrie  ${MESH_MASK_ID}_mesh_zgr.nc $IDIR mesh_zgr.nc
-   rapatrie  new_maskglo.nc $IDIR new_maskglo.nc
+   if (( $atl == 0 ) ; then rapatrie  new_maskglo.nc $IDIR new_maskglo.nc ; fi
  
    # Ascii output file:
    fheat=${CONFCASE}_y${YEAR}_heattrp.dat
@@ -406,8 +408,6 @@ set -x
   if [ $MAXMOC == 1  ] ; then
    f=moc.nc
    rapatrie ${CONFCASE}_y${YEAR}_MOC.nc $MEANY $f
-   # check if we have a NATL config or a ORCA config (to be improved ....)
-   atl=$( echo 1 | awk '{ ii=index (config,"NATL") ; print ii  }' config=$CONFIG )
 
    # Ascii output file
    fmaxmoc=${CONFCASE}_y${YEAR}_minmaxmoc.txt
@@ -560,7 +560,7 @@ set -x
    rapatrie  ${MESH_MASK_ID}_byte_mask.nc $IDIR mask.nc
    rapatrie  ${MESH_MASK_ID}_mesh_hgr.nc $IDIR mesh_hgr.nc
    rapatrie  ${MESH_MASK_ID}_mesh_zgr.nc $IDIR mesh_zgr.nc
-   rapatrie  new_maskglo.nc $IDIR new_maskglo.nc
+   if (( $atl == 0 ) ; then rapatrie  new_maskglo.nc $IDIR new_maskglo.nc ; fi
  
    # get tracer file from gaya: note that this is from -S dir (5 day average ... to discuss ...)
    rapatrie ${CONFCASE}_y${YEAR}m12d31_ptrcT.nc $SDIRY ${CONFCASE}_y${YEAR}m12d31_ptrcT.nc
