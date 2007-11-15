@@ -21,6 +21,12 @@
 ################################################################################
 
 set -x
+P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
+
+cp $P_CDF_DIR/config_def.ksh $TMPDIR
+cp $P_CDF_DIR/function_def.ksh $TMPDIR
+cd $TMPDIR
+
 
 # Part I : setup config dependent names
 #--------------------------------------

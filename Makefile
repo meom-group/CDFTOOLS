@@ -13,7 +13,7 @@ include make.macro
 
 CDFTOOLS=CDFTOOLS-2.1
 
-EXEC = cdfmoy cdfmoy_mpp cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfvT cdfvsig \
+EXEC = cdfmoy cdfmoy_mpp cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdfimprovechk\
        cdfbn2  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
        cdfrhoproj cdfpv cdfpvor\
@@ -43,6 +43,9 @@ cdfmoy_sal2_temp2: cdfio.o   cdfmoy_sal2_temp2.f90
 
 cdfmoy_sp: cdfio.o   cdfmoy_sp.f90
 	$(F90) cdfmoy_sp.f90 -o cdfmoy_sp cdfio.o  $(FFLAGS)
+
+cdfmoy_chsp: cdfio.o   cdfmoy_chsp.f90
+	$(F90) cdfmoy_chsp.f90 -o cdfmoy_chsp cdfio.o  $(FFLAGS)
 
 cdfstd: cdfio.o  cdfstd.f90
 	$(F90)  cdfstd.f90 -o cdfstd cdfio.o $(FFLAGS)
