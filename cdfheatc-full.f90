@@ -49,13 +49,13 @@ PROGRAM cdfheatc_full
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfheatc  gridTfile  [imin imax jmin jmax kmin kmax] '
+     PRINT *,' Usage : cdfheatc-full  gridTfile  [imin imax jmin jmax kmin kmax] '
      PRINT *,' Computes the heat content in the specified area (Joules)'
      PRINT *,' imin imax jmin jmax kmin kmax can be given in option '
      PRINT *,'    if imin = 0 then ALL i are taken'
      PRINT *,'    if jmin = 0 then ALL j are taken'
      PRINT *,'    if kmin = 0 then ALL k are taken'
-     PRINT *,' PARTIAL CELLS VERSION'
+     PRINT *,' FULL CELLS VERSION'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc '
      PRINT *,'  must be in the current directory'
      PRINT *,' Output on standard output'

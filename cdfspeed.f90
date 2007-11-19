@@ -1,20 +1,18 @@
 PROGRAM cdfspeed
   !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfmeanvar  ***
+  !!               ***  PROGRAM cdfspeed  ***
   !!
-  !!  **  Purpose  :  Compute the Mean Value and variance  over the ocean
-  !!                  PARTIAL STEPS
+  !!  **  Purpose  :  combine u and v to obtains the wind speed
   !!  
-  !!  **  Method   :  compute the sum ( V * e1 *e2 * e3 *mask )/ sum( e1 * e2 * e3 *mask )
+  !!  **  Method   :  sqrt(u**2 + v**2)
   !!
   !!
   !! history ;
-  !!  Original :  J.M. Molines (Oct. 2005) 
-  !!              J.M. Molines  Add variance Nov. 2006
+  !!  Original :  P. Mathiot (Nov. 2007) from cdfmeanvar
   !!-------------------------------------------------------------------
-  !!  $Rev: 94 $
-  !!  $Date: 2007-09-11 20:34:24 +0200 (Tue, 11 Sep 2007) $
-  !!  $Id: cdfmeanvar.f90 94 2007-09-11 18:34:24Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -43,7 +41,7 @@ PROGRAM cdfspeed
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmeanvar  ncfileU ncfileV' 
+     PRINT *,' Usage : cdfspeed  ncfileU ncfileV cdfvarU cdfvarV' 
      PRINT *,' Computes the speed current or wind'
      PRINT *,' Output on speed.nc'
      STOP
@@ -82,7 +80,7 @@ PROGRAM cdfspeed
   END IF
 
   ipk(1) = 1  !  2D
-  ! define new variables for output ( must update att.txt)
+  ! define new variables for output
   typvar(1)%name='U'
   typvar(1)%units='m.s-1'
   typvar(1)%missing_value=0.
