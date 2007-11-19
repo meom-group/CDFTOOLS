@@ -21,12 +21,12 @@ PROGRAM cdfmeanvar
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: jk, ik
+  INTEGER   :: jk, ik, jt
   INTEGER   :: imin=0, imax=0, jmin=0, jmax=0      !: domain limitation for computation
   INTEGER   :: kmin=0, kmax=0                      !: domain limitation for computation
   INTEGER   :: ierr                                !: working integer
   INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
+  INTEGER   :: npiglo,npjglo,npk,nt                !: size of the domain
   INTEGER   :: nvpk                                !: vertical levels in working variable
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, e3,  zv   !:  metrics, velocity
@@ -39,7 +39,7 @@ PROGRAM cdfmeanvar
   CHARACTER(LEN=80) :: cvar, cvartype
   CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
 
-
+  LOGICAL    :: lforcing
   INTEGER    :: istatus
 
   ! constants
@@ -83,6 +83,8 @@ PROGRAM cdfmeanvar
   npjglo= getdim (cfilev,'y')
   npk   = getdim (cfilev,'depth')
   nvpk  = getvdim(cfilev,cvar)
+  nt    = getdim (cfilev,'time_counter')
+
   IF (imin /= 0 ) THEN ; npiglo=imax -imin + 1;  ELSE ; imin=1 ; ENDIF
   IF (jmin /= 0 ) THEN ; npjglo=jmax -jmin + 1;  ELSE ; jmin=1 ; ENDIF
   IF (kmin /= 0 ) THEN ; npk   =kmax -kmin + 1;  ELSE ; kmin=1 ; ENDIF
@@ -94,7 +96,14 @@ PROGRAM cdfmeanvar
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
   PRINT *, 'nvpk  =', nvpk
+  PRINT *, 'nt    =', nt
 
+  lforcing=.FALSE.
+  IF ((npk .EQ. 0) .AND. (nt .GT. 1)) THEN
+     lforcing=.TRUE.
+     npk=1
+     PRINT *, 'W A R N I N G : you used a forcing field'
+  END IF
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )
   ALLOCATE ( zv(npiglo,npjglo) )
@@ -142,35 +151,43 @@ PROGRAM cdfmeanvar
 
   zvol=0.d0
   zsum=0.d0
-   DO jk = 1,nvpk
-     ik = jk+kmin-1
-     ! Get velocities v at ik
-     zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
-     zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
-!    zmask(:,npjglo)=0.
-
-     ! get e3 at level ik ( ps...)
-     e3(:,:) = getvar(coordzgr, ce3, ik,npiglo,npjglo,kimin=imin,kjmin=jmin, ldiom=.true.)
-     
-     ! 
-     zsurf=sum(e1 * e2 * zmask)
-     zvol2d=sum(e1 * e2 * e3 * zmask)
-     zvol=zvol+zvol2d
-     zsum2d=sum(zv*e1*e2*e3*zmask)
-     zvar2d=sum(zv*zv*e1*e2*e3*zmask)
-     zsum=zsum+zsum2d
-     zvar=zvar+zvar2d
-     IF (zvol2d /= 0 )THEN
-        PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
-        PRINT *, ' Mean value2 at level ',ik,'(',gdep(ik),' m) ',zvar2d/zvol2d, 'variance=', &
-           &    zvar2d/zvol2d - (zsum2d/zvol2d)*(zsum2d/zvol2d)
-     ELSE
-        PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
-     ENDIF
- 
+  DO jt = 1,nt
+     DO jk = 1,nvpk
+        ik = jk+kmin-1
+        ! Get velocities v at ik
+        IF ( lforcing ) THEN
+           ik = jt
+           zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin, ktime=jt)
+           ik=1
+        ELSE
+           zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin, ktime=jt)
+        END IF
+        zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
+        !    zmask(:,npjglo)=0.
+        
+        ! get e3 at level ik ( ps...)
+        e3(:,:) = getvar(coordzgr, ce3, ik,npiglo,npjglo,kimin=imin,kjmin=jmin, ldiom=.true.)
+        
+        ! 
+        zsurf=sum(e1 * e2 * zmask)
+        zvol2d=sum(e1 * e2 * e3 * zmask)
+        zvol=zvol+zvol2d
+        zsum2d=sum(zv*e1*e2*e3*zmask)
+        zvar2d=sum(zv*zv*e1*e2*e3*zmask)
+        zsum=zsum+zsum2d
+        zvar=zvar+zvar2d
+        IF (zvol2d /= 0 )THEN
+           PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
+           PRINT *, ' Mean value2 at level ',ik,'(',gdep(ik),' m) ',zvar2d/zvol2d, 'variance=', &
+                &    zvar2d/zvol2d - (zsum2d/zvol2d)*(zsum2d/zvol2d)
+        ELSE
+           PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
+        ENDIF
+     END DO
   END DO
-  PRINT * ,' Mean value over the ocean: ', zsum/zvol
-  PRINT * ,' Global variance over the ocean: ', zvar/zvol
-  PRINT * ,' Global std dev over the ocean: ', sqrt(zvar/zvol)
 
-   END PROGRAM cdfmeanvar
+  PRINT * ,' Mean value over the ocean: ', zsum/zvol
+  PRINT * ,' Global variance over the ocean: ', zvar/zvol - (zsum/zvol)*(zsum/zvol)
+  PRINT * ,' Global std dev over the ocean: ', sqrt(zvar/zvol - (zsum/zvol)*(zsum/zvol))
+  
+END PROGRAM cdfmeanvar
