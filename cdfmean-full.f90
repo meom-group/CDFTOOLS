@@ -162,9 +162,9 @@ PROGRAM cdfmean_full
      zsum2d=sum(zv*e1*e2*e3*zmask)
      zsum=zsum+zsum2d
      IF (zvol2d /= 0 )THEN
-        PRINT *, ' Mean value at level ',ik,'(',gdep,' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
+        PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
      ELSE
-        PRINT *, ' No points in the water at level ',ik,'(',gdep,' m) '
+        PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
      ENDIF
  
   END DO
