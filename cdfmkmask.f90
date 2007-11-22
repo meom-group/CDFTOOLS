@@ -12,9 +12,9 @@ PROGRAM cdfmkmask
   !! history: 
   !!     Original :   J.M. Molines November 2005
   !!-------------------------------------------------------------------
-  !!  $Rev: 67 $
-  !!  $Date: 2007-06-14 17:59:30 +0200 (Thu, 14 Jun 2007) $
-  !!  $Id: cdfmsksal.f90 67 2007-06-14 15:59:30Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
