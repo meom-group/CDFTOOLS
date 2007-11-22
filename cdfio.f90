@@ -215,6 +215,8 @@ CONTAINS
 
           IF ( ptyvar(jv)%precision == 'r8' ) THEN
              istatus = NF90_DEF_VAR(kout,ptyvar(jv)%name,NF90_DOUBLE,iidims(1:idims) ,kidvo(jv) )
+          ELSE IF ( ptyvar(jv)%precision == 'i2' ) THEN
+             istatus = NF90_DEF_VAR(kout,ptyvar(jv)%name,NF90_SHORT,iidims(1:idims) ,kidvo(jv) )
           ELSE
              IF ( ptyvar(jv)%scale_factor == 1. .AND. ptyvar(jv)%add_offset == 0. ) THEN
                 istatus = NF90_DEF_VAR(kout,ptyvar(jv)%name,NF90_FLOAT,iidims(1:idims) ,kidvo(jv) )
