@@ -47,6 +47,7 @@ PROGRAM cdfzonalmean
   REAL(KIND=4), DIMENSION (:),       ALLOCATABLE ::  gdep                !: gdept or gdepw
   REAL(KIND=4), DIMENSION (:,:,:),   ALLOCATABLE ::  zmask               !:  jpbasins x npiglo x npjglo
   REAL(KIND=4), DIMENSION (1)                    ::  tim
+  REAL(KIND=4)                                   :: spval=99999.
 
   REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE ::  zomsf , area        !: jpbasins x npjglo x npk
 
@@ -141,6 +142,7 @@ PROGRAM cdfzonalmean
 
   ! buildt output filename
   ivar = 0
+  mvar = 0
   DO jvar = 1,nvars
      ! skip variables such as nav_lon, nav_lat, time_counter deptht ...
      IF (ipk(jvar) == 0 ) THEN
@@ -165,7 +167,7 @@ PROGRAM cdfzonalmean
            ! units can be build automatically ( the same as original variable)
            typvaro(ivar)%units=typvar(jvar)%units
            ! missing value, valid min and valid max : idem original field
-           typvaro(ivar)%missing_value=typvar(jvar)%missing_value
+           typvaro(ivar)%missing_value=spval
            typvaro(ivar)%valid_min=typvar(jvar)%valid_min
            typvaro(ivar)%valid_max=typvar(jvar)%valid_max
            ! longname : prefix=Zonal_Mean_   suffix=TRIM(cbasin(jbasin)
@@ -272,7 +274,7 @@ PROGRAM cdfzonalmean
               WHERE (area /= 0 ) 
                  zomsf=zomsf/area
               ELSEWHERE
-                 zomsf=99999.
+                 zomsf=spval
               ENDWHERE
               ivar=  (jjvar-1)*npbasins + jbasin
               ierr = putvar (ncout, id_varout(ivar),REAL(zomsf(:,jkk)), jk,1,npjglo, ktime=jt)
