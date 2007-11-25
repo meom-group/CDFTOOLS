@@ -199,6 +199,16 @@ set -x
    expatrie  $fsshmean  $DIAGS $fsshmean
    expatrie  $ftmean  $DIAGS $ftmean
    expatrie  $fsmean  $DIAGS $fsmean
+   if [ $(chkfile $DIAGS/LEVITUS_y0000_TMEAN.txt ) == absent ] ; then
+    # first time : Create header with Levitus equivalent
+    # requires  LEVITUS 'same' diags (from the ANNUAL mean )
+    levitus=Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
+    rapatrie $levitus $IDIR $levitus
+    cdfmean $levitus  votemper T  >  LEVITUS_y0000_TMEAN.txt
+    cdfmean $levitus  vosaline T  >  LEVITUS_y0000_SMEAN.txt
+    expatrie  LEVITUS_y0000_TMEAN.txt $DIAGS  LEVITUS_y0000_TMEAN.txt
+    expatrie  LEVITUS_y0000_SMEAN.txt $DIAGS  LEVITUS_y0000_SMEAN.txt
+   fi
   fi
 
 
