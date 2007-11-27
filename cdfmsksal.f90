@@ -43,7 +43,10 @@ PROGRAM cdfmsksal
   CALL getarg (1, cfilet)
   npiglo= getdim (cfilet,'x')
   npjglo= getdim (cfilet,'y')
-  npk   = getdim (cfilet,'z')
+  npk   = getdim (cfilet,'depth')
+  PRINT *, 'NPIGLO ', npiglo
+  PRINT *, 'NPJGLO ', npjglo
+  PRINT *, 'NPK    ', npk
 
   ALLOCATE (zmask(npiglo,npjglo))
 

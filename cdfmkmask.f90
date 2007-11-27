@@ -58,7 +58,7 @@ PROGRAM cdfmkmask
   typvar(3)%name='vmask'
   typvar(4)%name='fmask'
   typvar(1:4)%units='1/0'
-  typvar(1:4)%missing_value=0.
+  typvar(1:4)%missing_value=9999.
   typvar(1:4)%valid_min= 0.
   typvar(1:4)%valid_max= 1.
   typvar(1)%long_name='tmask'
