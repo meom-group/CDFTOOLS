@@ -19,7 +19,7 @@ PROGRAM cdfspeed
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: jk, ik, jt
+  INTEGER   :: jk, ik, jt, ji, jj
   INTEGER   :: narg, iargc, ncout, ierr            !: command line 
   INTEGER   :: npiglo,npjglo,npk,nt                !: size of the domain
   INTEGER   :: nvpk                                !: vertical levels in working variable
@@ -43,7 +43,11 @@ PROGRAM cdfspeed
   IF ( narg == 0 ) THEN
      PRINT *,' Usage : cdfspeed  ncfileU ncfileV cdfvarU cdfvarV' 
      PRINT *,' Computes the speed current or wind'
-     PRINT *,' Output on speed.nc'
+     PRINT *,' If the input files are 3D, the input is assumed to be '
+     PRINT *,' a model output on native C-grid. Speed is computed on the A-grid.'
+     PRINT *,' If the input file is 2D and have many time steps, then '
+     PRINT *,' we assume that this is a forcing file already on the A-grid.'
+     PRINT *,' Output on speed.nc, variable U'
      STOP
   ENDIF
 
@@ -109,6 +113,18 @@ PROGRAM cdfspeed
         ELSE
            zv(:,:)= getvar(cfilev,cvarv,ik,npiglo,npjglo,ktime=jt)
            zu(:,:)= getvar(cfileu,cvaru,ik,npiglo,npjglo,ktime=jt)
+           ! in this case we are on the C-grid and the speed mus be computed on the A-grid
+           DO ji=1,npiglo -1
+             DO jj=1,npjglo
+               zu(ji,jj)=0.5*(zu(ji,jj)+zu(ji+1,jj))
+             ENDDO
+           ENDDO
+           DO ji=1,npiglo 
+             DO jj=1,npjglo-1
+               zv(ji,jj)=0.5*(zv(ji,jj)+zu(ji,jj+1))
+             ENDDO
+           ENDDO
+
         END IF
         
         U=SQRT(zv*zv+zu*zu)
