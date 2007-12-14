@@ -125,8 +125,8 @@ PROGRAM cdfsigtrp
   ALLOCATE ( gdept(npk), gdepw(npk) )
 
   ! read gdept, gdepw : it is OK even in partial cells, as we never use the bottom gdep
-  gdept(:) = getvare3(coordzgr,'gdept', npk) 
-  gdepw(:) = getvare3(coordzgr,'gdepw', npk) 
+  gdept(:) = getvare3(coordzgr,'gdept', npk)
+  gdepw(:) = getvare3(coordzgr,'gdepw', npk)
 
   !! *  Main loop on sections
 

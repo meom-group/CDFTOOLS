@@ -260,6 +260,9 @@ cdfweight: cdfio.o  cdfweight.f90
 cdfcoloc: cdfio.o  cdfcoloc.f90
 	$(F90) cdfcoloc.f90  -o cdfcoloc cdfio.o $(FFLAGS)
 
+cdfcoloc2: cdfio.o  cdfcoloc2.f90
+	$(F90) cdfcoloc2.f90  -o cdfcoloc2 cdfio.o $(FFLAGS)
+
 cdfstatcoord: cdfio.o  cdfstatcoord.f90
 	$(F90) cdfstatcoord.f90  -o cdfstatcoord cdfio.o $(FFLAGS)
 

@@ -44,7 +44,7 @@ PROGRAM cdfsigtrp
   INTEGER   :: numout=11                              !: ascii output
 
   INTEGER                            :: nsection                    !: number of sections (overall)
-  INTEGER ,DIMENSION(100)            :: imina, imaxa, jmina, jmaxa  !: sections limits
+  INTEGER ,DIMENSION(:), ALLOCATABLE :: imina, imaxa, jmina, jmaxa  !: sections limits
   INTEGER                            :: imin, imax, jmin, jmax      !: working section limits
   INTEGER                            :: npts                        !: working section number of h-points
 
@@ -63,7 +63,7 @@ PROGRAM cdfsigtrp
 
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE   :: zwtrp, zwtrpbin, trpbin       !: transport arrays
 
-  CHARACTER(LEN=80), DIMENSION (100)           :: csection                     !: section name
+  CHARACTER(LEN=80), DIMENSION (:), ALLOCATABLE :: csection                     !: section name
   CHARACTER(LEN=80) :: cfilet, cfileu, cfilev, cfilesec='dens_section.dat'      !: files name
   CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'          !: coordinates files
   CHARACTER(LEN=80) :: cfilout='trpsig.txt'                                     !: output file
@@ -86,7 +86,7 @@ PROGRAM cdfsigtrp
      PRINT *,'         -bimg : 2D (x=lat/lon, y=sigma) output on bimg file for hiso, cumul trp, trp'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc must be in the current directory'
      PRINT *,' File  section.dat must also be in the current directory '
-     PRINT *,' Output on trpsig.txt'
+     PRINT *,' Output on trpsig.txt and on standard output '
      STOP
   ENDIF
 
@@ -309,7 +309,7 @@ PROGRAM cdfsigtrp
         sigma=sigma_lev(jiso)
         DO ji=1,npts
            zwtrp(ji,jiso) = 0.d0
-           DO jk=1, nk
+           DO jk=1, nk-1
               IF ( gdepw(jk+1) < hiso(ji,jiso) ) THEN
                  zwtrp(ji,jiso)= zwtrp(ji,jiso) + eu(ji)*e3(ji,jk)*zu(ji,jk)
               ELSE  ! last box ( fraction)
@@ -366,13 +366,13 @@ PROGRAM cdfsigtrp
         OPEN(numbimg,FILE=cdum,FORM='UNFORMATTED')
         cdum=' 3 dimensions in this isopycnal file '
         WRITE(numbimg) cdum
-        cdum=' 1: hiso ;  2: bin trp '
+        cdum=' 1: hiso ;  2: bin trp ; 3: cumulated  trp '
         WRITE(numbimg) cdum
         WRITE(cdum,'(a,4i5.4)') ' from '//TRIM(csection(jsec)), imin,imax,jmin,jmax
         WRITE(numbimg) cdum
         cdum=' file '//TRIM(cfilet)
         WRITE(numbimg) cdum
-        WRITE(numbimg) npts,nbins,1,1,2,0
+        WRITE(numbimg) npts,nbins,1,1,3,0
         WRITE(numbimg) 1.,-REAL(sigma_lev(nbins)),1.,REAL(dsigma), 0.
         WRITE(numbimg) 0.
         WRITE(numbimg) 0.
@@ -380,6 +380,8 @@ PROGRAM cdfsigtrp
         WRITE(numbimg) (( REAL(hiso(ji,jiso)), ji=1,npts) , jiso=nbins,1,-1)
         ! binned transport
         WRITE(numbimg) (( REAL(zwtrpbin(ji,jiso))/1.e6, ji=1,npts) , jiso=nbins,1,-1)
+        ! cumulated transport
+        WRITE(numbimg) (( REAL(zwtrp(ji,jiso))/1.e6, ji=1,npts) , jiso=nbins,1,-1)
         CLOSE(numbimg)
      ENDIF
 
@@ -411,9 +413,9 @@ CONTAINS
   SUBROUTINE section_init(cdfile,cdsection,kimin,kimax,kjmin,kjmax,knumber)
     IMPLICIT NONE
     ! Arguments
-    INTEGER, DIMENSION(100) :: kimin,kimax, kjmin,kjmax
+    INTEGER, DIMENSION(:),ALLOCATABLE :: kimin,kimax, kjmin,kjmax
     INTEGER, INTENT(OUT) :: knumber
-    CHARACTER(LEN=80), DIMENSION(100) :: cdsection
+    CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cdsection
     CHARACTER(LEN=*), INTENT(IN) :: cdfile
 
     ! Local variables
@@ -434,10 +436,8 @@ CONTAINS
     END DO
 
     knumber=ii
-    IF ( knumber > 100 ) THEN
-      PRINT *,' ERROR : no more than 100 sections are allowed'
-      STOP
-    ENDIF
+    ALLOCATE( cdsection(knumber) )
+    ALLOCATE( kimin(knumber), kimax(knumber), kjmin(knumber), kjmax(knumber) )
     REWIND(numit)
     DO jsec=1,knumber
        READ(numit,'(a)') cdsection(jsec)

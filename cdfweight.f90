@@ -32,8 +32,9 @@ PROGRAM cdfweight
   INTEGER :: numgreg=10, numbin=20, ios
   
   ! Greg Holloway input data
-  INTEGER       :: id, idep
+  INTEGER       :: id
   REAL(KIND=8)  :: xmin, ymin
+  REAL(KIND=4)  :: dep
 
   REAL(KIND=8)                              :: emax, hPp          !: local maximum metrics
   REAL(KIND=8)                              :: glam0              !: longitude of grid point ji=1
@@ -127,21 +128,21 @@ PROGRAM cdfweight
   ios=0
   ! loop for each line of Greg File
   DO WHILE (ios == 0 )
-     READ(numgreg,*,iostat=ios) id,ymin,xmin,idep
+     READ(numgreg,*,iostat=ios) id,ymin,xmin,dep
      IF( ios == 0 ) THEN  ! EOF not reached
-        ! look for kloc = k index of point above idep
+        ! look for kloc = k index of point above dep
         kloc=1
         DO jk=1, npk-1
-           IF ( idep >= gdept(jk) ) THEN
+           IF ( dep >= gdept(jk) ) THEN
              kloc=jk 
            ELSE
              EXIT
            ENDIF
         ENDDO
         ! compute gamma such that Vint= (1-gamma) x V(kloc) + gamma x V(kloc +1)
-        gamma=(idep - gdept(kloc))/(gdept(kloc+1)-gdept(kloc) )
+        gamma=(dep - gdept(kloc))/(gdept(kloc+1)-gdept(kloc) )
         IF (kloc == npk -1 ) gamma=0
-        IF ( ldebug) print '("DEP", f8.1,i8,f8.0,f8.4)', gdept(kloc), idep, gdept(kloc+1), gamma
+        IF ( ldebug) print '("DEP", f8.1,i8,f8.0,f8.4)', gdept(kloc), dep, gdept(kloc+1), gamma
         IF ( gamma < 0 ) THEN
            kloc=1
            gamma = 0.
@@ -247,14 +248,14 @@ PROGRAM cdfweight
           alpha=-1000. ; beta=-1000.
         ENDIF
         
-        IF (ldebug) PRINT 9001, id, ymin, xmin, idep ,imin, jmin, rdis,  hP, hPp, hN, hE, hS, hW, iquadran, alpha, beta
+        IF (ldebug) PRINT 9001, id, ymin, xmin, dep ,imin, jmin, rdis,  hP, hPp, hN, hE, hS, hW, iquadran, alpha, beta
         ! output both on std output and binary weight file (same info).
-        PRINT 9002, id, ymin, xmin, idep ,imin, jmin, kloc, iquadran, alpha, beta, gamma
-        WRITE(numbin) id, ymin, xmin, idep ,imin, jmin, kloc, iquadran, hN, alpha, beta, gamma
+        PRINT 9002, id, ymin, xmin, dep ,imin, jmin, kloc, iquadran, alpha, beta, gamma
+        WRITE(numbin) id, ymin, xmin, dep ,imin, jmin, kloc, iquadran, hN, alpha, beta, gamma
      ENDIF
   ENDDO
-9001 FORMAT(i10, 2f10.4,3i6,7f10.4,I4,2f8.4)
-9002 FORMAT(i10, 2f10.4,4i6,I4,3f11.4)
+9001 FORMAT(i10, 3f10.4,2i6,7f10.4,I4,2f8.4)
+9002 FORMAT(i10, 3f10.4,3i6,I4,3f11.4)
      CLOSE(numbin)
 
 CONTAINS
