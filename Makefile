@@ -13,10 +13,10 @@ include make.macro
 
 CDFTOOLS=CDFTOOLS-2.1
 
-EXEC = cdfmoy cdfmoy_mpp cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
+EXEC = cdfmoy  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdfimprovechk\
        cdfbn2  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
-       cdfrhoproj cdfpv cdfpvor\
+       cdfrhoproj cdfsigintegr cdfpv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
        cdftransportizpm \
        cdfmasstrp cdfmasstrp-full \
@@ -108,6 +108,9 @@ cdfmkmask: cdfio.o  cdfmkmask.f90
 cdfmltmask: cdfio.o  cdfmltmask.f90
 	$(F90) cdfmltmask.f90 -o cdfmltmask cdfio.o $(FFLAGS)
 
+cdfmltmask2: cdfio.o  cdfmltmask2.f90
+	$(F90) cdfmltmask2.f90 -o cdfmltmask2 cdfio.o $(FFLAGS)
+
 cdfcurl: cdfio.o  cdfcurl.f90
 	$(F90) cdfcurl.f90 -o cdfcurl cdfio.o $(FFLAGS)
 
@@ -122,6 +125,9 @@ cdfmxl-full: cdfio.o eos.o  cdfmxl-full.f90
 
 cdfrhoproj: cdfio.o  cdfrhoproj.f90
 	$(F90) cdfrhoproj.f90 -o cdfrhoproj cdfio.o  $(FFLAGS) 
+
+cdfsigintegr: cdfio.o  cdfsigintegr.f90
+	$(F90) cdfsigintegr.f90 -o cdfsigintegr cdfio.o  $(FFLAGS) 
 
 cdfpv: cdfio.o  cdfpv.f90
 	$(F90) cdfpv.f90 -o cdfpv cdfio.o eos.o  $(FFLAGS) 
