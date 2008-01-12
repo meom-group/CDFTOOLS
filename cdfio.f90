@@ -723,14 +723,16 @@ CONTAINS
     !! * Local variables
     INTEGER, DIMENSION(4) :: istart, icount
     INTEGER :: ncid, id_var
-    INTEGER :: istatus, ilev, imin, jmin, itime, ilog
-    LOGICAL :: lliom=.false.
+    INTEGER :: istatus, ilev, imin, jmin, itime, ilog, ipiglo, imax
+    LOGICAL :: lliom=.false., llperio=.false.
     CHARACTER(LEN=80) :: clvar
 
     LOGICAL :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
     REAL(KIND=4) :: sf=1., ao=0.        !: Scale factor and add_offset
     REAL(KIND=4) :: spval               !: missing value
+    REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: zend, zstart
 
+    llperio=.false.
     IF (PRESENT(klev) ) THEN
        ilev=klev
     ELSE
@@ -739,6 +741,11 @@ CONTAINS
 
     IF (PRESENT(kimin) ) THEN
        imin=kimin
+       ipiglo=getdim(cdfile,'x')
+       IF (imin+kpi-1 > ipiglo ) THEN 
+         llperio=.true.
+         imax=kpi+1 +imin -ipiglo
+       ENDIF
     ELSE
        imin=1
     ENDIF
@@ -824,7 +831,16 @@ CONTAINS
     ENDIF
 
 
-    istatus=NF90_GET_VAR(ncid,id_var,getvar, start=istart,count=icount)
+    IF (llperio ) THEN
+      ALLOCATE (zend (ipiglo-imin,kpj), zstart(imax-1,kpj) )
+      istatus=NF90_GET_VAR(ncid,id_var,zend, start=(/imin,jmin,ilev,itime/),count=(/ipiglo-imin,kpj,1,1/))
+      istatus=NF90_GET_VAR(ncid,id_var,zstart, start=(/2,jmin,ilev,itime/),count=(/imax-1,kpj,1,1/))
+      getvar(1:ipiglo-imin,:)=zend
+      getvar(ipiglo-imin+1:kpi,:)=zstart
+      DEALLOCATE(zstart, zend )
+    ELSE
+      istatus=NF90_GET_VAR(ncid,id_var,getvar, start=istart,count=icount)
+    ENDIF
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar for ', TRIM(clvar)
        CALL ERR_HDL(istatus)

@@ -69,9 +69,12 @@ PROGRAM cdfclip
   ENDDO
    
 
-! npiglo= getdim (cfile,'x')
-! npjglo= getdim (cfile,'y')
-  npiglo= imax-imin+1
+  IF (imax < imin ) THEN ! we assume that this is the case when we cross the periodic line in orca (Indian ocean)
+    npiglo= getdim (cfile,'x')
+    npiglo=imax+(npiglo-imin) -1
+  ELSE
+    npiglo= imax-imin+1
+  ENDIF
   npjglo= jmax-jmin+1
   npk   = getdim (cfile,'depth',cdtrue=cdep, kstatus=istatus)
 
