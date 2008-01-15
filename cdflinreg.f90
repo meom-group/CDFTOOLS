@@ -34,6 +34,7 @@ PROGRAM cdflinreg
   INTEGER   :: ntframe                                      !: Cumul of time frame
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var , &         !: arrays of var id's
        &                             ipk    , &             !: arrays of vertical level for each var
+       &                             ipk2   , &             !: arrays of vertical level for each var
        &                             id_varout,& 
        &                             id_varout2
   REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: zy, zyt    !: Arrays for cumulated values
@@ -98,7 +99,7 @@ PROGRAM cdflinreg
 
   ALLOCATE (cvarname(nvars), cvarname2(3*nvars) )
   ALLOCATE (typvar(nvars), typvar2(3*nvars) )
-  ALLOCATE (id_var(nvars),ipk(nvars),id_varout(nvars), id_varout2(3*nvars)  )
+  ALLOCATE (id_var(nvars),ipk(nvars),id_varout(nvars), id_varout2(3*nvars),ipk2(3*nvars)  )
 
   ! get list of variable names and collect attributes in typvar (optional)
   cvarname(:)=getvarname(cfile,nvars,typvar)
@@ -152,6 +153,11 @@ PROGRAM cdflinreg
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
   ipk(:)     = getipk (cfile,nvars,cdep=cdep)
+  DO jvar=1,nvars
+    ipk2( (jvar-3)+1 ) = ipk(jvar)
+    ipk2( (jvar-3)+2 ) = ipk(jvar)
+    ipk2( (jvar-3)+3 ) = ipk(jvar)
+  ENDDO
   WHERE( ipk == 0 ) cvarname='none'
   typvar(:)%name=cvarname
   typvar2(:)%name=cvarname2
@@ -165,7 +171,7 @@ PROGRAM cdflinreg
   ncout2=create(cfileout2,cfile,npiglo,npjglo,npk,cdep=cdep)
 
 ! ierr= createvar(ncout , typvar,  nvars, ipk, id_varout )
-  ierr= createvar(ncout2, typvar2, nvars, ipk, id_varout2)
+  ierr= createvar(ncout2, typvar2, 3*nvars, ipk2, id_varout2)
 
 ! ierr= putheadervar(ncout , cfile, npiglo, npjglo, npk,cdep=cdep)
   ierr= putheadervar(ncout2, cfile, npiglo, npjglo, npk,cdep=cdep)
