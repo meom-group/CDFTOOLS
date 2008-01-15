@@ -15,7 +15,7 @@ CDFTOOLS=CDFTOOLS-2.1
 
 EXEC = cdfmoy  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdfimprovechk\
-       cdfbn2  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
+       cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
        cdfrhoproj cdfsigintegr cdfpv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
        cdftransportizpm \
@@ -80,6 +80,9 @@ cdfimprovechk: cdfio.o  cdfimprovechk.f90
 ## Derived quantities programs
 cdfbn2: cdfio.o  eos.o  cdfbn2.f90
 	$(F90) cdfbn2.f90 -o cdfbn2 cdfio.o eos.o  $(FFLAGS)
+
+cdfbn2-full: cdfio.o  eos.o  cdfbn2-full.f90
+	$(F90) cdfbn2-full.f90 -o cdfbn2-full cdfio.o eos.o  $(FFLAGS)
 
 cdfsig0: cdfio.o  eos.o  cdfsig0.f90
 	$(F90) cdfsig0.f90 -o cdfsig0 cdfio.o eos.o  $(FFLAGS)
