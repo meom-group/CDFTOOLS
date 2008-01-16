@@ -111,8 +111,8 @@ PROGRAM cdfspeed
            zu(:,:)= getvar(cfileu, cvaru,ik,npiglo,npjglo,ktime=jt)
            ik=1
         ELSE
-           zv(:,:)= getvar(cfilev,cvarv,ik,npiglo,npjglo,ktime=jt)
-           zu(:,:)= getvar(cfileu,cvaru,ik,npiglo,npjglo,ktime=jt)
+           zv(:,:)= getvar(cfilev,cvarv,jk,npiglo,npjglo,ktime=jt)
+           zu(:,:)= getvar(cfileu,cvaru,jk,npiglo,npjglo,ktime=jt)
            ! in this case we are on the C-grid and the speed mus be computed on the A-grid
            DO ji=1,npiglo -1
              DO jj=1,npjglo
