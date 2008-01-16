@@ -37,11 +37,11 @@ PROGRAM cdflinreg
        &                             ipk2   , &             !: arrays of vertical level for each var
        &                             id_varout,& 
        &                             id_varout2
-  REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: zy, zyt    !: Arrays for cumulated values
+  REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: zy, zyy, zyt    !: Arrays for cumulated values
   REAL(KIND=8)                                :: zt, zt2    !: variables for cumulated time values
   REAL(KIND=8)                                :: total_time
-  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: v2d ,&      !: Array to read a layer of data
-       &                                   rmean, rmean2, &
+  REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: v2d ,&      !: Array to read a layer of data
+       &                                   rmean, rmean2,rmean3,  &
        &                                   areg, breg, rpear !: slope, origin ordinate, pearson coef
   REAL(KIND=4),DIMENSION(2)                   :: timean     !: trick : timean(1) hold moy(t) (days)
                                                             !:         timean(2) hold moy(t2) (days)**2
@@ -91,8 +91,9 @@ PROGRAM cdflinreg
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
 
-  ALLOCATE( zy(npiglo,npjglo), zyt(npiglo,npjglo), v2d(npiglo,npjglo) )
-  ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo) )
+  ALLOCATE( zy(npiglo,npjglo), zyt(npiglo,npjglo), zyy(npiglo,npjglo),v2d(npiglo,npjglo) )
+  ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo),  rmean3(npiglo,npjglo) )
+  ALLOCATE( areg(npiglo,npjglo), breg(npiglo,npjglo) , rpear(npiglo,npjglo) )
 
   nvars = getnvar(cfile)
   PRINT *,' nvars =', nvars
@@ -109,7 +110,7 @@ PROGRAM cdflinreg
         ! AREG
         cvarname2(ijvar)=TRIM(cvarname(jvar))//'_areg'
         typvar2(ijvar)%name =  TRIM(typvar(jvar)%name)//'_areg'      ! name
-        typvar2(ijvar)%units = TRIM(typvar(jvar)%units)//'/day'      ! unit
+        typvar2(ijvar)%units = TRIM(typvar(jvar)%units)//'/year'      ! unit
         typvar2(ijvar)%missing_value = spval                         ! missing_value
         typvar2(ijvar)%valid_min = -100.                                    ! valid_min = zero
         typvar2(ijvar)%valid_max =  100.            ! valid_max *valid_max
@@ -154,11 +155,12 @@ PROGRAM cdflinreg
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
   ipk(:)     = getipk (cfile,nvars,cdep=cdep)
   DO jvar=1,nvars
-    ipk2( (jvar-3)+1 ) = ipk(jvar)
-    ipk2( (jvar-3)+2 ) = ipk(jvar)
-    ipk2( (jvar-3)+3 ) = ipk(jvar)
+    ipk2( (jvar-1)*3 +1 ) = ipk(jvar)
+    ipk2( (jvar-1)*3 +2 ) = ipk(jvar)
+    ipk2( (jvar-1)*3 +3 ) = ipk(jvar)
   ENDDO
   WHERE( ipk == 0 ) cvarname='none'
+  WHERE( ipk2 == 0 ) cvarname2='none'
   typvar(:)%name=cvarname
   typvar2(:)%name=cvarname2
 
@@ -178,36 +180,39 @@ PROGRAM cdflinreg
 
   lcaltmean=.TRUE. ; zt=0.d0 ; zt2=0.d0
   DO jvar = 1,nvars
-     ijvar=(jvar-3)+1
+     ijvar=(jvar-1)*3 +1
      IF (cvarname(jvar) == 'nav_lon' .OR. &
           cvarname(jvar) == 'nav_lat' ) THEN
         ! skip these variable
      ELSE
-        PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar)
+        PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar), jvar
         DO jk = 1, ipk(jvar)
-           PRINT *,'level ',jk
-           zy(:,:) = 0.d0 ; zyt(:,:) = 0.d0 ; total_time = 0.;  ntframe=0
+!          PRINT *,'level ',jk
+           zy(:,:) = 0.d0 ; zyt(:,:) = 0.d0 ; zyy(:,:) =0.d0 ; total_time = 0.;  ntframe=0
            DO jt = 1, narg
               CALL getarg (jt, cfile)
               nt = getdim (cfile,'time_counter')
+              ntframe=ntframe+nt
               IF ( lcaltmean )  THEN
-                 tim=getvar1d(cfile,'time_counter',nt)/86400.d0
-                 zt = zt + SUM(tim(1:nt) )
-                 zt2 = zt2 + SUM(tim(1:nt)*tim(1:nt) )
+                tim(ntframe-nt+1:ntframe)=getvar1d(cfile,'time_counter',nt)/86400.d0/365.
+!               tim(ntframe-nt+1:ntframe)=(/(ntframe-nt+jtt,jtt=1,nt)/)
               END IF
               DO jtt=1,nt
-                ntframe=ntframe+1
                 jkk=jk
                 ! If forcing fields is without depth dimension
                 IF (npk==0) jkk=jtt 
                 v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jtt )
-                zy(:,:) = zy(:,:) + v2d(:,:)
-                zyt(:,:) = zyt(:,:) + v2d(:,:)*tim(jtt)
+                zy(:,:)  = zy(:,:)  + v2d(:,:)
+                zyy(:,:) = zyy(:,:) + v2d(:,:)*v2d(:,:)
+                zyt(:,:) = zyt(:,:) + v2d(:,:)*tim(ntframe-nt+jtt)
               ENDDO
            END DO
            ! finish with level jk ; compute mean (assume spval is 0 )
+           zt=sum(tim(1:ntframe))
+           zt2=sum(tim(1:ntframe)*tim(1:ntframe) )
            rmean(:,:) = zy(:,:)/ntframe
            rmean2(:,:) = zyt(:,:)/ntframe
+           rmean3(:,:) = zyy(:,:)/ntframe
            ! store variable on outputfile
 !          ierr = putvar(ncout2,id_varout2(jvar) ,rmean, jk, npiglo, npjglo)
 !          ierr = putvar(ncout2,id_varout2(jvar),rmean2, jk,npiglo, npjglo)
@@ -222,14 +227,17 @@ PROGRAM cdflinreg
            areg(:,:)=( rmean2(:,:) - rmean(:,:) *timean(1) ) / ( timean(2) -timean(1)*timean(1) )
            breg(:,:)=rmean(:,:) - areg(:,:)*timean(1) 
   !!              R2= ( a.a.moy(t.t) -2a.b.moy(t) +b.b -moy(y).moy(y) ) )/( moy(y.y) -moy(y).moy(y) )
-           rpear(:,:) = (areg(:,:)*areg(:,:)*timean(2) -2*areg(:,:)*breg(:,:)*timean(1) -rmean(:,:)*rmean(:,:) ) / &
-             &          ( rmean2(:,:) -rmean(:,:)*rmean(:,:) )
+!          rpear(:,:) = (areg(:,:)*areg(:,:)*timean(2) -2*areg(:,:)*breg(:,:)*timean(1) -rmean(:,:)*rmean(:,:) ) / &
+!            &          ( rmean2(:,:) -rmean(:,:)*rmean(:,:) )
+           rpear(:,:) = areg(:,:)*areg(:,:)*( timean(2) -timean(1)*timean(1))/( rmean3(:,:) -rmean(:,:)*rmean(:,:) )
+           WHERE (rpear < 0 ) rpear=0 ; WHERE (rpear > 1 ) rpear=1
            ELSEWHERE
             areg=spval ; breg=spval ; rpear=spval
            ENDWHERE
-           ierr = putvar(ncout2,id_varout2(jvar) ,areg, jk, npiglo, npjglo)
-           ierr = putvar(ncout2,id_varout2(jvar),breg, jk,npiglo, npjglo)
-           ierr = putvar(ncout2,id_varout2(jvar),rpear, jk,npiglo, npjglo)
+           
+           ierr = putvar(ncout2,id_varout2(ijvar) ,REAL(areg), jk, npiglo, npjglo)
+           ierr = putvar(ncout2,id_varout2(ijvar+1),REAL(breg), jk,npiglo, npjglo)
+           ierr = putvar(ncout2,id_varout2(ijvar+2),REAL(rpear), jk,npiglo, npjglo)
            lcaltmean=.FALSE. ! tmean already computed
         END DO  ! loop to next level
      END IF
