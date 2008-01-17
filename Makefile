@@ -22,7 +22,7 @@ EXEC = cdfmoy  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdf
        cdfmasstrp cdfmasstrp-full \
        cdfsigtrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
-       cdfheatc cdfheatc-full cdfzonalmean cdfhflx\
+       cdfheatc cdfheatc-full cdfzonalmean cdfhflx cdfwflx \
        cdfmxlheatc cdfmxlheatc-full cdfmxlsaltc cdfmxlhcsc \
        cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
@@ -255,6 +255,9 @@ cdfzonalout: cdfio.o  cdfzonalout.f90
 
 cdfhflx: cdfio.o  cdfhflx.f90
 	$(F90) cdfhflx.f90 -o cdfhflx cdfio.o $(FFLAGS)
+
+cdfwflx: cdfio.o  cdfwflx.f90
+	$(F90) cdfwflx.f90 -o cdfwflx cdfio.o $(FFLAGS)
 
 ## Extracting tools, information tools
 cdfprofile: cdfio.o  cdfprofile.f90
