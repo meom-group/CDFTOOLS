@@ -8,10 +8,13 @@ PROGRAM cdflinreg
   !!  
   !!  **  Method: compute a and b such as yr = a . t + b 
   !!              yr is the estimation of the field value, t is the time (in days ).
-  !!              a= ( moy(y.t) - moy(y).moy(t) ) / (moy(t2) - moy(t).moy(t) )
+  !!              a= cov(y,t) / var(t)
   !!              b= moy(y) - a . moy(t) 
   !!              R2 pearson value [0,1], giving the quality of the adjustment is also given
-  !!              R2= ( a.a.moy(t.t) -2a.b.moy(t) +b.b -moy(y).moy(y) ) )/( moy(y.y) -moy(y).moy(y) )
+  !!              R2= a*a*var(t)/var(y)
+  !!        cov(y,t)= moy(y*t) - moy(y)*moy(t)
+  !!        var(t)  = moy(t*t) - moy(t)*moy(t)
+  !!        var(y)  = moy(y*y) - moy(y)*moy(y)
   !!
   !! history :
   !!     Original code :   J.M. Molines (Jan 2008 ) from cdfmoy
@@ -226,9 +229,6 @@ PROGRAM cdflinreg
            WHERE (rmean /= 0 ) 
            areg(:,:)=( rmean2(:,:) - rmean(:,:) *timean(1) ) / ( timean(2) -timean(1)*timean(1) )
            breg(:,:)=rmean(:,:) - areg(:,:)*timean(1) 
-  !!              R2= ( a.a.moy(t.t) -2a.b.moy(t) +b.b -moy(y).moy(y) ) )/( moy(y.y) -moy(y).moy(y) )
-!          rpear(:,:) = (areg(:,:)*areg(:,:)*timean(2) -2*areg(:,:)*breg(:,:)*timean(1) -rmean(:,:)*rmean(:,:) ) / &
-!            &          ( rmean2(:,:) -rmean(:,:)*rmean(:,:) )
            rpear(:,:) = areg(:,:)*areg(:,:)*( timean(2) -timean(1)*timean(1))/( rmean3(:,:) -rmean(:,:)*rmean(:,:) )
            WHERE (rpear < 0 ) rpear=0 ; WHERE (rpear > 1 ) rpear=1
            ELSEWHERE
