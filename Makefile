@@ -13,7 +13,7 @@ include make.macro
 
 CDFTOOLS=CDFTOOLS-2.1
 
-EXEC = cdfmoy  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
+EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfmxl cdfmxl-full\
        cdfrhoproj cdfsigintegr cdfpv cdfpvor\
@@ -34,6 +34,9 @@ all: $(EXEC)
 ## Statistical programs
 cdfmoy: cdfio.o   cdfmoy.f90
 	$(F90) cdfmoy.f90 -o cdfmoy cdfio.o  $(FFLAGS)
+
+cdfmoyt: cdfio.o   cdfmoyt.f90
+	$(F90) cdfmoyt.f90 -o cdfmoyt cdfio.o  $(FFLAGS)
 
 cdfmoy_mpp: cdfio.o   cdfmoy_mpp.f90
 	$(MPF90) cdfmoy_mpp.f90 -o cdfmoy_mpp cdfio.o  $(FFLAGS) $(LMPI)
