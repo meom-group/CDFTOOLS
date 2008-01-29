@@ -19,10 +19,10 @@ PROGRAM cdfcsp
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: jf,jk,jvar                                    !: dummy loop index
+  INTEGER   :: jf,jk,jvar, jt, jkk                          !: dummy loop index
   INTEGER   :: ierr                                         !: working integer
   INTEGER   :: ncid, narg, iargc                            !: 
-  INTEGER   :: npiglo,npjglo, npk                           !: size of the domain
+  INTEGER   :: npiglo,npjglo, npk , nt                      !: size of the domain
   INTEGER   ::  nvars                                       !: Number of variables in a file
   INTEGER , DIMENSION(:), ALLOCATABLE :: ipk                !: arrays of vertical level for each var
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var             !: arrays of var id
@@ -51,9 +51,13 @@ PROGRAM cdfcsp
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
   npk   = getdim (cfile,'depth',kstatus=istatus)
+  nt    = getdim (cfile,'time_counter')
   IF (istatus /= 0 ) THEN
      npk   = getdim (cfile,'z',kstatus=istatus)
-     IF (istatus /= 0 ) STOP 'depth dimension name not suported'
+     IF (istatus /= 0 ) THEN
+       PRINT *, "ASSUME NO VERTICAL DIMENSIONS !"
+       npk=0
+     ENDIF
   ENDIF
 
   PRINT *, 'npiglo=', npiglo
@@ -66,14 +70,18 @@ PROGRAM cdfcsp
 
   ALLOCATE (cvarname(nvars), id_var(nvars),ipk(nvars), typvar(nvars))
 
+  print *,' in getvarname'
   cvarname(:)=getvarname(cfile,nvars,typvar)
+  print *,' in getipk'
   ipk(:)      = getipk(cfile,nvars)
+  print *,' done'
   id_var(:)    = getvarid(cfile,nvars)
 
   DO jf = 1, narg
      CALL getarg (jf, cfile)
      PRINT *, 'Change spval on file ', cfile
      ncid = ncopen(cfile)
+     nt    = getdim (cfile,'time_counter')
      DO jvar = 1,nvars
         IF (cvarname(jvar) == 'nav_lon' .OR. &
              cvarname(jvar) == 'nav_lat'  .OR. &
@@ -85,11 +93,15 @@ PROGRAM cdfcsp
         ELSE
            ierr = getvaratt (cfile,cvarname(jvar),cunits,spval,clname,csname)
            ierr = cvaratt (cfile,cvarname(jvar),cunits,0.,clname,csname)
+          DO jt=1,nt
            DO jk = 1, ipk(jvar) 
-              tab(:,:) = getvar(cfile, cvarname(jvar), jk ,npiglo, npjglo )
+              jkk=jk
+              IF (npk == 0 ) jkk=jt
+              tab(:,:) = getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo, ktime=jt )
               WHERE( tab(:,:) == spval ) tab(:,:) = 0.
-              ierr = putvar(ncid, id_var(jvar) ,tab, jk, npiglo, npjglo)
+              ierr = putvar(ncid, id_var(jvar) ,tab, jkk, npiglo, npjglo, ktime=jt)
            ENDDO
+          END DO
         ENDIF 
      ENDDO
   ENDDO

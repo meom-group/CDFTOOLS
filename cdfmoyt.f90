@@ -105,7 +105,8 @@ PROGRAM cdfmoyt
      IF (cvarname(jvar)  /= 'vozocrtx' .AND. &
           cvarname(jvar) /= 'vomecrty' .AND. &
           cvarname(jvar) /= 'vovecrtz' .AND. &
-          cvarname(jvar) /= 'sossheig' ) THEN
+          cvarname(jvar) /= 'sossheig' .AND. &
+          cvarname(jvar) /= 'sst' ) THEN
           cvarname2(jvar) ='none'
      ELSE
         cvarname2(jvar)=TRIM(cvarname(jvar))//'_sqd'
@@ -156,7 +157,7 @@ PROGRAM cdfmoyt
      ELSE
         PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar)
         DO jk = 1, ipk(jvar)
-           PRINT *,'level ',jk
+           PRINT *,'JREC=', jrec, 'level ',jk
            tab(:,:) = 0.d0 ; tab2(:,:) = 0.d0 
            DO jt = 1, narg
               CALL getarg (jt, cfile)
@@ -175,8 +176,8 @@ PROGRAM cdfmoyt
            rmean(:,:) = tab(:,:)/narg
            IF (cvarname2(jvar) /= 'none' ) rmean2(:,:) = tab2(:,:)/narg
            ! store variable on outputfile
-           ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo,ktime=jrec)
-           IF (cvarname2(jvar) /= 'none' ) ierr = putvar(ncout2,id_varout2(jvar),rmean2, jk,npiglo, npjglo)
+           ierr = putvar(ncout, id_varout(jvar) ,rmean, jkk, npiglo, npjglo,ktime=jrec)
+           IF (cvarname2(jvar) /= 'none' ) ierr = putvar(ncout2,id_varout2(jvar),rmean2, jkk,npiglo, npjglo,ktime=jrec)
            IF (lcaltmean )  THEN
               timean(jrec)= total_time(jrec)/narg
            END IF
