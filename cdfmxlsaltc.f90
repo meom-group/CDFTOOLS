@@ -2,7 +2,7 @@ PROGRAM cdfmxlsaltc
   !!-------------------------------------------------------------------
   !!               ***  PROGRAM cdfmxlsaltc  ***
   !!
-  !!  **  Purpose  :  Compute the heat content in the mixed layer
+  !!  **  Purpose  :  Compute the salt content in the mixed layer
   !!                  PARTIAL STEPS
   !!  
   !!  **  Method   :  compute the sum ( S  * e1 *e2 * e3 *mask )
@@ -31,11 +31,11 @@ PROGRAM cdfmxlsaltc
   REAL(KIND=4),DIMENSION(:), ALLOCATABLE       ::  gdepw             !:  
 
   REAL(KIND=8), PARAMETER :: rprho0=1020., rpcp=4000.
-  REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf
+  REAL(KIND=8)      ::   zvol2d
   REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE ::  zmxlsaltc         !:  mxl salt content
 
   CHARACTER(LEN=80) :: cfilet 
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
+  CHARACTER(LEN=80) ::  coordzgr='mesh_zgr.nc',cmask='mask.nc'
 
   ! Output stuff
   INTEGER                         :: ncout, ierr
@@ -48,9 +48,9 @@ PROGRAM cdfmxlsaltc
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' Usage : cdfmxlsaltc  gridTfile   '
-     PRINT *,' Computes the heat content in the mixed layer (Joules)'
+     PRINT *,' Computes the salt content in the mixed layer (kg/m2)'
      PRINT *,' PARTIAL CELLS VERSION'
-     PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc '
+     PRINT *,' Files  mesh_zgr.nc ,mask.nc '
      PRINT *,'  must be in the current directory'
      PRINT *,' Output ncdf file mxlsaltc.nc, variable 2D somxlsaltc'
      STOP
@@ -100,8 +100,6 @@ PROGRAM cdfmxlsaltc
   ! in general it is not a particular value of gdepw.
   zmxl(:,:)=getvar(cfilet,'somxl010',1,npiglo,npjglo)
 
-  zvol=0.d0
-  zsum=0.d0
   zmxlsaltc(:,:)=0.d0
   DO jk = 1,npk
      ! Get temperatures at jk
