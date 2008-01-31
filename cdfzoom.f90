@@ -54,7 +54,7 @@ PROGRAM cdfzoom
      STOP
   END IF
   !
-  kext=1
+  kext=1 ; kmin=1 ; kmax=1
   fact=1
   numin = 10
   i=1
