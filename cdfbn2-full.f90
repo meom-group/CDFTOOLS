@@ -39,26 +39,37 @@ PROGRAM cdfbn2_full
        zmask,  e3w,gdepw
   REAL(KIND=4) , DIMENSION (:), ALLOCATABLE :: e3k
   REAL(KIND=4),DIMENSION(1)                   ::  tim
+  REAL(KIND=4),DIMENSION(:), ALLOCATABLE      ::  gdep
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='bn2.nc'   !:
+  CHARACTER(LEN=80) :: cfilet ,cfileout='bn2.nc', cdum, cdep   !:
   CHARACTER(LEN=80) :: coordzgr='mesh_zgr.nc' !:
   TYPE(variable), DIMENSION (1) :: typvar
 
   INTEGER    :: ncout
   INTEGER    :: istatus
   REAL(KIND=4)   ::  zpi
+  LOGICAL :: l_w=.false.
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfbn2-full   gridT '
+     PRINT *,' Usage : cdfbn2-full  gridT [W]'
      PRINT *,' Output on bn2.nc, variable vobn2'
+     PRINT *,' With option W specified, the output is on W points'
+     PRINT *,' By default it is on T points'
      PRINT *,' Need mesh_zgr.nc and mesh_hgr.nc '
      PRINT *,' FULL STEP CASE '
      STOP
   ENDIF
 
   CALL getarg (1, cfilet)
+  IF (narg == 2 ) THEN
+    CALL getarg(2,cdum)
+    SELECT CASE (cdum)
+    CASE ('W','w') ; l_w=.true.
+    CASE DEFAULT ; PRINT *,' Option not understood :', TRIM(cdum) ; STOP
+    END SELECT
+  ENDIF
 
   npiglo= getdim (cfilet,'x')
   npjglo= getdim (cfilet,'y')
@@ -82,14 +93,21 @@ PROGRAM cdfbn2_full
   PRINT *, 'npk   =', npk
 
   ALLOCATE (ztemp(npiglo,npjglo,2), zsal(npiglo,npjglo,2), zwk(npiglo,npjglo,2) ,zmask(npiglo,npjglo))
-  ALLOCATE (zn2(npiglo,npjglo) ,e3w(npiglo,npjglo),gdepw(1,1),e3k(npk) )
+  ALLOCATE (zn2(npiglo,npjglo) ,e3w(npiglo,npjglo),gdepw(1,1),e3k(npk) ,gdep(npk) )
+
+  cdep='gdept'
+  IF (l_w) cdep='gdepw'
+  DO jk=1,npk
+    gdepw(:,:)= getvar(coordzgr, cdep, jk, 1,1) ; gdep(jk)= gdepw(1,1)
+  ENDDO
+
 
   ! create output fileset
 
   ncout =create(cfileout, cfilet, npiglo,npjglo,npk)
 
   ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-  ierr= putheadervar(ncout, cfilet,npiglo,npjglo,npk)
+  ierr= putheadervar(ncout, cfilet,npiglo,npjglo,npk,pdep=gdep)
 
   zpi=ACOS(-1.)
 
@@ -114,12 +132,16 @@ PROGRAM cdfbn2_full
 
      zwk(:,:,iup) = eosbn2 ( ztemp,zsal,gdepw(1,1),e3w, npiglo,npjglo ,iup,idown)* zmask(:,:)
 
+     IF ( .NOT. l_w ) THEN
      ! now put zn2 at T level (k )
      WHERE ( zwk(:,:,idown) == 0 ) 
         zn2(:,:) =  zwk(:,:,iup)
      ELSEWHERE
         zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
      END WHERE
+     ELSE
+       zn2(:,:) = zwk(:,:,iup)
+     ENDIF
 
      ierr = putvar(ncout, id_varout(1) ,zn2, jk, npiglo, npjglo )
      itmp = idown ; idown = iup ; iup = itmp
