@@ -50,6 +50,7 @@ PROGRAM cdfbuoyflx
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  zmask,zcoefq,zcoefw              !:  work array
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  zalbet, zbeta                    !:  work array
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  evap, precip, runoff, wdmp, wnet !: water flux components
+  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  wice, precip_runoff               !: water flux components
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  qlat, qsb,    qlw,    qsw,  qnet !: heat flux components
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  b_evap, b_precip, b_runoff, b_wdmp, bw_net  !: BF water flux components
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  b_qlat, b_qsb,    b_qlw,    b_qsw , bh_net  !: BF heat flux components
@@ -63,7 +64,7 @@ PROGRAM cdfbuoyflx
 
   INTEGER    :: istatus
   ! output stuff
-  INTEGER, PARAMETER              :: jpvarout=23
+  INTEGER, PARAMETER              :: jpvarout=25
   INTEGER                         :: ncout, ierr
   INTEGER,    DIMENSION(jpvarout) :: ipk, id_varout  !: only one output variable
   REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
@@ -83,7 +84,7 @@ PROGRAM cdfbuoyflx
      PRINT *,' produces the buoyancy heat fluxes components'
      PRINT *,' produces the buoyancy net fluxes'
      PRINT *,' produces the sss and sst '
-     PRINT *,' Output on buoyflx.nc , 23 variables (2D) '
+     PRINT *,' Output on buoyflx.nc , 25 variables (2D) '
      STOP
   ENDIF
 
@@ -99,65 +100,71 @@ PROGRAM cdfbuoyflx
   typvar%axis='TYX'
 
   !  
-  ! 1--> 5 water fluxes                     ;   ! 6 --> 10    heat fluxes
-  typvar(1)%name= 'evap'                  ;  typvar(6)%name= 'latent'      
-  typvar(2)%name= 'precip'                ;  typvar(7)%name= 'sensible'      
-  typvar(3)%name= 'runoff'                ;  typvar(8)%name= 'longwave'      
-  typvar(4)%name= 'sssdmp'                ;  typvar(9)%name= 'solar'      
-  typvar(5)%name= 'watnet'                ;  typvar(10)%name= 'heatnet'      
-  typvar(1:5)%units='mm/day'              ;  typvar(6:10)%units='W/m2'      
-  typvar(1:5)%missing_value=0.            ;  typvar(6:10)%missing_value=0.      
-  typvar(1:5)%valid_min= -100.            ;  typvar(6:10)%valid_min= -500.      
-  typvar(1:5)%valid_max= 100.             ;  typvar(6:10)%valid_max= 500.      
-  typvar(1)%long_name='Evaporation'       ;  typvar(6)%long_name='Latent Heat flux'      
-  typvar(2)%long_name='Precipitation'     ;  typvar(7)%long_name='Sensible Heat flux'       
-  typvar(3)%long_name='Runoff'            ;  typvar(8)%long_name='Long Wave Heat flux'      
-  typvar(4)%long_name='SSS damping'       ;  typvar(9)%long_name='Short Wave Heat flux'
-  typvar(5)%long_name='Total water flux'  ;  typvar(10)%long_name='Net Heat Flux'      
-  typvar(1)%short_name='evap'             ;  typvar(6)%short_name='latent'      
-  typvar(2)%short_name='precip'           ;  typvar(7)%short_name='sensible'      
-  typvar(3)%short_name='runoff'           ;  typvar(8)%short_name='longwave'      
-  typvar(4)%short_name='sssdmp'           ;  typvar(9)%short_name='solar'      
-  typvar(5)%short_name='watnet'           ;  typvar(10)%short_name='heatnet'       
+  ! 1--> 7 water fluxes                     ;   ! 8 --> 12    heat fluxes
+  typvar(1)%name= 'evap'                  ;  typvar(8)%name= 'latent'      
+  typvar(2)%name= 'precip'                ;  typvar(9)%name= 'sensible'      
+  typvar(3)%name= 'runoff'                ;  typvar(10)%name= 'longwave'      
+  typvar(4)%name= 'sssdmp'                ;  typvar(11)%name= 'solar'      
+  typvar(5)%name= 'watnet'                ;  typvar(12)%name= 'heatnet'      
+  typvar(6)%name= 'wice'            
+  typvar(7)%name= 'precip_runoff'  
+  typvar(1:7)%units='mm/day'              ;  typvar(8:12)%units='W/m2'      
+  typvar(1:7)%missing_value=0.            ;  typvar(8:12)%missing_value=0.      
+  typvar(1:7)%valid_min= -100.            ;  typvar(8:12)%valid_min= -500.      
+  typvar(1:7)%valid_max= 100.             ;  typvar(8:12)%valid_max= 500.      
+  typvar(1)%long_name='Evaporation'       ;  typvar(8)%long_name='Latent Heat flux'      
+  typvar(2)%long_name='Precipitation'     ;  typvar(9)%long_name='Sensible Heat flux'       
+  typvar(3)%long_name='Runoff'            ;  typvar(10)%long_name='Long Wave Heat flux'      
+  typvar(4)%long_name='SSS damping'       ;  typvar(11)%long_name='Short Wave Heat flux'
+  typvar(5)%long_name='Total water flux'  ;  typvar(12)%long_name='Net Heat Flux'      
+  typvar(6)%long_name='Ice congelation and melting'  
+  typvar(7)%long_name='Precip and runoff together' 
+  typvar(1)%short_name='evap'             ;  typvar(8)%short_name='latent'      
+  typvar(2)%short_name='precip'           ;  typvar(9)%short_name='sensible'      
+  typvar(3)%short_name='runoff'           ;  typvar(10)%short_name='longwave'      
+  typvar(4)%short_name='sssdmp'           ;  typvar(11)%short_name='solar'      
+  typvar(5)%short_name='watnet'           ;  typvar(12)%short_name='heatnet'       
+  typvar(6)%short_name='wice'  
+  typvar(7)%short_name='precip_runoff' 
 
-  ! 11--> 15  buoy water fluxes             ;   ! 16 --> 20    buoy heat fluxes
-  typvar(11)%name= 'evap_b'               ;  typvar(16)%name= 'latent_b'
-  typvar(12)%name= 'precip_b'             ;  typvar(17)%name= 'sensible_b'
-  typvar(13)%name= 'runoff_b'             ;  typvar(18)%name= 'longwave_b'
-  typvar(14)%name= 'sssdmp_b'             ;  typvar(19)%name= 'solar_b'
-  typvar(15)%name= 'watnet_b'             ;  typvar(20)%name= 'heatnet_b'
-  typvar(11:15)%units='1e-6 kg/m2/s'      ;  typvar(16:20)%units='1e-6 kg/m2/s'
-  typvar(11:15)%missing_value=0.          ;  typvar(16:20)%missing_value=0.
-  typvar(11:15)%valid_min= -100.          ;  typvar(16:20)%valid_min= -500.
-  typvar(11:15)%valid_max= 100.           ;  typvar(16:20)%valid_max= 500.
-  typvar(11)%long_name='buoy flx evap'    ;  typvar(16)%long_name='buoy Latent Heat flux'
-  typvar(12)%long_name='buoy flx precip'  ;  typvar(17)%long_name='buoy Sensible Heat flux'
-  typvar(13)%long_name='buoy flx runoff'  ;  typvar(18)%long_name='buoy Long Wave Heat flux'
-  typvar(14)%long_name='buoy flx damping' ;  typvar(19)%long_name='buoy Short Wave Heat flux'
-  typvar(15)%long_name='buoy haline flx'  ;  typvar(20)%long_name='buoy thermo Flux'
-  typvar(11)%short_name='evap_b'          ;  typvar(16)%short_name='latent_b'
-  typvar(12)%short_name='precip_b'        ;  typvar(17)%short_name='sensible_b'
-  typvar(13)%short_name='runoff_b'        ;  typvar(18)%short_name='longwave_b'
-  typvar(14)%short_name='sssdmp_b'        ;  typvar(19)%short_name='solar_b'
-  typvar(15)%short_name='watnet_b'        ;  typvar(20)%short_name='heatnet_b'
+  ! 13--> 17  buoy water fluxes             ;   ! 18 --> 22    buoy heat fluxes
+  typvar(13)%name= 'evap_b'               ;  typvar(18)%name= 'latent_b'
+  typvar(14)%name= 'precip_b'             ;  typvar(19)%name= 'sensible_b'
+  typvar(15)%name= 'runoff_b'             ;  typvar(20)%name= 'longwave_b'
+  typvar(16)%name= 'sssdmp_b'             ;  typvar(21)%name= 'solar_b'
+  typvar(17)%name= 'watnet_b'             ;  typvar(22)%name= 'heatnet_b'
+  typvar(13:17)%units='1e-6 kg/m2/s'      ;  typvar(18:22)%units='1e-6 kg/m2/s'
+  typvar(13:17)%missing_value=0.          ;  typvar(18:22)%missing_value=0.
+  typvar(13:17)%valid_min= -100.          ;  typvar(18:22)%valid_min= -500.
+  typvar(13:17)%valid_max= 100.           ;  typvar(18:22)%valid_max= 500.
+  typvar(13)%long_name='buoy flx evap'    ;  typvar(18)%long_name='buoy Latent Heat flux'
+  typvar(14)%long_name='buoy flx precip'  ;  typvar(19)%long_name='buoy Sensible Heat flux'
+  typvar(15)%long_name='buoy flx runoff'  ;  typvar(20)%long_name='buoy Long Wave Heat flux'
+  typvar(16)%long_name='buoy flx damping' ;  typvar(21)%long_name='buoy Short Wave Heat flux'
+  typvar(17)%long_name='buoy haline flx'  ;  typvar(22)%long_name='buoy thermo Flux'
+  typvar(13)%short_name='evap_b'          ;  typvar(18)%short_name='latent_b'
+  typvar(14)%short_name='precip_b'        ;  typvar(19)%short_name='sensible_b'
+  typvar(15)%short_name='runoff_b'        ;  typvar(20)%short_name='longwave_b'
+  typvar(16)%short_name='sssdmp_b'        ;  typvar(21)%short_name='solar_b'
+  typvar(17)%short_name='watnet_b'        ;  typvar(22)%short_name='heatnet_b'
 
   ! total buoyancy flux
-  typvar(21)%name= 'buoyancy_fl'
-  typvar(21)%units='1e-6 kg/m2/s'
-  typvar(21)%missing_value=0.
-  typvar(21)%valid_min= -100.
-  typvar(21)%valid_max= 100.
-  typvar(21)%long_name='buoyancy flux'
-  typvar(21)%short_name='buoyancy_fl'
+  typvar(23)%name= 'buoyancy_fl'
+  typvar(23)%units='1e-6 kg/m2/s'
+  typvar(23)%missing_value=0.
+  typvar(23)%valid_min= -100.
+  typvar(23)%valid_max= 100.
+  typvar(23)%long_name='buoyancy flux'
+  typvar(23)%short_name='buoyancy_fl'
 
   ! SSS                                       ; SST
-  typvar(22)%name= 'sss'                      ;   typvar(23)%name= 'sst'
-  typvar(22)%units='PSU'                      ;   typvar(23)%units='Celsius'
-  typvar(22)%missing_value=0.                 ;   typvar(23)%missing_value=0.
-  typvar(22)%valid_min= 0.                    ;   typvar(23)%valid_min= -2.
-  typvar(22)%valid_max= 45                    ;   typvar(23)%valid_max= 45
-  typvar(22)%long_name='Sea Surface Salinity' ;   typvar(23)%long_name='Sea Surface Temperature'
-  typvar(22)%short_name='sss  '               ;   typvar(23)%short_name='sst'
+  typvar(24)%name= 'sss'                      ;   typvar(25)%name= 'sst'
+  typvar(24)%units='PSU'                      ;   typvar(25)%units='Celsius'
+  typvar(24)%missing_value=0.                 ;   typvar(25)%missing_value=0.
+  typvar(24)%valid_min= 0.                    ;   typvar(25)%valid_min= -2.
+  typvar(24)%valid_max= 45                    ;   typvar(25)%valid_max= 45
+  typvar(24)%long_name='Sea Surface Salinity' ;   typvar(25)%long_name='Sea Surface Temperature'
+  typvar(24)%short_name='sss  '               ;   typvar(25)%short_name='sst'
 
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
@@ -166,6 +173,7 @@ PROGRAM cdfbuoyflx
   ALLOCATE ( zmask(npiglo,npjglo), wnet(npiglo,npjglo), zalbet(npiglo,npjglo), zbeta(npiglo, npjglo) )
   ALLOCATE ( zcoefq(npiglo,npjglo), zcoefw(npiglo,npjglo) )
   ALLOCATE ( evap(npiglo,npjglo), precip(npiglo,npjglo), runoff(npiglo,npjglo), wdmp(npiglo,npjglo) )
+  ALLOCATE ( wice(npiglo,npjglo), precip_runoff(npiglo,npjglo) )
   ALLOCATE ( qlat(npiglo,npjglo), qsb(npiglo,npjglo), qlw(npiglo,npjglo), qsw(npiglo,npjglo), qnet(npiglo,npjglo) )
   ALLOCATE ( b_evap(npiglo,npjglo), b_precip(npiglo,npjglo), b_runoff(npiglo,npjglo), b_wdmp(npiglo,npjglo),bw_net(npiglo,npjglo) ) 
   ALLOCATE ( b_qlat(npiglo,npjglo), b_qsb(npiglo,npjglo),    b_qlw(npiglo,npjglo),    b_qsw(npiglo,npjglo), bh_net(npiglo,npjglo))
@@ -186,11 +194,17 @@ PROGRAM cdfbuoyflx
  ! Runoff
      runoff(:,:)= getvar(cfiler, 'sorunoff',  1 ,npiglo,npjglo)*86400.*zmask(:,:)         ! mm/days
       print *,'Runoff done'
- ! total water flux
-     wnet(:,:) =  getvar(cfilet, 'sowaflup',  1 ,npiglo,npjglo)*86400.*zmask(:,:)          ! mm/days
+ ! total water flux (emps)
+     wnet(:,:) =  getvar(cfilet, 'sowaflcd',  1 ,npiglo,npjglo)*86400.*zmask(:,:)          ! mm/days
       print *,'Total water flux done'
+ ! fsalt = contribution of ice freezing and melting to salinity ( + = freezing, - = melting )Q
+     wice(:,:) = getvar(cfilet, 'iowaflup',  1 ,npiglo,npjglo)*86400.*zmask(:,:)          ! mm/days
+      print *,'ice contribution done'
  ! Precip:
-     precip(:,:)= evap(:,:)-runoff(:,:)+wdmp(:,:)-wnet(:,:)                     ! mm/day
+     precip(:,:)= evap(:,:)-runoff(:,:)+wdmp(:,:)-wnet(:,:)+wice(:,:)                     ! mm/day
+      print *,'Precip done'
+ ! Precip+runoff : (as a whole ) (interpolated on line)
+     precip_runoff(:,:)= evap(:,:)+wdmp(:,:)-wnet(:,:)+wice(:,:)                          ! mm/day
       print *,'Precip done'
   ! other heat fluxes
      qsb(:,:)= getvar(cfilet, 'sosbhfup',  1 ,npiglo,npjglo)*zmask(:,:)                  ! W/m2 
@@ -238,31 +252,31 @@ PROGRAM cdfbuoyflx
  ierr = putvar(ncout, id_varout(3) ,runoff, 1,npiglo, npjglo)
  ierr = putvar(ncout, id_varout(4) ,wdmp,   1,npiglo, npjglo)
  ierr = putvar(ncout, id_varout(5) ,wnet,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(6) ,wice,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(7) ,precip_runoff,   1,npiglo, npjglo)
 
- ierr = putvar(ncout, id_varout(6)  ,qlat,  1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(7)  ,qsb,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(8)  ,qlw,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(9)  ,qsw,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(10) ,qnet,  1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(8)  ,qlat,  1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(9)  ,qsb,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(10)  ,qlw,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(11)  ,qsw,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(12) ,qnet,  1,npiglo, npjglo)
 
- ierr = putvar(ncout, id_varout(11) ,b_evap,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(12) ,b_precip, 1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(13) ,b_runoff, 1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(14) ,b_wdmp,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(15) ,bw_net,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(13) ,b_evap,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(14) ,b_precip, 1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(15) ,b_runoff, 1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(16) ,b_wdmp,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(17) ,bw_net,   1,npiglo, npjglo)
 
- ierr = putvar(ncout, id_varout(16) ,b_qlat,  1,npiglo, npjglo)
-! ierr = putvar(ncout, id_varout(16) ,zalbet,  1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(17) ,b_qsb,   1,npiglo, npjglo)
-! ierr = putvar(ncout, id_varout(17) ,zbeta,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(18) ,b_qlw,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(19) ,b_qsw,   1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(20) ,bh_net,  1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(18) ,b_qlat,  1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(19) ,b_qsb,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(20) ,b_qlw,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(21) ,b_qsw,   1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(22) ,bh_net,  1,npiglo, npjglo)
 
- ierr = putvar(ncout, id_varout(21) ,buoyancy_fl,  1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(23) ,buoyancy_fl,  1,npiglo, npjglo)
 
- ierr = putvar(ncout, id_varout(22) ,sss,  1,npiglo, npjglo)
- ierr = putvar(ncout, id_varout(23) ,sst,  1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(24) ,sss,  1,npiglo, npjglo)
+ ierr = putvar(ncout, id_varout(25) ,sst,  1,npiglo, npjglo)
 
  ierr=putvar1d(ncout,tim,1,'T')
 
