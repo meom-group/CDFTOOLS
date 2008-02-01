@@ -24,7 +24,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
        cdfheatc cdfheatc-full cdfzonalmean cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlheatc-full cdfmxlsaltc cdfmxlhcsc cdfvertmean\
-       cdfzonalsum cdficediags cdfzonalout\
+       cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask
@@ -313,6 +313,9 @@ cdfclip: cdfio.o  cdfclip.f90
 
 cdfsmooth: cdfio.o  cdfsmooth.f90
 	$(F90) cdfsmooth.f90  -o cdfsmooth cdfio.o $(FFLAGS)
+
+cdfpendep: cdfio.o  cdfpendep.f90
+	$(F90) cdfpendep.f90  -o cdfpendep cdfio.o $(FFLAGS)
 
 ## reformating programs
 cdf16bit: cdfio.o cdf16bit.f90
