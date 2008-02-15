@@ -121,7 +121,7 @@ PROGRAM cdfspeed
            ENDDO
            DO ji=1,npiglo 
              DO jj=1,npjglo-1
-               zv(ji,jj)=0.5*(zv(ji,jj)+zu(ji,jj+1))
+               zv(ji,jj)=0.5*(zv(ji,jj)+zv(ji,jj+1))
              ENDDO
            ENDDO
 
