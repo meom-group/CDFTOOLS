@@ -162,10 +162,10 @@ PROGRAM cdfvertmean
      e3(:,:) = getvar(coordzgr, ce3, jk,npiglo,npjglo, ldiom=.true.)
      IF (jk == k1 ) THEN
        hdep(:,:)=gdep(jk)+e3(:,:)
-       e3(:,:)=MIN(e3,hdep-dep_up)
+       e3(:,:)=MIN(e3,hdep-REAL(dep_up))
      ENDIF
      IF ( jk == k2 ) THEN
-      e3(:,:)=MIN(e3,dep_down-gdep(jk))
+      e3(:,:)=MIN(e3,REAL(dep_down)-gdep(jk))
      ENDIF
 
      zvol=SUM( e3 * zmask)
