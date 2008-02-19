@@ -20,7 +20,7 @@ PROGRAM cdfprobe
   CHARACTER(LEN=80) :: cfile, cdum , cvar
 
   narg=iargc()
-  IF ( narg /= 4  ) THEN
+  IF ( narg == 0  ) THEN
      PRINT *,' USAGE: cdfprobe cdf_file i j cdfvar [level]'
      PRINT *,'      Display a 2 columns output time(d) value '
      STOP 

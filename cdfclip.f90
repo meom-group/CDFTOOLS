@@ -30,24 +30,29 @@ PROGRAM cdfclip
        &                             id_varout , ndim
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: tab  !: Arrays for cumulated values
   REAL(KIND=8)                               :: total_time
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: v2d ,rlon, rlat
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: v2d ,rlon, rlat, v2dxz, v2dyz, zxz, zyz
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: dep
   REAL(KIND=4), DIMENSION(1)                 :: timean, tim
 
   CHARACTER(LEN=80) :: cfile ,cfileout                         !: file name
   CHARACTER(LEN=80) ::  cdep, cdum
   CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=255) :: cglobal !: global attribute to write on output file
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar
 
   INTEGER    :: ncout
   INTEGER    :: istatus
+  LOGICAL :: lzonal=.false. , lmeridian=.false.
+   
   !!
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' Usage : cdfclip -f file -zoom imin imax jmin jmax '
+     PRINT *,'    if imin==imax then assume a meridional section'
+     PRINT *,'    if jmin==jmax then assume a zonal section'
      STOP
   ENDIF
   !!
@@ -67,6 +72,10 @@ PROGRAM cdfclip
     END SELECT
     jarg=jarg+1
   ENDDO
+  WRITE(cglobal,'(a,a,a,4i5)') 'cdfclip -f ',TRIM(cfile),' -zoom ',imin,imax,jmin,jmax
+
+  IF ( imin == imax ) THEN ; lmeridian=.true.; print *,' Meridional section ' ; ENDIF
+  IF ( jmin == jmax ) THEN ; lzonal=.true. ; print *,' Zonal section ' ; ENDIF
    
 
   IF (imax < imin ) THEN ! we assume that this is the case when we cross the periodic line in orca (Indian ocean)
@@ -97,6 +106,7 @@ PROGRAM cdfclip
   PRINT *, 'npk   =', npk
 
   ALLOCATE( v2d(npiglo,npjglo),rlon(npiglo,npjglo), rlat(npiglo,npjglo), dep(npk) )
+  ALLOCATE( zxz(npiglo,1), zyz(1,npjglo) )
 
   nvars = getnvar(cfile)
   PRINT *,' nvars =', nvars
@@ -134,7 +144,7 @@ PROGRAM cdfclip
   ! create output file taking the sizes in cfile
 
   ncout =create(cfileout, cfile,npiglo,npjglo,npk,cdep=cdep)
-  ierr= createvar(ncout , typvar,  nvars, ipk, id_varout )
+  ierr= createvar(ncout , typvar,  nvars, ipk, id_varout,cdglobal=cglobal)
   ierr= putheadervar(ncout , cfile, npiglo, npjglo, npk,pnavlon=rlon, pnavlat=rlat,pdep=dep,cdep=cdep)
 
   DO jvar = 1,nvars
@@ -143,10 +153,32 @@ PROGRAM cdfclip
       CASE ('none' )
           ! skip
       CASE DEFAULT
-            DO jk=1,ipk(jvar)
-             v2d=getvar(cfile,cvarname(jvar),jk,npiglo,npjglo,kimin=imin,kjmin=jmin)
-             ierr=putvar(ncout,id_varout(jvar),v2d,jk,npiglo,npjglo)
-            END DO
+            IF ( lzonal ) THEN
+              ALLOCATE( v2dxz(npiglo,ipk(jvar)) )
+              print *, TRIM(cvarname(jvar)), jmin,npiglo, ipk(jvar), imin
+              v2dxz=getvarxz(cfile,cvarname(jvar),jmin,npiglo,ipk(jvar), kimin=imin,kkmin=1,ktime=1)
+              print *,'getvarxz OK'
+              DO jk=1,ipk(jvar)
+               zxz(:,1)=v2dxz(:,jk)
+               ierr=putvar(ncout,id_varout(jvar),zxz,jk,npiglo,1)
+              ENDDO
+              DEALLOCATE ( v2dxz )
+            ELSEIF (lmeridian) THEN
+              ALLOCATE(  v2dyz(npjglo,ipk(jvar)) )
+              print *, TRIM(cvarname(jvar)), imin,npjglo, ipk(jvar), jmin
+              v2dyz=getvaryz(cfile,cvarname(jvar),imin,npjglo,ipk(jvar),kjmin=jmin,kkmin=1,ktime=1)
+              print *,'getvaryz OK'
+              DO jk=1,ipk(jvar)
+               zyz(1,:)=v2dyz(:,jk)
+               ierr=putvar(ncout,id_varout(jvar),zyz,jk,1,npjglo)
+              ENDDO
+              DEALLOCATE ( v2dyz )
+            ELSE
+             DO jk=1,ipk(jvar)
+              v2d=getvar(cfile,cvarname(jvar),jk,npiglo,npjglo,kimin=imin,kjmin=jmin)
+              ierr=putvar(ncout,id_varout(jvar),v2d,jk,npiglo,npjglo)
+             ENDDO
+            ENDIF
       END SELECT
   END DO ! loop to next var in file
   ierr=putvar1d(ncout,timean,1,'T')

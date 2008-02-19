@@ -173,7 +173,7 @@ CONTAINS
     create=icout
   END FUNCTION create
 
-  FUNCTION createvar(kout,ptyvar,kvar,kpk, kidvo)
+  FUNCTION createvar(kout,ptyvar,kvar,kpk, kidvo, cdglobal)
     !! ----------------------------------------------------------------------------------------------------
     !!  *** Create kvar n-2D variables cdvar(:), in file id kout, kpk gives the number of vertical levels
     !!      idvo(:) contains the id of the crated variables.
@@ -193,10 +193,12 @@ CONTAINS
     INTEGER, DIMENSION(kvar), INTENT(out) :: kidvo
     INTEGER :: createvar
     TYPE (variable), DIMENSION(kvar) ,INTENT(in) :: ptyvar
+    CHARACTER(LEN=*), INTENT(in), OPTIONAL :: cdglobal
 
     ! * Local variables
     INTEGER :: jv,idims, istatus
     INTEGER, DIMENSION(4):: iidims
+   
 
     DO jv = 1, kvar
 
@@ -226,7 +228,7 @@ CONTAINS
           ENDIF
 
           ! add attributes
-          istatus = putatt(ptyvar(jv), kout,kidvo(jv))
+          istatus = putatt(ptyvar(jv), kout,kidvo(jv),cdglobal=cdglobal)
           createvar=istatus
        ENDIF
     END DO
@@ -320,7 +322,7 @@ CONTAINS
   END FUNCTION cvaratt
 
 
-  FUNCTION putatt (tyvar,kout,kid)
+  FUNCTION putatt (tyvar,kout,kid,cdglobal)
     !! ----------------------------------------------------------------------------------------------------
     !!  ***  Scan file att.txt for finding the line corresponding to cdvar, then read the attributes
     !!       for this variables ,whose id is kid and  write them in file id kout
@@ -330,6 +332,7 @@ CONTAINS
     INTEGER :: putatt
     INTEGER, INTENT(in) :: kout, kid
     TYPE (variable) ,INTENT(in) :: tyvar
+    CHARACTER(LEN=*), INTENT(in), OPTIONAL :: cdglobal !: global attribute
     putatt=NF90_PUT_ATT(kout,kid,'units',tyvar%units) 
     IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'missing_value',tyvar%missing_value)  
@@ -353,6 +356,11 @@ CONTAINS
     IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'savelog10',tyvar%savelog10) 
     IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    ! Global attribute
+    IF ( PRESENT(cdglobal) ) THEN
+    putatt=NF90_PUT_ATT(kout,NF90_GLOBAL,'history',cdglobal)
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    ENDIF
 
   END FUNCTION putatt
 
