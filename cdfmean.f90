@@ -20,12 +20,12 @@ PROGRAM cdfmean
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: jk, ik
+  INTEGER   :: jk, ik, jt
   INTEGER   :: imin=0, imax=0, jmin=0, jmax=0      !: domain limitation for computation
   INTEGER   :: kmin=0, kmax=0                      !: domain limitation for computation
   INTEGER   :: ierr                                !: working integer
   INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
+  INTEGER   :: npiglo,npjglo, npk, nt              !: size of the domain
   INTEGER   :: nvpk                                !: vertical levels in working variable
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, e3,  zv   !:  metrics, velocity
@@ -81,6 +81,7 @@ PROGRAM cdfmean
   npiglo= getdim (cfilev,'x')
   npjglo= getdim (cfilev,'y')
   npk   = getdim (cfilev,'depth')
+  nt    = getdim (cfilev,'time')
   nvpk  = getvdim(cfilev,cvar)
   IF (imin /= 0 ) THEN ; npiglo=imax -imin + 1;  ELSE ; imin=1 ; ENDIF
   IF (jmin /= 0 ) THEN ; npjglo=jmax -jmin + 1;  ELSE ; jmin=1 ; ENDIF
@@ -139,12 +140,14 @@ PROGRAM cdfmean
   e2(:,:) = getvar(coordhgr, ce2, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
   gdep(:) = getvare3(coordzgr,cdep,npk)
 
+DO jt=1,nt
   zvol=0.d0
   zsum=0.d0
    DO jk = 1,nvpk
      ik = jk+kmin-1
      ! Get velocities v at ik
      zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
+!     zv(:,:)= getvar(cfilev, cvar,  jt ,npiglo,npjglo,kimin=imin,kjmin=jmin,ktime=jt)
      zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
 !    zmask(:,npjglo)=0.
 
@@ -164,6 +167,7 @@ PROGRAM cdfmean
      ENDIF
  
   END DO
-  PRINT * ,' Mean value over the ocean: ', zsum/zvol
+  PRINT * ,' Mean value over the ocean: ', zsum/zvol, jt
+END DO
 
    END PROGRAM cdfmean

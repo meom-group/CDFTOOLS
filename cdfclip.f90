@@ -181,6 +181,7 @@ PROGRAM cdfclip
             ENDIF
       END SELECT
   END DO ! loop to next var in file
+  timean=getvar1d(cfile,'time_counter',1)
   ierr=putvar1d(ncout,timean,1,'T')
 
   istatus = closeout(ncout)
