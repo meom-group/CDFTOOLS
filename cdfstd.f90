@@ -67,9 +67,10 @@ PROGRAM cdfstd
      npk   = getdim (cfile,'z',kstatus=istatus)
      IF (istatus /= 0 ) THEN
         npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
-     ELSE
-        PRINT *,' assume file with no depth'
-        npk=0
+       IF (istatus /= 0 ) THEN
+         PRINT *,' assume file with no depth'
+         npk=0
+       ENDIF
      ENDIF
   ENDIF
 

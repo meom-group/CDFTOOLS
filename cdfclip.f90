@@ -79,14 +79,13 @@ PROGRAM cdfclip
     jarg=jarg+1
   ENDDO
   IF ( kmin > 0 ) THEN
-  WRITE(cglobal,'(a,a,a,6i5)') 'cdfclip -f ',TRIM(cfile),' -zoom ',imin,imax,jmin,jmax, kmin, kmax
+   WRITE(cglobal,'(a,a,a,6i5)') 'cdfclip -f ',TRIM(cfile),' -zoom ',imin,imax,jmin,jmax, kmin, kmax
   ELSE
-  WRITE(cglobal,'(a,a,a,4i5)') 'cdfclip -f ',TRIM(cfile),' -zoom ',imin,imax,jmin,jmax
+   WRITE(cglobal,'(a,a,a,4i5)') 'cdfclip -f ',TRIM(cfile),' -zoom ',imin,imax,jmin,jmax
   ENDIF
 
   IF ( imin == imax ) THEN ; lmeridian=.true.; print *,' Meridional section ' ; ENDIF
   IF ( jmin == jmax ) THEN ; lzonal=.true. ; print *,' Zonal section ' ; ENDIF
-   
 
   IF (imax < imin ) THEN ! we assume that this is the case when we cross the periodic line in orca (Indian ocean)
     npiglo= getdim (cfile,'x')
@@ -94,29 +93,38 @@ PROGRAM cdfclip
   ELSE
     npiglo= imax-imin+1
   ENDIF
-  npjglo= jmax-jmin+1
-  npk   = getdim (cfile,'depth',cdtrue=cdep, kstatus=istatus)
 
+  npjglo= jmax-jmin+1
+
+  ! look for possible name for vertical dim                       :
+  npk   = getdim (cfile,'depth',cdtrue=cdep, kstatus=istatus)     ! depthxxx
+  print *,'ist',istatus,'depth'
   IF (istatus /= 0 ) THEN
-     npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)
+     npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)       ! zxxx
+     print *,'ist',istatus,'z'
      IF (istatus /= 0 ) THEN
-       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
-        ELSE
-          IF (istatus /= 0 ) THEN
-! STOP 'depth dimension name not suported'
-          PRINT *,' assume file with no depth'
-          npk=0
-        ENDIF
+       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus) ! sigmaxxx
+      print *,'ist',istatus,'sigma'
+      IF (istatus /= 0 ) THEN
+         PRINT *,' assume file with no depth'
+         IF ( kmin > 0 ) THEN
+           PRINT *,' You cannot specify limits on k level !' ; STOP
+         ENDIF
+         npk=0  ! means no dim level in file (implicitly 1 level)
+      ENDIF
      ENDIF
   ENDIF
+
+  ! replace flag value (-9999) by standard value (no kmin kmax specified = whole column)
   IF ( kmin < 0 ) kmin = 1
   IF ( kmax < 0 ) kmax = npk
-  npkk = kmax - kmin +1   ! number of extracted levels. If no level in file, it is 0 ..
-  
+  npkk = kmax - kmin +1   ! number of extracted levels. If no level in file, it is 0: 0 -1 + 1 !
+  IF (npk == 0 ) kmax = 1
 
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk ,' npkk  =', npkk
+
   IF (npkk > npk ) THEN
    PRINT *,' It seems that you want levels that are not represented '
    PRINT *,' in any of the variables that are in the file ',TRIM(cfile)
@@ -147,7 +155,7 @@ PROGRAM cdfclip
   ! save variable dimension in ndim
   !  1 = either time or depth : noclip
   !  2 = nav_lon, nav_lat
-  !  3 = X,Y,T  or X,Y,Z   <-- need to fix the ambiguity
+  !  3 = X,Y,T  or X,Y,Z   <-- need to fix the ambiguity ...
   !  4 = X,Y,Z,T
   DO jvar=1,nvars
       ndim(jvar) = getvdim(cfile,cvarname(jvar)) + 1   !  we add 1 because vdim is dim - 1 ...
@@ -155,13 +163,12 @@ PROGRAM cdfclip
 
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  IF ( npk /= 0 ) THEN
+    
     ipk(:)     = getipk (cfile,nvars,cdep=cdep)
     ipk(:) = MIN ( ipk , kmax )            ! reduce max depth to the required maximum
     ipkk(:)= MAX( 0 , ipk(:) - kmin + 1 )  ! for output variable. For 2D input var, 
                                            ! ipkk is set to 0 if kmin > 1 ... OK ? 
     WHERE( ipkk == 0 ) cvarname='none'
-  ENDIF
   typvar(:)%name=cvarname
 
   ! create output fileset

@@ -63,11 +63,12 @@ PROGRAM cdfmoy_annual
   IF (istatus /= 0 ) THEN
      npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)
      IF (istatus /= 0 ) THEN
-       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
-        ELSE
+        npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
+        IF (istatus /= 0 ) THEN 
 ! STOP 'depth dimension name not suported'
-        PRINT *,' assume file with no depth'
-        npk=0
+         PRINT *,' assume file with no depth'
+         npk=0
+        ENDIF
      ENDIF
   ENDIF
   
