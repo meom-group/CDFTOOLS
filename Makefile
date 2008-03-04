@@ -315,7 +315,7 @@ cdfprobe: cdfio.o  cdfprobe.f90
 	$(F90) cdfprobe.f90  -o cdfprobe cdfio.o $(FFLAGS)
 
 cdfclip: cdfio.o  cdfclip.f90
-	$(F90) -CB cdfclip.f90  -o cdfclip cdfio.o $(FFLAGS)
+	$(F90) cdfclip.f90  -o cdfclip cdfio.o $(FFLAGS)
 
 cdfsmooth: cdfio.o  cdfsmooth.f90
 	$(F90) cdfsmooth.f90  -o cdfsmooth cdfio.o $(FFLAGS)
