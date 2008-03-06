@@ -53,7 +53,7 @@ PROGRAM cdfvita
   npjglo = getdim (cfileu,'y')
   npk    = getdim (cfileu,'depth')
 
-  ipk(1)      = 1
+  ipk(1)      = npk
   typvar(1)%name='sovitua'
   typvar(1)%units='m/s'
   typvar(1)%missing_value=0.
@@ -64,7 +64,7 @@ PROGRAM cdfvita
   typvar(1)%online_operation='N/A'
   typvar(1)%axis='TYX'
 
-  ipk(2)      = 1
+  ipk(2)      = npk
   typvar(2)%name='sovitva'
   typvar(2)%units='m/s'
   typvar(2)%missing_value=0.
@@ -75,7 +75,7 @@ PROGRAM cdfvita
   typvar(2)%online_operation='N/A'
   typvar(2)%axis='TYX'
 
-  ipk(3)      = 1
+  ipk(3)      = npk
   typvar(3)%name='sovitmod'
   typvar(3)%units='m/s'
   typvar(3)%missing_value=0.
@@ -94,7 +94,7 @@ PROGRAM cdfvita
   ALLOCATE( u(npiglo,npjglo),  v(npiglo,npjglo)  )
   ALLOCATE( ua(npiglo,npjglo), va(npiglo,npjglo), vmod(npiglo,npjglo) )
 
-  ncout =create(cfileout, cfilet,npiglo,npjglo,1)
+  ncout =create(cfileout, cfilet,npiglo,npjglo,npk)
 
   ierr= createvar(ncout ,typvar,3, ipk,id_varout )
   ierr= putheadervar(ncout, cfilet, npiglo, npjglo,npk)
