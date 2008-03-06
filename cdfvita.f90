@@ -99,8 +99,7 @@ PROGRAM cdfvita
   ierr= createvar(ncout ,typvar,3, ipk,id_varout )
   ierr= putheadervar(ncout, cfilet, npiglo, npjglo,npk)
 
-!  DO jk = 1, npk
-    jk=1
+  DO jk = 1, npk
     u(:,:) = getvar(cfileu,'vozocrtx',jk ,npiglo, npjglo)
     v(:,:) = getvar(cfilev,'vomecrty',jk ,npiglo, npjglo)
 
@@ -115,7 +114,7 @@ PROGRAM cdfvita
     ierr=putvar(ncout,id_varout(1), ua, jk ,npiglo, npjglo)
     ierr=putvar(ncout,id_varout(2), va, jk ,npiglo, npjglo)
     ierr=putvar(ncout,id_varout(3), vmod, jk ,npiglo, npjglo)
-!  END DO
+  END DO
     timean=getvar1d(cfileu,'time_counter',1)
     ierr=putvar1d(ncout,timean,1,'T')
     istatus = closeout(ncout)
