@@ -151,7 +151,7 @@ PROGRAM cdfmoc
   dumlon(:,:) = 0.   ! set the dummy longitude to 0
 
   ! create output fileset
-   ncout =create(cfileoutnc, cfilev, 1,npjglo,npk,cdep='depthw')
+   ncout =create(cfileoutnc, 'none', 1,npjglo,npk,cdep='depthw')
    ierr= createvar(ncout ,typvar,jpbasins, ipk,id_varout )
    ierr= putheadervar(ncout, cfilev,1, npjglo,npk,pnavlon=dumlon,pnavlat=dumlat,pdep=gdepw)
    tim=getvar1d(cfilev,'time_counter',1)
@@ -177,7 +177,6 @@ PROGRAM cdfmoc
   zomsf(:,:,:) = 0.
   
   DO jk = 1,npk-1
-     PRINT *,'level ',jk
      ! Get velocities v at jk
      zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
 

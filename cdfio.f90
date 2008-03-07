@@ -135,6 +135,7 @@ CONTAINS
        IF (PRESENT (cdep) ) THEN
           cldep = cdep
           idum=getdim(cdfilref,cldep,cldepref)   ! look for depth dimension name in ref file
+         IF (cldepref =='unknown' ) cldepref=cdep
        ELSE 
           idum=getdim(cdfilref,'depth',cldep   )   ! look for depth dimension name in ref file
           cldepref=cldep
