@@ -16,9 +16,9 @@ PROGRAM cdfgeo_uv
   !!   Original :  J. Jouanno (Feb 2008)
   !     remark JMM : use of fmask ? use of ff ?  
   !!---------------------------------------------------------------------
-  !!  $Rev: 94 $
-  !!  $Date: 2007-09-11 11:34:24 -0700 (Tue, 11 Sep 2007) $
-  !!  $Id: cdfw.f90 94 2007-09-11 18:34:24Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
