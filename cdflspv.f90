@@ -36,7 +36,7 @@ PROGRAM cdflspv
 
   INTEGER :: npiglo, npjglo, npk, npt  
   INTEGER :: narg, iargc
-  INTEGER :: ji,jj,jk
+  INTEGER :: ji,jj,jk, jt
   INTEGER :: ncout, ierr
   INTEGER :: iup=1 , idown=2, itmp
   INTEGER, DIMENSION(1) :: ipk, id_varout !: for output variables
@@ -107,14 +107,17 @@ PROGRAM cdflspv
   ncout = create(cfilout,'none' ,npiglo,npjglo,npk,cdep='depthw')
   ierr = createvar(ncout, typvar,1,ipk, id_varout )
   ierr = putheadervar(ncout , cfilet, npiglo, npjglo, npk,pdep=gdepw)
-  ierr = putvar1d(ncout,time_tag,1,'T')
+  ierr = putvar1d(ncout,time_tag,npt,'T')
+
+  DO jt=1,npt
+     PRINT *, 'time ',jt
   ! surface PV is unknown ...
   pv(:,:) = 0.
-  ierr = putvar(ncout,id_varout(1), pv,1,npiglo,npjglo)
+  ierr = putvar(ncout,id_varout(1), pv,1,npiglo,npjglo,ktime=jt)
 
   ! initialize first level
-  ztemp(:,:) =   getvar(cfilet,'votemper',1,npiglo,npjglo)
-  zsal(:,:)  =   getvar(cfilet,'vosaline',1,npiglo,npjglo)
+  ztemp(:,:) =   getvar(cfilet,'votemper',1,npiglo,npjglo,ktime=jt)
+  zsal(:,:)  =   getvar(cfilet,'vosaline',1,npiglo,npjglo,ktime=jt)
 
   zmask = 1.0
   WHERE(zsal == 0 ) zmask = 0.0
@@ -122,9 +125,8 @@ PROGRAM cdflspv
 
   ! Main vertical loop
   DO jk=2,npk
-     PRINT *, 'Level ',jk
-     ztemp(:,:) =   getvar(cfilet,'votemper',jk,npiglo,npjglo)
-     zsal(:,:)  =   getvar(cfilet,'vosaline',jk,npiglo,npjglo)
+     ztemp(:,:) =   getvar(cfilet,'votemper',jk,npiglo,npjglo,ktime=jt)
+     zsal(:,:)  =   getvar(cfilet,'vosaline',jk,npiglo,npjglo,ktime=jt)
      e3w (:,:)  =   getvar(coordzgr,'e3w_ps', jk, npiglo,npjglo, ldiom=.true.)
      WHERE (e3w == 0 ) e3w = 1.
 
@@ -141,13 +143,14 @@ PROGRAM cdflspv
            pv(ji,jj) = (fcorio(ji,jj))*dsig(ji,jj)*1.e7
         END DO
      END DO
-     ierr = putvar(ncout,id_varout(1), pv,jk,npiglo,npjglo)
+     ierr = putvar(ncout,id_varout(1), pv,jk,npiglo,npjglo,ktime=jt)
      
      ! swap index up and down
      itmp=iup
      iup=idown
      idown=itmp
-  END DO
+  END DO   ! level loop
+  END DO   ! time loop
 
   ierr = closeout(ncout)
   PRINT *,'cdflspv completed successfully'
