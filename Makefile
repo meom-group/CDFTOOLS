@@ -16,7 +16,7 @@ CDFTOOLS=CDFTOOLS-2.1
 EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
-       cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdfpvor\
+       cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
        cdftransportizpm \
        cdfmasstrp cdfmasstrp-full \
@@ -149,6 +149,9 @@ cdfsigintegr: cdfio.o  cdfsigintegr.f90
 
 cdfpv: cdfio.o  cdfpv.f90
 	$(F90) cdfpv.f90 -o cdfpv cdfio.o eos.o  $(FFLAGS) 
+
+cdflspv: cdfio.o  cdflspv.f90
+	$(F90) cdflspv.f90 -o cdflspv cdfio.o eos.o  $(FFLAGS) 
 
 cdfpvor: cdfio.o  cdfpvor.f90
 	$(F90) cdfpvor.f90 -o cdfpvor cdfio.o eos.o  $(FFLAGS) 
