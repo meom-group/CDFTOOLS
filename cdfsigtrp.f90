@@ -417,8 +417,8 @@ CONTAINS
     IMPLICIT NONE
     ! Arguments
 !   INTEGER, DIMENSION(:),ALLOCATABLE :: kimin,kimax, kjmin,kjmax
-    INTEGER, DIMENSION(knumber) :: kimin,kimax, kjmin,kjmax
     INTEGER, INTENT(INOUT) :: knumber
+    INTEGER, DIMENSION(knumber) :: kimin,kimax, kjmin,kjmax
 !   CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cdsection
     CHARACTER(LEN=80), DIMENSION(knumber) :: cdsection
     CHARACTER(LEN=*), INTENT(IN) :: cdfile

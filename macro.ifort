@@ -5,7 +5,8 @@
 #
 #NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
 NCDF = -I/usr/local/netcdf-3.6.1/ifort/include -L /usr/local/netcdf-3.6.1/ifort/lib/  \
-       -I/opt/netcdf/include -L /opt/netcdf/lib/ -lnetcdf
+       -I/opt/netcdf/include -L /opt/netcdf/lib/  \
+       -I/usr/local/include -L/usr/local/lib -lnetcdf
  
 F90=ifort
 MPF90=mpif90
