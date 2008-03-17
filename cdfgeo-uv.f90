@@ -52,7 +52,8 @@ PROGRAM cdfgeo_uv
      PRINT *,' USAGE : cdfgeo-uv fileT'
      PRINT *,'        Read sossheig on grid T'
      PRINT *,'        Produce 2 cdf file ugeo.nc and vgeo.nc with vozocrtx and vomecrty variables'
-     PRINT *,'        Names of the variable have been chosen to be compatible with cdfeke, but note that Ugeo and Vgeo are now respectively on V and U grid points'
+     PRINT *,'        Names of the variable have been chosen to be compatible with cdfeke, but note '
+     PRINT *,'        that Ugeo and Vgeo are now respectively on V and U grid points'
      PRINT *,'        Need mesh_hgr.nc mesh_zgr.nc'
      STOP
   ENDIF
