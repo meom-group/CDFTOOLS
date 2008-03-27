@@ -93,6 +93,7 @@ PROGRAM cdfmean
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
+  PRINT *, 'nt    =', nt
   PRINT *, 'nvpk  =', nvpk
 
   ! Allocate arrays

@@ -404,7 +404,7 @@ CONTAINS
 
   END FUNCTION getatt
 
-  FUNCTION  getdim (cdfile,cdim_name,cdtrue,kstatus)
+  FUNCTION  getdim (cdfile,cdim_name,cdtrue,kstatus,ldexact)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  getdim  ***
     !!
@@ -424,6 +424,7 @@ CONTAINS
          &                           cdim_name   ! dimension name to look at
     CHARACTER(LEN=80),OPTIONAL, INTENT(out) ::  cdtrue ! full name of the read dimension
     INTEGER, OPTIONAL, INTENT(out) :: kstatus   ! status of the nf inquire
+    LOGICAL, OPTIONAL, INTENT(in) :: ldexact    ! when true look for exact cdim_name
     INTEGER :: getdim                           ! the value for dim cdim_name, in file cdfile
 
     ! * Local variables
@@ -431,9 +432,11 @@ CONTAINS
     INTEGER :: istatus
     INTEGER :: idims
     CHARACTER(LEN=80) :: clnam
+    LOGICAL :: lexact=.false.
     clnam = '-------------'
 
     IF ( PRESENT(kstatus) ) kstatus=0
+    IF ( PRESENT(ldexact) ) lexact=ldexact
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
     IF ( istatus == NF90_NOERR ) THEN
        istatus=NF90_INQUIRE(ncid,ndimensions=idims)
@@ -445,13 +448,23 @@ CONTAINS
        !      id_var = id_var + 1
        !     END DO
 
-       DO id_var = 1,idims
-          istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,name=clnam,len=getdim)
-          IF ( INDEX(clnam,cdim_name) /= 0 ) THEN
-             IF ( PRESENT(cdtrue) ) cdtrue=clnam
-             EXIT
+       IF ( lexact ) THEN
+          istatus=NF90_INQ_DIMID(ncid,cdim_name,id_var)
+          IF (istatus /= NF90_NOERR ) THEN
+            PRINT *,NF90_STRERROR(istatus)
+            PRINT *,' Exact dimension name ', TRIM(cdim_name),' not found in ',TRIM(cdfile) ; STOP
           ENDIF
-       ENDDO
+          istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=getdim)
+          IF ( PRESENT(cdtrue) ) cdtrue=cdim_name
+       ELSE
+         DO id_var = 1,idims
+            istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,name=clnam,len=getdim)
+            IF ( INDEX(clnam,cdim_name) /= 0 ) THEN
+               IF ( PRESENT(cdtrue) ) cdtrue=clnam
+               EXIT
+            ENDIF
+         ENDDO
+       ENDIF
 
        IF ( id_var > idims ) THEN
           !      PRINT *,' warning: problem in getdim for ', TRIM(cdim_name),' in ', TRIM(cdfile)
@@ -750,7 +763,8 @@ CONTAINS
 
     IF (PRESENT(kimin) ) THEN
        imin=kimin
-       ipiglo=getdim(cdfile,'x')
+       ! next line in problem when x_a is before x in the mesh files ...
+       ipiglo=getdim(cdfile,'x',ldexact=.true.)
        IF (imin+kpi-1 > ipiglo ) THEN 
          llperio=.true.
          imax=kpi+1 +imin -ipiglo
