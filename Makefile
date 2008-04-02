@@ -79,9 +79,6 @@ cdfstdevts: cdfio.o  cdfstdevts.f90
 cdfvT: cdfio.o  cdfvT.f90
 	$(F90) cdfvT.f90 -o cdfvT cdfio.o $(FFLAGS)
 
-cdfmoyuvwt: cdfio.o  cdfmoyuvwt.f90
-	$(F90) cdfmoyuvwt.f90 -o cdfmoyuvwt cdfio.o $(FFLAGS)
-
 cdfvsig: cdfio.o eos.o  cdfvsig.f90
 	$(F90) cdfvsig.f90 -o cdfvsig cdfio.o eos.o $(FFLAGS)
 
