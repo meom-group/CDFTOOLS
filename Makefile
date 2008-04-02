@@ -14,6 +14,7 @@ include make.macro
 CDFTOOLS=CDFTOOLS-2.1
 
 EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
+       cdfmoyuv cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
        cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor\
@@ -27,7 +28,8 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
-       cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask
+       cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask \
+       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp
 
 all: $(EXEC)
 
@@ -49,6 +51,12 @@ cdfmoy_sp: cdfio.o   cdfmoy_sp.f90
 
 cdfmoy_chsp: cdfio.o   cdfmoy_chsp.f90
 	$(F90) cdfmoy_chsp.f90 -o cdfmoy_chsp cdfio.o  $(FFLAGS)
+
+cdfmoyuv: cdfio.o   cdfmoyuv.f90
+	$(F90) cdfmoyuv.f90 -o cdfmoyuv cdfio.o  $(FFLAGS)
+
+cdfmoyuvwt: cdfio.o   cdfmoyuvwt.f90
+	$(F90) cdfmoyuvwt.f90 -o cdfmoyuvwt cdfio.o  $(FFLAGS)
 
 cdfstd: cdfio.o  cdfstd.f90
 	$(F90)  cdfstd.f90 -o cdfstd cdfio.o $(FFLAGS)
@@ -158,6 +166,18 @@ cdflspv: cdfio.o  cdflspv.f90
 
 cdfpvor: cdfio.o  cdfpvor.f90
 	$(F90) cdfpvor.f90 -o cdfpvor cdfio.o eos.o  $(FFLAGS) 
+
+cdfkempemekeepe: cdfio.o  cdfkempemekeepe.f90
+	$(F90) cdfkempemekeepe.f90 -o cdfkempemekeepe cdfio.o  $(FFLAGS) 
+
+cdfbci: cdfio.o  cdfbci.f90
+	$(F90) cdfbci.f90 -o cdfbci cdfio.o  $(FFLAGS) 
+
+cdfbti: cdfio.o  cdfbti.f90
+	$(F90) cdfbti.f90 -o cdfbti cdfio.o  $(FFLAGS) 
+
+cdfnrjcomp: cdfio.o  cdfnrjcomp.f90
+	$(F90) cdfnrjcomp.f90 -o cdfnrjcomp cdfio.o  $(FFLAGS) 
 
 ## Transport programs
 cdfmhst: cdfio.o  cdfmhst.f90
