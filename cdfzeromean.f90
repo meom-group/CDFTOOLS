@@ -28,6 +28,7 @@ PROGRAM cdfzeromean
   INTEGER   :: ierr                                !: working integer
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk, nt              !: size of the domain
+  INTEGER   :: npiglo_fi,npjglo_fi
   INTEGER   :: nvpk                                !: vertical levels in working variable
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, e3,  zv   !:  metrics, velocity
@@ -94,6 +95,9 @@ PROGRAM cdfzeromean
   nt    = getdim (cfilev,'time')
   nvpk  = getvdim(cfilev,cvar)
   IF (npk == 0 ) THEN ;  lnodep=.TRUE. ; npk = 1 ; ENDIF  ! no depth dimension ==> 1 level
+  ! save original npiglo, npiglo
+  npiglo_fi=npiglo
+  npjglo_fi=npjglo
 
   IF (imin /= 0 ) THEN ; npiglo=imax -imin + 1;  ELSE ; imin=1 ; ENDIF
   IF (jmin /= 0 ) THEN ; npjglo=jmax -jmin + 1;  ELSE ; jmin=1 ; ENDIF
@@ -187,6 +191,9 @@ PROGRAM cdfzeromean
      zmean=zsum/zvol
      PRINT * ,' Mean value over the ocean: ', zmean, jt
   END DO
+  DEALLOCATE ( zv, zmask)
+  npiglo=npiglo_fi ; npjglo=npjglo_fi
+  ALLOCATE (zv(npiglo,npjglo), zmask(npiglo,npjglo) )
   ! re-read file and rest mean value from the variable and store on file
   nvars = getnvar(cfilev)
   ALLOCATE ( typvarin(nvars), cvarname(nvars) )
