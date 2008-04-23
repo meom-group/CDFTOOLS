@@ -83,6 +83,7 @@ PROGRAM cdfmean
   npk   = getdim (cfilev,'depth')
   nt    = getdim (cfilev,'time')
   nvpk  = getvdim(cfilev,cvar)
+  IF (npk == 0  ) THEN ; npk = 1              ; ENDIF  ! no depth dimension ==> 1 level
   IF (imin /= 0 ) THEN ; npiglo=imax -imin + 1;  ELSE ; imin=1 ; ENDIF
   IF (jmin /= 0 ) THEN ; npjglo=jmax -jmin + 1;  ELSE ; jmin=1 ; ENDIF
   IF (kmin /= 0 ) THEN ; npk   =kmax -kmin + 1;  ELSE ; kmin=1 ; ENDIF

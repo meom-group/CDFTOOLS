@@ -477,6 +477,8 @@ CONTAINS
        IF ( PRESENT(cdtrue) ) cdtrue='unknown'
        IF ( PRESENT(kstatus) ) kstatus=1 
     ENDIF
+    ! reset lexact to false for next call 
+    lexact=.false.
 
   END FUNCTION getdim
 

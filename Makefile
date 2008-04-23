@@ -22,7 +22,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdftransportizpm \
        cdfmasstrp cdfmasstrp-full \
        cdfsigtrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
-       cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full\
+       cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full cdfzeromean \
        cdfheatc cdfheatc-full cdfzonalmean cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlheatc-full cdfmxlsaltc cdfmxlhcsc cdfvertmean\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
@@ -260,6 +260,9 @@ cdfmeanvar: cdfio.o  cdfmeanvar.f90
 
 cdfmean-full: cdfio.o  cdfmean-full.f90
 	$(F90) cdfmean-full.f90 -o cdfmean-full cdfio.o $(FFLAGS)
+
+cdfzeromean: cdfio.o  cdfzeromean.f90
+	$(F90) cdfzeromean.f90 -o cdfzeromean cdfio.o $(FFLAGS)
 
 cdfheatc: cdfio.o  cdfheatc.f90
 	$(F90) cdfheatc.f90 -o cdfheatc cdfio.o $(FFLAGS)
