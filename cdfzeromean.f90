@@ -225,11 +225,11 @@ PROGRAM cdfzeromean
      DO jk = 1,nvpk
         ik = jk+kmin-1
         ! Get velocities v at ik
-        zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
+        zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo)
         !     zv(:,:)= getvar(cfilev, cvar,  jt ,npiglo,npjglo,kimin=imin,kjmin=jmin,ktime=jt)
-        zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
+        zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo)
         !    zmask(:,npjglo)=0.
-        WHERE (zmask /= 0 ) zv=zv - zmean
+        WHERE (zmask /= 0 ) zv(:,:) = zv(:,:) - zmean
         ierr = putvar(ncout, id_varout(1) ,zv, ik,npiglo, npjglo )
      END DO
   END DO
