@@ -41,7 +41,7 @@ PROGRAM cdftransportiz
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
   INTEGER   :: imin, imax, jmin, jmax, ik 
-  INTEGER   :: numout = 10
+  INTEGER   :: numout = 10, numvtrp=11, numhtrp=12, numstrp=14
 
   ! broken line stuff
   INTEGER, PARAMETER :: jpseg=10000
@@ -69,7 +69,8 @@ PROGRAM cdftransportiz
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
 
   CHARACTER(LEN=80) :: cfilet ,cfileout='section_trp.dat', &
-       &                       cfileu, cfilev, csection
+       &                       cfileu, cfilev, csection , &
+       &                       cfilvtrp='vtrp.txt', cfilhtrp='htrp.txt', cfilstrp='strp.txt'
   CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
   CHARACTER(LEN=80) ,DIMENSION(4)   :: cvarname   !: array of var name for output
 
@@ -231,10 +232,14 @@ PROGRAM cdftransportiz
   END DO    ! next class
 
   OPEN(numout,FILE=cfileout)
+  ! also dump the results on txt files without any comments, some users  like it !
+  OPEN(numvtrp,FILE=cfilvtrp)
+  OPEN(numhtrp,FILE=cfilhtrp)
+  OPEN(numstrp,FILE=cfilstrp)
   DO 
      PRINT *, ' Give name of section '
      READ(*,'(a)') csection
-     IF (TRIM(csection) == 'EOF' ) CLOSE(numout) 
+     IF (TRIM(csection) == 'EOF' ) THEN ; CLOSE(numout) ; CLOSE(numvtrp) ; CLOSE(numhtrp) ; CLOSE(numstrp) ; ENDIF
      IF (TRIM(csection) == 'EOF' ) EXIT
      PRINT *, ' Give imin, imax, jmin, jmax '
      READ(*,*) imin, imax, jmin, jmax
@@ -386,6 +391,9 @@ PROGRAM cdftransportiz
            WRITE(numout,9003) 0. ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
         ENDIF
         WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6, heatrpsum/1.e15, saltrpsum/1.e6
+        WRITE(numvtrp,'(e12.6)') voltrpsum
+        WRITE(numhtrp,'(e12.6)') heatrpsum
+        WRITE(numstrp,'(e12.6)') saltrpsum
 
      END DO ! next class
 
