@@ -394,6 +394,12 @@ coordinates2hgr: coordinates2hgr.f90
 coordinates2zgr: coordinates2zgr.f90
 	$(F90) coordinates2zgr.f90 -o coordinates2zgr $(FFLAGS)
 
+coordinates2hgr_karine: coordinates2hgr_karine.f90
+	$(F90) coordinates2hgr_karine.f90 -o coordinates2hgr_karine $(FFLAGS)
+
+coordinates2zgr_karine: coordinates2zgr_karine.f90
+	$(F90) coordinates2zgr_karine.f90 -o coordinates2zgr_karine $(FFLAGS)
+
 ## Modules
 
 cdfio.o: cdfio.f90
