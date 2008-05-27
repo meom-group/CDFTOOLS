@@ -83,7 +83,6 @@ PROGRAM cdfspeed
      PRINT *, 'W A R N I N G : you used a forcing field'
   END IF
 
-  ipk(1) = 1  !  2D
   ! define new variables for output
   typvar(1)%name='U'
   typvar(1)%units='m.s-1'
@@ -96,9 +95,17 @@ PROGRAM cdfspeed
   typvar(1)%axis='TZYX'
 
   ! create output fileset
-  ncout =create(cfileout, cfilev, npiglo,npjglo,0)
-  ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-  ierr= putheadervar(ncout, cfilev, npiglo, npjglo,0)
+  IF (lforcing ) THEN
+     ipk(1) = 1 !  2D
+     ncout =create(cfileout, cfilev, npiglo,npjglo,0)
+     ierr= createvar(ncout ,typvar,1, ipk,id_varout )
+     ierr= putheadervar(ncout, cfilev, npiglo, npjglo,0)
+  ELSE
+     ipk(1)=npk
+     ncout =create(cfileout, cfilev, npiglo,npjglo,npk)
+     ierr= createvar(ncout ,typvar,1, ipk,id_varout )
+     ierr= putheadervar(ncout, cfilev, npiglo, npjglo,npk)
+  END IF
   ! Allocate arrays
   ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), U(npiglo,npjglo))
 
@@ -133,6 +140,7 @@ PROGRAM cdfspeed
            PRINT *, jt
            ierr = putvar(ncout, id_varout(1) ,U, jt ,npiglo, npjglo, jt)
         ELSE
+           PRINT *, jk
            ierr = putvar(ncout, id_varout(1) ,U, jk ,npiglo, npjglo, jt)
         END IF        
      END DO
