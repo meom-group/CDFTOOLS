@@ -27,6 +27,8 @@ PROGRAM cdfspeed
 
   REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: zu, zv, U
 
+  REAL(kind=4), DIMENSION(:), ALLOCATABLE  :: tim
+
   CHARACTER(LEN=80) :: cfilev, cfileu
   CHARACTER(LEN=80) :: cfileout='speed.nc'
   CHARACTER(LEN=80) :: cvaru, cvarv, cvartype
@@ -107,7 +109,12 @@ PROGRAM cdfspeed
      ierr= putheadervar(ncout, cfilev, npiglo, npjglo,npk)
   END IF
   ! Allocate arrays
-  ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), U(npiglo,npjglo))
+  ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), U(npiglo,npjglo), tim(nt))
+
+  DO jt=1,nt
+     tim=jt
+  END DO
+  ierr=putvar1d(ncout,tim,nt,'T')
 
   DO jt = 1,nt
      DO jk = 1,nvpk
