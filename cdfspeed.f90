@@ -112,7 +112,7 @@ PROGRAM cdfspeed
   ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), U(npiglo,npjglo), tim(nt))
 
   DO jt=1,nt
-     tim=jt
+     tim(jt)=jt
   END DO
   ierr=putvar1d(ncout,tim,nt,'T')
 
