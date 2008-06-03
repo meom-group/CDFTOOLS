@@ -13,21 +13,21 @@ include make.macro
 
 CDFTOOLS=CDFTOOLS-2.1
 
-EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed\
+EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed cdfsum\
        cdfmoyuv cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
-       cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
+       cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
        cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
        cdftransportizpm \
        cdfmasstrp cdfmasstrp-full \
-       cdfsigtrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
+       cdfsigtrp cdfsigitrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full cdfzeromean \
        cdfheatc cdfheatc-full cdfzonalmean cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlheatc-full cdfmxlsaltc cdfmxlhcsc cdfvertmean\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
-       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy \
+       bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp
 
@@ -110,6 +110,9 @@ cdfsiginsitu: cdfio.o  eos.o  cdfsiginsitu.f90
 cdfbottomsig0: cdfio.o  eos.o  cdfbottomsig0.f90
 	$(F90) cdfbottomsig0.f90 -o cdfbottomsig0 cdfio.o eos.o  $(FFLAGS)
 
+cdfbottomsigi: cdfio.o  eos.o  cdfbottomsigi.f90
+	$(F90) cdfbottomsigi.f90 -o cdfbottomsigi cdfio.o eos.o  $(FFLAGS)
+
 cdfbottom: cdfio.o    cdfbottom.f90
 	$(F90) cdfbottom.f90 -o cdfbottom cdfio.o   $(FFLAGS)
 
@@ -124,6 +127,9 @@ cdfmsksal: cdfio.o  cdfmsksal.f90
 
 cdfmkmask: cdfio.o  cdfmkmask.f90
 	$(F90) cdfmkmask.f90 -o cdfmkmask cdfio.o $(FFLAGS)
+
+cdfmkmask-zone: cdfio.o  cdfmkmask-zone.f90
+	$(F90) cdfmkmask-zone.f90 -o cdfmkmask-zone cdfio.o $(FFLAGS)
 
 cdfmltmask: cdfio.o  cdfmltmask.f90
 	$(F90) cdfmltmask.f90 -o cdfmltmask cdfio.o $(FFLAGS)
@@ -228,6 +234,9 @@ cdfmasstrp-julien: cdfio.o  cdfmasstrp-julien.f90
 cdfsigtrp: cdfio.o  cdfsigtrp.f90
 	$(F90) cdfsigtrp.f90 -o cdfsigtrp cdfio.o eos.o $(FFLAGS)
 
+cdfsigitrp: cdfio.o  cdfsigitrp.f90
+	$(F90) cdfsigitrp.f90 -o cdfsigitrp cdfio.o eos.o $(FFLAGS)
+
 cdfsigtrp-full: cdfio.o  cdfsigtrp-full.f90
 	$(F90) cdfsigtrp-full.f90 -o cdfsigtrp-full cdfio.o eos.o $(FFLAGS)
 
@@ -251,6 +260,9 @@ cdfmocatl: cdfio.o  cdfmocatl.f90
 
 cdfmean: cdfio.o  cdfmean.f90
 	$(F90) cdfmean.f90 -o cdfmean cdfio.o $(FFLAGS)
+
+cdfsum: cdfio.o  cdfsum.f90
+	$(F90) cdfsum.f90 -o cdfsum cdfio.o $(FFLAGS)
 
 cdfvertmean: cdfio.o  cdfvertmean.f90
 	$(F90) cdfvertmean.f90 -o cdfvertmean cdfio.o $(FFLAGS)
@@ -374,6 +386,9 @@ cdfstrconv: cdfio.o cdfstrconv.f90
 cdfbathy: cdfio.o cdfbathy.f90
 	$(F90)   cdfbathy.f90  -o cdfbathy cdfio.o $(FFLAGS)
 	
+cdfvar: cdfio.o cdfvar.f90
+	$(F90)   cdfvar.f90  -o cdfvar cdfio.o $(FFLAGS)
+
 cdfcsp: cdfio.o cdfcsp.f90
 	$(F90)   cdfcsp.f90  -o cdfcsp cdfio.o $(FFLAGS)
 	
