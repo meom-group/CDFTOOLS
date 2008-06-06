@@ -1,6 +1,6 @@
-PROGRAM cdfsigtrp
+PROGRAM cdfsigitrp
   !!---------------------------------------------------------------------
-  !!               ***  PROGRAM cdfsigtrp  ***
+  !!               ***  PROGRAM cdfsigitrp  ***
   !!
   !!  **  Purpose: Compute density class Mass Transports  across a section
   !!               PARTIAL STEPS version
@@ -16,7 +16,7 @@ PROGRAM cdfsigtrp
   !!            read normal velocity (either vozocrtx oy vomecrty )
   !!            read 2 rows of T and S ( i i+1  or j j+1 )
   !!                compute the mean value at velocity point
-  !!                compute sigma0 (can be easily modified for sigmai )
+  !!                compute sigmai (reference depth is given as argument).
   !!            compute the depths of isopyncal surfaces
   !!            compute the transport from surface to the isopycn
   !!            compute the transport in each class of density
@@ -24,10 +24,11 @@ PROGRAM cdfsigtrp
   !!
   !! history :
   !!   Original :  J.M. Molines March 2006
+  !!   Original :  P. Mathiot 2008 from cdfsigtrp
   !!---------------------------------------------------------------------
-  !!  $Rev: 131 $
-  !!  $Date: 2007-12-14 09:21:24 +0100 (Fri, 14 Dec 2007) $
-  !!  $Id: cdfsigtrp.f90 131 2007-12-14 08:21:24Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -78,7 +79,7 @@ PROGRAM cdfsigtrp
   !  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg < 6  ) THEN
-     PRINT *,' Usage : cdfsigtrp  gridTfile  gridUfile gridVfile   sigma_min sigma_max nbins zref [options]'
+     PRINT *,' Usage : cdfsigitrp  gridTfile  gridUfile gridVfile   sigma_min sigma_max nbins zref [options]'
      PRINT *,'            sigma_min, sigma_max : limit for density bining '
      PRINT *,'                           nbins : number of bins to use '
      PRINT *, '           zref : depth of sigmai'
@@ -450,4 +451,4 @@ CONTAINS
   END SUBROUTINE section_init
 
 
-END PROGRAM cdfsigtrp
+END PROGRAM cdfsigitrp

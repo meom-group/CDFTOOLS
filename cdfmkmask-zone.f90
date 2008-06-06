@@ -1,6 +1,6 @@
-PROGRAM cdfmkmask
+PROGRAM cdfmkmask_zone
   !!-------------------------------------------------------------------
-  !!             ***  PROGRAM cdfmkmask  ***
+  !!             ***  PROGRAM cdfmkmask_zone  ***
   !!
   !!  **  Purpose: Build mask file from a salinity output
   !!  
@@ -11,10 +11,12 @@ PROGRAM cdfmkmask
   !!
   !! history: 
   !!     Original :   J.M. Molines November 2005
+  !!                  P. Mathiot (2008) from cdfmkmask limit to a particular area
+  !!     comment   : JMM : can be merge easily with cdfmkmask (using optional zoom)
   !!-------------------------------------------------------------------
-  !!  $Rev: 129 $
-  !!  $Date: 2007-11-27 10:52:19 +0100 (Tue, 27 Nov 2007) $
-  !!  $Id: cdfmkmask.f90 129 2007-11-27 09:52:19Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -41,7 +43,7 @@ PROGRAM cdfmkmask
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmkmask  gridT lonmin lonmax latmin latmax fileout'
+     PRINT *,' Usage : cdfmkmask-zone  gridT lonmin lonmax latmin latmax fileout'
      STOP
   ENDIF
 
@@ -137,4 +139,4 @@ PROGRAM cdfmkmask
   istatus = closeout(ncout)
 
 
-END PROGRAM cdfmkmask
+END PROGRAM cdfmkmask_zone

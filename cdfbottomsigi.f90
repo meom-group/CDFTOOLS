@@ -1,8 +1,8 @@
-PROGRAM cdfbottomsig0
+PROGRAM cdfbottomsigi
   !!-------------------------------------------------------------------
-  !!             ***  PROGRAM cdfbottomsig0  ***
+  !!             ***  PROGRAM cdfbottomsigi  ***
   !!
-  !!  **  Purpose: Compute the bottom sig0 from gridT file
+  !!  **  Purpose: Compute the bottom sigi from gridT file
   !!                Store the results on a 'similar' cdf file.
   !!  
   !!  **  Method: Try to avoid 3 d arrays 
@@ -10,10 +10,11 @@ PROGRAM cdfbottomsig0
   !!
   !! history: 
   !!     Original :   J.M. Molines (Nov. 2005)
+  !!              :   P. Mathiot (2008) from cdfbottomsig0 to cdfbottomdigi
   !!-------------------------------------------------------------------
-  !!  $Rev: 67 $
-  !!  $Date: 2007-06-14 17:59:30 +0200 (Thu, 14 Jun 2007) $
-  !!  $Id: cdfbottomsig0.f90 67 2007-06-14 15:59:30Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -30,7 +31,7 @@ PROGRAM cdfbottomsig0
   real(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: ztemp, zsal ,&   !: Array to read a layer of data
        &                                         ztemp0 , &       !: temporary array to read temp
        &                                         zsal0  , &       !: temporary array to read sal
-       &                                         zsig0 , &        !: potential density (sig-0)
+       &                                         zsigi , &        !: potential density (sig-0)
        &                                         zmask            !: 2D mask at surface
   REAL(KIND=4),DIMENSION(1)                   ::  tim
   REAL(KIND=4)  :: zref
@@ -72,7 +73,7 @@ PROGRAM cdfbottomsig0
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
 
-  ALLOCATE (ztemp(npiglo,npjglo), zsal(npiglo,npjglo), zsig0(npiglo,npjglo) ,zmask(npiglo,npjglo))
+  ALLOCATE (ztemp(npiglo,npjglo), zsal(npiglo,npjglo), zsigi(npiglo,npjglo) ,zmask(npiglo,npjglo))
   ALLOCATE (ztemp0(npiglo,npjglo), zsal0(npiglo,npjglo) )
 
   ! create output fileset
@@ -99,18 +100,18 @@ PROGRAM cdfbottomsig0
 
   ENDDO
      
-     zsig0(:,:) = sigmai ( ztemp,zsal,zref,npiglo,npjglo )* zmask(:,:)
+     zsigi(:,:) = sigmai ( ztemp,zsal,zref,npiglo,npjglo )* zmask(:,:)
 
-     sigmin=minval(zsig0(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
-     sigmax=maxval(zsig0(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
-     ismin= minloc(zsig0(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
-     ismax= maxloc(zsig0(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
+     sigmin=minval(zsigi(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
+     sigmax=maxval(zsigi(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
+     ismin= minloc(zsigi(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
+     ismax= maxloc(zsigi(2:npiglo-1,2:npjglo-1) ,zmask(2:npiglo-1,2:npjglo-1)==1)
      PRINT *,'Bottom density : min = ', sigmin,' at ', ismin(1), ismin(2)
      PRINT *,'               : max = ', sigmax,' at ', ismax(1), ismax(2)
 
-     ierr = putvar(ncout, id_varout(1) ,zsig0, 1,npiglo, npjglo)
+     ierr = putvar(ncout, id_varout(1) ,zsigi, 1,npiglo, npjglo)
 
         ierr=putvar1d(ncout,tim,1,'T')
 
   istatus = closeout(ncout)
-END PROGRAM cdfbottomsig0
+END PROGRAM cdfbottomsigi

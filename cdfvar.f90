@@ -1,21 +1,22 @@
-PROGRAM cdfbathy
+PROGRAM cdfvar
   !!----------------------------------------------------------------------------
-  !!                ***   PROGRAM cdfbathy ***
+  !!                ***   PROGRAM cdfvar ***
   !!
-  !!  ** Purpose:    Locally transform a bathy_meter file into a z-step like bathy
+  !!  ** Purpose:    Locally transform a data file .... ???
   !!
   !!  ** Method:  Use OPA9 routine to look for zps. Locally force the depth to give
   !!              full depth. Save the modifs as source fortran code.
   !!
-  !!  ** Usage :  cdfbathy -f file -zoom imin imax jmin jmax 
+  !!  ** Usage :  cdfvar -f file -zoom imin imax jmin jmax 
   !!
   !!   History: 
   !!       2007 : J-M Molines : Original
+  !!       2008 : P. Mathiot : Adaptation from cdfbathy for any variable of a file
   !!
   !!----------------------------------------------------------------------------
-  !!  $Rev: 67 $
-  !!  $Date: 2007-06-14 17:59:30 +0200 (Thu, 14 Jun 2007) $
-  !!  $Id: cdfbathy.f90 67 2007-06-14 15:59:30Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   ! * Module used
   USE cdfio
@@ -49,14 +50,14 @@ PROGRAM cdfbathy
   narg = iargc()
   IF (narg == 0) THEN
      PRINT 9999,'USAGE :cdfvar -f file '// &
-          '-zoom imin imax jmin jmax -fillzone -fullstep depmin'
+          '-zoom imin imax jmin jmax klev jtime -fillzone -fullstep depmin'
      PRINT 9999,'      -replace ''file'' -dumpzone ''file'' -a -o ' 
      PRINT 9999
      PRINT 9999, ' DESCRIPTION OF OPTIONS '
      PRINT 9999, ' ---------------------- '
      PRINT 9999, '   -file (or -f ) : name of var file '
      PRINT 9999, '   -var  (or -v ) : name of variable used '
-     PRINT 9999, '   -zoom (or -z ) : sub area of the var file to work with (imin imax jmin jmax klev)'
+     PRINT 9999, '   -zoom (or -z ) : sub area of the var file to work with (imin imax jmin jmax klev jtime)'
      PRINT 9999, '   -fillzone (or -fz ) : sub area will be filled with 0 up to the first coast line '
      PRINT 9999, '   -raz_zone (or -raz ) : sub area will be filled with 0 up '
      PRINT 9999, '   -fullstep (or -fs ) : sub area will be reshaped as full-step, below depmin'
@@ -368,4 +369,4 @@ CONTAINS
   END SUBROUTINE replacezone
 
 
-END PROGRAM cdfbathy
+END PROGRAM cdfvar

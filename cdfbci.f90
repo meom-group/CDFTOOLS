@@ -1,9 +1,10 @@
 PROGRAM cdfbci
   !!---------------------------------------------------------------------------
-  !!         ***  PROGRAM  cdfbti  ***
+  !!         ***  PROGRAM  cdfbci  ***
   !!
-  !!  **  Purpose: Compute the term of energetic transfert BTI 
-  !!      for the barotropic instability for given gridU gridV gridU2 gridV2 files and variables
+  !!  **  Purpose: Compute the term of energetic transfert BCI 
+  !!      for the baroclinic instability for given gridU gridV gridU2 gridV2 files and variables
+  !!      The intput file is the result of a pre-processing by cdfmoyuvwt
   !!
   !! history :
   !!   Original :  A. Melet (Feb 2008)

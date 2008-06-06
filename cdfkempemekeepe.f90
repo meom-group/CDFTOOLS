@@ -66,7 +66,7 @@ PROGRAM cdfkempemekeepe
 
   typvar(2)%name='anowT'
   typvar(2)%long_name='temporal mean of anomaly of w times ano of T on T point (*1000)'
-  typvar(2)%short_name='dTdy'
+  typvar(2)%short_name='anowT'
  
   typvar%units='1000 m.K'
   typvar%missing_value=0.

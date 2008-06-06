@@ -1,19 +1,20 @@
-PROGRAM cdfmean
+PROGRAM cdfsum
   !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfmean  ***
+  !!               ***  PROGRAM cdfsum  ***
   !!
-  !!  **  Purpose  :  Compute the Mean Value over the ocean
+  !!  **  Purpose  :  Compute the SUM  over the ocean
   !!                  PARTIAL STEPS
   !!  
-  !!  **  Method   :  compute the sum ( V * e1 *e2 * e3 *mask )/ sum( e1 * e2 * e3 *mask )
+  !!  **  Method   :  compute the sum ( V * e1 *e2 * e3 *mask )
   !!
   !!
   !! history ;
   !!  Original :  J.M. Molines (Oct. 2005) 
+  !!           :  P. Mathiot ( 2008) : adaptation from cdfmean
   !!-------------------------------------------------------------------
-  !!  $Rev: 94 $
-  !!  $Date: 2007-09-11 20:34:24 +0200 (Tue, 11 Sep 2007) $
-  !!  $Id: cdfmean.f90 94 2007-09-11 18:34:24Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -191,4 +192,4 @@ PROGRAM cdfmean
      IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: ', zsum
   END DO
   CLOSE(1)
-   END PROGRAM cdfmean
+   END PROGRAM cdfsum
