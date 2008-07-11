@@ -102,7 +102,7 @@ PROGRAM cdfsum
      npk=1
      PRINT *, 'W A R N I N G : you used a forcing field'
   END IF
-  IF (lforcing==.TRUE.)  OPEN(unit=1, file='out.txt' , form='formatted', status='new', iostat=err)
+  IF (lforcing)  OPEN(unit=1, file='out.txt' , form='formatted', status='new', iostat=err)
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )

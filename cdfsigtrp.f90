@@ -38,7 +38,7 @@ PROGRAM cdfsigtrp
   INTEGER   :: nbins                                  !: number of density classes
   INTEGER   :: ji, jk, jclass, jsec,jiso , jbin,jarg  !: dummy loop index
   INTEGER   :: ipos                                   !: working variable
-  INTEGER   :: narg, iargc, nxtarg                    !: command line 
+  INTEGER   :: narg, iargc                            !: command line 
   INTEGER   :: npk, nk                                !: vertical size, number of wet layers in the section
   INTEGER   :: numbimg=10                             !: optional bimg logical unit
   INTEGER   :: numout=11                              !: ascii output
