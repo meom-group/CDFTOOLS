@@ -268,7 +268,6 @@ cdfvertmean: cdfio.o  cdfvertmean.f90
 	$(F90) cdfvertmean.f90 -o cdfvertmean cdfio.o $(FFLAGS)
 
 cdfmeanvar: cdfio.o  cdfmeanvar.f90
-
 	$(F90) cdfmeanvar.f90 -o cdfmeanvar cdfio.o $(FFLAGS)
 
 cdfmean-full: cdfio.o  cdfmean-full.f90
