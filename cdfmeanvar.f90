@@ -39,7 +39,6 @@ PROGRAM cdfmeanvar
   CHARACTER(LEN=80) :: cvar, cvartype
   CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
 
-  LOGICAL    :: lforcing
   INTEGER    :: istatus
 
   ! constants
@@ -98,9 +97,7 @@ PROGRAM cdfmeanvar
   PRINT *, 'nvpk  =', nvpk
   PRINT *, 'nt    =', nt
 
-  lforcing=.FALSE.
   IF ((npk .EQ. 0) .AND. (nt .GT. 1)) THEN
-     lforcing=.TRUE.
      npk=1
      PRINT *, 'W A R N I N G : you used a forcing field'
   END IF
@@ -155,19 +152,13 @@ PROGRAM cdfmeanvar
      DO jk = 1,nvpk
         ik = jk+kmin-1
         ! Get velocities v at ik
-        IF ( lforcing ) THEN
-           ik = jt
-           zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin, ktime=jt)
-           ik=1
-        ELSE
-           zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin, ktime=jt)
+        zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin, ktime=jt)
+        IF ( nvpk /= 1 .OR. jt == 1 ) THEN
+          ! if there is only one level do not read mask and e3 every time step ...
+          zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
+          ! get e3 at level ik ( ps...)
+          e3(:,:) = getvar(coordzgr, ce3, ik,npiglo,npjglo,kimin=imin,kjmin=jmin, ldiom=.true.)
         END IF
-        zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
-        !    zmask(:,npjglo)=0.
-        
-        ! get e3 at level ik ( ps...)
-        e3(:,:) = getvar(coordzgr, ce3, ik,npiglo,npjglo,kimin=imin,kjmin=jmin, ldiom=.true.)
-        
         ! 
         zsurf=sum(e1 * e2 * zmask)
         zvol2d=sum(e1 * e2 * e3 * zmask)
@@ -177,7 +168,7 @@ PROGRAM cdfmeanvar
         zsum=zsum+zsum2d
         zvar=zvar+zvar2d
         IF (zvol2d /= 0 )THEN
-           PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
+           PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2 jt=', jt 
            PRINT *, ' Mean value2 at level ',ik,'(',gdep(ik),' m) ',zvar2d/zvol2d, 'variance=', &
                 &    zvar2d/zvol2d - (zsum2d/zvol2d)*(zsum2d/zvol2d)
         ELSE

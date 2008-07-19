@@ -253,10 +253,8 @@ PROGRAM cdfzonalmean
         DO jkk = 1, ipk(jvar)
            PRINT *,TRIM(cvarname(jvar)), ' level ',jkk
            ! Get variables and mask at level jk
-           IF (.NOT. lforcing) jk=jkk
-           IF ( lforcing     ) jk=jt
-           zv(:,:)       = getvar(cfilev,   cvarname(jvar),jk ,npiglo,npjglo)
-           zmaskvar(:,:) = getvar(cmaskfil, cmask,           jkk ,npiglo,npjglo)
+           zv(:,:)       = getvar(cfilev,   cvarname(jvar),jkk ,npiglo,npjglo,ktime=jt)
+           zmaskvar(:,:) = getvar(cmaskfil, cmask,         jkk ,npiglo,npjglo)
            
            ! For all basins 
            DO jbasin = 1, npbasins
@@ -277,7 +275,7 @@ PROGRAM cdfzonalmean
                  zomsf=spval
               ENDWHERE
               ivar=  (jjvar-1)*npbasins + jbasin
-              ierr = putvar (ncout, id_varout(ivar),REAL(zomsf(:,jkk)), jk,1,npjglo, ktime=jt)
+              ierr = putvar (ncout, id_varout(ivar),REAL(zomsf(:,jkk)), jkk,1,npjglo, ktime=jt)
            END DO  !next basin
         END DO  ! next k 
      END DO ! next time

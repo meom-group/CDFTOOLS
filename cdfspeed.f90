@@ -119,14 +119,11 @@ PROGRAM cdfspeed
   DO jt = 1,nt
      DO jk = 1,nvpk
         ! Get velocities v at ik
+           zv(:,:)= getvar(cfilev, cvarv,jk,npiglo,npjglo,ktime=jt)
+           zu(:,:)= getvar(cfileu, cvaru,jk,npiglo,npjglo,ktime=jt)
         IF ( lforcing ) THEN
-           ik = jt
-           zv(:,:)= getvar(cfilev, cvarv,ik,npiglo,npjglo,ktime=jt)
-           zu(:,:)= getvar(cfileu, cvaru,ik,npiglo,npjglo,ktime=jt)
-           ik=1
+          ! u and v are already on the T grid points
         ELSE
-           zv(:,:)= getvar(cfilev,cvarv,jk,npiglo,npjglo,ktime=jt)
-           zu(:,:)= getvar(cfileu,cvaru,jk,npiglo,npjglo,ktime=jt)
            ! in this case we are on the C-grid and the speed mus be computed on the A-grid
            DO ji=1,npiglo -1
              DO jj=1,npjglo
@@ -138,18 +135,10 @@ PROGRAM cdfspeed
                zv(ji,jj)=0.5*(zv(ji,jj)+zv(ji,jj+1))
              ENDDO
            ENDDO
-
         END IF
         
         U=SQRT(zv*zv+zu*zu)
-
-        IF (lforcing ) THEN
-           PRINT *, jt
-           ierr = putvar(ncout, id_varout(1) ,U, jt ,npiglo, npjglo, jt)
-        ELSE
-           PRINT *, jk
-           ierr = putvar(ncout, id_varout(1) ,U, jk ,npiglo, npjglo, jt)
-        END IF        
+        ierr = putvar(ncout, id_varout(1) ,U, jk ,npiglo, npjglo, ktime=jt)
      END DO
   END DO
   ierr = closeout(ncout)

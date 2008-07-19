@@ -24,7 +24,7 @@ PROGRAM cdfcurl
 
   REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  :: e2v, e1u, e1f, e2f 
   REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: un, vn, rotn, fmask, zun, zvn
-  REAL(KIND=4) ,DIMENSION(1)                 ::  tim
+  REAL(KIND=4) ,DIMENSION(:), ALLOCATABLE    ::  tim
 
   LOGICAL :: lforcing    = .FALSE.
 
@@ -85,8 +85,8 @@ PROGRAM cdfcurl
 
   ! if forcing field (PM)
   IF (ilev==0 .AND. npk==0) THEN
-     lforcing = .TRUE.
-     npk = 1
+     lforcing=.true.
+     npk = 1 ; ilev=1
      PRINT *, 'npk =0, assume 1'
   END IF
 
@@ -110,25 +110,24 @@ PROGRAM cdfcurl
   ALLOCATE ( un(npiglo,npjglo)  , vn(npiglo,npjglo)  )
   ALLOCATE ( zun(npiglo,npjglo) , zvn(npiglo,npjglo) )
   ALLOCATE ( rotn(npiglo,npjglo) , fmask(npiglo,npjglo) )
+  ALLOCATE ( tim(nt) )
 
   e1u=  getvar(coord, 'e1u', 1,npiglo,npjglo)
   e1f=  getvar(coord, 'e1f', 1,npiglo,npjglo)
   e2v=  getvar(coord, 'e2v', 1,npiglo,npjglo)
   e2f=  getvar(coord, 'e2f', 1,npiglo,npjglo)
 
-  tim=getvar1d(cfilu,'time_counter',1)
-  ierr=putvar1d(ncout,tim,1,'T')
+  tim=getvar1d(cfilu,'time_counter',nt)
+  ierr=putvar1d(ncout,tim,nt,'T')
   
   DO jt=1,nt
 
-     ! begin PM
      IF (MOD(jt,100)==0) PRINT *, jt,'/',nt
      ! if files are forcing fields
-     IF ( lforcing ) THEN
-        jk = jt
+        jk = ilev
         zun(:,:) =  getvar(cfilu, cvaru, jk ,npiglo,npjglo, ktime=jt)
         zvn(:,:) =  getvar(cfilv, cvarv, jk ,npiglo,npjglo, ktime=jt)
-        ! compute u and v on U and V point
+     IF ( lforcing ) THEN ! for forcing file u and v are on the A grid
         DO ji=1, npiglo-1
            un(ji,:) = 0.5*(zun(ji,:) + zun(ji+1,:))
         END DO
@@ -138,11 +137,9 @@ PROGRAM cdfcurl
         END DO
         ! end compute u and v on U and V point
      ELSE
-        jk = ilev
-        un(:,:) =  getvar(cfilu, cvaru, jk ,npiglo,npjglo, ktime=jt)
-        vn(:,:) =  getvar(cfilv, cvarv, jk ,npiglo,npjglo, ktime=jt)
+       un(:,:) = zun(:,:)
+       vn(:,:) = zvn(:,:)
      END IF
-     !end PM
 
      ! compute the mask
      IF (jt==1) THEN
@@ -166,7 +163,7 @@ PROGRAM cdfcurl
      ! 
      ! write rotn on file at level k and at time jt
      IF (lforcing ) THEN
-        ierr = putvar(ncout, id_varout(1) ,rotn, jt ,npiglo, npjglo, jt)
+        ierr = putvar(ncout, id_varout(1) ,rotn, 1 ,npiglo, npjglo, jt)
      ELSE
         ierr = putvar(ncout, id_varout(1) ,rotn, 1 ,npiglo, npjglo, jt)
      END IF

@@ -745,8 +745,8 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpi,kpj) :: getvar      ! 2D REAL 4 holding variable field at klev
 
     !! * Local variables
-    INTEGER, DIMENSION(4) :: istart, icount
-    INTEGER :: ncid, id_var
+    INTEGER, DIMENSION(4) :: istart, icount, nldim
+    INTEGER :: ncid, id_var, id_dimunlim, nbdim
     INTEGER :: istatus, ilev, imin, jmin, itime, ilog, ipiglo, imax
     LOGICAL :: lliom=.false., llperio=.false.
     CHARACTER(LEN=80) :: clvar
@@ -800,16 +800,6 @@ CONTAINS
     lsf=.FALSE.
     lao=.FALSE.
 
-    istart(1) = imin
-    istart(2) = jmin
-    ! JMM ! it workd for X Y Z T file,   not for X Y T .... try to found a fix !
-    istart(3) = ilev
-    istart(4) = itime
-
-    icount(1)=kpi
-    icount(2)=kpj
-    icount(3)=1
-    icount(4)=1
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,ncid) )
     IF ( lliom) THEN  ! try to detect if input file is a zgr IOM file, looking for e3t_0
       istatus=NF90_INQ_VARID( ncid,'e3t_0', id_var)
@@ -823,8 +813,28 @@ CONTAINS
       END SELECT
       ENDIF
     ENDIF
-
+    istatus=NF90_INQUIRE(ncid,unlimitedDimId=id_dimunlim)
     CALL ERR_HDL(NF90_INQ_VARID ( ncid,clvar,id_var))
+    ! look for time dim in variable
+    nldim=0
+    istatus=NF90_INQUIRE_VARIABLE(ncid, id_var,ndims=nbdim,dimids=nldim(:) )
+
+    istart(1) = imin
+    istart(2) = jmin
+    ! JMM ! it workd for X Y Z T file,   not for X Y T .... try to found a fix !
+    IF ( nldim(3) == id_dimunlim ) THEN
+    istart(3) = itime
+    istart(4) = 1
+    ELSE
+    istart(3) = ilev
+    istart(4) = itime
+    ENDIF
+
+    icount(1)=kpi
+    icount(2)=kpj
+    icount(3)=1
+    icount(4)=1
+
 
     istatus=NF90_INQUIRE_ATTRIBUTE(ncid,id_var,'missing_value')
     IF (istatus == NF90_NOERR ) THEN
@@ -1318,16 +1328,23 @@ CONTAINS
     INTEGER :: putvarr4                       ! return status
 
     !! * Local variables    
-    INTEGER :: istatus, itime
-    INTEGER, DIMENSION(4) :: istart, icount
+    INTEGER :: istatus, itime, id_dimunlim
+    INTEGER, DIMENSION(4) :: istart, icount, nldim
 
     IF (PRESENT(ktime) ) THEN
        itime=ktime
     ELSE
        itime=1
     ENDIF
-
-    istart(:) = 1 ; istart(3)=klev ; istart(4)=itime
+    istatus=NF90_INQUIRE(kout,unlimitedDimId=id_dimunlim)
+    nldim=0
+    istart(:) = 1 
+    istatus=NF90_INQUIRE_VARIABLE(kout, kid,dimids=nldim(:) )
+    IF ( nldim(3) == id_dimunlim)  THEN
+     istart(3)=itime ; istart(4)=1
+    ELSE
+     istart(3)=klev ; istart(4)=itime
+    ENDIF
     icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
     putvarr4=istatus
@@ -1359,8 +1376,8 @@ CONTAINS
     INTEGER :: reputvarr4
 
     !! * Local variables
-    INTEGER, DIMENSION(4) :: istart, icount
-    INTEGER :: ncid, id_var
+    INTEGER, DIMENSION(4) :: istart, icount, nldim
+    INTEGER :: ncid, id_var, id_dimunlim
     INTEGER :: istatus, ilev, imin, jmin, itime
 
     ilev=1  ; IF (PRESENT(klev)  ) ilev=klev
@@ -1370,7 +1387,14 @@ CONTAINS
 
     istatus=NF90_OPEN(cdfile,NF90_WRITE,ncid)
     istatus=NF90_INQ_VARID(ncid,cdvar,id_var)
-    istatus=NF90_PUT_VAR(ncid,id_var,ptab,start=(/imin,jmin,klev,itime/), count=(/kpi,kpj,1,1/) )
+    !! look for eventual unlimited dim (time_counter)
+    istatus=NF90_INQUIRE(ncid,unlimitedDimId=id_dimunlim)
+    
+    nldim=0
+    istatus=NF90_INQUIRE_VARIABLE(ncid, id_var,dimids=nldim(:) )
+    ! if the third dim of id_var is time, then adjust the starting point to take ktime into account (case XYT file)
+    IF ( nldim(3) == id_dimunlim)  THEN ; ilev=itime ; itime=1 ; ENDIF
+    istatus=NF90_PUT_VAR(ncid,id_var,ptab,start=(/imin,jmin,ilev,itime/), count=(/kpi,kpj,1,1/) )
     !PRINT *,TRIM(NF90_STRERROR(istatus)),' in reputvar'
     reputvarr4=istatus
     istatus=NF90_CLOSE(ncid)
@@ -1401,16 +1425,23 @@ CONTAINS
     INTEGER :: putvarzo                       ! return status
 
     !! * Local variables
-    INTEGER :: istatus, itime
-    INTEGER, DIMENSION(4) :: istart, icount
+    INTEGER :: istatus, itime, ilev, id_dimunlim
+    INTEGER, DIMENSION(4) :: istart, icount,nldim
 
+    ilev=klev
     IF (PRESENT(ktime) ) THEN
        itime=ktime
     ELSE
        itime=1
     ENDIF
 
-    istart(:) = 1 ; istart(3)=klev ; istart(4)=itime
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE(kout,unlimitedDimId=id_dimunlim)
+    nldim=0
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,dimids=nldim(:) )
+    !  if the third dim of id_var is time, then adjust the starting point to take ktime into account (case XYT file)
+    IF ( nldim(3) == id_dimunlim)  THEN ; ilev=itime ; itime=1 ; ENDIF
+    istart(:) = 1 ; istart(3)=ilev ; istart(4)=itime
     icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
     putvarzo=istatus
@@ -1441,16 +1472,26 @@ CONTAINS
     INTEGER :: putvari2                       ! return status
 
     !! * Local variables
-    INTEGER :: istatus, itime
-    INTEGER, DIMENSION(4) :: istart, icount
+    INTEGER :: istatus, itime, ilev, id_dimunlim
+    INTEGER, DIMENSION(4) :: istart, icount, nldim
 
+    ilev=klev
     IF (PRESENT(ktime) ) THEN
        itime=ktime
     ELSE
        itime=1
     ENDIF
+    ! idem above for XYT files
+    istatus=NF90_INQUIRE(kout,unlimitedDimId=id_dimunlim)
+    nldim=0
+    istart(:) = 1
+    istatus=NF90_INQUIRE_VARIABLE(kout, kid,dimids=nldim(:) )
+    IF ( nldim(3) == id_dimunlim)  THEN
+     istart(3)=itime ; istart(4)=1
+    ELSE
+     istart(3)=ilev ; istart(4)=itime
+    ENDIF
 
-    istart(:) = 1 ; istart(3)=klev ; istart(4)=itime
     icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
     putvari2=istatus

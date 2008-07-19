@@ -24,7 +24,7 @@ PROGRAM cdfclip
   INTEGER   :: ierr                                         !: working integer
   INTEGER   :: imin, imax, jmin, jmax, kmin=-9999, kmax=-9999
   INTEGER   :: narg, iargc , jarg                           !: 
-  INTEGER   :: npiglo,npjglo, npk, npkk                     !: size of the domain
+  INTEGER   :: npiglo,npjglo, npk, npkk,nt                  !: size of the domain
   INTEGER   ::  nvars                                       !: Number of variables in a file
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var , &         !: arrays of var id's
        &                             ipk ,ipkk  , &         !: arrays of vertical level for each var
@@ -33,7 +33,7 @@ PROGRAM cdfclip
   REAL(KIND=8)                               :: total_time
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: v2d ,rlon, rlat, v2dxz, v2dyz, zxz, zyz
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: depg, dep
-  REAL(KIND=4), DIMENSION(1)                 :: timean, tim
+  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: timean, tim
 
   CHARACTER(LEN=80) :: cfile ,cfileout                         !: file name
   CHARACTER(LEN=80) ::  cdep, cdum
@@ -120,10 +120,11 @@ PROGRAM cdfclip
   IF ( kmax < 0 ) kmax = npk
   npkk = kmax - kmin +1   ! number of extracted levels. If no level in file, it is 0: 0 -1 + 1 !
   IF (npk == 0 ) kmax = 1
-
+  nt     = getdim(cfile,'time_counter')
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk ,' npkk  =', npkk
+  PRINT *, 'nt    =', nt
 
   IF (npkk > npk ) THEN
    PRINT *,' It seems that you want levels that are not represented '
@@ -133,6 +134,7 @@ PROGRAM cdfclip
 
   ALLOCATE( v2d(npiglo,npjglo),rlon(npiglo,npjglo), rlat(npiglo,npjglo), depg(npk) , dep(npkk))
   ALLOCATE( zxz(npiglo,1), zyz(1,npjglo) )
+  ALLOCATE( timean(nt), tim(nt) )
 
   nvars = getnvar(cfile)
   PRINT *,' nvars =', nvars
@@ -189,36 +191,40 @@ PROGRAM cdfclip
             IF ( lzonal ) THEN
               ALLOCATE( v2dxz(npiglo,ipk(jvar)) )
               print *, TRIM(cvarname(jvar)), jmin,npiglo, ipk(jvar), imin
-              v2dxz=getvarxz(cfile,cvarname(jvar),jmin,npiglo,ipk(jvar), kimin=imin,kkmin=1,ktime=1)
-              print *,'getvarxz OK'
+              DO jt=1,nt
+              v2dxz=getvarxz(cfile,cvarname(jvar),jmin,npiglo,ipk(jvar), kimin=imin,kkmin=1,ktime=jt)
               DO jk=k1,k2
                ik = jk - k1 + 1 
                zxz(:,1)=v2dxz(:,jk)
-               ierr=putvar(ncout,id_varout(jvar),zxz,ik,npiglo,1)
+               ierr=putvar(ncout,id_varout(jvar),zxz,ik,npiglo,1,ktime=jt)
+              ENDDO
               ENDDO
               DEALLOCATE ( v2dxz )
             ELSEIF (lmeridian) THEN
               ALLOCATE(  v2dyz(npjglo,ipk(jvar)) )
               print *, TRIM(cvarname(jvar)), imin,npjglo, ipk(jvar), jmin
-              v2dyz=getvaryz(cfile,cvarname(jvar),imin,npjglo,ipk(jvar),kjmin=jmin,kkmin=1,ktime=1)
-              print *,'getvaryz OK'
+              DO jt=1,nt
+              v2dyz=getvaryz(cfile,cvarname(jvar),imin,npjglo,ipk(jvar),kjmin=jmin,kkmin=1,ktime=jt)
               DO jk=k1, k2
                ik = jk - k1 + 1 
                zyz(1,:)=v2dyz(:,jk)
-               ierr=putvar(ncout,id_varout(jvar),zyz,ik,1,npjglo)
+               ierr=putvar(ncout,id_varout(jvar),zyz,ik,1,npjglo,ktime=jt)
+              ENDDO
               ENDDO
               DEALLOCATE ( v2dyz )
             ELSE
+             DO jt = 1, nt
              DO jk=k1,k2
               ik = jk - k1 + 1
-              v2d=getvar(cfile,cvarname(jvar),jk,npiglo,npjglo,kimin=imin,kjmin=jmin)
-              ierr=putvar(ncout,id_varout(jvar),v2d,ik,npiglo,npjglo)
+              v2d=getvar(cfile,cvarname(jvar),jk,npiglo,npjglo,kimin=imin,kjmin=jmin,ktime=jt)
+              ierr=putvar(ncout,id_varout(jvar),v2d,ik,npiglo,npjglo,ktime=jt)
+             ENDDO
              ENDDO
             ENDIF
       END SELECT
   END DO ! loop to next var in file
-  timean=getvar1d(cfile,'time_counter',1)
-  ierr=putvar1d(ncout,timean,1,'T')
+  timean=getvar1d(cfile,'time_counter',nt)
+  ierr=putvar1d(ncout,timean,nt,'T')
 
   istatus = closeout(ncout)
 

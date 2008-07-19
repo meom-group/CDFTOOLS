@@ -30,8 +30,6 @@ PROGRAM cdfmltmask
   CHARACTER(LEN=80) :: cfilev , cfilemask, ctmp
   CHARACTER(LEN=80) :: cvar, cvartype, cdep
   CHARACTER(LEN=20) ::  cvmask
-  
-  LOGICAL :: lforcing= .FALSE.  ! PM
 
   INTEGER    :: istatus
 
@@ -84,11 +82,7 @@ PROGRAM cdfmltmask
   PRINT *, 'npt   =', npt
   PRINT *, 'nvpk  =', nvpk
 
-  IF (npk==0) THEN  ! PM
-     npk=1          ! PM
-     lforcing= .TRUE.  ! PM
-     PRINT *, 'it is a forcing field, assume npk=1'  ! PM
-  END IF  ! PM
+  IF (npk==0) npk=1
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )
@@ -113,13 +107,11 @@ PROGRAM cdfmltmask
 
   DO jt = 1, npt
      IF (MOD(jt,100)==0) PRINT *, jt,'/', npt
-     DO jkk = 1,nvpk
+     DO jk = 1,nvpk
         ! Read cvar
-        IF (.NOT. lforcing)jk=jkk !PM 
-        IF (lforcing) jk=jt  !PM
         zv(:,:)= getvar(cfilev, cvar, jk ,npiglo,npjglo, ktime=jt)
         ! Read mask
-        zmask(:,:)=getvar(cfilemask,cvmask,jkk,npiglo,npjglo)
+        zmask(:,:)=getvar(cfilemask,cvmask,jk,npiglo,npjglo)
         ! Multiplication of cvar by mask à level jk
         zvmask=zv*zmask
         ! Writing  on the original file                 

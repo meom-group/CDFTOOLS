@@ -28,6 +28,7 @@ PROGRAM cdfsum
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk, nt              !: size of the domain
   INTEGER   :: nvpk                                !: vertical levels in working variable
+  INTEGER   :: numout=10                           !: logical unit
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, e3,  zv   !:  metrics, velocity
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask             !:   npiglo x npjglo
@@ -102,7 +103,7 @@ PROGRAM cdfsum
      npk=1
      PRINT *, 'W A R N I N G : you used a forcing field'
   END IF
-  IF (lforcing)  OPEN(unit=1, file='out.txt' , form='formatted', status='new', iostat=err)
+  IF (lforcing)  OPEN(unit=numout, file='out.txt' , form='formatted', status='new', iostat=err)
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )
@@ -157,13 +158,7 @@ PROGRAM cdfsum
      DO jk = 1,nvpk
         ik = jk+kmin-1
         ! Get velocities v at ik
-        IF (lforcing) THEN
-           ik = jt
-           zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,ktime=jt,kimin=imin,kjmin=jmin)
-           ik=1
-        ELSE
-           zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,ktime=jt,kimin=imin,kjmin=jmin)
-        END IF
+        zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,ktime=jt,kimin=imin,kjmin=jmin)
         zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
         !    zmask(:,npjglo)=0.
         
@@ -186,7 +181,7 @@ PROGRAM cdfsum
            zsum2d=sum(zv*e1*e2*zmask)
            zsum=zsum+zsum2d
            PRINT *, ' Sum value at time ',jt,' = ',zsum2d
-           WRITE (1,'(i4," ",1e12.6)') jt, zsum2d
+           WRITE (numout,'(i4," ",1e12.6)') jt, zsum2d
         END IF
      END DO
      IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: ', zsum
