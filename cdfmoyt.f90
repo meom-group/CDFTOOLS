@@ -40,7 +40,7 @@ PROGRAM cdfmoyt
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: v2d ,&       !: Array to read a layer of data
        &                                   rmean, rmean2
   REAL(KIND=4),DIMENSION(:),ALLOCATABLE       :: timean
-  REAL(KIND=4),DIMENSION(365)                   ::  tim
+  REAL(KIND=4),DIMENSION(:),ALLOCATABLE       ::  tim
 
   CHARACTER(LEN=80) :: cfile ,cfileout, cfileout2           !: file name
   CHARACTER(LEN=80) ::  cdep
@@ -88,7 +88,7 @@ PROGRAM cdfmoyt
 
   ALLOCATE( tab(npiglo,npjglo), tab2(npiglo,npjglo), v2d(npiglo,npjglo) )
   ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo) )
-  ALLOCATE ( total_time(nt) ,timean(nt) )
+  ALLOCATE ( total_time(nt) ,timean(nt), tim(nt) )
 
   nvars = getnvar(cfile)
   PRINT *,' nvars =', nvars
@@ -167,7 +167,7 @@ PROGRAM cdfmoyt
               END IF
                 jkk=jk
                 ! If forcing fields is without depth dimension
-                IF (npk==0) jkk=jrec
+!               IF (npk==0) jkk=jrec
                 v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jrec )
                 tab(:,:) = tab(:,:) + v2d(:,:)
                 IF (cvarname2(jvar) /= 'none' ) tab2(:,:) = tab2(:,:) + v2d(:,:)*v2d(:,:)
