@@ -22,6 +22,7 @@ PROGRAM cdfmltmask
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk,npt              !: size of the domain
   INTEGER   :: nvpk                                !: vertical levels in working variable
+  INTEGER   :: npkmask                             !: vertical levels in mask file
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zv !: cvar at jk level 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask !: mask at jk level 
@@ -69,6 +70,14 @@ PROGRAM cdfmltmask
         ENDIF
      ENDIF
   ENDIF
+  npkmask = getdim (cfilemask,'depth',cdtrue=cdep, kstatus=istatus)
+  IF (istatus /= 0 ) THEN
+     npkmask  = getdim (cfilemask,'z',cdtrue=cdep,kstatus=istatus) ; !print *, istatus
+        IF ( istatus /= 0 ) THEN
+          PRINT *,' assume mask file with no depth'
+          npkmask=0
+        ENDIF
+  ENDIF
 
   npt   = getdim (cfilev,'time')
   nvpk  = getvdim(cfilev,cvar)
@@ -100,18 +109,25 @@ PROGRAM cdfmltmask
      cvmask='fmask'
   CASE ( 'W' )
      cvmask='tmask'
+  CASE ( 'P' )   ! for polymask 
+     cvmask='polymask'
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
      STOP
   END SELECT
 
+  IF ( npkmask <= 1 ) THEN 
+        zmask(:,:)=getvar(cfilemask,cvmask,1,npiglo,npjglo)
+  ENDIF
   DO jt = 1, npt
      IF (MOD(jt,100)==0) PRINT *, jt,'/', npt
      DO jk = 1,nvpk
         ! Read cvar
         zv(:,:)= getvar(cfilev, cvar, jk ,npiglo,npjglo, ktime=jt)
+        IF ( npkmask > 1 ) THEN
         ! Read mask
-        zmask(:,:)=getvar(cfilemask,cvmask,jk,npiglo,npjglo)
+          zmask(:,:)=getvar(cfilemask,cvmask,jk,npiglo,npjglo)
+        ENDIF
         ! Multiplication of cvar by mask à level jk
         zvmask=zv*zmask
         ! Writing  on the original file                 
