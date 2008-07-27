@@ -54,7 +54,7 @@ PROGRAM cdfpolymask
   CALL getarg (2, cfile)
   IF (narg == 3 ) THEN
    CALL getarg (3, cdum)
-   IF ( cdum /= ' -r' ) THEN
+   IF ( cdum /= '-r' ) THEN
       PRINT *,' unknown optional arugment (', TRIM(cdum),' )'
       PRINT *,' in actual version only -r -- for reverse -- is recognized '
       STOP
