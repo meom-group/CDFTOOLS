@@ -30,23 +30,38 @@ PROGRAM cdfpolymask
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
   CHARACTER(LEN=80) :: cfile, cpoly, cfileout='polymask.nc'            !: file name
+  CHARACTER(LEN=80) :: cdum                             !: dummy arguments
   TYPE(variable), DIMENSION(1) :: typvar
 
   INTEGER    :: ncout
   INTEGER    :: istatus, ierr
+  LOGICAL    :: lreverse=.false.
 
   !!  Read command line
   narg= iargc()
-  IF ( narg /= 2 ) THEN
-     PRINT *,' Usage : cdfpolymask ''polygon file'' ''reference ncfile'' '
+  IF ( narg < 2 ) THEN
+     PRINT *,' Usage : cdfpolymask ''polygon file'' ''reference ncfile'' [-r]'
      PRINT *,'   polygons are defined on the I,J grid'
      PRINT *,'   Output on polymask.nc ,variable polymask'
+     PRINT *,' polymask is 1 inside the polygon 0 outside '
+     PRINT *,' If optional argument -r is given, the produced mask file '
+     PRINT *,'  is reverse : 1 outside the polygon, 0 in the polygon '
      STOP
   ENDIF
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   CALL getarg (1, cpoly)
   CALL getarg (2, cfile)
+  IF (narg == 3 ) THEN
+   CALL getarg (3, cdum)
+   IF ( cdum /= ' -r' ) THEN
+      PRINT *,' unknown optional arugment (', TRIM(cdum),' )'
+      PRINT *,' in actual version only -r -- for reverse -- is recognized '
+      STOP
+   ELSE
+      lreverse=.true.
+   ENDIF
+  ENDIF
 
   npiglo = getdim (cfile,'x')
   npjglo = getdim (cfile,'y')
@@ -89,16 +104,22 @@ CONTAINS
 
     ! *Local variables
     INTEGER :: ji,jj, nfront, jjpoly
+    REAL(KIND=4) :: rin, rout
     LOGICAL :: l_in
     CHARACTER(LEN=80), DIMENSION(jpolys) :: carea
-    pmask=0.
+    IF ( lreverse ) THEN
+      rin=0. ; rout=1.
+    ELSE
+      rin=1. ; rout=0.
+    ENDIF
+    pmask(:,:)=rout
     CALL ReadPoly(cdpoly,nfront, carea)
     DO jjpoly=1, nfront
        CALL PrepPoly(jjpoly)
        DO jj=npjglo, 1, -1
           DO ji=1,npiglo
              CALL InPoly(jjpoly,float(ji), float(jj), l_in)
-             IF (l_in) pmask(ji,jj)=1.
+             IF (l_in ) pmask(ji,jj)=rin
           ENDDO
 !      IF ( jj < 405 .AND. jj > 335 ) THEN
 !         print '(i4,100i2)', jj, NINT(pmask(170:260,jj))

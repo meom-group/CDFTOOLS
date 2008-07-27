@@ -39,9 +39,10 @@ PROGRAM cdfmltmask
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmltmask ncfile maskfile cdfvar T| U | V | F | W '
+     PRINT *,' Usage : cdfmltmask ncfile maskfile cdfvar T| U | V | F | W | P'
      PRINT *,' Mask the file  '
      PRINT *,' output on ncfile_masked'
+     PRINT *,'  Point type P correspond to polymask'
      STOP
   ENDIF
 
