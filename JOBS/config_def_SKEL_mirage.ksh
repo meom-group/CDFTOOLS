@@ -9,8 +9,8 @@
 
 
 # Name of CONFIG and CASE
-CONFIG=MERA033
-CASE=M69
+CONFIG=ROSS
+CASE=MAR
 
 # check gaya .rhosts file !!!
 # these variables are used only in the generic functions defined in Part II
@@ -18,5 +18,5 @@ CASE=M69
  PREF=./ # PREF is the home of REMOTE_USER on remote machine
 
 # Directory with the CDFTOOLS executable
-CDFTOOLS=$HOME/CDFTOOLS-2.1/
+CDFTOOLS=$HOME/DEV/CDFTOOLS-2.1dev/
 

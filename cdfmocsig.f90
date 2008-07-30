@@ -165,7 +165,7 @@ PROGRAM cdfmocsig
 
   ! create output fileset
    IF (lprint) PRINT *, ' ready to create file:',trim( cfileoutnc), ' from reference:',trim(cfilev )
-   ncout =create(cfileoutnc, cfilev, 1,npjglo,jpbin,cdep='sigma_1')
+   ncout =create(cfileoutnc, cfilev, 1,npjglo,jpbin,cdep='sigma_2')
    IF (lprint) PRINT *, ' ready to create variables:'
    ierr= createvar(ncout ,typvar ,jpbasins, ipk ,id_varout )
    IF (lprint) PRINT *, ' writing variables headers:'

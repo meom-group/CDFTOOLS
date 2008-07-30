@@ -13,13 +13,13 @@ include make.macro
 
 CDFTOOLS=CDFTOOLS-2.1
 
-EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfvT cdfvsig cdfspeed cdfsum\
+EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfmoy_freq cdfvT cdfvsig cdfspeed cdfsum\
        cdfmoyuv cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
        cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
-       cdftransportizpm \
+       cdftransportizpm cdfvtrp cdftrp_bathy\
        cdfmasstrp cdfmasstrp-full \
        cdfsigtrp cdfsigitrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full cdfzeromean \
@@ -51,6 +51,9 @@ cdfmoy_sp: cdfio.o   cdfmoy_sp.f90
 
 cdfmoy_chsp: cdfio.o   cdfmoy_chsp.f90
 	$(F90) cdfmoy_chsp.f90 -o cdfmoy_chsp cdfio.o  $(FFLAGS)
+
+cdfmoy_freq: cdfio.o   cdfmoy_freq.f90
+	$(F90) cdfmoy_freq.f90 -o cdfmoy_freq cdfio.o  $(FFLAGS)
 
 cdfmoyuv: cdfio.o   cdfmoyuv.f90
 	$(F90) cdfmoyuv.f90 -o cdfmoyuv cdfio.o  $(FFLAGS)
@@ -191,6 +194,9 @@ cdfmhst-full: cdfio.o  cdfmhst-full.f90
 
 cdfvhst: cdfio.o  cdfvhst.f90
 	$(F90) cdfvhst.f90 -o cdfvhst cdfio.o $(FFLAGS)
+
+cdfvtrp: cdfio.o  cdfvtrp.f90
+	$(F90) cdfvtrp.f90 -o cdfvtrp cdfio.o $(FFLAGS)
 
 cdfvhst-full: cdfio.o  cdfvhst-full.f90
 	$(F90) cdfvhst-full.f90 -o cdfvhst-full cdfio.o $(FFLAGS)
@@ -370,6 +376,9 @@ cdf16bit: cdfio.o cdf16bit.f90
 	
 cdfvita: cdfio.o cdfvita.f90
 	$(F90) cdfvita.f90  -o cdfvita cdfio.o $(FFLAGS)
+
+cdftrp_bathy: cdfio.o cdftrp_bathy.f90
+	$(F90) cdftrp_bathy.f90  -o cdftrp_bathy cdfio.o $(FFLAGS)
 	
 cdfconvert: cdfio.o cdfconvert.f90
 	$(F90)  cdfconvert.f90  -o cdfconvert cdfio.o $(FFLAGS)

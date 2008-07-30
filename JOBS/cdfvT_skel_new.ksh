@@ -1,13 +1,8 @@
 #!/bin/ksh
-# @ cpu_limit  = 36000
-# @ data_limit = 1gb
-# Nom du travail LoadLeveler
-# @ job_name   = vt-YYYY
-# Fichier de sortie standard du travail       
-# @ output     = $(job_name).$(jobid)
-# Fichier de sortie d'erreur du travail
-# @ error      =  $(job_name).$(jobid)
-# @ queue                   
+
+#OAR -q sequentielle
+#OAR -OE            ### fichier de sortie et d' erreur normal
+#OAR -l /nodes=1/cpu=1,walltime=06:00:00 -p "network_address='zephir' 
 
 #################################################################################
 # This script is used to compute time mean averages for DRAKKAR model output.
@@ -21,8 +16,8 @@
 ################################################################################
 
 set -x
-P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
-
+#P_CDF_DIR=$HOME/RUN_ROSS/ROSS-MAR/CTL/CDF
+P_CDF_DIR=$HOME/DEV/CDFTOOLS-2.1dev/JOBS
 cp $P_CDF_DIR/config_def.ksh $TMPDIR
 cp $P_CDF_DIR/function_def.ksh $TMPDIR
 cd $TMPDIR

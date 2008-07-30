@@ -40,7 +40,7 @@ PROGRAM cdftransportiz
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
   INTEGER   :: imin, imax, jmin, jmax, ik 
-  INTEGER   :: numout = 10
+  INTEGER   :: numout = 10, numin=23, numout1 = 24
 
   ! broken line stuff
   INTEGER, PARAMETER :: jpseg=10000
@@ -226,15 +226,19 @@ PROGRAM cdftransportiz
 
      END DO  ! loop to next level
   END DO    ! next class
-
+  OPEN(numout1,FILE='out.txt')
   OPEN(numout,FILE=cfileout)
+  OPEN(numin,FILE='section.dat')
   DO
-     PRINT *, ' Give name of section '
-     READ(*,'(a)') csection
+     !PRINT *, ' Give name of section ''(a)'
+     READ(numin,*) csection
+     PRINT *, ' Give name of section  : ', TRIM(csection)
      IF (TRIM(csection) == 'EOF' ) CLOSE(numout)
+     IF (TRIM(csection) == 'EOF' ) CLOSE(numout1)
      IF (TRIM(csection) == 'EOF' ) EXIT
-     PRINT *, ' Give imin, imax, jmin, jmax '
-     READ(*,*) imin, imax, jmin, jmax
+     !PRINT *, ' Give imin, imax, jmin, jmax '
+     READ(numin,*) imin, imax, jmin, jmax
+     PRINT *, ' Give imin, imax, jmin, jmax ',imin, imax, jmin, jmax
      !! Find the broken line between P1 (imin,jmin) and P2 (imax, jmax)
      !! ---------------------------------------------------------------
      ! ... Initialization
@@ -383,7 +387,7 @@ PROGRAM cdftransportiz
            WRITE(numout,9003) 0 ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
         ENDIF
         WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6, 0.e0, 0.e0
-
+        WRITE(numout1,9004) voltrpsum/1.e6
      END DO ! next class
   END DO ! infinite loop : gets out when input is EOF
 
@@ -391,7 +395,7 @@ PROGRAM cdftransportiz
 9001 FORMAT(I4,6(f9.2,f9.3))
 9002 FORMAT(f9.0,f9.0,f9.2,f9.2,f9.2)
 9003 FORMAT(f9.2,f9.2,f9.2,f9.2,f9.2)
-
+9004 FORMAT(f9.2)
 CONTAINS
   SUBROUTINE interm_pt (ydpt,k,pai,pbi,paj,pbj,ydpti)
     !! -----------------------------------------------------
