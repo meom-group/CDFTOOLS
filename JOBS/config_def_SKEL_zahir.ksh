@@ -19,4 +19,6 @@ USER=rcli300 ;   REMOTE_USER=rcli002  ; PREF=/u/rech/cli/$REMOTE_USER # PREF is 
 
 # Directory with the CDFTOOLS executable
 CDFTOOLS=~rcli002/CDFTOOLS-2.1/
+P_CDF_DIR=$HOME/RUN_${CONFIG}/${CONFIG}-${CASE}/CTL/CDF
+SUB=llsubmit
 

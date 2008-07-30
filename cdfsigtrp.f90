@@ -111,6 +111,9 @@ PROGRAM cdfsigtrp
   END DO
 
   ! Initialise sections from file 
+  ! first call to get nsection and allocate arrays 
+  nsection = 0 ; CALL section_init(cfilesec, csection,imina,imaxa,jmina,jmaxa, nsection)
+  ALLOCATE ( csection(nsection), imina(nsection), imaxa(nsection), jmina(nsection),jmaxa(nsection) )
   CALL section_init(cfilesec, csection,imina,imaxa,jmina,jmaxa, nsection)
 
   ! Allocate and build sigma levels and section array
@@ -413,14 +416,20 @@ CONTAINS
   SUBROUTINE section_init(cdfile,cdsection,kimin,kimax,kjmin,kjmax,knumber)
     IMPLICIT NONE
     ! Arguments
-    INTEGER, DIMENSION(:),ALLOCATABLE :: kimin,kimax, kjmin,kjmax
-    INTEGER, INTENT(OUT) :: knumber
-    CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cdsection
+!   INTEGER, DIMENSION(:),ALLOCATABLE :: kimin,kimax, kjmin,kjmax
+    INTEGER, INTENT(INOUT) :: knumber
+    INTEGER, DIMENSION(knumber) :: kimin,kimax, kjmin,kjmax
+!   CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cdsection
+    CHARACTER(LEN=80), DIMENSION(knumber) :: cdsection
     CHARACTER(LEN=*), INTENT(IN) :: cdfile
 
     ! Local variables
     INTEGER :: ii, numit=10, jsec
     CHARACTER(LEN=80) :: cline
+    LOGICAL :: lfirst
+    
+    lfirst=.false.
+    IF ( knumber == 0 ) lfirst=.true.
 
     OPEN(numit, FILE=cdfile)
     ii=0
@@ -435,9 +444,11 @@ CONTAINS
        ENDIF
     END DO
 
+ 
     knumber=ii
-    ALLOCATE( cdsection(knumber) )
-    ALLOCATE( kimin(knumber), kimax(knumber), kjmin(knumber), kjmax(knumber) )
+    IF ( lfirst ) RETURN
+!   ALLOCATE( cdsection(knumber) )
+!   ALLOCATE( kimin(knumber), kimax(knumber), kjmin(knumber), kjmax(knumber) )
     REWIND(numit)
     DO jsec=1,knumber
        READ(numit,'(a)') cdsection(jsec)

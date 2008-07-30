@@ -228,17 +228,19 @@ PROGRAM cdftransportiz
   END DO    ! next class
   OPEN(numout1,FILE='out.txt')
   OPEN(numout,FILE=cfileout)
-  OPEN(numin,FILE='section.dat')
+! OPEN(numin,FILE='section.dat')
   DO
-     !PRINT *, ' Give name of section ''(a)'
-     READ(numin,*) csection
-     PRINT *, ' Give name of section  : ', TRIM(csection)
+      PRINT *, ' Give name of section '
+!    READ(numin,*) csection
+     READ(*,'a') csection
+!    PRINT *, ' Give name of section  : ', TRIM(csection)
      IF (TRIM(csection) == 'EOF' ) CLOSE(numout)
      IF (TRIM(csection) == 'EOF' ) CLOSE(numout1)
      IF (TRIM(csection) == 'EOF' ) EXIT
-     !PRINT *, ' Give imin, imax, jmin, jmax '
-     READ(numin,*) imin, imax, jmin, jmax
-     PRINT *, ' Give imin, imax, jmin, jmax ',imin, imax, jmin, jmax
+      PRINT *, ' Give imin, imax, jmin, jmax '
+!    READ(numin,*) imin, imax, jmin, jmax
+     READ(*,*) imin, imax, jmin, jmax
+!    PRINT *, ' Give imin, imax, jmin, jmax ',imin, imax, jmin, jmax
      !! Find the broken line between P1 (imin,jmin) and P2 (imax, jmax)
      !! ---------------------------------------------------------------
      ! ... Initialization

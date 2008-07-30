@@ -17,15 +17,20 @@ year=$1
 
 . ./config_def.ksh   # CDFTOOLS is set in this script (which is sourced now)
 
-cat $CDFTOOLS/JOBS/cdfmoy_skel_new.ksh | sed -e "s/YYYY/$year/g" -e "s/YYYE/$year/g" > cdfmoytmp.$$.ll
-chmod u+x cdfmoytmp.$$.ll
- oarsub ./cdfmoytmp.$$.ll
+cat $CDFTOOLS/JOBS/cdfmoy_skel_new.ksh | sed -e "s/YYYY/$year/g" -e "s/YYYE/$year/g" -e "s/CCOONNFF/$CONFIG/g" -e "s/CCAASSEE/$CASE/g" \
+   > cdfmoytmp.$$.ll
 
-cat $CDFTOOLS/JOBS/cdfvT_skel_new.ksh | sed -e "s/YYYY/$year/g" -e "s/YYYE/$year/g" > cdfvTtmp.$$.ll
+chmod u+x cdfmoytmp.$$.ll
+$SUB  cdfmoytmp.$$.ll
+
+cat $CDFTOOLS/JOBS/cdfvT_skel_new.ksh | sed -e "s/YYYY/$year/g" -e "s/YYYE/$year/g" -e "s/CCOONNFF/$CONFIG/g" -e "s/CCAASSEE/$CASE/g" \
+  > cdfvTtmp.$$.ll
 chmod u+x cdfvTtmp.$$.ll
- oarsub ./cdfvTtmp.$$.ll
+$SUB cdfvTtmp.$$.ll
 
 #if (( $year > 1958 )) ; then
-# cat $CDFTOOLS/JOBS/cdfmoy_trc_skel.ll | sed -e "s/YYYY/$year/g" -e "s/YYYE/$year/g" > cdfTRCtmp.$$.ll
-#  llsubmit cdfTRCtmp.$$.ll
+# cat $CDFTOOLS/JOBS/cdfmoy_trc_skel_new.ksh | sed -e "s/YYYY/$year/g" -e "s/YYYE/$year/g" -e "s/CCOONNFF/$CONFIG/g" -e "s/CCAASSEE/$CASE/g" \
+#  > cdfTRCtmp.$$.ll
+#chmod u+x cdfTRCtmp.$$.ll
+#  $SUB cdfTRCtmp.$$.ll
 #fi
