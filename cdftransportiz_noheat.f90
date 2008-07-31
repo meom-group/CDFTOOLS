@@ -232,7 +232,7 @@ PROGRAM cdftransportiz
   DO
       PRINT *, ' Give name of section '
 !    READ(numin,*) csection
-     READ(*,'a') csection
+     READ(*,'(a)') csection
 !    PRINT *, ' Give name of section  : ', TRIM(csection)
      IF (TRIM(csection) == 'EOF' ) CLOSE(numout)
      IF (TRIM(csection) == 'EOF' ) CLOSE(numout1)

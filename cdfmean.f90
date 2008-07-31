@@ -142,6 +142,8 @@ PROGRAM cdfmean
   e2(:,:) = getvar(coordhgr, ce2, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
   gdep(:) = getvare3(coordzgr,cdep,npk)
 
+  OPEN(1,FILE='out.txt')
+
 DO jt=1,nt
   zvol=0.d0
   zsum=0.d0
@@ -164,12 +166,13 @@ DO jt=1,nt
      zsum=zsum+zsum2d
      IF (zvol2d /= 0 )THEN
         PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
+        WRITE(1,9004) gdep(ik),ik,zsum2d/zvol2d
      ELSE
         PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
      ENDIF
- 
   END DO
   PRINT * ,' Mean value over the ocean: ', zsum/zvol, jt
 END DO
-
+CLOSE(1)
+9004 FORMAT(f9.2,' ',i2,' ',f9.2)
    END PROGRAM cdfmean
