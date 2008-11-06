@@ -95,13 +95,13 @@ PROGRAM cdfsiginsitu
   DO jk = 1, npk
      zmask(:,:)=1.
 
-     ztemp(:,:)= getvar(cfilet, 'votemper',  jk ,npiglo, npjglo)
-     zsal(:,:) = getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo)
+     ztemp(:,:)= getvar(cfilet, 'votemper',  jk ,npiglo, npjglo, ktime=jt)
+     zsal(:,:) = getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo, ktime=jt)
 
      WHERE(zsal == spval ) zmask = 0
 
      zsigi(:,:) = sigmai ( ztemp,zsal,prof(jk),npiglo,npjglo )* zmask(:,:)
-     ierr = putvar(ncout, id_varout(1) ,zsigi, jk,npiglo, npjglo)
+     ierr = putvar(ncout, id_varout(1) ,zsigi, jk,npiglo, npjglo,ktime=jt)
 
   END DO  ! loop to next level
   END DO  ! loop to next time

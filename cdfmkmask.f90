@@ -85,6 +85,7 @@ PROGRAM cdfmkmask
   DO jk=1, npk
      zmask(:,:)= getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo)
      WHERE (zmask > 0 ) zmask = 1
+     WHERE (zmask <=0 ) zmask = 0
      ierr=putvar(ncout,id_varout(1), zmask, jk ,npiglo, npjglo)
      ! now umask
      zmask2=0.

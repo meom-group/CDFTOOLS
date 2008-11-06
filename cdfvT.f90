@@ -154,7 +154,7 @@ PROGRAM cdfvT
         WRITE(cfilev,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
         INQUIRE(FILE=cfilev,EXIST=lexist)
         IF ( .NOT. lexist ) THEN
-          WRITE(cfileu,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
+          WRITE(cfilev,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
           INQUIRE(FILE=cfilev,EXIST=lexist)
           IF ( .NOT. lexist ) THEN
              PRINT *,' ERROR : missing gridV or even grid_V file '
