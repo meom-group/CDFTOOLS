@@ -29,7 +29,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask \
-       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp
+       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis
 
 all: $(EXEC)
 
@@ -394,6 +394,12 @@ cdfstrconv: cdfio.o cdfstrconv.f90
 	
 cdfbathy: cdfio.o cdfbathy.f90
 	$(F90)   cdfbathy.f90  -o cdfbathy cdfio.o $(FFLAGS)
+	
+cdfcofdis: cdfio.o cdfcofdis.f90
+	$(F90)    cdfcofdis.f90  -o cdfcofdis cdfio.o $(FFLAGS)
+	
+cdfcoastline: cdfio.o cdfcoastline.f90
+	$(F90)    cdfcoastline.f90  -o cdfcoastline cdfio.o $(FFLAGS)
 	
 cdfvar: cdfio.o cdfvar.f90
 	$(F90)   cdfvar.f90  -o cdfvar cdfio.o $(FFLAGS)
