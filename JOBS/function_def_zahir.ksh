@@ -28,16 +28,18 @@ putmonth() { mfput -u $REMOTE_USER cdfmoy.nc $MDIR/${CONFCASE}_y${YEAR}m${1}_$2.
 putmonth2() { mfput -u $REMOTE_USER cdfmoy2.nc $MDIR/${CONFCASE}_y${YEAR}m${1}_$2.nc ; \
              mv cdfmoy2.nc MONTHLY/${CONFCASE}_y${YEAR}m${1}_$2.nc ; }
 
-# putannual type : write annual MEAN to remote -MEAN dir, in the corresponding year. Clean local files
-putannual() { mfput -u $REMOTE_USER cdfmoy_annual.nc $MDIR/${CONFCASE}_y${YEAR}_ANNUAL_$1.nc ; \rm cdfmoy_annual.nc ;}
+# putannual type : write annual MEAN to remote -MEAN dir, in the corresponding year.
+putannual() { mv cdfmoy_annual.nc ${CONFCASE}_y${YEAR}_ANNUAL_$1.nc 
+    mfput -u $REMOTE_USER ${CONFCASE}_y${YEAR}_ANNUAL_$1.nc  $MDIR/${CONFCASE}_y${YEAR}_ANNUAL_$1.nc ;}
 
 # putvtmonth mm : write back monthly mean for month mm type 'VT' on remote machine in -MEAN/YEAR/ directory.
 #                    also move the localfile to local MONTHLY dir for further annual mean computing
 putvtmonth() { mfput -u $REMOTE_USER vt.nc $MDIR/${CONFCASE}_y${YEAR}m${1}_VT.nc ; \
              mv vt.nc MONTHLY/${CONFCASE}_y${YEAR}m${1}_VT.nc ; \rm ${CONFCASE}_y${YEAR}m${month}d??_grid[UVT].nc ; }
 
-# putvtannual type : write annual MEAN to remote -MEAN dir, in the corresponding year. Clean local files
-putvtannual() { mfput -u $REMOTE_USER cdfmoy_annual.nc $MDIR/${CONFCASE}_y${YEAR}_ANNUAL_VT.nc ; \rm cdfmoy_annual.nc ; }
+# putvtannual type : write annual MEAN to remote -MEAN dir, in the corresponding year.
+putvtannual() { mv cdfmoy_annual.nc ${CONFCASE}_y${YEAR}_ANNUAL_VT.nc ;
+   mfput -u $REMOTE_USER ${CONFCASE}_y${YEAR}_ANNUAL_VT.nc  $MDIR/${CONFCASE}_y${YEAR}_ANNUAL_VT.nc ; }
 #
 
 
