@@ -432,6 +432,7 @@ CONTAINS
     IF ( knumber == 0 ) lfirst=.true.
 
     OPEN(numit, FILE=cdfile)
+    REWIND(numit)
     ii=0
 
     DO

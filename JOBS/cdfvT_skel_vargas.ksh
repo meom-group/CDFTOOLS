@@ -5,6 +5,7 @@ P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
 cd $TMPDIR
 mkdir VT
 VTDIR=$TMPDIR/VT
+cd $VTDIR
 
 cp $P_CDF_DIR/config_def.ksh $VTDIR
 cp $P_CDF_DIR/function_def.ksh $VTDIR
