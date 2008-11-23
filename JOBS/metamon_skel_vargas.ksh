@@ -75,3 +75,5 @@ for   YEAR in  $YEARS ; do
    cd $TMPDIR
    find . -name "*${YEAR}*" -exec \rm -rf {} \;
 done
+  # experimental: build the mtl files by mkmtl.ksh on gaya (which send them on the meolipc web site)
+   rsh gaya "cd $CONFIG/${CONFCASE}-DIAGS/ ; /u/rech/cli/rcli600/bin/mkmtl.ksh "

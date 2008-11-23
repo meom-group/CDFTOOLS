@@ -340,7 +340,6 @@ set -x
     # nino 3.4   [ -170 W -- -120 W, -% S -- % N ]
     cdfmean  $f votemper T $NINO34 1 1 | tail -1 | awk '{ printf " %8.5f 0.00\n", $6 }'  >> $fnino
  
-    \rm $f
    done
  
    expatrie $fnino $DIAGS $fnino
