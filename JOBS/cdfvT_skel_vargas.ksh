@@ -2,6 +2,12 @@
 
 set -x
 P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
+cd $P_CDF_DIR
+
+# Part I : setup config dependent names
+#--------------------------------------
+. ./config_def.ksh   # config_def.ksh may be a link to an existing configuration file
+
 cd $TMPDIR
 mkdir VT
 VTDIR=$TMPDIR/VT
@@ -11,8 +17,6 @@ cp $P_CDF_DIR/config_def.ksh $VTDIR
 cp $P_CDF_DIR/function_def.ksh $VTDIR
 
 
-# Part I : setup config dependent names
-#--------------------------------------
 . ./config_def.ksh   # config_def.ksh may be a link to an existing configuration file
 
 # Part II  define some usefull functions
@@ -71,5 +75,6 @@ for YEAR in $YEARLST ; do
  
  #  move to TMPDIR for monitoring
  mv ${CONFCASE}_y${YEAR}m??_VT.nc $TMPDIR
+ mv ${CONFCASE}_y${YEAR}_ANNUAL_VT.nc $TMPDIR
  cd $VTDIR
 done

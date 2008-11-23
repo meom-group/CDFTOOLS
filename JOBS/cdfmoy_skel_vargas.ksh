@@ -2,6 +2,11 @@
 
 set -x
 P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
+cd $P_CDF_DIR
+
+# Part I : setup config dependent names
+#--------------------------------------
+. ./config_def.ksh    # this file (or a link) must exist in the current directory
 
 cd $TMPDIR
 if [ ! -d MOY ] ; then mkdir MOY ; fi
@@ -11,8 +16,7 @@ cd $MOYDIR
 cp $P_CDF_DIR/config_def.ksh $MOYDIR
 cp $P_CDF_DIR/function_def.ksh $MOYDIR
 
-# Part I : setup config dependent names
-#--------------------------------------
+# probably not necessary to repeat config_def ... but no harm ...
 . ./config_def.ksh    # this file (or a link) must exist in the current directory
 #
 # Part II  define some usefull functions
@@ -69,6 +73,7 @@ for YEAR in $YEARLST ; do
     esac
     # clean MONTHLY from grid and grid2 files
     mv ${CONFCASE}_y${YEAR}m??_$grid.nc $TMPDIR ; mv ${CONFCASE}_y${YEAR}m??_${grid}2.nc $TMPDIR
+    mv ${CONFCASE}_y${YEAR}_ANNUAL*nc  $TMPDIR
   cd $MOYDIR
  done
 done
