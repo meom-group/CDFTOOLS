@@ -9,6 +9,13 @@
 # @ error      =  $(job_name).$(jobid)
 # @ queue                   
 
+### OAR is valid on ZEPHIR
+#OAR -n metamoy
+#OAR -l /nodes=1/cpu=1,walltime=5:00:00
+#OAR -E METAMOY%jobid%
+#OAR -O METAMOY%jobid%
+
+
 #################################################################################
 # This script is used to compute time mean averages for DRAKKAR model output.
 # It replaces an older script which was also computing quarterly means.
@@ -22,6 +29,7 @@
 
 set -x
 P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
+. $P_CDF_DIR/config_def.ksh
 
 cp $P_CDF_DIR/config_def.ksh $TMPDIR
 cp $P_CDF_DIR/function_def.ksh $TMPDIR
