@@ -13,8 +13,8 @@
 ### OAR is valid on ZEPHIR
 #OAR -n metavt
 #OAR -l /nodes=1/cpu=1,walltime=5:00:00
-#OAR -E METAVT%jobid%
-#OAR -O METAVT%jobid%
+#OAR -E METAVT.%jobid%
+#OAR -O METAVT.%jobid%
 
 
 #################################################################################
@@ -29,7 +29,7 @@
 ################################################################################
 
 set -x
-P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
+P_CDF_DIR=$PDIR/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
 . $P_CDF_DIR/config_def.ksh
 
 cp $P_CDF_DIR/config_def.ksh $TMPDIR
