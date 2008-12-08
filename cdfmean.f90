@@ -27,6 +27,7 @@ PROGRAM cdfmean
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk, nt              !: size of the domain
   INTEGER   :: nvpk                                !: vertical levels in working variable
+  INTEGER   :: numout=10                           !: logical unit for output file
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, e3,  zv   !:  metrics, velocity
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask             !:   npiglo x npjglo
@@ -37,6 +38,7 @@ PROGRAM cdfmean
   CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
   CHARACTER(LEN=80) :: cvar, cvartype
   CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
+  CHARACTER(LEN=80) :: cfilout='out.txt'
 
 
   INTEGER    :: istatus
@@ -142,7 +144,7 @@ PROGRAM cdfmean
   e2(:,:) = getvar(coordhgr, ce2, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
   gdep(:) = getvare3(coordzgr,cdep,npk)
 
-  OPEN(1,FILE='out.txt')
+  OPEN(numout,FILE=cfilout)
 
 DO jt=1,nt
   zvol=0.d0
@@ -166,7 +168,7 @@ DO jt=1,nt
      zsum=zsum+zsum2d
      IF (zvol2d /= 0 )THEN
         PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
-        WRITE(1,9004) gdep(ik),ik,zsum2d/zvol2d
+        WRITE(numout,9004) gdep(ik),ik,zsum2d/zvol2d
      ELSE
         PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
      ENDIF
