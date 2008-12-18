@@ -19,7 +19,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
        cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
-       cdftransportizpm \
+       cdftransportizpm cdfmoc_gsop cdfmoc_rapid_26N_r8_ORCA025 cdfmoc_gsop_x cdfmht_gsop \
        cdfmasstrp cdfmasstrp-full \
        cdfsigtrp cdfsigitrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
        cdfpsi cdfpsi-full cdfpsi-open cdfmoc cdfmoc-full cdfmocatl cdfmocsig cdfmean cdfmeanvar cdfmean-full cdfzeromean \
@@ -255,6 +255,18 @@ cdftempvol-full: cdfio.o  cdftempvol-full.f90
 cdfmoc: cdfio.o  cdfmoc.f90
 	$(F90) cdfmoc.f90 -o cdfmoc cdfio.o $(FFLAGS)
 
+cdfmoc_gsop: cdfio.o eos.o  cdfmoc_gsop.f90
+	$(F90) cdfmoc_gsop.f90 -o cdfmoc_gsop cdfio.o eos.o $(FFLAGS)
+
+cdfmht_gsop: cdfio.o eos.o  cdfmht_gsop.f90
+	$(F90) cdfmht_gsop.f90 -o cdfmht_gsop cdfio.o eos.o $(FFLAGS)
+
+cdfmoc_gsop_x: cdfio.o eos.o  cdfmoc_gsop_x.f90
+	$(F90) cdfmoc_gsop_x.f90 -o cdfmoc_gsop_x cdfio.o eos.o $(FFLAGS)
+
+cdfmoc_rapid_26N_r8_ORCA025: cdfio.o eos.o  cdfmoc_rapid_26N_r8_ORCA025.f90
+	$(F90) cdfmoc_rapid_26N_r8_ORCA025.f90 -o cdfmoc_rapid_26N_r8_ORCA025 cdfio.o eos.o $(FFLAGS)
+
 cdfmocsig: cdfio.o eos.o  cdfmocsig.f90
 	$(F90) cdfmocsig.f90 -o cdfmocsig cdfio.o eos.o $(FFLAGS)
 
@@ -373,43 +385,43 @@ cdfpendep: cdfio.o  cdfpendep.f90
 ## reformating programs
 cdf16bit: cdfio.o cdf16bit.f90
 	$(F90) cdf16bit.f90  -o cdf16bit cdfio.o $(FFLAGS)
-	
+
 cdfvita: cdfio.o cdfvita.f90
 	$(F90) cdfvita.f90  -o cdfvita cdfio.o $(FFLAGS)
 
 cdftrp_bathy: cdfio.o cdftrp_bathy.f90
 	$(F90) cdftrp_bathy.f90  -o cdftrp_bathy cdfio.o $(FFLAGS)
-	
+
 cdfconvert: cdfio.o cdfconvert.f90
 	$(F90)  cdfconvert.f90  -o cdfconvert cdfio.o $(FFLAGS)
-	
+
 cdfflxconv: cdfio.o cdfflxconv.f90
 	$(F90)   cdfflxconv.f90  -o cdfflxconv cdfio.o $(FFLAGS)
-	
+
 cdfsstconv: cdfio.o cdfsstconv.f90
 	$(F90)   cdfsstconv.f90  -o cdfsstconv cdfio.o $(FFLAGS)
-	
+
 cdfstrconv: cdfio.o cdfstrconv.f90
 	$(F90)   cdfstrconv.f90  -o cdfstrconv cdfio.o $(FFLAGS)
-	
+
 cdfbathy: cdfio.o cdfbathy.f90
 	$(F90)   cdfbathy.f90  -o cdfbathy cdfio.o $(FFLAGS)
-	
+
 cdfcofdis: cdfio.o cdfcofdis.f90
 	$(F90)    cdfcofdis.f90  -o cdfcofdis cdfio.o $(FFLAGS)
-	
+
 cdfcoastline: cdfio.o cdfcoastline.f90
 	$(F90)    cdfcoastline.f90  -o cdfcoastline cdfio.o $(FFLAGS)
-	
+
 cdfvar: cdfio.o cdfvar.f90
 	$(F90)   cdfvar.f90  -o cdfvar cdfio.o $(FFLAGS)
 
 cdfcsp: cdfio.o cdfcsp.f90
 	$(F90)   cdfcsp.f90  -o cdfcsp cdfio.o $(FFLAGS)
-	
+
 cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 	$(F90)   cdfpolymask.f90  -o cdfpolymask cdfio.o modpoly.o $(FFLAGS)
-	
+
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
 bimgmoy4: bimgmoy4.f90
