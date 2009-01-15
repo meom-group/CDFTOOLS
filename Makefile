@@ -216,6 +216,12 @@ cdfpsi-open-zap: cdfio.o  cdfpsi-open-zap.f90
 cdfpsi-open_AM: cdfio.o  cdfpsi-open_AM.f90
 	$(F90) cdfpsi-open_AM.f90  -o cdfpsi-open_AM cdfio.o $(FFLAGS)
 
+cdfpsi-austral: cdfio.o  cdfpsi-austral.f90
+	$(F90) cdfpsi-austral.f90  -o cdfpsi-austral cdfio.o $(FFLAGS)
+
+cdfpsi-austral-ssh: cdfio.o  cdfpsi-austral-ssh.f90
+	$(F90) cdfpsi-austral-ssh.f90  -o cdfpsi-austral-ssh cdfio.o $(FFLAGS)
+
 cdftransportiz: cdfio.o  cdftransportiz.f90
 	$(F90) cdftransportiz.f90 -o cdftransportiz cdfio.o $(FFLAGS)
 

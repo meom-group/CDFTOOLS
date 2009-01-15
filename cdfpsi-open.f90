@@ -36,10 +36,11 @@ PROGRAM cdfpsi_open
   IMPLICIT NONE
   INTEGER   :: ji,jj,jk, jarg                      !: dummy loop index
   INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: command line 
+  INTEGER   :: narg, iargc, iarg                   !: command line 
   INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
   INTEGER   :: ncout
   INTEGER, DIMENSION(1) ::  ipk, id_varout         !
+  INTEGER  :: iref=-1, jref=-1
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask, e1v, e3v , zv !: mask, metrics
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e2u, e3u , zu !: mask, metrics
@@ -47,6 +48,7 @@ PROGRAM cdfpsi_open
   REAL(KIND=4) ,DIMENSION(1)                    ::  tim
 
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: ztrpu, ztrpv, psi1, psi2
+  REAL(KIND=8)   :: offset
 
   CHARACTER(LEN=80) :: cfileu ,cfilev, cfileoutnc='psi.nc'
   CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cmask='mask.nc'
@@ -62,7 +64,7 @@ PROGRAM cdfpsi_open
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfpsi_open  Ufile Vfile -mask -moy'
+     PRINT *,' Usage : cdfpsi_open  Ufile Vfile [-ref iref jref -mask -moy ]'
      PRINT *,' Computes the barotropic stream function as the integral of the transport'
      PRINT *,'    Option -mask : result are masked (default : no masked) '
      PRINT *,'    Option -moy : results is the mean between meridional and zonal calculation'
@@ -76,23 +78,30 @@ PROGRAM cdfpsi_open
   CALL getarg (1, cfileu  )
   CALL getarg (2, cfilev  )
   IF (narg > 2 ) THEN
-     DO  jarg = 3, narg 
-        CALL getarg(jarg, coption)
+      iarg=3
+     DO  WHILE ( iarg <= narg )
+        CALL getarg(iarg, coption)
         SELECT CASE ( coption )
         CASE ( '-mask' )
            lmask=.TRUE.
         CASE ( '-moy' )
            lmoy=.TRUE.
+        CASE ( '-ref' )
+           CALL getarg(iarg+1,coption) ; READ(coption,*)  iref
+           CALL getarg(iarg+2,coption) ; READ(coption,*)jref ; iarg=iarg+2 
         CASE DEFAULT
            PRINT *,' Unknown option : ', TRIM(coption)
            STOP
         END SELECT
+        iarg=iarg+1
      END DO
   ENDIF
 
   npiglo= getdim (cfileu,'x')
   npjglo= getdim (cfileu,'y')
   npk   = getdim (cfileu,'depth')
+  IF ( iref == -1 ) iref=npiglo
+  IF ( jref == -1 ) jref=npjglo
 
   ! define new variables for output
   typvar(1)%name= 'sobarstf'
@@ -176,6 +185,9 @@ PROGRAM cdfpsi_open
      END DO
      psi1=0.5*(psi1 +psi2)
   END IF
+  ! substract offset to psi. If -ref option not used, offset is the upper right value
+  offset = psi1(iref,jref)
+  psi1(:,:) = psi1(:,:) - offset
 
   IF ( lmask ) psi1=psi1*zmask
 
