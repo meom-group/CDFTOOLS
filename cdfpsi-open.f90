@@ -159,12 +159,12 @@ PROGRAM cdfpsi_open
   END DO  ! loop to next level
 
   ! compute transport along line jj=jpj
-  psi1(1,npjglo) = ztrpv(1,npjglo)  
+  psi1(1,npjglo-2) = ztrpv(1,npjglo-2)  
   DO ji=2,npiglo 
-     psi1(ji,npjglo) = psi1(ji-1,npjglo) + ztrpv(ji,npjglo)
+     psi1(ji,npjglo-2) = psi1(ji-1,npjglo-2) + ztrpv(ji,npjglo-2)
   END DO
   ! Then compute from N to S the transport using zonal contribution
-  DO jj=npjglo-1,1,-1
+  DO jj=npjglo-3,1,-1
      DO ji=1,npiglo
         psi1(ji,jj)=psi1(ji,jj+1)  + ztrpu(ji,jj+1)
      END DO
