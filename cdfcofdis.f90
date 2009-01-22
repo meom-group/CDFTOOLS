@@ -23,7 +23,8 @@ PROGRAM cdfcofdis
   REAL(KIND=4) ::   rad = 3.141592653589793 / 180.   !: conversion from degre into radian
   REAL(KIND=4) ::   ra  = 6371229.                   !: earth radius (meter)
 
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc', cmask='mask.nc', cfilet
+  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc', cmask='mask.nc'
+  CHARACTER(LEN=255) :: cfilet
 
   ! output stuff
   INTEGER, DIMENSION(1) :: ipk, id_varout
@@ -39,7 +40,7 @@ PROGRAM cdfcofdis
     PRINT *,'   where mesh_hgr.nc and mask.nc stand for the name of the mesh_hgr'
     PRINT *,'   and mask files respectively'
     PRINT *,'   gridT.nc is used for size and depth references'
-    PRINT *,' Program will output dist.nc with variable Tcoast, representing the distance of every'
+    PRINT *,' Program will output dist.coast with variable Tcoast, representing the distance of every'
     PRINT *,' T points to the coast line '
     STOP
   ENDIF
