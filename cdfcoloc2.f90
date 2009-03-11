@@ -54,7 +54,9 @@ PROGRAM cdfcoloc
 
   !!
 !  ctype=(/'CFCCONC'/)
-   ctype=(/'PENDEP'/)
+   ctype=(/'CFCINV'/)
+!   ctype=(/'PENDEP'/)
+!  ctype=(/'MXL'/)
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg /= 2  ) THEN
@@ -132,6 +134,13 @@ PROGRAM cdfcoloc
      CASE ('PENDEP')     !  CFC inventory, not used for Greg Holloway output
         WRITE(cweight,'(a,a,".bin")') TRIM(cweight_root), '_T'
         cvar='pendep' ; cvmask='tmask'
+        cfil=cgridt
+        npkv=1
+        scale=1.
+     CASE ('MXL')     !  Mixed layer depth
+        WRITE(cweight,'(a,a,".bin")') TRIM(cweight_root), '_T'
+         cvar='somxl010' ; cvmask='tmask'
+!       cvar='somxlt02' ; cvmask='tmask'
         cfil=cgridt
         npkv=1
         scale=1.

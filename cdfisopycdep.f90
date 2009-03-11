@@ -48,7 +48,7 @@ PROGRAM cdfisopycdep
 
   !! * Read command line
   narg=iargc()
-  IF (narg < 3 ) THEN
+  IF (narg < 2 ) THEN
          PRINT *, &
      &' >>>> usage: cdfisopycdep [-s sigma ] <rhofile> <cdfsigmavar> '
          PRINT *,'   Deptht of isopycnal surfaces will be in isopycdep.nc'
