@@ -62,7 +62,8 @@ PROGRAM cdficediag
 
   e1(:,:) = getvar(coordhgr, 'e1t', 1,npiglo,npjglo)
   e2(:,:) = getvar(coordhgr, 'e2t', 1,npiglo,npjglo)
-  ff(:,:) = getvar(coordhgr, 'ff' , 1,npiglo,npjglo)
+  ! only the sign of ff is important
+  ff(:,:) = getvar(coordhgr, 'gphit' , 1,npiglo,npjglo)
 
 
   ricethick(:,:)= getvar(cfilev, 'iicethic',  1 ,npiglo,npjglo)
