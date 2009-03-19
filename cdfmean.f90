@@ -152,8 +152,8 @@ DO jt=1,nt
    DO jk = 1,nvpk
      ik = jk+kmin-1
      ! Get velocities v at ik
-!    zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
-      zv(:,:)= getvar(cfilev, cvar,  jt ,npiglo,npjglo,kimin=imin,kjmin=jmin,ktime=jt)
+     zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
+!     zv(:,:)= getvar(cfilev, cvar,  jt ,npiglo,npjglo,kimin=imin,kjmin=jmin,ktime=jt)
      zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
 !    zmask(:,npjglo)=0.
 
