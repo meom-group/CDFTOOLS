@@ -1,14 +1,12 @@
 #!/bin/ksh
-# @ cpu_limit  = 36000
-# @ data_limit = 1gb
-# Nom du travail LoadLeveler
+# @ wall_clock_limit = 3:00:00
 # @ job_name   = vt-YYYY
-# Fichier de sortie standard du travail       
+# @ as_limit = 1gb
 # @ output     = $(job_name).$(jobid)
-# Fichier de sortie d'erreur du travail
 # @ error      =  $(job_name).$(jobid)
-# @ queue                   
-
+# @ notify_user = molines@hmg.inpg.fr
+# @ notification = error
+# @ queue
 
 ### OAR is valid on ZEPHIR
 #OAR -n metavt

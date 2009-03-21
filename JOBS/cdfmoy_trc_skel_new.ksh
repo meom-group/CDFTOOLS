@@ -1,19 +1,12 @@
 #!/bin/ksh
 # @ wall_clock_limit = 3:00:00
-# @ job_name   = moy-YYYY
+# @ job_name   = trc-YYYY
 # @ as_limit = 1gb
 # @ output     = $(job_name).$(jobid)
 # @ error      =  $(job_name).$(jobid)
 # @ notify_user = molines@hmg.inpg.fr
 # @ notification = error
-# @ queue                   
-
-### OAR is valid on ZEPHIR
-#OAR -n metamoy
-#OAR -l /nodes=1/cpu=1,walltime=5:00:00
-#OAR -E METAMOY.%jobid%
-#OAR -O METAMOY.%jobid%
-
+# @ queue
 
 #################################################################################
 # This script is used to compute time mean averages for DRAKKAR model output.
@@ -21,14 +14,13 @@
 # All customisable variable are set in Part I.
 # This script must be launched from metamoy.ksh which edit the years
 #
-# $Rev$
-# $Date$
-# $Id$
+# $Rev: 117 $
+# $Date: 2007-11-15 14:45:14 +0100 (Thu, 15 Nov 2007) $
+# $Id: cdfmoy_skel_new.ksh 117 2007-11-15 13:45:14Z molines $
 ################################################################################
 
 set -x
-P_CDF_DIR=$PDIR/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
-. $P_CDF_DIR/config_def.ksh
+P_CDF_DIR=$HOME/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
 
 cp $P_CDF_DIR/config_def.ksh $TMPDIR
 cp $P_CDF_DIR/function_def.ksh $TMPDIR
@@ -71,12 +63,13 @@ for YEAR in $YEARLST ; do
 
  # Monthly mean
  #
- for grid in gridT gridU gridV gridW icemod  ; do 
+ for grid in ptrcT  ; do 
    for month in 01 02 03 04 05 06 07 08 09 10 11 12  ; do 
     getmonth $month $grid
     $CDFTOOLS/cdfmoy ${CONFCASE}_y${YEAR}m${month}d??_$grid.nc
     case $grid in 
       icemod) putmonth $month $grid ;;
+      ptrcT)  putmonth $month $grid ;;
            *) putmonth $month $grid ;
               putmonth2 $month ${grid}2 ;;
     esac
@@ -88,6 +81,7 @@ for YEAR in $YEARLST ; do
    cd MONTHLY
     case $grid in 
       icemod) $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_$grid.nc    ; putannual $grid ;;
+      ptrcT) $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_$grid.nc    ; putannual $grid ;;
            *) $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_$grid.nc    ; putannual $grid ;
               $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_${grid}2.nc ; putannual ${grid}2 ;;
     esac
