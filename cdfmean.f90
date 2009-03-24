@@ -60,6 +60,8 @@ PROGRAM cdfmean
      PRINT *,' Output on standard output'
      STOP
   ENDIF
+  ! Open standard output with recl=256 to avoid wrapping of long lines (ifort)
+  OPEN(6,FORM='FORMATTED',RECL=256)
 
   CALL getarg (1, cfilev)
   CALL getarg (2, cvar)
@@ -93,11 +95,11 @@ PROGRAM cdfmean
   IF (nvpk == 2 ) nvpk = 1
   IF (nvpk == 3 ) nvpk = npk
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
-  PRINT *, 'nt    =', nt
-  PRINT *, 'nvpk  =', nvpk
+  WRITE(6, *) 'npiglo=', npiglo
+  WRITE(6, *) 'npjglo=', npjglo
+  WRITE (6,*) 'npk   =', npk
+  WRITE (6,*) 'nt    =', nt
+  WRITE (6,*) 'nvpk  =', nvpk
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )
@@ -167,13 +169,13 @@ DO jt=1,nt
      zsum2d=sum(zv*e1*e2*e3*zmask)
      zsum=zsum+zsum2d
      IF (zvol2d /= 0 )THEN
-        PRINT *, ' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
+        WRITE(6,*)' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
         WRITE(numout,9004) gdep(ik),ik,zsum2d/zvol2d
      ELSE
-        PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
+        WRITE(6,*) ' No points in the water at level ',ik,'(',gdep(ik),' m) '
      ENDIF
   END DO
-  PRINT * ,' Mean value over the ocean: ', zsum/zvol, jt
+  WRITE(6,*) ' Mean value over the ocean: ', zsum/zvol, jt
 END DO
 CLOSE(1)
 9004 FORMAT(f9.2,' ',i2,' ',f9.2)

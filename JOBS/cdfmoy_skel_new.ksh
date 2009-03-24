@@ -1,5 +1,5 @@
 #!/bin/ksh
-# @ wall_clock_limit = 3:00:00
+# @ wall_clock_limit = 10:00:00
 # @ job_name   = moy-YYYY
 # @ as_limit = 1gb
 # @ output     = $(job_name).$(jobid)
@@ -27,6 +27,7 @@
 ################################################################################
 
 set -x
+. $HOME/.profile
 P_CDF_DIR=$PDIR/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
 . $P_CDF_DIR/config_def.ksh
 

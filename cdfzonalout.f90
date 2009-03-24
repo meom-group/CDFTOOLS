@@ -51,6 +51,8 @@ PROGRAM cdfzonalout
   cvarname(1:nvars) = getvarname(cfilev,nvars,typvar)
   ipk(1:nvars) = getipk(cfilev,nvars)
 
+  ! Open standard output with reclen 2048 for avoid wrapping with ifort
+  OPEN(6,FORM='FORMATTED',RECL=2048)
   ! look for 1D var ( f(lat) )
   mvar = 0
   DO jvar = 1,nvars
@@ -62,10 +64,10 @@ PROGRAM cdfzonalout
         ijvar(mvar) = jvar    ! use indirect adressing for those variables
      ENDIF
   END DO
-  PRINT *,'Number of 1D variables :', mvar
+  WRITE(6,*) 'Number of 1D variables :', mvar
   DO jjvar=1,mvar
     jvar=ijvar(jjvar)
-    PRINT *,'     ',TRIM(cvarname(jvar))
+    WRITE(6,*) '     ',TRIM(cvarname(jvar))
   ENDDO
    
 
@@ -74,9 +76,9 @@ PROGRAM cdfzonalout
   npk   = getdim (cfilev,'depth')
 
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
+  WRITE(6,*)  'npiglo=', npiglo
+  WRITE(6,*)  'npjglo=', npjglo
+  WRITE(6,*)  'npk   =', npk
 
   ! Allocate arrays
   ALLOCATE ( zv(npiglo,npjglo,mvar) )
@@ -93,9 +95,9 @@ PROGRAM cdfzonalout
 
   END DO ! next variable
 
-   PRINT *,' J  LAT ', (TRIM(cvarname(ijvar(jjvar))),' ',jjvar=1,mvar)
+   WRITE(6,*) ' J  LAT ', (TRIM(cvarname(ijvar(jjvar))),' ',jjvar=1,mvar)
   DO jj=npjglo,1,-1
-    PRINT *, jj, dumlat(1,jj), zv(1,jj,1:mvar)
+    WRITE(6,*)  jj, dumlat(1,jj), zv(1,jj,1:mvar)
   ENDDO
 
 
