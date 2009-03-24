@@ -548,7 +548,9 @@ set -x
   # Launch post processing   ( by itself a complex script ...)
   # This script retrieve CONFIG name and CASE from the directory name where it runs...
   cd ${CONFIG}/${CONFCASE}-TRPSIG
+
  .  $TMPDIR/trpsig_postproc.ksh
+
   cd $TMPDIR
 
   # save results on gaya ( as many files as sections in dens_section.dat)
