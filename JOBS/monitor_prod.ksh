@@ -523,20 +523,20 @@ set -x
     cdfsigtrp $tfich $ufich $vfich 21 30 180 -bimg -print  >>  ${CONFCASE}_y${tag}_trpsig_monitor.lst
 
     # save the monthly log file on gaya for an (improbable) eventual post processing ...
-    expatrie ${CONFCASE}_y${tag}_trpsig_monitor.lst $TRPSIGY ${CONFCASE}_y${tag}_trpsig_monitor.lst
+#   expatrie ${CONFCASE}_y${tag}_trpsig_monitor.lst $TRPSIGY ${CONFCASE}_y${tag}_trpsig_monitor.lst
     # and create a mirror on the local tmpdir
     mv ${CONFCASE}_y${tag}_trpsig_monitor.lst  $TRPSIGY
 
     # Idem : save temporary bimg files on gaya and create local mirror
     for  b in *bimg ; do
         mv  $b ${CONFCASE}_y${tag}_$b
-        expatrie ${CONFCASE}_y${tag}_$b $TRPSIGY ${CONFCASE}_y${tag}_$b
+#       expatrie ${CONFCASE}_y${tag}_$b $TRPSIGY ${CONFCASE}_y${tag}_$b
         mv  ${CONFCASE}_y${tag}_$b  $TRPSIGY
     done
     
     # Idem: for txt files
     mv trpsig.txt ${CONFCASE}_y${tag}_trpsig.txt
-    expatrie ${CONFCASE}_y${tag}_trpsig.txt $TRPSIGY ${CONFCASE}_y${tag}_trpsig.txt
+#   expatrie ${CONFCASE}_y${tag}_trpsig.txt $TRPSIGY ${CONFCASE}_y${tag}_trpsig.txt
     mv  ${CONFCASE}_y${tag}_trpsig.txt $TRPSIGY
 
     # erase useless files ( monthly averages ) Keep tfich which can be used for MXL
