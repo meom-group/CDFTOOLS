@@ -18,6 +18,10 @@ MODULE cdfio
 
   IMPLICIT NONE
   INTEGER :: id_x, id_y, id_z, id_t, id_lat, id_lon, id_dep, id_tim
+  LOGICAL :: l_mbathy=.false.
+  INTEGER,    DIMENSION(:,:), ALLOCATABLE :: mbathy           !: for reading e3._ps in nemo3.x
+  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE :: e3t_ps, e3w_ps !: for reading e3._ps in nemo3.x
+  REAL(kind=4), DIMENSION(:), ALLOCATABLE :: e3t_0, e3w_0 !: for readinf e3._ps in nemo3.x
 
   TYPE, PUBLIC ::   variable 
      CHARACTER(LEN=80)::  name
@@ -748,6 +752,7 @@ CONTAINS
     INTEGER, DIMENSION(4) :: istart, icount, nldim
     INTEGER :: ncid, id_var, id_dimunlim, nbdim
     INTEGER :: istatus, ilev, imin, jmin, itime, ilog, ipiglo, imax
+    INTEGER :: ii, ij, ik, ji, jj
     LOGICAL :: lliom=.false., llperio=.false.
     CHARACTER(LEN=80) :: clvar
 
@@ -805,14 +810,63 @@ CONTAINS
       istatus=NF90_INQ_VARID( ncid,'e3t_0', id_var)
       IF ( istatus == NF90_NOERR ) THEN
         ! iom file , change names
-      SELECT CASE ( clvar )
-        CASE ('e3t_ps')  ; clvar='e3t'
-        CASE ('e3u_ps')  ; clvar='e3u'
-        CASE ('e3v_ps')  ; clvar='e3v'
-        CASE ('e3w_ps')  ; clvar='e3w'
-      END SELECT
+        ! now try to detect if it is v2 or v3, in v3, e3t_ps exist and is a 2d variable
+         istatus=NF90_INQ_VARID( ncid,'e3t_ps', id_var)
+         IF ( istatus == NF90_NOERR ) THEN  
+           ! case of NEMO_v3 zfr files
+           ! look for mbathy and out it in memory, once for all
+           IF ( .NOT. l_mbathy ) THEN
+             PRINT *,'MESH_ZGR V3 detected'
+             l_mbathy=.true.
+             istatus=NF90_INQ_DIMID(ncid,'x',id_var) ; istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=ii)
+             istatus=NF90_INQ_DIMID(ncid,'y',id_var) ; istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=ij)
+             istatus=NF90_INQ_DIMID(ncid,'z',id_var) ; istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=ik)
+             ALLOCATE( mbathy(ii,ij))               ! mbathy is allocated on the whole domain
+             ALLOCATE( e3t_ps(ii,ij),e3w_ps(ii,ij)) ! e3._ps  are  allocated on the whole domain
+             ALLOCATE( e3t_0(ik), e3w_0(ik) )       ! whole depth
+
+             istatus=NF90_INQ_VARID (ncid,'mbathy', id_var)
+             IF ( istatus /=  NF90_NOERR ) THEN
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no mbathy found !' ; STOP
+             ENDIF
+             istatus=NF90_GET_VAR(ncid,id_var,mbathy, start=(/1,1,1/), count=(/ii,ij,1/) )
+             !
+             istatus=NF90_INQ_VARID (ncid,'e3t_ps', id_var)
+             IF ( istatus /=  NF90_NOERR ) THEN
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_ps found !' ; STOP
+             ENDIF
+             istatus=NF90_GET_VAR(ncid,id_var,e3t_ps, start=(/1,1,1/), count=(/ii,ij,1/) )
+             !
+             istatus=NF90_INQ_VARID (ncid,'e3w_ps', id_var)
+             IF ( istatus /=  NF90_NOERR ) THEN
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_ps found !' ; STOP
+             ENDIF
+             istatus=NF90_GET_VAR(ncid,id_var,e3w_ps, start=(/1,1,1/), count=(/ii,ij,1/) )
+             !
+             istatus=NF90_INQ_VARID (ncid,'e3t_0', id_var)
+             IF ( istatus /=  NF90_NOERR ) THEN
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_0 found !' ; STOP
+             ENDIF
+             istatus=NF90_GET_VAR(ncid,id_var,e3t_0, start=(/1,1/), count=(/ik,1/) )
+             !
+             istatus=NF90_INQ_VARID (ncid,'e3w_0', id_var)
+             IF ( istatus /=  NF90_NOERR ) THEN
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_0 found !' ; STOP
+             ENDIF
+             istatus=NF90_GET_VAR(ncid,id_var,e3w_0, start=(/1,1/), count=(/ik,1/) )
+           ENDIF
+         ELSE
+          ! zgr v2
+          SELECT CASE ( clvar )
+           CASE ('e3t_ps')  ; clvar='e3t'
+           CASE ('e3u_ps')  ; clvar='e3u'
+           CASE ('e3v_ps')  ; clvar='e3v'
+           CASE ('e3w_ps')  ; clvar='e3w'
+          END SELECT
+         ENDIF
       ENDIF
     ENDIF
+
     istatus=NF90_INQUIRE(ncid,unlimitedDimId=id_dimunlim)
     CALL ERR_HDL(NF90_INQ_VARID ( ncid,clvar,id_var))
     ! look for time dim in variable
@@ -834,7 +888,6 @@ CONTAINS
     icount(2)=kpj
     icount(3)=1
     icount(4)=1
-
 
     istatus=NF90_INQUIRE_ATTRIBUTE(ncid,id_var,'missing_value')
     IF (istatus == NF90_NOERR ) THEN
@@ -868,13 +921,91 @@ CONTAINS
 
     IF (llperio ) THEN
       ALLOCATE (zend (ipiglo-imin,kpj), zstart(imax-1,kpj) )
-      istatus=NF90_GET_VAR(ncid,id_var,zend, start=(/imin,jmin,ilev,itime/),count=(/ipiglo-imin,kpj,1,1/))
-      istatus=NF90_GET_VAR(ncid,id_var,zstart, start=(/2,jmin,ilev,itime/),count=(/imax-1,kpj,1,1/))
-      getvar(1:ipiglo-imin,:)=zend
-      getvar(ipiglo-imin+1:kpi,:)=zstart
+      IF (l_mbathy .AND. ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' )) THEN
+       istatus=0
+       SELECT CASE ( clvar )
+         CASE ( 'e3t_ps' )
+           DO ji=1,ipiglo-imin+1
+            DO jj=1,kpj
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zend(ji,jj)=e3t_ps(imin+ji-1, jmin+jj-1)
+             ELSE
+               zend(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
+           DO ji=1,imax-1
+            DO jj=1,kpj
+             ik=mbathy(ji+1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zstart(ji,jj)=e3t_ps(ji+1, jmin+jj-1)
+             ELSE
+               zstart(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
+         CASE ( 'e3w_ps')
+           DO ji=1,ipiglo-imin+1
+            DO jj=1,kpj
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zend(ji,jj)=e3w_ps(imin+ji-1, jmin+jj-1)
+             ELSE
+               zend(ji,jj)=e3w_0(ilev)
+             ENDIF
+            END DO
+           END DO
+           DO ji=1,imax-1
+            DO jj=1,kpj
+             ik=mbathy(ji+1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zstart(ji,jj)=e3w_ps(ji+1, jmin+jj-1)
+             ELSE
+               zstart(ji,jj)=e3w_0(ilev)
+             ENDIF
+            END DO
+           END DO
+       END SELECT
+       getvar(1:ipiglo-imin,:)=zend
+       getvar(ipiglo-imin+1:kpi,:)=zstart
+      ELSE
+       istatus=NF90_GET_VAR(ncid,id_var,zend, start=(/imin,jmin,ilev,itime/),count=(/ipiglo-imin,kpj,1,1/))
+       istatus=NF90_GET_VAR(ncid,id_var,zstart, start=(/2,jmin,ilev,itime/),count=(/imax-1,kpj,1,1/))
+       getvar(1:ipiglo-imin,:)=zend
+       getvar(ipiglo-imin+1:kpi,:)=zstart
+      ENDIF
       DEALLOCATE(zstart, zend )
     ELSE
-      istatus=NF90_GET_VAR(ncid,id_var,getvar, start=istart,count=icount)
+      IF (l_mbathy .AND. ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' ))  THEN
+       istatus=0
+       SELECT CASE ( clvar )
+         CASE ( 'e3t_ps' )
+           DO ji=1,kpi
+            DO jj=1,kpj
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               getvar(ji,jj)=e3t_ps(imin+ji-1, jmin+jj-1)
+             ELSE
+               getvar(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
+         CASE ( 'e3w_ps')
+           DO ji=1,kpi
+            DO jj=1,kpj
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               getvar(ji,jj)=e3w_ps(imin+ji-1, jmin+jj-1)
+             ELSE
+               getvar(ji,jj)=e3w_0(ilev)
+             ENDIF
+            END DO
+           END DO
+       END SELECT
+      ELSE
+        istatus=NF90_GET_VAR(ncid,id_var,getvar, start=istart,count=icount)
+      ENDIF
     ENDIF
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar for ', TRIM(clvar)
