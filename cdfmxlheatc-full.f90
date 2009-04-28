@@ -12,9 +12,9 @@ PROGRAM cdfmxlheatc_full
   !! history ;
   !!  Original :  J.M. Molines ( 2006) April
   !!-------------------------------------------------------------------
-  !!  $Rev: 94 $
-  !!  $Date: 2007-09-11 20:34:24 +0200 (Tue, 11 Sep 2007) $
-  !!  $Id: cdfmxlheatc.f90 94 2007-09-11 18:34:24Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio

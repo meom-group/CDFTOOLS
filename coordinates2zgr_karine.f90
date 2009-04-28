@@ -10,9 +10,9 @@ PROGRAM coordinates2zgr
   !!   February 2003 : Anne de Miranda
   !!   June 2003     : J.M. Molines : modif for getarg (filename)
   !!--------------------------------------------------------------------------
-  !!  $Rev: 110 $
-  !!  $Date: 2007-10-10 18:07:55 +0200 (mer, 10 oct 2007) $
-  !!  $Id: coordinates2zgr.f90 110 2007-10-10 16:07:55Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
 
   USE netcdf

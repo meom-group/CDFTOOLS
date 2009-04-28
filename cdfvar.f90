@@ -49,7 +49,7 @@ PROGRAM cdfvar
   !!
   narg = iargc()
   IF (narg == 0) THEN
-     PRINT 9999,'USAGE :cdfvar -f file '// &
+     PRINT 9999,'USAGE :cdfvar -f file -var cdfvar'// &
           '-zoom imin imax jmin jmax klev jtime -fillzone -fullstep depmin'
      PRINT 9999,'      -replace ''file'' -dumpzone ''file'' -a -o ' 
      PRINT 9999

@@ -3,6 +3,7 @@ PROGRAM cdfsigitrp
   !!               ***  PROGRAM cdfsigitrp  ***
   !!
   !!  **  Purpose: Compute density class Mass Transports  across a section
+  !!               using potential density, refered to a particular depth
   !!               PARTIAL STEPS version
   !!  
   !!  **  Method:
@@ -17,7 +18,7 @@ PROGRAM cdfsigitrp
   !!            read 2 rows of T and S ( i i+1  or j j+1 )
   !!                compute the mean value at velocity point
   !!                compute sigmai (reference depth is given as argument).
-  !!            compute the depths of isopyncal surfaces
+  !!            compute the depths of isopycnal surfaces
   !!            compute the transport from surface to the isopycn
   !!            compute the transport in each class of density
   !!            compute the total transport (for information)

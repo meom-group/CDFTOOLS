@@ -1,6 +1,6 @@
-PROGRAM cdfvhst
+PROGRAM cdfvtrp
   !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfvhst  ***
+  !!               ***  PROGRAM cdfvtrp  ***
   !!
   !!  **  Purpose  :  Compute Verticaly integrated  Heat Salt Transport. 
   !!                  PARTIAL STEPS
@@ -14,9 +14,9 @@ PROGRAM cdfvhst
   !!  Original :  J.M. Molines (jan. 2005) (known then as cdfheattrp-save.f90 )
   !!              J.M. Molines : use module
   !!-------------------------------------------------------------------
-  !!  $Rev: 94 $
-  !!  $Date: 2007-09-11 20:34:24 +0200 (Tue, 11 Sep 2007) $
-  !!  $Id: cdfvhst.f90 94 2007-09-11 18:34:24Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -135,4 +135,4 @@ PROGRAM cdfvhst
 
   istatus = closeout (ncout)
 
-   END PROGRAM cdfvhst
+   END PROGRAM cdfvtrp

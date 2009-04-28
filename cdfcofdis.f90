@@ -131,7 +131,7 @@ PROGRAM cdfcofdis
     !!      C A U T I O N : Computation not yet implemented in mpp case.
     !!
     !! ** Action  : - pdct, distance to the coastline (argument)
-    !!              - NetCDF file 'dist.coast.nc' 
+    !!              - NetCDF file 'dist.coast' 
     !!----------------------------------------------------------------------
     !!
     !!

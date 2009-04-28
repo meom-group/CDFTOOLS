@@ -10,9 +10,9 @@ PROGRAM coordinates2hgr
   !!   February 2003 : Anne de Miranda
   !!   June 2003     : J.M. Molines : modif for getarg (filename)
   !!--------------------------------------------------------------------------
-  !!  $Rev: 108 $
-  !!  $Date: 2007-10-08 18:01:34 +0200 (lun, 08 oct 2007) $
-  !!  $Id: coordinates2hgr.f90 108 2007-10-08 16:01:34Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
 
   USE netcdf

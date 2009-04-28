@@ -15,9 +15,9 @@ PROGRAM cdfmoy_chsp
   !!                              now valid for grid T U V W icemod
   !!     Modified      :   P. Mathiot (June 2007) update for forcing fields
   !!-----------------------------------------------------------------------
-  !!  $Rev: 70 $
-  !!  $Date: 2007-06-28 16:28:19 +0200 (Thu, 28 Jun 2007) $
-  !!  $Id: cdfmoy.f90 70 2007-06-28 14:28:19Z mathiot $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !!
   USE cdfio 

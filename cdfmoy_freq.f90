@@ -14,9 +14,9 @@ PROGRAM cdfmoy_freq
   !!                              now valid for grid T U V W icemod
   !!     Modified      :   P. Mathiot (June 2007) update for forcing fields
   !!-----------------------------------------------------------------------
-  !!  $Rev: 70 $
-  !!  $Date: 2007-06-28 16:28:19 +0200 (Thu, 28 Jun 2007) $
-  !!  $Id: cdfmoy.f90 70 2007-06-28 14:28:19Z mathiot $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !!
   USE cdfio 
@@ -56,7 +56,7 @@ PROGRAM cdfmoy_freq
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmoy forcing_field frequency (monthly or daily or annual)'
+     PRINT *,' Usage : cdfmoy_freq forcing_field frequency (monthly or daily or annual)'
      STOP
   ENDIF
   !!
@@ -177,7 +177,7 @@ PROGRAM cdfmoy_freq
               !PRINT *, jtt,'/',nt,' et on enregistre tous les ',nt_in/nt_out
               IF (MOD(jtt,nt_in/nt_out)==0) THEN
                  jt=jt+1
-                 PRINT *, jtt,'/',nt,' et on enregistre tous les ',nt_in/nt_out
+                 PRINT *, jtt,'/',nt,' dumping every ',nt_in/nt_out
                  ! finish with level jk ; compute mean (assume spval is 0 )
                  rmean(:,:) = tab(:,:)/ntframe
                  PRINT *, '',rmean(100,100)
