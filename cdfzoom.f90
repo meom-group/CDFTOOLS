@@ -27,7 +27,7 @@ PROGRAM cdfzoom
   IMPLICIT NONE
   INTEGER ,PARAMETER :: jpk=100, jpt=700
   !
-  INTEGER :: numin,jk,ji,jj,jt,jl, jd, i
+  INTEGER :: numin,jk,ji,jj,jt,jl, jd, jarg
   INTEGER ::  narg, iargc
   INTEGER :: isdirect
   INTEGER :: ni,nj,nk,nt,icod,ndim
@@ -57,43 +57,33 @@ PROGRAM cdfzoom
   kext=1 ; kmin=1 ; kmax=1
   fact=1
   numin = 10
-  i=1
+  jarg=1
   ! Read command line
-  DO  WHILE (i <=  narg)
-     CALL getarg(i,cline1)
-     i = i + 1
+  DO  WHILE (jarg <=  narg)
+     CALL getarg(jarg,cline1)
+     jarg = jarg + 1
      IF (cline1 == '-f') THEN
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2); jarg = jarg + 1
         cfilein=cline2
      ELSE IF (cline1 == '-lev') THEN
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) kmin
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) kmax
      ELSE IF (cline1 == '-fact') THEN
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) fact
      ELSE IF (cline1 == '-zoom') THEN
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) imin
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) imax
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) jmin
-        CALL getarg(i,cline2)
-        i = i + 1
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) jmax
      ELSE IF ( cline1 == '-var') THEN
-        CALL getarg(i,cvar)
-        i = i + 1
-
+        CALL getarg(jarg,cvar) ; jarg = jarg + 1
      ELSE
         PRINT *, cline1,' : unknown option '
         STOP
