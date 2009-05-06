@@ -855,6 +855,11 @@ CONTAINS
              ENDIF
              istatus=NF90_GET_VAR(ncid,id_var,e3w_0, start=(/1,1/), count=(/ik,1/) )
            ENDIF
+          ! zgr v3 : clvar is not used but set for compatibility
+          SELECT CASE ( clvar )
+           CASE ('e3u_ps')  ; clvar='e3t_ps'
+           CASE ('e3v_ps')  ; clvar='e3t_ps'
+          END SELECT
          ELSE
           ! zgr v2
           SELECT CASE ( clvar )
