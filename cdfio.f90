@@ -926,7 +926,7 @@ CONTAINS
        istatus=0
        SELECT CASE ( clvar )
          CASE ( 'e3t_ps' )
-           DO ji=1,ipiglo-imin+1
+           DO ji=1,ipiglo-imin
             DO jj=1,kpj
              ik=mbathy(imin+ji-1, jmin+jj-1)
              IF (ilev == ik ) THEN
@@ -947,7 +947,7 @@ CONTAINS
             END DO
            END DO
          CASE ( 'e3u_ps' )
-           DO ji=1,ipiglo-imin+1
+           DO ji=1,ipiglo-imin
             DO jj=1,kpj
              ik=mbathy(imin+ji-1, jmin+jj-1)
              IF (ilev == ik ) THEN
@@ -967,9 +967,31 @@ CONTAINS
              ENDIF
             END DO
            END DO
-
+        CASE ( 'e3v_ps' )
+           zend(:,:)=e3t_0(ilev)
+           zstart(:,:)=e3t_0(ilev)
+           DO ji=1,ipiglo-imin
+            DO jj=1,MIN(kpj,ij-1)
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zend(ji,jj)=MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji-1, jmin+jj) )
+             ELSE
+               zend(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
+           DO ji=1,imax-1
+            DO jj=1,MIN(kpj,ij-1)
+             ik=mbathy(ji+1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zstart(ji,jj)=MIN(e3t_ps(ji+1, jmin+jj-1), e3t_ps(ji+1, jmin+jj) )
+             ELSE
+               zstart(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
          CASE ( 'e3w_ps')
-           DO ji=1,ipiglo-imin+1
+           DO ji=1,ipiglo-imin
             DO jj=1,kpj
              ik=mbathy(imin+ji-1, jmin+jj-1)
              IF (ilev == ik ) THEN
