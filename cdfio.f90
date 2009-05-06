@@ -40,7 +40,7 @@ MODULE cdfio
   END TYPE variable
 
   INTERFACE putvar
-     MODULE PROCEDURE putvarr4, putvari2, putvarzo, reputvarr4
+     MODULE PROCEDURE putvarr8, putvarr4, putvari2, putvarzo, reputvarr4
   END INTERFACE
 
 
@@ -752,7 +752,7 @@ CONTAINS
     INTEGER, DIMENSION(4) :: istart, icount, nldim
     INTEGER :: ncid, id_var, id_dimunlim, nbdim
     INTEGER :: istatus, ilev, imin, jmin, itime, ilog, ipiglo, imax
-    INTEGER :: ii, ij, ik, ji, jj
+    INTEGER, SAVE :: ii, ij, ik, ji, jj
     LOGICAL :: lliom=.false., llperio=.false.
     CHARACTER(LEN=80) :: clvar
 
@@ -921,7 +921,8 @@ CONTAINS
 
     IF (llperio ) THEN
       ALLOCATE (zend (ipiglo-imin,kpj), zstart(imax-1,kpj) )
-      IF (l_mbathy .AND. ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' )) THEN
+      IF (l_mbathy .AND. &
+        &  ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' .OR. clvar == 'e3u_ps' .OR. clvar == 'e3v_ps'))  THEN
        istatus=0
        SELECT CASE ( clvar )
          CASE ( 'e3t_ps' )
@@ -945,6 +946,28 @@ CONTAINS
              ENDIF
             END DO
            END DO
+         CASE ( 'e3u_ps' )
+           DO ji=1,ipiglo-imin+1
+            DO jj=1,kpj
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zend(ji,jj)=MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji, jmin+jj-1) )
+             ELSE
+               zend(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
+           DO ji=1,imax-1
+            DO jj=1,kpj
+             ik=mbathy(ji+1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               zstart(ji,jj)=MIN(e3t_ps(ji+1, jmin+jj-1), e3t_ps(ji+2, jmin+jj-1) )
+             ELSE
+               zstart(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
+
          CASE ( 'e3w_ps')
            DO ji=1,ipiglo-imin+1
             DO jj=1,kpj
@@ -977,7 +1000,8 @@ CONTAINS
       ENDIF
       DEALLOCATE(zstart, zend )
     ELSE
-      IF (l_mbathy .AND. ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' ))  THEN
+      IF (l_mbathy .AND. &
+        &  ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' .OR. clvar == 'e3u_ps' .OR. clvar == 'e3v_ps'))  THEN
        istatus=0
        SELECT CASE ( clvar )
          CASE ( 'e3t_ps' )
@@ -999,6 +1023,32 @@ CONTAINS
                getvar(ji,jj)=e3w_ps(imin+ji-1, jmin+jj-1)
              ELSE
                getvar(ji,jj)=e3w_0(ilev)
+             ENDIF
+            END DO
+           END DO
+         CASE ( 'e3u_ps' )
+           getvar(:,:)=e3t_0(ilev)
+           DO ji=1,MIN(kpi,ii-1)
+            DO jj=1,kpj
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               ! e3u_ps(ji) = MIN (   e3t (ji)               ,  e3t (ji+1) )
+               getvar(ji,jj)= MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji, jmin+jj-1) )
+             ELSE
+               getvar(ji,jj)=e3t_0(ilev)
+             ENDIF
+            END DO
+           END DO
+         CASE ( 'e3v_ps' )
+           getvar(:,:)=e3t_0(ilev)
+           DO ji=1,kpi
+            DO jj=1,MIN(kpj,ij-1)
+             ik=mbathy(imin+ji-1, jmin+jj-1)
+             IF (ilev == ik ) THEN
+               ! e3v_ps(jj) = MIN (   e3t (jj)               ,  e3t (jj+1) )
+               getvar(ji,jj)= MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji-1, jmin+jj) )
+             ELSE
+               getvar(ji,jj)=e3t_0(ilev)
              ENDIF
             END DO
            END DO
@@ -1435,6 +1485,52 @@ CONTAINS
     DEALLOCATE (z2d)
 
   END FUNCTION putheadervar
+
+  FUNCTION putvarr8(kout, kid,ptab, klev, kpi, kpj,ktime)
+    !!-----------------------------------------------------------
+    !!                       ***  FUNCTION  putvar  ***
+    !!
+    !! ** Purpose :  copy a 2D level of ptab in already open file kout, using variable kid
+    !!
+    !! ** Method  :
+    !!
+    !! ** Action  : variable level written
+    !!
+    !! history:
+    !!    27/04/2005 : Jean-Marc Molines : Original Code
+    !!-----------------------------------------------------------
+    !! * Arguments declarations
+    INTEGER, INTENT(in) :: kout  ,  &       ! ncid of output file
+         &                  kid              ! varid of output variable
+    INTEGER, INTENT(in) :: klev             ! level at which ptab will be written
+    INTEGER, INTENT(in) :: kpi,kpj          ! dimension of ptab
+    INTEGER, OPTIONAL, INTENT(in) :: ktime  ! dimension of ptab
+    REAL(KIND=8), DIMENSION(kpi,kpj),INTENT(in) :: ptab ! 2D array to write in file
+    INTEGER :: putvarr8                       ! return status
+
+    !! * Local variables
+    INTEGER :: istatus, itime, id_dimunlim
+    INTEGER, DIMENSION(4) :: istart, icount, nldim
+
+    IF (PRESENT(ktime) ) THEN
+       itime=ktime
+    ELSE
+       itime=1
+    ENDIF
+    istatus=NF90_INQUIRE(kout,unlimitedDimId=id_dimunlim)
+    nldim=0
+    istart(:) = 1
+    istatus=NF90_INQUIRE_VARIABLE(kout, kid,dimids=nldim(:) )
+    IF ( nldim(3) == id_dimunlim)  THEN
+     istart(3)=itime ; istart(4)=1
+    ELSE
+     istart(3)=klev ; istart(4)=itime
+    ENDIF
+    icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
+    istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
+    putvarr8=istatus
+
+  END FUNCTION putvarr8
 
   FUNCTION putvarr4(kout, kid,ptab, klev, kpi, kpj,ktime)
     !!-----------------------------------------------------------
