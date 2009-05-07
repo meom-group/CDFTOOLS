@@ -45,7 +45,7 @@ PROGRAM cdfmoy3
   CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname2   !: array of var22 name for output
   CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname3   !: array of var3 name for output
   
-  TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar, typvar2,typvar3
+  TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar, typvar2, typvar3
 
   INTEGER    :: ncout, ncout2, ncout3
   INTEGER    :: istatus
@@ -77,15 +77,15 @@ PROGRAM cdfmoy3
         ENDIF
      ENDIF
   ENDIF
-  
 
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
   npk=1
 
-  ALLOCATE( tab(npiglo,npjglo), tab2(npiglo,npjglo), v2d(npiglo,npjglo) )
-  ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo) )
+  ALLOCATE( tab(npiglo,npjglo), tab2(npiglo,npjglo), tab3(npiglo,npjglo) )
+  ALLOCATE( v2d(npiglo,npjglo) )
+  ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo), rmean3(npiglo,npjglo) )
 
   nvars = getnvar(cfile)
   PRINT *,' nvars =', nvars
@@ -96,11 +96,13 @@ PROGRAM cdfmoy3
 
   ! get list of variable names and collect attributes in typvar (optional)
   cvarname(:)=getvarname(cfile,nvars,typvar)
+  WHERE( cvarname /= 'sossheig'.and. cvarname /= 'votemper' ) cvarname='none'
 
   DO jvar = 1, nvars
      ! variables that will not be computed or stored are named 'none'
-     IF (cvarname(jvar)  /= 'sossheig' ) THEN
+     IF (cvarname(jvar)  /= 'sossheig'  .AND. cvarname(jvar) /= 'votemper') THEN
           cvarname2(jvar) ='none'
+          cvarname3(jvar) ='none'
      ELSE
         cvarname2(jvar)=TRIM(cvarname(jvar))//'_sqd'
         typvar2(jvar)%name =  TRIM(typvar(jvar)%name)//'_sqd'           ! name
@@ -137,7 +139,8 @@ PROGRAM cdfmoy3
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
   ipk(:)     = getipk (cfile,nvars,cdep=cdep)
-  WHERE( ipk == 0 .OR. ipk > 1 ) cvarname='none'
+  WHERE( ipk == 0 ) cvarname='none'
+  WHERE(ipk > 1 ) ipk = 1
   typvar(:)%name=cvarname
   typvar2(:)%name=cvarname2
   typvar3(:)%name=cvarname3
