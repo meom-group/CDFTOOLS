@@ -1,9 +1,8 @@
-PROGRAM cdfmoy
+PROGRAM cdfmoy3
   !!-----------------------------------------------------------------------
-  !!                 ***  PROGRAM cdfmoy  ***
+  !!                 ***  PROGRAM cdfmoy3  ***
   !!
-  !!  **  Purpose: Compute mean values for all the variables in a bunch
-  !!                of cdf files given as argument
+  !!  **  Purpose: Compute mean values of ssh ssh^2 and ssh^3
   !!                Store the results on a 'similar' cdf file.
   !!  
   !!  **  Method: Try to avoid 3 d arrays 
@@ -57,7 +56,7 @@ PROGRAM cdfmoy
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmoy ''list_of_ioipsl_model_output_files'' '
+     PRINT *,' Usage : cdfmoy3 ''list_of_ioipsl_model_output_files'' '
      STOP
   ENDIF
   !!
@@ -83,6 +82,7 @@ PROGRAM cdfmoy
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
+  npk=1
 
   ALLOCATE( tab(npiglo,npjglo), tab2(npiglo,npjglo), v2d(npiglo,npjglo) )
   ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo) )
@@ -99,10 +99,7 @@ PROGRAM cdfmoy
 
   DO jvar = 1, nvars
      ! variables that will not be computed or stored are named 'none'
-     IF (cvarname(jvar)  /= 'vozocrtx' .AND. &
-          cvarname(jvar) /= 'vomecrty' .AND. &
-          cvarname(jvar) /= 'vovecrtz' .AND. &
-          cvarname(jvar) /= 'sossheig' ) THEN
+     IF (cvarname(jvar)  /= 'sossheig' ) THEN
           cvarname2(jvar) ='none'
      ELSE
         cvarname2(jvar)=TRIM(cvarname(jvar))//'_sqd'
@@ -140,7 +137,7 @@ PROGRAM cdfmoy
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
   ipk(:)     = getipk (cfile,nvars,cdep=cdep)
-  WHERE( ipk == 0 ) cvarname='none'
+  WHERE( ipk == 0 .OR. ipk > 1 ) cvarname='none'
   typvar(:)%name=cvarname
   typvar2(:)%name=cvarname2
   typvar3(:)%name=cvarname3
@@ -166,7 +163,7 @@ PROGRAM cdfmoy
   lcaltmean=.TRUE.
   DO jvar = 1,nvars
      IF (cvarname(jvar) == 'nav_lon' .OR. &
-          cvarname(jvar) == 'nav_lat' ) THEN
+          cvarname(jvar) == 'nav_lat' .OR. cvarname2(jvar) == 'none' ) THEN
         ! skip these variable
      ELSE
         PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar)
@@ -216,4 +213,4 @@ PROGRAM cdfmoy
   istatus = closeout(ncout3)
 
 
-END PROGRAM cdfmoy
+END PROGRAM cdfmoy3
