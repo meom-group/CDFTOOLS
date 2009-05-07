@@ -37,6 +37,9 @@ all: $(EXEC)
 cdfmoy: cdfio.o   cdfmoy.f90
 	$(F90) cdfmoy.f90 -o cdfmoy cdfio.o  $(FFLAGS)
 
+cdfmoy3: cdfio.o   cdfmoy3.f90
+	$(F90) cdfmoy3.f90 -o cdfmoy3 cdfio.o  $(FFLAGS)
+
 cdfmoyt: cdfio.o   cdfmoyt.f90
 	$(F90) cdfmoyt.f90 -o cdfmoyt cdfio.o  $(FFLAGS)
 
