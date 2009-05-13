@@ -236,7 +236,7 @@ PROGRAM cdfmoy3
    IF (lfirst) THEN
      lfirst=.false.
      ! read e1 e2 and tmask ( assuming this prog only deal with T-points)
-     ALLOCATE ( ei(npiglo,npjglo),  tmask(npiglo,npjglo), tmask0(npiglo,npjglo) )
+     ALLOCATE ( at(npiglo, npjglo), ei(npiglo,npjglo),  tmask(npiglo,npjglo), tmask0(npiglo,npjglo) )
      at(:,:) = getvar(chgr,'e1t',1,npiglo,npjglo)
      ei(:,:) = getvar(chgr,'e2t',1,npiglo,npjglo)
      tmask0(:,:) = getvar(cmask,'tmask',1,npiglo,npjglo)
@@ -249,7 +249,8 @@ PROGRAM cdfmoy3
      area=sum(at)
    ENDIF
      zmean=sum(v2d*at)/area
-     v2d=(v2d-zmean) * tmask0
+     PRINT *,'jt zmean', jt, zmean
+     ptab=(ptab-zmean) * tmask0
      
   END SUBROUTINE zeromean
    
