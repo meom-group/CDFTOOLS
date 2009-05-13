@@ -305,22 +305,6 @@ set -x
    expatrie $ftgib $DIAGS $ftgib
    expatrie $fsgib $DIAGS $fsgib
 
-   if [ $(chkfile $DIAGS/LEVITUS_y0000_TMEAN.txt ) == absent ] ; then
-    # first time : Create header with Levitus equivalent
-    # requires  LEVITUS 'same' diags (from the ANNUAL mean )
-    #  !!! NEW !!!
-    # get non-masked levitus then mask it with the same mask as the model
-    levitus=Levitus_p2.1_ANNUAL_TS_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
-    rapatrie $levitus $IDIR $levitus
-    cdfmltmask $levitus  mask.nc votemper T             # votemper --> $levitus_masked
-    cdfmltmask ${levitus}_masked  mask.nc vosaline T    # vosaline --> $levitus_masked_masked
-    mv ${levitus}_masked_masked Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc  # simplify name
-    levitus=Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc # will be ready for GIB DIAG
-    #
-
-
-
-
    if [ $(chkfile $DIAGS/LEVITUS_y0000_TGIB.txt ) == absent ] ; then
     # first time : Create header with Levitus equivalent
     # requires  LEVITUS 'same' diags (from the ANNUAL mean )
