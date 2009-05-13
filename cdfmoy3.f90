@@ -21,12 +21,13 @@ PROGRAM cdfmoy3
   USE cdfio 
 
   IMPLICIT NONE
-  INTEGER   :: jk,jt,jvar, jv , jtt,jkk                     !: dummy loop index
+  INTEGER   :: jk,jt,jvar, jv , jtt,jkk , jarg              !: dummy loop index
   INTEGER   :: ierr                                         !: working integer
   INTEGER   :: narg, iargc                                  !: 
   INTEGER   :: npiglo,npjglo, npk ,nt                       !: size of the domain
   INTEGER   :: nvars                                        !: Number of variables in a file
   INTEGER   :: ntframe                                      !: Cumul of time frame
+  INTEGER, PARAMETER  :: jperio=4  ! ORCA025
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var , &         !: arrays of var id's
        &                             ipk    , &         !: arrays of vertical level for each var
        &                             id_varout,& 
@@ -49,19 +50,26 @@ PROGRAM cdfmoy3
 
   INTEGER    :: ncout, ncout2, ncout3
   INTEGER    :: istatus
-  LOGICAL    :: lcaltmean
+  LOGICAL    :: lcaltmean, l_mean=.false.
 
   !!
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmoy3 ''list_of_ioipsl_model_output_files'' '
+     PRINT *,' Usage : cdfmoy3 [-m] ''list_of_ioipsl_model_output_files'' '
+     PRINT *,'    If -m option is used, spatial mean is substract from each field '
+     PRINT *,'    In this compilation jperio = ', jperio
      STOP
   ENDIF
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   CALL getarg (1, cfile)
+  IF ( cfile == '-m' ) THEN 
+     l_mean=.true. 
+     CALL getarg (2, cfile) ! read the first file name then
+     jarg=2
+  ENDIF
 
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
@@ -174,7 +182,7 @@ PROGRAM cdfmoy3
            PRINT *,'level ',jk
            tab(:,:) = 0.d0 ; tab2(:,:) = 0.d0 ; tab3(:,:) = 0.d0 
            total_time = 0.;  ntframe=0
-           DO jt = 1, narg
+           DO jt = jarg, narg
               CALL getarg (jt, cfile)
               nt = getdim (cfile,'time_counter')
               IF ( lcaltmean )  THEN
@@ -187,6 +195,7 @@ PROGRAM cdfmoy3
                 ! If forcing fields is without depth dimension
                 IF (npk==0) jkk=jtt 
                 v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jtt )
+                IF (l_mean ) CALL zeromean(v2d)
                 tab(:,:) = tab(:,:) + v2d(:,:)
                 IF (cvarname2(jvar) /= 'none' ) tab2(:,:) = tab2(:,:) + v2d(:,:)*v2d(:,:)
                 IF (cvarname3(jvar) /= 'none' ) tab3(:,:) = tab3(:,:) + v2d(:,:)*v2d(:,:)*v2d(:,:)
@@ -214,6 +223,38 @@ PROGRAM cdfmoy3
   istatus = closeout(ncout)
   istatus = closeout(ncout2)
   istatus = closeout(ncout3)
+  CONTAINS 
+
+  SUBROUTINE zeromean(ptab)
+   REAL(KIND=4), DIMENSION(:,:), INTENT(inout) :: ptab
+   LOGICAL, SAVE  :: lfirst=.true.
+   CHARACTER(LEN=80) :: chgr='mesh_hgr.nc', cmask='mask.nc'
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE, SAVE :: ei, at, tmask,tmask0
+   REAL(KIND=8), SAVE :: area
+   REAL(KIND=8) :: zmean
+
+   IF (lfirst) THEN
+     lfirst=.false.
+     ! read e1 e2 and tmask ( assuming this prog only deal with T-points)
+     ALLOCATE ( ei(npiglo,npjglo),  tmask(npiglo,npjglo), tmask0(npiglo,npjglo) )
+     at(:,:) = getvar(chgr,'e1t',1,npiglo,npjglo)
+     ei(:,:) = getvar(chgr,'e2t',1,npiglo,npjglo)
+     tmask0(:,:) = getvar(cmask,'tmask',1,npiglo,npjglo)
+     tmask=tmask0
+     tmask(1,:)=0 ; tmask(npiglo,:)=0 ; tmask(:,1) = 0.; tmask(:,npjglo) = 0 
+     IF ( jperio == 3 .OR. jperio == 4 ) THEN
+       tmask(npiglo/2+1:npiglo,npjglo-1) = 0.
+     ENDIF
+     at(:,:) = at(:,:)*ei(:,:)*tmask(:,:)  ! surface of model cell
+     area=sum(at)
+   ENDIF
+     zmean=sum(v2d*at)/area
+     v2d=(v2d-zmean) * tmask0
+     
+  END SUBROUTINE zeromean
+   
+   
+
 
 
 END PROGRAM cdfmoy3
