@@ -137,7 +137,7 @@ PROGRAM cdfhflx
         END DO
      END DO
 
-  OPEN(numout,FILE=cfileout)
+  OPEN(numout,FILE=cfileout,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
   WRITE(numout,*)'! Zonal heat transport (integrated from surface fluxes) (in Pw)'
   IF (llglo) THEN
      WRITE(numout,*)'! J        Global          Atlantic         INDO-PACIF    INDIAN  PACIF '
