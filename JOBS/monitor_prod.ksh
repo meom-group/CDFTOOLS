@@ -202,8 +202,14 @@ set -x
    if [ $(chkfile $DIAGS/LEVITUS_y0000_TMEAN.txt ) == absent ] ; then
     # first time : Create header with Levitus equivalent
     # requires  LEVITUS 'same' diags (from the ANNUAL mean )
-    levitus=Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
+    #  !!! NEW !!!
+    # get non-masked levitus then mask it with the same mask as the model
+    levitus=Levitus_p2.1_ANNUAL_TS_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
     rapatrie $levitus $IDIR $levitus
+    cdfmltmask $levitus  mask.nc votemper T             # votemper --> $levitus_masked
+    cdfmltmask ${levitus}_masked  mask.nc vosaline T    # vosaline --> $levitus_masked_masked
+    mv ${levitus}_masked_masked $levitus                # simplify name
+    #  
     cdfmean $levitus  votemper T  >  LEVITUS_y0000_TMEAN.txt
     cdfmean $levitus  vosaline T  >  LEVITUS_y0000_SMEAN.txt
     expatrie  LEVITUS_y0000_TMEAN.txt $DIAGS  LEVITUS_y0000_TMEAN.txt
