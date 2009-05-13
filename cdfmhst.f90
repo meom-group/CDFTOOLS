@@ -310,7 +310,7 @@ PROGRAM cdfmhst
   END DO 
   ierr=closeout(ncout)
 
-  OPEN(numout,FILE=cfileout)
+  OPEN(numout,FILE=cfileout,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
   WRITE(numout,*)'! Zonal heat transport (integrated alon I-model coordinate) (in Pw)'
   IF ( llglo ) THEN
      WRITE(numout,*)'! J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
@@ -333,7 +333,7 @@ PROGRAM cdfmhst
   !               
   CLOSE(numout)
 
-  OPEN(numout,FILE=cfileouts)
+  OPEN(numout,FILE=cfileouts,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
   WRITE(numout,*)' ! Zonal salt transport (integrated alon I-model coordinate) (in 10^6 kg/s)'
   IF ( llglo ) THEN
      WRITE(numout,*)' ! J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
