@@ -21,7 +21,7 @@
   LOGICAL :: l_mbathy=.false.
   INTEGER,    DIMENSION(:,:), ALLOCATABLE :: mbathy            !: for reading e3._ps in nemo3.x
   REAL(kind=4),  DIMENSION(:,:), ALLOCATABLE :: e3t_ps, e3w_ps !: for reading e3._ps in nemo3.x
-  REAL(kind=4),  DIMENSION(:,:), ALLOCATABLE :: e3u_ps, e3v_ps !: for reading e3._ps in nemo3.x
+! REAL(kind=4),  DIMENSION(:,:), ALLOCATABLE :: e3u_ps, e3v_ps !: for reading e3._ps in nemo3.x
   REAL(kind=4),  DIMENSION(:), ALLOCATABLE :: e3t_0, e3w_0 !: for readinf e3._ps in nemo3.x
 
   TYPE, PUBLIC ::   variable 
