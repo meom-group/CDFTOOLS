@@ -1,4 +1,4 @@
-MODULE cdfio
+ MODULE cdfio
   !!---------------------------------------------------------------------------------------------------
   !!                     ***  MODULE  cdfio  ***
   !!
@@ -19,9 +19,10 @@ MODULE cdfio
   IMPLICIT NONE
   INTEGER :: id_x, id_y, id_z, id_t, id_lat, id_lon, id_dep, id_tim
   LOGICAL :: l_mbathy=.false.
-  INTEGER,    DIMENSION(:,:), ALLOCATABLE :: mbathy           !: for reading e3._ps in nemo3.x
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE :: e3t_ps, e3w_ps !: for reading e3._ps in nemo3.x
-  REAL(kind=4), DIMENSION(:), ALLOCATABLE :: e3t_0, e3w_0 !: for readinf e3._ps in nemo3.x
+  INTEGER,    DIMENSION(:,:), ALLOCATABLE :: mbathy            !: for reading e3._ps in nemo3.x
+  REAL(kind=4),  DIMENSION(:,:), ALLOCATABLE :: e3t_ps, e3w_ps !: for reading e3._ps in nemo3.x
+  REAL(kind=4),  DIMENSION(:,:), ALLOCATABLE :: e3u_ps, e3v_ps !: for reading e3._ps in nemo3.x
+  REAL(kind=4),  DIMENSION(:), ALLOCATABLE :: e3t_0, e3w_0 !: for readinf e3._ps in nemo3.x
 
   TYPE, PUBLIC ::   variable 
      CHARACTER(LEN=80)::  name
@@ -752,7 +753,7 @@ CONTAINS
     INTEGER, DIMENSION(4) :: istart, icount, nldim
     INTEGER :: ncid, id_var, id_dimunlim, nbdim
     INTEGER :: istatus, ilev, imin, jmin, itime, ilog, ipiglo, imax
-    INTEGER, SAVE :: ii, ij, ik, ji, jj
+    INTEGER, SAVE :: ii, ij, ik0, ji, jj, ik1, ik
     LOGICAL :: lliom=.false., llperio=.false.
     CHARACTER(LEN=80) :: clvar
 
@@ -820,10 +821,10 @@ CONTAINS
              l_mbathy=.true.
              istatus=NF90_INQ_DIMID(ncid,'x',id_var) ; istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=ii)
              istatus=NF90_INQ_DIMID(ncid,'y',id_var) ; istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=ij)
-             istatus=NF90_INQ_DIMID(ncid,'z',id_var) ; istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=ik)
+             istatus=NF90_INQ_DIMID(ncid,'z',id_var) ; istatus=NF90_INQUIRE_DIMENSION(ncid,id_var,len=ik0)
              ALLOCATE( mbathy(ii,ij))               ! mbathy is allocated on the whole domain
              ALLOCATE( e3t_ps(ii,ij),e3w_ps(ii,ij)) ! e3._ps  are  allocated on the whole domain
-             ALLOCATE( e3t_0(ik), e3w_0(ik) )       ! whole depth
+             ALLOCATE( e3t_0(ik0), e3w_0(ik0) )       ! whole depth
 
              istatus=NF90_INQ_VARID (ncid,'mbathy', id_var)
              IF ( istatus /=  NF90_NOERR ) THEN
@@ -847,18 +848,24 @@ CONTAINS
              IF ( istatus /=  NF90_NOERR ) THEN
                PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_0 found !' ; STOP
              ENDIF
-             istatus=NF90_GET_VAR(ncid,id_var,e3t_0, start=(/1,1/), count=(/ik,1/) )
+             istatus=NF90_GET_VAR(ncid,id_var,e3t_0, start=(/1,1/), count=(/ik0,1/) )
              !
              istatus=NF90_INQ_VARID (ncid,'e3w_0', id_var)
              IF ( istatus /=  NF90_NOERR ) THEN
                PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_0 found !' ; STOP
              ENDIF
-             istatus=NF90_GET_VAR(ncid,id_var,e3w_0, start=(/1,1/), count=(/ik,1/) )
+             istatus=NF90_GET_VAR(ncid,id_var,e3w_0, start=(/1,1/), count=(/ik0,1/) )
+             DO ji=1,ii
+                DO jj=1,ij
+                   IF ( e3t_ps (ji,jj) == 0 ) e3t_ps(ji,jj)=e3t_0(mbathy(ji,jj))
+                END DO
+             END DO
            ENDIF
-          ! zgr v3 : clvar is not used but set for compatibility
+          ! zgr v3
           SELECT CASE ( clvar )
            CASE ('e3u_ps')  ; clvar='e3t_ps'
            CASE ('e3v_ps')  ; clvar='e3t_ps'
+           CASE ('e3w_ps')  ; clvar='e3t_ps'
           END SELECT
          ELSE
           ! zgr v2
@@ -927,10 +934,11 @@ CONTAINS
     IF (llperio ) THEN
       ALLOCATE (zend (ipiglo-imin,kpj), zstart(imax-1,kpj) )
       IF (l_mbathy .AND. &
-        &  ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' .OR. clvar == 'e3u_ps' .OR. clvar == 'e3v_ps'))  THEN
+        &  ( cdvar == 'e3t_ps' .OR. cdvar == 'e3w_ps' .OR. cdvar == 'e3u_ps' .OR. cdvar == 'e3v_ps'))  THEN
        istatus=0
+       clvar=cdvar
        SELECT CASE ( clvar )
-         CASE ( 'e3t_ps' )
+         CASE ( 'e3t_ps', 'e3u_ps', 'e3v_ps' ) 
            DO ji=1,ipiglo-imin
             DO jj=1,kpj
              ik=mbathy(imin+ji-1, jmin+jj-1)
@@ -951,50 +959,28 @@ CONTAINS
              ENDIF
             END DO
            END DO
-         CASE ( 'e3u_ps' )
-           DO ji=1,ipiglo-imin
-            DO jj=1,kpj
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zend(ji,jj)=MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji, jmin+jj-1) )
-             ELSE
-               zend(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
-           DO ji=1,imax-1
-            DO jj=1,kpj
-             ik=mbathy(ji+1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zstart(ji,jj)=MIN(e3t_ps(ji+1, jmin+jj-1), e3t_ps(ji+2, jmin+jj-1) )
-             ELSE
-               zstart(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
-        CASE ( 'e3v_ps' )
-           zend(:,:)=e3t_0(ilev)
-           zstart(:,:)=e3t_0(ilev)
-           DO ji=1,ipiglo-imin
-            DO jj=1,MIN(kpj,ij-1)
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zend(ji,jj)=MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji-1, jmin+jj) )
-             ELSE
-               zend(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
-           DO ji=1,imax-1
-            DO jj=1,MIN(kpj,ij-1)
-             ik=mbathy(ji+1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zstart(ji,jj)=MIN(e3t_ps(ji+1, jmin+jj-1), e3t_ps(ji+1, jmin+jj) )
-             ELSE
-               zstart(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
+          getvar(1:ipiglo-imin,:)=zend
+          getvar(ipiglo-imin+1:kpi,:)=zstart
+         IF (clvar == 'e3u_ps') THEN
+         DO ji=1,kpi-1
+          DO jj=1,kpj
+            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji+1,jj))
+          END DO
+         END DO
+           ! not very satisfactory but still....
+           getvar(kpi,:)=getvar(kpi-1,:)
+         ENDIF
+
+         IF (clvar == 'e3v_ps') THEN
+         DO ji=1,kpi
+          DO jj=1,kpj-1
+            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji,jj+1))
+          END DO
+         END DO
+           ! not very satisfactory but still....
+           getvar(:,kpj)=getvar(:,kpj-1)
+         ENDIF
+         
          CASE ( 'e3w_ps')
            DO ji=1,ipiglo-imin
             DO jj=1,kpj
@@ -1016,9 +1002,10 @@ CONTAINS
              ENDIF
             END DO
            END DO
-       END SELECT
        getvar(1:ipiglo-imin,:)=zend
        getvar(ipiglo-imin+1:kpi,:)=zstart
+
+       END SELECT
       ELSE
        istatus=NF90_GET_VAR(ncid,id_var,zend, start=(/imin,jmin,ilev,itime/),count=(/ipiglo-imin,kpj,1,1/))
        istatus=NF90_GET_VAR(ncid,id_var,zstart, start=(/2,jmin,ilev,itime/),count=(/imax-1,kpj,1,1/))
@@ -1028,57 +1015,52 @@ CONTAINS
       DEALLOCATE(zstart, zend )
     ELSE
       IF (l_mbathy .AND. &
-        &  ( clvar == 'e3t_ps' .OR. clvar == 'e3w_ps' .OR. clvar == 'e3u_ps' .OR. clvar == 'e3v_ps'))  THEN
+        &  ( cdvar == 'e3t_ps' .OR. cdvar == 'e3w_ps' .OR. cdvar == 'e3u_ps' .OR. cdvar == 'e3v_ps'))  THEN
        istatus=0
+       clvar=cdvar
        SELECT CASE ( clvar )
-         CASE ( 'e3t_ps' )
-           DO ji=1,kpi
-            DO jj=1,kpj
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               getvar(ji,jj)=e3t_ps(imin+ji-1, jmin+jj-1)
-             ELSE
-               getvar(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
+         CASE ( 'e3t_ps', 'e3u_ps', 'e3v_ps' ) 
+         DO ji=1,kpi
+          DO jj=1,kpj
+           ik=mbathy(imin+ji-1, jmin+jj-1)
+           IF (ilev == ik ) THEN
+             getvar(ji,jj)=e3t_ps(imin+ji-1, jmin+jj-1)
+           ELSE
+             getvar(ji,jj)=e3t_0(ilev)
+           ENDIF
+          END DO
+         END DO
+         IF (clvar == 'e3u_ps') THEN
+         DO ji=1,kpi-1
+          DO jj=1,kpj
+            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji+1,jj))
+          END DO
+         END DO
+           ! not very satisfactory but still....
+           getvar(kpi,:)=getvar(2,:) 
+         ENDIF
+         IF (clvar == 'e3v_ps') THEN
+         DO ji=1,kpi
+          DO jj=1,kpj-1
+            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji,jj+1))
+          END DO
+         END DO
+           ! not very satisfactory but still....
+           getvar(:,kpj)=getvar(:,kpj-1)
+         ENDIF
+
          CASE ( 'e3w_ps')
-           DO ji=1,kpi
-            DO jj=1,kpj
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               getvar(ji,jj)=e3w_ps(imin+ji-1, jmin+jj-1)
-             ELSE
-               getvar(ji,jj)=e3w_0(ilev)
-             ENDIF
-            END DO
-           END DO
-         CASE ( 'e3u_ps' )
-           getvar(:,:)=e3t_0(ilev)
-           DO ji=1,MIN(kpi,ii-1)
-            DO jj=1,kpj
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               ! e3u_ps(ji) = MIN (   e3t (ji)               ,  e3t (ji+1) )
-               getvar(ji,jj)= MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji, jmin+jj-1) )
-             ELSE
-               getvar(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
-         CASE ( 'e3v_ps' )
-           getvar(:,:)=e3t_0(ilev)
-           DO ji=1,kpi
-            DO jj=1,MIN(kpj,ij-1)
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               ! e3v_ps(jj) = MIN (   e3t (jj)               ,  e3t (jj+1) )
-               getvar(ji,jj)= MIN(e3t_ps(imin+ji-1, jmin+jj-1), e3t_ps(imin+ji-1, jmin+jj) )
-             ELSE
-               getvar(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
+         DO ji=1,kpi
+          DO jj=1,kpj
+           ik=mbathy(imin+ji-1, jmin+jj-1)
+           IF (ilev == ik ) THEN
+             getvar(ji,jj)=e3w_ps(imin+ji-1, jmin+jj-1)
+           ELSE
+             getvar(ji,jj)=e3w_0(ilev)
+           ENDIF
+          END DO
+         END DO
+
        END SELECT
       ELSE
         istatus=NF90_GET_VAR(ncid,id_var,getvar, start=istart,count=icount)

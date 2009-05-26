@@ -113,7 +113,7 @@ PROGRAM cdfpsi
   e2u(:,:) = getvar(coordhgr, 'e2u', 1,npiglo,npjglo)
   zmask(:,:) = getvar(cmask, 'fmask', 1,npiglo,npjglo)
   ! get rid of the free-slip/no-slip condition
-  WHERE ( zmask == 2 ) zmask = 1
+  WHERE ( zmask >= 2 ) zmask = 1
 
   ztrpu(:,:)= 0.d0
   ztrpv(:,:)= 0.d0

@@ -355,8 +355,14 @@ cdffindij: cdfio.o  cdffindij.f90
 cdfweight: cdfio.o  cdfweight.f90
 	$(F90) cdfweight.f90  -o cdfweight cdfio.o $(FFLAGS)
 
+cdfweight2D: cdfio.o  cdfweight2D.f90
+	$(F90) cdfweight2D.f90  -o cdfweight2D cdfio.o $(FFLAGS)
+
 cdfcoloc: cdfio.o  cdfcoloc.f90
 	$(F90) cdfcoloc.f90  -o cdfcoloc cdfio.o $(FFLAGS)
+
+cdfcoloc2D: cdfio.o  cdfcoloc2D.f90
+	$(F90) cdfcoloc2D.f90  -o cdfcoloc2D cdfio.o $(FFLAGS)
 
 cdfcoloc2: cdfio.o  cdfcoloc2.f90
 	$(F90) cdfcoloc2.f90  -o cdfcoloc2 cdfio.o $(FFLAGS)
@@ -393,6 +399,9 @@ cdfsmooth: cdfio.o  cdfsmooth.f90
 
 cdfpendep: cdfio.o  cdfpendep.f90
 	$(F90) cdfpendep.f90  -o cdfpendep cdfio.o $(FFLAGS)
+
+cdfzgrv3: cdfio.o  cdfzgrv3.f90
+	$(F90) cdfzgrv3.f90  -o cdfzgrv3 cdfio.o $(FFLAGS)
 
 ## reformating programs
 cdf16bit: cdfio.o cdf16bit.f90
