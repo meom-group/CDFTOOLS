@@ -54,17 +54,15 @@ PROGRAM cdfcofpoint
   imin=1; jmin=1; jmax=npj; imax=npi
 
   IF (narg > 3 ) THEN
-    IF ( narg /= 9 ) THEN
+    IF ( narg /= 5 ) THEN
        PRINT *, ' ERROR : You must give 6 optional values (imin imax jmin jmax kmin kmax)'
        STOP
     ELSE
     ! input optional imin imax jmin jmax
-      CALL getarg ( 4,cdum) ; READ(cdum,*) imin
-      CALL getarg ( 5,cdum) ; READ(cdum,*) imax
-      CALL getarg ( 6,cdum) ; READ(cdum,*) jmin
-      CALL getarg ( 7,cdum) ; READ(cdum,*) jmax
-      CALL getarg ( 8,cdum) ; READ(cdum,*) kmin
-      CALL getarg ( 9,cdum) ; READ(cdum,*) kmax
+      CALL getarg ( 2,cdum) ; READ(cdum,*) imin
+      CALL getarg ( 3,cdum) ; READ(cdum,*) imax
+      CALL getarg ( 4,cdum) ; READ(cdum,*) jmin
+      CALL getarg ( 5,cdum) ; READ(cdum,*) jmax
     ENDIF
   ENDIF
 
@@ -85,10 +83,10 @@ PROGRAM cdfcofpoint
   mask_out(:,:)=0
   mask(:,:)= getvar(cfile, 'tmask',  1 ,npi,npj)
   i=0
-  DO WHILE ( SUM(mask) .NE. 0 )
+  DO WHILE ( SUM(mask(imin+1:imax-1,jmin+1:jmax-1)) .NE. 0 )
      i=i+1
      zmask=0
-     IF (MOD(i,10)==0) PRINT *, 'i = ',i, ' SUM(mask) = ',SUM(mask) 
+     IF (MOD(i,10)==0) PRINT *, 'i = ',i, ' SUM(mask) = ',SUM(mask(imin+1:imax-1,jmin+1:jmax-1)) 
      DO ji=imin+1,imax-1
         DO jj=jmin+1,jmax-1
            IF ((mask(ji,jj)==0) .AND. (mask_out(ji,jj)==i-1)) THEN
