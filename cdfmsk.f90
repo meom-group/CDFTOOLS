@@ -26,8 +26,8 @@ PROGRAM cdfmsk
        &                    id_varout              !: ncdf varid's
   real(KIND=4) , DIMENSION (:,:), ALLOCATABLE ::     zmask            !: 2D mask at current level
 
-  CHARACTER(LEN=80) ,DIMENSION(1)   :: cvarname   !: array of var name
-  CHARACTER(LEN=80)                 :: cfilet
+  CHARACTER(LEN=256) ,DIMENSION(1)   :: cvarname   !: array of var name
+  CHARACTER(LEN=256)                 :: cfilet
 
   INTEGER    :: ncout, npt
   INTEGER    :: istatus

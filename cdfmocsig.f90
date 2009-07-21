@@ -62,8 +62,8 @@ PROGRAM cdfmocsig
   REAL(KIND=8) ,DIMENSION(:,:)   , ALLOCATABLE   ::  zomsftmp              !: temporary transport array
   REAL(KIND=8) ,DIMENSION(:,:,:) , ALLOCATABLE   ::  zomsf                 !: jpbasins x npjglo x npk
 
-  CHARACTER(LEN=80) :: cfilev , cfilet, cfileoutnc='mocsig.nc'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cbasinmask='new_maskglo.nc'
+  CHARACTER(LEN=256) :: cfilev , cfilet, cfileoutnc='mocsig.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cbasinmask='new_maskglo.nc'
   TYPE(variable)    ,DIMENSION(jpbasins)         :: typvar                   !: structure for attribute
  
   REAL (KIND=4)      :: ztrans 

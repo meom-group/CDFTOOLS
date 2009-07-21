@@ -40,9 +40,9 @@ PROGRAM cdfsigintegr
   REAL(KIND=4), DIMENSION(:,:,:)  , ALLOCATABLE ::  zint   
   REAL(KIND=8), DIMENSION(:,:,:)  , ALLOCATABLE ::  v2dint   !: double precision for integration
 
-  CHARACTER(LEN=80) ::  cfilZI, cfildata, cfilRHOMOD, cvar, cfilout, ctype='T'
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: czvar     !: temporary arry for variable name in file
-  CHARACTER(LEN=80) :: coordzgr='mesh_zgr.nc'          !: coordinates files
+  CHARACTER(LEN=256) ::  cfilZI, cfildata, cfilRHOMOD, cvar, cfilout, ctype='T'
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: czvar     !: temporary arry for variable name in file
+  CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc'          !: coordinates files
 
  
   TYPE(variable), DIMENSION(3)  :: typvar      !: structure for attributes

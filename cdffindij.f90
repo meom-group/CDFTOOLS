@@ -33,7 +33,7 @@ PROGRAM cdffindij
   REAL(KIND=8)                              :: glam0, emax
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: glam, gphi, e1, e2
  
-  CHARACTER(LEN=80) :: cdum, coord='coordinates.nc', ctype='F'
+  CHARACTER(LEN=256) :: cdum, coord='coordinates.nc', ctype='F'
 
   LOGICAL  :: lagain, lbord
   !!  Read command line and output usage message if not compliant.

@@ -35,7 +35,7 @@ PROGRAM cdfwflx
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  evap, precip, runoff, wdmp !: water flux components
   REAL(KIND=4)                                   ::  Lv=2.5e6                    !: latent HF <--> evap conversion
 
-  CHARACTER(LEN=80) :: cfilet , cfiler
+  CHARACTER(LEN=256) :: cfilet , cfiler
 
   INTEGER    :: istatus
   ! output stuff
@@ -43,7 +43,7 @@ PROGRAM cdfwflx
   INTEGER                         :: ncout, ierr
   INTEGER,    DIMENSION(jpvarout) :: ipk, id_varout  !: only one output variable
   REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
-  CHARACTER(LEN=80)               :: cfileout='wflx.nc'
+  CHARACTER(LEN=256)               :: cfileout='wflx.nc'
 
   TYPE(variable), DIMENSION(jpvarout) :: typvar        !: structure for attributes
 

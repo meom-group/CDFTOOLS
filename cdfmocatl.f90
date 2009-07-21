@@ -44,8 +44,8 @@ PROGRAM cdfmocatl
 
   REAL(KIND=8) ,DIMENSION(:,:,:) , ALLOCATABLE ::  zomsf                 !: jpbasins x npjglo x npk
 
-  CHARACTER(LEN=80) :: cfilev , cfileoutnc='moc.nc'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cfilev , cfileoutnc='moc.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
   TYPE(variable), DIMENSION(jpbasins)      :: typvar                   !: structure for attribures
 
 

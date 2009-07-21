@@ -26,7 +26,7 @@ PROGRAM cdfwhereij
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glam, gphi
  
-  CHARACTER(LEN=80) :: cdum, coord, ctype
+  CHARACTER(LEN=256) :: cdum, coord, ctype
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg /= 6 ) THEN

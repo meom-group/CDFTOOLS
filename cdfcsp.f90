@@ -28,9 +28,9 @@ PROGRAM cdfcsp
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var             !: arrays of var id
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: tab        !: Arrays for cumulated values
   REAL(KIND=4)                                :: spval
-  CHARACTER(LEN=80) :: cfile                                !: file name
-  CHARACTER(LEN=80) :: cunits, clname, csname
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) :: cfile                                !: file name
+  CHARACTER(LEN=256) :: cunits, clname, csname
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar       !: type for attributes
 

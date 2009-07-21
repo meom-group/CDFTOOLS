@@ -50,8 +50,8 @@ PROGRAM cdfpsi_open
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: ztrpu, ztrpv, psi1, psi2, psissh
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: ztrpussh, ztrpvssh
 
-  CHARACTER(LEN=80) :: cfileu ,cfilev, cfileoutnc='psi.nc', cfilet
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cmask='mask.nc'
+  CHARACTER(LEN=256) :: cfileu ,cfilev, cfileoutnc='psi.nc', cfilet
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cmask='mask.nc'
   CHARACTER(LEN=10)  :: coption
 
   TYPE(variable), DIMENSION(3)  :: typvar         !: structure for attributes

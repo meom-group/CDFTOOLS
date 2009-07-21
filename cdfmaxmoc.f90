@@ -34,7 +34,7 @@ PROGRAM cdfmaxmoc
   REAL(KIND=4)                              ::   ovtmax, ovtmin  ! 
   REAL(KIND=4)                              ::   rlatmin, rlatmax, depmin , depmax
   !
-  CHARACTER(LEN=80) :: cdum, cfile, comment, cbasin, cvar
+  CHARACTER(LEN=256) :: cdum, cfile, comment, cbasin, cvar
 
   ! * main program
   narg=iargc()

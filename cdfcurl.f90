@@ -28,8 +28,8 @@ PROGRAM cdfcurl
 
   LOGICAL :: lforcing    = .FALSE.
 
-  CHARACTER(LEN=80) :: cfilu, cfilv, cvaru, cvarv, cdum
-  CHARACTER(LEN=80) :: coord='mesh_hgr.nc', cfileout='curl.nc'
+  CHARACTER(LEN=256) :: cfilu, cfilv, cvaru, cvarv, cdum
+  CHARACTER(LEN=256) :: coord='mesh_hgr.nc', cfileout='curl.nc'
   TYPE (variable), DIMENSION(1) :: typvar         !: structure for attibutes
 
   !!

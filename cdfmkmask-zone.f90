@@ -31,8 +31,8 @@ PROGRAM cdfmkmask_zone
        &                    id_varout              !: ncdf varid's
   real(KIND=4) , DIMENSION (:,:), ALLOCATABLE ::     zmask,zmask2, lon, lat            !: 2D mask at current level
 
-  CHARACTER(LEN=80) ,DIMENSION(4)   :: cvarname   !: array of var name
-  CHARACTER(LEN=80)                 :: cfilet, cline,cfileout, cdum
+  CHARACTER(LEN=256) ,DIMENSION(4)   :: cvarname   !: array of var name
+  CHARACTER(LEN=256)                 :: cfilet, cline,cfileout, cdum
   TYPE(variable), DIMENSION(4) :: typvar
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 

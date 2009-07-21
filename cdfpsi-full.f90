@@ -42,8 +42,8 @@ PROGRAM cdfpsi_full
 
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: ztrpu, ztrpv, psiu, psiv
 
-  CHARACTER(LEN=80) :: cfileu ,cfilev, cfileoutnc='psi.nc'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cmask='mask.nc'
+  CHARACTER(LEN=256) :: cfileu ,cfilev, cfileoutnc='psi.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cmask='mask.nc'
 
   TYPE (variable), DIMENSION(1)  :: typvar        !: structure for attributes
 

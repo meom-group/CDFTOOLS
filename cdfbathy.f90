@@ -36,8 +36,8 @@ PROGRAM cdfbathy
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE     :: h, rtime
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: bathyin,bathy, e3_bot
   !
-  CHARACTER(LEN=100) ::  cfilein, cline1, cline2, ctmp, cfileroot, creplace, cdump
-  CHARACTER(LEN=80) :: cvar='none', cdim
+  CHARACTER(LEN=256) ::  cfilein, cline1, cline2, ctmp, cfileroot, creplace, cdump
+  CHARACTER(LEN=256) :: cvar='none', cdim
 
   LOGICAL :: lexist=.TRUE., lfill=.FALSE., lfullstep=.FALSE., lappend=.FALSE., lreplace=.FALSE.
   LOGICAL :: ldump = .FALSE., lmodif=.FALSE., loverwrite=.false., lraz=.false., ldumpn=.false.
@@ -229,7 +229,7 @@ CONTAINS
 
   SUBROUTINE zgr_read
     INTEGER :: numzgr = 10, il, iostat, idum
-    CHARACTER(LEN=80) :: cline, cfile='zgrbat.txt'
+    CHARACTER(LEN=256) :: cline, cfile='zgrbat.txt'
     il=0
     OPEN(numzgr, FILE=cfile,IOSTAT=iostat)
 
@@ -305,7 +305,7 @@ CONTAINS
     INTEGER, INTENT(in) :: kimin,kimax,kjmin,kjmax
     INTEGER :: ji,jj
     INTEGER :: numdmp=20 , ni
-    CHARACTER(LEN=80) :: cfmtr, cfmti
+    CHARACTER(LEN=256) :: cfmtr, cfmti
     !   PRINT *,' Dumpzone not yet operational' ; STOP
     ni=kimax-kimin+1
     WRITE(cfmtr,99) ni
@@ -326,7 +326,7 @@ CONTAINS
     INTEGER, INTENT(in) :: kimin,kimax,kjmin,kjmax
     INTEGER :: ji,jj
     INTEGER :: numdmp=20 , ni
-    CHARACTER(LEN=80) :: cfmtr, cfmti
+    CHARACTER(LEN=256) :: cfmtr, cfmti
     ni=kimax-kimin+1
     WRITE(cfmtr,99) ni
     WRITE(cfmti,98) ni

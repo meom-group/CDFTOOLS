@@ -39,8 +39,8 @@ PROGRAM cdfzoom
   REAL ,DIMENSION (:,:), ALLOCATABLE :: v2d
   REAL                               :: fact
   !
-  CHARACTER(LEN=100) ::  cfilein, cline1, cline2
-  CHARACTER(LEN=80) :: cvar='none', cdim
+  CHARACTER(LEN=256) ::  cfilein, cline1, cline2
+  CHARACTER(LEN=256) :: cvar='none', cdim
   !!
   !! 1. Initializations:
   !! -------------------

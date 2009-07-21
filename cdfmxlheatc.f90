@@ -34,14 +34,14 @@ PROGRAM cdfmxlheatc
   REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf
   REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE ::  zmxlheatc         !:  mxl depth
 
-  CHARACTER(LEN=80) :: cfilet 
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
+  CHARACTER(LEN=256) :: cfilet 
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
 
   ! Output stuff
   INTEGER                         :: ncout, ierr
   INTEGER,           DIMENSION(1) :: ipk, id_varout  !: only one output variable
   REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
-  CHARACTER(LEN=80)               :: cfileout='mxlheatc.nc'
+  CHARACTER(LEN=256)               :: cfileout='mxlheatc.nc'
   
   TYPE(variable), DIMENSION(1) :: typvar          !: extension for attributes
 

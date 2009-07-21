@@ -17,7 +17,7 @@ PROGRAM cdfprobe
   IMPLICIT NONE
   INTEGER :: narg, iargc
   INTEGER :: ilook, jlook, ilevel
-  CHARACTER(LEN=80) :: cfile, cdum , cvar
+  CHARACTER(LEN=256) :: cfile, cdum , cvar
 
   narg=iargc()
   IF ( narg == 0  ) THEN

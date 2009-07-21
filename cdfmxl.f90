@@ -45,14 +45,14 @@ PROGRAM cdfmxl
       &                                    zmask         !: tmask at current level
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE   :: gdepw     !: depth of w levels
 
-  CHARACTER(LEN=80) :: cfilet,  coordzgr='mesh_zgr.nc'
-  CHARACTER(LEN=80) :: cbathy='bathy_level.nc'
+  CHARACTER(LEN=256) :: cfilet,  coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cbathy='bathy_level.nc'
 
   ! output stuff
   INTEGER                         :: ncout, ierr
   INTEGER,           DIMENSION(3) :: ipk, id_varout  !: only one output variable
   REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
-  CHARACTER(LEN=80)               :: cfileout='mxl.nc'
+  CHARACTER(LEN=256)               :: cfileout='mxl.nc'
 
   TYPE(variable), DIMENSION(3)    :: typvar        !: structure for attributes
 

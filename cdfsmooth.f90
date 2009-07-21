@@ -37,7 +37,7 @@ PROGRAM cdfsmooth
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE   ::  ec,e    !: weigh in r8, starting index 0 :nband
   REAL(KIND=4) ::  fn, spval
   !
-  CHARACTER(LEN=80) :: cfile,cnom, cfilout, cdep, ctim
+  CHARACTER(LEN=256) :: cfile,cnom, cfilout, cdep, ctim
   ! cdf stuff
   INTEGER    :: nvars, ierr
   INTEGER    :: ncout
@@ -45,7 +45,7 @@ PROGRAM cdfsmooth
        &                             ipk    , &         !: arrays of vertical level for each var
        &                             id_varout
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE   :: tim
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar
   ! ---

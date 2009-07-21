@@ -29,7 +29,7 @@ PROGRAM cdfprofile
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: v2d
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: depth, profile
 
-  CHARACTER(LEN=80) :: cdum, cfile, cvar, cdep
+  CHARACTER(LEN=256) :: cdum, cfile, cvar, cdep
 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()

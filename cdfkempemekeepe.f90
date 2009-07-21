@@ -31,8 +31,8 @@ PROGRAM cdfkempemekeepe
   REAL(kind=4), DIMENSION(:,:,:), ALLOCATABLE  :: wbartbar,anowt 
   REAL(KIND=4) ,DIMENSION(1)                 :: tim
 
-  CHARACTER(LEN=80) :: cfile
-  CHARACTER(LEN=80) :: cfileout='transfertst1t3.nc'
+  CHARACTER(LEN=256) :: cfile
+  CHARACTER(LEN=256) :: cfileout='transfertst1t3.nc'
   TYPE (variable), DIMENSION(2) :: typvar         !: structure for attibutes
 
   !!

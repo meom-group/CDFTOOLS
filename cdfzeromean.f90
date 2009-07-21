@@ -38,9 +38,9 @@ PROGRAM cdfzeromean
   REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf, zmean !: double precision cumul/mean
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: zmean2d            !: per level mean
 
-  CHARACTER(LEN=80) :: cfilev , cdum, cfileout='zeromean.nc'    
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
-  CHARACTER(LEN=80) :: cvar, cvartype
+  CHARACTER(LEN=256) :: cfilev , cdum, cfileout='zeromean.nc'    
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
+  CHARACTER(LEN=256) :: cvar, cvartype
   CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
 
   ! output stuff variables
@@ -49,7 +49,7 @@ PROGRAM cdfzeromean
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: tim, dep
   TYPE (variable), DIMENSION(1) :: typvar         !: structure for attibutes
   TYPE (variable), DIMENSION(:),ALLOCATABLE :: typvarin         !: structure for attibutes
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cvarname
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cvarname
   LOGICAL :: lnodep=.FALSE.
 
   !!  Read command line and output usage message if not compliant.

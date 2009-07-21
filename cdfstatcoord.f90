@@ -27,7 +27,7 @@ PROGRAM cdfstatcoord
   REAL(KIND=4) :: binsize=2., rlatmin=-80., rlatmax=90. , rlat, rlat1, rlat2
   REAL(KIND=8) :: e1mean, e2mean
 
-  CHARACTER(LEN=80) :: coord   ='mesh_hgr.nc' , cmask='mask.nc', cvmask='tmask' !:
+  CHARACTER(LEN=256) :: coord   ='mesh_hgr.nc' , cmask='mask.nc', cvmask='tmask' !:
   TYPE(variable), DIMENSION(3) :: typvar          !: structure for attribute
  
   !!  Read command line

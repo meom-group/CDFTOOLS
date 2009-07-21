@@ -49,8 +49,8 @@ PROGRAM cdfets
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE  :: gdepw   !: depth of w level here a 1x1 array to 
   !  be in agreement with mesh_zgr.nc
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='ets.nc'                       !:
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc' !:
+  CHARACTER(LEN=256) :: cfilet ,cfileout='ets.nc'                       !:
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc' !:
   TYPE (variable), DIMENSION(2) :: typvar         !: structure for attribute
 
   INTEGER    :: ncout

@@ -40,7 +40,7 @@ PROGRAM cdfisopycdep
   REAL(KIND=4)                                ::  spval=999999.
   REAL(KIND=4)                                ::  spvalz=0.
 
-  CHARACTER(LEN=80) ::  cline, cfilZI,  cfilsigma, cvar, cfilout
+  CHARACTER(LEN=256) ::  cline, cfilZI,  cfilsigma, cvar, cfilout
  
   TYPE(variable), DIMENSION(1)  :: typvar      !: structure for attributes
   !

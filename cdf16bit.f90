@@ -40,8 +40,8 @@ PROGRAM cdf16bit
   REAL(KIND=4)                      :: zzmax, zzmin         !: min and max of the full 3D field
   REAL(KIND=4)                      :: spval                !: missing value, fill_value, spval ...
 
-  CHARACTER(LEN=80) :: cfile ,cfileout, cdum                !: file name
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) :: cfile ,cfileout, cdum                !: file name
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar      !: Type variable is defined in cdfio.
                                                             !: It is used for attributes
@@ -197,7 +197,7 @@ PROGRAM cdf16bit
   INTEGER :: kvar  !: variable number
 
   ! * Local variables
-  CHARACTER(LEN=80) :: clvarname
+  CHARACTER(LEN=256) :: clvarname
   REAL(KIND=4) :: zvmin, zvmax
 
   clvarname=cvarname(kvar)

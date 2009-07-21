@@ -34,7 +34,7 @@ PROGRAM cdfbottomsig0
        &                                         zmask            !: 2D mask at surface
   REAL(KIND=4),DIMENSION(1)                   ::  tim
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='botsig0.nc' !:
+  CHARACTER(LEN=256) :: cfilet ,cfileout='botsig0.nc' !:
   TYPE (variable), DIMENSION(1) :: typvar         !: structure for attributes
 
   INTEGER    :: ncout

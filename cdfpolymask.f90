@@ -29,8 +29,8 @@ PROGRAM cdfpolymask
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: rpmask
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: cfile, cpoly, cfileout='polymask.nc'            !: file name
-  CHARACTER(LEN=80) :: cdum                             !: dummy arguments
+  CHARACTER(LEN=256) :: cfile, cpoly, cfileout='polymask.nc'            !: file name
+  CHARACTER(LEN=256) :: cdum                             !: dummy arguments
   TYPE(variable), DIMENSION(1) :: typvar
 
   INTEGER    :: ncout
@@ -106,7 +106,7 @@ CONTAINS
     INTEGER :: ji,jj, nfront, jjpoly
     REAL(KIND=4) :: rin, rout
     LOGICAL :: l_in
-    CHARACTER(LEN=80), DIMENSION(jpolys) :: carea
+    CHARACTER(LEN=256), DIMENSION(jpolys) :: carea
     IF ( lreverse ) THEN
       rin=0. ; rout=1.
     ELSE

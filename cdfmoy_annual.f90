@@ -35,9 +35,9 @@ PROGRAM cdfmoy_annual
        &                                   rmean
   REAL(KIND=4),DIMENSION(1)                   :: timean, tim
 
-  CHARACTER(LEN=80) :: cfile ,cfileout           !: file name
-  CHARACTER(LEN=80) ::  cdep
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) :: cfile ,cfileout           !: file name
+  CHARACTER(LEN=256) ::  cdep
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar
 

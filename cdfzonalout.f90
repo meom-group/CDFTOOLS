@@ -33,8 +33,8 @@ PROGRAM cdfzonalout
 
   REAL(KIND=8), DIMENSION (:,:,:),   ALLOCATABLE ::  zv
 
-  CHARACTER(LEN=80) :: cfilev 
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
+  CHARACTER(LEN=256) :: cfilev 
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
   TYPE(variable), DIMENSION(:),ALLOCATABLE :: typvar
 
   !!  Read command line and output usage message if not compliant.

@@ -35,9 +35,9 @@ PROGRAM cdfclip
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: depg, dep
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: timean, tim
 
-  CHARACTER(LEN=80) :: cfile ,cfileout                         !: file name
-  CHARACTER(LEN=80) ::  cdep, cdum
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) :: cfile ,cfileout                         !: file name
+  CHARACTER(LEN=256) ::  cdep, cdum
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
   CHARACTER(LEN=255) :: cglobal !: global attribute to write on output file
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar

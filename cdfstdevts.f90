@@ -26,8 +26,8 @@ PROGRAM cdfstdevts
   REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: u, u2,  rms
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: cfile ,cfile2 ,cfileout='rmsts.nc'            !: file name
-  CHARACTER(LEN=80), DIMENSION(2) :: cvar, cvar2
+  CHARACTER(LEN=256) :: cfile ,cfile2 ,cfileout='rmsts.nc'            !: file name
+  CHARACTER(LEN=256), DIMENSION(2) :: cvar, cvar2
 
   TYPE(variable), DIMENSION(2)    :: typvar          !: structure for attributes
 

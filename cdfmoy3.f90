@@ -40,11 +40,11 @@ PROGRAM cdfmoy3
   REAL(KIND=4),DIMENSION(1)                   :: timean
   REAL(KIND=4),DIMENSION(365)                   ::  tim
 
-  CHARACTER(LEN=80) :: cfile ,cfileout, cfileout2, cfileout3  !: file name
-  CHARACTER(LEN=80) ::  cdep
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname2   !: array of var22 name for output
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname3   !: array of var3 name for output
+  CHARACTER(LEN=256) :: cfile ,cfileout, cfileout2, cfileout3  !: file name
+  CHARACTER(LEN=256) ::  cdep
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname2   !: array of var22 name for output
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname3   !: array of var3 name for output
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar, typvar2, typvar3
 
@@ -228,7 +228,7 @@ PROGRAM cdfmoy3
   SUBROUTINE zeromean(ptab)
    REAL(KIND=4), DIMENSION(:,:), INTENT(inout) :: ptab
    LOGICAL, SAVE  :: lfirst=.true.
-   CHARACTER(LEN=80) :: chgr='mesh_hgr.nc', cmask='mask.nc'
+   CHARACTER(LEN=256) :: chgr='mesh_hgr.nc', cmask='mask.nc'
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE, SAVE :: ei, at, tmask,tmask0
    REAL(KIND=8), SAVE :: area
    REAL(KIND=8) :: zmean

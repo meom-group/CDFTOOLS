@@ -51,10 +51,10 @@ PROGRAM cdfzonalmean
 
   REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE ::  zomsf , area        !: jpbasins x npjglo x npk
 
-  CHARACTER(LEN=80) :: cfilev , cfileoutnc='zonalmean.nc', cdum
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmaskfil='mask.nc',cbasinmask='none'
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE   :: cvarnameo             !: array of var name for output
+  CHARACTER(LEN=256) :: cfilev , cfileoutnc='zonalmean.nc', cdum
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmaskfil='mask.nc',cbasinmask='none'
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE   :: cvarnameo             !: array of var name for output
   TYPE(variable), DIMENSION(:), ALLOCATABLE   :: typvar                  !: structure for attributes
   TYPE(variable), DIMENSION(:), ALLOCATABLE   :: typvaro                 !: structure for attributes
   CHARACTER(LEN=10) :: ce1, ce2, cphi, cdep,cmask, cdepo

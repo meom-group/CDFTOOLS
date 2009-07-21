@@ -25,7 +25,7 @@ PROGRAM coordinates2hgr
   REAL(wp) :: zjpiglo, zjpjglo, znbsel, zrecl8, ztimm8
   REAL(wp) :: znt, zdim, xx1, yy1, ddx, ddy, sspval
 
-  CHARACTER(80) :: cltextco
+  CHARACTER(256) :: cltextco
   INTEGER(4) :: numcoo, nummsh
   INTEGER(4) :: nrecl8
   INTEGER(4) :: ngrid
@@ -40,7 +40,7 @@ PROGRAM coordinates2hgr
   CHARACTER (len=21) ::        clname
   INTEGER                      ilev, itime, iargc, narg
   LOGICAL                      clog
-  CHARACTER(LEN=80)       :: cfilin, cfilout
+  CHARACTER(LEN=256)       :: cfilin, cfilout
 
   REAL(wp) , DIMENSION(:,:),  ALLOCATABLE ::   &
        glamt, glamu, glamv, glamf, gphit, gphiu, gphiv, gphif, &

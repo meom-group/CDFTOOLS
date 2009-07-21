@@ -66,9 +66,9 @@ PROGRAM cdfcensus
 
   REAL(kind=8)  ::  voltotal
 
-  CHARACTER(LEN=80) :: cline1, cline2, cline3, cline4
-  CHARACTER(LEN=80) :: cfilTS, cfildum, config
-  CHARACTER(LEN=80) :: chgr='mesh_hgr.nc' , czgr='mesh_zgr.nc',cfileout='census.nc'
+  CHARACTER(LEN=256) :: cline1, cline2, cline3, cline4
+  CHARACTER(LEN=256) :: cfilTS, cfildum, config
+  CHARACTER(LEN=256) :: chgr='mesh_hgr.nc' , czgr='mesh_zgr.nc',cfileout='census.nc'
 
   INTEGER ::           ncout, ierr
   TYPE(variable), DIMENSION(4) :: typvar

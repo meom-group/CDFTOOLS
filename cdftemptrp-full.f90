@@ -63,11 +63,11 @@ PROGRAM cdftemptrp_full
 
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE   :: zwtrp, zwtrpbin, trpbin       !: transport arrays
 
-  CHARACTER(LEN=80), DIMENSION (:), ALLOCATABLE :: csection                     !: section name
-  CHARACTER(LEN=80) :: cfilet, cfileu, cfilev, cfilesec='temp_section.dat'      !: files name
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'          !: coordinates files
-  CHARACTER(LEN=80) :: cfilout='trptemp.txt'                                    !: output file
-  CHARACTER(LEN=80) :: cdum                                                     !: dummy string
+  CHARACTER(LEN=256), DIMENSION (:), ALLOCATABLE :: csection                     !: section name
+  CHARACTER(LEN=256) :: cfilet, cfileu, cfilev, cfilesec='temp_section.dat'      !: files name
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'          !: coordinates files
+  CHARACTER(LEN=256) :: cfilout='trptemp.txt'                                    !: output file
+  CHARACTER(LEN=256) :: cdum                                                     !: dummy string
 
   LOGICAL    :: l_merid                     !: flag is true for meridional working section
   LOGICAL    :: l_print=.FALSE.             !: flag  for printing additional results
@@ -381,7 +381,7 @@ CONTAINS
 
     ! Local variables
     INTEGER :: ii, numit=10, jsec
-    CHARACTER(LEN=80) :: cline
+    CHARACTER(LEN=256) :: cline
 
     OPEN(numit, FILE=cdfile)
     ii=0
@@ -403,12 +403,12 @@ CONTAINS
     ! Arguments
     INTEGER, DIMENSION(:)    :: kimin,kimax, kjmin,kjmax
     INTEGER, INTENT(IN)     :: knumber
-    CHARACTER(LEN=80), DIMENSION(:)  :: cdsection
+    CHARACTER(LEN=256), DIMENSION(:)  :: cdsection
     CHARACTER(LEN=*), INTENT(IN) :: cdfile
 
     ! Local variables
     INTEGER :: ii, numit=10, jsec
-    CHARACTER(LEN=80) :: cline
+    CHARACTER(LEN=256) :: cline
 
     OPEN(numit, FILE=cdfile)
     REWIND(numit)

@@ -36,9 +36,9 @@ PROGRAM cdfmax
   REAL ,DIMENSION (:,:), ALLOCATABLE :: v2d, rlon, rlat
   REAL                               :: rfact=1.0
   !
-  CHARACTER(LEN=100) ::  cfilein, cline1, cline2
-  CHARACTER(LEN=80) :: cvar='none', cdim
-  CHARACTER(LEN=80), DIMENSION(:),ALLOCATABLE :: cvarnames
+  CHARACTER(LEN=256) ::  cfilein, cline1, cline2
+  CHARACTER(LEN=256) :: cvar='none', cdim
+  CHARACTER(LEN=256), DIMENSION(:),ALLOCATABLE :: cvarnames
   TYPE(variable), DIMENSION(:),ALLOCATABLE :: typvar
   !
   LOGICAL :: lvar=.false., lfil=.false.

@@ -29,8 +29,8 @@ PROGRAM cdfpendep
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: trcinv, trcsurf, pendep
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: cfiletrc, cfileout='pendep.nc'            !: file name
-  CHARACTER(LEN=80) :: cinv='invcfc' , ctrc='cfc11', cdum
+  CHARACTER(LEN=256) :: cfiletrc, cfileout='pendep.nc'            !: file name
+  CHARACTER(LEN=256) :: cinv='invcfc' , ctrc='cfc11', cdum
   TYPE(variable), DIMENSION(1) :: typvar
 
   INTEGER    :: ncout

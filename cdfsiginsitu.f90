@@ -34,8 +34,8 @@ PROGRAM cdfsiginsitu
   REAL(KIND=4),DIMENSION(:), ALLOCATABLE      :: prof ,tim    !: prof (m) and time (sec)
   REAL(KIND=4)                                :: spval  !: missing value
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='siginsitu.nc' !:
-  CHARACTER(LEN=80) :: cdum
+  CHARACTER(LEN=256) :: cfilet ,cfileout='siginsitu.nc' !:
+  CHARACTER(LEN=256) :: cdum
 
   TYPE(variable) , DIMENSION(1) :: typvar         !: structure for attributes
 

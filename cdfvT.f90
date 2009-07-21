@@ -33,7 +33,7 @@ PROGRAM cdfvT
        &                                         rmean
   REAL(KIND=4),DIMENSION(1)                   :: timean, tim
 
-  CHARACTER(LEN=80) :: cfilet,cfileu,cfilev ,cfileout='vt.nc', config , ctag !:
+  CHARACTER(LEN=256) :: cfilet,cfileu,cfilev ,cfileout='vt.nc', config , ctag !:
   TYPE (variable), DIMENSION(4)     :: typvar     !: structure for attributes
   LOGICAL :: lexist                               !: to inquire existence of files
 

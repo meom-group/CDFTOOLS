@@ -37,8 +37,8 @@ PROGRAM cdfvtrp
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku , zwkv, zu, zv
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: ztrpu, ztrpv
 
-  CHARACTER(LEN=80) :: cfileu, cfilev , cfileoutnc='trp.nc'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cfileu, cfilev , cfileoutnc='trp.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
   TYPE (variable), DIMENSION(4)    :: typvar      !: structure for attribute
 
 

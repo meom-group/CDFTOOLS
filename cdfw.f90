@@ -38,9 +38,9 @@ PROGRAM cdfw
   !                                              !: wn(top) is computed
   REAL(KIND=4) ,DIMENSION(1)                 ::  tim
 
-  CHARACTER(LEN=80) :: cfilu, cfilv
-  CHARACTER(LEN=80) :: chgr='mesh_hgr.nc', czgr='mesh_zgr.nc', cfileout='w.nc'
-  CHARACTER(LEN=80) :: cvaru='vozocrtx', cvarv='vomecrty', cvarw='vovecrtz'
+  CHARACTER(LEN=256) :: cfilu, cfilv
+  CHARACTER(LEN=256) :: chgr='mesh_hgr.nc', czgr='mesh_zgr.nc', cfileout='w.nc'
+  CHARACTER(LEN=256) :: cvaru='vozocrtx', cvarv='vomecrty', cvarw='vovecrtz'
 
   TYPE(variable), DIMENSION(1)      :: typvar     !: structure for attributes
 

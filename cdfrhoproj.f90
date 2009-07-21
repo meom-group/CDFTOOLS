@@ -42,8 +42,8 @@ PROGRAM cdfrhoproj
   REAL(KIND=4)                                ::  spval=999999.
   REAL(KIND=4)                                ::  spvalz=0.
 
-  CHARACTER(LEN=80) ::  cline, cfilZI, cfildata, cfilRHOMOD, cvar, cfilout, ctype='T'
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: czvar     !: temporary arry for variable name in file
+  CHARACTER(LEN=256) ::  cline, cfilZI, cfildata, cfilRHOMOD, cvar, cfilout, ctype='T'
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: czvar     !: temporary arry for variable name in file
  
   TYPE(variable), DIMENSION(2)  :: typvar      !: structure for attributes
   TYPE(variable), DIMENSION(:), ALLOCATABLE  :: typzvar      !: structure for attributes

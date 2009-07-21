@@ -35,7 +35,7 @@ PROGRAM cdfbottomsigi
        &                                         zmask            !: 2D mask at surface
   REAL(KIND=4),DIMENSION(1)                   ::  tim
   REAL(KIND=4)  :: zref
-  CHARACTER(LEN=80) :: cdum, cfilet ,cfileout='botsigi.nc' !:
+  CHARACTER(LEN=256) :: cdum, cfilet ,cfileout='botsigi.nc' !:
   TYPE (variable), DIMENSION(1) :: typvar         !: structure for attributes
 
   INTEGER    :: ncout

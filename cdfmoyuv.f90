@@ -30,8 +30,8 @@ PROGRAM cdfmoyuv
   REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  :: tabu, tabv, tabu2, tabv2, tabuv
   REAL(KIND=4) ,DIMENSION(1)                 ::  tim
 
-  CHARACTER(LEN=80) :: cfileu, cfilev, cvaru, cvarv, config , ctag
-  CHARACTER(LEN=80) :: cfileout='moyuv.nc', cdum
+  CHARACTER(LEN=256) :: cfileu, cfilev, cvaru, cvarv, config , ctag
+  CHARACTER(LEN=256) :: cfileout='moyuv.nc', cdum
 
   TYPE (variable), DIMENSION(5) :: typvar         !: structure for attibutes
 

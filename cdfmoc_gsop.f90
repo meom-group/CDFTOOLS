@@ -63,9 +63,9 @@ PROGRAM cdfmoc_gsop
   REAL(KIND=8) ,DIMENSION(:,:,:) , ALLOCATABLE   ::  zomsf               !: jpbasins x npjglo x npk
   REAL(KIND=8) ,DIMENSION(:,:,:) , ALLOCATABLE   ::  zomsf_gsop          !: jpgsop x npjglo x npk
 
-  CHARACTER(LEN=100) :: cfilet, cfilev , cfileoutnc='gsopmoc.nc'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cbasinmask='new_maskglo.nc'
-  CHARACTER(LEN=80) ,DIMENSION(jpgsop)     :: cvarname_gsop              !: array of var name for output
+  CHARACTER(LEN=256) :: cfilet, cfilev , cfileoutnc='gsopmoc.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cbasinmask='new_maskglo.nc'
+  CHARACTER(LEN=256) ,DIMENSION(jpgsop)     :: cvarname_gsop              !: array of var name for output
   TYPE(variable), DIMENSION(jpgsop) :: typvar       !: modif Alb 26/11/08 structure for attributes
   LOGICAL    :: llglo = .false.                            !: indicator for presence of new_maskglo.nc file
   INTEGER    :: istatus

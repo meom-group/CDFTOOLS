@@ -26,7 +26,7 @@ PROGRAM cdfstdevw
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: u, u2,  rms
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: cfile ,cfile2 ,cfileout='rmsw.nc'            !: file name
+  CHARACTER(LEN=256) :: cfile ,cfile2 ,cfileout='rmsw.nc'            !: file name
 
   TYPE(variable), DIMENSION(1)    :: typvar          !: structure for attributes
 

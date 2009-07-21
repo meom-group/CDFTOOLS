@@ -34,11 +34,11 @@ PROGRAM cdfmean
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::  gdep              !:  depth 
 
   REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf
-  CHARACTER(LEN=80) :: cfilev , cdum
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
-  CHARACTER(LEN=80) :: cvar, cvartype
+  CHARACTER(LEN=256) :: cfilev , cdum
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
+  CHARACTER(LEN=256) :: cvar, cvartype
   CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
-  CHARACTER(LEN=80) :: cfilout='out.txt'
+  CHARACTER(LEN=256) :: cfilout='out.txt'
 
 
   INTEGER    :: istatus

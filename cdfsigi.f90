@@ -35,8 +35,8 @@ PROGRAM cdfsigi
   REAL(KIND=4)                                :: prof=0.! in meters
   REAL(KIND=4)                                :: spval  !: missing value
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='sigi.nc' !:
-  CHARACTER(LEN=80) :: cdum
+  CHARACTER(LEN=256) :: cfilet ,cfileout='sigi.nc' !:
+  CHARACTER(LEN=256) :: cdum
 
   TYPE(variable) , DIMENSION(1) :: typvar         !: structure for attributes
 

@@ -30,8 +30,8 @@ PROGRAM cdfbti
   REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: dudx, dudy, dvdx, dvdy
   REAL(KIND=4) ,DIMENSION(1)                 :: tim
 
-  CHARACTER(LEN=80) :: cfile
-  CHARACTER(LEN=80) :: coord='mesh_hgr.nc', cfileout='bti.nc'
+  CHARACTER(LEN=256) :: cfile
+  CHARACTER(LEN=256) :: coord='mesh_hgr.nc', cfileout='bti.nc'
   TYPE (variable), DIMENSION(8) :: typvar         !: structure for attibutes
 
   !!

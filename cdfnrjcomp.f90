@@ -30,8 +30,8 @@ PROGRAM cdfnrjcomp
   REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: anousqrt, anovsqrt 
   REAL(KIND=4) ,DIMENSION(1)                 :: tim
 
-  CHARACTER(LEN=80) :: cfile
-  CHARACTER(LEN=80) :: cfileout='nrjcomp.nc'
+  CHARACTER(LEN=256) :: cfile
+  CHARACTER(LEN=256) :: cfileout='nrjcomp.nc'
   TYPE (variable), DIMENSION(6) :: typvar         !: structure for attibutes
 
   !!

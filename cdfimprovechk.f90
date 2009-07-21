@@ -40,7 +40,7 @@ PROGRAM cdfimprovechk
        &                                         zchk             !: check index output
   REAL(KIND=4),DIMENSION(1)                   ::  tim
 
-  CHARACTER(LEN=80) :: cfilobs, cfilref, cfiltst ,cvar ,cfileout='chk.nc' !:
+  CHARACTER(LEN=256) :: cfilobs, cfilref, cfiltst ,cvar ,cfileout='chk.nc' !:
   TYPE (variable), DIMENSION(1) :: typvar         !: structure for attributes
 
   INTEGER    :: ncout

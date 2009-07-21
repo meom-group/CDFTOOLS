@@ -45,11 +45,11 @@ PROGRAM cdfcoloc
   INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: mask   !: 3D working mask
 
   ! file name
-  CHARACTER(LEN=80) :: coord='coordinates.nc', czgr='mesh_zgr.nc', cmask='mask.nc', cfilout='izcfcinv.txt'
-  CHARACTER(LEN=80) :: cfilskip='izUVSxSyH_skip.txt'
-  CHARACTER(LEN=80) :: cweight,cweight_root, cgridt, cgridu, cgridv, cfil
+  CHARACTER(LEN=256) :: coord='coordinates.nc', czgr='mesh_zgr.nc', cmask='mask.nc', cfilout='izcfcinv.txt'
+  CHARACTER(LEN=256) :: cfilskip='izUVSxSyH_skip.txt'
+  CHARACTER(LEN=256) :: cweight,cweight_root, cgridt, cgridu, cgridv, cfil
   ! Variable type and name
-  CHARACTER(LEN=80) :: cctyp, cvar, cvmask    !: current mooring
+  CHARACTER(LEN=256) :: cctyp, cvar, cvmask    !: current mooring
   CHARACTER(LEN=10), DIMENSION(jptyp) :: ctype !:  all jptyp defined there
 
   !!

@@ -28,9 +28,9 @@ PROGRAM cdfmoy_mpp
   INTEGER :: ierror, iproc, nproc, narea
   INTEGER, DIMENSION(:), ALLOCATABLE :: nptag
   INTEGER :: irest, ntag, nused_proc, ndimtag , ntask
-  CHARACTER(LEN=80) :: cdum
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: ctags         ! tag list
-  CHARACTER(LEN=80), DIMENSION(:,:) , ALLOCATABLE:: cptag       ! processor tag list
+  CHARACTER(LEN=256) :: cdum
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: ctags         ! tag list
+  CHARACTER(LEN=256), DIMENSION(:,:) , ALLOCATABLE:: cptag       ! processor tag list
   LOGICAL :: lwp
   !
   !
@@ -52,10 +52,10 @@ PROGRAM cdfmoy_mpp
   REAL(KIND=4),DIMENSION(1)                   :: timean
   REAL(KIND=4),DIMENSION(365)                   ::  tim
 
-  CHARACTER(LEN=80) :: cfile ,cfileout, cfileout2           !: file name
-  CHARACTER(LEN=80) ::  cdep
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname2   !: array of var22 name for output
+  CHARACTER(LEN=256) :: cfile ,cfileout, cfileout2           !: file name
+  CHARACTER(LEN=256) ::  cdep
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname2   !: array of var22 name for output
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar, typvar2
 

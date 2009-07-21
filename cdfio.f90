@@ -25,19 +25,19 @@
   REAL(kind=4),  DIMENSION(:), ALLOCATABLE :: e3t_0, e3w_0 !: for readinf e3._ps in nemo3.x
 
   TYPE, PUBLIC ::   variable 
-     CHARACTER(LEN=80)::  name
-     CHARACTER(LEN=80):: units
+     CHARACTER(LEN=256)::  name
+     CHARACTER(LEN=256):: units
      REAL(kind=4)    :: missing_value
      REAL(kind=4)    :: valid_min
      REAL(kind=4)    :: valid_max
      REAL(kind=4)    :: scale_factor=1.
      REAL(kind=4)    :: add_offset=0.
      REAL(kind=4)    :: savelog10=0.
-     CHARACTER(LEN=80):: long_name
-     CHARACTER(LEN=80):: short_name
-     CHARACTER(LEN=80):: online_operation
-     CHARACTER(LEN=80):: axis
-     CHARACTER(LEN=80):: PRECISION='r4'  ! possible values are i2, r4, r8
+     CHARACTER(LEN=256):: long_name
+     CHARACTER(LEN=256):: short_name
+     CHARACTER(LEN=256):: online_operation
+     CHARACTER(LEN=256):: axis
+     CHARACTER(LEN=256):: PRECISION='r4'  ! possible values are i2, r4, r8
   END TYPE variable
 
   INTERFACE putvar
@@ -69,7 +69,7 @@ CONTAINS
 
     ! * Local variable
     INTEGER :: istatus, idvar, iatt, ja
-    CHARACTER(LEN=80) :: clatt
+    CHARACTER(LEN=256) :: clatt
 
     IF ( kcin /= -9999) THEN
        istatus = NF90_INQ_VARID(kcin,cdvar,idvar)
@@ -129,7 +129,7 @@ CONTAINS
     ! * Local Variable
     INTEGER   :: istatus, icout,ncid, idum
     INTEGER ,DIMENSION(4) :: nvdim
-    CHARACTER(LEN=80) :: cldep, cldepref
+    CHARACTER(LEN=256) :: cldep, cldepref
 
     istatus = NF90_CREATE(cdfile,NF90_CLOBBER, icout)
     istatus = NF90_DEF_DIM(icout,'x',kx, id_x)
@@ -253,7 +253,7 @@ CONTAINS
     INTEGER, DIMENSION(knvars) :: getvarid
 
     !! * local declarations
-    CHARACTER(LEN=80), DIMENSION(knvars) :: cdvar
+    CHARACTER(LEN=256), DIMENSION(knvars) :: cdvar
     INTEGER :: ncid, jv
     INTEGER :: istatus
 
@@ -273,8 +273,8 @@ CONTAINS
     !!
     !! ----------------------------------------------------------------------------------------------------
     ! * Arguments
-    CHARACTER(LEN=80), INTENT(in) :: cdfile, cdvar
-    CHARACTER(LEN=80), INTENT(out) :: cdunits, cdlong_name, cdshort_name
+    CHARACTER(LEN=256), INTENT(in) :: cdfile, cdvar
+    CHARACTER(LEN=256), INTENT(out) :: cdunits, cdlong_name, cdshort_name
     REAL(KIND=4), INTENT(out) :: pmissing_value
     INTEGER :: getvaratt
 
@@ -303,8 +303,8 @@ CONTAINS
     !!
     !! ----------------------------------------------------------------------------------------------------
     ! * Arguments
-    CHARACTER(LEN=80), INTENT(in) :: cdfile, cdvar
-    CHARACTER(LEN=80), INTENT(in) :: cdunits, cdlong_name, cdshort_name
+    CHARACTER(LEN=256), INTENT(in) :: cdfile, cdvar
+    CHARACTER(LEN=256), INTENT(in) :: cdunits, cdlong_name, cdshort_name
     INTEGER :: cvaratt
     REAL(KIND=4) :: pmissing_value
 
@@ -427,7 +427,7 @@ CONTAINS
     !! * Arguments declarations
     CHARACTER(LEN=*), INTENT(in) :: cdfile , &  ! File name to look at
          &                           cdim_name   ! dimension name to look at
-    CHARACTER(LEN=80),OPTIONAL, INTENT(out) ::  cdtrue ! full name of the read dimension
+    CHARACTER(LEN=256),OPTIONAL, INTENT(out) ::  cdtrue ! full name of the read dimension
     INTEGER, OPTIONAL, INTENT(out) :: kstatus   ! status of the nf inquire
     LOGICAL, OPTIONAL, INTENT(in) :: ldexact    ! when true look for exact cdim_name
     INTEGER :: getdim                           ! the value for dim cdim_name, in file cdfile
@@ -436,7 +436,7 @@ CONTAINS
     INTEGER :: ncid, id_var
     INTEGER :: istatus
     INTEGER :: idims
-    CHARACTER(LEN=80) :: clnam
+    CHARACTER(LEN=256) :: clnam
     LOGICAL :: lexact=.false.
     clnam = '-------------'
 
@@ -534,7 +534,7 @@ CONTAINS
     !! * Local variables
     INTEGER :: istatus, ncid, id_var, ivar, idi, istatus0
     INTEGER :: jvar
-    CHARACTER(LEN=80) :: clongname='long_name', clongn
+    CHARACTER(LEN=256) :: clongname='long_name', clongn
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,ncid))
     istatus0 = NF90_INQ_VARID ( ncid,cdvar,id_var)
@@ -605,7 +605,7 @@ CONTAINS
     !! * local declarations
     INTEGER :: ncid, ipk, jv, iipk
     INTEGER :: istatus
-    CHARACTER(LEN=80) :: cldep='dep'
+    CHARACTER(LEN=256) :: cldep='dep'
 
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
@@ -646,13 +646,13 @@ CONTAINS
     !! * Arguments declarations
     CHARACTER(LEN=*), INTENT(in) :: cdfile
     INTEGER, INTENT(in)  ::  knvars                  ! Number of variables in cdfile
-    CHARACTER(LEN=80), DIMENSION(knvars) :: getvarname
+    CHARACTER(LEN=256), DIMENSION(knvars) :: getvarname
     TYPE (variable), DIMENSION (knvars) :: ptypvar  ! Retrieve variables attribute
 
     !! * local declarations
     INTEGER :: ncid,  jv, ILEN
     INTEGER :: istatus
-    CHARACTER(LEN=80) :: cldum=''
+    CHARACTER(LEN=256) :: cldum=''
     REAL(KIND=4) :: zatt
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
@@ -755,7 +755,7 @@ CONTAINS
     INTEGER :: istatus, ilev, imin, jmin, itime, ilog, ipiglo, imax
     INTEGER, SAVE :: ii, ij, ik0, ji, jj, ik1, ik
     LOGICAL :: lliom=.false., llperio=.false.
-    CHARACTER(LEN=80) :: clvar
+    CHARACTER(LEN=256) :: clvar
 
     LOGICAL :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
     REAL(KIND=4) :: sf=1., ao=0.        !: Scale factor and add_offset
@@ -1370,7 +1370,7 @@ CONTAINS
     INTEGER, DIMENSION(4) :: istart, icount
     INTEGER :: ncid, id_var
     INTEGER :: istatus
-    CHARACTER(LEN=80) :: clvar                      ! local name for cdf var (modified)
+    CHARACTER(LEN=256) :: clvar                      ! local name for cdf var (modified)
 
     istart(:) = 1
     icount(:) = 1
@@ -1446,8 +1446,8 @@ CONTAINS
     INTEGER :: istatus, idep, jj
     REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: z2d
     REAL(KIND=4), DIMENSION(kpk) :: z1d
-    CHARACTER(LEN=80),DIMENSION(jpdep ) :: cldept=(/'deptht ','depthu ','depthv ','depthw ','nav_lev'/)
-    CHARACTER(LEN=80) :: cldep
+    CHARACTER(LEN=256),DIMENSION(jpdep ) :: cldept=(/'deptht ','depthu ','depthv ','depthw ','nav_lev'/)
+    CHARACTER(LEN=256) :: cldep
 
     ALLOCATE ( z2d (kpi,kpj) )
     IF (PRESENT(pnavlon) ) THEN 

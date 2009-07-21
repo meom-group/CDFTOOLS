@@ -37,19 +37,19 @@ PROGRAM cdfvertmean
   REAL(KIND=8)      :: zvol,  dep_up, dep_down
   REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE ::  zvertmean         !:  mxl salt content
 
-  CHARACTER(LEN=80) :: cfilet 
-  CHARACTER(LEN=80) :: coordzgr='mesh_zgr.nc',cmask='mask.nc'
-  CHARACTER(LEN=80)               :: ctype='T'
-  CHARACTER(LEN=80)               :: cdum
-  CHARACTER(LEN=80)               :: cvarnam, cdep, ce3, cvmask
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cvarname    !: name of input variables
+  CHARACTER(LEN=256) :: cfilet 
+  CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc',cmask='mask.nc'
+  CHARACTER(LEN=256)               :: ctype='T'
+  CHARACTER(LEN=256)               :: cdum
+  CHARACTER(LEN=256)               :: cvarnam, cdep, ce3, cvmask
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cvarname    !: name of input variables
   TYPE(variable), DIMENSION(:),ALLOCATABLE    :: typvarin     !: stucture for attributes
 
   ! Output stuff
   INTEGER                         :: ncout, ierr
   INTEGER,           DIMENSION(1) :: ipk, id_varout  !: only one output variable
   REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
-  CHARACTER(LEN=80)               :: cfileout='vertmean.nc'
+  CHARACTER(LEN=256)               :: cfileout='vertmean.nc'
 
   TYPE(variable), DIMENSION(1)    :: typvar         !: stucture for attributes
   !!  Read command line and output usage message if not compliant.

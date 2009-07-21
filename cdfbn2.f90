@@ -38,8 +38,8 @@ PROGRAM cdfbn2
   REAL(KIND=4),DIMENSION(1)                   ::  tim
   REAL(KIND=4),DIMENSION(:), ALLOCATABLE      ::  gdep
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='bn2.nc', cdum , cdep  !:
-  CHARACTER(LEN=80) :: coordzgr='mesh_zgr.nc' !:
+  CHARACTER(LEN=256) :: cfilet ,cfileout='bn2.nc', cdum , cdep  !:
+  CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc' !:
   TYPE(variable), DIMENSION (1) :: typvar
 
   INTEGER    :: ncout

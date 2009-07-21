@@ -50,8 +50,8 @@ PROGRAM cdfweight
   REAL(KIND=8)                              :: alpha, beta, gamma !: reduced coordinates (0-1) in the NP gridcell
                                                                   !: vertical weight
 
-  CHARACTER(LEN=80) :: coord='coordinates.nc', ctype='F', cfile, czgr='mesh_zgr.nc'
-  CHARACTER(LEN=80) :: cweight             !: weight file name
+  CHARACTER(LEN=256) :: coord='coordinates.nc', ctype='F', cfile, czgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cweight             !: weight file name
 
   LOGICAL  :: lagain, lbord, ldebug=.false.     !: additional debug print if ldebug=true
 

@@ -58,15 +58,15 @@ PROGRAM cdfmxlhcsc
 
   TYPE(variable),DIMENSION(3) :: typvar  !: extension for attributes
 
-  CHARACTER(LEN=80) :: cfilet,critere,cdum
-  CHARACTER(LEN=80) :: coordzgr='mesh_zgr.nc', coordhgr='mesh_hgr.nc' , cmask='mask.nc'
+  CHARACTER(LEN=256) :: cfilet,critere,cdum
+  CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc', coordhgr='mesh_hgr.nc' , cmask='mask.nc'
 
   ! output stuff
   INTEGER                         :: ncout, ierr
   INTEGER,           DIMENSION(3) :: ipk, id_varout  !: only one output variable
   REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
-  CHARACTER(LEN=80), DIMENSION(3) :: cvarname
-  CHARACTER(LEN=80)               :: cfileout='mxlhcsc.nc'
+  CHARACTER(LEN=256), DIMENSION(3) :: cvarname
+  CHARACTER(LEN=256)               :: cfileout='mxlhcsc.nc'
 
   !! 0- Get started ..
   !!

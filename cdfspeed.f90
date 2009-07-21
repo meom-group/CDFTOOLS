@@ -29,9 +29,9 @@ PROGRAM cdfspeed
 
   REAL(kind=4), DIMENSION(:), ALLOCATABLE  :: tim
 
-  CHARACTER(LEN=80) :: cfilev, cfileu
-  CHARACTER(LEN=80) :: cfileout='speed.nc'
-  CHARACTER(LEN=80) :: cvaru, cvarv, cvartype
+  CHARACTER(LEN=256) :: cfilev, cfileu
+  CHARACTER(LEN=256) :: cfileout='speed.nc'
+  CHARACTER(LEN=256) :: cvaru, cvarv, cvartype
   CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
 
   LOGICAL    :: lforcing

@@ -44,8 +44,8 @@ PROGRAM cdfhflx
 
   REAL(KIND=8) ,DIMENSION(:,:) , ALLOCATABLE ::  zmht    !: jpbasins x npjglo 
 
-  CHARACTER(LEN=80) :: cfilet , cfileout='hflx.out'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',cbasinmask='new_maskglo.nc'
+  CHARACTER(LEN=256) :: cfilet , cfileout='hflx.out'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',cbasinmask='new_maskglo.nc'
   LOGICAL    :: llglo = .false.                          !: indicator for presence of new_maskglo.nc file 
 
 

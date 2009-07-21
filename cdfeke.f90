@@ -30,7 +30,7 @@ PROGRAM cdfeke
   REAL(KIND=4)                                :: ua, va
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: cfileu ,cfileu2,cfilev, cfilev2, cfilet, cfileout='eke.nc'            !: file name
+  CHARACTER(LEN=256) :: cfileu ,cfileu2,cfilev, cfilev2, cfilet, cfileout='eke.nc'            !: file name
   TYPE(variable), DIMENSION(1) :: typvar
 
   INTEGER    :: ncout

@@ -36,10 +36,10 @@ PROGRAM cdfstd
   REAL(KIND=4), DIMENSION(1)                   :: timean
   REAL(KIND=4), DIMENSION(2000)                :: tim
 
-  CHARACTER(LEN=80) :: cfile ,cfileout                       !: file name
-  CHARACTER(LEN=80) :: cdep
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE:: cvarname    !: array of var name
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE:: cvarnameo   !: array of var name for output
+  CHARACTER(LEN=256) :: cfile ,cfileout                       !: file name
+  CHARACTER(LEN=256) :: cdep
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE:: cvarname    !: array of var name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE:: cvarnameo   !: array of var name for output
 
   TYPE ( variable ), DIMENSION(:), ALLOCATABLE :: typvar, typvaro
 

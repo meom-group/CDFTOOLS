@@ -67,9 +67,9 @@ PROGRAM cdftransportiz_full
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku,zwkv,    zwkut,zwkvt,   zwkus,zwkvs
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
 
-  CHARACTER(LEN=80) :: cfilet , cfileu, cfilev, csection
-  CHARACTER(LEN=80) :: cfileout='section_trp.dat'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
+  CHARACTER(LEN=256) :: cfilet , cfileu, cfilev, csection
+  CHARACTER(LEN=256) :: cfileout='section_trp.dat'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
 
   INTEGER    :: nxtarg
   LOGICAL    :: ltest=.FALSE.

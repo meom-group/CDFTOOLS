@@ -48,8 +48,8 @@ PROGRAM cdfpv
   REAL(KIND=4), DIMENSION(:)    , ALLOCATABLE ::  time_tag, h1d, gdepw
   REAL(KIND=4)                                ::  zrot, pi, rho0=1020.
 
-  CHARACTER(LEN=80) ::   cfilet,cfileu, cfilev,  cfilout
-  CHARACTER(LEN=80) ::  coordhgr='mesh_hgr.nc', coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) ::   cfilet,cfileu, cfilev,  cfilout
+  CHARACTER(LEN=256) ::  coordhgr='mesh_hgr.nc', coordzgr='mesh_zgr.nc'
 
   TYPE(variable) , DIMENSION(1)   :: typvar    !: structure for attributes
   !

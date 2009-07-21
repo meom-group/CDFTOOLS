@@ -50,7 +50,7 @@ INTEGER :: fidU, dimID_depthu, mdepthu, mxu, vozocrtx_ID
 !--- grid_V
 INTEGER :: fidV, dimID_depthv, mdepthv, myu, vomecrty_ID
                                                       
-CHARACTER(LEN=100) :: file_in_T, file_out, file_in_U, file_in_V, cdum             
+CHARACTER(LEN=256) :: file_in_T, file_out, file_in_U, file_in_V, cdum             
            
 REAL*4 :: RT, dtmp_T, dtmp_U, dtmp_V, miniT, miniU, miniV, rr, ang, pi,&
 &  latinf, latsup, loninf, lonsup, a, b, c, e, missing, lonref, latref
@@ -886,7 +886,7 @@ SUBROUTINE erreur(iret, lstop, chaine)
   LOGICAL, INTENT(in)                     :: lstop
   CHARACTER(LEN=*), INTENT(in)            :: chaine
   !
-  CHARACTER(LEN=80)                       :: message
+  CHARACTER(LEN=256)                       :: message
   !
   IF ( iret .NE. 0 ) THEN
     WRITE(*,*) 'ROUTINE: ', TRIM(chaine)

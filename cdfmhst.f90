@@ -45,9 +45,9 @@ PROGRAM cdfmhst
   REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_salt_glo, zonal_salt_atl, zonal_salt_pac,&
        &                                       zonal_salt_ind, zonal_salt_aus, zonal_salt_med, zmtrp
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='zonal_heat_trp.dat', cfileouts='zonal_salt_trp.dat'
+  CHARACTER(LEN=256) :: cfilet ,cfileout='zonal_heat_trp.dat', cfileouts='zonal_salt_trp.dat'
   ! to be put in namelist eventually
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cbasinmask='new_maskglo.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cbasinmask='new_maskglo.nc'
   
   ! NC output
   INTEGER            :: npvar=1
@@ -59,8 +59,8 @@ PROGRAM cdfmhst
   REAL(KIND=4), DIMENSION(1) :: gdep
   REAL(KIND=4), DIMENSION (1)                    ::  tim
 
-  CHARACTER(LEN=80) :: cfileoutnc='mhst.nc', cdum
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
+  CHARACTER(LEN=256) :: cfileoutnc='mhst.nc', cdum
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
   CHARACTER(LEN=4),DIMENSION(5) :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/)
   TYPE(variable), DIMENSION(:), ALLOCATABLE   :: typvar                  !: structure for attributes
 

@@ -43,8 +43,8 @@ PROGRAM cdfvhst_full
        &                                       zonal_heat_ind, zonal_heat_aus, zonal_heat_med
   REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_salt_glo, zonal_salt_atl, zonal_salt_pac, &
        &                                       zonal_salt_ind, zonal_salt_aus, zonal_salt_med
-  CHARACTER(LEN=80) :: cfilet , cfileoutnc='trp.nc'
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cfilet , cfileoutnc='trp.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
   TYPE (variable), DIMENSION(4)    :: typvar      !: structure for attribute
 
 

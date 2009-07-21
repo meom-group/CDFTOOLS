@@ -35,10 +35,10 @@ PROGRAM cdfbottom
        &                                         zmask       !: 2D mask at current level
   REAL(KIND=4),DIMENSION(1)                   ::  tim
 
-  CHARACTER(LEN=80) :: cfile, cdum ,cmask='mask.nc',cfileout='bottom.nc' !:
+  CHARACTER(LEN=256) :: cfile, cdum ,cmask='mask.nc',cfileout='bottom.nc' !:
   CHARACTER(LEN=1) :: ctype=' '
   CHARACTER(LEN=5) :: cvmask=' '                                   !: name of the mask variable
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE   :: cvarname       !: array of var name
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE   :: cvarname       !: array of var name
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar             !: structure for variable attribute
 

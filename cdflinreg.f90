@@ -51,10 +51,10 @@ PROGRAM cdflinreg
   REAL(KIND=4),DIMENSION(365)                 ::  tim
   REAL(KIND=4)                                :: spval = -99999.
 
-  CHARACTER(LEN=80) :: cfile ,cfileout, cfileout2           !: file name
-  CHARACTER(LEN=80) ::  cdep
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname2  !: array of var22 name for output
+  CHARACTER(LEN=256) :: cfile ,cfileout, cfileout2           !: file name
+  CHARACTER(LEN=256) ::  cdep
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname2  !: array of var22 name for output
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar, typvar2
 

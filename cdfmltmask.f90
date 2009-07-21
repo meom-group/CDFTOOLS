@@ -28,8 +28,8 @@ PROGRAM cdfmltmask
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask !: mask at jk level 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zvmask !: masked cvar at jk level
 
-  CHARACTER(LEN=80) :: cfilev , cfilemask, ctmp
-  CHARACTER(LEN=80) :: cvar, cvartype, cdep
+  CHARACTER(LEN=256) :: cfilev , cfilemask, ctmp
+  CHARACTER(LEN=256) :: cvar, cvartype, cdep
   CHARACTER(LEN=20) ::  cvmask
 
   INTEGER    :: istatus

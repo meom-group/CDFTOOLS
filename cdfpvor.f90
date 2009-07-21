@@ -63,9 +63,9 @@ PROGRAM cdfpvor
   REAL(KIND=4) , DIMENSION (:), ALLOCATABLE ::     gdepw  
   REAL(KIND=4),DIMENSION(:) ,ALLOCATABLE    ::  tim
 
-  CHARACTER(LEN=80) :: cfilet , cfileu, cfilev, cfileout='pvor.nc'   !:
-  CHARACTER(LEN=80) :: coordzgr='mesh_zgr.nc' !:
-  CHARACTER(LEN=80) :: coord   ='mesh_hgr.nc' !:
+  CHARACTER(LEN=256) :: cfilet , cfileu, cfilev, cfileout='pvor.nc'   !:
+  CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc' !:
+  CHARACTER(LEN=256) :: coord   ='mesh_hgr.nc' !:
   TYPE(variable), DIMENSION(3) :: typvar          !: structure for attribute
  
   INTEGER    :: ncout

@@ -37,10 +37,10 @@ PROGRAM cdfgeo_uv
   REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: sshn , fmask 
   REAL(KIND=4) ,DIMENSION(1)                 :: tim
   REAL(KIND=4)                               :: g 
-  CHARACTER(LEN=80) :: cfilt
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
-  CHARACTER(LEN=80) :: cfiloutu='ugeo.nc' , cfileoutv='vgeo.nc'
-  CHARACTER(LEN=80) :: cvart='sossheig', cvaru='vozocrtx', cvarv='vomecrty' 
+  CHARACTER(LEN=256) :: cfilt
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cfiloutu='ugeo.nc' , cfileoutv='vgeo.nc'
+  CHARACTER(LEN=256) :: cvart='sossheig', cvaru='vozocrtx', cvarv='vomecrty' 
 
   TYPE(variable), DIMENSION(1)      :: typvaru ,typvarv     !: structure for attributes
 

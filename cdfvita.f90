@@ -29,7 +29,7 @@ PROGRAM cdfvita
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: u, v, ua, va, vmod
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: cfileu ,cfilev, cfilew,  cfilet, cfileout='vita.nc'            !: file name
+  CHARACTER(LEN=256) :: cfileu ,cfilev, cfilew,  cfilet, cfileout='vita.nc'            !: file name
 
   INTEGER    :: ncout
   INTEGER    :: istatus, ierr

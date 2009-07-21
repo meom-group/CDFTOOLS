@@ -31,21 +31,21 @@ PROGRAM cdfconvert
   REAL(KIND=4) , DIMENSION (:), ALLOCATABLE :: dep
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: ctag, confcase
+  CHARACTER(LEN=256) :: ctag, confcase
 
   ! Dimg stuff
   INTEGER   :: irecl, ii, nt, ndim
   INTEGER   :: numu=10, numv=11, numt=12,  nums=14, num2d=15, numssh=16, numuu=17, numvv=18
-  CHARACTER(LEN=80) :: cdimgu, cdimgv,cdimgt, cdimgs, cdimg2d !: file name dimg
-  CHARACTER(LEN=80) :: cdimguu, cdimgvv, cdimgssh             !: file name dimg (optional)
-  CHARACTER(LEN=80) :: cheader
+  CHARACTER(LEN=256) :: cdimgu, cdimgv,cdimgt, cdimgs, cdimg2d !: file name dimg
+  CHARACTER(LEN=256) :: cdimguu, cdimgvv, cdimgssh             !: file name dimg (optional)
+  CHARACTER(LEN=256) :: cheader
   CHARACTER(LEN=4) :: cver
   REAL(KIND=4) :: x1,y1, dx,dy, spval
   LOGICAL :: lexist
 
   ! Netcdf Stuff
-  CHARACTER(LEN=80) :: cfilu ,cfilv ,cfilt, cfilbsf                   !: file name nc
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc', coordzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cfilu ,cfilv ,cfilt, cfilbsf                   !: file name nc
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc', coordzgr='mesh_zgr.nc'
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar
   INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout
   INTEGER    :: ncout
@@ -527,7 +527,7 @@ CONTAINS
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) ::  clname
       CHARACTER(LEN=4)  ::  cver
-      CHARACTER(LEN=80) ::  clheader
+      CHARACTER(LEN=256) ::  clheader
 !
       INTEGER :: irecl
 

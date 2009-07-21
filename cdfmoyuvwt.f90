@@ -39,10 +39,10 @@ PROGRAM cdfmoyuvwt
   REAL(kind=4), DIMENSION(:,:,:), ALLOCATABLE  :: wtab
   REAL(KIND=8)                               :: total_time
 
-  CHARACTER(LEN=80) :: cfileu, cfilev, cvaru, cvarv, config , ctag
-  CHARACTER(LEN=80) :: cfilew, cfilet, cavarw, cvart
-  CHARACTER(LEN=80) :: cfileout='moyuvwt.nc', cdum
-  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE  :: ctabtag
+  CHARACTER(LEN=256) :: cfileu, cfilev, cvaru, cvarv, config , ctag
+  CHARACTER(LEN=256) :: cfilew, cfilet, cavarw, cvart
+  CHARACTER(LEN=256) :: cfileout='moyuvwt.nc', cdum
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE  :: ctabtag
 
   TYPE (variable), DIMENSION(11) :: typvar         !: structure for attibutes
 

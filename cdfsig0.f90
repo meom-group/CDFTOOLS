@@ -32,7 +32,7 @@ PROGRAM cdfsig0
        &                                         zmask            !: 2D mask at current level
   REAL(KIND=4),DIMENSION(:),ALLOCATABLE   ::  tim
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='sig0.nc' !:
+  CHARACTER(LEN=256) :: cfilet ,cfileout='sig0.nc' !:
 
   TYPE(variable) , DIMENSION(1) :: typvar         !: structure for attributes
 

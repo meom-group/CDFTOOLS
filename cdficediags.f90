@@ -33,8 +33,8 @@ PROGRAM cdficediag
   REAL(KIND=8)      :: zvols,  zareas, zextends,zextends2        !: volume, area extend South hemisphere
   REAL(KIND=8)      :: zvoln,  zarean, zextendn,zextendn2        !: volume, area extend North hemisphere
 
-  CHARACTER(LEN=80) :: cfilev , cdum
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  cmask='mask.nc'
+  CHARACTER(LEN=256) :: cfilev , cdum
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  cmask='mask.nc'
 
   INTEGER    :: istatus
 

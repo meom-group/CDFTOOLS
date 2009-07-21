@@ -60,7 +60,7 @@ PROGRAM cdfbuoyflx
   REAL(KIND=4)                                   ::  Lv=2.5e6                   !: latent HF <--> evap conversion
   REAL(KIND=4)                                   ::  Cp = 4000.                 !: specific heat of water 
 
-  CHARACTER(LEN=80) :: cfilet , cfiler
+  CHARACTER(LEN=256) :: cfilet , cfiler
 
   INTEGER    :: istatus
   ! output stuff
@@ -68,7 +68,7 @@ PROGRAM cdfbuoyflx
   INTEGER                         :: ncout, ierr
   INTEGER,    DIMENSION(jpvarout) :: ipk, id_varout  !: only one output variable
   REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
-  CHARACTER(LEN=80)               :: cfileout='buoyflx.nc'
+  CHARACTER(LEN=256)               :: cfileout='buoyflx.nc'
 
   TYPE(variable), DIMENSION(jpvarout) :: typvar        !: structure for attributes
 

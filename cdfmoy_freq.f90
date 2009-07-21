@@ -41,9 +41,9 @@ PROGRAM cdfmoy_freq
   REAL(KIND=4),DIMENSION(1)                   :: time
   REAL(KIND=4),DIMENSION(365)                   ::  tim
 
-  CHARACTER(LEN=80) :: cfile ,cfileout                      !: file name
-  CHARACTER(LEN=80) ::  cdep, cfreq_out, cfreq_in
-  CHARACTER(LEN=80) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var nam
+  CHARACTER(LEN=256) :: cfile ,cfileout                      !: file name
+  CHARACTER(LEN=256) ::  cdep, cfreq_out, cfreq_in
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var nam
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar
 

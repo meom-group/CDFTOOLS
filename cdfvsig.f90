@@ -39,10 +39,10 @@ PROGRAM cdfvsig
        &                                         rmean
   REAL(KIND=4),DIMENSION(1)                   :: timean, tim
 
-  CHARACTER(LEN=80) :: config , ctag  !:
-  CHARACTER(LEN=80) :: cfilet,cfileu,cfilev, cfilew 
-  CHARACTER(LEN=80) :: cfilmask='mask.nc'
-  CHARACTER(LEN=80) :: cfilusig='usig.nc',  cfilvsig='vsig.nc',  cfilwsig='wsig.nc' !:
+  CHARACTER(LEN=256) :: config , ctag  !:
+  CHARACTER(LEN=256) :: cfilet,cfileu,cfilev, cfilew 
+  CHARACTER(LEN=256) :: cfilmask='mask.nc'
+  CHARACTER(LEN=256) :: cfilusig='usig.nc',  cfilvsig='vsig.nc',  cfilwsig='wsig.nc' !:
   INTEGER, DIMENSION(3) ::  ipkusig, id_varoutusig,&
                             ipkvsig, id_varoutvsig,&
                             ipkwsig, id_varoutwsig
@@ -238,7 +238,7 @@ PROGRAM cdfvsig
 
   CONTAINS
 
-  CHARACTER(LEN=80) FUNCTION filnam(cdconf, cdtag, cdgrid)
+  CHARACTER(LEN=256) FUNCTION filnam(cdconf, cdtag, cdgrid)
     !!------------------------------------------------------
     !!   ** Purpose : build filename from config tag and grid 
     !!------------------------------------------------------

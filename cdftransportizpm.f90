@@ -78,10 +78,10 @@ PROGRAM cdftransportizpm
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu_plus , ztrpv_plus
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu_minus, ztrpv_minus
 
-  CHARACTER(LEN=80) :: cfilet ,cfileout='section_trp.dat', &
+  CHARACTER(LEN=256) :: cfilet ,cfileout='section_trp.dat', &
        &                       cfileu, cfilev, csection
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
-  CHARACTER(LEN=80) ,DIMENSION(4)   :: cvarname   !: array of var name for output
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
+  CHARACTER(LEN=256) ,DIMENSION(4)   :: cvarname   !: array of var name for output
 
   INTEGER    ::  nxtarg
   LOGICAL    :: ltest=.FALSE.

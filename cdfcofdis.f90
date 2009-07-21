@@ -23,14 +23,14 @@ PROGRAM cdfcofdis
   REAL(KIND=4) ::   rad = 3.141592653589793 / 180.   !: conversion from degre into radian
   REAL(KIND=4) ::   ra  = 6371229.                   !: earth radius (meter)
 
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc', cmask='mask.nc'
+  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc', cmask='mask.nc'
   CHARACTER(LEN=255) :: cfilet
 
   ! output stuff
   INTEGER, DIMENSION(1) :: ipk, id_varout
   TYPE(variable), DIMENSION(1) :: typvar
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
-  CHARACTER(LEN=80) :: cfileout='dist.coast'
+  CHARACTER(LEN=256) :: cfileout='dist.coast'
   INTEGER :: ncout, ierr
 
   !

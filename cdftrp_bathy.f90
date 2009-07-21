@@ -30,7 +30,7 @@ PROGRAM cdftrp_bathy
   REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: e1u, e2v, dhdx, dhdy, alpha, tmask
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=80) :: cfile ,cfilev, cfilew,  cfilet, cfileout='trpiso.nc'            !: file name
+  CHARACTER(LEN=256) :: cfile ,cfilev, cfilew,  cfilet, cfileout='trpiso.nc'            !: file name
 
   INTEGER    :: ncout
   INTEGER    :: ierr
