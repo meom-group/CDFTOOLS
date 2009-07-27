@@ -9,6 +9,7 @@
   !!  
   !!   history:
   !!         Original : J.M. Molines (2005 )
+  !!                    R. Dussin (2009) add putvar_0d function
   !!------------------------------------------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -47,7 +48,7 @@
 
   PRIVATE 
   PUBLIC  copyatt, create, createvar, getvaratt,cvaratt
-  PUBLIC  putatt, putheadervar, putvar, putvar1d
+  PUBLIC  putatt, putheadervar, putvar, putvar1d, putvar0d
   PUBLIC  getatt, getdim, getvdim, getipk, getnvar, getvarname, getvarid, getspval
   PUBLIC  getvar, getvarxz, getvaryz, getvar1d, getvare3
   PUBLIC gettimeseries
@@ -1772,6 +1773,31 @@ CONTAINS
     putvar1d=istatus
 
   END FUNCTION putvar1d
+
+  FUNCTION putvar0d(kout,varid,value)
+    !!-----------------------------------------------------------
+    !!                       ***  FUNCTION  putvar0d  ***
+    !!
+    !! ** Purpose : Copy single value, with id varid, into file id kout
+    !!
+    !! ** Method  :  
+    !!
+    !! ** Action  : single value variable  written
+    !!
+    !!-----------------------------------------------------------
+    !! * Arguments declarations
+    INTEGER, INTENT(in) :: kout             ! ncid of output file
+    INTEGER, INTENT(in) :: varid            ! id of the variable
+    REAL(KIND=4), INTENT(in) :: value ! single value to write in file
+    INTEGER :: putvar0d                     ! return status
+
+    ! Local variables
+    INTEGER :: istatus
+
+    istatus=NF90_PUT_VAR(kout,varid,value)
+    putvar0d=istatus
+
+  END FUNCTION putvar0d
 
   FUNCTION closeout(kout)
     !!----------------------------------------------------------

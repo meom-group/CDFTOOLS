@@ -24,6 +24,7 @@ PROGRAM cdfsigtrp
   !!
   !! history :
   !!   Original :  J.M. Molines March 2006
+  !!            :  R. Dussin (Jul. 2009) add cdf output
   !!---------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -47,6 +48,11 @@ PROGRAM cdfsigtrp
   INTEGER ,DIMENSION(:), ALLOCATABLE :: imina, imaxa, jmina, jmaxa  !: sections limits
   INTEGER                            :: imin, imax, jmin, jmax      !: working section limits
   INTEGER                            :: npts                        !: working section number of h-points
+  ! added to write in netcdf
+  INTEGER :: kx=1, ky=1                ! dims of netcdf output file
+  INTEGER :: nboutput=2                ! number of values to write in cdf output
+  INTEGER :: ncout, ierr               ! for netcdf output
+  INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout
 
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdept, gdepw !: depth of T and W points 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zs, zt       !: salinity and temperature from file 
@@ -62,16 +68,28 @@ PROGRAM cdfsigtrp
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE   :: hiso                          !: depth of isopycns
 
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE   :: zwtrp, zwtrpbin, trpbin       !: transport arrays
+  ! added to write in netcdf
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE ::  dumlon, dumlat
+  REAL(KIND=4), DIMENSION(:), ALLOCATABLE   ::  pdep
+  REAL(KIND=4), DIMENSION (1)               ::  tim ! time counter
+  REAL(KIND=4), DIMENSION (1)               ::  dummy1, dummy2
+  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar  ! structure of output
 
   CHARACTER(LEN=256), DIMENSION (:), ALLOCATABLE :: csection                     !: section name
   CHARACTER(LEN=256) :: cfilet, cfileu, cfilev, cfilesec='dens_section.dat'      !: files name
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'          !: coordinates files
   CHARACTER(LEN=256) :: cfilout='trpsig.txt'                                     !: output file
   CHARACTER(LEN=256) :: cdum                                                     !: dummy string
+  ! added to write in netcdf
+  CHARACTER(LEN=256) :: cfileoutnc 
+  CHARACTER(LEN=256) :: cdunits, cdlong_name, cdshort_name, cdep
 
   LOGICAL    :: l_merid                     !: flag is true for meridional working section
   LOGICAL    :: l_print=.FALSE.             !: flag  for printing additional results
   LOGICAL    :: l_bimg=.FALSE.              !: flag  for bimg output
+  ! added to write in netcdf
+  LOGICAL :: lwrtcdf=.FALSE.
+
 
   !!  * Initialisations
 
@@ -84,6 +102,7 @@ PROGRAM cdfsigtrp
      PRINT *,'     Possible options :'
      PRINT *,'         -print :additional output is send to std output'
      PRINT *,'         -bimg : 2D (x=lat/lon, y=sigma) output on bimg file for hiso, cumul trp, trp'
+     PRINT *,'          cdfout : output in small netcdf files'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc must be in the current directory'
      PRINT *,' File  section.dat must also be in the current directory '
      PRINT *,' Output on trpsig.txt and on standard output '
@@ -105,10 +124,46 @@ PROGRAM cdfsigtrp
         l_print = .TRUE.
      CASE ('-bimg')
         l_bimg = .TRUE.
+     CASE ('cdfout')
+        lwrtcdf = .TRUE.
      CASE DEFAULT
         PRINT *,' Unknown option ', TRIM(cdum),' ... ignored'
      END SELECT
   END DO
+
+  IF(lwrtcdf) THEN
+
+     ALLOCATE ( typvar(nboutput), ipk(nboutput), id_varout(nboutput) )
+     ALLOCATE (dumlon(kx,ky) , dumlat(kx,ky) )
+
+     dumlon(:,:)=0.
+     dumlat(:,:)=0.
+
+     ipk(1)=nbins ! sigma for each level
+     ipk(2)=nbins ! transport for each level
+
+     ! define new variables for output 
+     typvar(1)%name='sigma_class'
+     typvar%units='[]'
+     typvar%missing_value=99999.
+     typvar%valid_min= 0.
+     typvar%valid_max= 100.
+     typvar%scale_factor= 1.
+     typvar%add_offset= 0.
+     typvar%savelog10= 0.
+     typvar(1)%long_name='class of potential density'
+     typvar(1)%short_name='sigma_class'
+     typvar%online_operation='N/A'
+     typvar%axis='ZT'
+
+     typvar(2)%name='sigtrp'
+     typvar(2)%units='Sv'
+     typvar(2)%valid_min= -1000.
+     typvar(2)%valid_max= 1000.
+     typvar(2)%long_name='transport in sigma class'
+     typvar(2)%short_name='sigtrp'
+
+  ENDIF
 
   ! Initialise sections from file 
   ! first call to get nsection and allocate arrays 
@@ -166,10 +221,10 @@ PROGRAM cdfsigtrp
            gdepu(:,jk) = gdept(jk)
 
            ! vertical metrics (PS case)
-           tmpm(:,:,1)=getvar(coordzgr,'e3u_ps',jk,1,npts, kimin=imin, kjmin=jmin+1, ldiom=.true.)
+           tmpm(:,:,1)=getvar(coordzgr,'e3u_ps',jk,1,npts, kimin=imin, kjmin=jmin+1, ldiom=.TRUE.)
            e3(:,jk)=tmpm(1,:,1)
-           tmpm(:,:,1)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin, kjmin=jmin+1, ldiom=.true.)
-           tmpm(:,:,2)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin+1, kjmin=jmin+1, ldiom=.true.)
+           tmpm(:,:,1)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin, kjmin=jmin+1, ldiom=.TRUE.)
+           tmpm(:,:,2)=getvar(coordzgr,'e3w_ps',jk,1,npts, kimin=imin+1, kjmin=jmin+1, ldiom=.TRUE.)
            IF (jk >= 2 ) THEN
               DO ji=1,npts
                  gdepu(ji,jk)= gdepu(ji,jk-1) + MIN(tmpm(1,ji,1), tmpm(1,ji,2))
@@ -209,10 +264,10 @@ PROGRAM cdfsigtrp
            gdepu(:,jk) = gdept(jk)
 
            ! vertical metrics (PS case)
-           tmpz(:,:,1)=getvar(coordzgr,'e3v_ps',jk, npts, 1, kimin=imin+1, kjmin=jmin, ldiom=.true.)
+           tmpz(:,:,1)=getvar(coordzgr,'e3v_ps',jk, npts, 1, kimin=imin+1, kjmin=jmin, ldiom=.TRUE.)
            e3(:,jk)=tmpz(:,1,1)
-           tmpz(:,:,1)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin, ldiom=.true.)
-           tmpz(:,:,2)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin+1, ldiom=.true.)
+           tmpz(:,:,1)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin, ldiom=.TRUE.)
+           tmpz(:,:,2)=getvar(coordzgr,'e3w_ps',jk,npts,1, kimin=imin+1, kjmin=jmin+1, ldiom=.TRUE.)
            IF (jk >= 2 ) THEN
               DO ji=1,npts
                  gdepu(ji,jk)= gdepu(ji,jk-1) + MIN(tmpz(ji,1,1), tmpz(ji,1,2))
@@ -335,11 +390,11 @@ PROGRAM cdfsigtrp
         IF (l_print) PRINT  9003, sigma,(zwtrpbin(ji,jbin)/1.e6,ji=1,npts), trpbin(jsec,jbin)/1.e6
      END DO
      PRINT *,' Total transport in all bins :',TRIM(csection(jsec)),' ',SUM(trpbin(jsec,:) )/1.e6
-     
+
 
      ! output of the code for 1 section
      IF (l_bimg) THEN
-       ! (along section, depth ) 2D variables
+        ! (along section, depth ) 2D variables
         cdum=TRIM(csection(jsec))//'_trpdep.bimg'
         OPEN(numbimg,FILE=cdum,FORM='UNFORMATTED')
         cdum=' 3 dimensions in this isopycnal file '
@@ -395,14 +450,44 @@ PROGRAM cdfsigtrp
   END DO   ! next section
 
   !! Global Output
-     OPEN( numout, FILE=cfilout)
-       ipos=INDEX(cfilet,'_gridT.nc')
-       WRITE(numout,9006)  TRIM(cfilet(1:ipos-1))
-       WRITE(numout,9005) ' sigma  ', (csection(jsec),jsec=1,nsection)
-     DO jiso=1,nbins
-       WRITE(numout,9004) sigma_lev(jiso), (trpbin(jsec,jiso),jsec=1,nsection)
-     ENDDO
-     CLOSE(numout)
+  OPEN( numout, FILE=cfilout)
+  ipos=INDEX(cfilet,'_gridT.nc')
+  WRITE(numout,9006)  TRIM(cfilet(1:ipos-1))
+  WRITE(numout,9005) ' sigma  ', (csection(jsec),jsec=1,nsection)
+  DO jiso=1,nbins
+     WRITE(numout,9004) sigma_lev(jiso), (trpbin(jsec,jiso),jsec=1,nsection)
+  ENDDO
+  CLOSE(numout)
+
+
+  IF(lwrtcdf) THEN
+
+     cdep='levels'
+
+     DO jsec=1,nsection
+
+        ! create output fileset
+        cfileoutnc=TRIM(csection(jsec))//'_trpsig.nc'
+        ncout =create(cfileoutnc,'none',kx,ky,nbins, cdep=cdep)
+        ierr= createvar(ncout,typvar,nboutput,ipk,id_varout)
+        ierr= putheadervar(ncout, cfilet,kx, &
+             ky,nbins,pnavlon=dumlon,pnavlat=dumlat, pdep=REAL(sigma_lev), cdep='levels')
+        tim=getvar1d(cfilet,'time_counter',1)
+        ierr=putvar1d(ncout,tim,1,'T')
+
+        ! netcdf output 
+        DO jiso=1,nbins
+           dummy1=sigma_lev(jiso)
+           dummy2=trpbin(jsec,jiso)
+           ierr = putvar(ncout,id_varout(1), dummy1, jiso, kx, ky )
+           ierr = putvar(ncout,id_varout(2), dummy2, jiso, kx, ky )
+        END DO
+
+        ierr = closeout(ncout)
+
+     END DO
+
+  ENDIF
 
 9000 FORMAT(i7,25f8.3)
 9001 FORMAT(i7,25f8.0)
@@ -416,10 +501,10 @@ CONTAINS
   SUBROUTINE section_init(cdfile,cdsection,kimin,kimax,kjmin,kjmax,knumber)
     IMPLICIT NONE
     ! Arguments
-!   INTEGER, DIMENSION(:),ALLOCATABLE :: kimin,kimax, kjmin,kjmax
+    !   INTEGER, DIMENSION(:),ALLOCATABLE :: kimin,kimax, kjmin,kjmax
     INTEGER, INTENT(INOUT) :: knumber
     INTEGER, DIMENSION(knumber) :: kimin,kimax, kjmin,kjmax
-!   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cdsection
+    !   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cdsection
     CHARACTER(LEN=256), DIMENSION(knumber) :: cdsection
     CHARACTER(LEN=*), INTENT(IN) :: cdfile
 
@@ -427,9 +512,9 @@ CONTAINS
     INTEGER :: ii, numit=10, jsec
     CHARACTER(LEN=256) :: cline
     LOGICAL :: lfirst
-    
-    lfirst=.false.
-    IF ( knumber == 0 ) lfirst=.true.
+
+    lfirst=.FALSE.
+    IF ( knumber == 0 ) lfirst=.TRUE.
 
     OPEN(numit, FILE=cdfile)
     REWIND(numit)
@@ -445,11 +530,11 @@ CONTAINS
        ENDIF
     END DO
 
- 
+
     knumber=ii
     IF ( lfirst ) RETURN
-!   ALLOCATE( cdsection(knumber) )
-!   ALLOCATE( kimin(knumber), kimax(knumber), kjmin(knumber), kjmax(knumber) )
+    !   ALLOCATE( cdsection(knumber) )
+    !   ALLOCATE( kimin(knumber), kimax(knumber), kjmin(knumber), kjmax(knumber) )
     REWIND(numit)
     DO jsec=1,knumber
        READ(numit,'(a)') cdsection(jsec)
