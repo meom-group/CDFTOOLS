@@ -362,7 +362,7 @@ cdfcoloc: cdfio.o  cdfcoloc.f90
 	$(F90) cdfcoloc.f90  -o cdfcoloc cdfio.o $(FFLAGS)
 
 cdfcoloc2D: cdfio.o  cdfcoloc2D.f90
-	$(F90) cdfcoloc2D.f90  -o cdfcoloc2D cdfio.o $(FFLAGS)
+	$(F90)  cdfcoloc2D.f90  -o cdfcoloc2D cdfio.o $(FFLAGS)
 
 cdfcoloc2: cdfio.o  cdfcoloc2.f90
 	$(F90) cdfcoloc2.f90  -o cdfcoloc2 cdfio.o $(FFLAGS)
