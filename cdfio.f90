@@ -341,32 +341,32 @@ CONTAINS
     TYPE (variable) ,INTENT(in) :: tyvar
     CHARACTER(LEN=*), INTENT(in), OPTIONAL :: cdglobal !: global attribute
     putatt=NF90_PUT_ATT(kout,kid,'units',tyvar%units) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt units'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'missing_value',tyvar%missing_value)  
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt missing value'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'valid_min',tyvar%valid_min) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_min'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'valid_max',tyvar%valid_max)
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_max'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'long_name',tyvar%long_name)
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt longname'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'short_name',tyvar%short_name) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt short name'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'online_operation',tyvar%online_operation) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt online oper'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'axis',tyvar%axis) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt axis'; ENDIF
     ! Optional attributes (scale_factor, add_offset )
     putatt=NF90_PUT_ATT(kout,kid,'scale_factor',tyvar%scale_factor) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt scale fact'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'add_offset',tyvar%add_offset) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt add offset'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'savelog10',tyvar%savelog10) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt savelog0'; ENDIF
     ! Global attribute
     IF ( PRESENT(cdglobal) ) THEN
     putatt=NF90_PUT_ATT(kout,NF90_GLOBAL,'history',cdglobal)
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt'; ENDIF
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt global'; ENDIF
     ENDIF
 
   END FUNCTION putatt
@@ -866,7 +866,7 @@ CONTAINS
           SELECT CASE ( clvar )
            CASE ('e3u_ps')  ; clvar='e3t_ps'
            CASE ('e3v_ps')  ; clvar='e3t_ps'
-           CASE ('e3w_ps')  ; clvar='e3t_ps'
+           CASE ('e3w_ps')  ; clvar='e3w_ps'
           END SELECT
          ELSE
           ! zgr v2
