@@ -129,7 +129,7 @@ PROGRAM cdfmltmask
         ! Read mask
           zmask(:,:)=getvar(cfilemask,cvmask,jk,npiglo,npjglo)
         ENDIF
-        ! Multiplication of cvar by mask à level jk
+        ! Multiplication of cvar by mask at level jk
         zvmask=zv*zmask
         ! Writing  on the original file                 
         istatus=putvar(cfilev,cvar,jk,npiglo,npjglo,1,1,ktime=jt, ptab=zvmask)

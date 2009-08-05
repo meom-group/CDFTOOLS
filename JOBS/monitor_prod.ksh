@@ -204,12 +204,12 @@ set -x
     # requires  LEVITUS 'same' diags (from the ANNUAL mean )
     #  !!! NEW !!!
     # get non-masked levitus then mask it with the same mask as the model
-    levitus=Levitus_p2.1_ANNUAL_TS_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
+    levitus=${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
     rapatrie $levitus $IDIR $levitus
     cdfmltmask $levitus  mask.nc votemper T             # votemper --> $levitus_masked
     cdfmltmask ${levitus}_masked  mask.nc vosaline T    # vosaline --> $levitus_masked_masked
-    mv ${levitus}_masked_masked Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc  # simplify name
-    levitus=Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc # will be ready for GIB DIAG 
+    mv ${levitus}_masked_masked ${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc  # simplify name
+    levitus=${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc # will be ready for GIB DIAG 
     #  
     cdfmean $levitus  votemper T  >  LEVITUS_y0000_TMEAN.txt
     cdfmean $levitus  vosaline T  >  LEVITUS_y0000_SMEAN.txt
@@ -308,15 +308,15 @@ set -x
    if [ $(chkfile $DIAGS/LEVITUS_y0000_TGIB.txt ) == absent ] ; then
     # first time : Create header with Levitus equivalent
     # requires  LEVITUS 'same' diags (from the ANNUAL mean )
-    levitus=Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
+    levitus=${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
     if [ ! -f $levitus ] ; then
      # need to build a masked LEvitus with proper mask
-     levitus=Levitus_p2.1_ANNUAL_TS_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
+     levitus=${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
      rapatrie $levitus $IDIR $levitus
      cdfmltmask $levitus  mask.nc votemper T             # votemper --> $levitus_masked
      cdfmltmask ${levitus}_masked  mask.nc vosaline T    # vosaline --> $levitus_masked_masked
-     mv ${levitus}_masked_masked Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc  # simplify name
-     levitus=Levitus_p2.1_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc # will be ready for GIB DIAG
+     mv ${levitus}_masked_masked ${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc  # simplify name
+     levitus=${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc # will be ready for GIB DIAG
     fi
     cdfmean $levitus  votemper T $GIBWIN  0 0  >  LEVITUS_y0000_TGIB.txt
     cdfmean $levitus  vosaline T $GIBWIN  0 0  >  LEVITUS_y0000_SGIB.txt
