@@ -23,7 +23,7 @@ PROGRAM bimgcaltrans
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE :: trp
   REAL(KIND=4) :: x1, sigmin, dx,dsig,spval, bidon
 
-  CHARACTER(LEN=256) :: cfile, comm
+  CHARACTER(LEN=80) :: cfile, comm
 
   !! 
   narg=iargc()
