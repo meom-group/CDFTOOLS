@@ -89,6 +89,7 @@ PROGRAM cdfsigtrp
   LOGICAL    :: l_bimg=.FALSE.              !: flag  for bimg output
   ! added to write in netcdf
   LOGICAL :: lwrtcdf=.FALSE.
+  CHARACTER(LEN=80) :: cfor9000, cfor9001, cfor9002, cfor9003
 
 
   !!  * Initialisations
@@ -207,7 +208,7 @@ PROGRAM cdfsigtrp
      ENDIF
 
      ALLOCATE ( zu(npts, npk), zt(npts,npk), zs(npts,npk) ,zsig(npts,0:npk) )
-     ALLOCATE ( eu(npts), e3(npts,npk), gdepu(npts, npk), zmask(npts,npk) )
+     ALLOCATE ( eu(npts), e3(npts,npk), gdepu(npts, 0:npk), zmask(npts,npk) )
      ALLOCATE ( tmpm(1,npts,2), tmpz(npts,1,2) )
      ALLOCATE ( zwtrp(npts, nbins+1) , hiso(npts,nbins+1), zwtrpbin(npts,nbins) )
 
@@ -306,34 +307,38 @@ PROGRAM cdfsigtrp
 
      ! Some control print 
      IF ( l_print ) THEN
+        WRITE(cfor9000,'(a,i3,a)') '(i7,',npts,'f8.3)'
+        WRITE(cfor9001,'(a,i3,a)') '(i7,',npts,'f8.0)'
+        WRITE(cfor9002,'(a,i3,a)') '(f7.3,',npts,'f8.0)'
+        WRITE(cfor9003,'(a,i3,a)') '(f7.3,',npts,'f8.3)'
         PRINT *,' T (deg C)' 
         DO jk=1,nk
-           PRINT 9000, jk,  (zt(ji,jk),ji=1,npts)
+           PRINT cfor9000, jk,  (zt(ji,jk),ji=1,npts)
         END DO
 
         PRINT *,' S (PSU)'
         DO jk=1,nk
-           PRINT 9000, jk,  (zs(ji,jk),ji=1,npts)
+           PRINT cfor9000,  jk,  (zs(ji,jk),ji=1,npts)
         END DO
 
         PRINT *,' SIG (kg/m3 - 1000 )'
         DO jk=1,nk
-           PRINT 9000, jk,  (zsig(ji,jk),ji=1,npts)
+           PRINT cfor9000, jk,  (zsig(ji,jk),ji=1,npts)
         END DO
 
         PRINT *,' VELOCITY (cm/s ) '
         DO jk=1,nk
-           PRINT 9000, jk,  (zu(ji,jk)*100,ji=1,npts)
+           PRINT cfor9000, jk,  (zu(ji,jk)*100,ji=1,npts)
         END DO
 
         PRINT *,' GDEPU (m) '
         DO jk=1,nk
-           PRINT 9001,jk,  (gdepu(ji,jk)*zmask(ji,jk),ji=1,npts)
+           PRINT cfor9001,jk,  (gdepu(ji,jk)*zmask(ji,jk),ji=1,npts)
         END DO
 
         PRINT *, 'E3 (m)'
         DO jk=1,nk
-           PRINT 9001,jk,  (e3(ji,jk)*zmask(ji,jk),ji=1,npts)
+           PRINT cfor9001,jk,  (e3(ji,jk)*zmask(ji,jk),ji=1,npts)
         END DO
      END IF
 
@@ -349,7 +354,7 @@ PROGRAM cdfsigtrp
               ELSE
                  ! interpolate between jk-1 and jk
                  zalfa=(sigma - zsig(ji,jk-1)) / ( zsig(ji,jk) -zsig(ji,jk-1) )
-                 IF (ABS(zalfa) > 1.1 ) THEN   ! case zsig(0) = zsig(1)-1.e-4
+                 IF (ABS(zalfa) > 1.1 .OR. zalfa < 0 ) THEN   ! case zsig(0) = zsig(1)-1.e-4
                     hiso(ji,jiso)= 0.
                  ELSE
                     hiso(ji,jiso)= gdepu(ji,jk)*zalfa + (1.-zalfa)* gdepu(ji,jk-1)
@@ -358,7 +363,7 @@ PROGRAM cdfsigtrp
               ENDIF
            END DO
         END DO
-        IF (l_print) PRINT 9002, sigma,(hiso(ji,jiso),ji=1,npts)
+        IF (l_print) PRINT cfor9002, sigma,(hiso(ji,jiso),ji=1,npts)
      END DO
 
      ! compute transport between surface and isopycn 
@@ -376,7 +381,7 @@ PROGRAM cdfsigtrp
               ENDIF
            END DO
         END DO
-        IF (l_print) PRINT  9003, sigma,(zwtrp(ji,jiso)/1.e6,ji=1,npts)
+        IF (l_print) PRINT  cfor9003, sigma,(zwtrp(ji,jiso)/1.e6,ji=1,npts)
      END DO
 
      ! binned transport : difference between 2 isopycns
@@ -387,7 +392,7 @@ PROGRAM cdfsigtrp
            zwtrpbin(ji,jbin) = zwtrp(ji,jbin+1) -  zwtrp(ji,jbin) 
         END DO
         trpbin(jsec,jbin)=SUM(zwtrpbin(:,jbin) )
-        IF (l_print) PRINT  9003, sigma,(zwtrpbin(ji,jbin)/1.e6,ji=1,npts), trpbin(jsec,jbin)/1.e6
+        IF (l_print) PRINT  cfor9003, sigma,(zwtrpbin(ji,jbin)/1.e6,ji=1,npts), trpbin(jsec,jbin)/1.e6
      END DO
      PRINT *,' Total transport in all bins :',TRIM(csection(jsec)),' ',SUM(trpbin(jsec,:) )/1.e6
 

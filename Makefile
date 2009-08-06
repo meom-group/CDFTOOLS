@@ -247,7 +247,7 @@ cdfmasstrp-julien: cdfio.o  cdfmasstrp-julien.f90
 	$(F90) cdfmasstrp-julien.f90 -o cdfmasstrp-julien cdfio.o $(FFLAGS)
 
 cdfsigtrp: cdfio.o  cdfsigtrp.f90
-	$(F90) cdfsigtrp.f90 -o cdfsigtrp cdfio.o eos.o $(FFLAGS)
+	$(F90) -CB cdfsigtrp.f90 -o cdfsigtrp cdfio.o eos.o $(FFLAGS)
 
 cdfsigitrp: cdfio.o  cdfsigitrp.f90
 	$(F90) cdfsigitrp.f90 -o cdfsigitrp cdfio.o eos.o $(FFLAGS)
