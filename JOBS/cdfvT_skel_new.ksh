@@ -50,6 +50,7 @@ cd $TMPDIR
 # Metamoy meta script will subtitute YYYY and YYYE with correct begining and ending years
 YEARS=YYYY
 YEARE=YYYE
+LOCAL_SAVE=${LOCAL_SAVE:=0}
 
 YEARLST=""
 y=$YEARS
@@ -65,11 +66,18 @@ CONFCASE=${CONFIG}-${CASE}
 # always work in TMPDIR ! not in the data dir as file will be erased at the end of the script !
 cd $TMPDIR
 mkdir MONTHLY
+   if [ $LOCAL_SAVE = 1 ] ; then
+    chkdir $WORKDIR/$CONFIG
+    chkdir $WORKDIR/$CONFIG/${CONFCASE}-MEAN
+   fi
 
 for YEAR in $YEARLST ; do
    SDIR=${CONFIG}/${CONFCASE}-S/$YEAR
    MDIR=$PREF/${CONFIG}/${CONFCASE}-MEAN/$YEAR
    chkdirg $MDIR
+   if [ $LOCAL_SAVE = 1 ] ; then
+    chkdir $WORKDIR/$CONFIG/${CONFCASE}-MEAN/YEAR
+   fi
 
  # Monthly mean
  #
