@@ -67,7 +67,7 @@ PROGRAM cdftransportiz
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku,zwkv,    zwkut,zwkvt,   zwkus,zwkvs
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
 
-  CHARACTER(LEN=256) :: cfilet , cfileu, cfilev, csection, cfileout='section_trp.dat'
+  CHARACTER(LEN=256) :: cfileu, cfilev, csection, cfileout='section_trp.dat'
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
 
   INTEGER    ::  nxtarg
@@ -89,13 +89,12 @@ PROGRAM cdftransportiz
 
 
   CALL getarg (1, cfileu)
-  IF ( cfilet == '-test')  THEN
+  IF ( cfileu == '-test')  THEN
      ltest = .TRUE.
      CALL getarg (2, cdum)
      READ(cdum,*) udum
      CALL getarg (3, cdum)
      READ(cdum,*) vdum
-     !    CALL getarg (4, cfilet)
      CALL getarg (4, cfileu)
      CALL getarg (5, cfilev)
      nxtarg=5
