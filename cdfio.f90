@@ -113,7 +113,7 @@ CONTAINS
   END FUNCTION copyatt
 
 
-  FUNCTION create( cdfile, cdfilref ,kx,ky,kz ,cdep)
+  FUNCTION create( cdfile, cdfilref ,kx,ky,kz ,cdep, cdepvar)
     !! ------------------------------------------------------------------------------------------
     !! ***  Create the file, and creates dimensions, and copy attributes from a cdilref
     !!      reference file ( for the nav_lon, nav_lat etc ...)
@@ -124,13 +124,15 @@ CONTAINS
     ! * Arguments
     CHARACTER(LEN=*), INTENT(in) :: cdfile,cdfilref
     INTEGER, INTENT(in) :: kx,ky,kz
-    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep 
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep    !: name of vertical dim name if not standard
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdepvar !: name of vertical var name if it differs
+                                                      !:  from vertical dimension name
     INTEGER :: create
 
     ! * Local Variable
     INTEGER   :: istatus, icout,ncid, idum
     INTEGER ,DIMENSION(4) :: nvdim
-    CHARACTER(LEN=256) :: cldep, cldepref
+    CHARACTER(LEN=256) :: cldep, cldepref, cldepvar
 
     istatus = NF90_CREATE(cdfile,NF90_CLOBBER, icout)
     istatus = NF90_DEF_DIM(icout,'x',kx, id_x)
@@ -146,8 +148,13 @@ CONTAINS
           idum=getdim(cdfilref,'depth',cldep   )   ! look for depth dimension name in ref file
           cldepref=cldep
        ENDIF
+       cldepvar=cldep
        istatus = NF90_DEF_DIM(icout,TRIM(cldep),kz, id_z)
+       IF (PRESENT (cdepvar) ) THEN
+         cldepvar=cdepvar
+       ENDIF
     ENDIF
+
 
     istatus = NF90_DEF_DIM(icout,'time_counter',NF90_UNLIMITED, id_t)
 
@@ -166,10 +173,9 @@ CONTAINS
     istatus = NF90_DEF_VAR(icout,'nav_lat',NF90_FLOAT,(/id_x,id_y/),id_lat)
     istatus = copyatt('nav_lat',id_lat,ncid,icout)
     IF ( kz /= 0 ) THEN
-       ! here we assume that dep variable has same name as dep dim .... jmm
-       istatus = NF90_DEF_VAR(icout,TRIM(cldep),NF90_FLOAT,(/id_z/),id_dep)
+       istatus = NF90_DEF_VAR(icout,TRIM(cldepvar),NF90_FLOAT,(/id_z/),id_dep)
        ! JMM bug fix : if cdep present, then chose attribute from cldepref
-       istatus = copyatt(TRIM(cldepref),id_dep,ncid,icout)
+       istatus = copyatt(TRIM(cldepvar),id_dep,ncid,icout)
     ENDIF
 
     istatus = NF90_DEF_VAR(icout,'time_counter',NF90_FLOAT,(/id_t/),id_tim)
@@ -226,6 +232,8 @@ CONTAINS
              istatus = NF90_DEF_VAR(kout,ptyvar(jv)%name,NF90_DOUBLE,iidims(1:idims) ,kidvo(jv) )
           ELSE IF ( ptyvar(jv)%precision == 'i2' ) THEN
              istatus = NF90_DEF_VAR(kout,ptyvar(jv)%name,NF90_SHORT,iidims(1:idims) ,kidvo(jv) )
+          ELSE IF ( ptyvar(jv)%precision == 'by' ) THEN
+             istatus = NF90_DEF_VAR(kout,ptyvar(jv)%name,NF90_BYTE,iidims(1:idims) ,kidvo(jv) )
           ELSE
              IF ( ptyvar(jv)%scale_factor == 1. .AND. ptyvar(jv)%add_offset == 0. ) THEN
                 istatus = NF90_DEF_VAR(kout,ptyvar(jv)%name,NF90_FLOAT,iidims(1:idims) ,kidvo(jv) )
@@ -1443,11 +1451,11 @@ CONTAINS
     INTEGER :: putheadervar                 ! return status
 
     !! * Local variables
-    INTEGER , PARAMETER :: jpdep=5
+    INTEGER , PARAMETER :: jpdep=6
     INTEGER :: istatus, idep, jj
     REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: z2d
     REAL(KIND=4), DIMENSION(kpk) :: z1d
-    CHARACTER(LEN=256),DIMENSION(jpdep ) :: cldept=(/'deptht ','depthu ','depthv ','depthw ','nav_lev'/)
+    CHARACTER(LEN=256),DIMENSION(jpdep ) :: cldept=(/'deptht ','depthu ','depthv ','depthw ','nav_lev','z'/)
     CHARACTER(LEN=256) :: cldep
 
     ALLOCATE ( z2d (kpi,kpj) )

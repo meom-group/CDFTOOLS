@@ -49,7 +49,7 @@ PROGRAM cdfdifmask
   CALL getarg (2, cfile2)
   npiglo= getdim (cfile1,'x')
   npjglo= getdim (cfile1,'y')
-  npk   = getdim (cfile1,'depth')
+  npk   = getdim (cfile1,'z')
 
    print *, npiglo, npjglo, npk
 
@@ -72,12 +72,12 @@ PROGRAM cdfdifmask
   typvar(4)%short_name='fmask'
   typvar(1:4)%online_operation='N/A'
   typvar(1:4)%axis='TZYX'
-  typvar(1:4)%precision='i2'
+  typvar(1:4)%precision='by'
 
-  ncout =create(cfileout, cfile1,npiglo,npjglo,npk)
+  ncout =create(cfileout, cfile1,npiglo,npjglo,npk,cdep='z',cdepvar='nav_lev')
 
   ierr= createvar(ncout ,typvar,4, ipk,id_varout )
-  ierr= putheadervar(ncout, cfile1, npiglo, npjglo,npk)
+  ierr= putheadervar(ncout, cfile1, npiglo, npjglo,npk,cdep='nav_lev')
 
 
   ALLOCATE (zmask(npiglo,npjglo),zmask2(npiglo,npjglo))
@@ -85,7 +85,9 @@ PROGRAM cdfdifmask
   npt= 0
   DO jvar=1,4
      cvar=typvar(jvar)%name
+     PRINT *, ' making difference for ', TRIM(cvar)
   DO jk=1, npk
+     PRINT * ,'jk = ', jk
      zmask(:,:)= getvar(cfile1, cvar,  jk ,npiglo, npjglo)
      zmask2(:,:)= getvar(cfile2, cvar,  jk ,npiglo, npjglo)
      zmask(:,:)= zmask2(:,:) - zmask(:,:)
