@@ -27,6 +27,7 @@ PROGRAM cdffindij
   INTEGER :: imin, imax, jmin, jmax
   INTEGER :: iloc, jloc
   INTEGER :: npiglo, npjglo
+  INTEGER, PARAMETER :: jpitermax=15
 
   REAL(KIND=8)                              :: xmin, xmax, ymin, ymax, rdis
   REAL(KIND=4)                              :: glamfound, glamin, glamax
@@ -106,7 +107,7 @@ PROGRAM cdffindij
     IF (xmax < glam0) xmax = xmax +360.
 
   lagain = .TRUE.
-  niter = 0
+  niter = 1
   DO WHILE (lagain)
      CALL Nearestpoint(xmin,ymin,npiglo,npjglo,glam,gphi,iloc,jloc,lbord)
      ! distance between the target point and the nearest point
@@ -121,10 +122,12 @@ PROGRAM cdffindij
         PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc)&
              &               , iloc, jloc 
         PRINT *,' Algorithme ne converge pas ', rdis 
-        IF ( niter >=  1 ) STOP ' pas de convergence apres iteration'
+        IF ( niter >=  jpitermax ) STOP ' pas de convergence apres iteration'
         lagain = .TRUE.
-        jloc = npjglo
         niter = niter +1
+        ! change location of first guess point for next interation
+        jloc = (niter -1)* npjglo/niter
+        iloc = (niter -1)* npiglo/jpitermax
      ELSE
         PRINT '("#  rdis= ",f8.3," km")', rdis
         lagain = .FALSE.
@@ -139,7 +142,8 @@ PROGRAM cdffindij
   ENDIF
   !
   lagain = .TRUE.
-  niter = 0
+  niter = 1
+  iloc=npiglo/2 ; jloc=npjglo/2
   DO WHILE (lagain)
      CALL Nearestpoint(xmax,ymax,npiglo,npjglo,glam,gphi,iloc,jloc,lbord)
      ! distance between the target point and the nearest point
@@ -153,10 +157,11 @@ PROGRAM cdffindij
         PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc) &
              &               , iloc, jloc
         PRINT *,' Algorithme ne converge pas ', rdis
-        IF ( niter >= 1 ) STOP ' pas de convergence avres iteration'
+        IF ( niter >= jpitermax ) STOP ' pas de convergence apres iteration'
         lagain = .TRUE.
-        jloc  = npjglo
         niter = niter +1
+        jloc = (niter -1)* npjglo/niter
+        iloc = (niter -1)* npiglo/jpitermax
      ELSE
         PRINT '("#  rdis= ",f8.3," km")', rdis
         lagain = .FALSE.
@@ -212,7 +217,10 @@ CONTAINS
     LOGICAL, SAVE ::  lbordcell, lfirst=.TRUE.
     !!
     ! Initial values
-    kpiloc = kpi/2 ; kpjloc = kpj/2    ! seek from the middle of domain
+    IF ( lfirst ) THEN
+      kpiloc = kpi/2 ; kpjloc = kpj/2    ! seek from the middle of domain
+      lfirst=.false.
+    ENDIF
     itbl = 10                          ! block size for search
     zdistmin=1000000. ; zdistmin0=1000000.
     i0=kpiloc ;  j0=kpjloc
