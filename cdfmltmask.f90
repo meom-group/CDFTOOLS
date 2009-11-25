@@ -27,7 +27,9 @@ PROGRAM cdfmltmask
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zv !: cvar at jk level 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask !: mask at jk level 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zvmask !: masked cvar at jk level
+  REAL(KIND=4)                                 :: spval  !: missing value
 
+  CHARACTER(LEN=256) :: cunits, clname, csname     !: attributes units, long_name, short_name
   CHARACTER(LEN=256) :: cfilev , cfilemask, ctmp
   CHARACTER(LEN=256) :: cvar, cvartype, cdep
   CHARACTER(LEN=20) ::  cvmask
@@ -62,22 +64,29 @@ PROGRAM cdfmltmask
   npjglo= getdim (cfilev,'y')
   npk   = getdim (cfilev,'depth',cdtrue=cdep, kstatus=istatus) ; !print *, istatus
   IF (istatus /= 0 ) THEN
-     npk   = getdim (cfilev,'z',cdtrue=cdep,kstatus=istatus) ; !print *, istatus
+     npk   = getdim (cfilev,'z',cdtrue=cdep,kstatus=istatus)
      IF (istatus /= 0 ) THEN
-       npk   = getdim (cfilev,'sigma',cdtrue=cdep,kstatus=istatus) ; !print *, istatus
+       npk   = getdim (cfilev,'sigma',cdtrue=cdep,kstatus=istatus)
         IF ( istatus /= 0 ) THEN
-          PRINT *,' assume file with no depth'
-          npk=0
+          npk = getdim (cfilev,'nav_lev',cdtrue=cdep,kstatus=istatus)
+            IF ( istatus /= 0 ) THEN
+              PRINT *,' assume file with no depth'
+              npk=0
+            ENDIF
         ENDIF
      ENDIF
   ENDIF
+
   npkmask = getdim (cfilemask,'depth',cdtrue=cdep, kstatus=istatus)
   IF (istatus /= 0 ) THEN
      npkmask  = getdim (cfilemask,'z',cdtrue=cdep,kstatus=istatus) ; !print *, istatus
-        IF ( istatus /= 0 ) THEN
-          PRINT *,' assume mask file with no depth'
-          npkmask=0
-        ENDIF
+       IF ( istatus /= 0 ) THEN
+            npkmask = getdim (cfilemask,'nav_lev',cdtrue=cdep,kstatus=istatus)
+            IF ( istatus /= 0 ) THEN
+              PRINT *,' assume file with no depth'
+              npkmask=0
+            ENDIF
+       ENDIF
   ENDIF
 
   npt   = getdim (cfilev,'time')
@@ -135,5 +144,9 @@ PROGRAM cdfmltmask
         istatus=putvar(cfilev,cvar,jk,npiglo,npjglo,1,1,ktime=jt, ptab=zvmask)
      END DO
   END DO
+  ! set missing value attribute for cvar as 0.
+  istatus = getvaratt (cfilev,cvar,cunits,spval,clname,csname)
+  istatus = cvaratt (cfilev,cvar,cunits,0.,clname,csname)
+
 
 END PROGRAM cdfmltmask 

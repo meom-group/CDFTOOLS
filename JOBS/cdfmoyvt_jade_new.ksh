@@ -17,9 +17,9 @@
 ### PBS is valid on JADE
 #PBS -N metamoyvt_jade
 #PBS -l select=1:ncpus=8:mpiprocs=8
-#PBS -l walltime=00:30:00
+#PBS -l walltime=02:30:00
 #PBS -l place=scatter:excl
-#PBS -M mathiot@hmg.inpg.fr
+#PBS -M molines@hmg.inpg.fr
 #PBS -mb -me
 
 #################################################################################
