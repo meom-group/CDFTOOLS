@@ -1455,7 +1455,7 @@ CONTAINS
     INTEGER :: istatus, idep, jj
     REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: z2d
     REAL(KIND=4), DIMENSION(kpk) :: z1d
-    CHARACTER(LEN=256),DIMENSION(jpdep ) :: cldept=(/'deptht ','depthu ','depthv ','depthw ','nav_lev','z'/)
+    CHARACTER(LEN=256),DIMENSION(jpdep ) :: cldept=(/'deptht ','depthu ','depthv ','depthw ','nav_lev','z      '/)
     CHARACTER(LEN=256) :: cldep
 
     ALLOCATE ( z2d (kpi,kpj) )
