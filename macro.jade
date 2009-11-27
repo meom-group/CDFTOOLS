@@ -4,11 +4,11 @@
 #  $Id$
 # -------------------------------------------------------------
 #
-NCDF= -I/opt/software/SGI/netcdf/4.0/include -L/opt/software/SGI/netcdf/4.0/lib -lnetcdf -lnetcdff
+NCDF= -I/opt/software/SGI/netcdf/4.0/include -L/opt/software/SGI/netcdf/4.0/lib -lnetcdff -lnetcdf
  
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
+FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian
 LMPI=-lmpich
 
-INSTALL=$(HOME)/bin
+INSTALL=$(WORKDIR)/bin

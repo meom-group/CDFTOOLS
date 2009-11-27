@@ -47,8 +47,8 @@ PROGRAM cdfmean
   REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf
   CHARACTER(LEN=256) :: cfilev , cdum
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
-  CHARACTER(LEN=256) :: cvar, cvartype
-  CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
+  CHARACTER(LEN=256) :: cvar, cvartype, cdep
+  CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype
   CHARACTER(LEN=256) :: cfilout='out.txt'
   ! added to write in netcdf
   CHARACTER(LEN=256) :: cfileoutnc='cdfmean.nc' , cflagcdf
@@ -105,9 +105,25 @@ PROGRAM cdfmean
      lwrtcdf=.TRUE.
   ENDIF
 
+  cdep='none'
   npiglo= getdim (cfilev,'x')
   npjglo= getdim (cfilev,'y')
-  npk   = getdim (cfilev,'depth')
+  npk   = getdim (cfilev,'depth',cdtrue=cdep,kstatus=istatus)
+
+  IF (istatus /= 0 ) THEN
+     npk   = getdim (cfilev,'z',cdtrue=cdep,kstatus=istatus)
+     IF (istatus /= 0 ) THEN
+       npk   = getdim (cfilev,'sigma',cdtrue=cdep,kstatus=istatus)
+        IF ( istatus /= 0 ) THEN
+          npk = getdim (cfilev,'nav_lev',cdtrue=cdep,kstatus=istatus)
+            IF ( istatus /= 0 ) THEN
+              PRINT *,' assume file with no depth'
+              npk=0
+            ENDIF
+        ENDIF
+     ENDIF
+  ENDIF
+
   nt    = getdim (cfilev,'time')
   nvpk  = getvdim(cfilev,cvar)
   IF (npk == 0  ) THEN ; npk = 1              ; ENDIF  ! no depth dimension ==> 1 level
@@ -123,6 +139,7 @@ PROGRAM cdfmean
   WRITE (6,*) 'npk   =', npk
   WRITE (6,*) 'nt    =', nt
   WRITE (6,*) 'nvpk  =', nvpk
+  WRITE (6,*) 'depth dim name is ', TRIM(cdep)
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )
