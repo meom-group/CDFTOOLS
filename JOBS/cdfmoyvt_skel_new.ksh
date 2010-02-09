@@ -52,7 +52,9 @@
 # $Id: cdfmoy_skel_new.ksh 262 2009-08-08 09:25:10Z rcli002 $
 ################################################################################
 
-TMPDIR0=$WORKDIR/METAMOY.$$
+jobid=${TMPDIR##*.}
+
+TMPDIR0=$WORKDIR/METAMOY.$jobid
 if [ ! -d $TMPDIR0 ] ; then mkdir $TMPDIR0 ;fi
 
 
