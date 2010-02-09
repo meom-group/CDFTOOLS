@@ -76,7 +76,7 @@ for YEAR in $YEARLST ; do
    MDIR=$PREF/${CONFIG}/${CONFCASE}-MEAN/$YEAR
    chkdirg $MDIR
    if [ $LOCAL_SAVE = 1 ] ; then
-    chkdir $WORKDIR/$CONFIG/${CONFCASE}-MEAN/YEAR
+    chkdir $WORKDIR/$CONFIG/${CONFCASE}-MEAN/$YEAR
    fi
 
  # Monthly mean
