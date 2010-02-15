@@ -1,0 +1,13 @@
+# Makefile for CDFTOOLS (Linux with pgi)
+# !!  $Rev$
+# !!  $Date$
+# !!  $Id$
+# !!--------------------------------------------------------------
+#
+NCDF = -lnetcdf
+ 
+F90=pgf90
+MPF90=pgf90
+FFLAGS = -fast $(NCDF) -byteswapio
+
+INSTALL=/usr/local/bin

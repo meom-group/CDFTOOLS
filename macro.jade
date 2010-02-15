@@ -1,0 +1,14 @@
+# macro.jade for jade at CINES
+#  $Rev$
+#  $Date$
+#  $Id$
+# -------------------------------------------------------------
+#
+NCDF= -I/opt/software/SGI/netcdf/4.0/include -L/opt/software/SGI/netcdf/4.0/lib -lnetcdff -lnetcdf
+ 
+F90=ifort
+MPF90=mpif90
+FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian
+LMPI=-lmpich
+
+INSTALL=$(WORKDIR)/bin

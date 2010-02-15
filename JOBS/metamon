@@ -1,0 +1,72 @@
+#!/bin/ksh
+# @ cpu_limit  = 36000
+# @ data_limit = 1gb
+# Nom du travail LoadLeveler
+# @ job_name   = moni05
+# Fichier de sortie standard du travail       
+# @ output     = $(job_name).$(jobid)
+# Fichier de sortie d'erreur du travail
+# @ error      =  $(job_name).$(jobid)
+# @ queue                   
+
+set -x
+
+CONFIG=ORCA05           # set the name of the config
+CASE=G82                 # set the case of the config
+
+# set the list of years you want to monitor 'at once'  
+yinit=2002            # initial year 
+yend=2004               # last year
+
+YEARS=''
+while (( $yinit <= $yend )) ; do
+ YEARS="$YEARS $yinit "
+ yinit=$(( yinit + 1 ))
+done
+
+MESH_MASK_ID='ORCA05-G70.112-no-caspian' # root part of the mesh-mask files
+                         # (they must be in the -I directory ( $CONFIG/${CONFIG}-I)
+                         #  Standard name is thus : ${MESH_MASK_ID}_byte_mask.nc
+                         #                          ${MESH_MASK_ID}_mesh_hgr.nc
+                         #                          ${MESH_MASK_ID}_mesh_zgr.nc
+#
+
+# define the I-J window for GIB diags
+GIBWIN='547 554 326 337 '
+
+# define the I-J windows for EL NINO diags
+NINO12='395 415 229 249'
+NINO3='275 395 239 259'
+NINO4='175 275 239 259'
+NINO34='235 335 239 259'
+
+
+# menu (set to 1 if you want it, to anything else if you do not !)
+EKE=1                    # compute EKE
+RMSSSH=1                 # compute RMS ssh and w
+TSMEAN=1                 # compute TSMEAN and ssh drift
+ICE=0                    # compute ice volume, area and extent
+ICEMONTH=1               # compute ice volume, area and extent
+GIB=1                    # compute Gibraltar diags (restoring zone)
+ELNINO=1                 # compute El Nino monitoring SSTs
+TRP=1                    # compute barotropic transport accross section as given in section.dat (CTL dir)
+MHT=1                    # compute Meridional Heat Transport (advective and from surface fluxes)
+MOC=1                    # compute MOC ( need a sub basin mask file called new_maskglo.nc)
+MAXMOC=1                 # diagnose the min and max of MOC
+BSF=1                    # compute the BSF (psi) from U and V
+DCT=1                    # compute density class transports for section given in dens_section.dat (CTL dir)
+MXL=1                    # Compute mixed layer depth from 3 criteria for month 03 and 09
+TRACER=0                 # Compute passive Tracer statistics
+
+#--------------------- nothing to touch below -----------------------------------------
+# copy config and function to the working directory.
+cp config_def.ksh $TMPDIR
+cp function_def.ksh $TMPDIR
+
+CONFCASE=${CONFIG}-${CASE}
+cd $TMPDIR
+. ./config_def.ksh
+
+for   YEAR in  $YEARS ; do
+   .  $CDFTOOLS/JOBS/monitor_prod.ksh
+done

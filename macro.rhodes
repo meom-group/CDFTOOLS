@@ -1,0 +1,15 @@
+# Makefile for CDFTOOLS on RHODES.IDRIS.FR (SGI Origin 2100)
+# !!  $Rev$
+# !!  $Date$
+# !!  $Id$
+# !!--------------------------------------------------------------
+#
+NCDF = -I/usr/local/pub/netcdf-3.6.1/include -L/usr/local/pub/netcdf-3.6.1/lib -lnetcdf
+
+F90=f90
+MPF90=f90
+FFLAGS= -O2  -mips4 -bytereclen $(NCDF) -bytereclen
+
+INSTALL=$(HOME_BIS)/CDFTOOLS-2.1/
+ 
+ 
