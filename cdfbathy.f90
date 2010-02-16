@@ -30,7 +30,7 @@ PROGRAM cdfbathy
   INTEGER, DIMENSION(:), ALLOCATABLE :: level
   INTEGER, DIMENSION (:,:), ALLOCATABLE :: mbathy, mask
   ! REAL(KIND=4) :: e3zps_min=25, e3zps_rat=0.2
-  REAL(KIND=4) :: e3zps_min=1000, e3zps_rat=1, depmin=600.
+  REAL(KIND=4) :: e3zps_min=1000, e3zps_rat=1, depmin=600., depfill=0.
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: gdept, gdepw, e3t, e3w
   !
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE     :: h, rtime
@@ -41,6 +41,7 @@ PROGRAM cdfbathy
 
   LOGICAL :: lexist=.TRUE., lfill=.FALSE., lfullstep=.FALSE., lappend=.FALSE., lreplace=.FALSE.
   LOGICAL :: ldump = .FALSE., lmodif=.FALSE., loverwrite=.false., lraz=.false., ldumpn=.false.
+  LOGICAL :: lrazb=.false.
   INTEGER :: iversion=1, iostat, ipos
   !!
   !! 1. Initializations:
@@ -58,6 +59,7 @@ PROGRAM cdfbathy
      PRINT 9999, '   -zoom (or -z ) : sub area of the bathy file to work with (imin imax jmin jmax)'
      PRINT 9999, '   -fillzone (or -fz ) : sub area will be filled with 0 up to the first coast line '
      PRINT 9999, '   -raz_zone (or -raz ) : sub area will be filled with 0 up '
+     PRINT 9999, '   -raz_below depmin (or -rb depmin ) : any depth less than depmin in subarea will be replaced by 0 '
      PRINT 9999, '   -fullstep (or -fs ) : sub area will be reshaped as full-step, below depmin'
      PRINT 9999, '               requires the presence of the file zgr_bat.txt (from ocean.output, eg )'
      PRINT 9999, '   -dumpzone (or -d ): sub area will be output to an ascii file, which can be used by -replace'
@@ -93,6 +95,10 @@ PROGRAM cdfbathy
         lfill=.TRUE. ; lmodif=.TRUE.
      ELSE IF (cline1 == '-raz_zone' .OR. cline1 == '-raz' ) THEN
         lraz=.TRUE. ; lmodif=.TRUE.
+     ELSE IF (cline1 == '-raz_below' .OR. cline1 == '-rb' ) THEN
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
+        READ(cline2,*) depfill
+        lrazb=.TRUE. ; lmodif=.TRUE.
      ELSE IF (cline1 == '-fullstep' .OR. cline1 == '-fs' ) THEN
         lfullstep=.TRUE. ; lmodif=.TRUE.
         CALL getarg(jarg,cline2) ; jarg = jarg + 1
@@ -158,6 +164,7 @@ PROGRAM cdfbathy
   ENDIF
   IF (lfill ) CALL fillzone( imin, imax, jmin, jmax)
   IF (lraz )  CALL raz_zone( imin, imax, jmin, jmax)
+  IF (lrazb )  CALL raz_below( imin, imax, jmin, jmax, depfill)
   IF (ldump)    CALL dumpzone(cdump,imin, imax, jmin, jmax)
   IF (ldumpn)    CALL nicedumpzone(cdump,imin, imax, jmin, jmax)
   IF (lreplace) CALL replacezone(creplace)
@@ -298,6 +305,13 @@ CONTAINS
     INTEGER :: kimin, kimax, kjmin,kjmax
     bathy(kimin:kimax, kjmin:kjmax) = 0.
   END SUBROUTINE raz_zone
+
+  SUBROUTINE raz_below(kimin,kimax,kjmin,kjmax,pdepmin)
+    ! * Fill subzone of the bathy file
+    INTEGER,      INTENT(in) :: kimin, kimax, kjmin,kjmax
+    REAL(KIND=4), INTENT(in) :: pdepmin
+   WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin)  bathy(kimin:kimax, kjmin:kjmax) = 0.
+  END SUBROUTINE raz_below
 
 
   SUBROUTINE dumpzone(cdumpf,kimin,kimax,kjmin,kjmax)
