@@ -28,22 +28,46 @@
 # In this script mean quadratic terms US UT VS VT are computed from 5 days averages
 # All customisable variable are set in Part I.
 #
-# $Rev$
-# $Date$
-# $Id$
+# $Rev: 229 $
+# $Date: 2009-03-24 09:34:51 +0100 (mar, 24 mar 2009) $
+# $Id: cdfvT_skel_new.ksh 229 2009-03-24 08:34:51Z rcli002 $
 ################################################################################
 
 set -x
 . $HOME/.profile
 P_CDF_DIR=$PDIR/RUN_CCOONNFF/CCOONNFF-CCAASSEE/CTL/CDF
 . $P_CDF_DIR/config_def.ksh
+. $P_CDF_DIR/function_def.ksh
+
 chkdir $TMPDIR
 
-cp $P_CDF_DIR/config_def.ksh $TMPDIR
-cp $P_CDF_DIR/function_def.ksh $TMPDIR
+#test network
+login_node=service1
+chknet $login_node
+echo "$login_node $NET"
+if [ $NET = KO ] ; then
+login_node=service2
+chknet $login_node
+echo "$login_node $NET"
+fi;
+if [ $NET = KO ] ; then
+login_node=service3
+chknet $login_node
+echo "$login_node $NET"
+fi;
+if [ $NET = KO ] ; then 
+echo network is KO
+date
+exit
+fi
+
+scp $USER@${login_node}:$P_CDF_DIR/config_def.ksh $TMPDIR/.
+scp $USER@${login_node}:$P_CDF_DIR/function_def.ksh $TMPDIR/.
+if [ ! -f $TMPDIR/cdfvT ] ; then scp $USER@${login_node}:$CDFTOOLS/cdfvT $TMPDIR/. ; fi ;
+if [ ! -f $TMPDIR/cdfmoy_annual ] ; then scp $USER@${login_node}:$CDFTOOLS/cdfmoy_annual $TMPDIR/. ; fi ; 
+
+
 cd $TMPDIR
-
-
 # Part I : setup config dependent names
 #--------------------------------------
 . ./config_def.ksh   # config_def.ksh may be a link to an existing configuration file
@@ -58,7 +82,6 @@ cd $TMPDIR
 # Metamoy meta script will subtitute YYYY and YYYE with correct begining and ending years
 YEARS=YYYY
 YEARE=YYYE
-LOCAL_SAVE=${LOCAL_SAVE:=0}
 
 YEARLST=""
 y=$YEARS
@@ -72,20 +95,14 @@ done
 CONFCASE=${CONFIG}-${CASE}
 
 # always work in TMPDIR ! not in the data dir as file will be erased at the end of the script !
-cd $TMPDIR
-mkdir MONTHLY
-   if [ $LOCAL_SAVE = 1 ] ; then
-    chkdir $WORKDIR/$CONFIG
-    chkdir $WORKDIR/$CONFIG/${CONFCASE}-MEAN
-   fi
 
 for YEAR in $YEARLST ; do
-   SDIR=${CONFIG}/${CONFCASE}-S/$YEAR
+cd $TMPDIR
+   SDIR=$PREF/${CONFIG}/${CONFCASE}-S/$YEAR
    MDIR=$PREF/${CONFIG}/${CONFCASE}-MEAN/$YEAR
    chkdirg $MDIR
-   if [ $LOCAL_SAVE = 1 ] ; then
-    chkdir $WORKDIR/$CONFIG/${CONFCASE}-MEAN/$YEAR
-   fi
+   chkdir $YEAR
+   cd $YEAR
 
  # Monthly mean
  #
@@ -100,17 +117,13 @@ for YEAR in $YEARLST ; do
      list="$list $tag"
    done
 
-   $CDFTOOLS/cdfvT $CONFCASE $list
-   putvtmonth $month
+   ../cdfvT $CONFCASE $list
+   mv -f vt.nc ${CONFCASE}_y${YEAR}m${month}_VT.nc
    \rm ${CONFCASE}_y${YEAR}m${month}d??_grid[UVT].nc
  done
 
  # annual mean  (uses a ponderation to compute the exact annual mean ). ! suppose 5 day averages when creating monthly mean
- cd $TMPDIR/MONTHLY
- $CDFTOOLS/cdfmoy_annual ${CONFCASE}_y${YEAR}m??_VT.nc
- putvtannual
- 
+ ../cdfmoy_annual ${CONFCASE}_y${YEAR}m??_VT.nc
+ mv -f cdfmoy_annual.nc ${CONFCASE}_y${YEAR}_ANNUAL_VT.nc
  # clean directory for eventually next year:
- \rm ${CONFCASE}_y${YEAR}m??_VT.nc
- cd $TMPDIR
 done

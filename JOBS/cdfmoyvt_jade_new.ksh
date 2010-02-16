@@ -17,8 +17,7 @@
 ### PBS is valid on JADE
 #PBS -N metamoyvt_jade
 #PBS -l select=1:ncpus=8:mpiprocs=8
-#PBS -l walltime=02:30:00
-#PBS -l place=scatter:excl
+#PBS -l walltime=4:30:00
 #PBS -M molines@hmg.inpg.fr
 #PBS -mb -me
 
@@ -72,6 +71,7 @@ fi
 
 if [ ! -f $TMPDIR/cdfmoy ] ; then scp $USER@${login_node}:$CDFTOOLS/cdfmoy $TMPDIR/. ; fi ;
 if [ ! -f $TMPDIR/cdfmoy_annual ] ; then scp $USER@${login_node}:$CDFTOOLS/cdfmoy_annual $TMPDIR/. ; fi ; 
+if [ ! -f $TMPDIR/cdfvT ] ; then scp $USER@${login_node}:$CDFTOOLS/cdfvT $TMPDIR/. ; fi ; 
 
 cd $TMPDIR
 
