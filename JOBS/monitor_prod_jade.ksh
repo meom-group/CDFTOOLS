@@ -185,6 +185,30 @@ LSPV=LLSSPPVV                   # compute large scale potential vorticity in Mar
    savemeanfile ${CONFCASE}_y${YEAR}m03_MXL.nc
    savemeanfile ${CONFCASE}_y${YEAR}m09_MXL.nc
   fi
+# Large scale potential vorticity for m03 m09: input file : gridT, and mesh_mask
+#^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  if [ $LSPV == 1 ] ; then
+   # get gridT file for the month 03 and 09
+   getmonthlymean gridT 03
+   getmonthlymean gridT 09
+
+   # get mesh mask files
+   getmask      ${MESH_MASK_ID}_byte_mask.nc
+   getmesh_hgr  ${MESH_MASK_ID}_mesh_hgr.nc
+   getmesh_zgr  ${MESH_MASK_ID}_mesh_zgr.nc
+
+   # compute lspv and dispose file on the MEAN directory
+   $BIN/cdflspv ${CONFCASE}_y${YEAR}m03_gridT.nc
+   mv lspv.nc ${CONFCASE}_y${YEAR}m03_LSPV.nc
+   savemeanfile ${CONFCASE}_y${YEAR}m03_LSPV.nc
+
+   \rm lspv.nc
+   $BIN/cdflspv ${CONFCASE}_y${YEAR}m09_gridT.nc
+   mv lspv.nc ${CONFCASE}_y${YEAR}m09_LSPV.nc
+   savemeanfile ${CONFCASE}_y${YEAR}m09_LSPV.nc
+   \rm lspv.nc
+  fi
+
 ############################################################################################
 ############################################################################################
 #=============================================================================

@@ -1,5 +1,4 @@
 #!/bin/csh
-
 # @ wall_clock_limit = 20:00:00
 # @ as_limit = 1gb
 # @ job_name   = cdfmoy-inter
