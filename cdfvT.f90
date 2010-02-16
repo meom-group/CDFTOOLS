@@ -5,10 +5,12 @@ PROGRAM cdfvT
   !!  **  Purpose: 
   !!  
   !!  **  Method: Try to avoid 3 d arrays 
+  !!              Assume that all input files have the same number of time frames
   !!
   !! history :
   !!   Original : J.M. Molines (Nov 2004 ) for ORCA025
-  !!              J.M. Molines  (apr 2005 ) : use of modules
+  !!              J.M. Molines (apr 2005 ) : use of modules
+  !!              J.M. Molines (Feb. 2010 ): handle multiframes input files.
   !!-------------------------------------------------------------------
   !!  $Rev$
   !!  $Date$
@@ -19,10 +21,12 @@ PROGRAM cdfvT
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: ji,jj,jk,jt                         !: dummy loop index
+  INTEGER   :: ji,jj,jk,jt ,jkk,jtt                !: dummy loop index
   INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc , ntags                 !: 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
+  INTEGER   :: narg, iargc
+  INTEGER   :: npiglo,npjglo, npk, nt              !: size of the domain
+  INTEGER   :: ntframe                             !: Cumul of time frame
+
   INTEGER, DIMENSION(4) ::  ipk, id_varout
   REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: zcumulut, zcumulus  !: Arrays for cumulated values
   REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: zcumulvt, zcumulvs  !: Arrays for cumulated values
@@ -31,7 +35,8 @@ PROGRAM cdfvT
        &                                         zvitu, zvitv,   &
        &                                         zworku, zworkv,   &
        &                                         rmean
-  REAL(KIND=4),DIMENSION(1)                   :: timean, tim
+  REAL(KIND=4),DIMENSION(1)                   :: timean
+  REAL(KIND=4),DIMENSION(:),ALLOCATABLE       :: tim
 
   CHARACTER(LEN=256) :: cfilet,cfileu,cfilev ,cfileout='vt.nc', config , ctag !:
   TYPE (variable), DIMENSION(4)     :: typvar     !: structure for attributes
@@ -39,6 +44,7 @@ PROGRAM cdfvT
 
   INTEGER    :: ncout
   INTEGER    :: istatus
+  LOGICAL    :: lcaltmean
 
   !!  Read command line
   narg= iargc()
@@ -51,7 +57,6 @@ PROGRAM cdfvT
      STOP
   ENDIF
 
-  ntags = narg -1   ! first argument is the config name
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   CALL getarg (1, config)
@@ -59,12 +64,12 @@ PROGRAM cdfvT
   WRITE(cfilet,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
   INQUIRE(FILE=cfilet,EXIST=lexist)
   IF ( .NOT. lexist ) THEN
-    WRITE(cfilet,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
-    INQUIRE(FILE=cfilet,EXIST=lexist)
-    IF ( .NOT. lexist ) THEN
-      PRINT *,' ERROR : missing gridT or even grid_T file '
-      STOP
-    ENDIF
+     WRITE(cfilet,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
+     INQUIRE(FILE=cfilet,EXIST=lexist)
+     IF ( .NOT. lexist ) THEN
+        PRINT *,' ERROR : missing gridT or even grid_T file '
+        STOP
+     ENDIF
   ENDIF
 
   PRINT *,TRIM(cfilet)
@@ -121,10 +126,11 @@ PROGRAM cdfvT
   ierr= createvar(ncout ,typvar,4, ipk,id_varout )
   ierr= putheadervar(ncout, cfilet,npiglo, npjglo, npk )
 
+  lcaltmean=.TRUE.
   DO jk = 1, npk
      PRINT *,'level ',jk
      zcumulut(:,:) = 0.d0 ;  zcumulvt(:,:) = 0.d0 ; total_time = 0.
-     zcumulus(:,:) = 0.d0 ;  zcumulvs(:,:) = 0.d0 
+     zcumulus(:,:) = 0.d0 ;  zcumulvs(:,:) = 0.d0 ; ntframe = 0
 
      DO jt = 2, narg
         CALL getarg (jt, ctag)
@@ -132,89 +138,97 @@ PROGRAM cdfvT
         WRITE(cfilet,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
         INQUIRE(FILE=cfilet,EXIST=lexist)
         IF ( .NOT. lexist ) THEN
-          WRITE(cfilet,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfilet,EXIST=lexist)
-          IF ( .NOT. lexist ) THEN
-             PRINT *,' ERROR : missing gridT or even grid_T file '
-             STOP
-          ENDIF
+           WRITE(cfilet,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
+           INQUIRE(FILE=cfilet,EXIST=lexist)
+           IF ( .NOT. lexist ) THEN
+              PRINT *,' ERROR : missing gridT or even grid_T file '
+              STOP
+           ENDIF
         ENDIF
+        nt=getdim (cfilet,'time_counter')
+        IF ( lcaltmean )  THEN
+           ALLOCATE (tim(nt) )
+           tim=getvar1d(cfilet,'time_counter',nt)
+           total_time = total_time + SUM(tim(1:nt) )
+           DEALLOCATE(tim)
+        END IF
 
+        ! assume U and V file have same time span ...
         WRITE(cfileu,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
         INQUIRE(FILE=cfileu,EXIST=lexist)
         IF ( .NOT. lexist ) THEN
-          WRITE(cfileu,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfileu,EXIST=lexist)
-          IF ( .NOT. lexist ) THEN
-             PRINT *,' ERROR : missing gridU or even grid_U file '
-             STOP
-          ENDIF
+           WRITE(cfileu,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
+           INQUIRE(FILE=cfileu,EXIST=lexist)
+           IF ( .NOT. lexist ) THEN
+              PRINT *,' ERROR : missing gridU or even grid_U file '
+              STOP
+           ENDIF
         ENDIF
 
         WRITE(cfilev,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
         INQUIRE(FILE=cfilev,EXIST=lexist)
         IF ( .NOT. lexist ) THEN
-          WRITE(cfilev,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
-          INQUIRE(FILE=cfilev,EXIST=lexist)
-          IF ( .NOT. lexist ) THEN
-             PRINT *,' ERROR : missing gridV or even grid_V file '
-             STOP
-          ENDIF
+           WRITE(cfilev,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
+           INQUIRE(FILE=cfilev,EXIST=lexist)
+           IF ( .NOT. lexist ) THEN
+              PRINT *,' ERROR : missing gridV or even grid_V file '
+              STOP
+           ENDIF
         ENDIF
 
-        IF (jk == 1  )  THEN
-           tim=getvar1d(cfilet,'time_counter',1)
-           total_time = total_time + tim(1)
-        END IF
+        DO jtt=1,nt
+           ntframe=ntframe+1
+           jkk=jk
+           zvitu(:,:)= getvar(cfileu, 'vozocrtx' , jkk ,npiglo, npjglo, ktime=jtt )
+           zvitv(:,:)= getvar(cfilev, 'vomecrty' , jkk ,npiglo, npjglo, ktime=jtt )
+           ztemp(:,:)= getvar(cfilet, 'votemper',  jkk ,npiglo, npjglo, ktime=jtt )
+           zsal(:,:) = getvar(cfilet, 'vosaline',  jkk ,npiglo, npjglo, ktime=jtt )
 
-        zvitu(:,:)= getvar(cfileu, 'vozocrtx' , jk ,npiglo, npjglo )
-        zvitv(:,:)= getvar(cfilev, 'vomecrty' , jk ,npiglo, npjglo )
-        ztemp(:,:)= getvar(cfilet, 'votemper',  jk ,npiglo, npjglo )
-        zsal(:,:) = getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo )
-
-        ! temperature
-        zworku(:,:) = 0. ; zworkv(:,:) = 0.
-        DO ji=1, npiglo-1
-           DO jj = 1, npjglo -1
-              zworku(ji,jj) = 0.5 * ( ztemp(ji,jj) + ztemp(ji+1,jj) )  ! temper at Upoint
-              zworkv(ji,jj) = 0.5 * ( ztemp(ji,jj) + ztemp(ji,jj+1) )  ! temper at Vpoint
+           ! temperature
+           zworku(:,:) = 0. ; zworkv(:,:) = 0.
+           DO ji=1, npiglo-1
+              DO jj = 1, npjglo -1
+                 zworku(ji,jj) = 0.5 * ( ztemp(ji,jj) + ztemp(ji+1,jj) )  ! temper at Upoint
+                 zworkv(ji,jj) = 0.5 * ( ztemp(ji,jj) + ztemp(ji,jj+1) )  ! temper at Vpoint
+              END DO
            END DO
-        END DO
 
-        zcumulut(:,:) = zcumulut(:,:) + zworku(:,:) * zvitu(:,:)
-        zcumulvt(:,:) = zcumulvt(:,:) + zworkv(:,:) * zvitv(:,:)
+           zcumulut(:,:) = zcumulut(:,:) + zworku(:,:) * zvitu(:,:)
+           zcumulvt(:,:) = zcumulvt(:,:) + zworkv(:,:) * zvitv(:,:)
 
-        ! salinity
-        zworku(:,:) = 0. ; zworkv(:,:) = 0.
-        DO ji=1, npiglo-1
-           DO jj = 1, npjglo -1
-              zworku(ji,jj) = 0.5 * ( zsal(ji,jj) + zsal(ji+1,jj) )  ! salinity  at Upoint
-              zworkv(ji,jj) = 0.5 * ( zsal(ji,jj) + zsal(ji,jj+1) )  ! salinity  at Vpoint
+           ! salinity
+           zworku(:,:) = 0. ; zworkv(:,:) = 0.
+           DO ji=1, npiglo-1
+              DO jj = 1, npjglo -1
+                 zworku(ji,jj) = 0.5 * ( zsal(ji,jj) + zsal(ji+1,jj) )  ! salinity  at Upoint
+                 zworkv(ji,jj) = 0.5 * ( zsal(ji,jj) + zsal(ji,jj+1) )  ! salinity  at Vpoint
+              END DO
            END DO
-        END DO
 
-        zcumulus(:,:) = zcumulus(:,:) + zworku(:,:) * zvitu(:,:)
-        zcumulvs(:,:) = zcumulvs(:,:) + zworkv(:,:) * zvitv(:,:)
+           zcumulus(:,:) = zcumulus(:,:) + zworku(:,:) * zvitu(:,:)
+           zcumulvs(:,:) = zcumulvs(:,:) + zworkv(:,:) * zvitv(:,:)
 
-     END DO
-
+        END DO  !jtt
+     END DO  ! jt
      ! finish with level jk ; compute mean (assume spval is 0 )
-     rmean(:,:) = zcumulvt(:,:)/ntags
+     rmean(:,:) = zcumulvt(:,:)/ntframe
      ierr = putvar(ncout, id_varout(1) ,rmean, jk,npiglo, npjglo )
 
-     rmean(:,:) = zcumulvs(:,:)/ntags
+     rmean(:,:) = zcumulvs(:,:)/ntframe
      ierr = putvar(ncout, id_varout(2) ,rmean, jk,npiglo, npjglo )
 
-     rmean(:,:) = zcumulut(:,:)/ntags
+     rmean(:,:) = zcumulut(:,:)/ntframe
      ierr = putvar(ncout, id_varout(3) ,rmean, jk,npiglo, npjglo )
 
-     rmean(:,:) = zcumulus(:,:)/ntags
+     rmean(:,:) = zcumulus(:,:)/ntframe
      ierr = putvar(ncout, id_varout(4) ,rmean, jk,npiglo, npjglo )
 
-     IF (jk == 1 )  THEN
-        timean(1)= total_time/ntags
+     IF (lcaltmean )  THEN
+        timean(1)= total_time/ntframe
         ierr=putvar1d(ncout,timean,1,'T')
      END IF
+     lcaltmean=.FALSE. ! tmean already computed
+
 
   END DO  ! loop to next level
 
