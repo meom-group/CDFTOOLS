@@ -16,7 +16,8 @@ CDFTOOLS=CDFTOOLS-2.1
 EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfmoy_freq cdfvT cdfvsig cdfspeed cdfsum\
        cdfmoyuv cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
-       cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
+       cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfspice\
+       cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
        cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
        cdftransportizpm  \
@@ -106,6 +107,9 @@ cdfbn2-full: cdfio.o  eos.o  cdfbn2-full.f90
 
 cdfsig0: cdfio.o  eos.o  cdfsig0.f90
 	$(F90) cdfsig0.f90 -o cdfsig0 cdfio.o eos.o  $(FFLAGS)
+
+cdfspice: cdfio.o  eos.o  cdfspice.f90
+	$(F90) cdfspice.f90 -o cdfspice cdfio.o eos.o  $(FFLAGS)
 
 cdfsigi: cdfio.o  eos.o  cdfsigi.f90
 	$(F90) cdfsigi.f90 -o cdfsigi cdfio.o eos.o  $(FFLAGS)
