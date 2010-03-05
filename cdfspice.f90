@@ -15,7 +15,9 @@ PROGRAM cdfspice
   !!                          theta -> potential temperature
   !!                          s     -> salinity 
   !!
-  !!  **  Example: spice(15,33) = 0.54458641375             
+  !!  **  Example: 
+  !!       spice(15,33)=   0.5445863      0.544586321373410  calcul en double
+  !!       spice(15,33)=   0.5445864      (calcul en simple precision)
   !!
   !! history: 
   !!     Original :   C.O. Dufour (Mar 2010) 
@@ -123,7 +125,7 @@ PROGRAM cdfspice
        ztempt(:,:) = ztempt(:,:)*ztemp(:,:)     
      END DO
 
-     ierr = putvar(ncout, id_varout(1) ,REAL(zspi), jk,npiglo, npjglo,ktime=jt)
+     ierr = putvar(ncout, id_varout(1) ,REAL(zspi)*zmask, jk,npiglo, npjglo,ktime=jt)
 
   END DO  ! loop to next level
   END DO  ! next time frame
