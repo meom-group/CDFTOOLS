@@ -4,7 +4,6 @@
 #-----------------------------------------------------------
 TEX=latex
 CDFTOOLS=cdftools
-CDFTOOLS_dev=/home/molines/DEV/CDFTOOLS_dev
 CDFTOOLSDIR=CDFTOOLS_2.1
 
 all:  $(CDFTOOLS)_prog.dvi $(CDFTOOLS)_user.dvi index
