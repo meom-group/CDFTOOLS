@@ -1,7 +1,7 @@
 #!/bin/ksh
 
-#   $Rev: 11 $
-#   $Date: 2007-04-13 20:21:21 +0200 (Fri, 13 Apr 2007) $
+#   $Rev$
+#   $Date$
 CDFTOOLS=../
 
 grep subsection cdftools_prog.tex | grep -v addcontent | grep underline | sed -e 's@\\subsection\*{\\underline{@@'  -e 's/}}//' \

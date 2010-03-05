@@ -1,7 +1,7 @@
 #!/bin/ksh
 
-#   $Rev: 35 $
-#   $Date: 2009-04-28 19:38:52 +0200 (Tue, 28 Apr 2009) $
+#   $Rev$
+#   $Date$
 # suppose that we run this script in $CDFTOOLS/DOC
 CDFTOOLS=../
 
