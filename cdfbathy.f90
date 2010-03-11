@@ -323,7 +323,8 @@ CONTAINS
     ! * Fill subzone of the bathy file
     INTEGER,      INTENT(in) :: kimin, kimax, kjmin,kjmax
     REAL(KIND=4), INTENT(in) :: pdepmin
-   WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin)  bathy(kimin:kimax, kjmin:kjmax) = pdepmin
+   WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin .AND. bathy(kimin:kimax, kjmin:kjmax) > 0 ) &
+        &                 bathy(kimin:kimax, kjmin:kjmax) = pdepmin
   END SUBROUTINE set_below
 
   SUBROUTINE dumpzone(cdumpf,kimin,kimax,kjmin,kjmax)
