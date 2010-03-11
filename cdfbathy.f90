@@ -41,7 +41,7 @@ PROGRAM cdfbathy
 
   LOGICAL :: lexist=.TRUE., lfill=.FALSE., lfullstep=.FALSE., lappend=.FALSE., lreplace=.FALSE.
   LOGICAL :: ldump = .FALSE., lmodif=.FALSE., loverwrite=.false., lraz=.false., ldumpn=.false.
-  LOGICAL :: lrazb=.false.
+  LOGICAL :: lrazb=.false., lsetb=.false.
   INTEGER :: iversion=1, iostat, ipos
   !!
   !! 1. Initializations:
@@ -60,6 +60,7 @@ PROGRAM cdfbathy
      PRINT 9999, '   -fillzone (or -fz ) : sub area will be filled with 0 up to the first coast line '
      PRINT 9999, '   -raz_zone (or -raz ) : sub area will be filled with 0 up '
      PRINT 9999, '   -raz_below depmin (or -rb depmin ) : any depth less than depmin in subarea will be replaced by 0 '
+     PRINT 9999, '   -set_below depmin (or -sb depmin ) : any depth less than depmin in subarea will be replaced by depmin '
      PRINT 9999, '   -fullstep (or -fs ) : sub area will be reshaped as full-step, below depmin'
      PRINT 9999, '               requires the presence of the file zgr_bat.txt (from ocean.output, eg )'
      PRINT 9999, '   -dumpzone (or -d ): sub area will be output to an ascii file, which can be used by -replace'
@@ -99,6 +100,10 @@ PROGRAM cdfbathy
         CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) depfill
         lrazb=.TRUE. ; lmodif=.TRUE.
+     ELSE IF (cline1 == '-set_below' .OR. cline1 == '-sb' ) THEN
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
+        READ(cline2,*) depfill
+        lsetb=.TRUE. ; lmodif=.TRUE.
      ELSE IF (cline1 == '-fullstep' .OR. cline1 == '-fs' ) THEN
         lfullstep=.TRUE. ; lmodif=.TRUE.
         CALL getarg(jarg,cline2) ; jarg = jarg + 1
@@ -165,6 +170,7 @@ PROGRAM cdfbathy
   IF (lfill ) CALL fillzone( imin, imax, jmin, jmax)
   IF (lraz )  CALL raz_zone( imin, imax, jmin, jmax)
   IF (lrazb )  CALL raz_below( imin, imax, jmin, jmax, depfill)
+  IF (lsetb )  CALL set_below( imin, imax, jmin, jmax, depfill)
   IF (ldump)    CALL dumpzone(cdump,imin, imax, jmin, jmax)
   IF (ldumpn)    CALL nicedumpzone(cdump,imin, imax, jmin, jmax)
   IF (lreplace) CALL replacezone(creplace)
@@ -313,6 +319,12 @@ CONTAINS
    WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin)  bathy(kimin:kimax, kjmin:kjmax) = 0.
   END SUBROUTINE raz_below
 
+  SUBROUTINE set_below(kimin,kimax,kjmin,kjmax,pdepmin)
+    ! * Fill subzone of the bathy file
+    INTEGER,      INTENT(in) :: kimin, kimax, kjmin,kjmax
+    REAL(KIND=4), INTENT(in) :: pdepmin
+   WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin)  bathy(kimin:kimax, kjmin:kjmax) = pdepmin
+  END SUBROUTINE set_below
 
   SUBROUTINE dumpzone(cdumpf,kimin,kimax,kjmin,kjmax)
     CHARACTER(LEN=*), INTENT(in) :: cdumpf
