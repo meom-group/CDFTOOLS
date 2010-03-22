@@ -30,7 +30,7 @@ PROGRAM cdfbottom
   INTEGER   :: nvars                               !: number of variables in the input file
   INTEGER, DIMENSION(:), ALLOCATABLE :: ipk,ipko,& !: outptut variables : number of levels,
        &               id_var,     id_varout       !: ncdf varid's
-  real(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: zfield ,&   !: Array to read a layer of data
+  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: zfield ,&   !: Array to read a layer of data
        &                                         zbot , &    !: array to store the bottom value
        &                                         zmask       !: 2D mask at current level
   REAL(KIND=4),DIMENSION(1)                   ::  tim
@@ -39,6 +39,7 @@ PROGRAM cdfbottom
   CHARACTER(LEN=1) :: ctype=' '
   CHARACTER(LEN=5) :: cvmask=' '                                   !: name of the mask variable
   CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE   :: cvarname       !: array of var name
+  CHARACTER(LEN=256) :: cdep
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar             !: structure for variable attribute
 
@@ -59,7 +60,22 @@ PROGRAM cdfbottom
   CALL getarg (1, cfile)
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
-  npk   = getdim (cfile,'depth')
+  npk   = getdim (cfile,'depth',cdtrue=cdep,kstatus=istatus)
+
+  IF (istatus /= 0 ) THEN
+     npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)
+     IF (istatus /= 0 ) THEN
+       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
+        IF ( istatus /= 0 ) THEN
+          npk = getdim (cfile,'nav_lev',cdtrue=cdep,kstatus=istatus)
+            IF ( istatus /= 0 ) THEN
+              PRINT *,' assume file with no depth'
+              npk=0
+            ENDIF
+        ENDIF
+     ENDIF
+  ENDIF
+
 
   ALLOCATE (zfield(npiglo,npjglo), zbot(npiglo,npjglo),zmask(npiglo,npjglo))
 
@@ -94,7 +110,7 @@ PROGRAM cdfbottom
 
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk (cfile,nvars)
+  ipk(:)     = getipk (cfile,nvars,cdep=cdep)
   ipko(:)= 1  ! all variables output are 2D
 
   WHERE( ipk <= 1 ) cvarname='none'
