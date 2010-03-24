@@ -137,21 +137,21 @@ PROGRAM cdfhflx
 
      IF (llglo) THEN
 
-        typvar(1)%name='hflx_atl'
-        typvar(1)%long_name='Heat_Fluxes_Atlantic'
-        typvar(1)%short_name='hflx_atl'
+        typvar(2)%name='hflx_atl'
+        typvar(2)%long_name='Heat_Fluxes_Atlantic'
+        typvar(2)%short_name='hflx_atl'
 
-        typvar(2)%name='hflx_indopacif'
-        typvar(2)%long_name='Heat_Fluxes_Indo-Pacific'
-        typvar(2)%short_name='hflx_indopacif'
+        typvar(3)%name='hflx_indopacif'
+        typvar(3)%long_name='Heat_Fluxes_Indo-Pacific'
+        typvar(3)%short_name='hflx_indopacif'
 
-        typvar(3)%name='hflx_indian'
-        typvar(3)%long_name='Heat_Fluxes_Indian'
-        typvar(3)%short_name='hflx_indian'
+        typvar(4)%name='hflx_indian'
+        typvar(4)%long_name='Heat_Fluxes_Indian'
+        typvar(4)%short_name='hflx_indian'
 
-        typvar(4)%name='hflx_pacif'
-        typvar(4)%long_name='Heat_Fluxes_Pacific'
-        typvar(4)%short_name='hflx_pacif'
+        typvar(5)%name='hflx_pacif'
+        typvar(5)%long_name='Heat_Fluxes_Pacific'
+        typvar(5)%short_name='hflx_pacif'
 
      ENDIF
   ENDIF
