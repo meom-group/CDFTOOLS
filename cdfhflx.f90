@@ -130,6 +130,7 @@ PROGRAM cdfhflx
      typvar%scale_factor= 1.
      typvar%add_offset= 0.
      typvar%savelog10= 0.
+     typvar%units='PW' 
      typvar(1)%long_name='Heat_Fluxes_Global'
      typvar(1)%short_name='hflx_glo'
      typvar%online_operation='N/A'
@@ -239,7 +240,7 @@ PROGRAM cdfhflx
 
      ! netcdf output 
      DO jj=1, jpbasins
-        ierr = putvar(ncout, id_varout(jj), htrp(jj,:), ipk(jj), kx, npjglo )
+        ierr = putvar(ncout, id_varout(jj), htrp(jj,:)/1e15, ipk(jj), kx, npjglo )
      END DO
 
      ierr = closeout(ncout)

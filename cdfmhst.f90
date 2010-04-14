@@ -269,7 +269,7 @@ PROGRAM cdfmhst
          WHERE ( zmtrp == 0 ) zmtrp=rpspval         
          ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
          js=js+1
-         zmtrp(:)=zonal_heat_ind(:) + zonal_heat_pac(:)/1.e15  ! INP
+         zmtrp(:)=(zonal_heat_ind(:) + zonal_heat_pac(:))/1.e15  ! INP
          WHERE ( zmtrp == 0 ) zmtrp=rpspval
          ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
          js=js+1
@@ -293,7 +293,7 @@ PROGRAM cdfmhst
          WHERE ( zmtrp == 0 ) zmtrp=rpspval
          ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
          js = js + 1
-         zmtrp(:)=zonal_salt_ind(:) + zonal_salt_pac(:)/1.e6  ! INP
+         zmtrp(:)=(zonal_salt_ind(:) + zonal_salt_pac(:))/1.e6  ! INP
          WHERE ( zmtrp == 0 ) zmtrp=rpspval
          ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
          js = js + 1
