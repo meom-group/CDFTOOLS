@@ -18,7 +18,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfspice\
        cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
-       cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor\
+       cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor cdfpvor-full\
        cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
        cdftransportizpm  \
        cdfmasstrp cdfmasstrp-full \
@@ -182,6 +182,9 @@ cdflspv: cdfio.o  cdflspv.f90
 
 cdfpvor: cdfio.o  cdfpvor.f90
 	$(F90) cdfpvor.f90 -o cdfpvor cdfio.o eos.o  $(FFLAGS) 
+
+cdfpvor-full: cdfio.o  cdfpvor-full.f90
+	$(F90) cdfpvor-full.f90 -o cdfpvor-full cdfio.o eos.o  $(FFLAGS) 
 
 cdfkempemekeepe: cdfio.o  cdfkempemekeepe.f90
 	$(F90) cdfkempemekeepe.f90 -o cdfkempemekeepe cdfio.o  $(FFLAGS) 
