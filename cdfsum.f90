@@ -98,7 +98,8 @@ PROGRAM cdfsum
   PRINT *, 'nt    =',nt
 
   lforcing=.FALSE.
-  IF ((npk .EQ. 0) .AND. (nt .GT. 1)) THEN
+! IF ((npk .EQ. 0) .AND. (nt .GT. 1)) THEN
+  IF ((npk .EQ. 0) ) THEN
      lforcing=.TRUE.
      npk=1
      PRINT *, 'W A R N I N G : you used a forcing field'

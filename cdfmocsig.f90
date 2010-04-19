@@ -40,7 +40,7 @@ PROGRAM cdfmocsig
   INTEGER   :: jpbasins
   INTEGER   :: jbasin, jj, jk ,ji, jkk             !: dummy loop index
   INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: command line 
+  INTEGER   :: narg, iargc, iarg                   !: command line 
   INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
   INTEGER   :: ncout, np
   INTEGER   :: numout=10
@@ -48,7 +48,7 @@ PROGRAM cdfmocsig
   INTEGER, DIMENSION(2)          ::  iloc
 
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  e1v,  gphiv          !:  metrics, velocity
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  zt,zs, zv, e3v       !:  metrics, velocity
+  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  zt, zs, zv, zveiv, e3v       !:  metrics, velocity
   INTEGER,      DIMENSION (:,:),     ALLOCATABLE ::  ibin   !: integer value corresponding to the density for binning
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlon               !: dummy longitude = 0.
   REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlat               !: latitude for i = north pole
@@ -73,16 +73,19 @@ PROGRAM cdfmocsig
 
   INTEGER    :: istatus 
   LOGICAL    :: lprint = .false.
+  LOGICAL    :: leiv = .false.
 
   ! constants
   lprint = .false. 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmocsig  V_file T_file depth_ref'
+     PRINT *,' Usage : cdfmocsig  V_file T_file depth_ref [-eiv]'
      PRINT *,' Computes the MOC for oceanic basins as described in new_maskglo.nc'
      PRINT *,' Last arguments is the reference depth for potential density, in m'
      PRINT *,' actually only 0 1000 or 2000 are allowed'
+     PRINT *,'     Option -eiv : takes into account VEIV Meridional eddy induced velocity'
+     PRINT *,'     -> To be used only if Gent and McWilliams parameterization has been used '
      PRINT *,' PARTIAL CELLS VERSION'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,new_maskglo.nc ,mask.nc '
      PRINT *,'  must be in the current directory'
@@ -103,6 +106,11 @@ PROGRAM cdfmocsig
   CALL getarg (2, cfilet)
   CALL getarg (3, cdref)
   READ(cdref,*) pref 
+  IF (narg > 3 ) THEN
+    iarg=4
+    leiv=.TRUE.
+  ENDIF
+
   npiglo= getdim (cfilev,'x')
   npjglo= getdim (cfilev,'y')
   npk   = getdim (cfilev,'depth')
@@ -192,6 +200,9 @@ PROGRAM cdfmocsig
   ! Allocate arrays
   ALLOCATE ( zmask(jpbasins,npiglo,npjglo) )
   ALLOCATE ( zv (npiglo,npjglo), zt(npiglo,npjglo), zs(npiglo,npjglo))
+  IF ( leiv ) THEN
+    ALLOCATE ( zveiv (npiglo,npjglo))
+  END IF
   ALLOCATE ( e3v(npiglo,npjglo) )
   ALLOCATE ( ibin(npiglo, npjglo) )
   ALLOCATE ( e1v(npiglo,npjglo), gphiv(npiglo,npjglo) ,gdepw(npk) )
@@ -247,6 +258,9 @@ PROGRAM cdfmocsig
      IF (lprint) PRINT *,' working at depth ',jk
      ! Get velocities v at jj
      zv(:,:)= getvar(cfilev, 'vomecrty', jk,npiglo,npjglo)
+     IF ( leiv ) THEN
+       zveiv(:,:)= getvar(cfilev, 'vomeeivv', jk,npiglo,npjglo)
+     END IF
      zt(:,:)= getvar(cfilet, 'votemper', jk,npiglo,npjglo)
      zs(:,:)= getvar(cfilet, 'vosaline', jk,npiglo,npjglo)
      ! get e3v at latitude jj
@@ -266,7 +280,11 @@ PROGRAM cdfmocsig
         !  converts transport in "k" to transport in "sigma"
         !  indirect adresssing - do it once and not for each basin!
         DO ji=2,npiglo-1
-           ztrans =   e1v(ji,jj)*e3v(ji,jj)*zv(ji,jj)
+           IF ( leiv ) THEN
+             ztrans =   e1v(ji,jj)*e3v(ji,jj)*(zv(ji,jj)+zveiv(ji,jj))
+           ELSE
+             ztrans =   e1v(ji,jj)*e3v(ji,jj)*zv(ji,jj)
+           END IF
            zomsftmp(ibin(ji,jj),ji)=zomsftmp(ibin(ji,jj),ji) - ztrans
         END DO
         ! integrates 'zonally' (along i-coordinate) 
