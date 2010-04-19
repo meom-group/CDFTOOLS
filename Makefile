@@ -180,10 +180,10 @@ cdfpv: cdfio.o  cdfpv.f90
 cdflspv: cdfio.o  cdflspv.f90
 	$(F90) cdflspv.f90 -o cdflspv cdfio.o eos.o  $(FFLAGS) 
 
-cdfpvor: cdfio.o  cdfpvor.f90
+cdfpvor: eos.o cdfio.o  cdfpvor.f90
 	$(F90) cdfpvor.f90 -o cdfpvor cdfio.o eos.o  $(FFLAGS) 
 
-cdfpvor-full: cdfio.o  cdfpvor-full.f90
+cdfpvor-full: eos.o cdfio.o  cdfpvor-full.f90
 	$(F90) cdfpvor-full.f90 -o cdfpvor-full cdfio.o eos.o  $(FFLAGS) 
 
 cdfkempemekeepe: cdfio.o  cdfkempemekeepe.f90
