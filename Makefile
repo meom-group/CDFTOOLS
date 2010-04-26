@@ -450,6 +450,9 @@ cdfvar: cdfio.o cdfvar.f90
 cdfcsp: cdfio.o cdfcsp.f90
 	$(F90)   cdfcsp.f90  -o cdfcsp cdfio.o $(FFLAGS)
 
+cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
+	$(F90)   cdfnorth_unfold.f90  -o cdfnorth_unfold cdfio.o $(FFLAGS)
+
 cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 	$(F90)   cdfpolymask.f90  -o cdfpolymask cdfio.o modpoly.o $(FFLAGS)
 
