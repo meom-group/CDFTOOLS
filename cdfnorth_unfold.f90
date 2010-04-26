@@ -20,16 +20,18 @@ PROGRAM cdfnorth_unfold
 
   IMPLICIT NONE
   INTEGER   :: jk,jt,jvar, jv , jtt,jkk                     !: dummy loop index
+  INTEGER   :: ji, ij                                       !: dummy loop index
   INTEGER   :: ierr                                         !: working integer
   INTEGER   :: narg, iargc                                  !: 
   INTEGER   :: npiglo,npjglo, npk ,nt                       !: size of the domain
   INTEGER   :: nvars                                        !: Number of variables in a file
   INTEGER   :: ijatl, ijpacif, npiarctic, npjarctic, isig
+  INTEGER   :: ipivot
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var , &         !: arrays of var id's
        &                             ipk    , &         !: arrays of vertical level for each var
        &                             id_varout
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: tab  !: Arrays for cumulated values
-  REAL(KIND=4)                                :: total_time
+  REAL(KIND=4)                                :: zrat
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: v2d        !: Array to read a layer of data
   REAL(KIND=4),DIMENSION(1)                   :: timean
   REAL(KIND=4),DIMENSION(365)                 ::  tim
@@ -40,12 +42,11 @@ PROGRAM cdfnorth_unfold
   
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar
 
-  INTEGER    :: ncout, ncout2
+  INTEGER    :: ncout
   INTEGER    :: istatus
   LOGICAL    :: lcaltmean
 
   !!
-
   !!  Read command line
   narg= iargc()
   IF ( narg /= 5 ) THEN
@@ -60,15 +61,8 @@ PROGRAM cdfnorth_unfold
   CALL getarg (2, cdum) ; READ(cdum,*) ijatl
   CALL getarg (3, cdum) ; READ(cdum,*) ijpacif
   CALL getarg (4, cpivot) 
-  CALL getarg (4, ctype )
+  CALL getarg (5, ctype )
 
-  ! to be improved
-  SELECT CASE ( ctype ) 
-   CASE ( 'T','t') 
-     isig=1
-   CASE ('U','u','V','v')
-     isig=-1
-  END SELECT
 
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
@@ -90,7 +84,12 @@ PROGRAM cdfnorth_unfold
 
   ! to be improved
   npiarctic=npiglo/2
-  npjarctic=npjglo-ijatl + npjglo -ijpacif 
+  ipivot=npiglo/2
+
+  SELECT CASE ( cpivot )
+  CASE ( 'T','t') ; npjarctic=(npjglo-ijatl+1)  + (npjglo -ijpacif +1) -3 
+  CASE ( 'F','f') ; npjarctic=(npjglo-ijatl+1)  + (npjglo -ijpacif +1) -2 
+  END SELECT
   
 
   PRINT *, 'npiglo=', npiglo
@@ -135,6 +134,50 @@ PROGRAM cdfnorth_unfold
                 ! If forcing fields is without depth dimension
                 IF (npk==0) jkk=jtt 
                 v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jtt )
+                IF ( jk == 1 ) THEN ! look for correct isig
+                 SELECT CASE ( cpivot)
+                 CASE ( 'T','t')
+                   SELECT CASE (ctype )
+                   CASE ( 'T','t') 
+                     ji=1
+                     DO WHILE ( v2d(ji,npjglo-1) == 0 )
+                       ji=ji+1
+                     ENDDO
+                      ij=2*ipivot - ji +2
+                      zrat= v2d(ij,npjglo-1) / v2d(ji,npjglo-1)
+                      IF ( ABS(zrat) /= 1. ) THEN
+                        PRINT *, 'INCOHERENT value in T point '; stop
+                      ELSE
+                       isig=zrat
+                      ENDIF
+                   CASE ( 'U','u') 
+                     ji=1
+                     DO WHILE ( v2d(ji,npjglo-1) == 0 )
+                       ji=ji+1
+                     ENDDO
+                      ij=2*ipivot - ji + 1
+                      zrat= v2d(ij,npjglo-1) / v2d(ji,npjglo-1)
+                      IF ( ABS(zrat) /= 1. ) THEN
+                        PRINT *, 'INCOHERENT value in U point '; stop
+                      ELSE
+                       isig=zrat
+                      ENDIF
+                   CASE ( 'V','v') 
+                     ji=1
+                     DO WHILE ( v2d(ji,npjglo-1) == 0 )
+                       ji=ji+1
+                     ENDDO
+                      ij=2*ipivot - ji + 2
+                      zrat= v2d(ij,npjglo-2) / v2d(ji,npjglo-1)
+                      IF ( ABS(zrat) /= 1. ) THEN
+                        PRINT *, 'INCOHERENT value in V point '; stop
+                      ELSE
+                       isig=zrat
+                      ENDIF
+                   END SELECT
+                 CASE ( 'F','f')
+                 END SELECT
+                ENDIF
                 CALL unfold(v2d, tab, ijatl, ijpacif, cpivot, ctype, isig)
                 ierr = putvar(ncout, id_varout(jvar) ,tab, jkk, npiarctic, npjarctic, ktime=jtt)
               ENDDO
@@ -159,160 +202,41 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(in) :: cdtype
     !!
     ! local variables :
-    INTEGER :: jj, jnorth, ipivot, ij
+    INTEGER :: jj,  ipivot, ij, ijn, ji, ii
     !
-    jnorth=npjglo -1
-
     ipivot=npiglo/2
-    SELECT CASE ( cdtype)
-    CASE ('T','t','V','v')
-      DO jj=kjatl,npjglo
-        jout=jj-kjatl+1
-        ptabout(:,jout)=ptabin(ipivot:npiglo, jj)
-      ENDDO
-
-    DO jj=jnorth-1, kjpacif,-1
-       ij= 1
-       ptabout(:,ij)= ksig * ptabin(1:npiglo/2, jj)
+    DO jj=kjatl, npjglo
+      ij=jj-kjatl+1
+      ptabout(:,ij) = ptabin (ipivot:npiglo,jj)
     ENDDO
+    ijn=ij
+    SELECT CASE ( cdtype)
+    CASE ('T','t')
+      DO jj=npjglo-3,kjpacif, -1
+        ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
+        DO ji = 2, npiarctic
+         ii = 2*ipivot -ji +2
+         ptabout(ji,ij)= ksig * ptabin(ii, jj)
+        ENDDO
+      ENDDO
+    CASE ('V','v')
+      DO jj=npjglo-4,kjpacif-1, -1
+        ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
+        DO ji = 2, npiarctic
+         ii = 2*ipivot -ji +2
+         ptabout(ji,ij)= ksig * ptabin(ii, jj)
+        ENDDO
+      ENDDO
+    CASE ('U','u')
+      DO jj=npjglo-3,kjpacif, -1
+        ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
+        DO ji = 1, npiarctic
+         ii = 2*ipivot -ji + 1
+         ptabout(ji,ij)= ksig * ptabin(ii, jj)
+        ENDDO
+      ENDDO
+    END SELECT
 
   END SUBROUTINE unfold
-
-    
-!   SUBROUTINE lbc_nfd_2d( pt2d, cd_type, psgn )
-  SUBROUTINE lbc_nfd_2d( ptabin, ptabout, kjatl, kjpacif, cdpivot, cdtype, psgn)
-      !!----------------------------------------------------------------------
-      !!                  ***  routine lbc_nfd_2d  ***
-      !!
-      !! ** Purpose :   2D lateral boundary condition : North fold treatment
-      !!       without processor exchanges. 
-      !!
-      !! ** Method  :   
-      !!
-      !! ** Action  :   pt2d with update value at its periphery
-      !!
-      !!----------------------------------------------------------------------
-      !! * Arguments
-      CHARACTER(len=1) , INTENT( in ) ::   &
-         cdtype       ! define the nature of ptab array grid-points
-      !             ! = T , U , V , F , W points
-      !             ! = S : T-point, north fold treatment ???
-      !             ! = G : F-point, north fold treatment ???
-      REAL(wp), INTENT( in ) ::   &
-         psgn          ! control of the sign change
-      !             !   = -1. , the sign is changed if north fold boundary
-      !             !   =  1. , the sign is kept  if north fold boundary
-      REAL(wp), DIMENSION(:,:), INTENT( inout ) ::   &
-         pt2d          ! 3D array on which the boundary condition is applied
-
-      !! * Local declarations
-      INTEGER  ::   ji, jl
-      INTEGER  ::   ijt, iju, ijpj, ijpjm1
-
-      ijpj = 4
-
-      ijpjm1 = ijpj-1
-
-
-
-      SELECT CASE ( cdpivot )
-
-      CASE ( 'T','t' )                       ! *  North fold  T-point pivot
-      jnorth= npjglo -1
-      DO jj=kjatl,jnorth
-        ptabout(:,jj)=ptabin(npiglo/2:npiglo, jj)
-      ENDDO
-      DO jj=jnorth, kjpacif,-1
-        ij= 1
-        ptabout(:,ij)= ksig * ptabin(1:npiglo/2, jj)
-      ENDDO
-
-         SELECT CASE ( cdtype )
-
-         CASE ( 'T', 'S', 'W' )
-            DO ji = 2, npiglo
-               ijt=npiglo-ji+2
-               pt2d(ji,ijpj) = psgn * pt2d(ijt,ijpj-2)
-            END DO
-            DO ji = npiglo/2+1, npiglo
-               ijt=npiglo-ji+2
-               pt2d(ji,ijpj-1) = psgn * pt2d(ijt,ijpj-1)
-            END DO
-         CASE ( 'U' )                                     ! U-point
-            DO ji = 1, npiglo-1
-               iju = npiglo-ji+1
-               pt2d(ji,ijpj) = psgn * pt2d(iju,ijpj-2)
-            END DO
-            DO ji = npiglo/2, npiglo-1
-               iju = npiglo-ji+1
-               pt2d(ji,ijpjm1) = psgn * pt2d(iju,ijpjm1)
-            END DO
-         CASE ( 'V' )                                     ! V-point
-            DO jl =-1, 0
-               DO ji = 2, npiglo
-                  ijt = npiglo-ji+2
-                  pt2d(ji,ijpj+jl) = psgn * pt2d(ijt,ijpj-3-jl)
-               END DO
-            END DO
-         CASE ( 'F' , 'G' )                               ! F-point
-            DO jl =-1, 0
-               DO ji = 1, npiglo-1
-                  iju = npiglo-ji+1
-                  pt2d(ji,ijpj+jl) = psgn * pt2d(iju,ijpj-3-jl)
-               END DO
-            END DO
-         CASE ( 'I' )                                     ! ice U-V point
-               pt2d(2,ijpj) = psgn * pt2d(3,ijpj-1)
-               DO ji = 3, npiglo
-                  iju = npiglo - ji + 3
-                  pt2d(ji,ijpj) = psgn * pt2d(iju,ijpj-1)
-               END DO
-         END SELECT
-
-      CASE ( 'F','f' )                        ! *  North fold  F-point pivot
-
-         SELECT CASE ( cdtype )
-         CASE ( 'T' , 'W' ,'S' )                          ! T-, W-point
-            DO ji = 1, npiglo
-               ijt = npiglo-ji+1
-               pt2d(ji,ijpj) = psgn * pt2d(ijt,ijpj-1)
-            END DO
-         CASE ( 'U' )                                     ! U-point
-            DO ji = 1, npiglo-1
-               iju = npiglo-ji
-               pt2d(ji,ijpj) = psgn * pt2d(iju,ijpj-1)
-            END DO
-         CASE ( 'V' )                                     ! V-point
-            DO ji = 1, npiglo
-               ijt = npiglo-ji+1
-               pt2d(ji,ijpj) = psgn * pt2d(ijt,ijpj-2)
-            END DO
-            DO ji = npiglo/2+1, npiglo
-               ijt = npiglo-ji+1
-               pt2d(ji,ijpjm1) = psgn * pt2d(ijt,ijpjm1)
-            END DO
-         CASE ( 'F' , 'G' )                               ! F-point
-               DO ji = 1, npiglo-1
-                  iju = npiglo-ji
-                  pt2d(ji,ijpj) = psgn * pt2d(iju,ijpj-2)
-               END DO
-            DO ji = npiglo/2+1, npiglo-1
-               iju = npiglo-ji
-               pt2d(ji,ijpjm1) = psgn * pt2d(iju,ijpjm1)
-            END DO
-         CASE ( 'I' )                                  ! ice U-V point
-            pt2d( 2 ,ijpj:ijpj) = 0.e0
-               DO ji = 2 , npiglo-1
-                  ijt = npiglo - ji + 2
-                  pt2d(ji,ijpj)= 0.5 * ( pt2d(ji,ijpj-1) + psgn * pt2d(ijt,ijpj-1) )
-               END DO
-         END SELECT
-
-      CASE DEFAULT                           ! *  closed : the code probably never go through
-         PRINT * ,' ERROR : not a North condition '
-
-      END SELECT
-
-   END SUBROUTINE lbc_nfd_2d
 
 END PROGRAM cdfnorth_unfold
