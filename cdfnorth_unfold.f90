@@ -30,11 +30,11 @@ PROGRAM cdfnorth_unfold
   INTEGER , DIMENSION(:), ALLOCATABLE :: id_var , &         !: arrays of var id's
        &                             ipk    , &         !: arrays of vertical level for each var
        &                             id_varout
-  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: tab  !: Arrays for cumulated values
+  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: tab 
+  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: tablon,tablat 
   REAL(KIND=4)                                :: zrat
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: v2d        !: Array to read a layer of data
-  REAL(KIND=4),DIMENSION(1)                   :: timean
-  REAL(KIND=4),DIMENSION(365)                 ::  tim
+  REAL(KIND=4),DIMENSION(:), ALLOCATABLE      :: tim, gdep
 
   CHARACTER(LEN=256) :: cfile ,cfileout                      !: file name
   CHARACTER(LEN=256) ::  cdep, cdum, cpivot, ctype
@@ -96,8 +96,10 @@ PROGRAM cdfnorth_unfold
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
+  PRINT *, 'nt    =', nt
 
-  ALLOCATE( tab(npiarctic, npjarctic),  v2d(npiglo,npjglo) )
+  ALLOCATE( tab(npiarctic, npjarctic),  v2d(npiglo,npjglo), tim(nt), gdep(npk) )
+  ALLOCATE( tablon(npiarctic, npjarctic), tablat(npiarctic, npjarctic) )
 
   nvars = getnvar(cfile)
   PRINT *,' nvars =', nvars
@@ -115,15 +117,23 @@ PROGRAM cdfnorth_unfold
   WHERE( ipk == 0 ) cvarname='none'
   typvar(:)%name=cvarname
 
+  v2d=getvar(cfile, 'nav_lon',1, npiglo,npjglo)
+  CALL unfold(v2d ,tablon, ijatl, ijpacif, cpivot, ctype, 1)
+  v2d=getvar(cfile, 'nav_lat',1, npiglo,npjglo)
+  CALL unfold(v2d ,tablat, ijatl, ijpacif, cpivot, ctype, 1)
+
   ! create output fileset
   cfileout='unfold.nc'
   ! create output file taking the sizes in cfile
 
   ncout =create(cfileout, cfile,npiarctic,npjarctic,npk,cdep=cdep)
   ierr= createvar(ncout , typvar,  nvars, ipk, id_varout )
+  tim=getvar1d(cfile,'time_counter',nt)
+! gdep=getvar1d(cfile,cdep,npk)
   
-!  ierr= putheadervar(ncout , cfile, npiarctic,npjarctic, npk,cdep=cdep)
-  ierr=putvar1d(ncout,timean,1,'T')
+  ierr= putheadervar(ncout , cfile, npiarctic,npjarctic, npk,pnavlon=tablon, pnavlat=tablat, cdep=cdep)
+  ierr=putvar1d(ncout,tim,nt,'T')
+! ierr=putvar1d(ncout,gdep,npk,'D')
 
   DO jvar = 1,nvars
         PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar)
@@ -216,6 +226,8 @@ CONTAINS
       ptabout(:,ij) = ptabin (ipivot:npiglo,jj)
     ENDDO
     ijn=ij
+    SELECT CASE ( cdpivot )
+    CASE ('T','t')   ! pivot
     SELECT CASE ( cdtype)
     CASE ('T','t')
       DO jj=npjglo-3,kjpacif, -1
@@ -244,6 +256,9 @@ CONTAINS
          ptabout(ji,ij)= ksig * ptabin(ii, jj)
         ENDDO
       ENDDO
+    END SELECT
+    CASE ('F','f')   ! pivot
+     PRINT * , ' Not yet done for F pivot ' ; stop
     END SELECT
 
   END SUBROUTINE unfold
