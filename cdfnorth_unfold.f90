@@ -67,6 +67,7 @@ PROGRAM cdfnorth_unfold
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
   npk   = getdim (cfile,'depth',cdtrue=cdep, kstatus=istatus)
+  nt   = getdim (cfile,'time', kstatus=istatus)
 
   IF (istatus /= 0 ) THEN
      npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)
@@ -129,6 +130,7 @@ PROGRAM cdfnorth_unfold
         DO jk = 1, ipk(jvar)
            PRINT *,'level ',jk
            tab(:,:) = 0.
+           isig =  1
               DO jtt=1,nt
                 jkk=jk
                 ! If forcing fields is without depth dimension
@@ -140,9 +142,10 @@ PROGRAM cdfnorth_unfold
                    SELECT CASE (ctype )
                    CASE ( 'T','t') 
                      ji=1
-                     DO WHILE ( v2d(ji,npjglo-1) == 0 )
+                     DO WHILE ( v2d(ji,npjglo-1)  == 0 .AND. ji < npiglo ) 
                        ji=ji+1
                      ENDDO
+                      IF ( ji /=  npiglo )  THEN
                       ij=2*ipivot - ji +2
                       zrat= v2d(ij,npjglo-1) / v2d(ji,npjglo-1)
                       IF ( ABS(zrat) /= 1. ) THEN
@@ -150,9 +153,10 @@ PROGRAM cdfnorth_unfold
                       ELSE
                        isig=zrat
                       ENDIF
+                      ENDIF
                    CASE ( 'U','u') 
                      ji=1
-                     DO WHILE ( v2d(ji,npjglo-1) == 0 )
+                     DO WHILE ( v2d(ji,npjglo-1) == 0  .AND. ji < npiglo )
                        ji=ji+1
                      ENDDO
                       ij=2*ipivot - ji + 1
@@ -164,7 +168,7 @@ PROGRAM cdfnorth_unfold
                       ENDIF
                    CASE ( 'V','v') 
                      ji=1
-                     DO WHILE ( v2d(ji,npjglo-1) == 0 )
+                     DO WHILE ( v2d(ji,npjglo-1) == 0 .AND. ji < npiglo )
                        ji=ji+1
                      ENDDO
                       ij=2*ipivot - ji + 2
@@ -177,9 +181,11 @@ PROGRAM cdfnorth_unfold
                    END SELECT
                  CASE ( 'F','f')
                  END SELECT
+                PRINT *,'ISIG=', isig
                 ENDIF
+                
                 CALL unfold(v2d, tab, ijatl, ijpacif, cpivot, ctype, isig)
-                ierr = putvar(ncout, id_varout(jvar) ,tab, jkk, npiarctic, npjarctic, ktime=jtt)
+                ierr = putvar(ncout, id_varout(jvar) ,tab, jkk, npiarctic, npjarctic)
               ENDDO
         END DO  ! loop to next level
   END DO ! loop to next var in file
@@ -215,15 +221,17 @@ CONTAINS
       DO jj=npjglo-3,kjpacif, -1
         ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
         DO ji = 2, npiarctic
-         ii = 2*ipivot -ji +2
+!        ii = 2*ipivot -ji +2 -ipivot +1 
+         ii = ipivot - ji + 3 
          ptabout(ji,ij)= ksig * ptabin(ii, jj)
         ENDDO
       ENDDO
     CASE ('V','v')
       DO jj=npjglo-4,kjpacif-1, -1
-        ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
+        ij=  ijn + ( npjglo - 4  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
         DO ji = 2, npiarctic
-         ii = 2*ipivot -ji +2
+!        ii = 2*ipivot -ji +2 -ipivot +1
+         ii = ipivot - ji + 3
          ptabout(ji,ij)= ksig * ptabin(ii, jj)
         ENDDO
       ENDDO
@@ -231,7 +239,8 @@ CONTAINS
       DO jj=npjglo-3,kjpacif, -1
         ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
         DO ji = 1, npiarctic
-         ii = 2*ipivot -ji + 1
+!        ii = 2*ipivot -ji + 1 -ipivot + 1
+         ii = ipivot -ji + 2
          ptabout(ji,ij)= ksig * ptabin(ii, jj)
         ENDDO
       ENDDO
