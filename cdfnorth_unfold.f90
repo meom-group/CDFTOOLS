@@ -191,7 +191,9 @@ CONTAINS
              ij=2*ipivot - ji +2
              zrat= ptab(ij,npjglo-1) / ptab(ji,npjglo-1)
              IF ( ABS(zrat) /= 1. ) THEN
-                PRINT *, 'INCOHERENT value in T point '; stop
+                PRINT *, 'INCOHERENT value in T point ', TRIM(cvarname(jvar)), zrat
+                istatus=closeout(ncout)
+                stop
              ELSE
                 chkisig=zrat
              ENDIF
@@ -204,7 +206,9 @@ CONTAINS
           ij=2*ipivot - ji + 1
           zrat= ptab(ij,npjglo-1) / ptab(ji,npjglo-1)
           IF ( ABS(zrat) /= 1. ) THEN
-             PRINT *, 'INCOHERENT value in U point '; stop
+             PRINT *, 'INCOHERENT value in U point ', TRIM(cvarname(jvar)), zrat
+             istatus=closeout(ncout)
+             stop
           ELSE
              chkisig=zrat
           ENDIF
@@ -216,7 +220,9 @@ CONTAINS
           ij=2*ipivot - ji + 2
           zrat= ptab(ij,npjglo-2) / ptab(ji,npjglo-1)
           IF ( ABS(zrat) /= 1. ) THEN
-             PRINT *, 'INCOHERENT value in V point '; stop
+             PRINT *, 'INCOHERENT value in V point ', TRIM(cvarname(jvar)), zrat
+             istatus=closeout(ncout)
+             stop
           ELSE
              chkisig=zrat
           ENDIF
