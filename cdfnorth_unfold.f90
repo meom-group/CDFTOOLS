@@ -39,12 +39,12 @@ PROGRAM cdfnorth_unfold
   CHARACTER(LEN=256) :: cfile ,cfileout                      !: file name
   CHARACTER(LEN=256) ::  cdep, cdum, cpivot, ctype
   CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
-  
+
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: typvar
 
   INTEGER    :: ncout
   INTEGER    :: istatus
-  LOGICAL    :: lcaltmean
+  LOGICAL    :: lcaltmean, lchk=.false.
 
   !!
   !!  Read command line
@@ -72,13 +72,13 @@ PROGRAM cdfnorth_unfold
   IF (istatus /= 0 ) THEN
      npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)
      IF (istatus /= 0 ) THEN
-       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
+        npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
         IF ( istatus /= 0 ) THEN 
-          npk = getdim (cfile,'nav_lev',cdtrue=cdep,kstatus=istatus)
-            IF ( istatus /= 0 ) THEN 
+           npk = getdim (cfile,'nav_lev',cdtrue=cdep,kstatus=istatus)
+           IF ( istatus /= 0 ) THEN 
               PRINT *,' assume file with no depth'
               npk=0
-            ENDIF
+           ENDIF
         ENDIF
      ENDIF
   ENDIF
@@ -91,7 +91,7 @@ PROGRAM cdfnorth_unfold
   CASE ( 'T','t') ; npjarctic=(npjglo-ijatl+1)  + (npjglo -ijpacif +1) -3 
   CASE ( 'F','f') ; npjarctic=(npjglo-ijatl+1)  + (npjglo -ijpacif +1) -2 
   END SELECT
-  
+
 
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
@@ -129,80 +129,104 @@ PROGRAM cdfnorth_unfold
   ncout =create(cfileout, cfile,npiarctic,npjarctic,npk,cdep=cdep)
   ierr= createvar(ncout , typvar,  nvars, ipk, id_varout )
   tim=getvar1d(cfile,'time_counter',nt)
-! gdep=getvar1d(cfile,cdep,npk)
-  
+  ! gdep=getvar1d(cfile,cdep,npk)
+
   ierr= putheadervar(ncout , cfile, npiarctic,npjarctic, npk,pnavlon=tablon, pnavlat=tablat, cdep=cdep)
   ierr=putvar1d(ncout,tim,nt,'T')
-! ierr=putvar1d(ncout,gdep,npk,'D')
+  ! ierr=putvar1d(ncout,gdep,npk,'D')
 
   DO jvar = 1,nvars
-        PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar)
-        DO jk = 1, ipk(jvar)
-           PRINT *,'level ',jk
-           tab(:,:) = 0.
-           isig =  1
-              DO jtt=1,nt
-                jkk=jk
-                ! If forcing fields is without depth dimension
-                IF (npk==0) jkk=jtt 
-                v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jtt )
-                IF ( jk == 1 ) THEN ! look for correct isig
-                 SELECT CASE ( cpivot)
-                 CASE ( 'T','t')
-                   SELECT CASE (ctype )
-                   CASE ( 'T','t') 
-                     ji=1
-                     DO WHILE ( v2d(ji,npjglo-1)  == 0 .AND. ji < npiglo ) 
-                       ji=ji+1
-                     ENDDO
-                      IF ( ji /=  npiglo )  THEN
-                      ij=2*ipivot - ji +2
-                      zrat= v2d(ij,npjglo-1) / v2d(ji,npjglo-1)
-                      IF ( ABS(zrat) /= 1. ) THEN
-                        PRINT *, 'INCOHERENT value in T point '; stop
-                      ELSE
-                       isig=zrat
-                      ENDIF
-                      ENDIF
-                   CASE ( 'U','u') 
-                     ji=1
-                     DO WHILE ( v2d(ji,npjglo-1) == 0  .AND. ji < npiglo )
-                       ji=ji+1
-                     ENDDO
-                      ij=2*ipivot - ji + 1
-                      zrat= v2d(ij,npjglo-1) / v2d(ji,npjglo-1)
-                      IF ( ABS(zrat) /= 1. ) THEN
-                        PRINT *, 'INCOHERENT value in U point '; stop
-                      ELSE
-                       isig=zrat
-                      ENDIF
-                   CASE ( 'V','v') 
-                     ji=1
-                     DO WHILE ( v2d(ji,npjglo-1) == 0 .AND. ji < npiglo )
-                       ji=ji+1
-                     ENDDO
-                      ij=2*ipivot - ji + 2
-                      zrat= v2d(ij,npjglo-2) / v2d(ji,npjglo-1)
-                      IF ( ABS(zrat) /= 1. ) THEN
-                        PRINT *, 'INCOHERENT value in V point '; stop
-                      ELSE
-                       isig=zrat
-                      ENDIF
-                   END SELECT
-                 CASE ( 'F','f')
-                 END SELECT
-                PRINT *,'ISIG=', isig
-                ENDIF
-                
-                CALL unfold(v2d, tab, ijatl, ijpacif, cpivot, ctype, isig)
-                ierr = putvar(ncout, id_varout(jvar) ,tab, jkk, npiarctic, npjarctic)
-              ENDDO
-        END DO  ! loop to next level
+     PRINT *,' Working with ', TRIM(cvarname(jvar)), ipk(jvar)
+     DO jk = 1, ipk(jvar)
+        PRINT *,'level ',jk
+        tab(:,:) = 0.
+        isig =  1
+        DO jtt=1,nt
+           jkk=jk
+           ! If forcing fields is without depth dimension
+           IF (npk==0) jkk=jtt 
+           v2d(:,:)= getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo,ktime=jtt )
+           IF ( jk == 1 ) THEN ! look for correct isig
+              isig=chkisig( cpivot, ctype, v2d, lchk)
+              PRINT *,'ISIG=', isig
+           ENDIF
+
+           CALL unfold(v2d, tab, ijatl, ijpacif, cpivot, ctype, isig)
+           ierr = putvar(ncout, id_varout(jvar) ,tab, jkk, npiarctic, npjarctic)
+        ENDDO
+     END DO  ! loop to next level
   END DO ! loop to next var in file
 
   istatus = closeout(ncout)
 
 CONTAINS
+  FUNCTION chkisig (cdpivot, cdtype, ptab, ldchk)
+    !!-------------------------------------------------------------------------
+    !!           *** FUNCTION chkisig  ***
+    !!
+    !!  Purpose: from the input data determine if the field is to be multiplied 
+    !!           -1 in the unfolding process  or not.
+    !!          if ldchk is true, proceed to an extended check of the overlaping
+    !!          rows.
+    !!-------------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in)            :: cdpivot, cdtype
+    REAL(KIND=4),DIMENSION(:,:), INTENT(in) :: ptab
+    LOGICAL, INTENT(in)                     :: ldchk
+    INTEGER                                 :: chkisig
+    ! 
+    REAL(KIND=4) :: zrat
+
+    IF ( ldchk ) THEN
+      PRINT *,' Full check not written yet ' ; stop
+    ELSE
+    SELECT CASE ( cdpivot)
+    CASE ( 'T','t')
+       SELECT CASE (cdtype )
+       CASE ( 'T','t') 
+          ji=1
+          DO WHILE ( ptab(ji,npjglo-1)  == 0 .AND. ji < npiglo ) 
+             ji=ji+1
+          ENDDO
+          IF ( ji /=  npiglo )  THEN
+             ij=2*ipivot - ji +2
+             zrat= ptab(ij,npjglo-1) / ptab(ji,npjglo-1)
+             IF ( ABS(zrat) /= 1. ) THEN
+                PRINT *, 'INCOHERENT value in T point '; stop
+             ELSE
+                chkisig=zrat
+             ENDIF
+          ENDIF
+       CASE ( 'U','u') 
+          ji=1
+          DO WHILE ( ptab(ji,npjglo-1) == 0  .AND. ji < npiglo )
+             ji=ji+1
+          ENDDO
+          ij=2*ipivot - ji + 1
+          zrat= ptab(ij,npjglo-1) / ptab(ji,npjglo-1)
+          IF ( ABS(zrat) /= 1. ) THEN
+             PRINT *, 'INCOHERENT value in U point '; stop
+          ELSE
+             chkisig=zrat
+          ENDIF
+       CASE ( 'V','v') 
+          ji=1
+          DO WHILE ( ptab(ji,npjglo-1) == 0 .AND. ji < npiglo )
+             ji=ji+1
+          ENDDO
+          ij=2*ipivot - ji + 2
+          zrat= ptab(ij,npjglo-2) / ptab(ji,npjglo-1)
+          IF ( ABS(zrat) /= 1. ) THEN
+             PRINT *, 'INCOHERENT value in V point '; stop
+          ELSE
+             chkisig=zrat
+          ENDIF
+       END SELECT
+    CASE ( 'F','f')
+       PRINT *, 'F pivot not done yet ' ; stop
+    END SELECT
+    ENDIF
+  END FUNCTION chkisig
+
   SUBROUTINE unfold( ptabin, ptabout, kjatl, kjpacif, cdpivot, cdtype, ksig)
     !!------------------------------------------------------------------------
     !!            ** SUBROUTINE unfol **
@@ -222,43 +246,43 @@ CONTAINS
     !
     ipivot=npiglo/2
     DO jj=kjatl, npjglo
-      ij=jj-kjatl+1
-      ptabout(:,ij) = ptabin (ipivot:npiglo,jj)
+       ij=jj-kjatl+1
+       ptabout(:,ij) = ptabin (ipivot:npiglo,jj)
     ENDDO
     ijn=ij
     SELECT CASE ( cdpivot )
     CASE ('T','t')   ! pivot
-    SELECT CASE ( cdtype)
-    CASE ('T','t')
-      DO jj=npjglo-3,kjpacif, -1
-        ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
-        DO ji = 2, npiarctic
-!        ii = 2*ipivot -ji +2 -ipivot +1 
-         ii = ipivot - ji + 3 
-         ptabout(ji,ij)= ksig * ptabin(ii, jj)
-        ENDDO
-      ENDDO
-    CASE ('V','v')
-      DO jj=npjglo-4,kjpacif-1, -1
-        ij=  ijn + ( npjglo - 4  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
-        DO ji = 2, npiarctic
-!        ii = 2*ipivot -ji +2 -ipivot +1
-         ii = ipivot - ji + 3
-         ptabout(ji,ij)= ksig * ptabin(ii, jj)
-        ENDDO
-      ENDDO
-    CASE ('U','u')
-      DO jj=npjglo-3,kjpacif, -1
-        ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
-        DO ji = 1, npiarctic
-!        ii = 2*ipivot -ji + 1 -ipivot + 1
-         ii = ipivot -ji + 2
-         ptabout(ji,ij)= ksig * ptabin(ii, jj)
-        ENDDO
-      ENDDO
-    END SELECT
+       SELECT CASE ( cdtype)
+       CASE ('T','t')
+          DO jj=npjglo-3,kjpacif, -1
+             ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
+             DO ji = 2, npiarctic
+                !        ii = 2*ipivot -ji +2 -ipivot +1 
+                ii = ipivot - ji + 3 
+                ptabout(ji,ij)= ksig * ptabin(ii, jj)
+             ENDDO
+          ENDDO
+       CASE ('V','v')
+          DO jj=npjglo-4,kjpacif-1, -1
+             ij=  ijn + ( npjglo - 4  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
+             DO ji = 2, npiarctic
+                !        ii = 2*ipivot -ji +2 -ipivot +1
+                ii = ipivot - ji + 3
+                ptabout(ji,ij)= ksig * ptabin(ii, jj)
+             ENDDO
+          ENDDO
+       CASE ('U','u')
+          DO jj=npjglo-3,kjpacif, -1
+             ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
+             DO ji = 1, npiarctic
+                !        ii = 2*ipivot -ji + 1 -ipivot + 1
+                ii = ipivot -ji + 2
+                ptabout(ji,ij)= ksig * ptabin(ii, jj)
+             ENDDO
+          ENDDO
+       END SELECT
     CASE ('F','f')   ! pivot
-     PRINT * , ' Not yet done for F pivot ' ; stop
+       PRINT * , ' Not yet done for F pivot ' ; stop
     END SELECT
 
   END SUBROUTINE unfold
