@@ -457,7 +457,7 @@ cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 	$(F90)   cdfpolymask.f90  -o cdfpolymask cdfio.o modpoly.o $(FFLAGS)
 
 cdfovide: cdfio.o  cdfovide.f90
-        $(F90) cdfovide.f90  -o cdfovide cdfio.o $(FFLAGS)
+	$(F90) cdfovide.f90  -o cdfovide cdfio.o $(FFLAGS)
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
 cdfsections: eos.o cdfsections.f90
