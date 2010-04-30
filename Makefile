@@ -30,7 +30,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
-       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold
+       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide
 
 all: $(EXEC)
 
@@ -456,6 +456,8 @@ cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
 cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 	$(F90)   cdfpolymask.f90  -o cdfpolymask cdfio.o modpoly.o $(FFLAGS)
 
+cdfovide: cdfio.o  cdfovide.f90
+        $(F90) cdfovide.f90  -o cdfovide cdfio.o $(FFLAGS)
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
 cdfsections: eos.o cdfsections.f90

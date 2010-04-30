@@ -1,0 +1,125 @@
+\documentclass[a4paper,11pt]{article}
+%\usepackage{epsf}
+\usepackage[latin1]{inputenc}
+%\usepackage{graphicx}
+%Check if we are compiling under latex or pdflatex
+   \ifx\pdftexversion\undefined
+     \usepackage[dvips]{graphicx}
+   \else
+     \usepackage[pdftex]{graphicx}
+   \fi
+\advance\textwidth by 60pt
+\advance\oddsidemargin by -25pt
+\advance\evensidemargin by -25pt
+
+%
+\begin{document}
+
+\newcommand{\etal}{{\it et al.}}
+\newcommand{\DegN}{$^{\circ}$N}
+\newcommand{\DegW}{$^{\circ}$W}
+\newcommand{\DegE}{$^{\circ}$E}
+\newcommand{\DegS}{$^{\circ}$S}
+\newcommand{\Deg}{$^{\circ}$}
+\newcommand{\DegC}{$^{\circ}$C}
+
+
+\title{cdfovide : user manual}  
+
+%\author{R. Dussin \thanks{Laboratoire de Physique des oceans, CNRS-Ifremer-UBO, Brest, France}, J.M. Molines \thanks{Laboratoire des Ecoulements Geophysiques et %Industriels, CNRS UMR 5519, Grenoble, France} }
+\author{R. Dussin, J.M. Molines}
+
+\maketitle
+
+\section{Introduction}
+
+cdfovide is part of a package called CDFTOOLS. About the install and common features of CDFTOOLS, please refer to CDFTOOLS documentation.
+This document explains briefly how to use it and some details of the code. The usage is :
+
+\begin{verbatim}
+cdfovide gridT gridU gridV
+\end{verbatim}
+
+\noindent
+The grid files \textbf{coordinates.nc} , \textbf{mesh\_hgr.nc} and \textbf{mesh\_zgr.nc} must be in your directory.
+
+\section{Some details of the code}
+
+The Ovide section is approximated by three legs defined such as :
+
+\begin{itemize}
+\item leg 1 : ( $43.0$ \DegW , $60.6$ \DegN ) to ( $31.3$ \DegW , $58.9$ \DegN )
+\item leg 2 : ( $31.3$ \DegW , $58.9$ \DegN ) to ( $12.65$ \DegW , $40.33$ \DegN )
+\item leg 3 : ( $12.65$ \DegW , $40.33$ \DegN ) to ( $8.7$ \DegW , $40.33$ \DegN )
+\end{itemize}
+
+\noindent
+those values are hardcoded. However it is possible to change them in the code. It corresponds to the following lines :
+
+\begin{verbatim}
+!! We define what are the 3 segments of OVIDE section
+  !! so that the user don't have to worry about it
+  !! sec1 : (lonsta1,latsta1) -> (lonsta2,latsta2)
+  !! and so on
+
+  lonsta(1)=-43.0
+  lonsta(2)=-31.3
+  lonsta(3)=-12.65
+  lonsta(4)=-8.7
+
+  latsta(1)=60.6
+  latsta(2)=58.9
+  latsta(3)=40.33
+  latsta(4)=40.33
+
+\end{verbatim}
+
+The model F gridpoints corresponding to the 4 ends ot the legs are computed using the same code as cdffindij. Then
+a broken line is computed using the same code as cdftransportiz. The indices of all the F-points are saved in the arrays isec and jsec.
+Their corresponding longitudes and latitudes are stored in nav\_lon and nav\_lat (NB : those are the lon and lat of the F points). If those
+arrays' size is $N$ (number of points), the others arrays' size is $N-1$ (number of segments). This is an example of the standard output 
+with a ORCA025 run :
+
+\begin{verbatim}
+ ------------------------------------------------------------
+leg 1 start at -43.00N  60.60W and ends at -31.30N  58.90W
+corresponding to F-gridpoints( 986, 796) and (1026, 782)
+ ------------------------------------------------------------
+ ------------------------------------------------------------
+leg 2 start at -31.30N  58.90W and ends at -12.65N  40.33W
+corresponding to F-gridpoints(1026, 782) and (1098, 675)
+ ------------------------------------------------------------
+ ------------------------------------------------------------
+leg 3 start at -12.65N  40.33W and ends at  -8.70N  40.33W
+corresponding to F-gridpoints(1098, 675) and (1114, 675)
+ ------------------------------------------------------------
+
+\end{verbatim}
+
+\noindent
+Once we have these list of F-gridpoints isec and jsec, we have to pick the values of $u$ or $v$ corresponding to the segment.
+If the segment is an horizontal one, we will pick a value for $v$ and $u=0$ and vice-versa. Hence the vozocrtx and vomecrty arrays
+in the output netcdf files will have empty lines, this is perfectly normal. We loop from F-point $1$ to $N-1$ and we define the current
+F-point as f(i,j). Four cases are investigated :
+
+\begin{itemize}
+\item horizontal segment, eastward : $v = v(i+1,j)$ and $u = 0$
+\item horizontal segment, westward : $v = v(i,j)$ and $u = 0$
+\item vertical segment, southward : $v = 0$ and $u = u(i,j)$
+\item vertical segment, northward : $v = 0 $ and $u = u(i,j+1)$
+\end{itemize}  
+
+\noindent
+The $e1v$, $e2u$, $e3v$ and $e3u$ arrays are picked at the same points that $u$ and $v$. Also, $u = 0$ leads to $e2u = e3u = 0$ and vice-versa.
+The temperature and salinity are interpolated on the $u$ or $v$ point. In the bottom, if one value on the T-point is zero (land), the value is set to
+zero. 
+
+
+
+
+
+
+
+
+
+\end{document}
