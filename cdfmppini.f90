@@ -22,29 +22,46 @@ PROGRAM cdfmppini
   INTEGER     , DIMENSION(:), ALLOCATABLE :: nbondi, nbondj, icount
 
   INTEGER   :: narg, iargc, numout=6
-  CHARACTER(LEN=80) :: cdum, cmask='mask.nc'
+  CHARACTER(LEN=80) :: cdum, cmask='mask.nc', cbathy='bathy_meter.nc', cfich='m'
+  CHARACTER(LEN=80) :: cvar, czgr='mesh_zgr.nc'
   LOGICAL :: lwp=.true.
   
   !----------------------------------------------------------------------------
   narg=iargc()
-  IF ( narg /= 2 ) THEN
-    PRINT *,'USAGE: cdfmppini jpni jpnj '
-    PRINT *,'    mask.nc is used for tmask'
+  IF ( narg < 2 ) THEN
+    PRINT *,'USAGE: cdfmppini jpni jpnj [m/b]'
+    PRINT *,'      optional argument: '
+    PRINT *,'              m (default) : take mask from mask.nc (tmask)'
+    PRINT *,'              b           : take mask from bathy_level.nc (Bathymetry)'
+    PRINT *,'              z           : take mask from mesh_zgr.nc (mbathy)'
+    PRINT *,'     mask.nc is used for tmask (default) or m specified'
+    PRINT *,'     bathy_meter.nc is used if b specified'
+    PRINT *,'     mesh_zgr is used if z specified'
     PRINT *,' Output is done on mppini.txt file'
     STOP
   ENDIF
   
   CALL getarg(1,cdum) ; READ(cdum,*) jpni
   CALL getarg(2,cdum) ; READ(cdum,*) jpnj
+  IF ( narg == 3 ) CALL getarg(3, cfich)
   
-  jpiglo= getdim (cmask,'x')
-  jpjglo= getdim (cmask,'y')
+  SELECT CASE ( cfich)
+  CASE ('m'); cdum=cmask  ; cvar='tmask'
+  CASE ('b'); cdum=cbathy ; cvar='Bathymetry'
+  CASE ('z'); cdum=czgr   ; cvar='mbathy'
+  END SELECT
+
+  
+  jpiglo= getdim (cdum,'x')
+  jpjglo= getdim (cdum,'y')
 
   jpi = ( jpiglo-2*jpreci + (jpni-1) ) / jpni + 2*jpreci 
   jpj = ( jpjglo-2*jprecj + (jpnj-1) ) / jpnj + 2*jprecj 
 
   ALLOCATE ( imask(jpiglo,jpjglo) )
-  imask(:,:)=getvar(cmask,'tmask',1,jpiglo,jpjglo)
+  imask(:,:)=getvar(cdum,cvar,1,jpiglo,jpjglo)
+  WHERE (imask <= 0 ) imask = 0
+  WHERE (imask > 0  ) imask = 1
   CALL mpp_init2
   PRINT *, 'JPIGLO= ', jpiglo
   PRINT *, 'JPJGLO= ', jpjglo
@@ -54,8 +71,9 @@ PROGRAM cdfmppini
   PRINT *, 'JPNJ  = ', jpnj
   PRINT *, 'JPNIJ = ', jpnij
 
-  PRINT *, 'NBONDI: ',MINVAL(nbondi),MAXVAL(nbondi)
-  PRINT *, 'NBONDJ: ',MINVAL(nbondj),MAXVAL(nbondj)
+  PRINT *, 'NBONDI between : ',MINVAL(nbondi),' AND ', MAXVAL(nbondi)
+  PRINT *, 'NBONDJ between : ',MINVAL(nbondj),' AND ', MAXVAL(nbondj)
+  PRINT *,' Accounting ...'
   ALLOCATE (icount(jpnij))
    DO jv=-1,2
      icount=0
@@ -305,7 +323,7 @@ CONTAINS
  9403     FORMAT('     *     ',20('         *   ',a3))
  9401     FORMAT('        ',20('   ',i3,'          '))
  9402     FORMAT(' ',i3,' *  ',20(i3,'  x',i3,'   *   '))
- 9404     FORMAT('     *  ',20('      ',i3,'   *   '))
+ 9404     FORMAT('     *  ',20('     ',i4,'   *   '))
       ENDIF
 
 
