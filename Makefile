@@ -13,7 +13,8 @@ include make.macro
 
 CDFTOOLS=CDFTOOLS-2.1
 
-EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_chsp cdfmoy_freq cdfvT cdfvsig cdfspeed cdfsum\
+EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_weighted cdfmoy_chsp cdfmoy_freq cdfvT \
+       cdfvsig cdfspeed cdfsum\
        cdfmoyuv cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfspice\
@@ -70,6 +71,9 @@ cdfstd: cdfio.o  cdfstd.f90
 
 cdfmoy_annual: cdfio.o   cdfmoy_annual.f90
 	$(F90) cdfmoy_annual.f90 -o cdfmoy_annual cdfio.o  $(FFLAGS)
+
+cdfmoy_weighted: cdfio.o   cdfmoy_weighted.f90
+	$(F90) cdfmoy_weighted.f90 -o cdfmoy_weighted cdfio.o  $(FFLAGS)
 
 cdfeke: cdfio.o  cdfeke.f90
 	$(F90) cdfeke.f90 -o cdfeke cdfio.o $(FFLAGS)
@@ -449,6 +453,9 @@ cdfvar: cdfio.o cdfvar.f90
 
 cdfcsp: cdfio.o cdfcsp.f90
 	$(F90)   cdfcsp.f90  -o cdfcsp cdfio.o $(FFLAGS)
+
+cdfnan: cdfio.o cdfnan.f90
+	$(F90)   cdfnan.f90  -o cdfnan cdfio.o $(FFLAGS)
 
 cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
 	$(F90)   cdfnorth_unfold.f90  -o cdfnorth_unfold cdfio.o $(FFLAGS)

@@ -17,7 +17,7 @@ fi
 ls *anne*  2> /dev/null && { chkdir ANNEX ; mv *anne* ANNEX  ; }
 
 # Scan the different types of files and send then to the YEAR directory
-for type in gridT gridU gridV gridW icemod ptrcT; do
+for type in gridT gridU gridV gridW icemod ptrcT trends dynT flxT; do
   ls *${type}.nc  2> /dev/null &&  { \
   for f in *_${type}.nc ; do 
     tag=$( echo $f | sed -e 's/_/ /g' | awk '{print $2}' )

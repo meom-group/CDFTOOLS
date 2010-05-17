@@ -175,8 +175,8 @@ PROGRAM cdfmoy
            rmean(:,:) = tab(:,:)/ntframe
            IF (cvarname2(jvar) /= 'none' ) rmean2(:,:) = tab2(:,:)/ntframe
            ! store variable on outputfile
-           ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo)
-           IF (cvarname2(jvar) /= 'none' ) ierr = putvar(ncout2,id_varout2(jvar),rmean2, jk,npiglo, npjglo)
+           ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo, kwght=ntframe)
+           IF (cvarname2(jvar) /= 'none' ) ierr = putvar(ncout2,id_varout2(jvar),rmean2, jk,npiglo, npjglo, kwght=ntframe)
            IF (lcaltmean )  THEN
               timean(1)= total_time/ntframe
               ierr=putvar1d(ncout,timean,1,'T')

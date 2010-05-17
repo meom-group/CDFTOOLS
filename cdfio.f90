@@ -34,6 +34,7 @@
      REAL(kind=4)    :: scale_factor=1.
      REAL(kind=4)    :: add_offset=0.
      REAL(kind=4)    :: savelog10=0.
+     INTEGER         :: iwght=1
      CHARACTER(LEN=256):: long_name
      CHARACTER(LEN=256):: short_name
      CHARACTER(LEN=256):: online_operation
@@ -360,6 +361,8 @@ CONTAINS
     IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt longname'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'short_name',tyvar%short_name) 
     IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt short name'; ENDIF
+    putatt=NF90_PUT_ATT(kout,kid,'iweight',tyvar%iwght) 
+    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt iweight'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'online_operation',tyvar%online_operation) 
     IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt online oper'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'axis',tyvar%axis) 
@@ -663,6 +666,7 @@ CONTAINS
     INTEGER :: istatus
     CHARACTER(LEN=256) :: cldum=''
     REAL(KIND=4) :: zatt
+    INTEGER      :: iatt
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,ncid)
     DO jv = 1, knvars
@@ -696,6 +700,13 @@ CONTAINS
           ptypvar(jv)%valid_max=zatt
        ELSE
           ptypvar(jv)%valid_max=0.
+       ENDIF
+
+       IF ( NF90_INQUIRE_ATTRIBUTE(ncid,jv,'iweight') == NF90_NOERR ) THEN
+          istatus=NF90_GET_ATT(ncid,jv,'iweight',iatt)
+          ptypvar(jv)%iwght=iatt
+       ELSE
+          ptypvar(jv)%iwght=1
        ENDIF
 
        IF ( NF90_INQUIRE_ATTRIBUTE(ncid,jv,'long_name',len=ILEN) == NF90_NOERR ) THEN
@@ -1504,7 +1515,7 @@ CONTAINS
 
   END FUNCTION putheadervar
 
-  FUNCTION putvarr8(kout, kid,ptab, klev, kpi, kpj,ktime)
+  FUNCTION putvarr8(kout, kid,ptab, klev, kpi, kpj,ktime, kwght)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  putvar  ***
     !!
@@ -1523,6 +1534,7 @@ CONTAINS
     INTEGER, INTENT(in) :: klev             ! level at which ptab will be written
     INTEGER, INTENT(in) :: kpi,kpj          ! dimension of ptab
     INTEGER, OPTIONAL, INTENT(in) :: ktime  ! dimension of ptab
+    INTEGER, OPTIONAL, INTENT(in) :: kwght  ! weight of this variable
     REAL(KIND=8), DIMENSION(kpi,kpj),INTENT(in) :: ptab ! 2D array to write in file
     INTEGER :: putvarr8                       ! return status
 
@@ -1546,11 +1558,14 @@ CONTAINS
     ENDIF
     icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
+    IF (PRESENT(kwght) ) THEN
+      istatus=NF90_PUT_ATT(kout,kid,'iweight',kwght)
+    ENDIF
     putvarr8=istatus
 
   END FUNCTION putvarr8
 
-  FUNCTION putvarr4(kout, kid,ptab, klev, kpi, kpj,ktime)
+  FUNCTION putvarr4(kout, kid,ptab, klev, kpi, kpj, ktime, kwght)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  putvar  ***
     !!
@@ -1569,6 +1584,7 @@ CONTAINS
     INTEGER, INTENT(in) :: klev             ! level at which ptab will be written
     INTEGER, INTENT(in) :: kpi,kpj          ! dimension of ptab
     INTEGER, OPTIONAL, INTENT(in) :: ktime  ! dimension of ptab
+    INTEGER, OPTIONAL, INTENT(in) :: kwght  ! weight of this variable
     REAL(KIND=4), DIMENSION(kpi,kpj),INTENT(in) :: ptab ! 2D array to write in file
     INTEGER :: putvarr4                       ! return status
 
@@ -1592,11 +1608,14 @@ CONTAINS
     ENDIF
     icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
+    IF (PRESENT(kwght) ) THEN
+      istatus=NF90_PUT_ATT(kout,kid,'iweight',kwght)
+    ENDIF
     putvarr4=istatus
 
   END FUNCTION putvarr4
 
-  FUNCTION reputvarr4 (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime,ptab)
+  FUNCTION reputvarr4 (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime,ptab,kwght)
     !!-----------------------------------------------------------
     !!                       ***  FUNCTION  putvar  ***
     !!
@@ -1617,6 +1636,7 @@ CONTAINS
     INTEGER, OPTIONAL, INTENT(in) :: klev           ! Optional variable. If missing 1 is assumed
     INTEGER, OPTIONAL, INTENT(in) :: kimin,kjmin    ! Optional variable. If missing 1 is assumed
     INTEGER, OPTIONAL, INTENT(in) :: ktime          ! Optional variable. If missing 1 is assumed
+    INTEGER, OPTIONAL, INTENT(in) :: kwght          ! weight of this variable
     REAL(KIND=4), DIMENSION(kpi,kpj) ::  ptab     ! 2D REAL 4 holding variable field at klev
     INTEGER :: reputvarr4
 
@@ -1641,6 +1661,9 @@ CONTAINS
     IF ( nldim(3) == id_dimunlim)  THEN ; ilev=itime ; itime=1 ; ENDIF
     istatus=NF90_PUT_VAR(ncid,id_var,ptab,start=(/imin,jmin,ilev,itime/), count=(/kpi,kpj,1,1/) )
     !PRINT *,TRIM(NF90_STRERROR(istatus)),' in reputvar'
+    IF (PRESENT(kwght)) THEN
+      istatus=NF90_PUT_ATT(ncid,id_var,'iweight',kwght)
+    ENDIF
     reputvarr4=istatus
     istatus=NF90_CLOSE(ncid)
 

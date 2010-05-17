@@ -212,16 +212,16 @@ PROGRAM cdfvT
      END DO  ! jt
      ! finish with level jk ; compute mean (assume spval is 0 )
      rmean(:,:) = zcumulvt(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(1) ,rmean, jk,npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(1) ,rmean, jk,npiglo, npjglo, kwght=ntframe )
 
      rmean(:,:) = zcumulvs(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(2) ,rmean, jk,npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(2) ,rmean, jk,npiglo, npjglo, kwght=ntframe )
 
      rmean(:,:) = zcumulut(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(3) ,rmean, jk,npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(3) ,rmean, jk,npiglo, npjglo, kwght=ntframe )
 
      rmean(:,:) = zcumulus(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(4) ,rmean, jk,npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(4) ,rmean, jk,npiglo, npjglo, kwght=ntframe )
 
      IF (lcaltmean )  THEN
         timean(1)= total_time/ntframe

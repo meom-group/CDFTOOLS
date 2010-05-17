@@ -51,6 +51,7 @@ PROGRAM cdfnan
     CALL getarg ( narg - 1, cfile)
     IF (TRIM(cfile) == '-value' ) THEN
       CALL getarg(narg,cfile) ; READ(cfile,*) replace ; l_replace=.true.
+      narg=narg -2 
     ENDIF
   ENDIF
   CALL getarg (1, cfile)
@@ -86,7 +87,7 @@ PROGRAM cdfnan
 
   DO jf = 1, narg
      CALL getarg (jf, cfile)
-     PRINT *, 'Change spval on file ', cfile
+     PRINT *, 'Change NaN on file ', cfile
      ncid = ncopen(cfile)
      nt    = getdim (cfile,'time_counter')
      DO jvar = 1,nvars
