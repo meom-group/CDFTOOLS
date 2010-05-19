@@ -88,7 +88,7 @@ PROGRAM cdfsigtrp
   LOGICAL    :: l_print=.FALSE.             !: flag  for printing additional results
   LOGICAL    :: l_bimg=.FALSE.              !: flag  for bimg output
   ! added to write in netcdf
-  LOGICAL :: lwrtcdf=.FALSE.
+  LOGICAL :: lwrtcdf=.TRUE.
   CHARACTER(LEN=80) :: cfor9000, cfor9001, cfor9002, cfor9003
 
 
@@ -103,7 +103,6 @@ PROGRAM cdfsigtrp
      PRINT *,'     Possible options :'
      PRINT *,'         -print :additional output is send to std output'
      PRINT *,'         -bimg : 2D (x=lat/lon, y=sigma) output on bimg file for hiso, cumul trp, trp'
-     PRINT *,'          cdfout : output in small netcdf files'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc must be in the current directory'
      PRINT *,' File  section.dat must also be in the current directory '
      PRINT *,' Output on trpsig.txt and on standard output '
@@ -125,8 +124,6 @@ PROGRAM cdfsigtrp
         l_print = .TRUE.
      CASE ('-bimg')
         l_bimg = .TRUE.
-     CASE ('cdfout')
-        lwrtcdf = .TRUE.
      CASE DEFAULT
         PRINT *,' Unknown option ', TRIM(cdum),' ... ignored'
      END SELECT

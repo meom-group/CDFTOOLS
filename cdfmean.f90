@@ -51,10 +51,10 @@ PROGRAM cdfmean
   CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype
   CHARACTER(LEN=256) :: cfilout='out.txt'
   ! added to write in netcdf
-  CHARACTER(LEN=256) :: cfileoutnc='cdfmean.nc' , cflagcdf
+  CHARACTER(LEN=256) :: cfileoutnc='cdfmean.nc'
   CHARACTER(LEN=256) :: cdunits, cdlong_name, cdshort_name 
   ! added to write in netcdf
-  LOGICAL :: lwrtcdf=.FALSE.
+  LOGICAL :: lwrtcdf=.TRUE.
 
 
   INTEGER    :: istatus
@@ -84,7 +84,7 @@ PROGRAM cdfmean
   CALL getarg (3, cvartype)
 
   IF (narg > 3 ) THEN
-     IF ( narg < 9 .OR. narg > 10 ) THEN
+     IF ( narg /= 9 ) THEN
         PRINT *, ' ERROR : You must give 6 optional values (imin imax jmin jmax kmin kmax)'
         STOP
      ELSE
@@ -95,14 +95,7 @@ PROGRAM cdfmean
         CALL getarg ( 7,cdum) ; READ(cdum,*) jmax
         CALL getarg ( 8,cdum) ; READ(cdum,*) kmin
         CALL getarg ( 9,cdum) ; READ(cdum,*) kmax
-        IF ( narg==10 ) THEN
-           CALL getarg (10,cdum) ; READ(cdum,*) cflagcdf
-        ENDIF
      ENDIF
-  ENDIF
-
-  IF(cflagcdf=='cdfout') THEN
-     lwrtcdf=.TRUE.
   ENDIF
 
   cdep='none'

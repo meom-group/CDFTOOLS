@@ -45,13 +45,13 @@ PROGRAM cdfmaxmoc
   !
   CHARACTER(LEN=256) :: cdum, cfile, comment, cbasin, cvar
   ! added to write in netcdf
-  CHARACTER(LEN=256) :: cfileoutnc='maxmoc.nc' , cflagcdf
+  CHARACTER(LEN=256) :: cfileoutnc='maxmoc.nc'
   ! added to write in netcdf
-  LOGICAL :: lwrtcdf=.FALSE.
+  LOGICAL :: lwrtcdf=.TRUE.
 
   ! * main program
   narg=iargc()
-  IF (narg >= 6 .AND. narg <= 7 ) THEN
+  IF (narg == 6) THEN
      CALL getarg(1,cfile)
      CALL getarg(2,cbasin)
      CALL getarg(3,cdum)
@@ -62,20 +62,11 @@ PROGRAM cdfmaxmoc
      READ(cdum,*) depmin
      CALL getarg(6,cdum)
      READ(cdum,*) depmax
-     IF (narg==7) THEN
-        CALL getarg(7,cdum)
-        READ(cdum,*) cflagcdf
-     ENDIF
   ELSE
-     PRINT *,' USAGE: cdfmaxmoc ''ovt_file.nc'' cbasin latmin latmax depmin depmax [cdfout]'
+     PRINT *,' USAGE: cdfmaxmoc ''ovt_file.nc'' cbasin latmin latmax depmin depmax '
      PRINT *,'        cbasin is one of atl glo inp ind or pac '
-     PRINT *,' Output on standard output by default'
-     PRINT *,' Output on netcdf is available adding cdfout as last argument'
+     PRINT *,' Output on standard output by default and maxmoc.nc '
      STOP
-  ENDIF
-
-  IF(cflagcdf=='cdfout') THEN
-     lwrtcdf=.TRUE.
   ENDIF
 
   npjglo=getdim(cfile,'y')

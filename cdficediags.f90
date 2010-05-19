@@ -47,9 +47,9 @@ PROGRAM cdficediag
   CHARACTER(LEN=256) :: cfilev , cdum
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  cmask='mask.nc'
   ! added to write in netcdf
-  CHARACTER(LEN=256) :: cfileoutnc='icediags.nc' , cflagcdf
+  CHARACTER(LEN=256) :: cfileoutnc='icediags.nc' 
   ! added to write in netcdf
-  LOGICAL :: lwrtcdf=.FALSE.
+  LOGICAL :: lwrtcdf=.TRUE.
 
   INTEGER    :: istatus
 
@@ -57,27 +57,16 @@ PROGRAM cdficediag
 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
-  IF ( narg == 0 .OR. narg >= 3 ) THEN
-     PRINT *,' Usage : cdficediag ncfile [cdfout]'
+  IF ( narg == 1) THEN
+     CALL getarg (1, cfilev)
+     npiglo= getdim (cfilev,'x')
+     npjglo= getdim (cfilev,'y')
+  ELSE
+     PRINT *,' Usage : cdficediag ncfile '
      PRINT *,' Files mesh_hgr.nc, mask.nc '
-     PRINT *,'  must be in the current directory'
-     PRINT *,' Output on standard output'
-     PRINT *,' Optional Output in NetCDF with cdfout option'
+     PRINT *,' must be in the current directory'
+     PRINT *,' Output on standard output and icediags.nc '
      STOP
-  ENDIF
-
-  CALL getarg (1, cfilev)
-
-  npiglo= getdim (cfilev,'x')
-  npjglo= getdim (cfilev,'y')
-
-  IF ( narg == 2 ) THEN
-     CALL getarg (2, cflagcdf)
-     IF (cflagcdf=='cdfout') THEN
-        lwrtcdf=.TRUE.
-     ELSE
-        PRINT *, 'unknown option'
-     ENDIF
   ENDIF
 
   ALLOCATE ( zmask(npiglo,npjglo) ,ff(npiglo,npjglo) )

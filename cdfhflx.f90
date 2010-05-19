@@ -57,26 +57,18 @@ PROGRAM cdfhflx
   CHARACTER(LEN=256) :: cfilet , cfileout='hflx.out'
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',cbasinmask='new_maskglo.nc'
   ! added to write in netcdf
-  CHARACTER(LEN=256) :: cfileoutnc='cdfhflx.nc' , cflagcdf
+  CHARACTER(LEN=256) :: cfileoutnc='cdfhflx.nc' 
   CHARACTER(LEN=256) :: cdunits, cdlong_name, cdshort_name
 
   LOGICAL    :: llglo = .FALSE.                          !: indicator for presence of new_maskglo.nc file 
   ! added to write in netcdf
-  LOGICAL :: lwrtcdf=.FALSE.
+  LOGICAL :: lwrtcdf=.TRUE.
 
   INTEGER    :: istatus
 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
-  IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfhflx  T file [cdfout]'
-     PRINT *,' Computes the MHT from heat fluxes '
-     PRINT *,' Files mesh_hgr.nc, new_maskglo.nc must be in the current directory'
-     PRINT *,' Output on hflx.out (ascii file )'
-     STOP
-  ENDIF
-
-  IF ( narg >= 1 ) THEN
+  IF ( narg == 1 ) THEN
      CALL getarg (1, cfilet)
      npiglo= getdim (cfilet,'x')
      npjglo= getdim (cfilet,'y')
@@ -85,16 +77,12 @@ PROGRAM cdfhflx
      PRINT *, 'npiglo=', npiglo
      PRINT *, 'npjglo=', npjglo
      PRINT *, 'npk   =', npk
-  ENDIF
-
-  IF ( narg == 2 ) THEN
-     CALL getarg (2, cflagcdf)
-     IF (cflagcdf == 'cdfout') THEN
-        lwrtcdf=.TRUE.
-     ELSE
-        PRINT *,'Uncorrect second argument'
-        PRINT *,'second argument must be "cdfout" to write in NetCDF'
-     ENDIF
+  ELSE
+     PRINT *,' Usage : cdfhflx  T-file '
+     PRINT *,' Computes the MHT from heat fluxes '
+     PRINT *,' Files mesh_hgr.nc, new_maskglo.nc must be in the current directory '
+     PRINT *,' Output on hflx.out (ascii file ) and hflx.nc '
+     STOP
   ENDIF
 
   !  Detects newmaskglo file 
