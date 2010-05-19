@@ -39,7 +39,8 @@ set -x
   # check existence of some required directories
   # ... on gaya
   chkdirg $DIAGS
-  chkdirg $DIAGS/NC
+  chkdirg $DIAGS/TXT    # for ASCII diag files (to become obsolete)
+  chkdirg $DIAGS/NC     # for NetCdf diag files
 
 #------------------------------------------------------------------------------
 # PATH:
@@ -218,16 +219,16 @@ set -x
    cdfmean  ${CONFCASE}_y${YEAR}_gridT.nc vosaline T >> $fsmean   ; mv cdfmean.nc $fsmean_nc
  
    # dispose ASCII file in the -DIAGS directory
-   expatrie  $fsshmean $DIAGS $fsshmean
-   expatrie  $ftmean   $DIAGS $ftmean
-   expatrie  $fsmean   $DIAGS $fsmean
+   expatrie  $fsshmean $DIAGS/TXT $fsshmean
+   expatrie  $ftmean   $DIAGS/TXT $ftmean
+   expatrie  $fsmean   $DIAGS/TXT $fsmean
 
    # dispose ASCII file in the -DIAGS/NC directory
    expatrie  $fsshmean_nc $DIAGS/NC $fsshmean_nc
    expatrie  $ftmean_nc   $DIAGS/NC $ftmean_nc
    expatrie  $fsmean_nc   $DIAGS/NC $fsmean_nc
 
-   if [ $(chkfile $DIAGS/LEVITUS_y0000_TMEAN.txt ) == absent ] ; then
+   if [ $(chkfile $DIAGS/TXT/LEVITUS_y0000_TMEAN.txt ) == absent ] ; then
     # first time : Create header with Levitus equivalent
     # requires  LEVITUS 'same' diags (from the ANNUAL mean )
     #  !!! NEW !!!
@@ -242,8 +243,8 @@ set -x
     cdfmean $levitus  votemper T  >  LEVITUS_y0000_TMEAN.txt  ; mv cdfmean.nc LEVITUS_y0000_TMEAN.nc
     cdfmean $levitus  vosaline T  >  LEVITUS_y0000_SMEAN.txt  ; mv cdfmean.nc LEVITUS_y0000_SMEAN.nc
 
-    expatrie  LEVITUS_y0000_TMEAN.txt $DIAGS  LEVITUS_y0000_TMEAN.txt
-    expatrie  LEVITUS_y0000_SMEAN.txt $DIAGS  LEVITUS_y0000_SMEAN.txt
+    expatrie  LEVITUS_y0000_TMEAN.txt $DIAGS/TXT  LEVITUS_y0000_TMEAN.txt
+    expatrie  LEVITUS_y0000_SMEAN.txt $DIAGS/TXT  LEVITUS_y0000_SMEAN.txt
     expatrie  LEVITUS_y0000_TMEAN.nc $DIAGS/NC  LEVITUS_y0000_TMEAN.nc
     expatrie  LEVITUS_y0000_SMEAN.nc $DIAGS/NC  LEVITUS_y0000_SMEAN.nc
    fi
@@ -268,16 +269,16 @@ set -x
    fice_nc=${CONFCASE}_y${YEAR}_ice.nc
  
    echo '###' $YEAR 02 > $fice
-   cdficediags ${CONFCASE}_y${YEAR}m02_icemod.nc cdfout >> $fice ; mv icediags.nc $fice_nc
+   cdficediags ${CONFCASE}_y${YEAR}m02_icemod.nc  >> $fice ; mv icediags.nc $fice_nc
    echo '###' $YEAR 03 >> $fice
-   cdficediags ${CONFCASE}_y${YEAR}m03_icemod.nc cdfout >> $fice ; ncks -A icediags.nc $fice_nc
+   cdficediags ${CONFCASE}_y${YEAR}m03_icemod.nc  >> $fice ; nrcat -A $fice_nc icediags.nc -o $fice_nc
    echo '###' $YEAR 08 >> $fice
-   cdficediags ${CONFCASE}_y${YEAR}m08_icemod.nc cdfout >> $fice ; ncks -A icediags.nc $fice_nc
+   cdficediags ${CONFCASE}_y${YEAR}m08_icemod.nc  >> $fice ; nrcat -A $fice_nc icediags.nc -o $fice_nc
    echo '###' $YEAR 09 >> $fice
-   cdficediags ${CONFCASE}_y${YEAR}m09_icemod.nc cdfout >> $fice ; ncks -A icediags.nc $fice_nc
+   cdficediags ${CONFCASE}_y${YEAR}m09_icemod.nc  >> $fice ; nrcat -A $fice_nc icediags.nc -o $fice_nc
  
-   expatrie $fice    $DIAGS    $fice 
-   expatrie $fice_nc $DIAGS/NC $fice_nc
+   expatrie $fice    $DIAGS/TXT $fice 
+   expatrie $fice_nc $DIAGS/NC  $fice_nc
   fi
 
 # Ice Volume area and extent for all months: input file : icemod, and mesh_mask
@@ -303,16 +304,24 @@ set -x
    m=1
    while (( $m <= 12 )) ; do
     mm=$( printf "%02d" $m )
+
     case $mm in 
     01) echo '###' $YEAR $mm > $fice ;;
     *)  echo '###' $YEAR $mm >> $fice ;;
     esac
+
     cdficediags ${CONFCASE}_y${YEAR}m${mm}_icemod.nc cdfout  >> $fice ; ncks -A icediags.nc $fice_nc
+
+    case $mm in
+    01) mv icediags.nc $fice_nc ;;
+    *)  ncrcat -A $fice_nc icediags.nc -o $fice_nc ;;
+    esac
+
     m=$(( m + 1 ))
    done
  
-   expatrie $fice    $DIAGS    $fice 
-   expatrie $fice_nc $DIAGS/NC $fice_nc
+   expatrie $fice    $DIAGS/TXT $fice 
+   expatrie $fice_nc $DIAGS/NC  $fice_nc
  
   fi
 
@@ -339,12 +348,12 @@ set -x
    echo $YEAR > $fsgib
    cdfmean ${CONFCASE}_y${YEAR}_gridT.nc  vosaline T $GIBWIN  0 0  >>  $fsgib ; mv cdfmean.nc $fsgib_nc
  
-   expatrie $ftgib    $DIAGS    $ftgib
-   expatrie $fsgib    $DIAGS    $fsgib
-   expatrie $ftgib_nc $DIAGS/NC $ftgib_nc
-   expatrie $fsgib_nc $DIAGS/NC $fsgib_nc
+   expatrie $ftgib    $DIAGS/TXT $ftgib
+   expatrie $fsgib    $DIAGS/TXT $fsgib
+   expatrie $ftgib_nc $DIAGS/NC  $ftgib_nc
+   expatrie $fsgib_nc $DIAGS/NC  $fsgib_nc
 
-   if [ $(chkfile $DIAGS/LEVITUS_y0000_TGIB.txt ) == absent ] ; then
+   if [ $(chkfile $DIAGS/TXT/LEVITUS_y0000_TGIB.txt ) == absent ] ; then
     # first time : Create header with Levitus equivalent
     # requires  LEVITUS 'same' diags (from the ANNUAL mean )
     levitus=${TSCLIM:=Levitus_p2.1}_ANNUAL_TS_masked_$( echo $CONFIG | tr 'A-Z' 'a-z').nc
@@ -359,10 +368,10 @@ set -x
     fi
     cdfmean $levitus  votemper T $GIBWIN  0 0  >  LEVITUS_y0000_TGIB.txt ; mv cdfmean.nc LEVITUS_y0000_TGIB.nc
     cdfmean $levitus  vosaline T $GIBWIN  0 0  >  LEVITUS_y0000_SGIB.txt ; mv cdfmean.nc LEVITUS_y0000_SGIB.nc
-    expatrie  LEVITUS_y0000_TGIB.txt $DIAGS  LEVITUS_y0000_TGIB.txt
-    expatrie  LEVITUS_y0000_SGIB.txt $DIAGS  LEVITUS_y0000_SGIB.txt
-    expatrie  LEVITUS_y0000_TGIB.nc $DIAGS/NC  LEVITUS_y0000_TGIB.nc
-    expatrie  LEVITUS_y0000_SGIB.nc $DIAGS/NC  LEVITUS_y0000_SGIB.nc
+    expatrie  LEVITUS_y0000_TGIB.txt $DIAGS/TXT LEVITUS_y0000_TGIB.txt
+    expatrie  LEVITUS_y0000_SGIB.txt $DIAGS/TXT LEVITUS_y0000_SGIB.txt
+    expatrie  LEVITUS_y0000_TGIB.nc $DIAGS/NC   LEVITUS_y0000_TGIB.nc
+    expatrie  LEVITUS_y0000_SGIB.nc $DIAGS/NC   LEVITUS_y0000_SGIB.nc
    fi
   fi
 
@@ -381,6 +390,12 @@ set -x
    fnino3_nc=${CONFCASE}_y${YEAR}_NINO3.nc
    fnino4_nc=${CONFCASE}_y${YEAR}_NINO4.nc
    fnino34_nc=${CONFCASE}_y${YEAR}_NINO34.nc
+
+   # special function for concatenation of Netcdf output
+   cdfmean_concat() { case $mm in
+      01)  mv cdfmean.nc $1 ;;
+      *)   ncrcat -A $1 cdfmean.nc -o $1 ;;
+      esac        ; }
  
    # get monthly mean gridT files and compute mean SST on each NINO box
    for  m in  1 2 3 4 5 6 7 8 9 10 11 12 ; do
@@ -393,23 +408,30 @@ set -x
      printf "%04d %02d" $YEAR $m >>   $fnino
  
     # nino 1+2   [ -90 W -- -80 W, -10 S -- 10 N ]
-    cdfmean  $f votemper T $NINO12 1 1 | tail -1 | awk '{ printf " %8.5f 0.00", $6 }'  >> $fnino ; ncks -A cdfmean.nc $fnino12_nc
+    cdfmean  $f votemper T $NINO12 1 1 | tail -1 | awk '{ printf " %8.5f 0.00", $6 }'  >> $fnino 
+    cdfmean_concat  $fnino12_nc
+
     # nino 3     [ -150 W -- -90 W, -5 S -- 5 N ]
-    cdfmean  $f votemper T $NINO3 1 1  | tail -1 | awk '{ printf " %8.5f 0.00", $6 }'  >> $fnino ; ncks -A cdfmean.nc $fnino3_nc
+    cdfmean  $f votemper T $NINO3 1 1  | tail -1 | awk '{ printf " %8.5f 0.00", $6 }'  >> $fnino 
+    cdfmean_concat  $fnino3_nc
+
     # nino 4     [ -200 W -- -150 W, -5 S -- 5 N ]
-    cdfmean  $f votemper T $NINO4 1 1 | tail -1 | awk '{ printf " %8.5f 0.00", $6 }'  >> $fnino  ; ncks -A cdfmean.nc $fnino4_nc
+    cdfmean  $f votemper T $NINO4 1 1 | tail -1 | awk '{ printf " %8.5f 0.00", $6 }'  >> $fnino  
+    cdfmean_concat  $fnino4_nc
+
     # nino 3.4   [ -170 W -- -120 W, -% S -- % N ]
-    cdfmean  $f votemper T $NINO34 1 1 | tail -1 | awk '{ printf " %8.5f 0.00\n", $6 }'  >> $fnino ; ncks -A cdfmean.nc $fnino34_nc
+    cdfmean  $f votemper T $NINO34 1 1 | tail -1 | awk '{ printf " %8.5f 0.00\n", $6 }'  >> $fnino 
+    cdfmean_concat  $fnino34_nc
  
    done
  
-   expatrie $fnino $DIAGS $fnino
-   expatrie $fnino12_nc $DIAGS/NC $fnino12_nc
-   expatrie $fnino3_nc  $DIAGS/NC $fnino3_nc
-   expatrie $fnino4_nc  $DIAGS/NC $fnino4_nc
-   expatrie $fnino34_nc $DIAGS/NC $fnino34_nc
+   expatrie $fnino      $DIAGS/TXT $fnino
+   expatrie $fnino12_nc $DIAGS/NC  $fnino12_nc
+   expatrie $fnino3_nc  $DIAGS/NC  $fnino3_nc
+   expatrie $fnino4_nc  $DIAGS/NC  $fnino4_nc
+   expatrie $fnino34_nc $DIAGS/NC  $fnino34_nc
   fi
-############################JMM#################################### up to here
+
 # Transport: Input files: VT, gridU, gridV, mesh mask, section.dat
 #^^^^^^^^^^^
   if [ $TRP == 1 ] ; then
@@ -439,7 +461,16 @@ set -x
    grep -v Give $fsection | grep -v level | grep -v IMAX | grep -v FROM > tmp
    mv -f tmp $fsection
    
-   expatrie  $fsection $DIAGS $fsection
+   expatrie  $fsection $DIAGS/TXT $fsection
+   
+   # save x_transports.nc file
+   listfiles=$( ls | grep transports.nc )
+
+   for file in $listfiles ; do
+       mv $file ${CONFCASE}_y${YEAR}_$file
+       expatrie ${CONFCASE}_y${YEAR}_$file $DIAGS/NC ${CONFCASE}_y${YEAR}_$file
+   done
+
   fi
  
 # Heat and Salt Meridional Transport : Input files : VT, mesh mask, new_maskglo
@@ -456,14 +487,17 @@ set -x
    rapatrie  ${MESH_MASK_ID}_mesh_zgr.nc $IDIR mesh_zgr.nc
    if (( $atl == 0 )) ; then rapatrie  new_maskglo.nc $IDIR new_maskglo.nc ; fi
  
-   # Ascii output file:
+   # Ascii output files:
    fheat=${CONFCASE}_y${YEAR}_heattrp.dat
    fsalt=${CONFCASE}_y${YEAR}_salttrp.dat
+   # Netcdf output files: (both head and salt in 2 separated variables)
  
-   cdfmhst  ${CONFCASE}_y${YEAR}_VT.nc
+   cdfmhst  ${CONFCASE}_y${YEAR}_VT.nc MST   # Save Meridional salt transport as well
+   mv mhst.nc ${CONFCASE}_y${YEAR}_mhst.nc
  
-   expatrie zonal_heat_trp.dat $DIAGS ${CONFCASE}_y${YEAR}_heattrp.dat
-   expatrie zonal_salt_trp.dat $DIAGS ${CONFCASE}_y${YEAR}_salttrp.dat
+   expatrie zonal_heat_trp.dat $DIAGS/TXT $fheat
+   expatrie zonal_salt_trp.dat $DIAGS/TXT $fsalt
+   expatrie ${CONFCASE}_y${YEAR}_mhst.nc $DIAGS/NC ${CONFCASE}_y${YEAR}_mhst.nc
  
    # needed below with the correct name
    cp zonal_heat_trp.dat ${CONFCASE}_y${YEAR}_heattrp.dat
@@ -473,7 +507,8 @@ set -x
     rapatrie ${CONFCASE}_y${YEAR}_gridT.nc $MEANY  ${CONFCASE}_y${YEAR}_gridT.nc
     cdfhflx  ${CONFCASE}_y${YEAR}_gridT.nc
  
-    expatrie hflx.out $DIAGS ${CONFCASE}_y${YEAR}_hflx.dat
+    expatrie hflx.out $DIAGS/TXT ${CONFCASE}_y${YEAR}_hflx.dat
+    expatrie cdfhflx.nc $DIAGS/NC ${CONFCASE}_y${YEAR}_hflx.nc
   fi
 
 
@@ -492,45 +527,63 @@ set -x
    if (( atl == 0 )) ; then
    # GLO
    printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo 20 60 500 2000 | grep Maximum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_maxmoc.nc
    printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo -40 30 2000 5500 | grep Minimum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_minmoc.nc
    # ATL
    printf "%s" 'Atl ' >>  $fmaxmoc ; cdfmaxmoc $f atl 0 60 500 2000 | grep Maximum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Atl_maxmoc.nc
    printf "%s" 'Atl ' >>  $fmaxmoc ; cdfmaxmoc $f atl -20 40 2000 5500 | grep Minimum  >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Atl_minmoc.nc
    #INP
    printf "%s" 'Inp ' >>  $fmaxmoc ; cdfmaxmoc $f inp 15 50 100 1000 | grep Minimum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Inp_minmoc.nc
    printf "%s" 'Inp ' >>  $fmaxmoc ; cdfmaxmoc $f inp -30 20 1000 5500  | grep Minimum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Inp_minmoc2.nc
    #AUS
    printf "%s" 'Aus ' >>  $fmaxmoc ; cdfmaxmoc $f glo -70 0 0 2000   | grep Maximum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Aus_maxmoc.nc
    printf "%s" 'Aus ' >>  $fmaxmoc ; cdfmaxmoc $f glo -70 0 2000 5500  | grep Minimum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Aus_minmoc.nc
    
-   expatrie $fmaxmoc $DIAGS $fmaxmoc
+   expatrie $fmaxmoc $DIAGS/TXT $fmaxmoc
 
    # Max and Min of MOC at some specific latitudes
    # GLO  MAX at 40 N and 30S
    printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo 40 40 500 2000 | grep Maximum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_maxmoc40N.nc
    printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo -30 -30 500  5500 | grep Maximum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_maxmoc30S.nc
    # ATL  MAX at 40N and 30S
    printf "%s" 'Atl ' >>  $fmaxmoc40 ; cdfmaxmoc $f atl 40 40 500 2000 | grep Maximum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Atl_maxmoc40N.nc
    printf "%s" 'Atl ' >>  $fmaxmoc40 ; cdfmaxmoc $f atl -30 -30  500 5000 | grep Maximum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Atl_maxmoc30S.nc
    #INP  Min at 30 S
    printf "%s" 'Inp ' >>  $fmaxmoc40 ; cdfmaxmoc $f inp -30 -30 1000 5500  | grep Minimum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Inp_minmoc30S.nc
    #AUS  MAX at 50 S
    printf "%s" 'Aus ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo -50 -50 0 2000   | grep Maximum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Aus_maxmoc50S.nc
 
-   expatrie $fmaxmoc40 $DIAGS $fmaxmoc40
+   expatrie $fmaxmoc40 $DIAGS/TXT $fmaxmoc40
 
    else    # NATL configuration
    # GLO
    printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo 20 60 500 2000 | grep Maximum >> $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_maxmoc.nc
    printf "%s" 'Glo ' >>  $fmaxmoc ; cdfmaxmoc $f glo -40 30 2000 5500 | grep Minimum >> $fmaxmoc
-   expatrie $fmaxmoc $DIAGS $fmaxmoc
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_minmoc.nc
+   expatrie $fmaxmoc $DIAGS/TXT $fmaxmoc
 
    # Max and Min of MOC at some specific latitudes
    # GLO  MAX at 40 N and 30S
    printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo 40 40 500 2000 | grep Maximum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_maxmoc40N.nc
    printf "%s" 'Glo ' >>  $fmaxmoc40 ; cdfmaxmoc $f glo -15 -15 500  5500 | grep Maximum >> $fmaxmoc40
+     expatrie maxmoc.nc $DIAGS/NC ${CONFIG}-${CASE}_y${YEAR}_Glo_maxmoc15S.nc
 
-   expatrie $fmaxmoc40 $DIAGS $fmaxmoc40
+   expatrie $fmaxmoc40 $DIAGS/TXT $fmaxmoc40
 
    # clean for next year 
    \rm moc.nc 
