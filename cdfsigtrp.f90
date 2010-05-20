@@ -74,6 +74,10 @@ PROGRAM cdfsigtrp
   REAL(KIND=4), DIMENSION (1)               ::  tim ! time counter
   REAL(KIND=4), DIMENSION (1)               ::  dummy1, dummy2
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar  ! structure of output
+  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvarin  !: structure for recovering input informations such as iwght
+  CHARACTER(LEN=256), DIMENSION(:),ALLOCATABLE :: cvarname !: names of input variables
+  INTEGER                                   :: nvarin    !: number of variables in input file
+  INTEGER                                   :: iweight   !: weight of input file for further averaging
 
   CHARACTER(LEN=256), DIMENSION (:), ALLOCATABLE :: csection                     !: section name
   CHARACTER(LEN=256) :: cfilet, cfileu, cfilev, cfilesec='dens_section.dat'      !: files name
@@ -130,6 +134,17 @@ PROGRAM cdfsigtrp
   END DO
 
   IF(lwrtcdf) THEN
+     nvarin=getnvar(cfileu)  ! smaller than cfilet
+     ALLOCATE(typvarin(nvarin), cvarname(nvarin)  )
+     cvarname(:)=getvarname(cfileu,nvarin,typvarin)
+
+     DO  jarg=1,nvarin
+       IF ( TRIM(cvarname(jarg))  == 'vozocrtx' ) THEN
+          iweight=typvarin(jarg)%iwght
+          EXIT  ! loop
+       ENDIF
+     END DO
+
 
      ALLOCATE ( typvar(nboutput), ipk(nboutput), id_varout(nboutput) )
      ALLOCATE (dumlon(kx,ky) , dumlat(kx,ky) )
@@ -149,6 +164,7 @@ PROGRAM cdfsigtrp
      typvar%scale_factor= 1.
      typvar%add_offset= 0.
      typvar%savelog10= 0.
+     typvar%iwght=iweight
      typvar(1)%long_name='class of potential density'
      typvar(1)%short_name='sigma_class'
      typvar%online_operation='N/A'
