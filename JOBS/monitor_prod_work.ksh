@@ -638,13 +638,13 @@ set -x
 
     echo $tag > ${CONFCASE}_y${tag}_trpsig_monitor.lst
 
-    cdfsigtrp $tfich $ufich $vfich 21 30 180 -bimg -print  >>  ${CONFCASE}_y${tag}_trpsig_monitor.lst
+    cdfsigtrp $tfich $ufich $vfich 21 30 180 -print  >>  ${CONFCASE}_y${tag}_trpsig_monitor.lst
     # save netcdf files
     listfiles=$( ls | grep trpsig.nc  )
 
     for file in $listfiles ; do
         expatrie $file $DIAGS/NC ${CONFCASE}_${tag}_$file
-        mv $file ${CONFIG}/${CONFCASE}-TRPSIG/${CONFCASE}_${tag}_$file
+        mv $file $TRPSIGY/${CONFCASE}_${tag}_$file
     done
 
     # save the monthly log file on gaya for an (improbable) eventual post processing ...
@@ -653,16 +653,16 @@ set -x
     mv ${CONFCASE}_y${tag}_trpsig_monitor.lst  $TRPSIGY
 
     # Idem : save temporary bimg files on gaya and create local mirror
-    for  b in *bimg ; do
-        mv  $b ${CONFCASE}_y${tag}_$b
-#       expatrie ${CONFCASE}_y${tag}_$b $TRPSIGY ${CONFCASE}_y${tag}_$b
-        mv  ${CONFCASE}_y${tag}_$b  $TRPSIGY
-    done
+#    for  b in *bimg ; do
+#        mv  $b ${CONFCASE}_y${tag}_$b
+##       expatrie ${CONFCASE}_y${tag}_$b $TRPSIGY ${CONFCASE}_y${tag}_$b
+#        mv  ${CONFCASE}_y${tag}_$b  $TRPSIGY
+#    done
     
     # Idem: for txt files
-    mv trpsig.txt ${CONFCASE}_y${tag}_trpsig.txt
-#   expatrie ${CONFCASE}_y${tag}_trpsig.txt $TRPSIGY ${CONFCASE}_y${tag}_trpsig.txt
-    mv  ${CONFCASE}_y${tag}_trpsig.txt $TRPSIGY
+#    mv trpsig.txt ${CONFCASE}_y${tag}_trpsig.txt
+##   expatrie ${CONFCASE}_y${tag}_trpsig.txt $TRPSIGY ${CONFCASE}_y${tag}_trpsig.txt
+#    mv  ${CONFCASE}_y${tag}_trpsig.txt $TRPSIGY
 
     # erase useless files ( monthly averages ) Keep tfich which can be used for MXL
     \rm *.bimg  $ufich $vfich
@@ -672,18 +672,37 @@ set -x
 
   # Launch post processing   ( by itself a complex script ...)
   # This script retrieve CONFIG name and CASE from the directory name where it runs...
-  cd ${CONFIG}/${CONFCASE}-TRPSIG
-  # compute mean nc files
-  # ....
-
- .  $TMPDIR/trpsig_postproc.ksh
-
-  cd $TMPDIR
-
-  # save results on gaya ( as many files as sections in dens_section.dat)
-  for f in ${CONFCASE}_y*_trpsig.txt ; do
-    expatrie $f $DIAGS/TXT/TRPSIG/ $f
+  cd $TRPSIGY
+  # compute mean nc files : all sections are mixed in this dir with 12 months each 
+  # isolate sections from m01 files : NATL025-GRD83_y1999m01_01_Denmark_strait_trpsig.nc
+  section_list=''
+  for f in *m01_*trpsig.nc ; do
+   section=${f%_trpsig.nc} ; section=${section#*m01_}
+   section_list="$section_list $section"
   done
+
+  for section in $section_list ; do
+   cdfmoy_weighted ${CONFCASE}_y${YEAR}m??_${section}_trpsig.nc 
+   froot=${CONFCASE}_y${YEAR}_${section}_trpsig
+   mv cdfmoy_weighted.nc  $froot.nc
+   expatrie $froot.nc $DIAGS/NC $froot.nc
+   ncks -v sigtrp  $froot.nc | \
+       sed -e 's/=/ /g' | grep -e '^time_counter\[' | grep -e lev | \
+       awk '{printf " %07.4f %+14.9e\n", $4, $8/1.e6}' > $froot.txt
+   expatrie $froot.txt $DIAGS/TXT/TRPSIG/  $froot.txt
+  done
+
+  # ....
+# cd $TMPDIR
+# cd ${CONFIG}/${CONFCASE}-TRPSIG
+#.  $TMPDIR/trpsig_postproc.ksh
+
+# cd $TMPDIR
+
+# # save results on gaya ( as many files as sections in dens_section.dat)
+# for f in ${CONFCASE}_y*_trpsig.txt ; do
+#   expatrie $f $DIAGS/TXT/TRPSIG/ $f
+# done
 
    # return to tmpdir
    cd $TMPDIR
