@@ -612,8 +612,8 @@ set -x
   # on a separate directory
   chkdirg ${CONFIG}/${CONFCASE}-TRPSIG/
   chkdirg ${CONFIG}/${CONFCASE}-TRPSIG/$YEAR/
-  chkdirg $DIAGS/$YEAR/
-  chkdirg $DIAGS/TRPSIG/
+  chkdirg $DIAGS/TXT/$YEAR/
+  chkdirg $DIAGS/TXT/TRPSIG/
 
   # also need temporary directories in the actual tmpdir:
   chkdir ${CONFIG}
@@ -639,6 +639,13 @@ set -x
     echo $tag > ${CONFCASE}_y${tag}_trpsig_monitor.lst
 
     cdfsigtrp $tfich $ufich $vfich 21 30 180 -bimg -print  >>  ${CONFCASE}_y${tag}_trpsig_monitor.lst
+    # save netcdf files
+    listfiles=$( ls | grep trpsig.nc  )
+
+    for file in $listfiles ; do
+        expatrie $file $DIAGS/NC ${CONFCASE}_${tag}_$file
+        mv $file ${CONFIG}/${CONFCASE}-TRPSIG/${CONFCASE}_${tag}_$file
+    done
 
     # save the monthly log file on gaya for an (improbable) eventual post processing ...
 #   expatrie ${CONFCASE}_y${tag}_trpsig_monitor.lst $TRPSIGY ${CONFCASE}_y${tag}_trpsig_monitor.lst
@@ -666,6 +673,8 @@ set -x
   # Launch post processing   ( by itself a complex script ...)
   # This script retrieve CONFIG name and CASE from the directory name where it runs...
   cd ${CONFIG}/${CONFCASE}-TRPSIG
+  # compute mean nc files
+  # ....
 
  .  $TMPDIR/trpsig_postproc.ksh
 
@@ -673,7 +682,7 @@ set -x
 
   # save results on gaya ( as many files as sections in dens_section.dat)
   for f in ${CONFCASE}_y*_trpsig.txt ; do
-    expatrie $f $DIAGS/TRPSIG/ $f
+    expatrie $f $DIAGS/TXT/TRPSIG/ $f
   done
 
    # return to tmpdir

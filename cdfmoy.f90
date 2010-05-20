@@ -73,8 +73,11 @@ PROGRAM cdfmoy
         IF ( istatus /= 0 ) THEN 
           npk = getdim (cfile,'nav_lev',cdtrue=cdep,kstatus=istatus)
             IF ( istatus /= 0 ) THEN 
-              PRINT *,' assume file with no depth'
-              npk=0
+              npk = getdim (cfile,'levels',cdtrue=cdep,kstatus=istatus)
+              IF ( istatus /= 0 ) THEN 
+                PRINT *,' assume file with no depth'
+                npk=0
+              ENDIF
             ENDIF
         ENDIF
      ENDIF

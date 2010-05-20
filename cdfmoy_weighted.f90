@@ -65,15 +65,19 @@ PROGRAM cdfmoy_weighted
   IF (istatus /= 0 ) THEN
      npk   = getdim (cfile,'z',cdtrue=cdep,kstatus=istatus)
      IF (istatus /= 0 ) THEN
-        npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
-        IF (istatus /= 0 ) THEN 
-! STOP 'depth dimension name not suported'
-         PRINT *,' assume file with no depth'
-         npk=0
+       npk   = getdim (cfile,'sigma',cdtrue=cdep,kstatus=istatus)
+        IF ( istatus /= 0 ) THEN
+          npk = getdim (cfile,'nav_lev',cdtrue=cdep,kstatus=istatus)
+            IF ( istatus /= 0 ) THEN
+              npk = getdim (cfile,'levels',cdtrue=cdep,kstatus=istatus)
+              IF ( istatus /= 0 ) THEN
+                PRINT *,' assume file with no depth'
+                npk=0
+              ENDIF
+            ENDIF
         ENDIF
      ENDIF
   ENDIF
-  
 
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo

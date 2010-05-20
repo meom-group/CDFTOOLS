@@ -399,7 +399,7 @@ PROGRAM cdfsigtrp
         ! (along section, depth ) 2D variables
         cdum=TRIM(csection(jsec))//'_trpdep.bimg'
         OPEN(numbimg,FILE=cdum,FORM='UNFORMATTED')
-        cdum=' 3 dimensions in this isopycnal file '
+        cdum=' 4 dimensions in this isopycnal file '
         WRITE(numbimg) cdum
         cdum=' 1: T ;  2: S ; 3: sigma ; 4: Velocity '
         WRITE(numbimg) cdum
@@ -480,7 +480,7 @@ PROGRAM cdfsigtrp
         ! netcdf output 
         DO jiso=1,nbins
            dummy1=sigma_lev(jiso)
-           dummy2=trpbin(jsec,jiso)
+           dummy2=trpbin(jsec,jiso)/1.e6
            ierr = putvar(ncout,id_varout(1), dummy1, jiso, kx, ky )
            ierr = putvar(ncout,id_varout(2), dummy2, jiso, kx, ky )
         END DO
