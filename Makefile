@@ -360,11 +360,14 @@ cdfbuoyflx: cdfio.o  eos.o cdfbuoyflx.f90
 cdfprofile: cdfio.o  cdfprofile.f90
 	$(F90) cdfprofile.f90  -o cdfprofile cdfio.o $(FFLAGS)
 
-cdfwhereij: cdfio.o  cdfwhereij.f90
+cdfwhereij:cdfio.o  cdfwhereij.f90
 	$(F90) cdfwhereij.f90  -o cdfwhereij cdfio.o $(FFLAGS)
 
-cdffindij: cdfio.o  cdffindij.f90
-	$(F90) cdffindij.f90  -o cdffindij cdfio.o $(FFLAGS)
+cdffindij: cdftools.o  cdffindij.f90
+	$(F90) cdffindij.f90  -o cdffindij cdfio.o cdftools.o $(FFLAGS)
+
+cdf_use_lib: cdftools.o cdf_use_lib.f90
+	$(F90) cdf_use_lib.f90  -o cdf_use_lib cdfio.o  cdftools.o $(FFLAGS)
 
 cdfweight: cdfio.o  cdfweight.f90
 	$(F90) cdfweight.f90  -o cdfweight cdfio.o $(FFLAGS)
@@ -498,6 +501,9 @@ cdfio.o: cdfio.f90
 
 eos.o: eos.f90
 	$(F90) -c eos.f90 $(FFLAGS)
+
+cdftools.o: cdfio.o cdftools.f90
+	$(F90) -c cdftools.f90 $(FFLAGS)
 
 modpoly.o: modpoly.f90
 	$(F90) -c modpoly.f90 $(FFLAGS)
