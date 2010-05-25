@@ -606,7 +606,7 @@ set -x
   # for annual values. This process is still done through temporary bimg/dimg files (remnant of the
   # old Clipper times).  By the way, 2 bimgtools are required: bimgmoy4 and bimgcaltrans
   #  In-lining of this script may be confusing. I leave it as an external module.
-  cp $CDFTOOLS/JOBS/trpsig_postproc.ksh ./
+#  cp $CDFTOOLS/JOBS/trpsig_postproc.ksh ./
 
   # due to the large amount of files that are produced by this diags, we prefer to keep them
   # on a separate directory
@@ -692,18 +692,6 @@ set -x
    expatrie $froot.txt $DIAGS/TXT/TRPSIG/  $froot.txt
   done
 
-  # ....
-# cd $TMPDIR
-# cd ${CONFIG}/${CONFCASE}-TRPSIG
-#.  $TMPDIR/trpsig_postproc.ksh
-
-# cd $TMPDIR
-
-# # save results on gaya ( as many files as sections in dens_section.dat)
-# for f in ${CONFCASE}_y*_trpsig.txt ; do
-#   expatrie $f $DIAGS/TXT/TRPSIG/ $f
-# done
-
    # return to tmpdir
    cd $TMPDIR
    # Erase the TRPSIG tree for this current year
@@ -724,6 +712,7 @@ set -x
  
    # Ascii output file:
    ftrc=${CONFCASE}_y${YEAR}_TRCmean.dat
+   ftrc_nc=${CONFCASE}_y${YEAR}_TRCmean.nc
  
    # Number of mol in the ocean ...
    printf "%04d "  $YEAR   >  $ftrc
@@ -735,6 +724,7 @@ set -x
    mean=$(cat tmp1 |  grep -e 'Mean value over the ocean' | awk ' {print $6}')
    total=$(echo $mean $area |  awk '{print $1 * $2 }' )
    printf "%s "  $total  >> $ftrc
+   mv cdfmean.nc $ftrc_nc
  
    # B-C14
    \rm -f tmp1
@@ -743,8 +733,11 @@ set -x
    mean=$(cat tmp1 |  grep -e 'Mean value over the ocean' | awk ' {print $6}')
    total=$(echo $mean $area |  awk '{print $1 * $2 }' )
    printf "%s \n"  $total  >> $ftrc
+   # append cdfmean.nc variable to the already existing nc file
+   ncks -A cdfmean.nc $ftrc_nc
  
-   expatrie $ftrc $DIAGS $ftrc
+   expatrie $ftrc $DIAGS/TXT $ftrc
+   expatrie $ftrc_nc $DIAGS/NC $ftrc_nc
  
    # zonal integral of inventories
    cdfzonalsum  ${CONFCASE}_y${YEAR}m12d31_ptrcT.nc  T
@@ -764,9 +757,9 @@ set -x
    expatrie zonalmean.nc $MEANY ${CONFCASE}_y${YEAR}_TRCzonalmean.nc
    expatrie zonalsum.nc $MEANY ${CONFCASE}_y${YEAR}_TRCzonalsum.nc
  
-   expatrie zonalmean.dat $DIAGS ${CONFCASE}_y${YEAR}_TRCzonalmean.dat
-   expatrie zonalsum.dat $DIAGS ${CONFCASE}_y${YEAR}_TRCzonalsum.dat
-   expatrie zonalsurf.dat $DIAGS ${CONFCASE}_y${YEAR}_TRCzonalsurf.dat
+   expatrie zonalmean.dat $DIAGS/TXT ${CONFCASE}_y${YEAR}_TRCzonalmean.dat
+   expatrie zonalsum.dat $DIAGS/TXT ${CONFCASE}_y${YEAR}_TRCzonalsum.dat
+   expatrie zonalsurf.dat $DIAGS/TXT ${CONFCASE}_y${YEAR}_TRCzonalsurf.dat
    \rm zonalsurf.nc
  
   fi
