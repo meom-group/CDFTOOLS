@@ -41,7 +41,7 @@ MODULE cdftools
   !! * Local variables
   INTEGER :: niter
   INTEGER :: imin, imax, jmin, jmax
-  INTEGER :: iloc, jloc
+  INTEGER, SAVE  :: iloc, jloc
   INTEGER :: npiglo, npjglo
   INTEGER, PARAMETER :: jpitermax=15
 
@@ -103,6 +103,7 @@ MODULE cdftools
     
     IF (xmin < glam0) xmin = xmin +360.
     IF (xmax < glam0) xmax = xmax +360.
+
 
   lagain = .TRUE.
   niter = 1
