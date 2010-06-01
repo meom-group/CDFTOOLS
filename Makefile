@@ -31,7 +31,8 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
-       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini
+       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
+       cdfpsi_level cdfhdy
 
 all: $(EXEC)
 
@@ -202,6 +203,9 @@ cdfbti: cdfio.o  cdfbti.f90
 cdfnrjcomp: cdfio.o  cdfnrjcomp.f90
 	$(F90) cdfnrjcomp.f90 -o cdfnrjcomp cdfio.o  $(FFLAGS) 
 
+cdfhdy: cdfio.o  eos.o  cdfhdy.f90
+	$(F90) cdfhdy.f90 -o cdfhdy cdfio.o eos.o  $(FFLAGS)
+
 ## Transport programs
 cdfmhst: cdfio.o  cdfmhst.f90
 	$(F90) cdfmhst.f90 -o cdfmhst cdfio.o $(FFLAGS)
@@ -238,6 +242,9 @@ cdfpsi-austral: cdfio.o  cdfpsi-austral.f90
 
 cdfpsi-austral-ssh: cdfio.o  cdfpsi-austral-ssh.f90
 	$(F90) cdfpsi-austral-ssh.f90  -o cdfpsi-austral-ssh cdfio.o $(FFLAGS)
+
+cdfpsi_level: cdfio.o  cdfpsi_level.f90
+	$(F90) cdfpsi_level.f90  -o cdfpsi_level cdfio.o $(FFLAGS)
 
 cdftransportiz: cdfio.o  cdftransportiz.f90
 	$(F90) cdftransportiz.f90 -o cdftransportiz cdfio.o $(FFLAGS)
