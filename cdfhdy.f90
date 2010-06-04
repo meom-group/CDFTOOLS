@@ -26,7 +26,7 @@ PROGRAM cdfhdy
   INTEGER   :: npiglo,npjglo, npk, npt             !: size of the domain
   INTEGER, DIMENSION(1) ::  ipk, &                 !: outptut variables : number of levels,
        &                    id_varout              !: ncdf varid's
-  real(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: ztemp, zsal ,&   !: Array to read a layer of data
+  real(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: ztemp, zsal ,&   !: Array to read a layer of data
        &                                         ztemp0, zsal0 ,&   !: reference density
        &                                         zsig0 , &        !: potential density (sig-0)
        &                                         zsig  , &        !: potential density (sig-0)
@@ -178,25 +178,25 @@ SUBROUTINE eos_insitu( ptem, psal, pdepth, jpiglo, jpjglo, prd )
      !! References :   Jackett and McDougall, J. Atmos. Ocean. Tech., 1994
      !!----------------------------------------------------------------------
      INTEGER, INTENT(in   )                           ::   jpiglo, jpjglo
-     REAL(4), DIMENSION(jpiglo,jpjglo), INTENT(in   ) ::   ptem   ! potential temperature  [Celcius]
-     REAL(4), DIMENSION(jpiglo,jpjglo), INTENT(in   ) ::   psal   ! salinity               [psu]
-     REAL(4), DIMENSION(jpiglo,jpjglo), INTENT(in   ) ::   pdepth ! depth                  [m]
-     REAL(4), DIMENSION(jpiglo,jpjglo), INTENT(  out) ::   prd    ! in situ density 
+     REAL(8), DIMENSION(jpiglo,jpjglo), INTENT(in   ) ::   ptem   ! potential temperature  [Celcius]
+     REAL(8), DIMENSION(jpiglo,jpjglo), INTENT(in   ) ::   psal   ! salinity               [psu]
+     REAL(8), DIMENSION(jpiglo,jpjglo), INTENT(in   ) ::   pdepth ! depth                  [m]
+     REAL(8), DIMENSION(jpiglo,jpjglo), INTENT(  out) ::   prd    ! in situ density 
      !!
      INTEGER  ::   ji, jj, jk           ! dummy loop indices
      INTEGER  ::   jpkm1
-     REAL(4) ::   zt , zs , zh , zsr   ! temporary scalars
-     REAL(4) ::   zr1, zr2, zr3, zr4   !    -         -
-     REAL(4) ::   zrhop, ze, zbw, zb   !    -         -
-     REAL(4) ::   zd , zc , zaw, za    !    -         -
-     REAL(4) ::   zb1, za1, zkw, zk0   !    -         -
-     REAL(4) ::   zrau0r               !    -         -
-     REAL(4), DIMENSION(jpiglo,jpjglo) ::   zws   ! temporary workspace
+     REAL(8) ::   zt , zs , zh , zsr   ! temporary scalars
+     REAL(8) ::   zr1, zr2, zr3, zr4   !    -         -
+     REAL(8) ::   zrhop, ze, zbw, zb   !    -         -
+     REAL(8) ::   zd , zc , zaw, za    !    -         -
+     REAL(8) ::   zb1, za1, zkw, zk0   !    -         -
+     REAL(8) ::   zrau0r               !    -         -
+     REAL(8), DIMENSION(jpiglo,jpjglo) ::   zws   ! temporary workspace
      INTEGER  ::   nn_eos   = 0        !: = 0/1/2 type of eq. of state and Brunt-Vaisala frequ.
-     REAL(4) ::   rn_alpha = 2.0e-4   !: thermal expension coeff. (linear equation of state)
-     REAL(4) ::   rn_beta  = 7.7e-4   !: saline  expension coeff. (linear equation of state)
+     REAL(8) ::   rn_alpha = 2.0e-4   !: thermal expension coeff. (linear equation of state)
+     REAL(8) ::   rn_beta  = 7.7e-4   !: saline  expension coeff. (linear equation of state)
 
-     REAL(4) ::   ralpbet           !: alpha / beta ratio
+     REAL(8) ::   ralpbet           !: alpha / beta ratio
       !!----------------------------------------------------------------------
 
      zrau0r = 1.e0 / rau0
