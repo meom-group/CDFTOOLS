@@ -24,10 +24,10 @@ PROGRAM cdfprofile
   INTEGER :: narg, iargc, istatus
   INTEGER :: jk
   INTEGER :: ilook, jlook
-  INTEGER :: npiglo, npjglo, npk
+  INTEGER :: npiglo, npjglo, npk, nvars
   ! added to write in netcdf
   INTEGER :: kx=1, ky=1, kz            ! dims of netcdf output file
-  INTEGER :: jj, nboutput=1                ! number of values to write in cdf output
+  INTEGER :: jj, jvar, nboutput=1                ! number of values to write in cdf output
   INTEGER :: ncout, ierr               ! for netcdf output
   INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout
 
@@ -37,10 +37,11 @@ PROGRAM cdfprofile
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE ::  dumlon, dumlat
   REAL(KIND=4), DIMENSION (1)               ::  tim ! time counter
   REAL(KIND=4), DIMENSION (1,1)             ::  dummymean 
-  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar  ! structure of output
+  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar_input, typvar  ! structure of output
 
 
   CHARACTER(LEN=256) :: cdum, cfile, cvar, cdep
+  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
   ! added to write in netcdf
   CHARACTER(LEN=256) :: cfileoutnc='profile.nc'
 
@@ -64,9 +65,11 @@ PROGRAM cdfprofile
   npiglo= getdim (cfile,'x')
   npjglo= getdim (cfile,'y')
   npk   = getdim (cfile,'depth',cdep)
+  nvars = getnvar(cfile)
 
   ! Allocate arrays
   ALLOCATE( v2d (npiglo,npjglo), depth(npk) ,profile(npk) )
+  ALLOCATE ( typvar_input(nvars) ,cvarname(nvars) )
   ALLOCATE ( typvar(nboutput), ipk(nboutput), id_varout(nboutput) )
   ALLOCATE (dumlon(1,1) , dumlat(1,1) ,lon(npiglo,npjglo), lat(npiglo,npjglo))
 
@@ -80,19 +83,14 @@ PROGRAM cdfprofile
      ipk(jj)=npk
   ENDDO
 
-  ! define new variables for output 
-  typvar(1)%name=TRIM(cvar)
-  typvar(1)%units='Sverdrup'
-  typvar%missing_value=99999.
-  typvar(1)%valid_min= -1000.
-  typvar(1)%valid_max= 1000.
-  typvar%scale_factor= 1.
-  typvar%add_offset= 0.
-  typvar%savelog10= 0.
-  !typvar(1)%long_name=
-  typvar(1)%short_name=TRIM(cvar)
-  typvar%online_operation='N/A'
-  typvar%axis='TZ'
+  cvarname(:)=getvarname(cfile,nvars,typvar_input)
+
+  DO jvar = 1, nvars
+  ! variables that will not be computed or stored are named 'none'
+    IF ( cvarname(jvar) == cvar ) THEN
+       typvar=typvar_input(jvar)
+    ENDIF
+  ENDDO
 
   depth(:) = getvar1d(cfile,cdep,npk,istatus)
   kz=npk
