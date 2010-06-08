@@ -36,7 +36,7 @@ PROGRAM cdfclip
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: timean, tim
 
   CHARACTER(LEN=256) :: cfile ,cfileout                         !: file name
-  CHARACTER(LEN=256) ::  cdep, cdum
+  CHARACTER(LEN=256) ::  cdep, cdum, ctim
   CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
   CHARACTER(LEN=255) :: cglobal !: global attribute to write on output file
   
@@ -120,7 +120,17 @@ PROGRAM cdfclip
   IF ( kmax < 0 ) kmax = npk
   npkk = kmax - kmin +1   ! number of extracted levels. If no level in file, it is 0: 0 -1 + 1 !
   IF (npk == 0 ) kmax = 1
-  nt     = getdim(cfile,'time_counter')
+  nt     = getdim(cfile,'time_counter', cdtrue=ctim, kstatus=istatus)
+  IF ( istatus /= 0 ) THEN
+     nt     = getdim(cfile,'time', cdtrue=ctim, kstatus=istatus)
+     IF ( istatus /= 0 ) THEN
+        nt     = getdim(cfile,'t', cdtrue=ctim, kstatus=istatus)
+        IF ( istatus /= 0 ) THEN
+          PRINT *, 'no time dimension found'
+          nt=1
+        ENDIF
+     ENDIF
+  ENDIF
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk ,' npkk  =', npkk
@@ -176,10 +186,10 @@ PROGRAM cdfclip
   ! create output fileset
   cfileout='cdfclip.nc'
   ! create output file taking the sizes in cfile
-
   ncout =create(cfileout, cfile,npiglo,npjglo,npkk,cdep=cdep)
   ierr= createvar(ncout , typvar,  nvars, ipkk, id_varout,cdglobal=cglobal)
   ierr= putheadervar(ncout , cfile, npiglo, npjglo, npkk,pnavlon=rlon, pnavlat=rlat,pdep=dep,cdep=cdep)
+
 
   DO jvar = 1,nvars
       ! skip dimension variables (already done when creating the output file)
@@ -190,7 +200,6 @@ PROGRAM cdfclip
       CASE DEFAULT
             IF ( lzonal ) THEN
               ALLOCATE( v2dxz(npiglo,ipk(jvar)) )
-              print *, TRIM(cvarname(jvar)), jmin,npiglo, ipk(jvar), imin
               DO jt=1,nt
               v2dxz=getvarxz(cfile,cvarname(jvar),jmin,npiglo,ipk(jvar), kimin=imin,kkmin=1,ktime=jt)
               DO jk=k1,k2
@@ -202,7 +211,6 @@ PROGRAM cdfclip
               DEALLOCATE ( v2dxz )
             ELSEIF (lmeridian) THEN
               ALLOCATE(  v2dyz(npjglo,ipk(jvar)) )
-              print *, TRIM(cvarname(jvar)), imin,npjglo, ipk(jvar), jmin
               DO jt=1,nt
               v2dyz=getvaryz(cfile,cvarname(jvar),imin,npjglo,ipk(jvar),kjmin=jmin,kkmin=1,ktime=jt)
               DO jk=k1, k2

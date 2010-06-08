@@ -20,7 +20,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfbn2 cdfbn2-full  cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig0 cdfbottomsigi cdfspice\
        cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl cdfmxl-full\
        cdfrhoproj cdfisopycdep cdfsigintegr cdfpv cdflspv cdfpvor cdfpvor-full\
-       cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz-full \
+       cdfmhst cdfmhst-full cdfvhst cdfvhst-full cdftransportiz cdftransportiz_noheat cdftransportiz_noheat_obc cdftransportiz-full \
        cdftransportizpm  \
        cdfmasstrp cdfmasstrp-full \
        cdfsigtrp cdfsigitrp cdfsigtrp-full cdftemptrp-full  cdftempvol-full\
@@ -254,6 +254,9 @@ cdftransportizpm: cdfio.o  cdftransportizpm.f90
 
 cdftransportiz_noheat: cdfio.o  cdftransportiz_noheat.f90
 	$(F90) cdftransportiz_noheat.f90 -o cdftransportiz_noheat cdfio.o $(FFLAGS)
+
+cdftransportiz_noheat_obc: cdfio.o  cdftransportiz_noheat_obc.f90
+	$(F90) cdftransportiz_noheat_obc.f90 -o cdftransportiz_noheat_obc cdfio.o $(FFLAGS)
 
 cdftransportiz-full: cdfio.o  cdftransportiz-full.f90
 	$(F90) cdftransportiz-full.f90 -o cdftransportiz-full cdfio.o $(FFLAGS)

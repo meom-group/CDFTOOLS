@@ -24,9 +24,9 @@ PROGRAM cdftransportiz
   !!   Original :  J.M. Molines (jan. 2005)
   !!               J.M. Molines Apr 2005 : use modules
   !!---------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
+  !!  $Rev: 264 $
+  !!  $Date: 2009-09-08 17:49:35 +0200 (Tue, 08 Sep 2009) $
+  !!  $Id: cdftransportiz_noheat.f90 264 2009-09-08 15:49:35Z mathiot $
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -65,13 +65,14 @@ PROGRAM cdftransportiz
   REAL(KIND=4)                                 ::  udum, vdum
 
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku,zwkv,    zwkut,zwkvt,   zwkus,zwkvs
+  REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zuobc, zvobc
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
 
   CHARACTER(LEN=256) :: cfileu, cfilev, csection, cfileout='section_trp.dat'
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
 
   INTEGER    ::  nxtarg
-  LOGICAL    :: ltest=.FALSE.
+  LOGICAL    :: ltest=.FALSE., l_merid=.false.,  l_zonal=.false.
 
   ! constants
   REAL(KIND=4)   ::  rau0=1000.,  rcp=4000.
@@ -114,11 +115,28 @@ PROGRAM cdftransportiz
   npiglo= MAX(1, getdim (cfileu,'x') )
   npjglo= MAX(1 ,getdim (cfileu,'y') )
   npk   = getdim (cfileu,'depth')
+
+  IF ( npiglo == 1 ) THEN
+    l_merid=.true.
+    PRINT *,' Meridional OBC'
+  ENDIF
+
+  IF ( npjglo == 1 ) THEN
+    l_zonal=.true.
+    PRINT *,' ZONAL OBC'
+  ENDIF
   
 
   PRINT *, 'npiglo=', npiglo
   PRINT *, 'npjglo=', npjglo
   PRINT *, 'npk   =', npk
+
+  IF ( l_merid) THEN
+    ALLOCATE (zuobc(npjglo,npk), zvobc(npjglo,npk) )
+  ELSEIF (l_zonal) THEN
+    ALLOCATE (zuobc(npiglo,npk), zvobc(npiglo,npk) )
+  ENDIF
+    
 
   ! Allocate arrays
   ALLOCATE( zu (npiglo,npjglo), zut(npiglo,npjglo), zus(npiglo,npjglo) )
@@ -185,6 +203,18 @@ PROGRAM cdftransportiz
 
   ztrpus(:,:,:)= 0
   ztrpvs(:,:,:)= 0
+ 
+
+  ! read u, v on OBC
+    IF ( l_zonal ) THEN   ! (jpiglo,jpk)
+      zuobc(:,:)= getvarxz(cfileu, 'vozocrtx',1,npiglo,npk )
+      zvobc(:,:)= getvarxz(cfilev, 'vomecrty',1,npiglo,npk )
+    ENDIF
+    IF ( l_merid ) THEN   ! (jpjglo,jpk)
+      zuobc(:,:)= getvaryz(cfileu, 'vozocrtx',1,npjglo,npk )
+      zvobc(:,:)= getvaryz(cfilev, 'vomecrty',1,npjglo,npk )
+    ENDIF
+
   DO jclass = 1, nclass
      DO jk = ilev0(jclass),ilev1(jclass)
         PRINT *,'level ',jk
@@ -197,8 +227,13 @@ PROGRAM cdftransportiz
            zus(:,:)= udum
            zvs(:,:)= vdum
         ELSE
-           zu (:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
-           zv (:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
+           IF ( l_zonal ) THEN
+           zu(:,1)=zuobc(:,jk)
+           zv(:,1)=zvobc(:,jk)
+           ELSE IF (l_merid ) THEN
+           zu(1,:)=zuobc(:,jk)
+           zv(1,:)=zvobc(:,jk)
+           ENDIF
            zut(:,:)= 0.
            zvt(:,:)= 0.
            zus(:,:)= 0.

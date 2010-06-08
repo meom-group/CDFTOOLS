@@ -1130,7 +1130,7 @@ CONTAINS
     LOGICAL :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
     REAL(KIND=4) :: sf=1., ao=0.        !: Scale factor and add_offset
     REAL(KIND=4)         :: spval       !: Missing values
-
+    INTEGER :: idum
 
     IF (PRESENT(kimin) ) THEN
        imin=kimin
@@ -1155,16 +1155,6 @@ CONTAINS
     lsf=.FALSE.
     lao=.FALSE.
 
-    istart(1) = imin
-    istart(2) = kj
-    istart(3) = kmin
-    ! JMM ! it workd for X Y Z T file,   not for X Y T .... try to found a fix !
-    istart(4) = itime
-
-    icount(1)=kpi
-    icount(2)=1
-    icount(3)=kpz
-    icount(4)=1
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,ncid) )
     CALL ERR_HDL(NF90_INQ_VARID ( ncid,cdvar,id_var))
@@ -1196,6 +1186,17 @@ CONTAINS
        ! there is a scale factor for this variable
        istatus=NF90_GET_ATT(ncid,id_var,'add_offset',ao)
        IF ( ao /= 0.) lao=.TRUE.
+    ENDIF
+
+    ! detect if there is a y dimension in cdfile
+    istatus=NF90_INQ_DIMID(ncid,'y',idum)
+    IF ( istatus == NF90_NOERR ) THEN  ! the file has a 'y' dimension
+      istart=(/imin,kj,kmin,itime/)
+      ! JMM ! it workd for X Y Z T file,   not for X Y T .... try to found a fix !
+      icount=(/kpi,1,kpz,1/)
+    ELSE    ! no y dimension
+      istart=(/imin,kmin,itime,1/)
+      icount=(/kpi,kpz,1,1/)
     ENDIF
 
     istatus=NF90_GET_VAR(ncid,id_var,getvarxz, start=istart,count=icount)
@@ -1243,6 +1244,7 @@ CONTAINS
     LOGICAL :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
     REAL(KIND=4) :: sf=1., ao=0.        !: Scale factor and add_offset
     REAL(KIND=4)         :: spval       !: Missing values
+    INTEGER :: idum
 
     IF (PRESENT(kjmin) ) THEN
        jmin=kjmin
@@ -1267,16 +1269,6 @@ CONTAINS
     lsf=.FALSE.
     lao=.FALSE.
 
-    istart(1) = ki
-    istart(2) = jmin
-    istart(3) = kmin
-    istart(4) = 1
-
-    icount(1)=1
-    icount(2)=kpj
-    icount(3)=kpz
-    ! JMM ! it workd for X Y Z T file,   not for X Y T .... try to found a fix !
-    icount(4)=itime
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,ncid) )
     CALL ERR_HDL(NF90_INQ_VARID ( ncid,cdvar,id_var))
@@ -1308,6 +1300,17 @@ CONTAINS
        ! there is a scale factor for this variable
        istatus=NF90_GET_ATT(ncid,id_var,'add_offset',ao)
        IF ( ao /= 0.) lao=.TRUE.
+    ENDIF
+
+    ! detect if there is a x dimension in cdfile
+    istatus=NF90_INQ_DIMID(ncid,'x',idum)
+    IF ( istatus == NF90_NOERR ) THEN  ! the file has a 'x' dimension
+      istart=(/ki,jmin,kmin,itime/)
+      ! JMM ! it workd for X Y Z T file,   not for X Y T .... try to found a fix !
+      icount=(/1,kpj,kpz,1/)
+    ELSE    ! no x dimension
+      istart=(/jmin,kmin,itime,1/)
+      icount=(/kpj,kpz,1,1/)
     ENDIF
 
     istatus=NF90_GET_VAR(ncid,id_var,getvaryz, start=istart,count=icount)
