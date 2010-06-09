@@ -15,7 +15,7 @@ PROGRAM cdftransportiz
   !!             This program use a zig-zag line going through U and V-points.
   !!             It takes as input : VT files, gridU, gridV files.
   !!             The mesh_hgr.nc, mesh_hzr.nc are required.
-  !!             It is conveniebt to use an ASCII file as the standard input to give
+  !!             It is convenient to use an ASCII file as the standard input to give
   !!             the name and the imin imax jmin jmax for eaxh section required
   !!             The last name of this ASCII file must be EOF
   !!

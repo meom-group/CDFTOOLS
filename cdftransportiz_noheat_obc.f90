@@ -1,6 +1,6 @@
-PROGRAM cdftransportiz
+PROGRAM cdftransportiz_noheat_obc
   !!---------------------------------------------------------------------
-  !!               ***  PROGRAM cdftransportiz  ***
+  !!               ***  PROGRAM cdftransportiz_noheat_obc  ***
   !!
   !!  **  Purpose: Compute Transports across a section
   !!               PARTIAL STEPS version
@@ -23,10 +23,11 @@ PROGRAM cdftransportiz
   !! history :
   !!   Original :  J.M. Molines (jan. 2005)
   !!               J.M. Molines Apr 2005 : use modules
+  !!               J.M. Molines Jun. 2010 : adaptation for OBC files
   !!---------------------------------------------------------------------
   !!  $Rev: 264 $
   !!  $Date: 2009-09-08 17:49:35 +0200 (Tue, 08 Sep 2009) $
-  !!  $Id: cdftransportiz_noheat.f90 264 2009-09-08 15:49:35Z mathiot $
+  !!  $Id: cdftransportiz_noheat_obc.f90 264 2009-09-08 15:49:35Z mathiot $
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
@@ -36,12 +37,16 @@ PROGRAM cdftransportiz
   INTEGER :: nclass   !: number of depth class
   INTEGER ,DIMENSION (:),ALLOCATABLE ::  imeter  !: limit beetween depth level, in m (nclass -1)
   INTEGER ,DIMENSION (:),ALLOCATABLE :: ilev0,ilev1 !: limit in levels  ! nclass
-  INTEGER   :: jk, jclass                          !: dummy loop index
+  INTEGER   :: jk, jclass, jj                      !: dummy loop index
   INTEGER   :: narg, iargc                         !: command line 
   INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
   INTEGER   :: imin, imax, jmin, jmax, ik 
-  INTEGER   :: numout = 10, numin=23, numout1 = 24
-
+  INTEGER   :: numout = 10, numvtrp=11, numhtrp=12, numstrp=14
+  ! added to write in netcdf
+  INTEGER :: kx=1, ky=1, kz=1          ! dims of netcdf output file
+  INTEGER :: nboutput=7                ! number of values to write in cdf output
+  INTEGER :: ncout, ierr               ! for netcdf output
+  INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout
   ! broken line stuff
   INTEGER, PARAMETER :: jpseg=10000
   INTEGER :: i0,j0,i1,j1, i, j
@@ -68,11 +73,22 @@ PROGRAM cdftransportiz
   REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zuobc, zvobc
   REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
 
-  CHARACTER(LEN=256) :: cfileu, cfilev, csection, cfileout='section_trp.dat'
+  ! added to write in netcdf
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE ::  dumlon, dumlat
+  REAL(KIND=4), DIMENSION (1)               ::  tim ! time counter
+  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar  ! structure of output
+  !
+  CHARACTER(LEN=256) :: cfilet ,cfileout='section_trp.dat', &
+       &                       cfileu, cfilev, csection , &
+       &                       cfilvtrp='vtrp.txt', cfilhtrp='htrp.txt', cfilstrp='strp.txt'
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
 
   INTEGER    ::  nxtarg
   LOGICAL    :: ltest=.FALSE., l_merid=.false.,  l_zonal=.false.
+  ! added to write in netcdf
+  CHARACTER(LEN=256) :: cfileoutnc 
+  ! added to write in netcdf
+  LOGICAL :: lwrtcdf=.TRUE.
 
   ! constants
   REAL(KIND=4)   ::  rau0=1000.,  rcp=4000.
@@ -115,6 +131,77 @@ PROGRAM cdftransportiz
   npiglo= MAX(1, getdim (cfileu,'x') )
   npjglo= MAX(1 ,getdim (cfileu,'y') )
   npk   = getdim (cfileu,'depth')
+
+ IF(lwrtcdf) THEN
+
+     ALLOCATE ( typvar(nboutput), ipk(nboutput), id_varout(nboutput) )
+     ALLOCATE (dumlon(1,1) , dumlat(1,1) )
+
+     dumlon(:,:)=0.
+     dumlat(:,:)=0.
+
+     DO jj=1,nboutput
+        ipk(jj)=1
+     ENDDO
+
+     ! define new variables for output
+     typvar(1)%name='vtrp'
+     typvar(1)%units='Sverdrup'
+     typvar%missing_value=99999.
+     typvar(1)%valid_min= -1000.
+     typvar(1)%valid_max= 1000.
+     typvar%scale_factor= 1.
+     typvar%add_offset= 0.
+     typvar%savelog10= 0.
+     typvar(1)%long_name='Mass_Transport'
+     typvar(1)%short_name='vtrp'
+     typvar%online_operation='N/A'
+     typvar%axis='T'
+
+     typvar(2)%name='lonmin'
+     typvar(2)%units='deg'
+     typvar(2)%valid_min= -180.
+     typvar(2)%valid_max= 180.
+     typvar(2)%long_name='minimum_longitude_of_section'
+     typvar(2)%short_name='lonmin'
+
+     typvar(3)%name='lonmax'
+     typvar(3)%units='deg'
+     typvar(3)%valid_min= -180.
+     typvar(3)%valid_max= 180.
+     typvar(3)%long_name='maximum_longitude_of_section'
+     typvar(3)%short_name='lonmax'
+
+     typvar(4)%name='latmin'
+     typvar(4)%units='deg'
+     typvar(4)%valid_min= -90.
+     typvar(4)%valid_max= 90.
+     typvar(4)%long_name='minimum_latitude_of_section'
+     typvar(4)%short_name='latmin'
+
+     typvar(5)%name='latmax'
+     typvar(5)%units='deg'
+     typvar(5)%valid_min= -90.
+     typvar(5)%valid_max= 90.
+     typvar(5)%long_name='maximum_latitude_of_section'
+     typvar(5)%short_name='latmax'
+
+     typvar(6)%name='top'
+     typvar(6)%units='meters'
+     typvar(6)%valid_min= 0.
+     typvar(6)%valid_max= 10000.
+     typvar(6)%long_name='min_depth_of_the_section'
+     typvar(6)%short_name='top'
+
+     typvar(7)%name='bottom'
+     typvar(7)%units='meters'
+     typvar(7)%valid_min= 0.
+     typvar(7)%valid_max= 10000.
+     typvar(7)%long_name='max_depth_of_the_section'
+     typvar(7)%short_name='bottom'
+
+  ENDIF
+
 
   IF ( npiglo == 1 ) THEN
     l_merid=.true.
@@ -261,21 +348,16 @@ PROGRAM cdftransportiz
 
      END DO  ! loop to next level
   END DO    ! next class
-  OPEN(numout1,FILE='out.txt')
   OPEN(numout,FILE=cfileout)
-! OPEN(numin,FILE='section.dat')
   DO
-      PRINT *, ' Give name of section '
-!    READ(numin,*) csection
+     PRINT *, ' Give name of section '
      READ(*,'(a)') csection
-!    PRINT *, ' Give name of section  : ', TRIM(csection)
+
      IF (TRIM(csection) == 'EOF' ) CLOSE(numout)
-     IF (TRIM(csection) == 'EOF' ) CLOSE(numout1)
      IF (TRIM(csection) == 'EOF' ) EXIT
-      PRINT *, ' Give imin, imax, jmin, jmax '
-!    READ(numin,*) imin, imax, jmin, jmax
+     PRINT *, ' Give imin, imax, jmin, jmax '
      READ(*,*) imin, imax, jmin, jmax
-!    PRINT *, ' Give imin, imax, jmin, jmax ',imin, imax, jmin, jmax
+
      !! Find the broken line between P1 (imin,jmin) and P2 (imax, jmax)
      !! ---------------------------------------------------------------
      ! ... Initialization
@@ -421,10 +503,38 @@ PROGRAM cdftransportiz
            WRITE(numout,*)  '% nada LONmin LATmin LONmax LATmax'
            WRITE(numout,*)  '% Top(m)  Bottom(m)  MassTrans(Sv) HeatTrans(PW) SaltTrans(kt/s)'
            WRITE(numout,*) 0 ,imin, imax, jmin, jmax
-           WRITE(numout,9003) 0 ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
-        ENDIF
-        WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6, 0.e0, 0.e0
-        WRITE(numout1,9004) voltrpsum/1.e6
+              WRITE(numout,9003) 0. ,gla(1),gphi(1), gla(nn-1), gphi(nn-1)
+           ENDIF
+           WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), voltrpsum/1.e6
+           WRITE(numvtrp,'(e12.6)') voltrpsum
+
+
+           IF(lwrtcdf) THEN
+
+              ! create output fileset
+              cfileoutnc=TRIM(csection)//'_transports.nc'
+              ncout =create(cfileoutnc,'none',kx,ky,kz,cdep='depthw')
+              ierr= createvar(ncout,typvar,nboutput,ipk,id_varout )
+              ierr= putheadervar(ncout, cfilev,kx, &
+                   ky,kz,pnavlon=dumlon,pnavlat=dumlat,pdep=gdepw)
+              tim=getvar1d(cfilev,'time_counter',1)
+              ierr=putvar1d(ncout,tim,1,'T')
+
+              ! netcdf output 
+              ierr = putvar0d(ncout,id_varout(1), REAL(voltrpsum/1.e6) )
+
+              ierr = putvar0d(ncout,id_varout(2), REAL(gla(1)) )
+              ierr = putvar0d(ncout,id_varout(3), REAL(gla(nn-1)) )
+              ierr = putvar0d(ncout,id_varout(4), REAL(gphi(1)) )
+              ierr = putvar0d(ncout,id_varout(5), REAL(gphi(nn-1)) )
+              ierr = putvar0d(ncout,id_varout(6), REAL(gdepw(ilev0(jclass))) )
+              ierr = putvar0d(ncout,id_varout(7), REAL(gdepw(ilev1(jclass)+1)) )
+
+              ierr = closeout(ncout)
+
+           ENDIF
+
+
      END DO ! next class
   END DO ! infinite loop : gets out when input is EOF
 
@@ -543,4 +653,4 @@ CONTAINS
     END IF
   END SUBROUTINE interm_pt
 
-END PROGRAM cdftransportiz
+END PROGRAM cdftransportiz_noheat_obc
