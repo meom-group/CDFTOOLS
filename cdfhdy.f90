@@ -32,7 +32,7 @@ PROGRAM cdfhdy
        &                                         zsig  , &        !: potential density (sig-0)
        &                                         zmask , &        !: 2D mask at current level
        &                                         zhdy, zterm, zdep, zdepth, zssh
-  REAL(KIND=4),DIMENSION(:),ALLOCATABLE   ::  tim
+  REAL(KIND=4),DIMENSION(:),ALLOCATABLE   ::  tim, ze3t_1d
 
   CHARACTER(LEN=256) :: cfilet , cdum, cfileout='cdfhdy.nc', cmask='mask.nc' !:
   CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc'
@@ -83,7 +83,7 @@ PROGRAM cdfhdy
 
   ALLOCATE (ztemp0(npiglo,npjglo), zsal0(npiglo,npjglo), zsig0(npiglo,npjglo) ,zmask(npiglo,npjglo))
   ALLOCATE (ztemp(npiglo,npjglo), zsal(npiglo,npjglo), zsig(npiglo,npjglo) , zhdy(npiglo,npjglo), zterm(npiglo,npjglo))
-  ALLOCATE (zdep(npiglo,npjglo), zdepth(npiglo,npjglo), zssh(npiglo,npjglo))
+  ALLOCATE (zdep(npiglo,npjglo), zdepth(npiglo,npjglo), zssh(npiglo,npjglo), ze3t_1d(npk))
   ALLOCATE (tim(npt))
 
   ! create output fileset
@@ -100,6 +100,8 @@ PROGRAM cdfhdy
   zsal0(:,:)=35.
 
   zmask(:,:) = getvar(cmask, 'tmask', zlev2, npiglo, npjglo)
+  ze3t_1d(:) = getvare3(coordzgr, 'e3t',npk)
+!  PRINT *, 'e3t = ', ze3t_1d
 
   DO jt=1,npt
     PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
@@ -109,7 +111,9 @@ PROGRAM cdfhdy
 
   DO jk = zlev1, zlev2
 
-     zdep(:,:)   = getvar(coordzgr, 'e3t_ps', jk,npiglo,npjglo,ldiom=.true.)
+!     zdep(:,:)   = getvar(coordzgr, 'e3t_ps', jk,npiglo,npjglo,ldiom=.true.)
+     ! we degrade the computation to smooth the results
+     zdep(:,:) = ze3t_1d(jk)
 
      ! total depth at current level (used for computation of rho in situ)
      zdepth(:,:) = zdepth(:,:) + zdep(:,:)

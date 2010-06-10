@@ -86,7 +86,6 @@ PROGRAM cdfprofile
   cvarname(:)=getvarname(cfile,nvars,typvar_input)
 
   DO jvar = 1, nvars
-  ! variables that will not be computed or stored are named 'none'
     IF ( cvarname(jvar) == cvar ) THEN
        typvar=typvar_input(jvar)
     ENDIF

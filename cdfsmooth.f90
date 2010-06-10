@@ -35,6 +35,7 @@ PROGRAM cdfsmooth
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE ::  v2d,w2d !: raw data,  filtered result
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE   ::  h       !: depth
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE   ::  ec,e    !: weigh in r8, starting index 0 :nband
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE ::  ec2d
   REAL(KIND=4) ::  fn, spval
   !
   CHARACTER(LEN=256) :: cfile,cnom, cfilout, cdep, ctim
@@ -85,6 +86,7 @@ PROGRAM cdfsmooth
         PRINT *,' Working with Lanczos filter'
      CASE ( 'Hanning','H','h')
         nfilter=2
+        ALLOCATE ( ec2d(0:2,0:2) )
         WRITE(cfilout,'(a,a,i3.3)') TRIM(cfile),'H',ncoup
         PRINT *,' Working with Hanning filter'
      CASE ( 'Shapiro','S','s')
@@ -197,7 +199,7 @@ CONTAINS
     CASE ( 1 )
        CALL lislanczos2d(px,kpx,py,npiglo,npjglo,fn,nband,npiglo,npjglo)
     CASE ( 2 )
-       print *,' not available'
+       CALL lishan2d(px,iw,py,ncoup,npiglo,npjglo)
     CASE ( 3 )
        print *,' not available'
     CASE ( 4 )
@@ -234,7 +236,20 @@ CONTAINS
   SUBROUTINE inithann(pfn,knj)
     INTEGER, INTENT(in)     :: knj  !: bandwidth
     REAL(KIND=4),INTENT(in) ::  pfn
-    PRINT *,' Init hann not done already' ; STOP
+    REAL(KIND=4) :: zsum
+
+    ec2d(:,:) = 0.  
+    ! central point
+    ec2d(1,1) = 4.
+    ! along one direction
+    ec2d(1,0) = 1. ;  ec2d(1,2) = 1.
+    ! and the other 
+    ec2d(0,1) = 1. ;  ec2d(2,1) = 1.
+
+    ! normalize
+    zsum = SUM(ec2d)
+    ec2d(:,:) = ec2d(:,:) / zsum
+
   END SUBROUTINE inithann
 
   SUBROUTINE initshap(pfn,knj)
@@ -337,6 +352,55 @@ CONTAINS
 !     py=0.5*(ztmpx + ztmpy )
     !
   END SUBROUTINE lislanczos2d
+
+  SUBROUTINE lishan2d(px,kiw,py,order,kpi,kpj)
+    !----------------------------------------------
+    !   px  = input data
+    !   kiw = validity of input data
+    !   py  = output filter
+    !   n=number of input/output data
+    !--------------------------------------------
+    ! * Arguments
+    INTEGER, INTENT(in) :: kpi, kpj, order
+    INTEGER,DIMENSION(:,:),INTENT(in) :: kiw
+    REAL(KIND=4), DIMENSION(:,:), INTENT(in)  :: px
+    REAL(KIND=4), DIMENSION(:,:), INTENT(out) :: py
+
+    ! local
+    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmp
+    INTEGER :: jiplus1, jiminus1, jjplus1, jjminus1
+    INTEGER :: jj, ji, iorder  !: loop indexes
+
+    ! init the arrays
+    ALLOCATE( tmp(kpi,kpj) )
+    py(:,:)  = 0.
+    tmp(:,:) = px(:,:)
+
+    DO iorder=1,order
+
+      DO jj=2,kpj-1
+        DO ji=2,kpi-1
+
+        !treatment of the domain frontiers
+        jiplus1 = MIN(ji+1,kpi) ; jiminus1 = MAX(ji-1,1) 
+        jjplus1 = MIN(jj+1,kpj) ; jjminus1 = MAX(jj-1,1) 
+
+        ! we don't compute in land
+        IF ( kiw(ji,jj) == 1 ) THEN
+
+             py(ji,jj) = SUM( ec2d(:,:) * tmp(jiminus1:jiplus1,jjminus1:jjplus1) )
+
+        ENDIF
+
+        ENDDO
+      ENDDO
+
+    ! update the tmp array
+    tmp(:,:) = py(:,:)
+
+    ENDDO
+
+  END SUBROUTINE lishan2d
 
   SUBROUTINE lisbox(px,kiw,py,knx,kny,pfn,knj,kpi,kpj)
     !----------------------------------------------
