@@ -103,31 +103,31 @@ PROGRAM cdfspice
 
   ! Compute spiciness
   DO jt=1,npt
-    PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
-  DO jk = 1, npk
-     zmask(:,:)=1.
+     PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
+     DO jk = 1, npk
+        zmask(:,:)=1.
 
-     ztemp(:,:)= getvar(cfilet, 'votemper',  jk ,npiglo, npjglo,ktime=jt)
-     zsal(:,:) = getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo,ktime=jt)
+        ztemp(:,:)= getvar(cfilet, 'votemper',  jk ,npiglo, npjglo,ktime=jt)
+        zsal(:,:) = getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo,ktime=jt)
 
-     WHERE(zsal == 0 ) zmask = 0
+        WHERE(zsal == 0 ) zmask = 0
 
-     ! spiciness at time jt, at level jk  
-     zspi(:,:) = 0
-     zsalref(:,:) = zsal(:,:) - 35.
-     ztempt(:,:) = 1.
-     DO ji=1,6
-       zsalt(:,:) = 1.
-       DO jj=1,5
-         zspi(:,:) = zspi(:,:) + beta(ji,jj)*ztempt(:,:)*zsalt(:,:)
-         zsalt(:,:) = zsalt(:,:)*zsalref(:,:)
-       END DO
-       ztempt(:,:) = ztempt(:,:)*ztemp(:,:)     
-     END DO
+        ! spiciness at time jt, at level jk  
+        zspi(:,:) = 0
+        zsalref(:,:) = zsal(:,:) - 35.
+        ztempt(:,:) = 1.
+        DO ji=1,6
+           zsalt(:,:) = 1.
+           DO jj=1,5
+              zspi(:,:) = zspi(:,:) + beta(ji,jj)*ztempt(:,:)*zsalt(:,:)
+              zsalt(:,:) = zsalt(:,:)*zsalref(:,:)
+           END DO
+           ztempt(:,:) = ztempt(:,:)*ztemp(:,:)     
+        END DO
 
-     ierr = putvar(ncout, id_varout(1) ,REAL(zspi)*zmask, jk,npiglo, npjglo,ktime=jt)
+        ierr = putvar(ncout, id_varout(1) ,REAL(zspi)*zmask, jk,npiglo, npjglo,ktime=jt)
 
-  END DO  ! loop to next level
+     END DO  ! loop to next level
   END DO  ! next time frame
 
   istatus = closeout(ncout)
