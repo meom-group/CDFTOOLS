@@ -201,7 +201,7 @@ CONTAINS
     CASE ( 2 )
        CALL lishan2d(px,iw,py,ncoup,npiglo,npjglo)
     CASE ( 3 )
-       print *,' not available'
+       CALL lisshapiro1d(px,iw,py,ncoup,npiglo,npjglo)
     CASE ( 4 )
        CALL lisbox(px,kpx,py,npiglo,npjglo,fn,nband,npiglo,npjglo)
     END SELECT
@@ -255,7 +255,9 @@ CONTAINS
   SUBROUTINE initshap(pfn,knj)
     INTEGER, INTENT(in)     :: knj  !: bandwidth
     REAL(KIND=4),INTENT(in) ::  pfn
-    PRINT *,' Init shap not done already' ; STOP
+
+!   nothing to do 
+
   END SUBROUTINE initshap
 
   SUBROUTINE initbox(pfn,knj)
@@ -401,6 +403,92 @@ CONTAINS
     ENDDO
 
   END SUBROUTINE lishan2d
+
+  SUBROUTINE lisshapiro1d(px,kiw,py,order,kpi,kpj)
+    !----------------------------------------------
+    !   px  = input data
+    !   kiw = validity of input data
+    !   py  = output filter
+    !   n=number of input/output data
+    !
+    !   adapted from Mercator code...
+    !--------------------------------------------
+    ! * Arguments
+    INTEGER, INTENT(in) :: kpi, kpj, order
+    INTEGER,DIMENSION(:,:),INTENT(in) :: kiw
+    REAL(KIND=4), DIMENSION(:,:), INTENT(in)  :: px
+    REAL(KIND=4), DIMENSION(:,:), INTENT(out) :: py
+    REAL(KIND=4), PARAMETER :: rp_aniso_diff_XY=2.25 !  anisotrope case
+    REAL(KIND=4)            :: zalphax, zalphay, znum
+
+    ! local
+    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztmp , zpx , zpy, zkiw
+    INTEGER :: imin, imax, halo=0
+    INTEGER :: jj, ji, iorder  !: loop indexes
+
+    LOGICAL :: cycl = .true.
+
+    !PRINT *, 'east-west periodicity is assumed ' , cycl
+
+    IF(cycl) halo=1
+    ! we allocate with an halo
+    ALLOCATE( ztmp(0:kpi+halo,kpj) , zpx(0:kpi+halo,kpj) , zpy(0:kpi+halo,kpj) , zkiw(0:kpi+halo,kpj) )
+
+    IF(cycl) THEN
+       zpx(1:kpi,:) = px(:,:)   ;  zkiw(1:kpi,:) = kiw(:,:)
+       zpx(0,:)     = px(kpi,:) ;  zkiw(0,:)     = kiw(kpi,:)
+       zpx(kpi+1,:) = px(1,:)   ;  zkiw(kpi+1,:) = kiw(1,:)
+    ELSE
+       zpx(:,:) = px(:,:)
+    ENDIF
+
+    zpy(:,:)  = zpx(:,:)  ! init?
+    ztmp(:,:) = zpx(:,:)  ! init
+
+    zalphax=1./2.
+    zalphay=1./2.
+
+    !  Dx/Dy=rp_aniso_diff_XY  , D_ = vitesse de diffusion
+    !  140 passes du fitre, Lx/Ly=1.5, le rp_aniso_diff_XY correspondant est:
+
+    IF ( rp_aniso_diff_XY >=  1. ) zalphay=zalphay/rp_aniso_diff_XY
+    IF ( rp_aniso_diff_XY <   1. ) zalphax=zalphax*rp_aniso_diff_XY
+
+    DO iorder=1,order
+
+    imin=2-halo
+    imax=kpi-1+halo
+
+        DO ji = imin,imax
+           DO jj = 2,kpj-1
+              ! We crop on the coast
+               znum = ztmp(ji,jj)   &
+                      + 0.25*zalphax*(ztmp(ji-1,jj  )-ztmp(ji,jj))*zkiw(ji-1,jj)  &
+                      + 0.25*zalphax*(ztmp(ji+1,jj  )-ztmp(ji,jj))*zkiw(ji+1,jj)  &
+                      + 0.25*zalphay*(ztmp(ji  ,jj-1)-ztmp(ji,jj))*zkiw(ji  ,jj-1)  &
+                      + 0.25*zalphay*(ztmp(ji  ,jj+1)-ztmp(ji,jj))*zkiw(ji  ,jj+1)
+               zpy(ji,jj)=znum*zkiw(ji,jj)+zpx(ji,jj)*(1.-zkiw(ji,jj))
+            ENDDO  ! end loop ji
+        ENDDO  ! end loop jj
+
+    IF(cycl) THEN
+       zpy(0,:)     = zpy(kpi,:) 
+       zpy(kpi+1,:) = zpy(1,:) 
+    ENDIF
+
+    ! update the tmp array
+    ztmp(:,:) = zpy(:,:)
+
+    ENDDO
+
+  ! return this array
+  IF(cycl) THEN
+     py(:,:) = zpy(1:kpi,:)
+  ELSE
+     py(:,:) = zpy(:,:)
+  ENDIF
+
+  END SUBROUTINE lisshapiro1d
 
   SUBROUTINE lisbox(px,kiw,py,knx,kny,pfn,knj,kpi,kpj)
     !----------------------------------------------

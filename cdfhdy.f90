@@ -100,8 +100,8 @@ PROGRAM cdfhdy
   zsal0(:,:)=35.
 
   zmask(:,:) = getvar(cmask, 'tmask', zlev2, npiglo, npjglo)
+  zssh(:,:)  = getvar(cfilet, 'sossheig', 1, npiglo, npjglo)
   ze3t_1d(:) = getvare3(coordzgr, 'e3t',npk)
-!  PRINT *, 'e3t = ', ze3t_1d
 
   DO jt=1,npt
     PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
@@ -111,9 +111,13 @@ PROGRAM cdfhdy
 
   DO jk = zlev1, zlev2
 
-!     zdep(:,:)   = getvar(coordzgr, 'e3t_ps', jk,npiglo,npjglo,ldiom=.true.)
+     !zdep(:,:)   = getvar(coordzgr, 'e3t_ps', jk,npiglo,npjglo,ldiom=.true.)
      ! we degrade the computation to smooth the results
      zdep(:,:) = ze3t_1d(jk)
+
+     IF ( zlev1 == 1) THEN
+        zdep(:,:) = zdep(:,:) + zssh(:,:)
+     ENDIF
 
      ! total depth at current level (used for computation of rho in situ)
      zdepth(:,:) = zdepth(:,:) + zdep(:,:)
@@ -123,8 +127,6 @@ PROGRAM cdfhdy
 
      CALL eos_insitu( ztemp0, zsal0, zdepth, npiglo, npjglo, zsig0 ) 
      CALL eos_insitu( ztemp, zsal, zdepth, npiglo, npjglo, zsig ) 
-
-     PRINT *, 'max of ref profile for level', jk ,'is ', MAXVAL(zsig0)
 
      ! we compute the term of the integral : (1/g) *10e4 * sum [ delta * dz ]
      ! with delta = (1/rho - 1/rho0)
