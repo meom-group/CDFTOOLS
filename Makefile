@@ -32,7 +32,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
-       cdfpsi_level cdfhdy
+       cdfpsi_level cdfhdy cdfhdy3d
 
 all: $(EXEC)
 
@@ -205,6 +205,9 @@ cdfnrjcomp: cdfio.o  cdfnrjcomp.f90
 
 cdfhdy: cdfio.o  eos.o  cdfhdy.f90
 	$(F90) cdfhdy.f90 -o cdfhdy cdfio.o eos.o  $(FFLAGS)
+
+cdfhdy3d: cdfio.o  eos.o  cdfhdy3d.f90
+	$(F90) cdfhdy3d.f90 -o cdfhdy3d cdfio.o eos.o  $(FFLAGS)
 
 ## Transport programs
 cdfmhst: cdfio.o  cdfmhst.f90

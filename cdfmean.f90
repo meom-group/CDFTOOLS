@@ -77,7 +77,8 @@ PROGRAM cdfmean
      STOP
   ENDIF
   ! Open standard output with recl=256 to avoid wrapping of long lines (ifort)
-  OPEN(6,FORM='FORMATTED',RECL=256)
+  OPEN(6,FORM='FORMATTED',RECL=256)  ! ifort
+!  OPEN(6,FORM='FORMATTED')          ! gfortran
 
   CALL getarg (1, cfilev)
   CALL getarg (2, cvar)

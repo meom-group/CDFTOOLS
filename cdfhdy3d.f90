@@ -1,9 +1,9 @@
-PROGRAM cdfhdy
+PROGRAM cdfhdy3d
   !!-------------------------------------------------------------------
-  !!             ***  PROGRAM cdfhdy  ***
+  !!             ***  PROGRAM cdfhdy3d  ***
   !!
   !!  **  Purpose: Compute dynamical height anomaly field from gridT file
-  !!                Store the results on a 2D cdf file.
+  !!                Store the results on a 3D cdf file.
   !!  
   !!
   !! history: 
@@ -34,7 +34,7 @@ PROGRAM cdfhdy
        &                                         zhdy, zterm, zdep, zdepth, zssh
   REAL(KIND=4),DIMENSION(:),ALLOCATABLE   ::  tim, ze3t_1d
 
-  CHARACTER(LEN=256) :: cfilet , cdum, cfileout='cdfhdy.nc', cmask='mask.nc' !:
+  CHARACTER(LEN=256) :: cfilet , cdum, cfileout='cdfhdy3d.nc', cmask='mask.nc' !:
   CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc'
 
   TYPE(variable) , DIMENSION(1) :: typvar         !: structure for attributes
@@ -48,30 +48,27 @@ PROGRAM cdfhdy
 
   !!  Read command line
   narg= iargc()
-  IF ( narg .LT. 3 ) THEN
-     PRINT *,' Usage : cdfhdy gridT level1 level2 '
-     PRINT *,' integrates from level1 (usually surface) to level2, level2 greater than level1 '
+  IF ( narg .NE. 1 ) THEN
+     PRINT *,' Usage : cdfhdy3d gridT '
      PRINT *,' reference is the sea surface, mask.nc and mesh_zgr.nc must be in your directory'
-     PRINT *,' Output on cdfhdy.nc, variable sohdy'
+     PRINT *,' Output on cdfhdy3d.nc, variable vohdy'
      STOP
   ENDIF
 
   CALL getarg (1, cfilet)
-  CALL getarg (2, cdum) ;        READ(cdum,*) zlev1
-  CALL getarg (3, cdum) ;        READ(cdum,*) zlev2
   npiglo= getdim (cfilet,'x')
   npjglo= getdim (cfilet,'y')
   npk   = getdim (cfilet,'depth')
   npt   = getdim (cfilet,'time')
 
-  ipk(:)= 1 
-  typvar(1)%name= 'sohdy'
+  ipk(:)= npk 
+  typvar(1)%name= 'vohdy'
   typvar(1)%units='m'
   typvar(1)%missing_value=0.
   typvar(1)%valid_min= -100.
   typvar(1)%valid_max= 100.
   typvar(1)%long_name='Dynamical height anomaly'
-  typvar(1)%short_name='sohdy'
+  typvar(1)%short_name='vohdy'
   typvar(1)%online_operation='N/A'
   typvar(1)%axis='TZYX'
 
@@ -99,7 +96,6 @@ PROGRAM cdfhdy
   ztemp0(:,:)=0.
   zsal0(:,:)=35.
 
-  zmask(:,:) = getvar(cmask, 'tmask', zlev2, npiglo, npjglo)
   zssh(:,:)  = getvar(cfilet, 'sossheig', 1, npiglo, npjglo)
   ze3t_1d(:) = getvare3(coordzgr, 'e3t',npk)
 
@@ -109,14 +105,15 @@ PROGRAM cdfhdy
      zhdy(:,:) = 0.
      zdepth(:,:) = 0.
 
-  DO jk = zlev1, zlev2
+  DO jk = 1, npk
 
      !zdep(:,:)   = getvar(coordzgr, 'e3t_ps', jk,npiglo,npjglo,ldiom=.true.)
      ! we degrade the computation to smooth the results
      zdep(:,:) = ze3t_1d(jk)
 
-      IF ( jk == 1 ) THEN
-!     IF ( zlev1 == 1) THEN oh le vilain bug
+     zmask(:,:) = getvar(cmask, 'tmask', jk, npiglo, npjglo)
+
+     IF ( jk == 1) THEN
         zdep(:,:) = zdep(:,:) + zssh(:,:)
      ENDIF
 
@@ -138,14 +135,14 @@ PROGRAM cdfhdy
      WHERE(zsal == 0 ) zterm = 0
 
      zhdy(:,:) = zhdy(:,:) + zterm(:,:)
+     ! we mask with the mask of the level
+     zhdy(:,:) = zhdy(:,:) * zmask(:,:)
+
+     ierr = putvar(ncout, id_varout(1) ,zhdy, jk,npiglo, npjglo,ktime=jt)
+
 
   END DO  ! loop to next level
      
-     ! we mask with the last level of the integral
-     zhdy(:,:) = zhdy(:,:) * zmask(:,:)
-
-     ierr = putvar(ncout, id_varout(1) ,zhdy, 1,npiglo, npjglo,ktime=jt)
-
   END DO  ! next time frame
 
   istatus = closeout(ncout)
@@ -250,4 +247,4 @@ SUBROUTINE eos_insitu( ptem, psal, pdepth, jpiglo, jpjglo, prd )
         END DO
 END SUBROUTINE eos_insitu
 
-END PROGRAM cdfhdy
+END PROGRAM cdfhdy3d
