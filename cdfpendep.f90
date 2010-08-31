@@ -1,4 +1,4 @@
-PROGRAM cdfpendep
+PROGRAM cdfpendep_new
   !!-------------------------------------------------------------------
   !!              PROGRAM CDFPENDEP
   !!              *****************
@@ -29,7 +29,7 @@ PROGRAM cdfpendep
   REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: trcinv, trcsurf, pendep
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=256) :: cfiletrc, cfileout='pendep.nc'            !: file name
+  CHARACTER(LEN=256) :: cfiletrc, cfiledia, cfileout='pendep.nc'            !: file name
   CHARACTER(LEN=256) :: cinv='invcfc' , ctrc='cfc11', cdum
   TYPE(variable), DIMENSION(1) :: typvar
 
@@ -39,16 +39,17 @@ PROGRAM cdfpendep
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfpendep ''TRC file'' [-inv inventory_name  -trc trc_name ]'
-     PRINT *,' if not given, inventory name is cfcinv, and trc name is cfc '
+     PRINT *,' Usage : cdfpendep ''TRC file'' ''DIA file'' [-inv inventory_name  -trc trc_name ]'
+     PRINT *,' if not given, inventory name is invcfc, and trc name is cfc11 '
      PRINT *,'   Output on pendep.nc ,variable pendep (m) '
      STOP
   ENDIF
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   CALL getarg (1, cfiletrc)
-  IF ( narg > 1 ) THEN
-    jarg=2
+  CALL getarg (2, cfiledia)
+  IF ( narg > 2 ) THEN
+    jarg=3
     DO WHILE (jarg <= narg )
       CALL getarg(jarg,cdum)
       SELECT CASE (cdum)
@@ -61,7 +62,7 @@ PROGRAM cdfpendep
 
   npiglo = getdim (cfiletrc,'x')
   npjglo = getdim (cfiletrc,'y')
-  npk    = getdim (cfiletrc,'depth')
+  npk    = getdim (cfiletrc,'deptht')
 
   ipk(1)      = 1
   typvar(1)%name='pendep'
@@ -87,7 +88,7 @@ PROGRAM cdfpendep
   ierr= putheadervar(ncout, cfiletrc, npiglo, npjglo,1)
 
     pendep(:,:)=0.
-    trcinv(:,:) = getvar(cfiletrc,cinv,1 ,npiglo, npjglo)
+    trcinv(:,:) = getvar(cfiledia,cinv,1 ,npiglo, npjglo)
     trcsurf(:,:) = getvar(cfiletrc,ctrc,1 ,npiglo, npjglo)
     WHERE( trcsurf /= 0 ) pendep=trcinv/trcsurf
     ierr=putvar(ncout,id_varout(1), pendep, 1 ,npiglo, npjglo)
@@ -96,4 +97,4 @@ PROGRAM cdfpendep
     ierr=putvar1d(ncout,timean,1,'T')
     istatus = closeout(ncout)
 
-END PROGRAM cdfpendep
+END PROGRAM cdfpendep_new
