@@ -32,7 +32,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
-       cdfpsi_level cdfhdy cdfhdy3d
+       cdfpsi_level cdfhdy cdfhdy3d cdffracinv cdfzonalintdeg
 
 all: $(EXEC)
 
@@ -360,6 +360,9 @@ cdfzonalsum: cdfio.o  cdfzonalsum.f90
 cdfzonalout: cdfio.o  cdfzonalout.f90
 	$(F90) cdfzonalout.f90 -o cdfzonalout cdfio.o $(FFLAGS) 
 
+cdfzonalintdeg: cdfio.o cdfzonalintdeg.f90
+	$(F90) cdfzonalintdeg.f90 -o cdfzonalintdeg cdfio.o $(FFLAGS)
+
 cdfhflx: cdfio.o  cdfhflx.f90
 	$(F90) cdfhflx.f90 -o cdfhflx cdfio.o $(FFLAGS)
 
@@ -429,6 +432,9 @@ cdfsmooth: cdfio.o  cdfsmooth.f90
 
 cdfpendep: cdfio.o  cdfpendep.f90
 	$(F90) cdfpendep.f90  -o cdfpendep cdfio.o $(FFLAGS)
+
+cdffracinv: cdfio.o cdffracinv.f90
+	$(F90) cdffracinv.f90 -o cdffracinv cdfio.o $(FFLAGS)
 
 cdfzgrv3: cdfio.o  cdfzgrv3.f90
 	$(F90) cdfzgrv3.f90  -o cdfzgrv3 cdfio.o $(FFLAGS)
