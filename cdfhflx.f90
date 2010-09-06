@@ -130,17 +130,17 @@ PROGRAM cdfhflx
         typvar(2)%long_name='Heat_Fluxes_Atlantic'
         typvar(2)%short_name='hflx_atl'
 
-        typvar(3)%name='hflx_indopacif'
+        typvar(3)%name='hflx_inp'
         typvar(3)%long_name='Heat_Fluxes_Indo-Pacific'
-        typvar(3)%short_name='hflx_indopacif'
+        typvar(3)%short_name='hflx_inp'
 
-        typvar(4)%name='hflx_indian'
+        typvar(4)%name='hflx_ind'
         typvar(4)%long_name='Heat_Fluxes_Indian'
-        typvar(4)%short_name='hflx_indian'
+        typvar(4)%short_name='hflx_ind'
 
-        typvar(5)%name='hflx_pacif'
+        typvar(5)%name='hflx_pac'
         typvar(5)%long_name='Heat_Fluxes_Pacific'
-        typvar(5)%short_name='hflx_pacif'
+        typvar(5)%short_name='hflx_pac'
 
      ENDIF
   ENDIF
