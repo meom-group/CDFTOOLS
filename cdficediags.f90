@@ -44,7 +44,7 @@ PROGRAM cdficediag
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar  ! structure of output
   !  REAL(KIND=4), DIMENSION(:), ALLOCATABLE   ::   gdepw    ! depth read 
   !
-  CHARACTER(LEN=256) :: cfilev , cdum
+  CHARACTER(LEN=256) :: cfilei , cdum
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  cmask='mask.nc'
   ! added to write in netcdf
   CHARACTER(LEN=256) :: cfileoutnc='icediags.nc' 
@@ -58,9 +58,9 @@ PROGRAM cdficediag
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 1) THEN
-     CALL getarg (1, cfilev)
-     npiglo= getdim (cfilev,'x')
-     npjglo= getdim (cfilev,'y')
+     CALL getarg (1, cfilei)
+     npiglo= getdim (cfilei,'x')
+     npjglo= getdim (cfilei,'y')
   ELSE
      PRINT *,' Usage : cdficediag ncfile '
      PRINT *,' Files mesh_hgr.nc, mask.nc '
@@ -141,8 +141,8 @@ PROGRAM cdficediag
   ff(:,:) = getvar(coordhgr, 'gphit' , 1,npiglo,npjglo)
 
 
-  ricethick(:,:)= getvar(cfilev, 'iicethic',  1 ,npiglo,npjglo)
-  riceldfra(:,:)= getvar(cfilev, 'ileadfra',  1 ,npiglo,npjglo)
+  ricethick(:,:)= getvar(cfilei, 'iicethic',  1 ,npiglo,npjglo)
+  riceldfra(:,:)= getvar(cfilei, 'ileadfra',  1 ,npiglo,npjglo)
 
   ! modify the mask for periodic and north fold condition (T pivot, F Pivot ...)
   ! in fact should be nice to use jperio as in the code ...
@@ -193,9 +193,9 @@ PROGRAM cdficediag
      ! create output fileset
      ncout =create(cfileoutnc,'none',kx,ky,kz,cdep='depthw')
      ierr= createvar(ncout,typvar,nboutput,ipk,id_varout )
-     ierr= putheadervar(ncout, cfilev,kx, &
+     ierr= putheadervar(ncout, cfilei,kx, &
           ky,kz,pnavlon=dumlon,pnavlat=dumlat)
-     tim=getvar1d(cfilev,'time_counter',1)
+     tim=getvar1d(cfilei,'time_counter',1)
      ierr=putvar1d(ncout,tim,1,'T')
 
      ! netcdf output 
