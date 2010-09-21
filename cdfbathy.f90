@@ -31,13 +31,14 @@ PROGRAM cdfbathy
   INTEGER, DIMENSION (:,:), ALLOCATABLE :: mbathy, mask
   ! REAL(KIND=4) :: e3zps_min=25, e3zps_rat=0.2
   REAL(KIND=4) :: e3zps_min=1000, e3zps_rat=1, depmin=600., depfill=0.
+  REAL(KIND=4) :: scale_factor=1. ! divide by scale factor when reading
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: gdept, gdepw, e3t, e3w
   !
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE     :: h, rtime
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: bathyin,bathy, e3_bot
   !
   CHARACTER(LEN=256) ::  cfilein, cline1, cline2, ctmp, cfileroot, creplace, cdump
-  CHARACTER(LEN=256) :: cvar='none', cdim
+  CHARACTER(LEN=256) ::  cdim, cvar='Bathymetry'
 
   LOGICAL :: lexist=.TRUE., lfill=.FALSE., lfullstep=.FALSE., lappend=.FALSE., lreplace=.FALSE.
   LOGICAL :: ldump = .FALSE., lmodif=.FALSE., loverwrite=.false., lraz=.false., ldumpn=.false.
@@ -56,6 +57,8 @@ PROGRAM cdfbathy
      PRINT 9999, ' DESCRIPTION OF OPTIONS '
      PRINT 9999, ' ---------------------- '
      PRINT 9999, '   -file (or -f ) : name of bathy file '
+     PRINT 9999, '   -var (or -v ) : name of cdf variable [default: Bathymetry]'
+     PRINT 9999, '   -scale  s  : use s as a scale factor (divide when read the file)'
      PRINT 9999, '   -zoom (or -z ) : sub area of the bathy file to work with (imin imax jmin jmax)'
      PRINT 9999, '   -fillzone (or -fz ) : sub area will be filled with 0 up to the first coast line '
      PRINT 9999, '   -raz_zone (or -raz ) : sub area will be filled with 0 up '
@@ -83,6 +86,12 @@ PROGRAM cdfbathy
      IF (cline1 == '-file ' .OR. cline1 == '-f') THEN
         CALL getarg(jarg,cline2) ; jarg = jarg + 1
         cfilein=cline2
+     ELSE IF (cline1 == '-var' .OR. cline1 == '-v') THEN
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
+        cvar=cline2
+     ELSE IF (cline1 == '-scale' ) THEN
+        CALL getarg(jarg,cline2) ; jarg = jarg + 1
+        READ(cline2,*) scale_factor
      ELSE IF (cline1 == '-zoom' .OR. cline1 == '-z') THEN
         CALL getarg(jarg,cline2) ; jarg = jarg + 1
         READ(cline2,*) imin
@@ -161,7 +170,8 @@ PROGRAM cdfbathy
   ALLOCATE (mbathy(npiglo,npjglo), bathy(npiglo,npjglo),bathyin(npiglo,npjglo),e3_bot(npiglo,npjglo))
   ALLOCATE (mask(npiglo,npjglo))
   mask = 0
-  bathy(:,:)=getvar(ctmp,'Bathymetry',1, npiglo,npjglo)
+  bathy(:,:)=getvar(ctmp,cvar,1, npiglo,npjglo)
+  bathy(:,:)=bathy(:,:)/scale_factor
   bathyin=bathy  ! save original 
 
   IF (lfullstep ) THEN 
@@ -177,7 +187,8 @@ PROGRAM cdfbathy
 
   IF (lmodif ) THEN
      CALL prlog(bathyin,bathy,npiglo,npjglo,lappend)
-     istatus=putvar(ctmp,'Bathymetry',1,imax-imin+1,jmax-jmin+1,kimin=imin,kjmin=jmin,ptab=bathy(imin:imax,jmin:jmax))
+     istatus=putvar(ctmp,cvar,1,imax-imin+1,jmax-jmin+1,kimin=imin,kjmin=jmin,&
+      &   ptab=bathy(imin:imax,jmin:jmax)*scale_factor)
   ENDIF
 
 CONTAINS 
@@ -284,7 +295,8 @@ CONTAINS
     DO ji=1,kpi
        DO jj=1,kpj
           IF ( ABS( ptabold(ji,jj) - ptab(ji,jj)) > 0.02  ) THEN    ! allow a 2 cm tolerance for rounding purposes
-             WRITE(numlog,'(a,i4,a,i4,a,f8.2,a,f8.2)') ' bathy(',ji,',',jj,')=',ptab(ji,jj),' ! instead of ',ptabold(ji,jj)
+             WRITE(numlog,'(a,i4,a,i4,a,f8.2,a,f8.2)') ' bathy(',ji,',',jj,')=',ptab(ji,jj)*scale_factor,&
+ & ' ! instead of ',ptabold(ji,jj)*scale_factor
           END IF
        END DO
     END DO
