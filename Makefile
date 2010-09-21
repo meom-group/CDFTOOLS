@@ -28,7 +28,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        cdfheatc cdfheatc-full cdfzonalmean cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlheatc-full cdfmxlsaltc cdfmxlhcsc cdfvertmean\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
-       cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe \
+       cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfmax_sp cdfprobe cdfinfo \
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
@@ -423,6 +423,9 @@ cdfmax_sp: cdfio.o  cdfmax_sp.f90
 
 cdfprobe: cdfio.o  cdfprobe.f90
 	$(F90) cdfprobe.f90  -o cdfprobe cdfio.o $(FFLAGS)
+
+cdfinfo: cdfio.o  cdfinfo.f90
+	$(F90) cdfinfo.f90  -o cdfinfo cdfio.o $(FFLAGS)
 
 cdfclip: cdfio.o  cdfclip.f90
 	$(F90) cdfclip.f90  -o cdfclip cdfio.o $(FFLAGS)
