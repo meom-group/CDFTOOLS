@@ -147,7 +147,7 @@ PROGRAM cdfvertmean
    IF ( gdep(jk) <= dep_down ) k2=jk
   ENDDO
     
-  PRINT *, dep_up, dep_down, k1, k2 , gdep(k1), gdep(k2)
+  PRINT *, dep_up, dep_down, k1, k2 , gdep(k1), gdep(k2+1)
      
 
   zvol=0.d0
