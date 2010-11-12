@@ -40,7 +40,8 @@ PROGRAM cdfcsp
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfcsp ''list_of_ioipsl_model_output_files'' '
+     PRINT *,' Usage : cdfcsp ''list_of_files'' '
+     PRINT *,'        Replace missing_values by 0 and update attribute'
      STOP
   ENDIF
   PRINT *, 'narg=', narg
