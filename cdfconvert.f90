@@ -38,7 +38,7 @@ PROGRAM cdfconvert
   INTEGER   :: numu=10, numv=11, numt=12,  nums=14, num2d=15, numssh=16, numuu=17, numvv=18
   CHARACTER(LEN=256) :: cdimgu, cdimgv,cdimgt, cdimgs, cdimg2d !: file name dimg
   CHARACTER(LEN=256) :: cdimguu, cdimgvv, cdimgssh             !: file name dimg (optional)
-  CHARACTER(LEN=256) :: cheader
+  CHARACTER(LEN=80) :: cheader
   CHARACTER(LEN=4) :: cver
   REAL(KIND=4) :: x1,y1, dx,dy, spval
   LOGICAL :: lexist

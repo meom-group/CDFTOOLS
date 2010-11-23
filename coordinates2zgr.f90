@@ -25,7 +25,7 @@ PROGRAM coordinates2zgr
   REAL(wp) :: zjpiglo, zjpjglo, znbsel, zrecl8, ztimm8
   REAL(wp) :: znt, zdim, xx1, yy1, ddx, ddy, sspval
 
-  CHARACTER(256) :: cltextco
+  CHARACTER(80) :: cltextco
   INTEGER(4) :: numcoo, nummsh, numbat
   INTEGER(4) :: nrecl8
   INTEGER(4) :: ngrid
