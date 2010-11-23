@@ -527,7 +527,7 @@ CONTAINS
       IMPLICIT NONE
       CHARACTER(LEN=*), INTENT(in) ::  clname
       CHARACTER(LEN=4)  ::  cver
-      CHARACTER(LEN=256) ::  clheader
+      CHARACTER(LEN=80) ::  clheader
 !
       INTEGER :: irecl
 
