@@ -7,12 +7,11 @@ PROGRAM cdfhdy
   !!  
   !!
   !! history: 
-  !!     Original :   J.M. Molines (Nov 2004 ) for ORCA025
-  !!                  J.M. Molines Apr 2005 : use modules
+  !!     Original :   R. Dussin, May 2010
   !!-------------------------------------------------------------------
-  !!  $Rev: 256 $
-  !!  $Date: 2009-07-21 17:49:27 +0200 (mar. 21 juil. 2009) $
-  !!  $Id: cdfsig0.f90 256 2009-07-21 15:49:27Z molines $
+  !!  $Rev$
+  !!  $Date$
+  !!  $Id$
   !!--------------------------------------------------------------
   !! * Modules used
   USE cdfio
