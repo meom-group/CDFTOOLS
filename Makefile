@@ -32,7 +32,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
-       cdfpsi_level cdfhdy cdfhdy3d cdffracinv cdfzonalintdeg cdfmaskdmp cdfisopsi
+       cdfpsi_level cdfhdy cdfhdy3d cdffracinv cdfzonalintdeg cdfmaskdmp cdfisopsi cdf2matlab
 
 all: $(EXEC)
 
@@ -447,6 +447,9 @@ cdffracinv: cdfio.o cdffracinv.f90
 
 cdfzgrv3: cdfio.o  cdfzgrv3.f90
 	$(F90) cdfzgrv3.f90  -o cdfzgrv3 cdfio.o $(FFLAGS)
+
+cdf2matlab: cdfio.o  cdf2matlab.f90
+	$(F90) cdf2matlab.f90 -o cdf2matlab cdfio.o $(FFLAGS) 
 
 ## reformating programs
 cdf16bit: cdfio.o cdf16bit.f90
