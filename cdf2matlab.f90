@@ -19,13 +19,14 @@ PROGRAM cdf2matlab
 
   !! * Local variables
   IMPLICIT NONE
-  INTEGER   :: jj
+  INTEGER   :: ji, jj
   INTEGER   :: narg, iargc                           !: 
   INTEGER   :: npiglo, npjglo, npk, npiglox2         !: size of the domain
   INTEGER   :: zlev , zindex, ztmp
   INTEGER, DIMENSION(3) :: ipk, id_varout
   REAL(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: zlon, zlat, zvar          ! input arrays
   REAL(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: zlonout, zlatout, zvarout ! output arrays
+  REAL(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: zlonwork, zlatwork, zvarwork ! working arrays arrays
   REAL(KIND=4) , DIMENSION(1)                :: timean
 
   CHARACTER(LEN=256) :: cfile, cvarin, cdum, cfileout='output.nc'        !: file name
@@ -114,6 +115,34 @@ PROGRAM cdf2matlab
      zvarout(npiglo+ztmp+1:npiglox2,jj) = zvar(1:zindex-1,jj) 
 
   END DO
+
+  ! Special treatement for ORCA2
+
+  IF ( ( npiglo .EQ. 182 ) .AND. ( npjglo .EQ. 149 ) ) THEN
+     PRINT *, 'Assuming that config is ORCA2'
+
+     ALLOCATE( zvarwork(npiglox2,npjglo),zlonwork(npiglox2,npjglo),zlatwork(npiglox2,npjglo) )
+
+     !! init the arryas
+     zlonwork(:,:) = zlonout(:,:)
+     zlatwork(:,:) = zlatout(:,:)
+     zvarwork(:,:) = zvarout(:,:)
+
+     !! swap values to keep lon increasing 
+     zlonwork(131,:) = zlonout(130,:) ; zlonwork(npiglo+131,:) = zlonout(npiglo+130,:)
+     zlatwork(131,:) = zlatout(130,:) ; zlatwork(npiglo+131,:) = zlatout(npiglo+130,:)
+     zvarwork(131,:) = zvarout(130,:) ; zvarwork(npiglo+131,:) = zvarout(npiglo+130,:)
+
+     zlonwork(130,:) = zlonout(131,:) ; zlonwork(npiglo+130,:) = zlonout(npiglo+131,:)
+     zlatwork(130,:) = zlatout(131,:) ; zlatwork(npiglo+130,:) = zlatout(npiglo+131,:)
+     zvarwork(130,:) = zvarout(131,:) ; zvarwork(npiglo+130,:) = zvarout(npiglo+131,:)
+
+   !! swapping the arrays
+   zlonout(:,:) = zlonwork(:,:)
+   zlatout(:,:) = zlatwork(:,:)
+   zvarout(:,:) = zvarwork(:,:)
+
+   ENDIF
 
   ierr=putvar(ncout,id_varout(1), zlonout, 1, npiglox2, npjglo)
   ierr=putvar(ncout,id_varout(2), zlatout, 1, npiglox2, npjglo)
