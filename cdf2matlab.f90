@@ -152,4 +152,6 @@ PROGRAM cdf2matlab
   ierr=putvar1d(ncout,timean,1,'T')
   istatus = closeout(ncout)
 
+  PRINT *, 'Tip : in matlab, do not plot the last line (e.g. maximum northern latitude) '
+
 END PROGRAM cdf2matlab
