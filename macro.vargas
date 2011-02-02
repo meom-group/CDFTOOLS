@@ -4,7 +4,7 @@
 # !!  $Id: macro.zahir 82 2007-07-17 08:24:09Z molines $
 # !!--------------------------------------------------------------
 #
-NCDF= -I/usr/local/pub/NetCDF/3.5.1/include -L/usr/local/pub/NetCDF/3.5.1/lib -lnetcdf
+NCDF= -I/usr/local/pub/NetCDF/3.6.2/include -L/usr/local/pub/NetCDF/3.6.2/lib -lnetcdf
 
 F90=xlf90
 MPF90=mpxlf90_r
