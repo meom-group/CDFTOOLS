@@ -135,7 +135,7 @@ CONTAINS
     INTEGER ,DIMENSION(4) :: nvdim
     CHARACTER(LEN=256) :: cldep, cldepref, cldepvar
 
-    istatus = NF90_CREATE(cdfile,NF90_CLOBBER, icout)
+    istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncid=icout)
     istatus = NF90_DEF_DIM(icout,'x',kx, id_x)
     istatus = NF90_DEF_DIM(icout,'y',ky, id_y)
 
