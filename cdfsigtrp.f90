@@ -320,10 +320,10 @@ PROGRAM cdfsigtrp
 
      ! Some control print 
      IF ( l_print ) THEN
-        WRITE(cfor9000,'(a,i3,a)') '(i7,',npts,'f8.3)'
-        WRITE(cfor9001,'(a,i3,a)') '(i7,',npts,'f8.0)'
-        WRITE(cfor9002,'(a,i3,a)') '(f7.3,',npts,'f8.0)'
-        WRITE(cfor9003,'(a,i3,a)') '(f7.3,',npts,'f8.3)'
+        WRITE(cfor9000,'(a,i4,a)') '(i7,',npts,'f8.3)'
+        WRITE(cfor9001,'(a,i4,a)') '(i7,',npts,'f8.0)'
+        WRITE(cfor9002,'(a,i4,a)') '(f7.3,',npts,'f8.0)'
+        WRITE(cfor9003,'(a,i4,a)') '(f7.3,',npts,'f8.3)'
         PRINT *,' T (deg C)' 
         DO jk=1,nk
            PRINT cfor9000, jk,  (zt(ji,jk),ji=1,npts)
