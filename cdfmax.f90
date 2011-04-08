@@ -37,6 +37,7 @@ PROGRAM cdfmax
   REAL ,DIMENSION(:),ALLOCATABLE     :: h, rtime
   REAL ,DIMENSION (:,:), ALLOCATABLE :: v2d, rlon, rlat
   REAL                               :: rfact=1.0
+  REAL                               :: rmissing=0.
   !
   CHARACTER(LEN=256) ::  cfilein, cline1, cline2
   CHARACTER(LEN=256) :: cvar='none', cdim
@@ -57,7 +58,6 @@ PROGRAM cdfmax
           ' -zoom imin imax jmin jmax  -fact multfact -xy ]'
      PRINT *, '   -lev and -zoom limit the area for min/max computation'
      PRINT *, '    if not specified : the 3D data is taken '
-     PRINT *, '    spval is assumed to be 0 (not taken into account)'
      PRINT *, '    if either imin=imax or jmin=jmax a vertical slab is considered'
      PRINT *, '     UNLESS -xy option is specified !!! '
 
@@ -202,6 +202,7 @@ PROGRAM cdfmax
   rlon=getvar(cfilein,'nav_lon',1,niz,njz,imin,jmin)
   rlat=getvar(cfilein,'nav_lat',1,niz,njz,imin,jmin)
 
+  rmissing=getatt(cfilein, cvar,'missing_value')
   DO
      ndim=getvdim(cfilein,cvar)+1   ! getvdim gives ndim-1 !
      PRINT *,TRIM(cvar),' with multiplying factor of ', rfact
@@ -219,7 +220,7 @@ PROGRAM cdfmax
            DO jt=1,nt
               DO jk =kmin,kmax
                  v2d(:,:)=getvar(cfilein,cvar,jk,niz,njz,kimin=imin,kjmin=jmin,ktime=jt)
-                 lmask(:,:)=.TRUE. ; WHERE ( v2d == 0 ) lmask=.FALSE.
+                 lmask(:,:)=.TRUE. ; WHERE ( v2d == rmissing ) lmask=.FALSE.
                  ilmax=MAXLOC(v2d,lmask)
                  ilmin=MINLOC(v2d,lmask)
                  i1=ilmax(1) ; j1=ilmax(2)
@@ -240,7 +241,7 @@ PROGRAM cdfmax
         CASE( 4 )  ! assume x,y,z,t variable
            ipmin=jmin ; ipmax=jmax; jpmin=kmin; jpmax=kmax
            v2d(:,:)=getvaryz(cfilein,cvar,imin,njz,nkz,jmin,kmin)
-           lmask(:,:)=.TRUE. ; WHERE ( v2d == 0 ) lmask=.FALSE.
+           lmask(:,:)=.TRUE. ; WHERE ( v2d == rmissing ) lmask=.FALSE.
            ilmax=MAXLOC(v2d,lmask)
            ilmin=MINLOC(v2d,lmask)
            i1=ilmax(1) ; j1=ilmax(2)
@@ -260,7 +261,7 @@ PROGRAM cdfmax
         CASE( 4 )  ! assume x,y,z,t variable
            ipmin=imin ; ipmax=imax; jpmin=kmin; jpmax=kmax
            v2d(:,:)=getvarxz(cfilein,cvar,jmin,niz,nkz,imin,kmin)
-           lmask(:,:)=.TRUE. ; WHERE ( v2d == 0 ) lmask=.FALSE.
+           lmask(:,:)=.TRUE. ; WHERE ( v2d == rmissing ) lmask=.FALSE.
            ilmax=MAXLOC(v2d,lmask)
            ilmin=MINLOC(v2d,lmask)
            i1=ilmax(1) ; j1=ilmax(2)
