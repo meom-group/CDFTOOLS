@@ -32,7 +32,7 @@ EXEC = cdfmoy cdfmoyt  cdfmoy_sp cdfstd cdfmoy_sal2_temp2  cdfmoy_annual cdfmoy_
        bimgmoy4 bimgcaltrans cdf16bit cdfvita cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar cdfmkmask-zone\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
-       cdfpsi_level cdfhdy cdfhdy3d cdffracinv cdfzonalintdeg cdfmaskdmp cdfisopsi cdf2matlab
+       cdfpsi_level cdfhdy cdfhdy3d cdffracinv cdfzonalintdeg cdfmaskdmp cdfisopsi cdf2matlab cdffixtime
 
 all: $(EXEC)
 
@@ -257,6 +257,9 @@ cdfpsi_level: cdfio.o  cdfpsi_level.f90
 
 cdftransportiz: cdfio.o  cdftransportiz.f90
 	$(F90) cdftransportiz.f90 -o cdftransportiz cdfio.o $(FFLAGS)
+
+cdftransportiz_magda: cdfio.o  cdftransportiz_magda.f90
+	$(F90) cdftransportiz_magda.f90 -o cdftransportiz_magda cdfio.o $(FFLAGS)
 
 cdftransportizpm: cdfio.o  cdftransportizpm.f90
 	$(F90) cdftransportizpm.f90 -o cdftransportizpm cdfio.o $(FFLAGS)
@@ -502,6 +505,9 @@ cdfovide: cdfio.o  cdfovide.f90
 
 cdfmppini: cdfio.o  cdfmppini.f90
 	$(F90)  cdfmppini.f90  -o cdfmppini cdfio.o $(FFLAGS)
+
+cdffixtime: cdfio.o  cdffixtime.f90
+	$(F90)  cdffixtime.f90  -o cdffixtime cdfio.o $(FFLAGS)
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
 cdfsections: eos.o cdfsections.f90

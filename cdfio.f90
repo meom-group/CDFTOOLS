@@ -46,10 +46,18 @@
      MODULE PROCEDURE putvarr8, putvarr4, putvari2, putvarzo, reputvarr4
   END INTERFACE
 
+  INTERFACE putvar1d
+     MODULE PROCEDURE putvar1d4, reputvar1d4
+  END INTERFACE
+
+  INTERFACE atted
+     MODULE PROCEDURE atted_char, atted_r4
+  END INTERFACE
+
 
   PRIVATE 
   PUBLIC  copyatt, create, createvar, getvaratt,cvaratt
-  PUBLIC  putatt, putheadervar, putvar, putvar1d, putvar0d
+  PUBLIC  putatt, putheadervar, putvar, putvar1d, putvar0d, atted
   PUBLIC  getatt, getdim, getvdim, getipk, getnvar, getvarname, getvarid, getspval
   PUBLIC  getvar, getvarxz, getvaryz, getvar1d, getvare3
   PUBLIC gettimeseries
@@ -420,6 +428,94 @@ CONTAINS
     istatus=NF90_CLOSE(ncid)
 
   END FUNCTION getatt
+
+  FUNCTION atted_char ( cdfile, cdvar, cdatt, cdvalue )
+     !!-------------------------------------------------------------------------
+     !!                    ***  FUNCTION atted_char  ***
+     !!
+     !! ** Purpose : attribute editor : modify existing attribute or create 
+     !!              new attribute for variable cdvar in cdfile
+     !! 
+     !! ** Method : just put_att after some check.
+     !!-------------------------------------------------------------------------
+     CHARACTER(LEN=*),  INTENT(in) :: cdfile  ! input file
+     CHARACTER(LEN=*),  INTENT(in) :: cdvar   ! variable name
+     CHARACTER(LEN=*),  INTENT(in) :: cdatt   ! attribute  name
+     CHARACTER(LEN=*),  INTENT(in) :: cdvalue ! attribute value
+     INTEGER                       :: atted_char
+
+     INTEGER  :: incid,  istatus, idvar, ityp
+     !!-------------------------------------------------------------------------
+     istatus = NF90_OPEN(cdfile, NF90_WRITE, incid)
+     istatus = NF90_INQ_VARID(incid, cdvar, idvar)
+     IF ( istatus /= NF90_NOERR ) THEN 
+       PRINT *, NF90_STRERROR(istatus),' in atted ( inq_varid)'
+       STOP
+     ENDIF
+     istatus = NF90_INQUIRE_ATTRIBUTE(incid, idvar, cdatt, xtype=ityp )
+     IF ( istatus /= NF90_NOERR ) THEN
+       PRINT *, ' Attribute does not exist. Create it'
+       istatus = NF90_REDEF(incid)
+       istatus = NF90_PUT_ATT(incid, idvar, cdatt, cdvalue)
+       atted_char = istatus
+     ELSE
+       IF ( ityp == NF90_CHAR ) THEN
+         istatus = NF90_REDEF(incid)
+         istatus = NF90_PUT_ATT(incid, idvar, cdatt, cdvalue)
+         atted_char = istatus
+       ELSE
+         PRINT *, ' Mismatch in attribute type in atted_char'
+         STOP
+       ENDIF
+     ENDIF
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION atted_char
+
+  FUNCTION atted_r4 ( cdfile, cdvar, cdatt, pvalue )
+     !!-------------------------------------------------------------------------
+     !!                    ***  FUNCTION atted_r4  ***
+     !!
+     !! ** Purpose : attribute editor : modify existing attribute or create
+     !!              new attribute for variable cdvar in cdfile
+     !!
+     !! ** Method : just put_att after some check.
+     !!-------------------------------------------------------------------------
+     CHARACTER(LEN=*),  INTENT(in) :: cdfile  ! input file
+     CHARACTER(LEN=*),  INTENT(in) :: cdvar   ! variable name
+     CHARACTER(LEN=*),  INTENT(in) :: cdatt   ! attribute  name
+     REAL(KIND=4),      INTENT(in) :: pvalue ! attribute value
+     INTEGER                       :: atted_r4
+
+     INTEGER  :: incid,  istatus, idvar, ityp
+     !!-------------------------------------------------------------------------
+     istatus = NF90_OPEN(cdfile, NF90_WRITE, incid)
+     istatus = NF90_INQ_VARID(incid, cdvar, idvar)
+     IF ( istatus /= NF90_NOERR ) THEN
+       PRINT *, NF90_STRERROR(istatus),' in atted ( inq_varid)'
+       STOP
+     ENDIF
+     istatus = NF90_INQUIRE_ATTRIBUTE(incid, idvar, cdatt, xtype=ityp )
+     IF ( istatus /= NF90_NOERR ) THEN
+       PRINT *, ' Attribute does not exist. Create it'
+       istatus = NF90_REDEF(incid)
+       istatus = NF90_PUT_ATT(incid, idvar, cdatt, pvalue)
+       atted_r4 = istatus
+     ELSE
+       IF ( ityp == NF90_FLOAT ) THEN
+         istatus = NF90_REDEF(incid)
+         istatus = NF90_PUT_ATT(incid, idvar, cdatt, pvalue)
+         atted_r4 = istatus
+       ELSE
+         PRINT *, ' Mismatch in attribute type in atted_r4'
+         STOP
+       ENDIF
+     ENDIF
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION atted_r4
+
+
 
   FUNCTION  getdim (cdfile,cdim_name,cdtrue,kstatus,ldexact)
     !!-----------------------------------------------------------
@@ -1770,9 +1866,9 @@ CONTAINS
   END FUNCTION putvari2
 
 
-  FUNCTION putvar1d(kout,ptab,kk,cdtype)
+  FUNCTION putvar1d4(kout,ptab,kk,cdtype)
     !!-----------------------------------------------------------
-    !!                       ***  FUNCTION  putvar1d  ***
+    !!                       ***  FUNCTION  putvar1d4  ***
     !!
     !! ** Purpose : Copy 1D variable (size kk) hold in ptab,  with id kid, into file id kout
     !!
@@ -1788,7 +1884,7 @@ CONTAINS
     INTEGER, INTENT(in) :: kk               ! number of elements in ptab
     REAL(KIND=4), DIMENSION(kk),INTENT(in) :: ptab ! 1D array to write in file
     CHARACTER(LEN=1), INTENT(in)  :: cdtype ! either T or D
-    INTEGER :: putvar1d                     ! return status
+    INTEGER :: putvar1d4                     ! return status
 
     !! * Local variables     
     INTEGER :: istatus, iid
@@ -1804,9 +1900,39 @@ CONTAINS
     istart(:) = 1
     icount(:) = kk
     istatus=NF90_PUT_VAR(kout,iid, ptab, start=istart,count=icount)
-    putvar1d=istatus
+    putvar1d4=istatus
 
-  END FUNCTION putvar1d
+  END FUNCTION putvar1d4
+
+  FUNCTION reputvar1d4(cdfile, cdvar, ptab, kk )
+    !!-----------------------------------------------------------
+    !!                       ***  FUNCTION  reputvar1d4  ***
+    !!
+    !! ** Purpose : same as putvar1d4 but using an already existing file and variable
+    !!
+    !! ** Method  :  
+    !!
+    !! ** Action  : 1D variable  written
+    !!
+    !! history:
+    !!    04/2011 : Jean-Marc Molines : introduce module procedure for putvar1d
+    !!-----------------------------------------------------------
+    CHARACTER(LEN=*),            INTENT(in) :: cdfile      ! filename
+    CHARACTER(LEN=*),            INTENT(in) :: cdvar       ! variable name
+    REAL(KIND=4), DIMENSION(kk), INTENT(in) :: ptab        ! 1D array to write in file
+    INTEGER,                     INTENT(in) :: kk          ! number of elements in ptab
+    INTEGER                                 :: reputvar1d4 ! return status
+
+    INTEGER                                 :: istatus, incid, id
+    !!-----------------------------------------------------------
+    incid = ncopen(cdfile)
+    istatus = NF90_OPEN(cdfile, NF90_WRITE, incid)
+    istatus = NF90_INQ_VARID(incid, cdvar, id )
+    istatus = NF90_PUT_VAR(incid, id, ptab, start=(/1/), count=(/kk/) )
+    reputvar1d4 = istatus
+    istatus = NF90_CLOSE(incid)
+
+  END FUNCTION reputvar1d4
 
   FUNCTION putvar0d(kout,varid,value)
     !!-----------------------------------------------------------
