@@ -143,7 +143,7 @@ PROGRAM cdffixtime
   ! Modify cdfile !! CAUTION : Original file will be modified  !!
   istatus = putvar1d( cfile, 'time_counter', rseconds, 1 )
   istatus = atted(cfile,'time_counter','units',ctim_unit)
-  istatus = atted(cfile,'time_counter','time_origin',ctim_unit)
+  istatus = atted(cfile,'time_counter','time_origin',ctim_origin)
 
 CONTAINS
 

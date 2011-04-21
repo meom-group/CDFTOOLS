@@ -5,8 +5,10 @@
 #
 NCDF = -I/opt/netcdf-4.1/include -L /opt/netcdf-4.1/lib/  \
        -lnetcdf
-HDF5 = -I/opt/hdf5-1.8.4/include -L/opt/hdf5-1.8.4/lib -lhdf5_hl -lhdf5 
-ZLIB = -I/opt/zlib-1.2.3/include -L/opt/zlib-1.2.3/lib -lz
+#HDF5 = -I/opt/hdf5-1.8.4/include -L/opt/hdf5-1.8.4/lib -lhdf5_hl -lhdf5 
+#ZLIB = -I/opt/zlib-1.2.3/include -L/opt/zlib-1.2.3/lib -lz
+HDF5 =  -L/opt/hdf5-1.8.4/lib -lhdf5_hl -lhdf5 
+ZLIB =  -L/opt/zlib-1.2.3/lib -lz
  
 F90=ifort
 MPF90=mpif90
