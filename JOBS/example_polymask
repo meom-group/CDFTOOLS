@@ -1,0 +1,15 @@
+nom_du_polygone # pour lisibilite du fichier
+nombre de segments, (1/0) suivant si on coupe la ligne de changement de date ou pas
+i,j du polygone (nfois)
+attention : pas de ligne vides a la fin
+
+exemple (carre entre (1,1) et (100,100):
+
+### debut du fichier
+carre_simple
+4 0
+1 1
+1 100
+100 100
+100 1
+### fin du fichier
