@@ -91,6 +91,12 @@ CONTAINS
        ! Automatically close the polygon
        vertx(ipoly,jmax+1)=vertx(ipoly,1)               
        verty(ipoly,jmax+1)=verty(ipoly,1)
+       ! take care not to have integer values on polygon vertices
+       DO jj=1, jmax+1
+         IF ( (vertx(ipoly, jj) - INT( vertx(ipoly, jj) ) ) == 0 ) vertx(ipoly, jj) = vertx(ipoly, jj)+0.001
+         IF ( (verty(ipoly, jj) - INT( verty(ipoly, jj) ) ) == 0 ) verty(ipoly, jj) = verty(ipoly, jj)+0.001
+       END DO
+
     ENDDO
 995 kpoly=ipoly-1
     CLOSE(numpol)
