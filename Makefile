@@ -407,4 +407,4 @@ cleanexe: clean
 	( cd $(BINDIR) ; \rm -f $(EXEC) )
 
 install:
-	\cp $(EXEC)  $(INSTALL)
+	cd bin ; \cp $(EXEC)  $(INSTALL)
