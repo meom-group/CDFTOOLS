@@ -1,70 +1,92 @@
 PROGRAM cdfnan
-  !!-----------------------------------------------------------------------
-  !!                 ***  PROGRAM cdfnan  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfnan  ***
+  !!=====================================================================
+  !!  ** Purpose : Replace the nan values by spval or another value 
+  !!               given in argument
   !!
-  !!  **  Purpose: Replace the nan values by spval or another value given in argument
-  !!  
-  !! history :
-  !!   Original :  J.M. Molines from cdfcsp
-  !!-----------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !!
-  !! * Modules used
+  !! History : 2.1  : 05/2010  : J.M. Molines : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio 
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jf,jk,jvar, jt, jkk                          !: dummy loop index
-  INTEGER   :: ierr                                         !: working integer
-  INTEGER   :: ncid, narg, iargc                            !: 
-  INTEGER   :: npiglo,npjglo, npk , nt                      !: size of the domain
-  INTEGER   ::  nvars                                       !: Number of variables in a file
-  INTEGER , DIMENSION(:), ALLOCATABLE :: ipk                !: arrays of vertical level for each var
-  INTEGER , DIMENSION(:), ALLOCATABLE :: id_var             !: arrays of var id
-  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: tab        !: Arrays for cumulated values
-  REAL(KIND=4)                                :: spval, replace
-  CHARACTER(LEN=256) :: cfile                                !: file name
-  CHARACTER(LEN=256) :: cunits, clname, csname
-  CHARACTER(LEN=256) ,DIMENSION(:), ALLOCATABLE:: cvarname   !: array of var name
 
-  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar       !: type for attributes
-  LOGICAL     :: l_replace=.false.
+  INTEGER(KIND=4)                               :: jk, jvar, jt           ! dummy loop index
+  INTEGER(KIND=4)                               :: ierr                   ! working integer
+  INTEGER(KIND=4)                               :: narg, iargc, ijarg     ! browse line
+  INTEGER(KIND=4)                               :: ncid                   ! ncid of input file for rewrite
+  INTEGER(KIND=4)                               :: npiglo, npjglo         ! size of the domain
+  INTEGER(KIND=4)                               :: npk, npt               ! size of the domain
+  INTEGER(KIND=4)                               :: nvars                  ! Number of variables in a file
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                    ! arrays of vertical level for each var
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var                 ! arrays of var id
 
-  INTEGER    :: istatus
+  REAL(KIND=4)                                  :: zspval, replace        ! spval, replace value
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tab                    ! Arrays for data
 
+  CHARACTER(LEN=256)                            :: cldum                  ! dummy string for getarg
+  CHARACTER(LEN=256)                            :: cf_inout               ! file name
+  CHARACTER(LEN=256)                            :: cunits, clname, csname ! attributes
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names               ! array of var name
 
-  !!  Read command line
+  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar                ! type for attributes
+
+  LOGICAL                                       :: l_replace = .false.    ! flag for replace value
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfnan ''list_of_ioipsl_model_output_files''[-value replace] '
-     PRINT *,'  Option -value must be the last on the line'
-     PRINT *,'  When used, it replace Nan by this value instead of the spval'
+     PRINT *,' usage : cdfnan list_of_model_output_files [-value replace] '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Detect NaN values in the input files, and change them to '
+     PRINT *,'       either spval (missing_value) or the value given as option.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       list of model output files. They must be of same type and have'
+     PRINT *,'       similar sizes. CAUTION : input files are rewritten !'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-value replace ] : use replace instead of missing_value for'
+     PRINT *,'                           changing NaN.'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : input file is rewritten without NaN.' 
+     PRINT *,'         variables : same name as input.' 
      STOP
   ENDIF
-  PRINT *, 'narg=', narg
-  !!
-  !! Initialisation from 1st file (all file are assume to have the same geometry)
-  IF ( narg >= 2 ) THEN
-    CALL getarg ( narg - 1, cfile)
-    IF (TRIM(cfile) == '-value' ) THEN
-      CALL getarg(narg,cfile) ; READ(cfile,*) replace ; l_replace=.true.
-      narg=narg -2 
-    ENDIF
-  ENDIF
-  CALL getarg (1, cfile)
 
-  npiglo= getdim (cfile,'x')
-  npjglo= getdim (cfile,'y')
-  npk   = getdim (cfile,'depth',kstatus=istatus)
-  nt    = getdim (cfile,'time_counter')
-  IF (istatus /= 0 ) THEN
-     npk   = getdim (cfile,'z',kstatus=istatus)
-     IF (istatus /= 0 ) THEN
-       PRINT *, "ASSUME NO VERTICAL DIMENSIONS !"
-       npk=0
+  ijarg=1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
+     SELECT CASE (cldum)
+     CASE ('-value' ) 
+        CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; 
+        READ(cldum,*) replace ; l_replace=.true.
+     CASE DEFAULT
+        CALL getarg( ijarg, cf_inout)
+        ijarg = ijarg + 1
+     END SELECT
+  END DO
+  IF ( chkfile (cf_inout) )  STOP ! missing file
+
+  npiglo = getdim (cf_inout, cn_x              )
+  npjglo = getdim (cf_inout, cn_y              )
+  npk    = getdim (cf_inout, cn_z, kstatus=ierr)
+
+  IF (ierr /= 0 ) THEN
+     npk   = getdim (cf_inout,'z',kstatus=ierr)
+     IF (ierr /= 0 ) THEN
+        PRINT *, 'ASSUME NO VERTICAL DIMENSIONS !'
+        npk=0
      ENDIF
   ENDIF
 
@@ -74,50 +96,56 @@ PROGRAM cdfnan
 
   ALLOCATE( tab(npiglo,npjglo) )
 
-  nvars = getnvar(cfile)
+  nvars = getnvar(cf_inout)
 
-  ALLOCATE (cvarname(nvars), id_var(nvars),ipk(nvars), typvar(nvars))
+  ALLOCATE (cv_names(nvars), id_var(nvars),ipk(nvars), stypvar(nvars))
 
-  print *,' in getvarname'
-  cvarname(:)=getvarname(cfile,nvars,typvar)
-  print *,' in getipk'
-  ipk(:)      = getipk(cfile,nvars)
-  print *,' done'
-  id_var(:)    = getvarid(cfile,nvars)
+  cv_names(:) = getvarname(cf_inout,nvars,stypvar)
+  ipk(:)      = getipk(cf_inout,nvars)
+  id_var(:)   = getvarid(cf_inout,nvars)
 
-  DO jf = 1, narg
-     CALL getarg (jf, cfile)
-     PRINT *, 'Change NaN on file ', cfile
-     ncid = ncopen(cfile)
-     nt    = getdim (cfile,'time_counter')
-     DO jvar = 1,nvars
-        IF (cvarname(jvar) == 'nav_lon' .OR. &
-             cvarname(jvar) == 'nav_lat'  .OR. &
-             cvarname(jvar) == 'time_counter'  .OR. &
-             cvarname(jvar) == 'deptht'  .OR.  &
-             cvarname(jvar) == 'depthu'  .OR.  &
-             cvarname(jvar) == 'depthv' )  THEN
-           ! skip these variable
-        ELSE
-           IF ( l_replace ) THEN
-              spval=replace
+  !re scan argument list 
+  ijarg = 1
+  DO WHILE (ijarg <=  narg ) 
+     CALL getarg (ijarg, cf_inout) ; ijarg = ijarg + 1 
+     IF ( chkfile (cf_inout) )  STOP ! missing file
+
+     SELECT CASE ( cf_inout)
+     CASE ('-value' )
+        ! replace already read, just skip
+        ijarg = ijarg + 1
+     CASE DEFAULT  ! reading files
+        PRINT *, 'Change NaN on file ', cf_inout
+        ncid = ncopen(cf_inout)
+        npt  = getdim (cf_inout,cn_t)
+
+        DO jvar = 1,nvars
+           IF (    cv_names(jvar) == cn_vlon2d   .OR. &
+                &  cv_names(jvar) == cn_vlat2d   .OR. &
+                &  cv_names(jvar) == cn_vtimec   .OR. &
+                &  cv_names(jvar) == cn_vdeptht  .OR. &
+                &  cv_names(jvar) == cn_vdepthu  .OR. &
+                &  cv_names(jvar) == cn_vdepthv         )  THEN
+              ! skip these variable
            ELSE
-              ierr = getvaratt (cfile,cvarname(jvar),cunits,spval,clname,csname)
-           ENDIF
+              IF ( l_replace ) THEN
+                 zspval=replace
+              ELSE
+                 ierr = getvaratt (cf_inout, cv_names(jvar), cunits, zspval, clname, csname)
+              ENDIF
 
-          DO jt=1,nt
-           DO jk = 1, ipk(jvar) 
-              jkk=jk
-              IF (npk == 0 ) jkk=jt
-              tab(:,:) = getvar(cfile, cvarname(jvar), jkk ,npiglo, npjglo, ktime=jt )
-              WHERE( isnan(tab(:,:)) ) tab(:,:) = spval
-              ierr = putvar(ncid, id_var(jvar) ,tab, jkk, npiglo, npjglo, ktime=jt)
-           ENDDO
-          END DO
-        ENDIF 
-     ENDDO
+              DO jt=1,npt
+                 DO jk = 1, ipk(jvar) 
+                    tab(:,:) = getvar(cf_inout, cv_names(jvar), jk, npiglo, npjglo, ktime=jt )
+                    WHERE( isnan(tab(:,:)) ) tab(:,:) = zspval
+                    ierr = putvar(ncid, id_var(jvar), tab, jk, npiglo, npjglo, ktime=jt)
+                 ENDDO
+              END DO
+           ENDIF
+        ENDDO
+     END SELECT
   ENDDO
 
-  istatus = closeout(ncid)
+  ierr = closeout(ncid)
 
 END PROGRAM cdfnan

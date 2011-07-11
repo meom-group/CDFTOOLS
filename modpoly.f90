@@ -1,221 +1,197 @@
 MODULE modpoly
-  !------------------------------------------------------------------------
-  !     *** MODULE modpoly ***
-  !
-  !  ** Purpose : The main function of this module is  the function InPoly,
-  !            which returns a boolean set to true, if the point given in input
-  !            is within a defined polygon, set to false in the contrary.
-  !
-  !  ** Method : Use algorithms developped in the late 80's for a finite element
-  !           mesh generator (TRIGRID) by R. Walters, C. Werner et Al.
-  !           Some original comments are maintained for references.
-  ! - DEFINITIONS
-  !     vertx(,) = 2dim. array of polygons and their X coordinates.
-  !     verty(,) = 2dim. array of polygons and their Y coordinates.
-  !     nvertcnt() = # vertices in a given polygon.
-  !     numpolys = # of polygons currently defined.
-  !
-  !   PARAMETERS set for polygon storage in MASTER1.PAR (before)
-  !     jpvert = max # vertices a polygon may have.
-  !     jpolys = max # polygons that may be defined.
-  !     maxpolydels = array dimension for pd(), the pending deletion array.
-  !
-  !   history:
-  !      Original code : late 80's trigrid (Walters et Al.)
-  !        adaptation to model diagnostics : J.M. Molines (03/2006)
-  !-----------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
+  !!======================================================================
+  !!                     ***  MODULE  modpoly  ***
+  !! Determine if a given point is within a polygon or not. This module is
+  !! inherited from de finite element mesh generator program (TRIGRID) 
+  !!=====================================================================
+  !! History :  2.1  : 03/2006  : J.M. Molines : Port from trigrid
+  !!            3.0  : 12/2010  : J.M. Molines : Doctor norm + Licence
+  !!
+  !!          Use algorithms developped in the late 80's for a finite element
+  !!          mesh generator (TRIGRID) by R. Walters, C. Werner et Al.
+  !!          Some original comments are maintained for references.
+  !!----------------------------------------------------------------------
 
-  ! Module Variables
+  !!----------------------------------------------------------------------
+  !!   routines      : description
+  !!   ReadPoly      : Read polygon file 
+  !!   PrepPoly      : Compute elements of the sides of polygon
+  !!   InPoly        : Check if a point in in or out of a polygon
+  !!   PointSlope    : Internal routine which computes slopes and coeff, of the side
+  !!----------------------------------------------------------------------
+
   IMPLICIT NONE
+
   PRIVATE
 
-  INTEGER,PUBLIC , PARAMETER :: jpvert = 50, &  !: Number of vertex per polygon
-       &                 jpolys = 20    !: Number of polygons.
+  INTEGER(KIND=4), PUBLIC , PARAMETER :: jpvert = 50  !: Number of vertex per polygon
+  INTEGER(KIND=4), PUBLIC , PARAMETER :: jpolys = 20  !: Number of polygons.
 
   ! - Storage for polygon definitions
-  INTEGER   :: numpolys
-  INTEGER,DIMENSION(jpolys) ::  nvertcnt
+  INTEGER(KIND=4)                    :: numpolys            ! number of of polygons currently defined
+  INTEGER(KIND=4), DIMENSION(jpolys) :: nvertcnt            ! number of vertices of a given polygon
 
-  REAL(KIND=4), DIMENSION(jpolys,jpvert+1) :: vertx, verty
-  REAL(KIND=4) ::  pmaxx, pmaxy, pminx, pminy
-  REAL(KIND=8), DIMENSION(jpvert) ::  slope, a, b, c
+  REAL(KIND=4), DIMENSION(jpolys,jpvert+1) :: vertx, verty  ! 2dim. array of polygons and their X,Y  coordinates
+  REAL(KIND=4)                             :: rmaxx, rmaxy  ! max x,y of polygon coordinates
+  REAL(KIND=4)                             :: rminx, rminy  ! min x,y of polygon coordinates
+  REAL(KIND=8), DIMENSION(jpvert)          :: slope         ! slope of the sides of polygone
+  REAL(KIND=8), DIMENSION(jpvert)          :: ra, rb, rc    ! equation of side of polygon
 
-  PUBLIC ReadPoly, PrepPoly, InPoly
+  PUBLIC  :: ReadPoly
+  PUBLIC  :: PrepPoly
+  PUBLIC  :: InPoly
+  PRIVATE :: PointSlope
+
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2010, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
 
 CONTAINS 
 
-  SUBROUTINE ReadPoly(cdfront,kpoly,cdarea)
-    !!-------------------------------------------------------------------------
-    !!    *** SUBROUTINE ReadPoly  ***
+  SUBROUTINE ReadPoly(cdfront, kpoly, cdarea)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE ReadPoly  ***
     !!
-    !!  ** Purpose : read an ASCII file with names of polygon area
-    !!        and vertices.
+    !! ** Purpose : read an ASCII file with names of polygon area
+    !!        and vertices.  
     !!
-    !!  ** Method :
-    !!
-    !! history :
-    !!    Original code : late 80's trigrid (Walters et Al.)
-    !!       adaptation to model diagnostics : J.M. Molines (03/2006)
-    !!-------------------------------------------------------------------------
-    ! * Arguments
-    INTEGER, INTENT(OUT) :: kpoly
-    CHARACTER(LEN=*),INTENT(IN) :: cdfront   !: Name of input file
-    CHARACTER(LEN=*),DIMENSION (:),INTENT(OUT) :: cdarea  !: Name of the polygonal area
+    !! References :  late 80's trigrid (Walters et Al.)
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*),                 INTENT(in) :: cdfront ! Name of input file
+    INTEGER(KIND=4),                 INTENT(out) :: kpoly   ! number of poylgons
+    CHARACTER(LEN=*), DIMENSION (:), INTENT(out) :: cdarea  ! Name of the polygonal area
 
-    ! * Local Variables
-    INTEGER,DIMENSION(jpolys) :: ipac        !: flag for Pacific area (across date line )
-    INTEGER :: numpol=8                      !: logical unit for input file
-    INTEGER :: ipoly                         ! polygon counter
-    INTEGER :: jj, jmax
-
-    OPEN (numpol,FILE=cdfront)
+    INTEGER(KIND=4) :: jj                          ! dummy loop index
+    INTEGER(KIND=4),DIMENSION(jpolys) :: ipac      ! flag for Pacific area (across date line )
+    INTEGER(KIND=4) :: inum=8                      ! logical unit for input file
+    INTEGER(KIND=4) :: ipoly                       ! polygon counter
+    INTEGER(KIND=4) :: ivert                       ! number of vertices of a polygon
+    !!----------------------------------------------------------------------
+    OPEN (inum,FILE=cdfront)
     ipoly=0
     !
     DO WHILE (.TRUE.)
        ipoly=ipoly+1
-       READ(numpol,'(a)',END=995) cdarea(ipoly)                   ! 1rst line of block : name of polygon
-       READ(numpol,*)nvertcnt(ipoly),ipac(ipoly)                  ! 2nd : number of vertices, 
-       jmax=nvertcnt(ipoly)
-       READ(numpol,*)(vertx(ipoly,jj),verty(ipoly,jj),jj=1,jmax)  ! 3rd : (x,y) pairs foreach vertex
+       READ(inum,'(a)',END=995) cdarea(ipoly)                   ! 1rst line of block : name of polygon
+       READ(inum,*)nvertcnt(ipoly), ipac(ipoly)                 ! 2nd : number of vertices, 
+       ivert=nvertcnt(ipoly)
+       READ(inum,*)(vertx(ipoly,jj),verty(ipoly,jj),jj=1,ivert)  ! 3rd : (x,y) pairs foreach vertex
        ! take care of the date line for pacific zone
        IF (ipac(ipoly) == 1 ) THEN
-          DO jj=1,jmax 
+          DO jj=1,ivert 
              IF (vertx(ipoly,jj) < 0 ) vertx(ipoly,jj) = vertx(ipoly,jj) + 360.
           END DO
        ENDIF
 
        ! Automatically close the polygon
-       vertx(ipoly,jmax+1)=vertx(ipoly,1)               
-       verty(ipoly,jmax+1)=verty(ipoly,1)
-       ! take care not to have integer values on polygon vertices
-       DO jj=1, jmax+1
+       vertx(ipoly,ivert+1)=vertx(ipoly,1)               
+       verty(ipoly,ivert+1)=verty(ipoly,1)
+       ! add dummy 0.001 to integer vertex coordinates... to avoid singular problem 
+       DO jj=1, ivert+1
          IF ( (vertx(ipoly, jj) - INT( vertx(ipoly, jj) ) ) == 0 ) vertx(ipoly, jj) = vertx(ipoly, jj)+0.001
          IF ( (verty(ipoly, jj) - INT( verty(ipoly, jj) ) ) == 0 ) verty(ipoly, jj) = verty(ipoly, jj)+0.001
        END DO
-
     ENDDO
+
 995 kpoly=ipoly-1
-    CLOSE(numpol)
+
+    CLOSE(inum)
 
   END SUBROUTINE ReadPoly
 
+
   SUBROUTINE PrepPoly ( kpolyid )
     !!---------------------------------------------------------------------
-    !!     *** SUBROUTINE PrepPoly  ***
+    !!                  ***  ROUTINE PrepPoly  ***
     !!
-    !!  ** Purpose : To determine certain polygon information in preparation for
-    !!       a call to InPoly.
-    !!  
-    !!  ** Method : 
-    !!   GIVEN: polyid  = the id number of polygon to use in Common POLYDEFS
-    !!              in PolyStor.Inc.
-    !!   RETURNS: In Common /SLOP/:
-    !!          slope = array of slopes of polygon sides
-    !!          a, b, c = arrays of line equation components of polygon sides
-    !!          pmaxx, pmaxy, pminx, pminy = min/max x,y polygon coordinates
-    !! 
-    !! history:
-    !!   WRITTEN: June 1990 by JDM for NODER.
-    !!     for model diagnostics, J.M. Molines (03/2006)
-    !-----------------------------------------------------------------------
-    IMPLICIT NONE
+    !! ** Purpose :  determine  polygon information in preparation for
+    !!               a call to InPoly. 
+    !!
+    !! ** Method  :  returns slope and equation of lines (ra, rc, rb)
+    !!               as well as the min/max of polygon coordinates
+    !!
+    !! References :  Trigrid  
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4) ,INTENT(in) :: kpolyid   ! polygon Id
 
-    !! * Arguments
-    INTEGER ,INTENT(IN) :: kpolyid
-
-    !! * Local Variables
-    INTEGER ji, numvert
-
+    INTEGER(KIND=4) ji        ! dummy loop index
+    INTEGER(KIND=4) inumvert   ! number of vertices for polygon kpolyid
+    !!----------------------------------------------------------------------
     !     - get slopes & line equations for each polygon boundary
-    numvert = nvertcnt(kpolyid)
-    DO ji = 1, numvert-1
-       CALL PointSlope ( slope(ji), vertx(kpolyid,ji),                   &
-            &                   vertx(kpolyid,ji+1), verty(kpolyid,ji),       &
-            &                   verty(kpolyid,ji+1), a(ji), b(ji), c(ji) )
+    inumvert = nvertcnt(kpolyid)
+    DO ji = 1, inumvert-1
+       CALL PointSlope ( slope(ji), vertx(kpolyid,ji), vertx(kpolyid,ji+1),       &
+            &                       verty(kpolyid,ji), verty(kpolyid,ji+1),       &
+            &                       ra(ji), rb(ji), rc(ji) )
     END DO
-    !       - ( ji = 1, numvert-1 )
-    CALL PointSlope ( slope(numvert), vertx(kpolyid,numvert),            &
-         &                 vertx(kpolyid,1), verty(kpolyid,numvert),       &
-         &                 verty(kpolyid,1), a(numvert),                   &
-         &                 b(numvert), c(numvert) )
+    !       - ( ji = 1, inumvert-1 )
+    CALL PointSlope ( slope(inumvert), vertx(kpolyid,inumvert), vertx(kpolyid,1), &
+            &                          verty(kpolyid,inumvert), verty(kpolyid,1), &
+            &                          ra(inumvert), rb(inumvert), rc(inumvert) )
 
     !     - calculate the max x,y's of polygon
-    pmaxx = vertx(kpolyid,1)
-    pmaxy = verty(kpolyid,1)
-    DO ji = 1, numvert
-       IF (vertx(kpolyid,ji) >  pmaxx)  pmaxx = vertx(kpolyid,ji)
-       IF (verty(kpolyid,ji) >  pmaxy)  pmaxy = verty(kpolyid,ji)
+    rmaxx = vertx(kpolyid,1)
+    rmaxy = verty(kpolyid,1)
+    DO ji = 1, inumvert
+       IF (vertx(kpolyid,ji) >  rmaxx)  rmaxx = vertx(kpolyid,ji)
+       IF (verty(kpolyid,ji) >  rmaxy)  rmaxy = verty(kpolyid,ji)
     END DO
 
     !     - calculate the min x,y's of polygon
-    pminx = vertx(kpolyid,1)
-    pminy = verty(kpolyid,1)
-    DO ji = 1, numvert
-       IF (vertx(kpolyid,ji) <  pminx)  pminx = vertx(kpolyid,ji)
-       IF (verty(kpolyid,ji) <  pminy)  pminy = verty(kpolyid,ji)
+    rminx = vertx(kpolyid,1)
+    rminy = verty(kpolyid,1)
+    DO ji = 1, inumvert
+       IF (vertx(kpolyid,ji) <  rminx)  rminx = vertx(kpolyid,ji)
+       IF (verty(kpolyid,ji) <  rminy)  rminy = verty(kpolyid,ji)
     END DO
 
   END SUBROUTINE PrepPoly
 
 
   SUBROUTINE InPoly ( kpolyid, pxpoint, pypoint, ld_in )
-    !!------------------------------------------------------------------------
-    !!        ***  SUBROUTINE  InPoly  ***
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE InPoly  ***
     !!
-    !!  ** Purpose: To see if a point is inside or outside of the specified
-    !!        polygon.
+    !! ** Purpose :  To see if a point is inside or outside of the specified
+    !!        polygon. 
     !!
-    !!  ** Method:
-    !!  GIVEN: Polygon data in Common SLOP, this data must be obtained by a 
-    !!       call to PrepPoly prior to any calls to InPoly referencing the
-    !!       same polygon. When kpolyid changes between calls to InPoly,
-    !!       PrepPoly must be called to obtain the new info for the new polygon.
-    !!       Passed Arguments;
-    !!       kpolyid  = the id number of polygon to use in Common POLYDEFS
-    !!              in PolyStor.Inc.
-    !!       pxpoint, pypoint = x,y coordinates of point to test.
-    !!  RETURNS: ld_in = TRUE if point is in polygon, else FALSE.
+    !! ** Method  :  Use the equation of the side of the polygon to determine
+    !!               if a point is in (ld_in = true) or out (ld_in = false) 
     !!
-    !!  history:
-    !!     Original : TRIGRID  June 1990 by JDM for NODER, based on InOut in SplitMod.For.
-    !!        Model diags : J.M. Molines (03/2006)
-    !!-----------------------------------------------------------------------
-    IMPLICIT NONE
+    !! References : Trigrid 
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4), INTENT(in) ::  kpolyid           ! Polygon ID
+    REAL(KIND=4),    INTENT(in) ::  pxpoint, pypoint  ! Position to check
+    LOGICAL,        INTENT(out) :: ld_in              ! True if in the polygon
 
-    !* Arguments
-    INTEGER,INTENT(IN)      ::  kpolyid           ! Polygon ID
-    REAL(KIND=4),INTENT(IN) ::  pxpoint, pypoint  ! Position to check
-    LOGICAL,INTENT(OUT)     :: ld_in              ! True if in the polygon
-
-    !* Local Variables
-    INTEGER :: icross, ji, numvert
-    REAL(KIND=8) ::  zxpt, zx, zy, zevenodd
-
-    numvert = nvertcnt(kpolyid)
+    INTEGER(KIND=4) :: ji
+    INTEGER(KIND=4) :: icross, inumvert
+    REAL(KIND=8)    :: zxpt, zx, zy, zevenodd
+    !!----------------------------------------------------------------------
+    inumvert = nvertcnt(kpolyid)
     !     - store coordinates of point to test
     zx = pxpoint
     zy = pypoint
     !     - get the number of cross with the polygon boundary
     icross = 0
     !     - see if point falls in the max and min range of polygon
-    IF ( zx <=  pmaxx ) THEN
-       IF ( zx >=  pminx ) THEN
-          IF ( zy <=  pmaxy ) THEN
-             IF ( zy >=  pminy ) THEN
+    IF ( zx <=  rmaxx ) THEN
+       IF ( zx >=  rminx ) THEN
+          IF ( zy <=  rmaxy ) THEN
+             IF ( zy >=  rminy ) THEN
                 !               - step through the polygon boundaries
-                DO ji = 1, numvert
+                DO ji = 1, inumvert
                    !                 - see if slope = 9999 and if point is on same y axis
                    IF ( slope(ji) ==  9999 ) THEN
                       IF ( zx >=  vertx(kpolyid,ji) ) THEN
-                         IF ( ji ==  numvert ) THEN
-                            IF (        ( (zy <=  verty(kpolyid,numvert) ) .AND.    &
-                                 &        (zy >   verty(kpolyid,1)       ) ) .OR.   &
-                                 &      ( (zy >=  verty(kpolyid,numvert) ) .AND.    &
-                                 &        (zy <   verty(kpolyid,1)       ) ) ) THEN
+                         IF ( ji ==  inumvert ) THEN
+                            IF (        ( (zy <=  verty(kpolyid,inumvert) ) .AND.    &
+                                 &        (zy >   verty(kpolyid,1)        ) ) .OR.   &
+                                 &      ( (zy >=  verty(kpolyid,inumvert) ) .AND.    &
+                                 &        (zy <   verty(kpolyid,1)        ) ) ) THEN
                                !                         - it has crossed the polygon boundary
                                icross = icross + 1
 !                              if (zy == 398) print *, zx, zy, icross ,'A', ji
@@ -227,17 +203,17 @@ CONTAINS
                             !                       - it has crossed the polygon boundary
                             icross = icross + 1
 !                              if (zy == 398) print *, zx, zy, icross,'B', ji
-                         ENDIF !    ( ji = numvert )
+                         ENDIF !    ( ji = inumvert )
                       ENDIF   !    ( zx >= vertx(kpolyid,ji) )
                       !                   - see if normal slope (+ or -), and if point is not
                       !                    - higher or lower than y endpoints of the vertices
                    ELSEIF ( slope(ji) .NE. 0 ) THEN
-                      zxpt = ( c(ji) + zy ) / a(ji) 
-                      IF ( ji ==  numvert ) THEN
-                         IF (            ( (zxpt <=  vertx(kpolyid,numvert) ) .AND.   &
-                              &            (zxpt >   vertx(kpolyid,1)       ) ) .OR.  &
-                              &          ( (zxpt >=  vertx(kpolyid,numvert) ) .AND.   &
-                              &            (zxpt <   vertx(kpolyid,1)       ) ) ) THEN
+                      zxpt = ( rc(ji) + zy ) / ra(ji) 
+                      IF ( ji ==  inumvert ) THEN
+                         IF (            ( (zxpt <=  vertx(kpolyid,inumvert) ) .AND.   &
+                              &            (zxpt >   vertx(kpolyid,1)        ) ) .OR.  &
+                              &          ( (zxpt >=  vertx(kpolyid,inumvert) ) .AND.   &
+                              &            (zxpt <   vertx(kpolyid,1)        ) ) ) THEN
                             IF ( zx >=  zxpt) THEN
                                !                          - it has crossed the polygon boundary
                                icross = icross + 1
@@ -253,9 +229,9 @@ CONTAINS
                             icross = icross + 1
 !                              if (zy == 398) print *, zx, zy, icross,'D', ji, slope(ji), zxpt
                          ENDIF ! ( zx >= zxpt )
-                      ENDIF ! ( ji = numvert )
+                      ENDIF ! ( ji = inumvert )
                    ENDIF !  ( zxpt test )
-                END DO !  ( ji = 1, numvert )
+                END DO !  ( ji = 1, inumvert )
                 !          - decide how many times scanline crossed poly bounds
                 zevenodd = AMOD ( ( icross * 1.0 ), 2.0 )
                 IF ( zevenodd .NE. 0 ) THEN
@@ -268,63 +244,59 @@ CONTAINS
              ELSE
                 ld_in = .FALSE.
              ENDIF
-             !          - ( zy >= pminy )
+             !          - ( zy >= rminy )
           ELSE
              ld_in = .FALSE.
           ENDIF
-          !           - ( zy <= pmaxy )
+          !           - ( zy <= rmaxy )
        ELSE
           ld_in = .FALSE.
        ENDIF
-       !         - ( zx >= pminx )
+       !         - ( zx >= rminx )
     ELSE
        ld_in = .FALSE.
     ENDIF
-    !       - ( zx <= pmaxx )
+    !       - ( zx <= rmaxx )
 
   END SUBROUTINE InPoly
 
   SUBROUTINE PointSlope ( pslup, pvertxa, pvertxb, pvertya, pvertyb, pax, pby, pcnstnt )
-    !!-------------------------------------------------------------------------
-    !!         *** SUBROUTINE PointSlope  ***
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE PointSlope  ***
     !!
-    !!  ** Purpose: To get the slope and general equations of lines.
+    !! ** Purpose :   To get the slope and general equations of lines. 
     !!
-    !!  ** Method:
-    !!    GIVEN: vertxa, vertxb, vertya, vertyb = endpoints of line section
+    !! ** Method  :  GIVEN: vertxa, vertxb, vertya, vertyb = endpoints of line section
     !!                            to operate on.
-    !!    RETURNS: slup = slope of the line section
-    !!         ax, by, cnstnt = general eqation of the line section.
+    !!             RETURNS: slup = slope of the line section
+    !!              ax, by, cnstnt = general eqation of the line section. 
     !!
-    !!  history:
-    !!    Original : TRIGRID
-    !!      for model diags ; J.M. Molines (03/2006)
-    !!-----------------------------------------------------------------------
-    IMPLICIT NONE
+    !! References :    trigrid
+    !!----------------------------------------------------------------------
+    REAL(KIND=8), INTENT(out) :: pslup
+    REAL(KIND=4),  INTENT(in) :: pvertxa, pvertxb, pvertya, pvertyb
+    REAL(KIND=8), INTENT(out) :: pax, pby, pcnstnt
 
-    !* Arguments
-    REAL(KIND=4), INTENT(IN) :: pvertxa, pvertxb, pvertya, pvertyb
-    REAL(KIND=8), INTENT(OUT) :: pax, pby, pcnstnt
-    REAL(KIND=8), INTENT(OUT) :: pslup
-
-    !* Local Variables
     REAL(KIND=8) :: zvertxa, zvertxb, zvertya, zvertyb
-    REAL(KIND=8) ::  zrise, zrun
+    REAL(KIND=8) :: zrise, zrun
+    !!----------------------------------------------------------------------
 
-    zvertxa=pvertxa  ; zvertxb=pvertxb 
-    zvertya=pvertya  ; zvertyb=pvertyb 
+    zvertxa = pvertxa  ; zvertxb = pvertxb 
+    zvertya = pvertya  ; zvertyb = pvertyb 
 
     zrise = zvertyb - zvertya
-    zrun = zvertxb - zvertxa
+    zrun  = zvertxb - zvertxa
 
     IF ( zrun ==  0 ) THEN
        pslup = 9999
     ELSE
        pslup = zrise / zrun
     ENDIF
+
     IF ( ABS(pslup) <=  0.001 ) THEN
        pslup = 0.0
     ENDIF
+
     IF ( pslup ==  0 ) THEN
        pax = pslup
        pby = 1

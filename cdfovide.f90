@@ -1,108 +1,103 @@
 PROGRAM cdfovide
-  !!---------------------------------------------------------------------
-  !!               ***  PROGRAM cdfovide  ***
-  !!
-  !!  **  Purpose: Easy tool to perform Temperature, Salinity and velocity 
-  !!               plots along OVIDE section 
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfovide  ***
+  !!=====================================================================
+  !!  ** Purpose : Easy tool to perform Temperature, Salinity and velocity
+  !!               plots along OVIDE section
   !!               PARTIAL STEPS version
-  !!  
-  !!  **  Method:  Works as a standalone file once compiled
-  !!               Inspired by cdffindij, cdftransportiz 
-  !! history :
-  !!   Original :  R. Dussin (dec. 2008)
   !!
-  !!---------------------------------------------------------------------               
-  !! * Modules used
+  !!  ** Method  : Works as a standalone file once compiled
+  !!               Inspired by cdffindij, cdftransportiz
+  !!
+  !! History : 2.1  : 12/2009  : R. Dussin    : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
+  !!----------------------------------------------------------------------
+  !!   routines      : description
+  !!----------------------------------------------------------------------
   USE cdfio
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER :: narg, iargc !: command line
-  INTEGER :: npiglo, npjglo, npk !: size of the domain
-  INTEGER :: niter, nclass
-  INTEGER :: imin, imax, jmin, jmax, k, ik, jk, jclass
-  INTEGER :: iloc, jloc
-  INTEGER :: iloop, jloop
 
-  INTEGER :: nsec=0 ! nb total de points le long de la section
-  INTEGER, DIMENSION (:), ALLOCATABLE :: isec, jsec ! indices des points a recuperer
+  INTEGER(KIND=4) :: narg, iargc         ! command line
+  INTEGER(KIND=4) :: npiglo, npjglo, npk ! size of the domain
+  INTEGER(KIND=4) :: niter
+  INTEGER(KIND=4) :: imin, imax, jmin, jmax, k, ik, jk, jclass
+  INTEGER(KIND=4) :: iloc, jloc
+  INTEGER(KIND=4) :: iloop, jloop
+
+  INTEGER(KIND=4) :: nsec=0 ! nb total de points le long de la section
+  INTEGER(KIND=4), DIMENSION (:), ALLOCATABLE :: isec, jsec ! indices des points a recuperer
   
-  INTEGER, PARAMETER :: nsta=4
-  INTEGER, DIMENSION(nsta) :: ista, jsta
-  INTEGER, DIMENSION(nsta-1) :: keepn
+  INTEGER(KIND=4), PARAMETER :: nsta=4
+  INTEGER(KIND=4), DIMENSION(nsta) :: ista, jsta
+  INTEGER(KIND=4), DIMENSION(nsta-1) :: ikeepn
 
-  INTEGER ,DIMENSION (:),ALLOCATABLE ::  imeter  !: limit beetween depth level, in m (nclass -1)
-  INTEGER ,DIMENSION (:),ALLOCATABLE :: ilev0,ilev1 !: limit in levels  ! nclass
-  INTEGER   :: numout = 10, numvtrp=11, numhtrp=12, numstrp=14
   ! broken line stuff
-  INTEGER, PARAMETER :: jpseg=10000
-  INTEGER :: i0,j0,i1,j1, i, j
-  INTEGER :: n,nn, jseg, kk
-  INTEGER :: norm_u, norm_v, ist, jst
-  INTEGER    ::  nxtarg
-  INTEGER, DIMENSION(nsta-1,jpseg) :: legs1=0, legs2=0
+  INTEGER(KIND=4), PARAMETER :: jpseg=10000
+  INTEGER(KIND=4) :: i0,j0,i1,j1, i, j
+  INTEGER(KIND=4) :: n,nn, jseg, kk
+  INTEGER(KIND=4) :: norm_u, norm_v, ist, jst
+  INTEGER(KIND=4)    ::  nxtarg
+  INTEGER(KIND=4), DIMENSION(nsta-1,jpseg) :: legs1=0, legs2=0
 
-  REAL(KIND=8),DIMENSION(nsta)              :: lonsta, latsta
+  REAL(KIND=8), DIMENSION(nsta)             :: rlonsta, rlatsta
   REAL(KIND=8)                              :: xmin, xmax, ymin, ymax, rdis
   REAL(KIND=4)                              :: glamfound, glamin, glamax
   REAL(KIND=8)                              :: glam0, emax
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: glam, gphi, e1, e2
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: e1t, e2t, e1u, e2v, e3t
   
-  REAL(KIND=4) ::  rxi0,ryj0, rxi1, ryj1
-  REAL(KIND=4) ::   ai,bi, aj,bj,d
-  REAL(KIND=4) ::    rxx(jpseg),ryy(jpseg)
+  REAL(KIND=4) :: rxi0, ryj0, rxi1, ryj1
+  REAL(KIND=4) :: ai, bi, aj,bj,d
+  REAL(KIND=4) :: rxx(jpseg), ryy(jpseg)
   REAL(KIND=4), DIMENSION(jpseg) :: gla !, gphi
 
   REAL(KIND=8), DIMENSION(jpseg) :: voltrp, heatrp, saltrp
   REAL(KIND=8)                   :: voltrpsum, heatrpsum, saltrpsum
   COMPLEX yypt(jpseg), yypti
 
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e1v, e3v ,gphiv, zv, zvt, zvs !: mask, metrics
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e2u, e3u ,gphiu, zu, zut, zus !: mask, metrics
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         temper, saline, zonalu, meridv, navlon, navlat
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         ovidetemper, ovidesaline, ovidezonalu, ovidemeridv
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         lonsec, latsec, dumisec, dumjsec
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e1tsec, e1usec, e1vsec, e2tsec, e2usec, e2vsec
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e3tsec, e3usec, e3vsec
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         glamu, glamv
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::         gdepw
-  REAL(KIND=4)                                 ::   rd1, rd2
-  REAL(KIND=4)                                 ::  udum, vdum
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1v, e3v ,gphiv, zv, zvt, zvs !: mask, metrics
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e2u, e3u ,gphiu, zu, zut, zus !: mask, metrics
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: temper, saline, zonalu, meridv, navlon, navlat
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: ovidetemper, ovidesaline, ovidezonalu, ovidemeridv
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: lonsec, latsec, dumisec, dumjsec
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1tsec, e1usec, e1vsec, e2tsec, e2usec, e2vsec
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e3tsec, e3usec, e3vsec
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: glamu, glamv
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw
 
-  REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwku,zwkv,    zwkut,zwkvt,   zwkus,zwkvs
-  REAL(KIND=8),   DIMENSION (:,:,:), ALLOCATABLE :: ztrpu, ztrpv, ztrput,ztrpvt, ztrpus,ztrpvs
 
 ! constants
   REAL(KIND=4)   ::  rau0=1000.,  rcp=4000.
 
-  CHARACTER(LEN=80) :: coord='coordinates.nc', ctype='F'
+  CHARACTER(LEN=80) :: ctype='F'
   CHARACTER(LEN=80) :: cfilet , cfileu, cfilev, csection 
-  CHARACTER(LEN=80) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cdum
-  CHARACTER(LEN=80) ,DIMENSION(4)   :: cvarname   !: array of var name for output
   LOGICAL  :: lagain, lbord
-  LOGICAL    :: ltest=.FALSE.
+  LOGICAL  :: ltest=.FALSE.
+  LOGICAL  :: lchk
   
 ! cdf output stuff
   CHARACTER(LEN=80) :: cfileoutnc='ovide.nc'
-  TYPE(variable)    ,DIMENSION(:), ALLOCATABLE   :: typvar
-  INTEGER    :: ierr, ncout
-  REAL(KIND=4), DIMENSION (1)                    ::  tim
-  INTEGER    :: nfield=10
-  INTEGER ,DIMENSION (:),ALLOCATABLE :: ipk, id_varout
+  TYPE (variable), DIMENSION(:), ALLOCATABLE   :: stypvar
+  INTEGER(KIND=4)    :: ierr, ncout
+  REAL(KIND=4), DIMENSION(1)                    ::  tim
+  INTEGER(KIND=4)    :: nfield=10
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
-  !!---------------------------------------------------------------------
-  !!  End of declarations, code begins here
-  !!---------------------------------------------------------------------
-
-  !!---------------------------------------------------------------------
-  !!  Command line 
-  !!---------------------------------------------------------------------
-
-  narg= iargc()
+  narg = iargc()
   IF ( narg < 3  ) THEN
-     PRINT *,' Usage : cdfovide gridTfile gridUfile gridVfile '
-     PRINT *,' Files cordinates.nc, mesh_hgr.nc and mesh_zgr.nc must be in te current directory '
-     PRINT *,' Output on netcdf '
+     PRINT *,'usage : cdfovide gridTfile gridUfile gridVfile '
+     PRINT *,'     Files ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' must be in te current directory '
+     PRINT *,'     Output on netcdf file ',TRIM(cfileoutnc)
      STOP
   ENDIF
 
@@ -110,20 +105,18 @@ PROGRAM cdfovide
   CALL getarg (2, cfileu)
   CALL getarg (3, cfilev)
 
-  !! We define what are the 3 segments of OVIDE section
-  !! so that the user don't have to worry about it
-  !! sec1 : (lonsta1,latsta1) -> (lonsta2,latsta2)
-  !! and so on
+  lchk = chkfile(cn_fhgr)
+  lchk = chkfile(cn_fzgr) .OR. lchk
+  lchk = chkfile(cfilet ) .OR. lchk
+  lchk = chkfile(cfileu ) .OR. lchk
+  lchk = chkfile(cfilev ) .OR. lchk
+  IF ( lchk ) STOP ! missing files
 
-  lonsta(1)=-43.0
-  lonsta(2)=-31.3
-  lonsta(3)=-12.65
-  lonsta(4)=-8.7
-
-  latsta(1)=60.6
-  latsta(2)=58.9
-  latsta(3)=40.33
-  latsta(4)=40.33
+  ! Location of leg points that define the 3 legs of OVIDE section
+  rlonsta(1) = -43.00 ; rlatsta(1) = 60.60    ! Greenland
+  rlonsta(2) = -31.30 ; rlatsta(2) = 58.90    ! Reykjanes Ridge
+  rlonsta(3) = -12.65 ; rlatsta(3) = 40.33    ! Off Portugal
+  rlonsta(4) =  -8.70 ; rlatsta(4) = 40.33    ! Lisboa
 
   PRINT *, '###########################################################'
   PRINT *, '#                                                          '
@@ -139,33 +132,33 @@ PROGRAM cdfovide
   !!  Find the indexes of the 3 legs (from cdffindij) 
   !!---------------------------------------------------------------------
 
-  npiglo= getdim (coord,'x')
-  npjglo= getdim (coord,'y')
+  npiglo = getdim (cn_fhgr,cn_x)
+  npjglo = getdim (cn_fhgr,cn_y)
   
   ALLOCATE (glam(npiglo,npjglo), gphi(npiglo,npjglo) )
   ALLOCATE (e1(npiglo,npjglo), e2(npiglo,npjglo) )
 
   SELECT CASE ( ctype )
   CASE ('T' , 't' )
-     glam(:,:) = getvar(coord, 'glamt',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphit',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1t'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2t'  ,1,npiglo,npjglo)
+     glam(:,:) = getvar(cn_fhgr, 'glamt',1,npiglo,npjglo)
+     gphi(:,:) = getvar(cn_fhgr, 'gphit',1,npiglo,npjglo)
+     e1  (:,:) = getvar(cn_fhgr, 'e1t'  ,1,npiglo,npjglo)
+     e2  (:,:) = getvar(cn_fhgr, 'e2t'  ,1,npiglo,npjglo)
   CASE ('U','u' )
-     glam(:,:) = getvar(coord, 'glamu',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphiu',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1u'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2u'  ,1,npiglo,npjglo)
+     glam(:,:) = getvar(cn_fhgr, 'glamu',1,npiglo,npjglo)
+     gphi(:,:) = getvar(cn_fhgr, 'gphiu',1,npiglo,npjglo)
+     e1  (:,:) = getvar(cn_fhgr, 'e1u'  ,1,npiglo,npjglo)
+     e2  (:,:) = getvar(cn_fhgr, 'e2u'  ,1,npiglo,npjglo)
   CASE ('V','v' )
-     glam(:,:) = getvar(coord, 'glamv',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphiv',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1v'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2v'  ,1,npiglo,npjglo)
+     glam(:,:) = getvar(cn_fhgr, 'glamv',1,npiglo,npjglo)
+     gphi(:,:) = getvar(cn_fhgr, 'gphiv',1,npiglo,npjglo)
+     e1  (:,:) = getvar(cn_fhgr, 'e1v'  ,1,npiglo,npjglo)
+     e2  (:,:) = getvar(cn_fhgr, 'e2v'  ,1,npiglo,npjglo)
   CASE ('F','f' )
-     glam(:,:) = getvar(coord, 'glamf',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphif',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1f'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2f'  ,1,npiglo,npjglo)
+     glam(:,:) = getvar(cn_fhgr, 'glamf',1,npiglo,npjglo)
+     gphi(:,:) = getvar(cn_fhgr, 'gphif',1,npiglo,npjglo)
+     e1  (:,:) = getvar(cn_fhgr, 'e1f'  ,1,npiglo,npjglo)
+     e2  (:,:) = getvar(cn_fhgr, 'e2f'  ,1,npiglo,npjglo)
   CASE DEFAULT
      PRINT *,' ERROR : type of point not known: ', TRIM(ctype)
   END SELECT
@@ -179,10 +172,10 @@ PROGRAM cdfovide
   !! loop on the 3 legs
   DO k = 1,nsta-1
 
-   xmin=lonsta(k)
-   ymin=latsta(k)
-   xmax=lonsta(k+1)
-   ymax=latsta(k+1)
+   xmin=rlonsta(k)
+   ymin=rlatsta(k)
+   xmax=rlonsta(k+1)
+   ymax=rlatsta(k+1)
 
    IF (xmin < 0.) xmin = xmin +360.
    IF (xmax < 0.) xmax = xmax +360.
@@ -394,21 +387,21 @@ PROGRAM cdfovide
   END IF
 
   ! compute the number of total points
-  keepn(k)=nn
+  ikeepn(k)=nn
   nsec = nsec + nn
   END DO !! loop on the 3 legs
 
 ! fancy control print
 WRITE(*,*) '------------------------------------------------------------'
-WRITE(*,9100) 'leg 1 start at ', lonsta(1) ,'°N ', latsta(1), '°W and ends at ', lonsta(2) ,'°N ', latsta(2), '°W'
+WRITE(*,9100) 'leg 1 start at ', rlonsta(1) ,'°N ', rlatsta(1), '°W and ends at ', rlonsta(2) ,'°N ', rlatsta(2), '°W'
 WRITE(*,9101) 'corresponding to F-gridpoints(', ista(1),',',jsta(1),') and (', ista(2),',',jsta(2),')' 
 WRITE(*,*) '------------------------------------------------------------'
 WRITE(*,*) '------------------------------------------------------------'
-WRITE(*,9100) 'leg 2 start at ', lonsta(2) ,'°N ', latsta(2), '°W and ends at ', lonsta(3) ,'°N ', latsta(3), '°W'
+WRITE(*,9100) 'leg 2 start at ', rlonsta(2) ,'°N ', rlatsta(2), '°W and ends at ', rlonsta(3) ,'°N ', rlatsta(3), '°W'
 WRITE(*,9101) 'corresponding to F-gridpoints(', ista(2),',',jsta(2),') and (', ista(3),',',jsta(3),')' 
 WRITE(*,*) '------------------------------------------------------------'
 WRITE(*,*) '------------------------------------------------------------'
-WRITE(*,9100) 'leg 3 start at ', lonsta(3) ,'°N ', latsta(3), '°W and ends at ', lonsta(4) ,'°N ', latsta(4), '°W'
+WRITE(*,9100) 'leg 3 start at ', rlonsta(3) ,'°N ', rlatsta(3), '°W and ends at ', rlonsta(4) ,'°N ', rlatsta(4), '°W'
 WRITE(*,9101) 'corresponding to F-gridpoints(', ista(3),',',jsta(3),') and (', ista(4),',',jsta(4),')' 
 WRITE(*,*) '------------------------------------------------------------'
 
@@ -418,8 +411,8 @@ WRITE(*,*) '------------------------------------------------------------'
   ALLOCATE (isec(nsec), jsec(nsec)) 
 
   DO k=1, nsta-1
-    DO iloop=1, keepn(k) 
-     jloop=iloop + SUM(keepn(1:k)) -keepn(k)
+    DO iloop=1, ikeepn(k) 
+     jloop=iloop + SUM(ikeepn(1:k)) -ikeepn(k)
      isec(jloop)=legs1(k,iloop)
      jsec(jloop)=legs2(k,iloop)
     END DO
@@ -448,8 +441,8 @@ WRITE(*,*) '------------------------------------------------------------'
 
   navlon(:,:) = getvar(cfilet, 'nav_lon' ,1,npiglo,npjglo)
   navlat(:,:) = getvar(cfilet, 'nav_lat' ,1,npiglo,npjglo)
-  e1v(:,:)    = getvar(coordhgr, 'e1v',1,npiglo,npjglo)
-  e2u(:,:)    = getvar(coordhgr, 'e2u',1,npiglo,npjglo)
+  e1v(:,:)    = getvar(cn_fhgr, 'e1v',1,npiglo,npjglo)
+  e2u(:,:)    = getvar(cn_fhgr, 'e2u',1,npiglo,npjglo)
 
   ! il faut faire un test sur la continuité des segements
   ! on va prendre T et S comme etant la moyenne du point
@@ -503,8 +496,8 @@ WRITE(*,*) '------------------------------------------------------------'
   saline(:,:) = getvar(cfilet, 'vosaline',jk,npiglo,npjglo)
   zonalu(:,:) = getvar(cfileu, 'vozocrtx',jk,npiglo,npjglo)
   meridv(:,:) = getvar(cfilev, 'vomecrty',jk,npiglo,npjglo)
-  e3u(:,:) = getvar(coordzgr, 'e3u_ps',jk,npiglo,npjglo, ldiom=.true.)
-  e3v(:,:) = getvar(coordzgr, 'e3v_ps',jk,npiglo,npjglo, ldiom=.true.)
+  e3u(:,:) = getvar(cn_fzgr, 'e3u_ps',jk,npiglo,npjglo, ldiom=.true.)
+  e3v(:,:) = getvar(cn_fzgr, 'e3v_ps',jk,npiglo,npjglo, ldiom=.true.)
 
   DO iloop=1,nsec-1
     IF ( jsec(iloop+1) == jsec(iloop) ) THEN ! horizontal segment
@@ -572,69 +565,69 @@ WRITE(*,*) '------------------------------------------------------------'
   END DO
   END DO
 
-  ALLOCATE ( typvar(nfield), ipk(nfield), id_varout(nfield) )
+  ALLOCATE ( stypvar(nfield), ipk(nfield), id_varout(nfield) )
 
   DO iloop=1,nfield
      ipk(iloop) = npk
   END DO
 
  ! define new variables for output 
-  typvar(1)%name= 'votemper'
-  typvar(1)%units='deg C'
-  typvar%missing_value=0.
-  typvar(1)%valid_min= -2.
-  typvar(1)%valid_max= 40.
-  typvar%scale_factor= 1.
-  typvar%add_offset= 0.
-  typvar%savelog10= 0.
-  typvar(1)%long_name='Temperature along OVIDE section'
-  typvar(1)%short_name='votemper'
-  typvar%online_operation='N/A'
-  typvar%axis='TYZ'
+  stypvar(1)%cname= 'votemper'
+  stypvar(1)%cunits='deg C'
+  stypvar%rmissing_value=0.
+  stypvar(1)%valid_min= -2.
+  stypvar(1)%valid_max= 40.
+  stypvar%scale_factor= 1.
+  stypvar%add_offset= 0.
+  stypvar%savelog10= 0.
+  stypvar(1)%clong_name='Temperature along OVIDE section'
+  stypvar(1)%cshort_name='votemper'
+  stypvar%conline_operation='N/A'
+  stypvar%caxis='TYZ'
 
-  typvar(2)%name= 'vosaline'
-  typvar(2)%units='PSU'
-  typvar(2)%valid_min= 0.
-  typvar(2)%valid_max= 50.
-  typvar(2)%long_name='Salinity along OVIDE section'
-  typvar(2)%short_name='vosaline'
+  stypvar(2)%cname= 'vosaline'
+  stypvar(2)%cunits='PSU'
+  stypvar(2)%valid_min= 0.
+  stypvar(2)%valid_max= 50.
+  stypvar(2)%clong_name='Salinity along OVIDE section'
+  stypvar(2)%cshort_name='vosaline'
 
-  typvar(3)%name= 'vozocrtx'
-  typvar(3)%units='m.s-1'
-  typvar(3)%valid_min= -20.
-  typvar(3)%valid_max= 20.
-  typvar(3)%long_name='Zonal velocity along OVIDE section'
-  typvar(3)%short_name='vozocrtx'
+  stypvar(3)%cname= 'vozocrtx'
+  stypvar(3)%cunits='m.s-1'
+  stypvar(3)%valid_min= -20.
+  stypvar(3)%valid_max= 20.
+  stypvar(3)%clong_name='Zonal velocity along OVIDE section'
+  stypvar(3)%cshort_name='vozocrtx'
 
-  typvar(4)%name= 'vomecrty'
-  typvar(4)%units='m.s-1'
-  typvar(4)%valid_min= -20.
-  typvar(4)%valid_max= 20.
-  typvar(4)%long_name='Meridionnal velocity along OVIDE section'
-  typvar(4)%short_name='vomecrty'
+  stypvar(4)%cname= 'vomecrty'
+  stypvar(4)%cunits='m.s-1'
+  stypvar(4)%valid_min= -20.
+  stypvar(4)%valid_max= 20.
+  stypvar(4)%clong_name='Meridionnal velocity along OVIDE section'
+  stypvar(4)%cshort_name='vomecrty'
 
-  typvar(5)%name= 'isec'
-  typvar(5)%valid_min= 0.
-  typvar(5)%valid_max= npiglo 
-  typvar(6)%name= 'jsec'
-  typvar(6)%valid_min= 0.
-  typvar(6)%valid_max= npjglo 
-  typvar(7)%name= 'e2u'
-  typvar(7)%valid_min= MINVAL(e2usec(1,:))
-  typvar(7)%valid_max= MAXVAL(e2usec(1,:)) 
-  typvar(8)%name= 'e1v'
-  typvar(8)%valid_min= MINVAL(e1vsec(1,:))
-  typvar(8)%valid_max= MAXVAL(e1vsec(1,:))
-  typvar(9)%name= 'e3u'
-  typvar(9)%valid_min= MINVAL(e3usec(:,:))
-  typvar(9)%valid_max= MAXVAL(e3usec(:,:)) 
-  typvar(10)%name= 'e3v'
-  typvar(10)%valid_min= MINVAL(e3vsec(:,:))
-  typvar(10)%valid_max= MAXVAL(e3vsec(:,:)) 
+  stypvar(5)%cname= 'isec'
+  stypvar(5)%valid_min= 0.
+  stypvar(5)%valid_max= npiglo 
+  stypvar(6)%cname= 'jsec'
+  stypvar(6)%valid_min= 0.
+  stypvar(6)%valid_max= npjglo 
+  stypvar(7)%cname= 'e2u'
+  stypvar(7)%valid_min= MINVAL(e2usec(1,:))
+  stypvar(7)%valid_max= MAXVAL(e2usec(1,:)) 
+  stypvar(8)%cname= 'e1v'
+  stypvar(8)%valid_min= MINVAL(e1vsec(1,:))
+  stypvar(8)%valid_max= MAXVAL(e1vsec(1,:))
+  stypvar(9)%cname= 'e3u'
+  stypvar(9)%valid_min= MINVAL(e3usec(:,:))
+  stypvar(9)%valid_max= MAXVAL(e3usec(:,:)) 
+  stypvar(10)%cname= 'e3v'
+  stypvar(10)%valid_min= MINVAL(e3vsec(:,:))
+  stypvar(10)%valid_max= MAXVAL(e3vsec(:,:)) 
 
   ! create output fileset
    ncout =create(cfileoutnc, 'none', 1,nsec,npk,cdep='depthw')
-   ierr= createvar(ncout ,typvar,nfield, ipk,id_varout )
+   ierr= createvar(ncout ,stypvar,nfield, ipk,id_varout )
    ierr= putheadervar(ncout, cfilet,1, nsec,npk,pnavlon=lonsec,pnavlat=latsec,pdep=gdepw)
    tim=getvar1d(cfilet,'time_counter',1)
    ierr=putvar1d(ncout,tim,1,'T')
@@ -683,14 +676,14 @@ CONTAINS
     IMPLICIT NONE
     !* arguments
     REAL(KIND=8),INTENT(in)   ::  pplon,pplat   !: lon and lat of target point
-    INTEGER,INTENT (in)       ::  kpi,kpj       !: grid size
-    INTEGER,INTENT (inout)    :: kpiloc,kpjloc  !: nearest point location
+    INTEGER(KIND=4),INTENT (in)       ::  kpi,kpj       !: grid size
+    INTEGER(KIND=4),INTENT (inout)    :: kpiloc,kpjloc  !: nearest point location
     REAL(KIND=8),DIMENSION(kpi,kpj),INTENT(in) ::  pphi,plam  !: model grid layout
     LOGICAL                   :: ldbord         !: reach boundary flag
 
     ! * local variables
-    INTEGER :: ji,jj,i0,j0,i1,j1
-    INTEGER :: itbl
+    INTEGER(KIND=4) :: ji,jj,i0,j0,i1,j1
+    INTEGER(KIND=4) :: itbl
     REAL(KIND=4) ::  zdist,zdistmin,zdistmin0
     LOGICAL, SAVE ::  lbordcell, lfirst=.TRUE.
     !!
@@ -766,7 +759,7 @@ SUBROUTINE interm_pt (ydpt,k,pai,pbi,paj,pbj,ydpti)
     COMPLEX, INTENT(in) :: ydpt(*)
     COMPLEX, INTENT(out) :: ydpti
     REAL(KIND=4), INTENT(IN) ::  pai,pbi,paj,pbj
-    INTEGER ,INTENT(in) :: k
+    INTEGER(KIND=4) ,INTENT(in) :: k
     ! ... local
     COMPLEX :: ylptmp1, ylptmp2
     REAL(KIND=4) ::  za0,zb0,za1,zb1,zd1,zd2

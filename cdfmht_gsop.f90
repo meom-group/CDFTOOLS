@@ -72,7 +72,7 @@ PROGRAM cdfmht_gsop
   CHARACTER(LEN=256) :: cfilet, cfilev , cfileoutnc='gsopmht.nc'
   CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cbasinmask='new_maskglo.nc'
   CHARACTER(LEN=256) ,DIMENSION(jpgsop)     :: cvarname_gsop              !: array of var name for output
-  TYPE(variable), DIMENSION(jpgsop) :: typvar       !: modif Alb 26/11/08 structure for attributes
+  TYPE(variable), DIMENSION(jpgsop) :: stypvar       !: modif Alb 26/11/08 structure for attributes
   LOGICAL    :: llglo = .false.                            !: indicator for presence of new_maskglo.nc file
   INTEGER    :: istatus
 
@@ -111,57 +111,57 @@ PROGRAM cdfmht_gsop
 
  ! define new variables for output
 
-  typvar(1)%name= 'zobtmhta'
-  typvar(1)%units='PetaWatt'
-  typvar(1)%missing_value=99999.
-  typvar(1)%valid_min= -1000.
-  typvar(1)%valid_max= 1000.
-  typvar(1)%scale_factor= 1.
-  typvar(1)%add_offset= 0.
-  typvar(1)%savelog10= 0.
-  typvar(1)%long_name='Barotropic_Merid_HeatTransport'
-  typvar(1)%short_name='zobtmhta'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TY'
+  stypvar(1)%cname= 'zobtmhta'
+  stypvar(1)%cunits='PetaWatt'
+  stypvar(1)%rmissing_value=99999.
+  stypvar(1)%valid_min= -1000.
+  stypvar(1)%valid_max= 1000.
+  stypvar(1)%scale_factor= 1.
+  stypvar(1)%add_offset= 0.
+  stypvar(1)%savelog10= 0.
+  stypvar(1)%clong_name='Barotropic_Merid_HeatTransport'
+  stypvar(1)%cshort_name='zobtmhta'
+  stypvar(1)%conline_operation='N/A'
+  stypvar(1)%caxis='TY'
 
-  typvar(2)%name= 'zoshmhta'
-  typvar(2)%units='PetaWatt'
-  typvar(2)%missing_value=99999.
-  typvar(2)%valid_min= -1000.
-  typvar(2)%valid_max= 1000.
-  typvar(2)%scale_factor= 1.
-  typvar(2)%add_offset= 0.
-  typvar(2)%savelog10= 0.
-  typvar(2)%long_name='GeoShear_Merid_HeatTransport'
-  typvar(2)%short_name='zoshmhta'
-  typvar(2)%online_operation='N/A'
-  typvar(2)%axis='TY'
+  stypvar(2)%cname= 'zoshmhta'
+  stypvar(2)%cunits='PetaWatt'
+  stypvar(2)%rmissing_value=99999.
+  stypvar(2)%valid_min= -1000.
+  stypvar(2)%valid_max= 1000.
+  stypvar(2)%scale_factor= 1.
+  stypvar(2)%add_offset= 0.
+  stypvar(2)%savelog10= 0.
+  stypvar(2)%clong_name='GeoShear_Merid_HeatTransport'
+  stypvar(2)%cshort_name='zoshmhta'
+  stypvar(2)%conline_operation='N/A'
+  stypvar(2)%caxis='TY'
 
-  typvar(3)%name= 'zoagmhta'
-  typvar(3)%units='PetaWatt'
-  typvar(3)%missing_value=99999.
-  typvar(3)%valid_min= -1000.
-  typvar(3)%valid_max= 1000.
-  typvar(3)%scale_factor= 1.
-  typvar(3)%add_offset= 0.
-  typvar(3)%savelog10= 0.
-  typvar(3)%long_name='Ageo_Merid_HeatTransport'
-  typvar(3)%short_name='zoagmhta'
-  typvar(3)%online_operation='N/A'
-  typvar(3)%axis='TY'
+  stypvar(3)%cname= 'zoagmhta'
+  stypvar(3)%cunits='PetaWatt'
+  stypvar(3)%rmissing_value=99999.
+  stypvar(3)%valid_min= -1000.
+  stypvar(3)%valid_max= 1000.
+  stypvar(3)%scale_factor= 1.
+  stypvar(3)%add_offset= 0.
+  stypvar(3)%savelog10= 0.
+  stypvar(3)%clong_name='Ageo_Merid_HeatTransport'
+  stypvar(3)%cshort_name='zoagmhta'
+  stypvar(3)%conline_operation='N/A'
+  stypvar(3)%caxis='TY'
 
-  typvar(4)%name= 'zomhtatl'
-  typvar(4)%units='PetaWatt'
-  typvar(4)%missing_value=99999.
-  typvar(4)%valid_min= -1000.
-  typvar(4)%valid_max= 1000.
-  typvar(4)%scale_factor= 1.
-  typvar(4)%add_offset= 0.
-  typvar(4)%savelog10= 0.
-  typvar(4)%long_name='Meridional_HeatTransport_Atlantic'
-  typvar(4)%short_name='zomhtatl'
-  typvar(4)%online_operation='N/A'
-  typvar(4)%axis='TY'
+  stypvar(4)%cname= 'zomhtatl'
+  stypvar(4)%cunits='PetaWatt'
+  stypvar(4)%rmissing_value=99999.
+  stypvar(4)%valid_min= -1000.
+  stypvar(4)%valid_max= 1000.
+  stypvar(4)%scale_factor= 1.
+  stypvar(4)%add_offset= 0.
+  stypvar(4)%savelog10= 0.
+  stypvar(4)%clong_name='Meridional_HeatTransport_Atlantic'
+  stypvar(4)%cshort_name='zomhtatl'
+  stypvar(4)%conline_operation='N/A'
+  stypvar(4)%caxis='TY'
 
   ipk_gsop(1) = npk
   ipk_gsop(2) = npk
@@ -210,7 +210,7 @@ PROGRAM cdfmht_gsop
 
   ! create output fileset
   ncout =create(cfileoutnc, cfilev,1,npjglo,1,cdep='depthw')
-  ierr= createvar(ncout ,typvar,jpgsop, ipk_gsop,id_varout_gsop )
+  ierr= createvar(ncout ,stypvar,jpgsop, ipk_gsop,id_varout_gsop )
   ierr= putheadervar(ncout, cfilev,1, npjglo,1,pnavlon=dumlon,pnavlat=dumlat,pdep=gdepw)
   tim=getvar1d(cfilev,'time_counter',1)
   ierr=putvar1d(ncout,tim,1,'T')

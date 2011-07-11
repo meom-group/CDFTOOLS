@@ -1,0 +1,14 @@
+# Makefile for CDFTOOLS
+#    $Rev: 522 $
+#    $Date: 2011-06-17 12:50:13 +0200 (Fri, 17 Jun 2011) $
+# --------------------------------------------------------------
+#
+#NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
+NCDF = -I/usr/include -lnetcdff -lnetcdf
+
+F90=gfortran -v
+MPF90=
+FFLAGS= -O  $(NCDF)  -fno-second-underscore
+LMPI=-lmpich
+
+INSTALL=$(HOME)/bin

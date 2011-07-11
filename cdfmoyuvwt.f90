@@ -1,326 +1,346 @@
 PROGRAM cdfmoyuvwt
-  !!---------------------------------------------------------------------------
-  !!         ***  PROGRAM  cdfbti  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfmoyuvwt  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute mean values of some quantities, required for
+  !!               other cdftools ( cdfbci, cdfbti and cdfnrjcomp).
+  !!               At U point : ubar, u2bar
+  !!               At V point : vbar, v2bar
+  !!               At W point : wbar
+  !!               AT T point : tbar, t2bar, uvbar, utbar, vtbar, wtbar
   !!
-  !!  **  Purpose: Compute the temporal mean of u,v,u2,v2 and uv on the T point 
-  !!               Useful for the programm cdfbti which compute the transfert of
-  !!               barotropic instability energy
+  !!  ** Method  : take care of double precision on product
   !!
-  !! history :
-  !!   Original :  A. Melet (Feb 2008)
-  !!---------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 02/2008  : A. Melet     : Original code
+  !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER :: ji,jj,jk, jt, ntframe, ilev
-  INTEGER :: npiglo, npjglo, npk, nt, ntags
-  INTEGER :: imin, imax, jmin, jmax, npil, npjl
-  INTEGER :: narg, iargc, ncout, ierr
-  INTEGER, DIMENSION(11) ::  ipk, id_varout         ! 
 
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: u2d, v2d
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: w2d, t2d
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: wxz, txz
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: un, vn, u2n, v2n, uvn
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: wn, tn, utn, vtn, t2n
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: wtn, zzz
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: umask, vmask, tmask, wmask
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: t1mask, w1mask
-  REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  :: tabu, tabv, tabu2, tabv2, tabuv
-  REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  :: tabw, tabt, tabut, tabvt, tabt2
-  REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  :: tabwt
-  REAL(KIND=4) ,DIMENSION(1)                 ::  tim
-  REAL(kind=4), DIMENSION(:,:,:), ALLOCATABLE  :: wtab
-  REAL(KIND=8)                               :: total_time
+  INTEGER(KIND=4), PARAMETER                    :: jp_var = 11
+  INTEGER(KIND=4)                               :: ji, jj, jk, jt, jtt
+  INTEGER(KIND=4)                               :: ntframe
+  INTEGER(KIND=4)                               :: npiglo, npjglo
+  INTEGER(KIND=4)                               :: npk, npt, ntags
+  INTEGER(KIND=4)                               :: iimin, iimax, ijmin, ijmax
+  INTEGER(KIND=4)                               :: iup=1, idwn=2
+  INTEGER(KIND=4)                               :: narg, iargc, ijarg
+  INTEGER(KIND=4)                               :: ncout
+  INTEGER(KIND=4)                               :: ierr
+  INTEGER(KIND=4), DIMENSION(jp_var)            :: ipk, id_varout         ! 
 
-  CHARACTER(LEN=256) :: cfileu, cfilev, cvaru, cvarv, config , ctag
-  CHARACTER(LEN=256) :: cfilew, cfilet, cavarw, cvart
-  CHARACTER(LEN=256) :: cfileout='moyuvwt.nc', cdum
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE  :: ctabtag
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: w2d
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: u2d, v2d, t2d
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim
 
-  TYPE (variable), DIMENSION(11) :: typvar         !: structure for attibutes
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabu, dtabv, dtabu2, dtabv2, dtabuv
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabw, dtabt, dtabut, dtabvt, dtabt2
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabwt
+  REAL(KIND=8)                                  :: dcoef
+  REAL(KIND=8)                                  :: dtotal_time
 
+  CHARACTER(LEN=256)                            :: cf_ufil, cf_vfil
+  CHARACTER(LEN=256)                            :: cf_wfil, cf_tfil
+  CHARACTER(LEN=256)                            :: cf_out='moyuvwt.nc'
+  CHARACTER(LEN=256)                            :: cldum
+  CHARACTER(LEN=256)                            :: config , ctag
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: ctabtag
+
+  TYPE (variable), DIMENSION(jp_var)            :: stypvar         ! structure for attibutes
+
+  LOGICAL                                       :: llnam_nemo = .FALSE.
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
   !!
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' USAGE : cdfmoyuv config imin imax jmin jmax ''list_of_tags'' '
-     PRINT *,'        Produce a cdf file moyuv.nc with uvbar variable on T point'
-     PRINT *,'        and ubar, u2bar on U point, and vbar, v2bar on V point '
-     PRINT *,'        for the region defined by imin imax jmin jmax'
-     PRINT *,' '
+     PRINT *,' usage : cdfmoyuv CONFCASE [-zoom imin imax jmin jmax ] ''list of tags'' '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute temporal mean fields for velocity components (u,v,w) and' 
+     PRINT *,'       temperature (t), as well as second order moments ( u2, v2, t2, uv, ut,'
+     PRINT *,'       vt, wt).'
+     PRINT *,'        These fields are required in other cdftools which computes either '
+     PRINT *,'        barotropic (cdfbti) or baroclinic (cdfbci) instabilities, and a global'
+     PRINT *,'        energy balance (cdfnrjcomp)'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       CONFCASE : the root name for the data files. Grid files are assumed to'
+     PRINT *,'                  be gridT, gridU, gridV, gridW. ( grid_T, grid_U, grid_V and'
+     PRINT *,'                  grid_W are also supported.'
+     PRINT *,'       List_of_tags : The list of time tags corresponding to the time serie'
+     PRINT *,'                  whose mean is being computed.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-zoom imin imax jmin jmax ] : limit the mean computation to the ' 
+     PRINT *,'                  specified sub area.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       none' 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables :  There are 11 variables produced by this program.'
+     PRINT *,'                 tbar, t2bar : mean t (Kelvin) and mean t^2 (K^2)   [T-point]'
+     PRINT *,'                 ubar, u2bar : mean u (m/s) and mean u^2 (m2/s2)    [U-point]'
+     PRINT *,'                 vbar, v2bar : mean v (m/s) and mean v^2 (m2/s2)    [V-point]'
+     PRINT *,'                 wbar        : mean w (m/s)                         [W-point]'
+     PRINT *,'                 uvbar       : mean product u . v (m2/s2)           [T-point]'       
+     PRINT *,'                 utbar, vtbar, wtbar : mean product [uvw].t (m/s.K) [T-point]'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'      cdfbti, cdfbci and cdfnrjcomp' 
+     PRINT *,'      '
      STOP
   ENDIF
 
-  ntags = narg - 5   ! first five arguments are not tags
-  ALLOCATE (ctabtag(ntags) )
-  !! Initialisation from 1st file (all file are assume to have the same
-  !geometry)
-  CALL getarg (1, config)
-  CALL getarg (2, cdum) ; READ(cdum,*) imin
-  CALL getarg (3, cdum) ; READ(cdum,*) imax
-  CALL getarg (4, cdum) ; READ(cdum,*) jmin
-  CALL getarg (5, cdum) ; READ(cdum,*) jmax
-  CALL getarg (6, ctag)
-  WRITE(cfileu,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
-  ctabtag(1)=ctag
+  iimin=0 ; ijmin=0
+  iimax=0 ; ijmax=0
+  ijarg = 1 ; ntags=-1
+  ALLOCATE (ctabtag ( narg ) )  ! allocate string array for tags ( OK: it is an over-estimate).
 
-  DO jt=7,narg
-    CALL getarg(jt,ctag)
-    ctabtag(jt-5)=ctag
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum) ; ijarg = ijarg +1
+     SELECT CASE (cldum)
+     CASE ( '-zoom' )            
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) iimin
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) iimax
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) ijmin
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) ijmax
+     CASE DEFAULT 
+        ntags=ntags+1
+        SELECT CASE ( ntags )
+        CASE (0) ; config = cldum
+        CASE DEFAULT
+           ctabtag(ntags) = cldum
+        END SELECT
+     END SELECT
   END DO
 
-  PRINT *,TRIM(cfileu)        
-  npiglo = getdim (cfileu,'x')
-  npjglo = getdim (cfileu,'y')
-  npk    = getdim (cfileu,'depth')
-  nt     = getdim(cfileu,'time_counter')
+  ! check if all files exists
+  DO jt=1, ntags
+     ctag = ctabtag(jt)
 
-  IF (imin /= 0 ) THEN ; npiglo=imax -imin + 1;  ELSE ; imin=1 ; ENDIF
-  IF (jmin /= 0 ) THEN ; npjglo=jmax -jmin + 1;  ELSE ; jmin=1 ; ENDIF
+     ! check U-file
+     WRITE(cf_ufil,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
+     IF ( chkfile (cf_ufil ) ) THEN 
+        WRITE(cf_ufil,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
+        IF ( chkfile (cf_ufil ) ) STOP ! missing gridU or grid_U file
+        llnam_nemo=.TRUE. ! assume all files are nemo style ...
+     ENDIF
+
+     ! check V-file
+     WRITE(cf_vfil,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
+     IF ( chkfile (cf_vfil ) ) THEN 
+        WRITE(cf_vfil,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
+        IF ( chkfile (cf_vfil ) ) STOP ! missing gridV or grid_V file
+     ENDIF
+
+     ! check W-file
+     WRITE(cf_wfil,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
+     IF ( chkfile (cf_wfil ) ) THEN 
+        WRITE(cf_wfil,'(a,"_",a,"_grid_W.nc")') TRIM(config),TRIM(ctag)
+        IF ( chkfile (cf_wfil ) ) STOP ! missing gridW or grid_W file
+     ENDIF
+
+     ! check T-file
+     WRITE(cf_tfil,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
+     IF ( chkfile (cf_tfil ) ) THEN 
+        WRITE(cf_tfil,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
+        IF ( chkfile (cf_tfil ) ) STOP ! missing gridT or grid_T file
+     ENDIF
+  END DO
+
+  ! assume all input files have same spatial size
+  npiglo = getdim (cf_ufil, cn_x )
+  npjglo = getdim (cf_ufil, cn_y )
+  npk    = getdim (cf_ufil, cn_z )
+
+  ! modify sizes with respect to zoomed area
+  IF (iimin /= 0 ) THEN ; npiglo=iimax -iimin + 1 ; ELSE ; iimin=1 ; iimax=npiglo ; ENDIF
+  IF (ijmin /= 0 ) THEN ; npjglo=ijmax -ijmin + 1 ; ELSE ; ijmin=1 ; ijmax=npjglo ; ENDIF
 
   ! define new variables for output ( must update att.txt)
 
-  typvar(1)%name='ubar'
-  typvar(1)%long_name='temporal mean of u on U point'
-  typvar(1)%short_name='ubar'
+  stypvar( 1)%cname       = 'ubar'
+  stypvar( 1)%clong_name  = 'temporal mean of u on U point'
+  stypvar( 1)%cshort_name = 'ubar'
+  stypvar( 1)%cunits      = 'm/s'
 
-  typvar(2)%name='vbar'
-  typvar(2)%long_name='temporal mean of v on V point'
-  typvar(2)%short_name='vbar'
+  stypvar( 2)%cname       = 'vbar'
+  stypvar( 2)%clong_name  = 'temporal mean of v on V point'
+  stypvar( 2)%cshort_name = 'vbar'
+  stypvar( 2)%cunits      = 'm/s'
 
-  typvar(3)%name='u2bar'
-  typvar(3)%long_name='temporal mean of u * u on U point'
-  typvar(3)%short_name='u2bar'
+  stypvar( 3)%cname       = 'u2bar'
+  stypvar( 3)%clong_name  = 'temporal mean of u * u on U point'
+  stypvar( 3)%cshort_name = 'u2bar'
+  stypvar( 3)%cunits      = 'm2/s2'
 
-  typvar(4)%name='v2bar'
-  typvar(4)%long_name='temporal mean of v * v on V point'
-  typvar(4)%short_name='v2bar'
+  stypvar( 4)%cname       = 'v2bar'
+  stypvar( 4)%clong_name  = 'temporal mean of v * v on V point'
+  stypvar( 4)%cshort_name = 'v2bar'
+  stypvar( 4)%cunits      = 'm2/s2'
 
-  typvar(5)%name='uvbar'
-  typvar(5)%long_name='temporal mean of u * v on T point'
-  typvar(5)%short_name='uvbar'
+  stypvar( 5)%cname       = 'uvbar'
+  stypvar( 5)%clong_name  = 'temporal mean of u * v on T point'
+  stypvar( 5)%cshort_name = 'uvbar'
+  stypvar( 5)%cunits      = 'm2/s2'
 
-  typvar(6)%name='wbar'
-  typvar(6)%long_name='temporal mean of w on W point'
-  typvar(6)%short_name='wbar'
-   
-  typvar(7)%name='tbar'
-  typvar(7)%long_name='temporal mean of T on T point in K'
-  typvar(7)%short_name='tbar'
+  stypvar( 6)%cname       = 'wbar'
+  stypvar( 6)%clong_name  = 'temporal mean of w on W point'
+  stypvar( 6)%cshort_name = 'wbar'
+  stypvar( 6)%cunits      = 'm/s'
 
-  typvar(8)%name='utbar'
-  typvar(8)%long_name='temporal mean of u * T (in K) on T point'
-  typvar(8)%short_name='utbar'
+  stypvar( 7)%cname       = 'tbar'
+  stypvar( 7)%clong_name  = 'temporal mean of T on T point in K'
+  stypvar( 7)%cshort_name = 'tbar'
+  stypvar( 7)%cunits      = 'K'
 
-  typvar(9)%name='vtbar'
-  typvar(9)%long_name='temporal mean of v * T (in K) on T point'
-  typvar(9)%short_name='vtbar'
- 
-  typvar(10)%name='t2bar'
-  typvar(10)%long_name='temporal mean of T * T on T point in K^2'
-  typvar(10)%short_name='t2bar'
-      
-  typvar(11)%name='wtbar'
-  typvar(11)%long_name='temporal mean of w * T (in K) on T point'
-  typvar(11)%short_name='wtbar'
+  stypvar( 8)%cname       = 'utbar'
+  stypvar( 8)%clong_name  = 'temporal mean of u * T (in K) on T point'
+  stypvar( 8)%cshort_name = 'utbar'
+  stypvar( 8)%cunits      = 'm/s.K'
 
-  typvar%units=''
-  typvar%missing_value=0.
-  typvar%valid_min= -1000.
-  typvar%valid_max= 1000.
-  typvar%online_operation='N/A'
-  typvar%axis='TYX'
+  stypvar( 9)%cname       = 'vtbar'
+  stypvar( 9)%clong_name  = 'temporal mean of v * T (in K) on T point'
+  stypvar( 9)%cshort_name = 'vtbar'
+  stypvar( 9)%cunits      = 'm/s.K'
+
+  stypvar(10)%cname       = 't2bar'
+  stypvar(10)%clong_name  = 'temporal mean of T * T on T point in K^2'
+  stypvar(10)%cshort_name = 't2bar'
+  stypvar(10)%cunits      = 'K2'
+
+  stypvar(11)%cname       = 'wtbar'
+  stypvar(11)%clong_name  = 'temporal mean of w * T (in K) on T point'
+  stypvar(11)%cshort_name = 'wtbar'
+  stypvar(11)%cunits      = 'm/s.K'
+
+  stypvar%rmissing_value    = 0.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         = 1000.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TYX'
 
   ipk(:) = npk  
 
-  PRINT *, 'npiglo =',npiglo
-  PRINT *, 'npjglo =',npjglo
-  PRINT *, 'npk    =',npk
-  PRINT *, 'nt     =',nt 
-
-  !test if lev exists
-  IF ((npk==0) .AND. (ilev .GT. 0) ) THEN
-     PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
-     STOP
-  END IF
+  PRINT *, ' npiglo = ', npiglo
+  PRINT *, ' npjglo = ', npjglo
+  PRINT *, ' npk    = ', npk
 
   ! create output fileset
-  ncout =create(cfileout, cfileu, npiglo,npjglo,npk)
-  ierr= createvar(ncout ,typvar,11, ipk,id_varout )
-  ierr= putheadervar(ncout, cfileu, npiglo, npjglo,npk)
-        
+  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, npk       )
+  ierr  = createvar   (ncout,  stypvar, jp_var, ipk,    id_varout )
+  ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, npk       )
+
   ! Allocate the memory
-  ALLOCATE ( u2d(npiglo,npjglo)  , v2d(npiglo,npjglo)  )
-  ALLOCATE ( t2d(npiglo,npjglo)  , w2d(npiglo,npjglo)  )
-  ALLOCATE ( un(npiglo,npjglo) , tabu(npiglo,npjglo) )
-  ALLOCATE ( vn(npiglo,npjglo) , tabv(npiglo,npjglo) )
-  ALLOCATE ( u2n(npiglo,npjglo) , tabu2(npiglo,npjglo) )
-  ALLOCATE ( v2n(npiglo,npjglo) , tabv2(npiglo,npjglo) )
-  ALLOCATE ( t2n(npiglo,npjglo) , tabt2(npiglo,npjglo) )
-  ALLOCATE ( uvn(npiglo,npjglo) , tabuv(npiglo,npjglo) )
-  ALLOCATE ( tn(npiglo,npjglo) , tabt(npiglo,npjglo) )
-  ALLOCATE ( wn(npiglo,npjglo) , tabw(npiglo,npjglo) )
-  ALLOCATE ( utn(npiglo,npjglo) , tabut(npiglo,npjglo) )
-  ALLOCATE ( vtn(npiglo,npjglo) , tabvt(npiglo,npjglo) )
-  ALLOCATE ( wtn(npiglo,npk) , tabwt(npiglo,npk), zzz(npiglo,1) )
-   
-  ALLOCATE ( umask(npiglo,npjglo) , vmask(npiglo,npjglo) )
-  ALLOCATE ( tmask(npiglo,npjglo) , wmask(npiglo,npjglo) )
-  ALLOCATE ( t1mask(npiglo,npk) , w1mask(npiglo,npk) )
-  ALLOCATE ( txz(npiglo,npk) , wxz(npiglo,npk) )
-  ALLOCATE ( wtab(npiglo, npjglo, npk) )
-  
-  DO jk=1, npk
+  ALLOCATE ( u2d(npiglo,npjglo), v2d(npiglo,npjglo)   )
+  ALLOCATE ( t2d(npiglo,npjglo), w2d(npiglo,npjglo,2) )
+
+  ALLOCATE ( dtabu(npiglo,npjglo), dtabu2(npiglo,npjglo), dtabut(npiglo,npjglo) )
+  ALLOCATE ( dtabv(npiglo,npjglo), dtabv2(npiglo,npjglo), dtabvt(npiglo,npjglo) )
+  ALLOCATE ( dtabt(npiglo,npjglo), dtabt2(npiglo,npjglo)                        )
+  ALLOCATE ( dtabw(npiglo,npjglo),                        dtabwt(npiglo,npjglo) )
+  ALLOCATE (                                              dtabuv(npiglo,npjglo) )
+
+  DO jk=1, npk-1   ! level npk is masked for T U V and is 0 for W ( bottom ) !
      PRINT *,'            level ',jk
-     total_time = 0.d0;  ntframe=0 
-     tabu(:,:) = 0.d0 ; tabv(:,:) = 0.d0 ; tabuv(:,:) = 0.d0 
-     tabu2(:,:) = 0.d0 ; tabv2(:,:) = 0.d0 ; tabt(:,:) = 0.d0 
-     tabw(:,:) = 0.d0 ; tabut(:,:) = 0.d0 ; tabvt(:,:) = 0.d0 
-     tabt2(:,:) = 0.d0
-     un(:,:)  =  0.d0
-     vn(:,:)  =  0.d0
-     u2n(:,:) =  0.d0
-     v2n(:,:) =  0.d0
-     uvn(:,:) =  0.d0
-     tn(:,:)  =  0.d0
-     wn(:,:)  =  0.d0
-     utn(:,:)  =  0.d0
-     vtn(:,:)  =  0.d0
-     t2n(:,:)  =  0.d0
+     dtotal_time  = 0.d0 ;  ntframe=0 
+     dtabu(:,:)   = 0.d0 ; dtabv(:,:)  = 0.d0 ; dtabuv(:,:) = 0.d0 
+     dtabu2(:,:)  = 0.d0 ; dtabv2(:,:) = 0.d0 ; dtabt(:,:)  = 0.d0 
+     dtabw(:,:)   = 0.d0 ; dtabut(:,:) = 0.d0 ; dtabvt(:,:) = 0.d0 
+     dtabt2(:,:)  = 0.d0 ; dtabwt(:,:) = 0.d0
 
-     DO jt= 6, narg
-        ntframe=ntframe+1
-        ctag=ctabtag(jt-5)
-        WRITE(cfileu,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
-        WRITE(cfilev,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
-        WRITE(cfilew,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
-        WRITE(cfilet,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
-        IF ( jk == 1 ) THEN
-         tim=getvar1d(cfileu,'time_counter',nt)
-         total_time = total_time + SUM(tim(1:nt) )
+     DO jt= 1, ntags
+        ctag    = ctabtag(jt)
+        IF ( llnam_nemo ) THEN
+           WRITE(cf_ufil,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
+           WRITE(cf_vfil,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
+           WRITE(cf_wfil,'(a,"_",a,"_grid_W.nc")') TRIM(config),TRIM(ctag)
+           WRITE(cf_tfil,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
+        ELSE  ! drakkar style
+           WRITE(cf_ufil,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
+           WRITE(cf_vfil,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
+           WRITE(cf_wfil,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
+           WRITE(cf_tfil,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
         ENDIF
-        
-        u2d(:,:)= getvar(cfileu, 'vozocrtx', jk , &
-                  & npiglo, npjglo, kimin=imin, kjmin=jmin, ktime=1 )
-        v2d(:,:)= getvar(cfilev, 'vomecrty', jk , &
-                  & npiglo, npjglo, kimin=imin, kjmin=jmin, ktime=1 )
-        w2d(:,:)= getvar(cfilew, 'vovecrtz', jk , &
-                  & npiglo, npjglo, kimin=imin, kjmin=jmin, ktime=1 )
-        t2d(:,:)= getvar(cfilet, 'votemper', jk , &
-                  & npiglo, npjglo, kimin=imin, kjmin=jmin, ktime=1 )
-        
-        tabu(:,:)  = tabu(:,:)  + u2d(:,:)
-        tabu2(:,:) = tabu2(:,:) + u2d(:,:) * u2d(:,:)
-        tabv(:,:)  = tabv(:,:)  + v2d(:,:)
-        tabv2(:,:) = tabv2(:,:) + v2d(:,:) * v2d(:,:)
-        tabw(:,:)  = tabw(:,:)  + w2d(:,:)
-        tabt(:,:)  = tabt(:,:)  + (t2d(:,:)+273.15)
-        tabt2(:,:) = tabt2(:,:) + (t2d(:,:)+273.15)*(t2d(:,:)+273.15)
-        
-        DO jj = jmin+1, npjglo
-           DO ji = imin+1, npiglo
-              umask(ji,jj)=0.
-              umask(ji,jj)=u2d(ji,jj)*u2d(ji-1,jj)
-              vmask(ji,jj)=0.
-              vmask(ji,jj)=v2d(ji,jj)*v2d(ji,jj-1)
-              wmask(ji,jj)=0.
-              wmask(ji,jj)=w2d(ji,jj)
-              tmask(ji,jj)=0.
-              tmask(ji,jj)=t2d(ji,jj)
-              IF (umask(ji,jj) /= 0.) umask(ji,jj)=1.
-              IF (vmask(ji,jj) /= 0.) vmask(ji,jj)=1.   
-              IF (tmask(ji,jj) /= 0.) tmask(ji,jj)=1.
-              IF (wmask(ji,jj) /= 0.) wmask(ji,jj)=1.
 
-              tabuv(ji-imin,jj-jmin) = tabuv(ji-imin,jj-jmin) &
-              &   + 0.5 * umask(ji,jj) * (u2d(ji,jj)+u2d(ji-1,jj)) &
-              &   * 0.5 * vmask(ji,jj) * (v2d(ji,jj)+v2d(ji,jj-1)) 
-              tabut(ji-imin,jj-jmin) = tabut(ji-imin,jj-jmin) &
-              &   + 0.5 * umask(ji,jj) * (u2d(ji,jj)+u2d(ji-1,jj)) &
-              &   * tmask(ji,jj) * (t2d(ji,jj)+273.15)
-              tabvt(ji-imin,jj-jmin) = tabvt(ji-imin,jj-jmin) &
-              &   + 0.5 * vmask(ji,jj) * (v2d(ji,jj)+v2d(ji,jj-1)) &
-              &   * tmask(ji,jj) * (t2d(ji,jj)+273.15)
-              
+        IF ( jk == 1 ) THEN
+           npt = getdim(cf_ufil, cn_t)
+           ALLOCATE ( tim(npt) )
+           tim=getvar1d(cf_ufil, cn_vtimec, npt)
+           dtotal_time = dtotal_time + SUM(DBLE(tim))
+           DEALLOCATE ( tim )
+        ENDIF
+
+        DO jtt = 1, npt
+           ntframe  = ntframe+1
+           u2d(:,:)      = getvar(cf_ufil, cn_vozocrtx, jk,   npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jtt )
+           v2d(:,:)      = getvar(cf_vfil, cn_vomecrty, jk,   npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jtt )
+           w2d(:,:,iup)  = getvar(cf_wfil, cn_vovecrtz, jk,   npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jtt )
+           w2d(:,:,idwn) = getvar(cf_wfil, cn_vovecrtz, jk+1, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jtt )
+           t2d(:,:)      = getvar(cf_tfil, cn_votemper, jk,   npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jtt )
+           WHERE ( t2d /= 0. ) t2d = t2d + 273.15   ! from C to K
+
+           dtabu(:,:)  = dtabu(:,:)  + u2d(:,:)
+           dtabu2(:,:) = dtabu2(:,:) + u2d(:,:) * u2d(:,:) * 1.d0
+           dtabv(:,:)  = dtabv(:,:)  + v2d(:,:)
+           dtabv2(:,:) = dtabv2(:,:) + v2d(:,:) * v2d(:,:) * 1.d0
+           dtabw(:,:)  = dtabw(:,:)  + w2d(:,:,iup)
+           dtabt(:,:)  = dtabt(:,:)  + t2d(:,:)
+           dtabt2(:,:) = dtabt2(:,:) + t2d(:,:) * t2d(:,:) * 1.d0
+
+           DO jj = npjglo, 2 , -1
+              DO ji = npiglo, 2 , -1
+                 ! put u, v on T point ( note the loops starting from the end for using u2d and v2d as tmp array)
+                 u2d(ji,jj) = 0.5 * ( u2d(ji,jj) + u2d(ji-1,jj  ) )
+                 v2d(ji,jj) = 0.5 * ( v2d(ji,jj) + v2d(ji,  jj-1) )
+              END DO
            END DO
-        END DO
-     END DO
-     
-     un(:,:)  = tabu(:,:)  / ntframe
-     vn(:,:)  = tabv(:,:)  / ntframe
-     u2n(:,:) = tabu2(:,:) / ntframe
-     v2n(:,:) = tabv2(:,:) / ntframe
-     uvn(:,:) = tabuv(:,:) / ntframe
-     tn(:,:)  = tabt(:,:)  / ntframe
-     wn(:,:)  = tabw(:,:)  / ntframe
-     utn(:,:) = tabut(:,:) / ntframe
-     vtn(:,:) = tabvt(:,:) / ntframe
-     t2n(:,:) = tabt2(:,:) / ntframe
-     ! sauvegarde
-     ierr = putvar(ncout, id_varout(1) ,un, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(2) ,vn, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(3) ,u2n, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(4) ,v2n, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(5) ,uvn, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(6) ,wn, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(7) ,tn, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(8) ,utn, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(9) ,vtn, jk, npiglo, npjglo, &
-                   &      ktime=1)
-     ierr = putvar(ncout, id_varout(10) ,t2n, jk, npiglo, npjglo, &
-                   &      ktime=1)
+           u2d(1,:) = 0. ; u2d(:,1) = 0.
+           v2d(1,:) = 0. ; v2d(:,1) = 0.
+           w2d(:,:,iup) = 0.5 * ( w2d(:,:,iup) + w2d(:,:,idwn) )  ! W at  T point
 
+           dtabuv(:,:) = dtabuv(:,:) + u2d(:,:)     * v2d(:,:) * 1.d0
+           dtabut(:,:) = dtabut(:,:) + u2d(:,:)     * t2d(:,:) * 1.d0
+           dtabvt(:,:) = dtabvt(:,:) + v2d(:,:)     * t2d(:,:) * 1.d0
+           dtabwt(:,:) = dtabwt(:,:) + w2d(:,:,iup) * t2d(:,:) * 1.d0
 
+        END DO  ! jtt
+     END DO     ! tags
+
+     dcoef = 1.d0 / ntframe
+
+     ! save on file
+     ierr = putvar(ncout, id_varout( 1), REAL(dtabu * dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 2), REAL(dtabv * dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 3), REAL(dtabu2* dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 4), REAL(dtabv2* dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 5), REAL(dtabuv* dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 6), REAL(dtabw * dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 7), REAL(dtabt * dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 8), REAL(dtabut* dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout( 9), REAL(dtabvt* dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(10), REAL(dtabt2* dcoef), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(11), REAL(dtabwt* dcoef), jk, npiglo, npjglo )
+
+  END DO   ! loop on level
+
+  ! fill up empty last level
+  dtabu = 0.d0  ! reset this dummy array to 0 for npk output
+  DO jk= 1, jp_var
+     ierr  = putvar(ncout, id_varout(jk), REAL(dtabu), npk, npiglo, npjglo )
   END DO
-     ! this is done for everybody, dont bother the time for next variables
-     tim(1)= total_time/ntframe
-     ierr=putvar1d(ncout,tim,1,'T')
 
-  DO jj = jmin+1, jmax   ! jj global
-     print *, 'JJ=',jj
-     ntframe=0
-     tabwt(:,:) = 0.d0
-     wtn(:,:)   =  0.d0
-     wxz(:,:)   =  0.d0
-     txz(:,:)   =  0.d0
-    DO jt= 6, narg
-       ntframe=ntframe+1
-       ctag=ctabtag(jt-5)
-       WRITE(cfilet,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
-       WRITE(cfilew,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
-
-       wxz(:,:)=getvarxz(cfilew,'vovecrtz',jj,npiglo,npk, kimin=imin,kkmin=1,ktime=1)
-       txz(:,:)=getvarxz(cfilet,'votemper',jj,npiglo,npk, kimin=imin,kkmin=1,ktime=1)
-
-         DO jk=1, npk-1
-            w1mask(:,jk) = wxz(:,jk) * wxz(:,jk+1)
-            t1mask(:,jk) = txz(:,jk)
-            WHERE ( w1mask(:,jk) /= 0.) w1mask(:,jk)=1.
-            WHERE ( t1mask(:,jk) /= 0.) t1mask(:,jk)=1.
-            tabwt(:,jk) = tabwt(:,jk) + t1mask(:,jk)*(txz(:,jk)+273.15) &
-                          & *0.5* w1mask(:,jk)* ( wxz(:,jk) + wxz(:,jk+1))
-        END DO
-     END DO
-     wtn(:,:) = tabwt(:,:) / ntframe
-     wtab(:,jj-jmin+1,:)= wtn(:,:)
-  END DO       
-  DO jk=1,npk
-     ierr = putvar(ncout, id_varout(11) ,wtab(:,:,jk), jk, npiglo, npjglo )
-  END DO
+  ierr = putvar1d(ncout, (/REAL(dtotal_time*dcoef)/), 1, 'T')
 
   ierr = closeout(ncout)
 

@@ -1,103 +1,123 @@
 PROGRAM cdfzonalout
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfzonalout  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfzonalout  ***
+  !!=====================================================================
+  !!  ** Purpose : Output zonal mean/integral as ascii files
   !!
-  !!  **  Purpose  :  Output zonal mean/integral as ascii files
-  !!  
-  !!  **  Method   :  
-  !!     Read zonalmean or zonalsum file, determine 1D variable and dump them on an ASCII file
+  !!  ** Method  : Read zonalmean or zonalsum file, determine 1D variable
+  !!               and dump them on the standard output.
   !!
-  !!
-  !! history ;
-  !!  Original :  J.M. Molines (Feb. 2006) 
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 02/2006  : J.M. Molines : Original code
+  !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jbasin, jj, jk ,ji ,jvar ,jjvar     !: dummy loop index
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER   :: nvars , mvar                        !: number of variables in the file
-  INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, ijvar, ipko, id_varout    !: jpbasin x nvar
 
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlon              !: dummy longitude = 0.
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlat              !: latitude for i = north pole
-  REAL(KIND=4), DIMENSION (1)                    ::  tim
+  INTEGER(KIND=4)                               :: jj, jvar, jt  ! dummy loop index
+  INTEGER(KIND=4)                               :: ivar          ! variable counter
+  INTEGER(KIND=4)                               :: narg, iargc   ! command line 
+  INTEGER(KIND=4)                               :: npjglo, npt   ! size of the domain
+  INTEGER(KIND=4)                               :: nvarin, nvar  ! variables count
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipki          ! input ipk variables
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varin      ! input variables id's
 
-  REAL(KIND=8), DIMENSION (:,:,:),   ALLOCATABLE ::  zv
+  REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: tim           ! time counter
+  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zdumlat       ! latitude for i = north pole
+  REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zv            ! data values
 
-  CHARACTER(LEN=256) :: cfilev 
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
-  TYPE(variable), DIMENSION(:),ALLOCATABLE :: typvar
+  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar       ! dummy structure
 
-  !!  Read command line and output usage message if not compliant.
+  CHARACTER(LEN=256)                            :: cf_zonal      ! input file name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names      ! input variable names
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
   narg= iargc()
+
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfzonalout  file  '
+     PRINT *,' usage :  cdfzonalout ZONAL-file'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'        This is a formatting program for zonal files, either mean or integral.'
+     PRINT *,'        It displays results on the standard output from the input zonal file.'
+     PRINT *,'        It only works with 1D zonal variables, skipping 2D variables, that'
+     PRINT *,'        cannot be easily displayed !'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'        ZONAL-file : input netcdf zonal file produced by one of the zonal'
+     PRINT *,'                     tools.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        none'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'        - Standard output,  structured in columns:'
+     PRINT *,'             J  LAT  ( zonal mean, var = 1--> nvar) '
      STOP
   ENDIF
 
-  CALL getarg (1, cfilev)
+  CALL getarg (1, cf_zonal)
+  IF ( chkfile(cf_zonal) ) STOP ! missing file
 
-  nvars  = getnvar(cfilev)
-  ALLOCATE ( cvarname(nvars)  ,ipk(nvars), ijvar(nvars), typvar(nvars)  )
-  cvarname(1:nvars) = getvarname(cfilev,nvars,typvar)
-  ipk(1:nvars) = getipk(cfilev,nvars)
+  nvarin  = getnvar(cf_zonal)
+  ALLOCATE ( cv_names(nvarin), ipki(nvarin), id_varin(nvarin), stypvar(nvarin)  )
+
+  cv_names(:) = getvarname(cf_zonal, nvarin, stypvar )
+  ipki(:)     = getipk    (cf_zonal, nvarin          )
 
   ! Open standard output with reclen 2048 for avoid wrapping with ifort
   OPEN(6,FORM='FORMATTED',RECL=2048)
   ! look for 1D var ( f(lat) )
-  mvar = 0
-  DO jvar = 1,nvars
+  nvar = 0
+  DO jvar = 1,nvarin
      ! skip variables such as nav_lon, nav_lat, time_counter deptht ...
-     IF (ipk(jvar) == 0 .OR. ipk(jvar) > 1 ) THEN
-        cvarname(jvar)='none'
+     IF (ipki(jvar) == 0 .OR. ipki(jvar) > 1 ) THEN
+        cv_names(jvar)='none'
      ELSE
-        mvar = mvar + 1       ! count for valid input variables
-        ijvar(mvar) = jvar    ! use indirect adressing for those variables
+        nvar = nvar + 1          ! count for elligible  input variables
+        id_varin(nvar) = jvar    ! use indirect adressing for those variables
      ENDIF
   END DO
-  WRITE(6,*) 'Number of 1D variables :', mvar
-  DO jjvar=1,mvar
-    jvar=ijvar(jjvar)
-    WRITE(6,*) '     ',TRIM(cvarname(jvar))
+
+  WRITE(6,*) 'Number of 1D variables :', nvar
+  DO jvar=1,nvar
+     ivar=id_varin(jvar)
+     WRITE(6,*) '     ',TRIM(cv_names(ivar))
   ENDDO
-   
 
-  npiglo= getdim (cfilev,'x')
-  npjglo= getdim (cfilev,'y')
-  npk   = getdim (cfilev,'depth')
+  npjglo = getdim (cf_zonal,cn_y)
+  npt    = getdim (cf_zonal,cn_t)
 
-
-  WRITE(6,*)  'npiglo=', npiglo
-  WRITE(6,*)  'npjglo=', npjglo
-  WRITE(6,*)  'npk   =', npk
+  WRITE(6,*)  'npjglo =', npjglo
+  WRITE(6,*)  'npt    =', npt
 
   ! Allocate arrays
-  ALLOCATE ( zv(npiglo,npjglo,mvar) )
-  ALLOCATE ( dumlon(1,npjglo) , dumlat(1,npjglo))
+  ALLOCATE ( zv(1,npjglo,nvar), tim(npt)         )
+  ALLOCATE ( zdumlat(1,npjglo) )
 
+  zdumlat(:,:) = getvar  (cf_zonal, 'nav_lat', 1, 1, npjglo)
+  tim(:)       = getvar1d(cf_zonal, cn_vtimec, npt         )
 
-  dumlat(:,:) = getvar(cfilev,'nav_lat',1,1,npjglo)
+  DO jt = 1, npt  ! time loop
+     ! main elligible variable loop
+     DO jvar = 1, nvar
+        ivar         = id_varin(jvar)
+        zv(:,:,jvar) = getvar(cf_zonal, cv_names(ivar), 1, 1, npjglo, ktime=jt)
+     END DO ! next variable
 
-  ! main computing loop
-  DO jjvar = 1, mvar
-     jvar = ijvar(jjvar)
-        ! Get variables and mask at level jk
-        zv(:,:,jjvar)       = getvar(cfilev,   cvarname(jvar),  1 ,1,npjglo)
+     WRITE(6,*) ' JT = ', jt, ' TIME = ', tim(jt)
+     WRITE(6,*) ' J  LAT ', (TRIM(cv_names(id_varin(jvar))),' ',jvar=1,nvar)
 
-  END DO ! next variable
-
-   WRITE(6,*) ' J  LAT ', (TRIM(cvarname(ijvar(jjvar))),' ',jjvar=1,mvar)
-  DO jj=npjglo,1,-1
-    WRITE(6,*)  jj, dumlat(1,jj), zv(1,jj,1:mvar)
+     DO jj=npjglo,1,-1
+        WRITE(6,*)  jj, zdumlat(1,jj), zv(1,jj,1:nvar)
+     ENDDO
   ENDDO
 
 

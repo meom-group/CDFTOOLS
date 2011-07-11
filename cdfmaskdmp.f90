@@ -1,58 +1,102 @@
 PROGRAM cdfmaskdmp
-  !!-------------------------------------------------------------------
-  !!             ***  PROGRAM cdfmaskdmp  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfmaskdmp  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute 3D mask for AABW relaxation from T and S 
+  !!               climatology.
+  !!               Store the results on a cdf file.
   !!
-  !!  **  Purpose: Compute 3D mask for AABW relaxation from T and S climatologies
-  !!                Store the results on a cdf file.
-  !!  
   !!  **  Method: read temp and salinity, compute sigma-2
   !!              compute coefs, create mask
   !!
-  !! history: 
-  !!     Original :   R. Dussin (sept 2010) for ORCA025
-  !!
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 09/2010  : R. Dussin    : Original code from JLS Py version
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
   USE eos
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jk , jt , jj , ji                   !: dummy loop index
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: 
-  INTEGER   :: npiglo,npjglo, npk, npt             !: size of the domain
-  INTEGER, DIMENSION(1) ::  ipk, &                 !: outptut variables : number of levels,
-       &                    id_varout              !: ncdf varid's
-  real(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: ztemp, zsal ,&   !: Array to read a layer of data
-       &                                         zsigi , &        !: potential density (sig-i)
-       &                                         zmask , &        !: 2D mask at current level
-       &                                         zwdmp , &        !: damping mask at current level
-       &                                         zlat             !: latitude
-  REAL(KIND=4),DIMENSION(:),ALLOCATABLE       :: tim , zdep
-  REAL(KIND=4)                                :: spval  !: missing value
 
-  CHARACTER(LEN=256) :: cfilet , cfiles, cfilemask='mask.nc', cfileout='mask_dmp.nc' !:
-  CHARACTER(LEN=256) :: cdum
+  INTEGER(KIND=4)                           :: ji, jj, jk, jt     ! dummy loop index
+  INTEGER(KIND=4)                           :: ierr               ! error status
+  INTEGER(KIND=4)                           :: narg, iargc        ! browse command line
+  INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
+  INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
+  INTEGER(KIND=4)                           :: ncout              ! ncid of output file
+  INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout     ! level and varid's
 
-  TYPE(variable) , DIMENSION(1) :: typvar         !: structure for attributes
+  REAL(KIND=4)                              :: ref_dep=2000.      ! reference depth in meters
+  REAL(KIND=4)                              :: zsnmin=37.16       ! minimum density
+  REAL(KIND=4)                              :: zswidth=0.025      ! tapering width
+  REAL(KIND=4)                              :: hmin=1000.         ! depth limit
+  REAL(KIND=4)                              :: hwidth=100.        ! depth tapering height
+  REAL(KIND=4)                              :: rlatmax=-20        ! max latitude
+  REAL(KIND=4)                              :: rlatwidth=2        ! latitude tapering width
+  REAL(KIND=4)                              :: wdep, wsig, wlat   ! tapering function dep, sigma and lat
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp              ! temperature
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsal               ! salinity
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsigi              ! sigma-i
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zwdmp              ! 2D build mask at current level
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlat               ! latitudes
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: zdep               ! deptht
 
-  INTEGER    :: ncout
-  INTEGER    :: istatus
-  ! default parameters
-  REAL(KIND=4)   :: prof=2000.
-  REAL(KIND=4)   :: snmax=37.16 , swidth=0.025
-  REAL(KIND=4)   :: hmin=1000. , hwidth=100.
-  REAL(KIND=4)   :: latmax=-20. , latwidth=2.
-  REAL(KIND=4)   :: riri, fifi, loulou
+  CHARACTER(LEN=256)                        :: cf_tfil            ! input filename for temperature
+  CHARACTER(LEN=256)                        :: cf_sfil            ! input filename for salinity
+  CHARACTER(LEN=256)                        :: cf_out='mask_dmp.nc' ! output file name
+  CHARACTER(LEN=256)                        :: cldum              ! dummy string
 
-  !!  Read command line
-  narg= iargc()
+  TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmaskdmp fileT fileS [prof snmax swidth hmin hwidth latmax latwidth]'
-     PRINT *,' default is : cdfmaskdmp fileT fileS 2000. 37.16 0.025 1000. 100. -20. 2. '
-     PRINT *,' mask.nc must be in your directory '
-     PRINT *,' Output on mask_dmp.nc, variable wdmp'
+     PRINT *,' usage : cdfmaskdmp T-file S-file  ... '
+     PRINT *,'               ... [ref_dep snmin swidth hmin hwidth latmax latwidth]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute a damping mask with smooth transition according to density,'
+     PRINT *,'       depth and latitude criteria.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       T-file : temperature file' 
+     PRINT *,'       S-file : salinity file' 
+     PRINT *,'        They can be the same file, but as many climatologied are provided'
+     PRINT *,'        in separate files, we decided to put both in the command line.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'        ** If used, they must all be provided in the correct order (!) **'
+     PRINT *,'       ref_dep  : reference depth for potential density.'
+     PRINT *,'       snmin    : density minimum for the mask.'
+     PRINT *,'       swidth   : density width for tapering'
+     PRINT *,'       hmin     : minimum depth'
+     PRINT *,'       hwidth   : depth width  for tapering'
+     PRINT *,'       latmax   : maximum latitude'
+     PRINT *,'       latwidth : latitude width  for tapering'
+     PRINT *,'      '
+     PRINT *,'       Actual default values are :'
+     PRINT *,'        ref_dep  = ', ref_dep
+     PRINT *,'        snmin    = ', zsnmin
+     PRINT *,'        swidth   = ', zswidth
+     PRINT *,'        hmin     = ', hmin
+     PRINT *,'        hwidth   = ', hwidth
+     PRINT *,'        latmax   = ', rlatmax
+     PRINT *,'        latwidth = ', rlatwidth
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       ', TRIM(cn_fmsk) 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables : wdmp'
      STOP
   ENDIF
 
@@ -61,90 +105,81 @@ PROGRAM cdfmaskdmp
      STOP
   ENDIF
 
-  CALL getarg (1, cfilet)
-  CALL getarg (2, cfiles)
-  IF ( narg == 9 ) THEN
+  CALL getarg (1, cf_tfil)
+  CALL getarg (2, cf_sfil)
 
-    CALL getarg (3, cdum)
-    READ(cdum,*) prof
-    CALL getarg (4, cdum)
-    READ(cdum,*) snmax
-    CALL getarg (5, cdum)
-    READ(cdum,*) swidth
-    CALL getarg (6, cdum)
-    READ(cdum,*) hmin
-    CALL getarg (7, cdum)
-    READ(cdum,*) hwidth
-    CALL getarg (8, cdum)
-    READ(cdum,*) latmax
-    CALL getarg (9, cdum)
-    READ(cdum,*) latwidth
- 
+  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) ) STOP ! missing files
+
+  IF ( narg == 9 ) THEN
+     CALL getarg (3, cldum) ; READ(cldum,*) ref_dep
+     CALL getarg (4, cldum) ; READ(cldum,*) zsnmin
+     CALL getarg (5, cldum) ; READ(cldum,*) zswidth
+     CALL getarg (6, cldum) ; READ(cldum,*) hmin
+     CALL getarg (7, cldum) ; READ(cldum,*) hwidth
+     CALL getarg (8, cldum) ; READ(cldum,*) rlatmax
+     CALL getarg (9, cldum) ; READ(cldum,*) rlatwidth
   ENDIF
 
-  npiglo= getdim (cfilet,'x')
-  npjglo= getdim (cfilet,'y')
-  npk   = getdim (cfilet,'depth')
-  npt   = getdim (cfilet,'time')
+  npiglo = getdim (cf_tfil,cn_x)
+  npjglo = getdim (cf_tfil,cn_y)
+  npk    = getdim (cf_tfil,cn_z)
+  npt    = getdim (cf_tfil,cn_t)
 
-  ipk(:)= npk  ! all variables (input and output are 3D)
-  typvar(1)%name='wdmp'
-  typvar(1)%missing_value=1.e+20
-  typvar(1)%axis='TZYX'
+  ipk(:)                    = npk  
+  stypvar(1)%cname          = 'wdmp'
+  stypvar(1)%rmissing_value = 1.e+20
+  stypvar(1)%caxis          = 'TZYX'
 
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
-  PRINT *, 'npt   =', npt
-
-  ALLOCATE (ztemp(npiglo,npjglo), zsal(npiglo,npjglo), zsigi(npiglo,npjglo) ,zmask(npiglo,npjglo) , zlat(npiglo,npjglo))
-  ALLOCATE (zwdmp(npiglo,npjglo))
-  ALLOCATE (tim(npt) , zdep(npk))
+  ALLOCATE (ztemp(npiglo,npjglo), zsal( npiglo,npjglo)                      )
+  ALLOCATE (zsigi(npiglo,npjglo), zmask(npiglo,npjglo), zlat(npiglo,npjglo) )
+  ALLOCATE (zwdmp(npiglo,npjglo) )
+  ALLOCATE (tim(npt) , zdep(npk) )
 
   ! create output fileset
+  ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk       )
+  ierr  = createvar   (ncout,  stypvar,  1,     ipk,     id_varout )
+  ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
 
-  ncout =create(cfileout, cfilet, npiglo,npjglo,npk)
+  tim(:)    = getvar1d(cf_tfil, cn_vtimec,  npt              )
+  zdep(:)   = getvar1d(cf_tfil, cn_vdeptht, npk              )
+  zlat(:,:) = getvar  (cf_tfil, cn_vlat2d,  1, npiglo, npjglo)
 
-  ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-  ierr= putheadervar(ncout, cfilet,npiglo, npjglo,npk)
-
-  tim=getvar1d(cfilet,'time_counter',npt)
-  zdep=getvar1d(cfilet,'deptht',npk)
-  zlat(:,:) = getvar(cfilet, 'nav_lat',  1 ,npiglo, npjglo)
-
-  ierr=putvar1d(ncout,tim,npt,'T')
+  ierr=putvar1d(ncout, tim, npt, 'T')
 
   DO jt = 1, npt
      PRINT *,'time: ',jt
-  DO jk = 1, npk
-     PRINT *, 'jk = ', jk
+     DO jk = 1, npk
+        PRINT *, 'jk = ', jk
+        ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
+        zsal( :,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        zmask(:,:) = getvar(cn_fmsk, 'tmask',     jk, npiglo, npjglo          )
 
-     ztemp(:,:)= getvar(cfilet, 'votemper',  jk ,npiglo, npjglo,ktime=jt)
-     zsal(:,:) = getvar(cfiles, 'vosaline',  jk ,npiglo, npjglo,ktime=jt)
+        zsigi(:,:) = sigmai( ztemp, zsal, ref_dep, npiglo, npjglo)* zmask(:,:)
 
-     zmask(:,:) = getvar(cfilemask, 'tmask',  jk ,npiglo, npjglo)
+        DO jj=1,npjglo
+           DO ji=1,npiglo
 
-     zsigi(:,:) = sigmai ( ztemp,zsal,prof,npiglo,npjglo )* zmask(:,:)
+              wdep = TANH( (zdep(jk    ) - hmin   ) / hwidth   ) / 2. + 0.5
+              wsig = TANH( (zsigi(ji,jj) - zsnmin ) / zswidth  ) / 2. + 0.5
+              wlat = TANH(-(zlat( ji,jj) - rlatmax) / rlatwidth) / 2. + 0.5
 
-     DO jj=1,npjglo
-        DO ji=1,npiglo
+              zwdmp(ji,jj) = wdep * wsig * wlat
 
-           riri=tanh((zdep(jk)-hmin)/hwidth)/2. + 0.5
-           fifi=tanh((zsigi(ji,jj)-snmax)/swidth)/2. + 0.5
-           loulou=tanh(-(zlat(ji,jj)-latmax)/latwidth)/2. + 0.5
-
-           zwdmp(ji,jj)=riri * fifi * loulou
-
+           ENDDO
         ENDDO
-     ENDDO
 
-     zwdmp(:,:) = zwdmp(:,:) * zmask(:,:)
+        zwdmp(:,:) = zwdmp(:,:) * zmask(:,:)
 
-     ierr = putvar(ncout, id_varout(1) ,zwdmp, jk,npiglo, npjglo,ktime=jt)
+        ierr = putvar(ncout, id_varout(1), zwdmp, jk,npiglo, npjglo, ktime=jt)
 
-  END DO  ! loop to next level
+     END DO  ! loop to next level
   END DO  ! loop on time
 
-  istatus = closeout(ncout)
+  ierr = closeout(ncout)
+
 END PROGRAM cdfmaskdmp

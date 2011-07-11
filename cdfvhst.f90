@@ -1,175 +1,191 @@
 PROGRAM cdfvhst
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfvhst  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfvhst  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute Verticaly integrated  Heat Salt Transport.
   !!
-  !!  **  Purpose  :  Compute Verticaly integrated  Heat Salt Transport. 
-  !!                  PARTIAL STEPS
-  !!  
-  !!  **  Method   :  Compute the 2D fields somevt, somevs and sozout, sozous
-  !!                  as the integral on the vertical of ut, vt, us, vs
-  !!                  Save on the nc file
+  !!  ** Method  : Take VT files computed by cdfvT.f90 and integrate
+  !!               vertically to produce a 2D file
   !!
-  !!
-  !! history ;
-  !!  Original :  J.M. Molines (jan. 2005) (known then as cdfheattrp-save.f90 )
-  !!              J.M. Molines : use module
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 01/2005  : J.M. Molines : Original code
+  !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jk                            !: dummy loop index
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER   ::  ncout
-  INTEGER, DIMENSION(4) ::  ipk, id_varout         !
 
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask, e1v, e3v ,gphiv, zvt, zvs !: mask, metrics
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::         e2u, e3u ,gphiu, zut, zus !: mask, metrics
-  REAL(KIND=4) ,DIMENSION(1)                    ::  tim
-  REAL(KIND=4) ,DIMENSION(:) , ALLOCATABLE ::  gphimean_glo, gphimean_atl, gphimean_pac, &
-       &                                       gphimean_ind, gphimean_aus, gphimean_med
+  INTEGER(KIND=4)                            :: jk, jt          ! dummy loop index
+  INTEGER(KIND=4)                            :: ierr            ! working integer
+  INTEGER(KIND=4)                            :: narg, iargc     ! command line 
+  INTEGER(KIND=4)                            :: ijarg           ! argument counter
+  INTEGER(KIND=4)                            :: npiglo, npjglo  ! size of the domain
+  INTEGER(KIND=4)                            :: npk, npt        ! size of the domain
+  INTEGER(KIND=4)                            :: ncout           ! ncdf id of output file
+  INTEGER(KIND=4), DIMENSION(4)              :: ipk, id_varout  ! output variable levels and id's
 
-  REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: zwk , zwks, zwkut, zwkus
-  REAL(KIND=8),   DIMENSION (:,:), ALLOCATABLE :: ztrp, ztrps,ztrput, ztrpus
-  REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_heat_glo, zonal_heat_atl, zonal_heat_pac, &
-       &                                       zonal_heat_ind, zonal_heat_aus, zonal_heat_med
-  REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_salt_glo, zonal_salt_atl, zonal_salt_pac, &
-       &                                       zonal_salt_ind, zonal_salt_aus, zonal_salt_med
+  REAL(KIND=4), PARAMETER                    :: pp_rau0=1000.   ! fresh water density ( kg/m3)
+  REAL(KIND=4), PARAMETER                    :: pp_rcp=4000.    ! heat capacity of water (J/kg/K)
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: e1v, e2u        ! horizontal metrics
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: e3u, e3v        ! vertical metrics
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zut, zus        ! heat and salt zonal copmponents
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zvt, zvs        ! heat and salt meridional components
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim             ! time counter
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: e31d            ! vertical metrics when full step
 
-  CHARACTER(LEN=256) :: cfilet , cfileoutnc='trp.nc'
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
-  TYPE (variable), DIMENSION(4)    :: typvar      !: structure for attribute
+  REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: dtrput, dtrpus  ! zonal transport
+  REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: dtrpvt, dtrpvs  ! meridional transport
 
+  TYPE (variable), DIMENSION(4)              :: stypvar         ! structure output variables
 
-  INTEGER    :: istatus
+  CHARACTER(LEN=256)                         :: cf_vtfil        ! input file name (vt)
+  CHARACTER(LEN=256)                         :: cf_out='trp.nc' ! output file name
+  CHARACTER(LEN=256)                         :: cldum           ! dummy char variable
 
-  ! constants
-  REAL(KIND=4), PARAMETER   ::  rau0=1000., rcp=4000.
+  LOGICAL                                    :: lfull=.FALSE.   ! flag for full step
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
-  !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfvhst  VTfile '
-     PRINT *,' Computes the vertically integrated transports at each grid cell'
-     PRINT *,' PARTIAL CELLS VERSION'
-     PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc must be in te current directory'
-     PRINT *,' Output on trp.nc, variables somevt somevs sozout sozous '
+     PRINT *,' usage : cdfvhst  VTfile [-full ]'
+     PRINT *,'     PURPOSE :'
+     PRINT *,'         Computes the vertically integrated heat and salt transports '
+     PRINT *,'         at each grid cell.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'         VTfile : file which contains UT, VT, US, VS quantities'
+     PRINT *,'              (produced by cdfvT.f90)'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'         [ -full ] : use full step computation (default is partial steps).'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'         Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr)
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'         Netcdf file : ',TRIM(cf_out)
+     PRINT *,'         Variables : ', TRIM(cn_somevt),', ',TRIM(cn_somevs),', ',TRIM(cn_sozout),' and  ',TRIM(cn_sozous)
      STOP
   ENDIF
 
-  CALL getarg (1, cfilet)
-  npiglo= getdim (cfilet,'x')
-  npjglo= getdim (cfilet,'y')
-  npk   = getdim (cfilet,'depth')
+  ijarg = 1
+  DO WHILE (ijarg <= narg )
+     CALL getarg(ijarg, cldum ) ; ijarg = ijarg+1
+     SELECT CASE (cldum )
+     CASE ( '-full' )
+        lfull = .TRUE.
+     CASE DEFAULT
+        cf_vtfil = cldum
+     END SELECT
+  END DO
 
- ! define new variables for output 
-  typvar(1)%name= 'somevt'
-  typvar(2)%name= 'somevs'
-  typvar(3)%name= 'sozout'
-  typvar(4)%name= 'sozous'
+  IF ( chkfile(cf_vtfil) ) STOP ! missing file
 
-  typvar(1)%units='W'
-  typvar(2)%units='kg.s-1'
-  typvar(3)%units='W'
-  typvar(4)%units='kg.s-1'
+  npiglo= getdim (cf_vtfil,cn_x )
+  npjglo= getdim (cf_vtfil,cn_y )
+  npk   = getdim (cf_vtfil,cn_z )
+  npt   = getdim (cf_vtfil,cn_t )
 
-  typvar%missing_value=0.
-  typvar%valid_min= -100.
-  typvar%valid_max= 100.
+  ! define new variables for output 
+  ipk(:)                    = 1
+  stypvar%rmissing_value    = 0.
+  stypvar%valid_min         = -100.
+  stypvar%valid_max         = 100.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TYX'
 
-  typvar(1)%long_name='Meridional_heat_transport'
-  typvar(2)%long_name='Meridional_salt_transport'
-  typvar(3)%long_name='Zonal_heat_transport'
-  typvar(4)%long_name='Zonal_salt_transport'
+  stypvar(1)%cname       = cn_somevt
+  stypvar(2)%cname       = cn_somevs
+  stypvar(3)%cname       = cn_sozout
+  stypvar(4)%cname       = cn_sozous
 
-  typvar(1)%short_name='somevt'
-  typvar(2)%short_name='somevs'
-  typvar(3)%short_name='sozout'
-  typvar(4)%short_name='sozous'
-  typvar%online_operation='N/A'
-  typvar%axis='TYX'
+  stypvar(1)%cunits      = 'W'
+  stypvar(2)%cunits      = 'kg.s-1'
+  stypvar(3)%cunits      = 'W'
+  stypvar(4)%cunits      = 'kg.s-1'
 
-  ipk(1) = 1  !  2D
-  ipk(2) = 1  !  2D
-  ipk(3) = 1  !  2D
-  ipk(4) = 1  !  2D
+  stypvar(1)%clong_name  = 'Meridional_heat_transport'
+  stypvar(2)%clong_name  = 'Meridional_salt_transport'
+  stypvar(3)%clong_name  = 'Zonal_heat_transport'
+  stypvar(4)%clong_name  = 'Zonal_salt_transport'
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
+  stypvar(1)%cshort_name = cn_somevt
+  stypvar(2)%cshort_name = cn_somevs
+  stypvar(3)%cshort_name = cn_sozout
+  stypvar(4)%cshort_name = cn_sozous
+
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
 
   ! Allocate arrays
-  ALLOCATE ( zmask(npiglo,npjglo) )
-  ALLOCATE ( zwk(npiglo,npjglo)  ,zvt(npiglo,npjglo) )
-  ALLOCATE ( zwks(npiglo,npjglo) ,zvs(npiglo,npjglo) )
-  ALLOCATE ( zwkut(npiglo,npjglo)  ,zut(npiglo,npjglo) )
-  ALLOCATE ( zwkus(npiglo,npjglo) ,zus(npiglo,npjglo) )
-  ALLOCATE ( e1v(npiglo,npjglo),e3v(npiglo,npjglo), gphiv(npiglo,npjglo))
-  ALLOCATE ( e2u(npiglo,npjglo),e3u(npiglo,npjglo), gphiu(npiglo,npjglo))
-  ALLOCATE ( ztrp(npiglo,npjglo))
-  ALLOCATE ( ztrps(npiglo,npjglo))
-  ALLOCATE ( ztrput(npiglo,npjglo))
-  ALLOCATE ( ztrpus(npiglo,npjglo))
-  ALLOCATE ( zonal_heat_glo(npjglo), zonal_heat_atl(npjglo), zonal_heat_pac(npjglo))
-  ALLOCATE ( zonal_heat_ind(npjglo), zonal_heat_aus(npjglo), zonal_heat_med(npjglo) )
-  ALLOCATE ( zonal_salt_glo(npjglo), zonal_salt_atl(npjglo), zonal_salt_pac(npjglo))
-  ALLOCATE ( zonal_salt_ind(npjglo), zonal_salt_aus(npjglo), zonal_salt_med(npjglo) )
-  ALLOCATE ( gphimean_glo(npjglo) , gphimean_atl(npjglo), gphimean_pac(npjglo))
-  ALLOCATE ( gphimean_ind(npjglo),gphimean_aus(npjglo),gphimean_med(npjglo))
+  ALLOCATE ( zvt(npiglo,npjglo), zvs(npiglo,npjglo) )
+  ALLOCATE ( zut(npiglo,npjglo), zus(npiglo,npjglo) )
+  ALLOCATE ( e1v(npiglo,npjglo), e3v(npiglo,npjglo) )
+  ALLOCATE ( e2u(npiglo,npjglo), e3u(npiglo,npjglo) )
+  ALLOCATE ( dtrpvt(npiglo,npjglo), dtrpvs(npiglo,npjglo))
+  ALLOCATE ( dtrput(npiglo,npjglo), dtrpus(npiglo,npjglo))
+  ALLOCATE ( tim(npt), e31d(npk) )
 
   ! create output fileset
-  ncout =create(cfileoutnc, cfilet, npiglo,npjglo,npk)
-  ierr= createvar(ncout ,typvar,4, ipk,id_varout )
-  ierr= putheadervar(ncout, cfilet,npiglo, npjglo,npk)
-  tim=getvar1d(cfilet,'time_counter',1)
-  ierr=putvar1d(ncout,tim,1,'T')
+  ncout = create      (cf_out, cf_vtfil, npiglo, npjglo, 1         )
+  ierr  = createvar   (ncout,  stypvar,  4,      ipk,    id_varout )
+  ierr  = putheadervar(ncout,  cf_vtfil, npiglo, npjglo, 1         )
 
+  tim   = getvar1d(cf_vtfil, cn_vtimec, npt     )
+  ierr  = putvar1d(ncout,    tim,       npt, 'T')
 
-  e1v(:,:) = getvar(coordhgr, 'e1v', 1,npiglo,npjglo)
-  e2u(:,:) = getvar(coordhgr, 'e2u', 1,npiglo,npjglo)
-  gphiv(:,:) = getvar(coordhgr, 'gphiv', 1,npiglo,npjglo)
-  gphiu(:,:) = getvar(coordhgr, 'gphiu', 1,npiglo,npjglo)
+  ! read level independent metrics
+  e1v(:,:) = getvar(cn_fhgr,   cn_ve1v, 1, npiglo, npjglo)
+  e2u(:,:) = getvar(cn_fhgr,   cn_ve2u, 1, npiglo, npjglo)
+  e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk              ) ! used only for full step
 
-  ztrp(:,:)= 0
-  ztrps(:,:)= 0
-  ztrput(:,:)= 0
-  ztrpus(:,:)= 0
-  DO jk = 1,npk
-     PRINT *,'level ',jk
-     ! Get temperature and salinity at jk
-     zvt(:,:)= getvar(cfilet, 'vomevt',  jk ,npiglo,npjglo)
-     zvs(:,:)= getvar(cfilet, 'vomevs',  jk ,npiglo,npjglo)
-     zut(:,:)= getvar(cfilet, 'vozout',  jk ,npiglo,npjglo)
-     zus(:,:)= getvar(cfilet, 'vozous',  jk ,npiglo,npjglo)
+  DO jt=1, npt
+     ! reset transport to 0
+     dtrpvt(:,:) = 0.d0
+     dtrpvs(:,:) = 0.d0
+     dtrput(:,:) = 0.d0
+     dtrpus(:,:) = 0.d0
 
-     ! get e3v at level jk
-     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
-     e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
-     zwk(:,:) = zvt(:,:)*e1v(:,:)*e3v(:,:)
-     zwks(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)
-     zwkut(:,:) = zut(:,:)*e2u(:,:)*e3u(:,:)
-     zwkus(:,:) = zus(:,:)*e2u(:,:)*e3u(:,:)
+     DO jk = 1,npk
+        PRINT *,'level ',jk, ' time ', jt
+        ! Get heat/salt transport component at jk
+        zvt(:,:)= getvar(cf_vtfil, cn_vomevt, jk ,npiglo, npjglo, ktime=jt)
+        zvs(:,:)= getvar(cf_vtfil, cn_vomevs, jk ,npiglo, npjglo, ktime=jt)
+        zut(:,:)= getvar(cf_vtfil, cn_vozout, jk ,npiglo, npjglo, ktime=jt)
+        zus(:,:)= getvar(cf_vtfil, cn_vozous, jk ,npiglo, npjglo, ktime=jt)
 
-     ! integrates vertically 
-     ztrp(:,:) = ztrp(:,:) + zwk(:,:) * rau0*rcp
-     ztrps(:,:) = ztrps(:,:) + zwks(:,:)  
-     ztrput(:,:) = ztrput(:,:) + zwkut(:,:) * rau0*rcp
-     ztrpus(:,:) = ztrpus(:,:) + zwkus(:,:)  
+        ! get e3v at level jk ( and multiply by respective horizontal metric)
+        IF ( lfull ) THEN
+           e3v(:,:) = e31d(jk) * e1v(:,:)
+           e3u(:,:) = e31d(jk) * e2u(:,:)
+        ELSE
+           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.) * e1v(:,:)
+           e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.) * e2u(:,:)
+        ENDIF
 
-  END DO  ! loop to next level
+        ! integrates vertically 
+        dtrpvt(:,:) = dtrpvt(:,:) + zvt(:,:) * e3v(:,:) * pp_rau0*pp_rcp * 1.d0
+        dtrpvs(:,:) = dtrpvs(:,:) + zvs(:,:) * e3v(:,:) * 1.d0
+        dtrput(:,:) = dtrput(:,:) + zut(:,:) * e3u(:,:) * pp_rau0*pp_rcp * 1.d0
+        dtrpus(:,:) = dtrpus(:,:) + zus(:,:) * e3u(:,:) * 1.d0
 
-     ierr = putvar(ncout, id_varout(1) ,SNGL(ztrp),   1, npiglo, npjglo)
-     ierr = putvar(ncout, id_varout(2) ,SNGL(ztrps),  1, npiglo, npjglo)
-     ierr = putvar(ncout, id_varout(3) ,SNGL(ztrput), 1, npiglo, npjglo)
-     ierr = putvar(ncout, id_varout(4) ,SNGL(ztrpus), 1, npiglo, npjglo)
+     END DO  ! loop to next level
 
-     istatus = closeout (ncout)
+     ! output on file
+     ierr = putvar(ncout, id_varout(1) ,SNGL(dtrpvt), 1, npiglo, npjglo, ktime=jt)
+     ierr = putvar(ncout, id_varout(2) ,SNGL(dtrpvs), 1, npiglo, npjglo, ktime=jt)
+     ierr = putvar(ncout, id_varout(3) ,SNGL(dtrput), 1, npiglo, npjglo, ktime=jt)
+     ierr = putvar(ncout, id_varout(4) ,SNGL(dtrpus), 1, npiglo, npjglo, ktime=jt)
+  END DO  ! loop on time step
 
-   END PROGRAM cdfvhst
+  ierr = closeout (ncout)
+
+END PROGRAM cdfvhst

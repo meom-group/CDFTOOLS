@@ -1,0 +1,21 @@
+# Makefile for CDFTOOLS
+#    $Rev: 173 $
+#    $Date: 2008-03-17 11:42:21 +0100 (lun 17 mar 2008) $
+# --------------------------------------------------------------
+#
+NCDF = -I/opt/netcdf-4.1/include -L /opt/netcdf-4.1/lib/  \
+       -lnetcdf
+HDF5 = -I/opt/hdf5-1.8.4/include -L/opt/hdf5-1.8.4/lib -lhdf5_hl -lhdf5 
+ZLIB = -I/opt/zlib-1.2.3/include -L/opt/zlib-1.2.3/lib -lz
+
+#NCDF = -I/opt/netcdf-4.1.1-ifort/include -L /opt/netcdf-4.1.1-ifort/lib/  \
+#       -lnetcdf
+#HDF5 = 
+#ZLIB =
+ 
+F90=ifort
+MPF90=mpif90
+FFLAGS= -O   $(NCDF) $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
+LMPI=-lmpich
+
+INSTALL=/usr/local/cdftools-2.1/bin

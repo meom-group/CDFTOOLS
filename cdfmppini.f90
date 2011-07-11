@@ -1,65 +1,114 @@
 PROGRAM cdfmppini 
-  !!---------------------------------------------------------------------------
-  !!               ***  PROGRAM cdfmppini  ***
-  !!  
-  !!   Purpose: off line domain decomposition using mesh_hgr
-  !!   
-  !!   Method : just an incapsulation of mpp_ini from NEMO
-  !!  
-  !! history : original, J.M. Molines, May 2010
-  !!---------------------------------------------------------------------------
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfmppini  ***
+  !!=====================================================================
+  !!  ** Purpose : off line domain decomposition using mesh_hgr
+  !!
+  !!  ** Method  : just an incapsulation of mpp_ini from NEMO
+  !!
+  !! History : 2.1  : 05/2010  : J.M. Molines : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
+  !!----------------------------------------------------------------------
+  !!   routines      : description
+  !!   mpp_init2     Nemo routine for mpp initialisation
+  !!----------------------------------------------------------------------
   USE cdfio
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER, PARAMETER :: wp=8   ! working precision
-  INTEGER :: jpni, jpnj, jpnij
-  INTEGER :: jpreci=1 , jprecj=1
-  INTEGER :: jpi, jpj, jpiglo,jpjglo
-  INTEGER :: jperio=6, jv
+  ! REM : some of the doctor rules are not followed because we want to use
+  !       the mpp_init2 routine almost out of the box, thus we need to define
+  !       variables which are parameters in NEMO, with the same name (jp..)
 
-  INTEGER     , DIMENSION(:,:), ALLOCATABLE :: imask
-  INTEGER     , DIMENSION(:), ALLOCATABLE :: nimppt, njmppt, nlcit, nlcjt
-  INTEGER     , DIMENSION(:), ALLOCATABLE :: nldit, nldjt, nleit, nlejt
-  INTEGER     , DIMENSION(:), ALLOCATABLE :: nbondi, nbondj, icount
+  INTEGER(KIND=4), PARAMETER                   :: wp=8   ! working precision
+  INTEGER(KIND=4)                              :: jpni, jpnj, jpnij
+  INTEGER(KIND=4)                              :: jpreci=1 , jprecj=1
+  INTEGER(KIND=4)                              :: jpi, jpj, jpiglo, jpjglo
+  INTEGER(KIND=4)                              :: jperio=6, jv
+  INTEGER(KIND=4)                              :: narg, iargc, numout=6
+  INTEGER(KIND=4)                              :: ijarg, ireq
+  INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: imask
+  INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nimppt, njmppt, nlcit, nlcjt
+  INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nldit, nldjt, nleit, nlejt
+  INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nbondi, nbondj, icount
 
-  INTEGER   :: narg, iargc, numout=6
-  CHARACTER(LEN=80) :: cdum, cmask='mask.nc', cbathy='bathy_meter.nc', cfich='m'
-  CHARACTER(LEN=80) :: cvar, czgr='mesh_zgr.nc'
-  LOGICAL :: lwp=.true.
-  
+
+  CHARACTER(LEN=80)                            :: cf_msk='m'
+  CHARACTER(LEN=80)                            :: cf_out='mppini.txt'
+  CHARACTER(LEN=80)                            :: cv_in
+  CHARACTER(LEN=80)                            :: cldum
+
+  LOGICAL                                      :: lwp=.true.
   !----------------------------------------------------------------------------
-  narg=iargc()
+  CALL ReadCdfNames()
+
+  narg = iargc()
   IF ( narg < 2 ) THEN
-    PRINT *,'USAGE: cdfmppini jpni jpnj [m/b]'
-    PRINT *,'      optional argument: '
-    PRINT *,'              m (default) : take mask from mask.nc (tmask)'
-    PRINT *,'              b           : take mask from bathy_level.nc (Bathymetry)'
-    PRINT *,'              z           : take mask from mesh_zgr.nc (mbathy)'
-    PRINT *,'     mask.nc is used for tmask (default) or m specified'
-    PRINT *,'     bathy_meter.nc is used if b specified'
-    PRINT *,'     mesh_zgr is used if z specified'
-    PRINT *,' Output is done on mppini.txt file'
-    STOP
+     PRINT *,' usage : cdfmppini jpni jpnj [m/b/z] [-jperio jperio]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Perform the mpp initialisation with NEMO routine mpp_init2 and' 
+     PRINT *,'       give some statistics about the domains. Save the layout on a '
+     PRINT *,'       text file.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       jpni : number of domains in the i direction.' 
+     PRINT *,'       jpnj : number of domains in the j direction.' 
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [m/b/z] : use one of these letter to choose the land/sea mask.'
+     PRINT *,'               m  : take mask from ',TRIM(cn_fmsk),' (tmask) [ default ]'
+     PRINT *,'               b  : take mask from ',TRIM(cn_fbathymet),' (Bathymetry)'
+     PRINT *,'               z  : take mask from ',TRIM(cn_fzgr),' (mbathy)'
+     PRINT *,'                   Default is ',TRIM(cf_msk)
+     PRINT *,'       [-jperio jperio ] : specify jperio. '
+     PRINT '(a,i2)','                          default value is ', jperio
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       one of ',TRIM(cn_fmsk),', ',TRIM(cn_fbathymet),' or ',TRIM(cn_fzgr),' according to option' 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       - Standard output'
+     PRINT *,'       - ASCII file ', TRIM(cf_out)
+     STOP
   ENDIF
   
-  CALL getarg(1,cdum) ; READ(cdum,*) jpni
-  CALL getarg(2,cdum) ; READ(cdum,*) jpnj
-  IF ( narg == 3 ) CALL getarg(3, cfich)
-  
-  SELECT CASE ( cfich)
-  CASE ('m'); cdum=cmask  ; cvar='tmask'
-  CASE ('b'); cdum=cbathy ; cvar='Bathymetry'
-  CASE ('z'); cdum=czgr   ; cvar='mbathy'
-  END SELECT
+  cf_msk = cn_fmsk ; cv_in='tmask'
+  ijarg=1 ; ireq=0
+  DO WHILE ( ijarg <= narg )
+     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE( 'm' ) ; cf_msk=cn_fmsk       ; cv_in='tmask'
+     CASE( 'b' ) ; cf_msk=cn_fbathymet  ; cv_in='Bathymetry'
+     CASE( 'z' ) ; cf_msk=cn_fzgr       ; cv_in='mbathy'
+     CASE( '-jperio' ) 
+        CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jperio
+     CASE DEFAULT 
+        ireq = ireq+1
+        SELECT CASE ( ireq )
+        CASE ( 1 ) ; READ(cldum,*) jpni
+        CASE ( 2 ) ; READ(cldum,*) jpnj
+        CASE DEFAULT ; PRINT *,' Too many arguments.'; STOP
+        END SELECT
+     END SELECT
+  END DO
 
+  IF ( chkfile (cf_msk ))  STOP ! missing file
   
-  jpiglo= getdim (cdum,'x')
-  jpjglo= getdim (cdum,'y')
+  jpiglo = getdim (cf_msk,cn_x)
+  jpjglo = getdim (cf_msk,cn_y)
 
   jpi = ( jpiglo-2*jpreci + (jpni-1) ) / jpni + 2*jpreci 
   jpj = ( jpjglo-2*jprecj + (jpnj-1) ) / jpnj + 2*jprecj 
 
   ALLOCATE ( imask(jpiglo,jpjglo) )
-  imask(:,:)=getvar(cdum,cvar,1,jpiglo,jpjglo)
+  imask(:,:) = getvar(cf_msk, cv_in, 1, jpiglo, jpjglo)
   WHERE (imask <= 0 ) imask = 0
   WHERE (imask > 0  ) imask = 1
   CALL mpp_init2
@@ -80,14 +129,13 @@ PROGRAM cdfmppini
      WHERE(nbondi == jv ) icount=1
      PRINT *,' NBONDI = ', jv,' : ', sum(icount)
    ENDDO
+
    DO jv=-1,2
      icount=0
      WHERE(nbondj == jv ) icount=1
      PRINT *,' NBONDJ = ', jv,' : ', sum(icount)
    ENDDO
     
-    
-
 
 CONTAINS
 
@@ -132,27 +180,27 @@ CONTAINS
       !!   9.0  !  04-01  (G. Madec, J.M Molines)  F90 : free form , north fold jpni > 1
       !!----------------------------------------------------------------------
       !! 
-      INTEGER :: ji, jj, jn, jproc, jarea     ! dummy loop indices
-      INTEGER ::  inum = 99                   ! temporary logical unit
-      INTEGER ::   &
+      INTEGER(KIND=4) :: ji, jj, jn, jproc, jarea     ! dummy loop indices
+      INTEGER(KIND=4) ::  inum = 99                   ! temporary logical unit
+      INTEGER(KIND=4) ::   &
          ii, ij, ifreq, il1, il2,          &  ! temporary integers
          icont, ili, ilj,                  &  !    "          "
          isurf, ijm1, imil,                &  !    "          "
          iino, ijno, iiso, ijso,           &  !    "          " 
          iiea, ijea, iiwe, ijwe,           &  !    "          "
          iresti, irestj, iproc                !    "          "
-      INTEGER :: nreci, nrecj,  nperio
-      INTEGER, DIMENSION(10000)          ::    iint, ijnt          
-      INTEGER, DIMENSION(:), ALLOCATABLE ::    iin, ijn          
-      INTEGER, DIMENSION(jpni,jpnj) ::   &
+      INTEGER(KIND=4) :: nreci, nrecj,  nperio
+      INTEGER(KIND=4), DIMENSION(10000)          ::    iint, ijnt          
+      INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE ::    iin, ijn          
+      INTEGER(KIND=4), DIMENSION(jpni,jpnj) ::   &
          iimppt, ijmppt, ilci  , ilcj  ,   &  ! temporary workspace
          ipproc, ibondj, ibondi,           &  !    "           "
          ilei  , ilej  , ildi  , ildj  ,   &  !    "           "
          ioea  , iowe  , ioso  , iono         !    "           "
       REAL(wp) ::   zidom , zjdom          ! temporary scalars
 
-      INTEGER :: nono, noso, noea, nowe
-      INTEGER, DIMENSION(:), ALLOCATABLE :: ii_nono, ii_noso, ii_noea, ii_nowe
+      INTEGER(KIND=4) :: nono, noso, noea, nowe
+      INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ii_nono, ii_noso, ii_noea, ii_nowe
 
       ! 0. initialisation
       ! -----------------
@@ -416,7 +464,7 @@ CONTAINS
 
       ! Save processor layout in ascii file
       IF (lwp) THEN
-         OPEN (inum, FILE='mppini.txt', FORM='FORMATTED', RECL=255)
+         OPEN (inum, FILE=cf_out, FORM='FORMATTED', RECL=255)
          WRITE(inum,'(6i8)') jpnij,jpi,jpj,jpiglo,jpjglo
          WRITE(inum,'(a)') 'RANK   nlci nlcj nldi nldj nlei nlej nimpp njmpp nono noso nowe noea nbondi nbondj '
 
@@ -428,11 +476,11 @@ CONTAINS
          
 
          WRITE(inum,'(15i5)') jproc-1, nlcit(jproc), nlcjt(jproc), &
-                                     nldit(jproc), nldjt(jproc), &
-                                     nleit(jproc), nlejt(jproc), &
-                                     nimppt(jproc), njmppt(jproc),& 
-                                     ii_nono(jproc), ii_noso(jproc), ii_nowe(jproc), ii_noea(jproc) ,&
-                                     nbondi(jproc),  nbondj(jproc) 
+                                       nldit(jproc), nldjt(jproc), &
+                                       nleit(jproc), nlejt(jproc), &
+                                       nimppt(jproc), njmppt(jproc),& 
+                                       ii_nono(jproc), ii_noso(jproc), ii_nowe(jproc), ii_noea(jproc) ,&
+                                       nbondi(jproc),  nbondj(jproc) 
         END DO
         CLOSE(inum)   
       END IF

@@ -1,66 +1,129 @@
 PROGRAM cdfcofdis
-  !!--------------------------------------------------------------------------
-  !!                   ***  PROGRAM  cdfcofdis   ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfcofdis  ***
+  !!=====================================================================
+  !!  ** Purpose : A wrapper for NEMO routine cofdis: create a file 
+  !!               with the distance to coast variable
   !!
-  !! ** Purpose : wrap for standalone cofdis routine from OPA
-  !! 
-  !! ** Method : define required arrays and variables in main
-  !!             call cofdis
-  !!             write results using cdfio instead of ioipsl
+  !!  ** Method  : Mimic some NEMO global variables to be able to use
+  !!               NEMO cofdis with minimum changes. Use cdfio instead
+  !!               of IOIPSL for the output file. Due to this constaint
+  !!               DOCTOR norm is not fully respected (eg jpi not PARAMETER) 
+  !!               pdct is not a routine argument ...
   !!
-  !!-------------------------------------------------------------------------
+  !! History : 2.1  : 11/2009  : J.M. Molines : Original code
+  !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
+  !!----------------------------------------------------------------------
+  !!   cofdis       : compute distance to coast (NEMO routine )
+  !!----------------------------------------------------------------------
+
   USE cdfio
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2010, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  ! Global variables
-  INTEGER :: jpi,jpj,jpk, jpim1, jpjm1, nperio=4
-  INTEGER :: narg, iargc
+
+  INTEGER(KIND=4)                           :: jpi, jpj, jpk
+  INTEGER(KIND=4)                           :: jpim1, jpjm1, nperio=4
+  INTEGER(KIND=4)                           :: narg, iargc, iarg
+  INTEGER(KIND=4)                           :: ncout, ierr
+  INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout
+
+  ! from phycst
+  REAL(KIND=4)            :: rpi = 3.141592653589793          !: pi
+  REAL(KIND=4)            :: rad = 3.141592653589793 / 180.   !: conv. from degre into radian
+  REAL(KIND=4)            :: ra  = 6371229.                   !: earth radius (meter)
+
+  REAL(KIND=4) ,DIMENSION(1)                :: timean
+  ! to be read in mesh_hgr
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamt, glamu,glamv, glamf
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: gphit, gphiu,gphiv, gphif
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, umask, vmask, fmask
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: pdct
-  ! from phycst
-  REAL(KIND=4) ::   rpi = 3.141592653589793          !: pi
-  REAL(KIND=4) ::   rad = 3.141592653589793 / 180.   !: conversion from degre into radian
-  REAL(KIND=4) ::   ra  = 6371229.                   !: earth radius (meter)
+  ! 
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: pdct                       ! 2D only in this version
+                                                                          ! It is a 3D arg in original cofdis
+  CHARACTER(LEN=256)                        :: cf_out='dist.coast'
+  CHARACTER(LEN=256)                        :: cf_tfil
+  CHARACTER(LEN=256)                        :: cv_out='Tcoast'
+  CHARACTER(LEN=256)                        :: cldum
 
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc', cmask='mask.nc'
-  CHARACTER(LEN=255) :: cfilet
+  TYPE(variable), DIMENSION(1)              :: stypvar
 
-  ! output stuff
-  INTEGER, DIMENSION(1) :: ipk, id_varout
-  TYPE(variable), DIMENSION(1) :: typvar
-  REAL(KIND=4) ,DIMENSION(1)                  :: timean
-  CHARACTER(LEN=256) :: cfileout='dist.coast'
-  INTEGER :: ncout, ierr
-
+  LOGICAL                                   :: lchk
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
   !
   narg=iargc()
   IF ( narg == 0 ) THEN
-    PRINT *,' USAGE: cdfcofdis mesh_hgr.nc  mask.nc gridT.nc'
-    PRINT *,'   where mesh_hgr.nc and mask.nc stand for the name of the mesh_hgr'
-    PRINT *,'   and mask files respectively'
-    PRINT *,'   gridT.nc is used for size and depth references'
-    PRINT *,' Program will output dist.coast with variable Tcoast, representing the distance of every'
-    PRINT *,' T points to the coast line '
-    STOP
+     PRINT *,' usage :  cdfcofdis mesh_hgr.nc mask.nc gridT.nc [-jperio jperio ]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'        Compute the distance to the coast and create a file with '
+     PRINT *,'        the ',TRIM(cv_out),' variable, indicating the distance to the coast.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       HGR-file : name of the mesh_hgr file '
+     PRINT *,'       MSK-file : name of the mask file '
+     PRINT *,'       T-file   : netcdf file at T point.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [ -jperio jperio ] : define the NEMO jperio variable for north fold condition' 
+     PRINT *,'                Default is  4.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       none' 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables : ', TRIM(cv_out),' (m)'
+     PRINT *,'      '
+     PRINT *,'      '
+     STOP
   ENDIF
  
-  CALL getarg(1,coordhgr)
-  CALL getarg(2,cmask)
-  CALL getarg(3,cfilet)
+  CALL getarg(1,cn_fhgr)  ! overwrite standard name eventually
+  CALL getarg(2,cn_fmsk)  !   ""                "" 
+  CALL getarg(3,cf_tfil )
+
+  lchk =           chkfile ( cn_fhgr )
+  lchk = lchk .OR. chkfile ( cn_fmsk )
+  lchk = lchk .OR. chkfile ( cf_tfil )
+  IF ( lchk ) STOP ! missing files
+
+  iarg = 4 
+  DO WHILE ( iarg <= narg )
+    CALL getarg(iarg, cldum ) ; iarg = iarg + 1
+    SELECT CASE ( cldum )
+    CASE ( '-jperio' ) 
+       CALL getarg (iarg,cldum) ; READ(cldum, * ) nperio  ; iarg = iarg + 1
+    CASE DEFAULT
+       PRINT *,' unknown option : ', TRIM(cldum)
+       STOP
+    END SELECT
+  END DO
 
   ! read domain dimensions in the mask file
-  jpi=getdim(cfilet,'x')
-  jpj=getdim(cfilet,'y')
-  jpk=getdim(cfilet,'depth')
+  jpi = getdim(cf_tfil,cn_x)
+  jpj = getdim(cf_tfil,cn_y)
+  jpk = getdim(cf_tfil,cn_z)
+
   IF (jpk == 0 ) THEN
-    jpk=getdim(cfilet,'z')
+    jpk = getdim(cf_tfil,'z')
     IF ( jpk == 0 ) THEN
       PRINT *,' ERROR in determining jpk form gridT file ....'
       STOP
     ENDIF
   ENDIF
-  PRINT *, jpi,jpj,jpk
+
+  PRINT *, ' JPI = ', jpi
+  PRINT *, ' JPJ = ', jpj
+  PRINT *, ' JPK = ', jpk
+
   jpim1=jpi-1 ; jpjm1=jpj-1
 
   ! ALLOCATION of the arrays
@@ -72,48 +135,38 @@ PROGRAM cdfcofdis
   PRINT *, 'ALLOCATION DONE.'
 
   ! read latitude an longitude
-  glamt(:,:) = getvar(coordhgr,'glamt',1,jpi,jpj)
-  PRINT *,' READ GLAMT done.'
-  glamu(:,:) = getvar(coordhgr,'glamu',1,jpi,jpj)
-  PRINT *,' READ GLAMU done.'
-  glamv(:,:) = getvar(coordhgr,'glamv',1,jpi,jpj)
-  PRINT *,' READ GLAMV done.'
-  glamf(:,:) = getvar(coordhgr,'glamf',1,jpi,jpj)
-  PRINT *,' READ GLAMF done.'
+  glamt(:,:) = getvar(cn_fhgr,cn_glamt,1,jpi,jpj)
+  glamu(:,:) = getvar(cn_fhgr,cn_glamu,1,jpi,jpj)
+  glamv(:,:) = getvar(cn_fhgr,cn_glamv,1,jpi,jpj)
+  glamf(:,:) = getvar(cn_fhgr,cn_glamf,1,jpi,jpj)
 
-  gphit(:,:) = getvar(coordhgr,'gphit',1,jpi,jpj)
-  PRINT *,' READ GPHIT done.'
-  gphiu(:,:) = getvar(coordhgr,'gphiu',1,jpi,jpj)
-  PRINT *,' READ GPHIU done.'
-  gphiv(:,:) = getvar(coordhgr,'gphiv',1,jpi,jpj)
-  PRINT *,' READ GPHIV done.'
-  gphif(:,:) = getvar(coordhgr,'gphif',1,jpi,jpj)
-  PRINT *,' READ GPHIF done.'
+  gphit(:,:) = getvar(cn_fhgr,cn_gphit,1,jpi,jpj)
+  gphiu(:,:) = getvar(cn_fhgr,cn_gphiu,1,jpi,jpj)
+  gphiv(:,:) = getvar(cn_fhgr,cn_gphiv,1,jpi,jpj)
+  gphif(:,:) = getvar(cn_fhgr,cn_gphif,1,jpi,jpj)
 
   ! prepare file output
-  ipk(1) = jpk
-  typvar(1)%name='Tcoast'
-  typvar(1)%units='m'
-  typvar(1)%missing_value=0
-  typvar(1)%valid_min= 0.
-  typvar(1)%valid_max= 1.
-  typvar(1)%long_name='Tcoast'
-  typvar(1)%short_name='Tcoast'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TZYX'
-  typvar(1)%precision='r4'
-  PRINT *,' CREATE ...'
-  ncout=create(cfileout, cfilet,jpi,jpj,jpk)
+  ipk(1)                       = jpk
+  stypvar(1)%cname             = cv_out
+  stypvar(1)%cunits            = 'm'
+  stypvar(1)%rmissing_value    = 0
+  stypvar(1)%valid_min         = 0.
+  stypvar(1)%valid_max         = 1.
+  stypvar(1)%clong_name        = cv_out
+  stypvar(1)%cshort_name       = cv_out
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TZYX'
+  stypvar(1)%cprecision        = 'r4'
 
-  PRINT *,' CREATEVAR ...'
-  ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-  PRINT *,' PUTHEADERVAR ...'
-  ierr= putheadervar(ncout, cfilet, jpi,jpj,jpk)
-  PRINT *, 'CALL to cofdis ...'
+  ncout = create      (cf_out, cf_tfil, jpi, jpj, jpk       )
+  ierr  = createvar   (ncout,  stypvar, 1,   ipk, id_varout )
+  ierr  = putheadervar(ncout,  cf_tfil, jpi, jpj, jpk       )
+
   CALL cofdis
   
   CONTAINS
-  SUBROUTINE cofdis
+
+  SUBROUTINE cofdis()
     !!----------------------------------------------------------------------
     !!                 ***  ROUTINE cofdis  ***
     !!
@@ -133,12 +186,10 @@ PROGRAM cdfcofdis
     !! ** Action  : - pdct, distance to the coastline (argument)
     !!              - NetCDF file 'dist.coast' 
     !!----------------------------------------------------------------------
-    !!
-    !!
-    INTEGER ::   ji, jj, jk, jl      ! dummy loop indices
-    INTEGER ::   iju, ijt            ! temporary integers
-    INTEGER ::   icoast, itime
-    INTEGER ::   icot         ! logical unit for file distance to the coast
+    INTEGER(KIND=4) ::   ji, jj, jk, jl      ! dummy loop indices
+    INTEGER(KIND=4) ::   iju, ijt            ! temporary integers
+    INTEGER(KIND=4) ::   icoast, itime
+    INTEGER(KIND=4) ::   icot         ! logical unit for file distance to the coast
     LOGICAL, DIMENSION(jpi,jpj) ::   llcotu, llcotv, llcotf   ! ???
     CHARACTER (len=32) ::   clname
     REAL(KIND=4) ::   zdate0
@@ -164,10 +215,10 @@ PROGRAM cdfcofdis
        ! read the masks
        !    temp(:,:) = getvar(cbathy,'Bathy_level',1, npiglo, npjglo)
 
-       tmask(:,:)=getvar(cmask,'tmask',jk,jpi,jpj)
-       umask(:,:)=getvar(cmask,'umask',jk,jpi,jpj)
-       vmask(:,:)=getvar(cmask,'vmask',jk,jpi,jpj)
-       fmask(:,:)=getvar(cmask,'fmask',jk,jpi,jpj)
+       tmask(:,:)=getvar(cn_fmsk,'tmask',jk,jpi,jpj)
+       umask(:,:)=getvar(cn_fmsk,'umask',jk,jpi,jpj)
+       vmask(:,:)=getvar(cn_fmsk,'vmask',jk,jpi,jpj)
+       fmask(:,:)=getvar(cn_fmsk,'fmask',jk,jpi,jpj)
        PRINT *, '    READ masks done.'
        ! Define the coastline points (U, V and F)
        DO jj = 2, jpjm1
@@ -281,7 +332,7 @@ PROGRAM cdfcofdis
              ELSE
                 DO jl = 1, icoast
                    zdis(jl) = ( zxt(ji,jj) - zxc(jl) )**2   &
-                        &     + ( zyt(ji,jj) - zyc(jl) )**2   &
+                        &     + ( zyt(ji,jj) - zyc(jl) )**2 &
                         &     + ( zzt(ji,jj) - zzc(jl) )**2
                 END DO
                 pdct(ji,jj) = ra * SQRT( MINVAL( zdis(1:icoast) ) )

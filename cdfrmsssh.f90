@@ -1,92 +1,143 @@
 PROGRAM cdfrmsssh
-  !!-------------------------------------------------------------------
-  !!             ***  PROGRAM cdfrmsssh  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfrmsssh  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the RMS of SSH, from the mean squared value.
   !!
-  !!  **  Purpose: Compute RMS SSH
-  !!  
-  !!  **  Method: Try to avoid 3 d arrays 
+  !!  ** Method  : Read gridT and gridT2 and compute rms
   !!
-  !! history :
-  !!  Original :  J.M. Molines (Nov 2004 ) for ORCA025
-  !!              J.M. Molines Apr 2005 : use modules
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 11/2004  : J.M. Molines : Original code
+  !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: ji,jj,jk
-  INTEGER   :: narg, iargc                          !: 
-  INTEGER   :: npiglo,npjglo, npk                   !: size of the domain
-  INTEGER, DIMENSION(1) ::  ipk, id_varout
-  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: u, u2,  rms
-  REAL(KIND=4) ,DIMENSION(1)                  :: timean
 
-  CHARACTER(LEN=256) :: cfile ,cfile2 ,cfileout='rms.nc'            !: file name
+  INTEGER(KIND=4)                            :: jk, jt            ! dummy loop index
+  INTEGER(KIND=4)                            :: narg, iargc       ! command line
+  INTEGER(KIND=4)                            :: ijarg, ireq       ! command line
+  INTEGER(KIND=4)                            :: npiglo, npjglo    ! size of the domain
+  INTEGER(KIND=4)                            :: npk, npt          ! size of the domain
+  INTEGER(KIND=4)                            :: ncout             ! ncid of output variable
+  INTEGER(KIND=4)                            :: ierr              ! error status
+  INTEGER(KIND=4), DIMENSION(1)              :: ipko, id_varout   ! output variable
 
-  TYPE(variable), DIMENSION(1) :: typvar          !: structure for attribute
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zvbar, zvba2      ! mean and mean2 variable
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim               ! time counter
 
-  INTEGER    :: ncout
-  INTEGER    :: istatus, ierr
+  REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dsdev             ! standard deviation
 
-  !!  Read command line
+  CHARACTER(LEN=256)                         :: cf_in             ! input mean file name
+  CHARACTER(LEN=256)                         :: cf_in2            ! input mean2 file name
+  CHARACTER(LEN=256)                         :: cf_out = 'rms.nc' ! output file name
+  CHARACTER(LEN=256)                         :: cv_in, cv_in2     ! input variable names
+  CHARACTER(LEN=256)                         :: cldum             ! dummy character variable
+
+  TYPE(variable), DIMENSION(1)               :: stypvaro          ! output data structure
+
+  LOGICAL                                    :: lchk = .FALSE.    ! flag for missing files
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  cv_in = cn_sossheig
+
   narg= iargc()
-  IF ( narg /= 2 ) THEN
-     PRINT *,' Usage : cdfrmsssh ''gridX gridX2'' '
-     PRINT *,'   Output on rms.nc , variable sossheig_rms '
+  IF ( narg < 2 ) THEN
+     PRINT *,' usage : cdfrmsssh T-file T2-file '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute the standard deviation of the SSH from its'
+     PRINT *,'       mean value and its mean square value. '
+     PRINT *,'      '
+     PRINT *,'       Note that what is computed in this program is stictly the'
+     PRINT *,'       standard deviation. It is very often called RMS, which is'
+     PRINT *,'       an abuse. It is the same only in the case of zero mean value.'
+     PRINT *,'       However, for historical reason, the name of this tool, remains'
+     PRINT *,'       unchanged: cdfrmsssh'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       T-file  : netcdf file with mean values for SSH' 
+     PRINT *,'       T2-file : netcdf file with mean squared values for SSH' 
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       none' 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables : ', TRIM(cv_in)//'_rms, same unit than the input.'
+     PRINT *,'      '
+     PRINT *,'     SEA ALSO :'
+     PRINT *,'       cdfstd, cdfstdevw, cdfstdevts.'
      STOP
   ENDIF
-  !!
-  !! Initialisation from 1st file (all file are assume to have the same geometry)
-  CALL getarg (1, cfile)
-  CALL getarg (2, cfile2)
 
-  npiglo= getdim (cfile,'x')
-  npjglo= getdim (cfile,'y')
-  npk   = getdim (cfile,'depth')
+  ijarg = 1  ; ireq = 0
+  DO WHILE ( ijarg <= narg) 
+     CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE DEFAULT
+        ireq = ireq + 1
+        SELECT CASE ( ireq ) 
+        CASE ( 1 ) ; cf_in  = cldum
+        CASE ( 2 ) ; cf_in2 = cldum
+        CASE DEFAULT
+           PRINT *, ' Too many variables ' ; STOP
+        END SELECT
+     END SELECT
+  ENDDO
 
-  ipk(1) = 1
-  typvar(1)%name= 'sossheig_rms'
-  typvar(1)%units='m'
-  typvar(1)%missing_value=0.
-  typvar(1)%valid_min= 0.
-  typvar(1)%valid_max= 100.
-  typvar(1)%long_name='RMS_Sea_Surface_height'
-  typvar(1)%short_name='sossheig_rms'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TYX'
+  ! check existence of files
+  lchk = lchk .OR. chkfile(cf_in  )
+  lchk = lchk .OR. chkfile(cf_in2 )
+  IF (lchk ) STOP ! missing file
 
+  npiglo = getdim (cf_in, cn_x)
+  npjglo = getdim (cf_in, cn_y)
+  npk    = getdim (cf_in, cn_z)
+  npt    = getdim (cf_in, cn_t)
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
+  ipko(1) = 1
+  stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
+  stypvaro(1)%cunits            = 'm'
+  stypvaro(1)%rmissing_value    = 0.
+  stypvaro(1)%valid_min         = 0.
+  stypvaro(1)%valid_max         = 100.
+  stypvaro(1)%clong_name        = 'RMS_Sea_Surface_height'
+  stypvaro(1)%cshort_name       = TRIM(cv_in)//'_rms'
+  stypvaro(1)%conline_operation = 'N/A'
+  stypvaro(1)%caxis             = 'TYX'
 
-  ALLOCATE( u(npiglo,npjglo), u2(npiglo,npjglo) )
-  ALLOCATE( rms(npiglo,npjglo) )
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
 
-  ncout =create(cfileout, cfile,npiglo,npjglo,npk)
+  ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
+  ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
 
-  ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-  ierr= putheadervar(ncout, cfile, npiglo, npjglo, npk)
+  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       )
+  ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout )
+  ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
-  DO jk = 1, ipk(1)
-     u(:,:) = getvar(cfile,'sossheig',jk, npiglo, npjglo)
-     u2(:,:) = getvar(cfile2,'sossheig_sqd',jk, npiglo, npjglo)
+  cv_in2 = TRIM(cv_in)//'_sqd'
+  DO jt = 1, npt
+     zvbar(:,:) = getvar(cf_in,  cv_in,  1, npiglo, npjglo, ktime=jt)
+     zvba2(:,:) = getvar(cf_in2, cv_in2, 1, npiglo, npjglo, ktime=jt)
 
-     rms(:,:) = 0.
-     DO ji=2, npiglo
-        DO jj=2,npjglo
-           rms(ji,jj)  =  SQRT((u2(ji,jj)-u(ji,jj)*u(ji,jj)))
-        END DO
-     END DO
-     ierr=putvar(ncout,id_varout(1), rms, jk, npiglo, npjglo)
+     dsdev(:,:) = SQRT ( DBLE(zvba2(:,:) - zvbar(:,:)*zvbar(:,:)) )
+
+     ierr = putvar(ncout, id_varout(1), REAL(dsdev), 1, npiglo, npjglo, ktime=jt)
   END DO
-  timean=getvar1d(cfile,'time_counter',1)
-  ierr=putvar1d(ncout,timean,1,'T')
-  istatus = closeout(ncout)
+
+  tim  = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, tim,       npt, 'T')
+
+  ierr = closeout(ncout)
 
 END PROGRAM cdfrmsssh

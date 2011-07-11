@@ -140,37 +140,37 @@ PROGRAM cdfflxconv
   ALLOCATE ( typvarqsr(nvar), ipkqsr(nvar), id_varoutqsr(nvar) )
   jvar=1
   ipkemp(jvar)      = 1
-  typvaremp(jvar)%name='sowaflup'    ! E - P = dim 3 - dim 4 dimgfile
-  typvaremp(jvar)%units='kg/m2/s'
-  typvaremp(jvar)%missing_value=0.
+  typvaremp(jvar)%cname='sowaflup'    ! E - P = dim 3 - dim 4 dimgfile
+  typvaremp(jvar)%cunits='kg/m2/s'
+  typvaremp(jvar)%rmissing_value=0.
   typvaremp(jvar)%valid_min= -0.002
   typvaremp(jvar)%valid_max= 0.002
-  typvaremp(jvar)%long_name='E-P Upward water flux'
-  typvaremp(jvar)%short_name='sowaflup'
-  typvaremp(jvar)%online_operation='N/A'
-  typvaremp(jvar)%axis='TYX'
+  typvaremp(jvar)%clong_name='E-P Upward water flux'
+  typvaremp(jvar)%cshort_name='sowaflup'
+  typvaremp(jvar)%conline_operation='N/A'
+  typvaremp(jvar)%caxis='TYX'
 
   ipkqnet(jvar)      = 1
-  typvarqnet(jvar)%name='sohefldo'   !  QNET = dim 1 dimgfile
-  typvarqnet(jvar)%units='W/m2'
-  typvarqnet(jvar)%missing_value=0.
+  typvarqnet(jvar)%cname='sohefldo'   !  QNET = dim 1 dimgfile
+  typvarqnet(jvar)%cunits='W/m2'
+  typvarqnet(jvar)%rmissing_value=0.
   typvarqnet(jvar)%valid_min= -1000.
   typvarqnet(jvar)%valid_max= 1000.
-  typvarqnet(jvar)%long_name='Net_Downward_Heat_Flux'
-  typvarqnet(jvar)%short_name='sohefldo'
-  typvarqnet(jvar)%online_operation='N/A'
-  typvarqnet(jvar)%axis='TYX'
+  typvarqnet(jvar)%clong_name='Net_Downward_Heat_Flux'
+  typvarqnet(jvar)%cshort_name='sohefldo'
+  typvarqnet(jvar)%conline_operation='N/A'
+  typvarqnet(jvar)%caxis='TYX'
 
   ipkqsr(jvar)      = 1
-  typvarqsr(jvar)%name='soshfldo'   ! QSR = dim 2 dimgfile
-  typvarqsr(jvar)%units='W/m2'
-  typvarqsr(jvar)%missing_value=0.
+  typvarqsr(jvar)%cname='soshfldo'   ! QSR = dim 2 dimgfile
+  typvarqsr(jvar)%cunits='W/m2'
+  typvarqsr(jvar)%rmissing_value=0.
   typvarqsr(jvar)%valid_min= -1000.
   typvarqsr(jvar)%valid_max= 1000.
-  typvarqsr(jvar)%long_name='Short_Wave_Radiation'
-  typvarqsr(jvar)%short_name='soshfldo'
-  typvarqsr(jvar)%online_operation='N/A'
-  typvarqsr(jvar)%axis='TYX'
+  typvarqsr(jvar)%clong_name='Short_Wave_Radiation'
+  typvarqsr(jvar)%cshort_name='soshfldo'
+  typvarqsr(jvar)%conline_operation='N/A'
+  typvarqsr(jvar)%caxis='TYX'
 
   ncoutemp =create(cemp, 'none',npiglo,npjglo,npk,cdep='deptht' )
   istatus= createvar(ncoutemp ,typvaremp,nvar, ipkemp,id_varoutemp )
@@ -267,26 +267,26 @@ PROGRAM cdfflxconv
   ALLOCATE ( typvartauy(nvar), ipktauy(nvar), id_varouttauy(nvar) )
   jvar=1
   ipktaux(jvar)      = 1
-  typvartaux(jvar)%name='sozotaux'    ! taux dim 1 of dimgfile
-  typvartaux(jvar)%units='N/m2'
-  typvartaux(jvar)%missing_value=0.
+  typvartaux(jvar)%cname='sozotaux'    ! taux dim 1 of dimgfile
+  typvartaux(jvar)%cunits='N/m2'
+  typvartaux(jvar)%rmissing_value=0.
   typvartaux(jvar)%valid_min= -0.1
   typvartaux(jvar)%valid_max= 0.1
-  typvartaux(jvar)%long_name='Zonal Wind Stress'
-  typvartaux(jvar)%short_name='sozotaux'
-  typvartaux(jvar)%online_operation='N/A'
-  typvartaux(jvar)%axis='TYX'
+  typvartaux(jvar)%clong_name='Zonal Wind Stress'
+  typvartaux(jvar)%cshort_name='sozotaux'
+  typvartaux(jvar)%conline_operation='N/A'
+  typvartaux(jvar)%caxis='TYX'
 
   ipktauy(jvar)      = 1
-  typvartauy(jvar)%name='sometauy'    ! tauy dim 2 of dimgfile
-  typvartauy(jvar)%units='N/m2'
-  typvartauy(jvar)%missing_value=0.
+  typvartauy(jvar)%cname='sometauy'    ! tauy dim 2 of dimgfile
+  typvartauy(jvar)%cunits='N/m2'
+  typvartauy(jvar)%rmissing_value=0.
   typvartauy(jvar)%valid_min= -0.1
   typvartauy(jvar)%valid_max= 0.1
-  typvartauy(jvar)%long_name='Meridional Wind Stress'
-  typvartauy(jvar)%short_name='sometauy'
-  typvartauy(jvar)%online_operation='N/A'
-  typvartauy(jvar)%axis='TYX'
+  typvartauy(jvar)%clong_name='Meridional Wind Stress'
+  typvartauy(jvar)%cshort_name='sometauy'
+  typvartauy(jvar)%conline_operation='N/A'
+  typvartauy(jvar)%caxis='TYX'
 
   ncouttaux =create(ctaux, 'none',npiglo,npjglo,npk,cdep='deptht' )
   istatus= createvar(ncouttaux ,typvartaux,nvar, ipktaux,id_varouttaux )
@@ -359,15 +359,15 @@ PROGRAM cdfflxconv
   ALLOCATE ( typvarsst(nvar), ipksst(nvar), id_varoutsst(nvar) )
   jvar=1
   ipksst(jvar)      = 1
-  typvarsst(jvar)%name='sst'    ! sst dim 1 of dimgfile
-  typvarsst(jvar)%units='C'
-  typvarsst(jvar)%missing_value=0.
+  typvarsst(jvar)%cname='sst'    ! sst dim 1 of dimgfile
+  typvarsst(jvar)%cunits='C'
+  typvarsst(jvar)%rmissing_value=0.
   typvarsst(jvar)%valid_min= -10.
   typvarsst(jvar)%valid_max= 50.
-  typvarsst(jvar)%long_name='Reynolds SST'
-  typvarsst(jvar)%short_name='SST'
-  typvarsst(jvar)%online_operation='N/A'
-  typvarsst(jvar)%axis='TYX'
+  typvarsst(jvar)%clong_name='Reynolds SST'
+  typvarsst(jvar)%cshort_name='SST'
+  typvarsst(jvar)%conline_operation='N/A'
+  typvarsst(jvar)%caxis='TYX'
 
   ncoutsst =create(csst, 'none',npiglo,npjglo,npk,cdep='deptht' )
   istatus= createvar(ncoutsst ,typvarsst,nvar, ipksst,id_varoutsst )

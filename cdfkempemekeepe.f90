@@ -1,132 +1,137 @@
 PROGRAM cdfkempemekeepe
-  !!---------------------------------------------------------------------------
-  !!         ***  PROGRAM  cdfkempemekeepe  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfkempemekeepe  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the term of energetic transfert from mean kinetic
+  !!               energy to mean potential energy (T1) and from eddy 
+  !!               potential energy to eddy kinetic energy (T3)
   !!
-  !!  **  Purpose: Compute the term of energetic transfert  
-  !!     from mean kinetic energy to mean potential energy (T1) 
-  !!     and from eddy potential energy to eddy kinetic energy (T3)
-  !!
-  !! history :
-  !!   Original :  A. Melet (Mar 2008)
-  !!---------------------------------------------------------------------
-  !!--------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
-
+  !! History : 2.1  : 03/2008  : A. Melet     : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER :: ji,jj,jk, jt, ilev, jmin
-  INTEGER :: npiglo, npjglo, npk, nt
-  INTEGER :: kimin,imin,kkmin,ktime
-  INTEGER :: narg, iargc, ncout, ierr
-  INTEGER, DIMENSION(2) ::  ipk, id_varout         ! 
 
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: t1mask,w1mask,txz,wxz 
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: wtxz,wbartbarxz,anowtxz
-  REAL(kind=4), DIMENSION(:,:,:), ALLOCATABLE  :: wbartbar,anowt 
-  REAL(KIND=4) ,DIMENSION(1)                 :: tim
+  INTEGER(KIND=4)                             :: jj, jk         ! dummy loop index
+  INTEGER(KIND=4)                             :: npiglo, npjglo ! size of the domain
+  INTEGER(KIND=4)                             :: npk, npt       ! size of the domain
+  INTEGER(KIND=4)                             :: narg, iargc    ! browse line
+  INTEGER(KIND=4)                             :: ncout, ierr    ! ncid of outputfile, error status
+  INTEGER(KIND=4), DIMENSION(2)               :: ipk, id_varout ! levels and varid's of output vars
 
-  CHARACTER(LEN=256) :: cfile
-  CHARACTER(LEN=256) :: cfileout='transfertst1t3.nc'
-  TYPE (variable), DIMENSION(2) :: typvar         !: structure for attibutes
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: wbartbar
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: anowt 
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: t1mask
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: w1mask
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: txz
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: wxz 
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: wtxz
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: wbartbarxz
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: anowtxz
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim            ! time counter (dummy)
 
-  !!
+  CHARACTER(LEN=256)                          :: cf_uvwtfil          ! input file
+  CHARACTER(LEN=256)                          :: cf_out='transfertst1t3.nc'
+
+  TYPE  (variable), DIMENSION(2)              :: stypvar        ! structure for attibutes
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
   narg = iargc()
   IF ( narg /= 1 ) THEN
-     PRINT *,' USAGE : cdfkempemekeepe file'
-     PRINT *,'        Produce a cdf file transfertst1t3.nc with wT and anowT variables'
-     PRINT *,'        file is from cdfmoyuvwt'
-     PRINT *,'        the mean must have been computed on a period long enough'
-     PRINT *,'        for the statistics to be meaningful'
+     PRINT *,'usage : cdfkempemekeepe file'
+     PRINT *,'     Produce a cdf file transfertst1t3.nc with wT and anowT variables'
+     PRINT *,'     file is from cdfmoyuvwt'
+     PRINT *,'     the mean must have been computed on a period long enough'
+     PRINT *,'     for the statistics to be meaningful'
      PRINT *,'                         '
-     PRINT *,'        if file is in grid B or C, check the code (PM)' 
      STOP
   ENDIF
 
-  CALL getarg(1, cfile)
-  npiglo = getdim(cfile,'x')
-  npjglo = getdim(cfile,'y')
-  npk    = getdim(cfile,'depth')
-  nt     = getdim(cfile,'time_counter')
+  CALL getarg(1, cf_uvwtfil)
 
-  PRINT *, 'npiglo =',npiglo
-  PRINT *, 'npjglo =',npjglo
-  PRINT *, 'npk    =',npk
-  PRINT *, 'nt     =',nt
+  IF (chkfile(cf_uvwtfil) ) STOP ! missing file
+  npiglo = getdim(cf_uvwtfil, cn_x)
+  npjglo = getdim(cf_uvwtfil, cn_y)
+  npk    = getdim(cf_uvwtfil, cn_z)
+  npt    = getdim(cf_uvwtfil, cn_t)
+
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
 
   ! define new variables for output ( must update att.txt)
-  typvar(1)%name='wT'
-  typvar(1)%long_name='temporal mean of w times temporal mean of T on T point (*1000)'
-  typvar(1)%short_name='wT'
+  ipk(:)                    = npk  
+  stypvar(1)%cname          = 'wT'
+  stypvar(1)%clong_name     = 'temporal mean of w times temporal mean of T on T point (*1000)'
+  stypvar(1)%cshort_name    = 'wT'
 
-  typvar(2)%name='anowT'
-  typvar(2)%long_name='temporal mean of anomaly of w times ano of T on T point (*1000)'
-  typvar(2)%short_name='anowT'
+  stypvar(2)%cname          = 'anowT'
+  stypvar(2)%clong_name     = 'temporal mean of anomaly of w times ano of T on T point (*1000)'
+  stypvar(2)%cshort_name    = 'anowT'
  
-  typvar%units='1000 m.K'
-  typvar%missing_value=0.
-  typvar%valid_min= -1000.
-  typvar%valid_max= 1000.
-  typvar%online_operation='N/A'
-  typvar%axis='TYX'
-
-  ipk(:) = npk  
+  stypvar%cunits            = '1000 m.K'
+  stypvar%rmissing_value    = 0.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         = 1000.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TYX'
   
-  !test if lev exists
-  IF ((npk==0) .AND. (ilev .GT. 0) ) THEN
-     PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
-     STOP
-  END IF
-
   ! create output fileset
-  ncout =create(cfileout, cfile, npiglo,npjglo,npk)
-  ierr= createvar(ncout ,typvar,2, ipk,id_varout )
-  ierr= putheadervar(ncout, cfile, npiglo, npjglo,npk)
+  ncout = create      (cf_out, cf_uvwtfil,   npiglo, npjglo, npk       )
+  ierr  = createvar   (ncout,    stypvar, 2,      ipk,    id_varout )
+  ierr  = putheadervar(ncout,    cf_uvwtfil,   npiglo, npjglo, npk       )
 
   ! Allocate the memory
-  ALLOCATE ( t1mask(npiglo,npk) , w1mask(npiglo,npk) )
-  ALLOCATE ( txz(npiglo,npk) , wxz(npiglo,npk) )
-  ALLOCATE ( wtxz(npiglo,npk) )
-  ALLOCATE ( wbartbarxz(npiglo,npk), anowtxz(npiglo,npk) )
-  ALLOCATE ( wbartbar(npiglo, npjglo, npk) )
-  ALLOCATE ( anowt(npiglo, npjglo, npk) )
+  ALLOCATE ( wbartbar(  npiglo, npjglo, npk) )  ! 3D can be huge !
+  ALLOCATE ( anowt(     npiglo, npjglo, npk) )  ! 3D can be huge
+  ALLOCATE ( t1mask(    npiglo,npk) )
+  ALLOCATE ( w1mask(    npiglo,npk) )
+  ALLOCATE ( txz(       npiglo,npk) )
+  ALLOCATE ( wxz(       npiglo,npk) )
+  ALLOCATE ( wtxz(      npiglo,npk) )
+  ALLOCATE ( anowtxz(   npiglo,npk) )
+  ALLOCATE ( wbartbarxz(npiglo,npk) )  
+  ALLOCATE ( tim(npt)  )  
   
-  tim=getvar1d(cfile,'time_counter',nt)
-  ierr=putvar1d(ncout,tim,1,'T')
+  tim  = getvar1d(cf_uvwtfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, tim,       npt, 'T')
 
   DO jj = 1, npjglo
-     print*, 'jj : ',jj
-       wbartbarxz(:,:) = 0.d0
-       anowtxz(:,:)    = 0.d0
-       wtxz(:,:)     = 0.d0
-       wxz(:,:)      = 0.d0
-       txz(:,:)      = 0.d0
+       wbartbarxz(:,:) = 0.0
+       anowtxz(:,:)    = 0.0
+       wtxz(:,:)       = 0.0
+       wxz(:,:)        = 0.0
+       txz(:,:)        = 0.0
 
-       txz(:,:) = getvarxz(cfile,'tbar',jj,npiglo,npk,kimin=1,kkmin=1,ktime=1)
-       wxz(:,:) = getvarxz(cfile,'wbar',jj,npiglo,npk,kimin=1,kkmin=1,ktime=1)
-       wtxz(:,:)= getvarxz(cfile,'wtbar',jj,npiglo,npk,kimin=1,kkmin=1,ktime=1)
+       txz( :,:) = getvarxz(cf_uvwtfil, 'tbar',  jj, npiglo, npk, kimin=1, kkmin=1, ktime=1)
+       wxz( :,:) = getvarxz(cf_uvwtfil, 'wbar',  jj, npiglo, npk, kimin=1, kkmin=1, ktime=1)
+       wtxz(:,:) = getvarxz(cf_uvwtfil, 'wtbar', jj, npiglo, npk, kimin=1, kkmin=1, ktime=1)
 
        DO jk=1, npk-1
           w1mask(:,jk) = wxz(:,jk) * wxz(:,jk+1)
           t1mask(:,jk) = txz(:,jk)
           WHERE ( w1mask(:,jk) /= 0.) w1mask(:,jk)=1.
           WHERE ( t1mask(:,jk) /= 0.) t1mask(:,jk)=1. 
-          wbartbarxz(:,jk) = 1000 * t1mask(:,jk) * txz(:,jk) &
-                &     * 0.5 * w1mask(:,jk) * ( wxz(:,jk) + wxz(:,jk+1) )
-          anowtxz(:,jk) = 1000 * ( wtxz(:,jk) - wbartbarxz(:,jk)*0.001 )      
+          wbartbarxz(:,jk) = 1000. * t1mask(:,jk) * txz(:,jk) * 0.5 * w1mask(:,jk) * ( wxz(:,jk) + wxz(:,jk+1) )
+          anowtxz(   :,jk) = 1000. * ( wtxz(:,jk) - wbartbarxz(:,jk)*0.001 )      
        END DO
        wbartbar(:,jj,:) = wbartbarxz(:,:)
-       anowt(:,jj,:)    = anowtxz(:,:)
+       anowt(   :,jj,:) = anowtxz(   :,:)
   END DO
   DO jk=1,npk
-     ierr = putvar(ncout, id_varout(1) ,wbartbar(:,:,jk), jk, npiglo, npjglo )
-     ierr = putvar(ncout, id_varout(2) ,anowt(:,:,jk), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(1), wbartbar(:,:,jk), jk, npiglo, npjglo )
+     ierr = putvar(ncout, id_varout(2), anowt(   :,:,jk), jk, npiglo, npjglo )
   END DO
+
   ierr = closeout(ncout)  
 
 END PROGRAM cdfkempemekeepe

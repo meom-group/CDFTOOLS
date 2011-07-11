@@ -1,277 +1,457 @@
 PROGRAM cdfmean
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfmean  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfmean  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the Mean Value over the ocean or part of the
+  !!               ocean (spatial mean).
   !!
-  !!  **  Purpose  :  Compute the Mean Value over the ocean
-  !!                  PARTIAL STEPS
-  !!  
-  !!  **  Method   :  compute the sum ( V * e1 *e2 * e3 *mask )/ sum( e1 * e2 * e3 *mask )
+  !!  ** Method  : mean= sum( V * e1 *e2 * e3 *mask )/ sum( e1 * e2 * e3 *mask ))
+  !!               Partial cell version
   !!
-  !!
-  !! history ;
-  !!  Original :  J.M. Molines (Oct. 2005) 
-  !!              R. Dussin (Jul 2009) : add cdf output
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 10/2005  : J.M. Molines : Original code
+  !!         : 2.1  : 07/2009  : R. Dussin    : Netcdf output
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jk, ik, jt, jj
-  INTEGER   :: imin=0, imax=0, jmin=0, jmax=0      !: domain limitation for computation
-  INTEGER   :: kmin=0, kmax=0                      !: domain limitation for computation
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk, nt              !: size of the domain
-  INTEGER   :: nvpk                                !: vertical levels in working variable
-  INTEGER   :: numout=10                           !: logical unit for output file
-  ! added to write in netcdf
-  INTEGER :: kx=1, ky=1                ! dims of netcdf output file
-  INTEGER :: nvars=2                ! number of values to write in cdf output
-  INTEGER :: ncout, ierr               ! for netcdf output
-  INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout
-  !
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, e3,  zv   !:  metrics, velocity
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask             !:   npiglo x npjglo
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::  gdep              !:  depth 
-  ! added to write in netcdf
-  REAL(KIND=4) :: threedmeanout, pmissing_value
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE ::  dumlon, dumlat, dummymean
-  REAL(KIND=4), DIMENSION (1)               ::  tim ! time counter
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: meanout
-  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar  ! structure of output
-  !
-  REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf
-  CHARACTER(LEN=256) :: cfilev , cdum
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
-  CHARACTER(LEN=256) :: cvar, cvartype, cdep
-  CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype
-  CHARACTER(LEN=256) :: cfilout='out.txt'
-  ! added to write in netcdf
-  CHARACTER(LEN=256) :: cfileoutnc='cdfmean.nc'
-  CHARACTER(LEN=256) :: cdunits, cdlong_name, cdshort_name 
-  ! added to write in netcdf
-  LOGICAL :: lwrtcdf=.TRUE.
 
+  INTEGER(KIND=4)                            :: jk, jt, jvar       ! dummy loop index
+  INTEGER(KIND=4)                            :: ik, ii, ivar       !
+  INTEGER(KIND=4)                            :: iimin=0, iimax=0   ! domain limitation for computation
+  INTEGER(KIND=4)                            :: ijmin=0, ijmax=0   ! domain limitation for computation
+  INTEGER(KIND=4)                            :: ikmin=0, ikmax=0   ! domain limitation for computation
+  INTEGER(KIND=4)                            :: narg, iargc, ijarg ! command line 
+  INTEGER(KIND=4)                            :: npiglo, npjglo     ! size of the domain
+  INTEGER(KIND=4)                            :: npiglo_fi          ! size of the domain from input file
+  INTEGER(KIND=4)                            :: npjglo_fi          ! size of the domain from input file
+  INTEGER(KIND=4)                            :: npk_fi             ! size of the domain from input file
+  INTEGER(KIND=4)                            :: npk, npt           ! size of the domain
+  INTEGER(KIND=4)                            :: nvpk               ! vertical levels in working variable
+  INTEGER(KIND=4)                            :: numout=10          ! logical unit for mean output file
+  INTEGER(KIND=4)                            :: numvar=11          ! logical unit for variance output file
+  INTEGER(KIND=4)                            :: ikx=1, iky=1       ! dims of netcdf output file
+  INTEGER(KIND=4)                            :: nvars              ! number of values to write in cdf output
+  INTEGER(KIND=4)                            :: ncout, ierr        ! for netcdf output
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
 
-  INTEGER    :: istatus
+  REAL(KIND=4)                               :: zspval             ! missing value
+  REAL(KIND=4), DIMENSION(1,1)               :: rdummy             ! dummy variable
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: e1, e2, e3, zv     ! metrics, velocity
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zmask              ! npiglo x npjglo
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: rdumlon, rdumlat   ! dummy lon/lat for output file
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: rdummymean         ! array for mean value on output file
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdep               ! depth 
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: zdep               ! depth of the whole vertical levels
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: e31d               ! 1d vertical spacing
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                ! time counter
 
-  ! constants
+  REAL(KIND=8)                               :: dvol, dsum, dsurf  ! cumulated values
+  REAL(KIND=8)                               :: dvol2d, dsum2d     !
+  REAL(KIND=8)                               :: dvar2d, dvar       ! for variance computing
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvmeanout          ! spatial mean
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvariance           ! spatial variance
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvmeanout3d         ! global 3D mean value
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvariance3d         ! global 3D mean variance
 
-  !!  Read command line and output usage message if not compliant.
-  narg= iargc()
+  CHARACTER(LEN=256)                         :: cv_nam             ! current variable name
+  CHARACTER(LEN=256)                         :: cv_dep             ! deptht name
+  CHARACTER(LEN=20)                          :: cv_e1, cv_e2       ! horizontal metrics names
+  CHARACTER(LEN=20)                          :: cv_e3, cv_e31d     ! vertical metrics names
+  CHARACTER(LEN=20)                          :: cv_msk             ! mask variable name
+  CHARACTER(LEN=256)                         :: cf_in              ! input file name
+  CHARACTER(LEN=256)                         :: cf_out   = 'cdfmean.txt' ! ASCII output file for mean
+  CHARACTER(LEN=256)                         :: cf_var   = 'cdfvar.txt'  ! ASCII output file for variance
+  CHARACTER(LEN=256)                         :: cf_ncout = 'cdfmean.nc'  ! NCDF output file
+  CHARACTER(LEN=256)                         :: cf_zerom = 'zeromean.nc' ! NCDF output file with zeromean field
+  CHARACTER(LEN=256)                         :: ctype              ! type of C-grid point to work with
+  CHARACTER(LEN=256)                         :: clunits            ! attribute of output file : units
+  CHARACTER(LEN=256)                         :: cllong_name        !     "      long name
+  CHARACTER(LEN=256)                         :: clshort_name       !     "      short name
+  CHARACTER(LEN=256)                         :: cglobal            !     "      global 
+  CHARACTER(LEN=256)                         :: cldum              ! dummy char variable
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names        ! list of file names
+
+  TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar            ! structure of output
+  TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvarin          ! structure of input data
+  TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvarzero        ! structure of zeromean output
+
+  LOGICAL                                    :: lfull     = .false.! full step  flag
+  LOGICAL                                    :: lvar      = .false.! variance  flag
+  LOGICAL                                    :: lzeromean = .false.! zero mean  flag
+  LOGICAL                                    :: lnodep    = .false.! no depth flag
+  LOGICAL                                    :: lchk               ! flag for missing files
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmean  ncfile cdfvar T| U | V | F | W [imin imax jmin jmax kmin kmax] '
-     PRINT *,' Computes the mean value of the field (3D, weighted) '
-     PRINT *,' imin imax jmin jmax kmin kmax can be given in option '
-     PRINT *,'    if imin = 0 then ALL i are taken'
-     PRINT *,'    if jmin = 0 then ALL j are taken'
-     PRINT *,'    if kmin = 0 then ALL k are taken'
-     PRINT *,' PARTIAL CELLS VERSION'
-     PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc '
-     PRINT *,'  must be in the current directory'
-     PRINT *,' Output on standard output'
+     PRINT *,' usage : cdfmean  IN-file IN-var T|U|V|F|W [imin imax jmin jmax kmin kmax]'
+     PRINT *,'       ... [-full] [-var] [-zeromean] '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'        Computes the mean value of the field (3D, weighted). For 3D fields,'
+     PRINT *,'        a horizontal mean for each level is also given. If a spatial window'
+     PRINT *,'        is specified, the mean value is computed only in this window.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       IN-file : input netcdf file.'
+     PRINT *,'       IN-var  : name of netcdf variable to work with.'
+     PRINT *,'       T|U|V|F|W : position of cdfvar on the C-grid' 
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [imin imax jmin jmax kmin kmax] : spatial windows where mean value '
+     PRINT *,'                  is computed:' 
+     PRINT *,'                  if imin = 0 then ALL i are taken'
+     PRINT *,'                  if jmin = 0 then ALL j are taken'
+     PRINT *,'                  if kmin = 0 then ALL k are taken'
+     PRINT *,'       [ -full ] : compute the mean for full steps, instead of default '
+     PRINT *,'                   partial steps.'
+     PRINT *,'       [ -var ]  : also compute the spatial variance of cdfvar '
+     PRINT *,'       [ -zeromean ] : create a file with cdfvar having a zero spatial mean.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       Files ', TRIM(cn_fhgr),', ', TRIM(cn_fzgr),', ', TRIM(cn_fmsk)
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       - netcdf file : ', TRIM(cf_ncout)
+     PRINT *,'           variables : mean_cdfvar, mean_3D_cdfvar '
+     PRINT *,'                    [var_cdfvar, var_3D_cdfvar, in case of -var]'
+     PRINT *,'       - netcdf file : ', TRIM(cf_zerom),' [ in case of -zeromean option]'
+     PRINT *,'           variables : cdfvar'
+     PRINT *,'       - ASCII files : ', TRIM(cf_out) 
+     PRINT *,'                       [ ',TRIM(cf_var),', in case of -var ]'
+     PRINT *,'       - all output on ASCII files are also sent to standard output.'
      STOP
   ENDIF
+
   ! Open standard output with recl=256 to avoid wrapping of long lines (ifort)
   OPEN(6,FORM='FORMATTED',RECL=256)  ! ifort
-!  OPEN(6,FORM='FORMATTED')          ! gfortran
+  !  OPEN(6,FORM='FORMATTED')          ! gfortran
 
-  CALL getarg (1, cfilev)
-  CALL getarg (2, cvar)
-  CALL getarg (3, cvartype)
+  cglobal = 'Partial step computation'
+  ijarg = 1 ; ii = 0
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 
+     SELECT CASE (cldum) 
+     CASE ('-full' )
+        lfull = .true. 
+        cglobal = 'full step computation'
+     CASE ('-var' )
+        lvar = .true. 
+     CASE ('-zeromean' )
+        lzeromean = .true. 
+     CASE DEFAULT 
+        ii=ii+1
+        SELECT CASE (ii) 
+        CASE ( 1 ) ; cf_in  = cldum 
+        CASE ( 2 ) ; cv_nam = cldum 
+        CASE ( 3 ) ; ctype  = cldum 
+        CASE ( 4 ) ; READ(cldum,*) iimin
+        CASE ( 5 ) ; READ(cldum,*) iimax
+        CASE ( 6 ) ; READ(cldum,*) ijmin
+        CASE ( 7 ) ; READ(cldum,*) ijmax
+        CASE ( 8 ) ; READ(cldum,*) ikmin
+        CASE ( 9 ) ; READ(cldum,*) ikmax
+        CASE DEFAULT 
+          PRINT *, '  ERROR : Too many arguments ...'
+          STOP
+        END SELECT
+     END SELECT
+  END DO
 
-  IF (narg > 3 ) THEN
-     IF ( narg /= 9 ) THEN
-        PRINT *, ' ERROR : You must give 6 optional values (imin imax jmin jmax kmin kmax)'
-        STOP
-     ELSE
-        ! input optional imin imax jmin jmax
-        CALL getarg ( 4,cdum) ; READ(cdum,*) imin
-        CALL getarg ( 5,cdum) ; READ(cdum,*) imax
-        CALL getarg ( 6,cdum) ; READ(cdum,*) jmin
-        CALL getarg ( 7,cdum) ; READ(cdum,*) jmax
-        CALL getarg ( 8,cdum) ; READ(cdum,*) kmin
-        CALL getarg ( 9,cdum) ; READ(cdum,*) kmax
-     ENDIF
-  ENDIF
+  lchk = chkfile(cn_fhgr)
+  lchk = chkfile(cn_fzgr) .OR. lchk
+  lchk = chkfile(cn_fmsk) .OR. lchk
+  lchk = chkfile(cf_in  ) .OR. lchk
+  IF ( lchk ) STOP ! missing file
 
-  cdep='none'
-  npiglo= getdim (cfilev,'x')
-  npjglo= getdim (cfilev,'y')
-  npk   = getdim (cfilev,'depth',cdtrue=cdep,kstatus=istatus)
+  cv_dep   = 'none'
+  npiglo = getdim (cf_in, cn_x)
+  npjglo = getdim (cf_in, cn_y)
+  npk    = getdim (cf_in, cn_z, cdtrue=cv_dep, kstatus=ierr)
 
-  IF (istatus /= 0 ) THEN
-     npk   = getdim (cfilev,'z',cdtrue=cdep,kstatus=istatus)
-     IF (istatus /= 0 ) THEN
-       npk   = getdim (cfilev,'sigma',cdtrue=cdep,kstatus=istatus)
-        IF ( istatus /= 0 ) THEN
-          npk = getdim (cfilev,'nav_lev',cdtrue=cdep,kstatus=istatus)
-            IF ( istatus /= 0 ) THEN
+  IF (ierr /= 0 ) THEN
+     npk   = getdim (cf_in, 'z', cdtrue=cv_dep, kstatus=ierr)
+     IF (ierr /= 0 ) THEN
+        npk   = getdim (cf_in, 'sigma', cdtrue=cv_dep, kstatus=ierr)
+        IF ( ierr /= 0 ) THEN
+           npk = getdim (cf_in, 'nav_lev', cdtrue=cv_dep, kstatus=ierr)
+           IF ( ierr /= 0 ) THEN
               PRINT *,' assume file with no depth'
               npk=0
-            ENDIF
+           ENDIF
         ENDIF
      ENDIF
   ENDIF
 
-  nt    = getdim (cfilev,'time')
-  nvpk  = getvdim(cfilev,cvar)
-  IF (npk == 0  ) THEN ; npk = 1              ; ENDIF  ! no depth dimension ==> 1 level
-  IF (imin /= 0 ) THEN ; npiglo=imax -imin + 1;  ELSE ; imin=1 ; ENDIF
-  IF (jmin /= 0 ) THEN ; npjglo=jmax -jmin + 1;  ELSE ; jmin=1 ; ENDIF
-  IF (kmin /= 0 ) THEN ; npk   =kmax -kmin + 1;  ELSE ; kmin=1 ; ENDIF
+  npt   = getdim (cf_in, cn_t)
+  nvpk  = getvdim(cf_in, cv_nam)
+  ! save original npiglo, npiglo
+  npiglo_fi = npiglo
+  npjglo_fi = npjglo
+  npk_fi    = npk
+
+  IF (npk   == 0 ) THEN ; lnodep = .true.;  npk = 1                  ;  ENDIF ! no depth dimension ==> 1 level
+  IF (iimin /= 0 ) THEN ; npiglo = iimax -iimin + 1;  ELSE ; iimin=1 ;  ENDIF
+  IF (ijmin /= 0 ) THEN ; npjglo = ijmax -ijmin + 1;  ELSE ; ijmin=1 ;  ENDIF
+  IF (ikmin /= 0 ) THEN ; npk    = ikmax -ikmin + 1;  ELSE ; ikmin=1 ;  ENDIF
 
   IF (nvpk == 2 ) nvpk = 1
   IF (nvpk == 3 ) nvpk = npk
 
-  WRITE(6, *) 'npiglo=', npiglo
-  WRITE(6, *) 'npjglo=', npjglo
-  WRITE (6,*) 'npk   =', npk
-  WRITE (6,*) 'nt    =', nt
-  WRITE (6,*) 'nvpk  =', nvpk
-  WRITE (6,*) 'depth dim name is ', TRIM(cdep)
+  WRITE(6, *) 'npiglo = ', npiglo
+  WRITE(6, *) 'npjglo = ', npjglo
+  WRITE(6, *) 'npk    = ', npk
+  WRITE(6, *) 'npt    = ', npt
+  WRITE(6, *) 'nvpk   = ', nvpk
+  WRITE(6, *) 'depth dim name is ', TRIM(cv_dep)
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo) )
-  ALLOCATE ( zv(npiglo,npjglo) )
-  ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo), e3(npiglo,npjglo) )
-  ALLOCATE ( gdep (npk) )
-  SELECT CASE (TRIM(cvartype))
-     CASE ( 'T' )
-        ce1='e1t'
-        ce2='e2t'
-        ce3='e3t_ps'
-        cvmask='tmask'
-        cdep='gdept'
-     CASE ( 'U' )
-        ce1='e1u'
-        ce2='e2u'
-        ce3='e3t_ps'
-        cvmask='umask'
-        cdep='gdept'
-     CASE ( 'V' )
-        ce1='e1v'
-        ce2='e2v'
-        ce3='e3t_ps'
-        cvmask='vmask'
-        cdep='gdept'
-     CASE ( 'F' )
-        ce1='e1f'
-        ce2='e2f'
-        ce3='e3t_ps'
-        cvmask='fmask'
-        cdep='gdept'
-     CASE ( 'W' )
-        ce1='e1t'
-        ce2='e2t'
-        ce3='e3w_ps'
-        cvmask='tmask'
-        cdep='gdepw'
-     CASE DEFAULT
-        PRINT *, 'this type of variable is not known :', TRIM(cvartype)
-        STOP
+  ALLOCATE ( zv   (npiglo,npjglo) )
+  ALLOCATE ( e1   (npiglo,npjglo), e2(npiglo,npjglo), e3(npiglo,npjglo) )
+  ALLOCATE ( gdep (npk), e31d(npk), tim(npt) , dvariance3d(npt), dvmeanout3d(npt) )
+  ALLOCATE ( zdep(npk_fi) )
+
+  SELECT CASE (TRIM(ctype))
+  CASE ( 'T' )
+     cv_e1    = cn_ve1t
+     cv_e2    = cn_ve2t
+     cv_e3    = 'e3t_ps'
+     cv_e31d  = cn_ve3t
+     cv_msk = 'tmask'
+     cv_dep   = cn_gdept
+  CASE ( 'U' )
+     cv_e1    = cn_ve1u
+     cv_e2    = cn_ve2u
+     cv_e3    = 'e3t_ps'
+     cv_e31d  = cn_ve3t
+     cv_msk = 'umask'
+     cv_dep   = cn_gdept
+  CASE ( 'V' )
+     cv_e1    = cn_ve1v
+     cv_e2    = cn_ve2v
+     cv_e3    = 'e3t_ps'
+     cv_e31d  = cn_ve3t
+     cv_msk = 'vmask'
+     cv_dep   = cn_gdept
+  CASE ( 'F' )
+     cv_e1    = cn_ve1f
+     cv_e2    = cn_ve2f
+     cv_e3    = 'e3t_ps'
+     cv_e31d  = cn_ve3t
+     cv_msk = 'fmask'
+     cv_dep   = cn_gdept
+  CASE ( 'W' )
+     cv_e1    = cn_ve1t
+     cv_e2    = cn_ve2t
+     cv_e3    = 'e3w_ps'
+     cv_e31d  = cn_ve3w
+     cv_msk = 'tmask'
+     cv_dep   = cn_gdepw
+  CASE DEFAULT
+     PRINT *, 'this type of variable is not known :', TRIM(ctype)
+     STOP
   END SELECT
 
-  e1(:,:) = getvar(coordhgr, ce1, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
-  e2(:,:) = getvar(coordhgr, ce2, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
-  gdep(:) = getvare3(coordzgr,cdep,npk)
+  e1(:,:) = getvar  (cn_fhgr, cv_e1,  1,  npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+  e2(:,:) = getvar  (cn_fhgr, cv_e2,  1,  npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+  IF ( lfull )  e31d(:) = getvare3(cn_fzgr, cv_e31d, npk)
+  zdep(:) = getvare3(cn_fzgr, cv_dep, npk_fi)
+  gdep(:) = zdep(ikmin:npk - ikmin + 1)
 
-  IF(lwrtcdf) THEN
-      ALLOCATE ( typvar(nvars), ipk(nvars), id_varout(nvars) )
-      ALLOCATE (dumlon(kx,ky) , dumlat(kx,ky), dummymean(kx,ky) )
-      ALLOCATE ( meanout(npk) )
+  IF ( lvar ) THEN
+    nvars = 4  ! space for variance too
+  ELSE
+    nvars = 2  ! default value
+  ENDIF
 
-      dumlon(:,:)=0.
-      dumlat(:,:)=0.
+  ALLOCATE ( stypvar(nvars), ipk(nvars), id_varout(nvars) )
+  ALLOCATE ( rdumlon(ikx,iky), rdumlat(ikx,iky), rdummymean(ikx,iky) )
+  ALLOCATE ( dvmeanout(npk) )
+  IF ( lvar ) ALLOCATE ( dvariance(npk) )
 
-      ipk(1)=npk ! mean for each level
-      ipk(2)=1   ! 3D mean
+  rdumlon(:,:) = 0.
+  rdumlat(:,:) = 0.
 
-      ierr=getvaratt (cfilev,cvar,cdunits, &
-                pmissing_value, cdlong_name, cdshort_name)
+  ipk(1) = npk ! mean for each level
+  ipk(2) = 1   ! 3D mean
+  IF ( lvar ) THEN
+    ipk(3) = npk ! variance for each level
+    ipk(4) = 1   ! 3D variance
+  ENDIF
 
-      ! define new variables for output 
-      typvar(1)%name='mean_'//TRIM(cvar)
-      typvar%units=TRIM(cdunits)
-      typvar%missing_value=99999.
-      typvar%valid_min= -1000.
-      typvar%valid_max= 1000.
-      typvar%scale_factor= 1.
-      typvar%add_offset= 0.
-      typvar%savelog10= 0.
-      typvar(1)%long_name='mean_'//TRIM(cdlong_name)
-      typvar(1)%short_name='mean_'//TRIM(cdshort_name)
-      typvar%online_operation='N/A'
-      typvar%axis='ZT'
+  ierr=getvaratt (cf_in, cv_nam, clunits, zspval, cllong_name, clshort_name)
 
-      typvar(2)%name='mean_3D'//TRIM(cvar)
-      typvar(2)%long_name='mean_3D'//TRIM(cdlong_name)
-      typvar(2)%short_name='mean_3D'//TRIM(cdshort_name)
-      typvar%online_operation='N/A'
-      typvar%axis='T'
-   ENDIF
+  ! define new variables for output 
+  stypvar%cunits            = TRIM(clunits)
+  stypvar%rmissing_value    = 99999.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         = 1000.
+  stypvar%scale_factor      = 1.
+  stypvar%add_offset        = 0.
+  stypvar%savelog10         = 0.
+  stypvar%conline_operation = 'N/A'
 
+  stypvar(1)%cname          = 'mean_'//TRIM(cv_nam)
+  stypvar(1)%clong_name     = 'mean_'//TRIM(cllong_name)
+  stypvar(1)%cshort_name    = 'mean_'//TRIM(clshort_name)
+  stypvar(1)%caxis          = 'ZT'
 
-   OPEN(numout,FILE=cfilout)
+  stypvar(2)%cname          = 'mean_3D'//TRIM(cv_nam)
+  stypvar(2)%clong_name     = 'mean_3D'//TRIM(cllong_name)
+  stypvar(2)%cshort_name    = 'mean_3D'//TRIM(clshort_name)
+  stypvar(2)%caxis          = 'T'
 
-   DO jt=1,nt
-      zvol=0.d0
-      zsum=0.d0
-      DO jk = 1,nvpk
-         ik = jk+kmin-1
-         ! Get velocities v at ik
-!         zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
-          zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin,ktime=jt)
-         zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
-         !    zmask(:,npjglo)=0.  
-         ! get e3 at level ik ( ps...)
-         e3(:,:) = getvar(coordzgr, ce3, ik,npiglo,npjglo,kimin=imin,kjmin=jmin, ldiom=.TRUE.)
+  IF ( lvar) THEN
+    stypvar(3)%cunits         = TRIM(clunits)//'^2'
+    stypvar(3)%cname          = 'var_'//TRIM(cv_nam)
+    stypvar(3)%clong_name     = 'var_'//TRIM(cllong_name)
+    stypvar(3)%cshort_name    = 'var_'//TRIM(clshort_name)
+    stypvar(3)%caxis          = 'ZT'
 
-         ! 
-         zsurf=SUM(e1 * e2 * zmask)
-         zvol2d=SUM(e1 * e2 * e3 * zmask)
-         zvol=zvol+zvol2d
-         zsum2d=SUM(zv*e1*e2*e3*zmask)
-         zsum=zsum+zsum2d
-         IF (zvol2d /= 0 )THEN
-            WRITE(6,*)' Mean value at level ',ik,'(',gdep(ik),' m) ',zsum2d/zvol2d, 'surface = ',zsurf/1.e6,' km^2'
-            WRITE(numout,9004) gdep(ik),ik,zsum2d/zvol2d
-            IF (lwrtcdf) meanout(jk)=zsum2d/zvol2d
-         ELSE
-            WRITE(6,*) ' No points in the water at level ',ik,'(',gdep(ik),' m) '
-            IF (lwrtcdf) meanout(jk)=99999.
-         ENDIF
-      END DO
-      WRITE(6,*) ' Mean value over the ocean: ', zsum/zvol, jt
-      threedmeanout=zsum/zvol
-   END DO
-   CLOSE(1)
-9004          FORMAT(f9.2,' ',i2,' ',f9.2)
+    stypvar(4)%cunits         = TRIM(clunits)//'^2'
+    stypvar(4)%cname          = 'var_3D'//TRIM(cv_nam)
+    stypvar(4)%clong_name     = 'var_3D'//TRIM(cllong_name)
+    stypvar(4)%cshort_name    = 'var_3D'//TRIM(clshort_name)
+    stypvar(4)%caxis          = 'T'
+  ENDIF
 
-   IF(lwrtcdf) THEN
+  OPEN(numout,FILE=cf_out)
+  IF ( lvar ) OPEN(numvar,FILE=cf_var)
+  ! create output fileset
+  ncout = create      (cf_ncout,   'none',  ikx,   iky,   npk, cdep=cv_dep)
+  ierr  = createvar   (ncout,      stypvar, nvars, ipk,   id_varout, cdglobal=TRIM(cglobal) )
+  ierr  = putheadervar(ncout,      cf_in,  ikx, iky, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep, cdep=cv_dep)
+  tim   = getvar1d(cf_in, cn_vtimec, npt)
+  ierr  = putvar1d(ncout,  tim,       npt, 'T')
 
-      ! create output fileset
-      ncout =create(cfileoutnc,'none',kx,ky,npk,cdep=cdep)
-      ierr= createvar(ncout,typvar,nvars,ipk,id_varout )
-      ierr= putheadervar(ncout, cfilev ,kx, &
-           ky,npk,pnavlon=dumlon,pnavlat=dumlat,pdep=gdep,cdep=cdep)
-      tim=getvar1d(cfilev,'time_counter',1)
-      ierr=putvar1d(ncout,tim,1,'T')
+  DO jt=1,npt
+     dvol = 0.d0
+     dsum = 0.d0
+     dvar = 0.d0
+     DO jk = 1, nvpk
+        ik = jk+ikmin-1
+        ! Get velocities v at ik
+        zv   (:,:) = getvar(cf_in,  cv_nam,   ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
+        zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
+        IF ( lfull ) THEN
+          e3(:,:) = e31d(jk)
+        ELSE
+          e3(:,:) = getvar(cn_fzgr, cv_e3,    ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
+        ENDIF
+        ! 
+        dsurf  = SUM(DBLE(          e1 * e2      * zmask))
+        dvol2d = SUM(DBLE(          e1 * e2 * e3 * zmask))
+        dvol   = dvol + dvol2d
+        dsum2d = SUM(DBLE(zv      * e1 * e2 * e3 * zmask))
+        dvar2d = SUM(DBLE(zv * zv * e1 * e2 * e3 * zmask))
+        dsum   = dsum + dsum2d
+        dvar   = dvar + dvar2d
 
-      ! netcdf output 
-      DO jk=1, nvpk
-         dummymean(1,1)=meanout(jk)
-         ierr = putvar(ncout, id_varout(1), dummymean, jk, kx, ky )
-      END DO
+        IF (dvol2d /= 0 )THEN
+           dvmeanout(jk) = dsum2d/dvol2d
+           WRITE(6,*)' Mean value at level ',ik,'(',gdep(ik),' m) ',dvmeanout(jk), 'surface = ',dsurf/1.e6,' km^2'
+           WRITE(numout,9004) gdep(ik), ik, dvmeanout(jk)
+           IF ( lvar ) THEN
+             dvariance(jk) = dvar2d/dvol2d - dvmeanout(jk) * dvmeanout(jk)
+             WRITE(6,*)' Variance value at level ',ik,'(',gdep(ik),' m) ',dvariance(jk), 'surface = ',dsurf/1.e6,' km^2'
+             WRITE(numvar,9004) gdep(ik), ik, dvariance(jk)
+           ENDIF
+        ELSE
+           WRITE(6,*) ' No points in the water at level ',ik,'(',gdep(ik),' m) '
+           dvmeanout(jk) = 99999.
+           dvariance(jk) = 99999.
+        ENDIF
 
-      ierr=putvar0d(ncout,id_varout(2), threedmeanout )
+        rdummymean(1,1) = dvmeanout(jk)
+        ierr            = putvar(ncout, id_varout(1), rdummymean, jk, ikx, iky, ktime=jt )
+        IF ( lvar ) THEN
+          rdummymean(1,1) = dvariance(jk)
+          ierr            = putvar(ncout, id_varout(3), rdummymean, jk, ikx, iky, ktime=jt )
+        ENDIF
+     END DO
 
-      ierr = closeout(ncout)
+     dvmeanout3d(jt) = dsum / dvol
+     WRITE(6,*) ' Mean value over the ocean: ', dvmeanout3d(jt), jt
+     rdummy(:,:) = dvmeanout3d(jt)
+     ierr = putvar0d(ncout, id_varout(2), rdummy, ktime=jt )
 
-   ENDIF
+     IF ( lvar ) THEN
+       dvariance3d(jt) = dvar/dvol - dsum / dvol * dsum / dvol
+       WRITE(6,*) ' Variance over the ocean: ', dvariance3d(jt), jt
+       rdummy(:,:) = dvariance3d(jt)
+       ierr = putvar0d(ncout, id_varout(4), rdummy, ktime=jt )
+     ENDIF
 
- END PROGRAM cdfmean
+  END DO  ! time loop
+
+              CLOSE(numout)
+  IF ( lvar ) CLOSE(numvar)
+
+  ierr = closeout(ncout)
+9004 FORMAT(f9.2,' ',i2,' ',f9.2)
+
+  ! -zeromean option activated : rest the spatial mean computed above for each timeframe
+  !           from the original variable, and output the result to zeromean.nc
+  !           This replaces exactly the cdfzeromean tool
+  !           The mean value which is used here is eventually computed on a reduced region
+  IF ( lzeromean )  THEN
+    DEALLOCATE ( zv, zmask, id_varout, ipk )
+    npiglo = npiglo_fi ; npjglo = npjglo_fi
+    ALLOCATE (zv(npiglo,npjglo), zmask(npiglo,npjglo) )
+
+    ! re-read file and rest mean value from the variable and store on file
+    nvars = getnvar(cf_in)
+    ALLOCATE ( stypvarin(nvars), cv_names(nvars), stypvarzero(1) )
+    ALLOCATE ( id_varout(1), ipk(1), stypvarzero(1) )
+    cv_names(:) = getvarname(cf_in, nvars, stypvarin)
+
+    ! look for the working variable
+    DO jvar = 1, nvars
+       IF ( TRIM(cv_names(jvar)) == TRIM(cv_nam) ) EXIT
+    END DO
+    ivar = jvar
+
+    ipk(1)                        = nvpk
+    stypvarzero(1)%cname          = cv_nam
+    stypvarzero%cunits            = stypvarin(ivar)%cunits
+    stypvarzero%rmissing_value    = stypvarin(ivar)%rmissing_value
+    stypvarzero%valid_min         = stypvarin(ivar)%valid_min - MAXVAL(dvmeanout3d)
+    stypvarzero%valid_max         = stypvarin(ivar)%valid_max - MINVAL(dvmeanout3d)
+    stypvarzero(1)%clong_name     = stypvarin(ivar)%clong_name//' zero mean '
+    stypvarzero(1)%cshort_name    = cv_nam
+    stypvarzero%conline_operation = 'N/A'
+    stypvarzero%caxis             = stypvarin(ivar)%caxis
+
+  ik=nvpk
+  IF ( lnodep ) ik = 0  ! no depth variable in input file : the same in output file
+  ncout = create      (cf_zerom, cf_in,        npiglo, npjglo, ik            )
+  ierr  = createvar   (ncout ,   stypvarzero , 1,      ipk,    id_varout     )
+  ierr  = putheadervar(ncout,    cf_in,        npiglo, npjglo, ik , pdep=zdep)
+  tim   = getvar1d(cf_in, cn_vtimec, npt)
+
+  DO jt=1,npt
+     DO jk = 1, nvpk
+        ik = jk+ikmin-1
+        zv   (:,:) = getvar(cf_in,   cv_nam,   ik, npiglo, npjglo, ktime=jt)
+        zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo)
+
+        WHERE (zmask /= 0 ) zv(:,:) = zv(:,:) - dvmeanout3d(jt)
+        ierr = putvar(ncout, id_varout(1), zv, ik, npiglo, npjglo, ktime=jt )
+     END DO
+  END DO
+
+  ierr=putvar1d(ncout, tim, npt,'T')
+  ierr=closeout(ncout              )
+ 
+  ENDIF
+
+END PROGRAM cdfmean

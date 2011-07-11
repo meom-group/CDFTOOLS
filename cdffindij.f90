@@ -1,56 +1,87 @@
 PROGRAM cdffindij
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdffindij  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdffindij  ***
+  !!=====================================================================
+  !!  ** Purpose : Return the window index (imin imax jmin jmax )
+  !!               for the geographical windows given on input 
+  !!               (longmin longmax latmin matmax)
   !!
-  !!  **  Purpose  :  return the window index (imin imax jmin jmax )
-  !!          for the geographical windows given on input (longmin longmax latmin matmax)
-  !!  
-  !!  **  Method   :  Read the coordinate/mesh_hgr file and look
-  !!                  for the glam, gphi variables
-  !!                  Then use a seach algorithm to find the corresponding I J
-  !!                 The point type ( T U V F ) is specified on the command line
-  !!                 as well as the name of the coordinate/mesh hgr file.
+  !!  ** Method  : Read the coordinate/mesh_hgr file and look for the glam,
+  !!               gphi variables.
+  !!               Then use a search algorithm to find the corresponding I J
+  !!               The point type ( T U V F ) is specified on the command 
+  !!               line as well as the name of the coordinate/mesh hgr file.
   !!
-  !! history ;
-  !!  Original :  J.M. Molines (November 2005 )
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 11/2005  : J.M. Molines : Original code
+  !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
+  USE cdfio
   USE cdftools
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2010, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER :: narg, iargc, niter
-  INTEGER :: imin, imax, jmin, jmax
-  REAL(KIND=4)                              :: xmin, xmax, ymin, ymax
-  CHARACTER(LEN=256) :: cdum, coord='coordinates.nc', ctype='F'
+
+  INTEGER(KIND=4)    :: narg, iargc                ! command line
+  INTEGER(KIND=4)    :: ijarg, ireq                ! command line
+  INTEGER(KIND=4)    :: iimin, iimax, ijmin, ijmax ! model grid window
+
+  REAL(KIND=4)       :: xmin, xmax, ymin, ymax     ! geographical window
+
+  CHARACTER(LEN=256) :: ctype='F'                  ! point type to search for
+  CHARACTER(LEN=256) :: cldum                      ! dummy character variable
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg < 4 ) THEN
-     PRINT *,' Usage : cdffindij  xmin xmax ymin ymax  [coord_file] [point_type]'
-     PRINT *,' return the i,j  position for the zoomed area (nearest point ) '
-     PRINT *,' as read in coord_file for the point type specified by point_type'
-     PRINT *,' Example : cdffindij  -70 15 -20 25  coordinate_ORCA025.nc F '
+     PRINT *,' usage :   cdffindij  xmin xmax ymin ymax  [-c COOR-file] [-p point_type]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Return the model limit (i,j space) of the geographical window ' 
+     PRINT *,'       given on the input line.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       xmin xmax ymin ymax : geographical limits of the window, in lon/lat' 
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-c COOR-file ] : specify a particular coordinate file' 
+     PRINT *,'                     default is ',TRIM(cn_fcoo)
+     PRINT *,'       [-p point type] : specify the point on the C-grid (T U V F)'
+     PRINT *,'                     default is ',TRIM(ctype)
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       ', TRIM(cn_fcoo),' or the specified coordinates file.' 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       Output is done on standard output.'
      STOP
   ENDIF
 
-  CALL getarg (1, cdum ) ; READ(cdum,*) xmin
-  CALL getarg (2, cdum ) ; READ(cdum,*) xmax
-  CALL getarg (3, cdum ) ; READ(cdum,*) ymin
-  CALL getarg (4, cdum ) ; READ(cdum,*) ymax
+  ijarg = 1 ; ireq = 0
+  DO WHILE ( ijarg <= narg ) 
+    CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
+    SELECT CASE ( cldum )
+    CASE ( '-c' ) ; CALL getarg(ijarg, cn_fcoo ) ; ijarg=ijarg+1
+    CASE ( '-p' ) ; CALL getarg(ijarg, ctype   ) ; ijarg=ijarg+1
+    CASE DEFAULT
+       ireq=ireq+1
+       SELECT CASE (ireq)
+       CASE ( 1 ) ; READ(cldum,*) xmin
+       CASE ( 2 ) ; READ(cldum,*) xmax
+       CASE ( 3 ) ; READ(cldum,*) ymin
+       CASE ( 4 ) ; READ(cldum,*) ymax
+       CASE DEFAULT 
+         PRINT *,' Too many arguments !' ; STOP
+       END SELECT
+    END SELECT
+  END DO
 
-  ! if 5th argument not given coordinates.nc is assumed
-  IF ( narg > 4 ) THEN
-     CALL getarg (5, coord )
-  ENDIF
-  ! if 6th argument not given, assume F point
-  IF ( narg == 6 ) THEN
-     CALL getarg (6, ctype )
-  ENDIF
+  CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, cd_coord=cn_fcoo, cd_point=ctype)
 
-   CALL cdf_findij ( xmin, xmax, ymin, ymax, imin, imax, jmin, jmax, cd_coord=coord, cd_point=ctype)
 END PROGRAM cdffindij

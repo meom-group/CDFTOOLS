@@ -1,365 +1,418 @@
 PROGRAM cdfmhst
-  !!--------------------------------------------------------------------
-  !!               ***  PROGRAM  cdfmhst  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfmhst  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute Meridional Heat Salt  Transport.
   !!
-  !!  **  Purpose  : Compute Meridional Heat Salt  Transport. 
-  !!  
-  !!  **  Method   : Starts from the mean VT, VS fields computed by cdfvT
-  !!                 The program looks for the file "new_maskglo.nc". If it does not exist, 
-  !!                 only the calculation over all the domain is performed (this is adequate 
-  !!                 for a basin configuration like NATL4).
+  !!  ** Method  : Starts from the mean VT, VS fields computed by cdfvT.
+  !!               Zonal and vertical integration are performed for these
+  !!               quantities. If a sub-basin mask is provided, then a
+  !!               meridional H/S transoport is computed for each sub basin.
   !!
-  !!
-  !! history :
-  !!      Original : J.M. Molines (jan. 2005)
-  !!                 J.M. Molines apr. 2005 : use modules
-  !!                 A.M. Treguier (april 2006) adaptation to NATL4 case 
-  !!                 J.M. Molines ( April 2007) : add netcdf output
-  !!--------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 01/2005  : J.M. Molines  : Original code
+  !!                : 04/2005  : A.M. Treguier : adaptation to regional config
+  !!                : 04/2007  : J.M. Molines  : add netcdf output
+  !!           3.0  : 05/2011  : J.M. Molines  : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jj,jk                            !: dummy loop index
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER   :: numout = 10
-  INTEGER, DIMENSION(2)          ::  iloc
-  LOGICAL    :: llglo = .false.                !: indicator for presence of new_maskglo.nc file 
 
+  INTEGER(KIND=4)                              :: jj, jk, jt       ! dummy loop index
+  INTEGER(KIND=4)                              :: jbasins, jvar    ! dummy loop index
+  INTEGER(KIND=4)                              :: narg, iargc      ! command line 
+  INTEGER(KIND=4)                              :: ijarg            ! argument counter
+  INTEGER(KIND=4)                              :: npiglo, npjglo   ! size of the domain
+  INTEGER(KIND=4)                              :: npk, npt         ! size of the domain
+  INTEGER(KIND=4)                              :: numouth = 10     ! logical unit for heat 
+  INTEGER(KIND=4)                              :: numouts = 11     ! logical unit for salt
+  INTEGER(KIND=4)                              :: npvar=1          ! number of variables type
+  INTEGER(KIND=4)                              :: nbasins          ! number of basins
+  INTEGER(KIND=4)                              :: ierr             ! error status
+  INTEGER(KIND=4)                              :: ncout            ! ncid of output file
+  INTEGER(KIND=4)                              :: ivar             ! variable index
+  INTEGER(KIND=4), DIMENSION(2)                :: iloc             ! working array
+  INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE  :: ipk, id_varout   ! for output variables
 
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE ::  zmask, e1v, e3v ,gphiv, zvt, zvs !: mask, metrics
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlon              !: dummy longitude = 0.
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlat              !: latitude for i = north pole
+  REAL(KIND=4), PARAMETER                      :: pprau0 = 1000.   ! reference density
+  REAL(KIND=4), PARAMETER                      :: pprcp  = 4000.   ! specific heat
+  REAL(KIND=4), PARAMETER                      :: ppspval= 9999.99 ! missing value
 
-  REAL(KIND=4)                              ::  zpoints
+  REAL(KIND=4), DIMENSION(1)                   :: gdep             ! dummy depth array
+  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim              ! time counter
+  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d             ! 1D e3t for full step
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zmask            ! mask
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1v, e3v, gphiv  ! metrics and latitude
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zvt, zvs         ! transport components
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rdumlon          ! dummy longitude = 0.
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rdumlat          ! latitude for i = north pole
 
-  REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: zwk , ztrp, ztrps, zwks
-  REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_heat_glo, zonal_heat_atl, zonal_heat_pac,&
-       &                                       zonal_heat_ind, zonal_heat_aus, zonal_heat_med
-  REAL(KIND=8) ,DIMENSION(:) , ALLOCATABLE ::  zonal_salt_glo, zonal_salt_atl, zonal_salt_pac,&
-       &                                       zonal_salt_ind, zonal_salt_aus, zonal_salt_med, zmtrp
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_glo  ! zonal integral
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_atl  ! zonal integral 
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_pac
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_ind
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_aus
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_med
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_salt_glo
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_salt_atl
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_salt_pac
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_salt_ind
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_salt_aus
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_salt_med
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dmtrp            ! transport in PW ir kT/s
+  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dwkh, dtrph      ! working variables
+  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dtrps, dwks      ! working variables
 
-  CHARACTER(LEN=256) :: cfilet ,cfileout='zonal_heat_trp.dat', cfileouts='zonal_salt_trp.dat'
-  ! to be put in namelist eventually
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc', cbasinmask='new_maskglo.nc'
-  
-  ! NC output
-  INTEGER            :: npvar=1
-  INTEGER            :: jbasins, js, jvar   !: dummy loop index
-  INTEGER            :: ncout,  nbasins, ierr
-  INTEGER, DIMENSION(:), ALLOCATABLE :: ipk, id_varout
+  TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar          ! structure for attributes
 
-  REAL(KIND=4), PARAMETER :: rpspval=9999.99
-  REAL(KIND=4), DIMENSION(1) :: gdep
-  REAL(KIND=4), DIMENSION (1)                    ::  tim
+  CHARACTER(LEN=256)                           :: cf_vtfil         ! input VT file name
+  CHARACTER(LEN=256)                           :: cf_outh='zonal_heat_trp.dat'
+  CHARACTER(LEN=256)                           :: cf_outs='zonal_salt_trp.dat'
+  CHARACTER(LEN=256)                           :: cf_outnc='mhst.nc'
+  CHARACTER(LEN=256)                           :: cv_zomht='zomht' ! MHT variable name
+  CHARACTER(LEN=256)                           :: cv_zomst='zomst' ! MST variable name
+  CHARACTER(LEN=256)                           :: cldum            ! dummy character variable
+  CHARACTER(LEN=4),  DIMENSION(5)              :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/)
+  CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cvarname         ! varname arrays
 
-  CHARACTER(LEN=256) :: cfileoutnc='mhst.nc', cdum
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE   :: cvarname             !: array of var name for input
-  CHARACTER(LEN=4),DIMENSION(5) :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/)
-  TYPE(variable), DIMENSION(:), ALLOCATABLE   :: typvar                  !: structure for attributes
-
-  ! constants
-  REAL(KIND=4),PARAMETER   ::  rau0=1000.,   rcp=4000.
+  LOGICAL                                      :: llglo = .FALSE.  ! flag for sub basin file
+  LOGICAL                                      :: lchk  = .FALSE.  ! flag for missing files
+  LOGICAL                                      :: lfull = .FALSE.  ! flag for missing files
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmhst  VTfile  [MST] '
-     PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc, new_maskglo.nc must be in te current directory'
-     PRINT *,' ASCII Output on zonal_heat_trp.dat and zonal_salt_trp.dat'
-     PRINT *,' NetCDF Output on mhst.nc with variables :'
-     PRINT *,'                       zomht_glo, zomht_atl, zomht_inp, zomht_pac'
-     PRINT *,'    and in case of MST option :'
-     PRINT *,'                       zomst_glo, zomst_atl, zomst_inp, zomst_pac'
+     PRINT *,' usage : cdfmhst  VT-file  [MST] [-full]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute the meridional heat/salt transport as a function of '
+     PRINT *,'       latitude. If the file ',TRIM(cn_fbasins),' is provided, the meridional '
+     PRINT *,'       heat/salt transport for each sub-basin is also computed.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       VT-file  : netcdf file containing the mean value of the products' 
+     PRINT *,'                  U.S, U.T, V.S and V.T (obtained with cdfvT).'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [MST ] : output flag for meridional salt transport on netcdf files.'
+     PRINT *,'                If not specified, only the MHT is output.' 
+     PRINT *,'       [-full ] : to be set for full step case.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        ', TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk)
+     PRINT *,'        If ',TRIM(cn_fbasins),' is also available, sub-basin meridional transports'
+     PRINT *,'        are also computed.'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       ASCII files : ', TRIM(cf_outh),' : Meridional Heat Transport'
+     PRINT *,'                     ', TRIM(cf_outs),' : Meridional Salt Transport'
+     PRINT *,'       netcdf file : ', TRIM(cf_outnc)
+     PRINT *,'           variables : ( [... ] : MST option ) '
+     PRINT *,'                       ', TRIM(cv_zomht),cbasin(1),' : Meridional Heat Transport (global)'
+     PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(1),' : Meridional Salt Transport (global) ] '
+     PRINT *,'       If ',TRIM(cn_fbasins),' is available, per basin meridional transport '
+     PRINT *,'       are also available:' 
+              DO jbasins=2, 5
+     PRINT *,'                       ', TRIM(cv_zomht),cbasin(jbasins),' : Meridional Heat Transport'
+     PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(jbasins),' : Meridional Salt Transport ]'
+              END DO
      STOP
   ENDIF
 
-  CALL getarg (1, cfilet)
-  npiglo= getdim (cfilet,'x')
-  npjglo= getdim (cfilet,'y')
-  npk   = getdim (cfilet,'depth')
-  npvar=1
-  IF ( narg == 2 ) THEN
-   CALL getarg(2,cdum)
-   IF ( cdum /= 'MST' ) THEN
-      PRINT *,' unknown option :', TRIM(cdum)  ; STOP
-   ENDIF
-   npvar=2
+  npvar = 1    ! default value ( no MST output)
+  ijarg = 1
+  DO WHILE ( ijarg <= narg ) 
+     CALL getarg(ijarg, cldum) ; ijarg = ijarg+1
+     SELECT CASE ( cldum)
+     CASE ( 'MST' )   ; npvar    =2
+     CASE ( '-full' ) ; lfull    = .TRUE.
+     CASE DEFAULT     ; cf_vtfil = cldum
+     END SELECT
+  END DO
+
+  ! check for missing files
+  lchk = lchk .OR. chkfile( cn_fhgr )
+  lchk = lchk .OR. chkfile( cn_fzgr )
+  lchk = lchk .OR. chkfile( cn_fmsk )
+  lchk = lchk .OR. chkfile( cf_vtfil)
+  IF ( lchk ) STOP ! missing files
+
+  ! check for sub basin file and set appropriate variables
+  nbasins = 1 
+  IF ( .NOT. chkfile(cn_fbasins) ) THEN
+     llglo   = .TRUE.
+     nbasins = 5 
   ENDIF
 
+  npiglo = getdim (cf_vtfil, cn_x)
+  npjglo = getdim (cf_vtfil, cn_y)
+  npk    = getdim (cf_vtfil, cn_z)
+  npt    = getdim (cf_vtfil, cn_t)
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
 
   ! Allocate arrays
-  ALLOCATE ( zwk(npiglo,npjglo) ,zmask(npiglo,npjglo),zvt(npiglo,npjglo) )
-  ALLOCATE ( zwks(npiglo,npjglo) ,zvs(npiglo,npjglo) )
-  ALLOCATE ( e1v(npiglo,npjglo),e3v(npiglo,npjglo), gphiv(npiglo,npjglo))
-  ALLOCATE ( ztrp(npiglo,npjglo))
-  ALLOCATE ( ztrps(npiglo,npjglo))
-  ALLOCATE ( zonal_heat_glo(npjglo), zonal_heat_atl(npjglo), zonal_heat_pac(npjglo) )
-  ALLOCATE ( zonal_heat_ind(npjglo), zonal_heat_aus(npjglo) , zonal_heat_med(npjglo) )
-  ALLOCATE ( zonal_salt_glo(npjglo), zonal_salt_atl(npjglo), zonal_salt_pac(npjglo) )
-  ALLOCATE ( zonal_salt_ind(npjglo), zonal_salt_aus(npjglo), zonal_salt_med(npjglo) )
-  ALLOCATE ( zmtrp(npjglo) )
-  ALLOCATE ( dumlon(1,npjglo) , dumlat(1,npjglo))
+  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dwkh(npiglo,npjglo), zmask(npiglo,npjglo), zvt(npiglo,npjglo) )
+  ALLOCATE ( dwks(npiglo,npjglo), zvs(npiglo,npjglo) )
+  ALLOCATE ( e1v(npiglo,npjglo), e3v(npiglo,npjglo), gphiv(npiglo,npjglo))
+  ALLOCATE ( dtrph(npiglo,npjglo))
+  ALLOCATE ( dtrps(npiglo,npjglo))
+  ALLOCATE ( dzonal_heat_glo(npjglo), dzonal_heat_atl(npjglo), dzonal_heat_pac(npjglo) )
+  ALLOCATE ( dzonal_heat_ind(npjglo), dzonal_heat_aus(npjglo), dzonal_heat_med(npjglo) )
+  ALLOCATE ( dzonal_salt_glo(npjglo), dzonal_salt_atl(npjglo), dzonal_salt_pac(npjglo) )
+  ALLOCATE ( dzonal_salt_ind(npjglo), dzonal_salt_aus(npjglo), dzonal_salt_med(npjglo) )
+  ALLOCATE ( dmtrp(npjglo) )
+  ALLOCATE ( rdumlon(1,npjglo), rdumlat(1,npjglo))
 
-  ! create output fileset
-  e1v(:,:)   = getvar(coordhgr, 'e1v', 1,npiglo,npjglo)
-  gphiv(:,:) = getvar(coordhgr, 'gphiv', 1,npiglo,npjglo)
-  gdep(:) = getvare3(coordzgr, 'nav_lev' ,1)
+  IF ( lfull ) ALLOCATE ( e31d(npk) )
 
-  iloc=maxloc(gphiv)
-  dumlat(1,:) = gphiv(iloc(1),:)
-  dumlon(:,:) = 0.   ! set the dummy longitude to 0
+  e1v(:,:)   = getvar(cn_fhgr, cn_ve1v,  1, npiglo, npjglo)
+  gphiv(:,:) = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
+  gdep(:)    = 0.  ! dummy depth for netcdf output
 
+  IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t, npk )
 
-  ztrp(:,:)= 0
-  ztrps(:,:)= 0
-  DO jk = 1,npk
-     PRINT *,'level ',jk
-     ! Get temperature and salinity at jk
-     zvt(:,:)= getvar(cfilet, 'vomevt',  jk ,npiglo,npjglo)
-     zvs(:,:)= getvar(cfilet, 'vomevs',  jk ,npiglo,npjglo)
+  iloc         = MAXLOC( gphiv )
+  rdumlat(1,:) = gphiv(iloc(1),:)
+  rdumlon(:,:) = 0.   ! set the dummy longitude to 0
 
-     ! get e3v at level jk
-     e3v(:,:)  = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
-     zwk(:,:)  = zvt(:,:)*e1v(:,:)*e3v(:,:)
-     zwks(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)
-
-     ! integrates vertically 
-     ztrp(:,:)  = ztrp(:,:)  + zwk(:,:) * rau0*rcp
-     ztrps(:,:) = ztrps(:,:) + zwks(:,:)  
-
-  END DO  ! loop to next level
-
-  ! global 
-  zmask(:,:)=getvar('mask.nc','vmask',1,npiglo,npjglo)
-  DO jj=1,npjglo
-     zonal_heat_glo(jj)= SUM( ztrp(2:npiglo-1,jj)*zmask(2:npiglo-1,jj))
-     zonal_salt_glo(jj)= SUM( ztrps(2:npiglo-1,jj)*zmask(2:npiglo-1,jj))
-     zpoints =  SUM(zmask(2:npiglo-1,jj))
-  END DO
-
- !  Detects newmaskglo file 
-  INQUIRE( FILE=cbasinmask, EXIST=llglo )
- 
-  nbasins=1
-  IF ( llglo) THEN ! 5 basins
-       nbasins=5
-  ENDIF
-  
+  ! prepare output netcdf output file
   ! Allocate output variables
-  ALLOCATE(typvar(nbasins*npvar),cvarname(nbasins*npvar))
-  ALLOCATE(ipk(nbasins*npvar),id_varout(nbasins*npvar))
+  ALLOCATE(stypvar(nbasins*npvar),  cvarname(nbasins*npvar) )
+  ALLOCATE(    ipk(nbasins*npvar), id_varout(nbasins*npvar) )
+
   ipk(:)=1               ! all output variables have only 1 level !
   DO jbasins = 1,nbasins
-   SELECT CASE ( npvar )
-   CASE ( 1 )   ! only MHT is output
-   cvarname(jbasins) = 'zomht'//TRIM(cbasin(jbasins))
-   typvar(jbasins)%name=cvarname(jbasins)
-   typvar(jbasins)%units='PW'
-   typvar(jbasins)%missing_value=rpspval
-   typvar(jbasins)%valid_min=-10.
-   typvar(jbasins)%valid_max=20
-   typvar(jbasins)%long_name='Meridional Heat Transport '//TRIM(cbasin(jbasins))
-   typvar(jbasins)%short_name=cvarname(jbasins)
-   typvar(jbasins)%online_operation='N/A'
-   typvar(jbasins)%axis='TY'
-   CASE ( 2 )   ! both MHT and MST (meridional Salt Transport )
-   cvarname(jbasins) = 'zomht'//TRIM(cbasin(jbasins))
-   typvar(jbasins)%name=cvarname(jbasins)
-   typvar(jbasins)%units='PW'
-   typvar(jbasins)%missing_value=rpspval
-   typvar(jbasins)%valid_min=-10.
-   typvar(jbasins)%valid_max=20
-   typvar(jbasins)%long_name='Meridional Heat Transport '//TRIM(cbasin(jbasins))
-   typvar(jbasins)%short_name=cvarname(jbasins)
-   typvar(jbasins)%online_operation='N/A'
-   typvar(jbasins)%axis='TY'
-   ! MST
-   cvarname(nbasins+jbasins) = 'zomst'//TRIM(cbasin(jbasins))
-   typvar(nbasins+jbasins)%name=cvarname(nbasins+jbasins)
-   typvar(nbasins+jbasins)%units='T/sec'
-   typvar(nbasins+jbasins)%missing_value=rpspval
-   typvar(nbasins+jbasins)%valid_min=-10.e9
-   typvar(nbasins+jbasins)%valid_max=20.e9
-   typvar(nbasins+jbasins)%long_name='Meridional Salt Transport '//TRIM(cbasin(jbasins))
-   typvar(nbasins+jbasins)%short_name=cvarname(nbasins+jbasins)
-   typvar(nbasins+jbasins)%online_operation='N/A'
-   typvar(nbasins+jbasins)%axis='TY'
-   CASE DEFAULT
-      PRINT * ,'   This program is not ready for npvar > 2 ' ; STOP
-   END SELECT 
+
+     cvarname(jbasins)                  = TRIM(cv_zomht)//TRIM(cbasin(jbasins))
+     stypvar(jbasins)%cname             = cvarname(jbasins)
+     stypvar(jbasins)%cunits            = 'PW'
+     stypvar(jbasins)%rmissing_value    = ppspval
+     stypvar(jbasins)%valid_min         = -10.
+     stypvar(jbasins)%valid_max         = 20
+     stypvar(jbasins)%clong_name        = 'Meridional Heat Transport '//TRIM(cbasin(jbasins))
+     stypvar(jbasins)%cshort_name       = cvarname(jbasins)
+     stypvar(jbasins)%conline_operation = 'N/A'
+     stypvar(jbasins)%caxis             = 'TY'
+
+     IF ( npvar == 2 ) THEN
+        ! MST
+        ivar = nbasins+jbasins
+        cvarname(ivar)                   = TRIM(cv_zomst)//TRIM(cbasin(jbasins))
+        stypvar(ivar )%cname             = cvarname(ivar)
+        stypvar(ivar )%cunits            = 'T/sec'
+        stypvar(ivar )%rmissing_value    = ppspval
+        stypvar(ivar )%valid_min         = -10.e9
+        stypvar(ivar )%valid_max         = 20.e9
+        stypvar(ivar )%clong_name        = 'Meridional Salt Transport '//TRIM(cbasin(jbasins))
+        stypvar(ivar )%cshort_name       = cvarname(ivar)
+        stypvar(ivar )%conline_operation = 'N/A'
+        stypvar(ivar )%caxis             = 'TY'
+     ENDIF
   END DO
 
-  IF ( llglo ) THEN
-     ! Zonal mean with mask
-     ! Atlantic 
-     zmask(:,:)=getvar(cbasinmask,'tmaskatl',1,npiglo,npjglo)
-     DO jj=1,npjglo
-        zonal_heat_atl(jj) = SUM( ztrp(:,jj) *zmask(:,jj))
-        zonal_salt_atl(jj) = SUM( ztrps(:,jj) *zmask(:,jj))
-        zpoints =  SUM(zmask(:,jj))
-     END DO
-
-     ! Pacific
-     zmask(:,:)=getvar(cbasinmask,'tmaskpac',1,npiglo,npjglo)
-     DO jj=1,npjglo
-        zonal_heat_pac(jj)= SUM( ztrp(:,jj)*zmask(:,jj))
-        zonal_salt_pac(jj)= SUM( ztrps(:,jj)*zmask(:,jj))
-        zpoints =  SUM(zmask(:,jj))
-     END DO
-
-     ! Indian
-     zmask(:,:)=getvar(cbasinmask,'tmaskind',1,npiglo,npjglo)
-     DO jj=1,npjglo
-        zonal_heat_ind(jj)= SUM( ztrp(:,jj)*zmask(:,jj))
-        zonal_salt_ind(jj)= SUM( ztrps(:,jj)*zmask(:,jj))
-        zpoints =  SUM(zmask(:,jj))
-     END DO
-
-     ! Austral
-     zonal_heat_aus = 0.
-     zonal_salt_aus = 0.
-!    zmask(:,:)=getvar(cbasinmask,'tmaskant',1,npiglo,npjglo)
-!    DO jj=1,npjglo
-!       zonal_heat_aus(jj)= SUM( ztrp(:,jj)*zmask(:,jj))
-!       zonal_salt_aus(jj)= SUM( ztrps(:,jj)*zmask(:,jj))
-!       zpoints =  SUM(zmask(:,jj))
-!    END DO
-
-!   ! Med
-     zonal_heat_med = 0.
-     zonal_salt_med = 0.
-
-!    zmask(:,:)=getvar(cbasinmask,'tmaskmed',1,npiglo,npjglo)
-!    DO jj=1,npjglo
-!       zonal_heat_med(jj)= SUM( ztrp(:,jj)*zmask(:,jj))
-!       zonal_salt_med(jj)= SUM( ztrps(:,jj)*zmask(:,jj))
-!       zpoints =  SUM(zmask(:,jj))
-!    END DO
-  ENDIF
-
-  ! Output file
   ! create output fileset
-  ncout = create(cfileoutnc, cfilet, 1,npjglo,1,cdep='depthv')
-  ierr  = createvar(ncout ,typvar,nbasins*npvar, ipk,id_varout )
-  ierr  = putheadervar(ncout, cfilet,1,npjglo,1,pnavlon=dumlon,pnavlat=dumlat,pdep=gdep)
-  tim   = getvar1d(cfilet,'time_counter',1)
-  ierr  = putvar1d(ncout,tim,1,'T')
+  ncout = create      (cf_outnc, cf_vtfil, 1,             npjglo, 1, cdep='depthv'                              )
+  ierr  = createvar   (ncout,    stypvar,  nbasins*npvar, ipk,    id_varout                                     )
+  ierr  = putheadervar(ncout,    cf_vtfil, 1,             npjglo, 1, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep)
 
-  DO jvar=1,npvar   !  MHT [ and MST ]  (1 or 2 )
-    IF ( jvar == 1 ) THEN
-       ! MHT
-       js=1
-       zmtrp(:)=zonal_heat_glo(:)/1.e15                        ! GLO
-       WHERE ( zmtrp == 0 ) zmtrp=rpspval
-       ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-       js=js+1
-       IF ( nbasins == 5 ) THEN
-         zmtrp(:)=zonal_heat_atl(:)/1.e15                      ! ATL
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval         
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-         js=js+1
-         zmtrp(:)=(zonal_heat_ind(:) + zonal_heat_pac(:))/1.e15  ! INP
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-         js=js+1
-         zmtrp(:)=zonal_heat_ind(:)/1.e15                      ! IND
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-         js=js+1
-         zmtrp(:)=zonal_heat_pac(:)/1.e15                      ! PAC
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-         js=js+1
-       ENDIF
-    ELSE
-       ! MST
-       zmtrp(:)=zonal_salt_glo(:)/1.e6                        ! GLO
-       WHERE ( zmtrp == 0 ) zmtrp=rpspval
-       ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-       js = js + 1
-       IF ( nbasins == 5 ) THEN
-         zmtrp(:)=zonal_salt_atl(:)/1.e6                      ! ATL
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-         js = js + 1
-         zmtrp(:)=(zonal_salt_ind(:) + zonal_salt_pac(:))/1.e6  ! INP
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-         js = js + 1
-         zmtrp(:)=zonal_salt_ind(:)/1.e6                      ! IND
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-         js = js + 1
-         zmtrp(:)=zonal_salt_pac(:)/1.e6                      ! PAC
-         WHERE ( zmtrp == 0 ) zmtrp=rpspval
-         ierr=putvar(ncout,id_varout(js),REAL(zmtrp), 1,1,npjglo)
-       js = js + 1
-       ENDIF
-    ENDIF
-  END DO 
-  ierr=closeout(ncout)
+  tim   = getvar1d (cf_vtfil, cn_vtimec, npt     )
+  ierr  = putvar1d (ncout,    tim,       npt, 'T')
 
-  OPEN(numout,FILE=cfileout,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
-  WRITE(numout,*)'! Zonal heat transport (integrated alon I-model coordinate) (in Pw)'
-  IF ( llglo ) THEN
-     WRITE(numout,*)'! J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
-     DO jj=npjglo, 1, -1
-        WRITE(numout,9000) jj, &
-          dumlat(1,jj),  zonal_heat_glo(jj)/1e15 , &
-            zonal_heat_atl(jj)/1e15, &
-            zonal_heat_pac(jj)/1e15, &
-            zonal_heat_ind(jj)/1e15, &
-            zonal_heat_med(jj)/1e15, &
-            zonal_heat_aus(jj)/1e15
+  OPEN(numouth,FILE=cf_outh,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
+  OPEN(numouts,FILE=cf_outs,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
+
+  DO jt=1, npt
+     dtrph(:,:) = 0.d0
+     dtrps(:,:) = 0.d0
+     DO jk = 1,npk
+        PRINT *,'level ',jk
+        ! Get temperature and salinity at jk
+        zvt(:,:)= getvar(cf_vtfil, cn_vomevt, jk, npiglo, npjglo, ktime=jt)
+        zvs(:,:)= getvar(cf_vtfil, cn_vomevs, jk, npiglo, npjglo, ktime=jt)
+
+        ! get e3v at level jk
+        IF ( lfull ) THEN
+           e3v(:,:) = e31d(jk)
+        ELSE
+           e3v(:,:)  = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+        ENDIF
+        dwkh(:,:) = zvt(:,:)*e1v(:,:)*e3v(:,:)*1.d0
+        dwks(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)*1.d0
+
+        ! integrates vertically 
+        dtrph(:,:) = dtrph(:,:) + dwkh(:,:) * pprau0 * pprcp
+        dtrps(:,:) = dtrps(:,:) + dwks(:,:)  
+
+     END DO  ! loop to next level
+
+     ! global 
+     zmask(:,:) = getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
+     DO jj=1,npjglo
+        dzonal_heat_glo(jj) = SUM( dtrph(2:npiglo-1,jj)*zmask(2:npiglo-1,jj) )
+        dzonal_salt_glo(jj) = SUM( dtrps(2:npiglo-1,jj)*zmask(2:npiglo-1,jj) )
      END DO
-  ELSE
-     WRITE(numout,*)'! J        Global        '
-     DO jj=npjglo, 1, -1
-        WRITE(numout,9000) jj, &
-          dumlat(1,jj),  zonal_heat_glo(jj)/1e15  
+
+     IF ( llglo ) THEN
+        ! Zonal mean with mask
+        ! Atlantic 
+        zmask(:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
+        DO jj=1,npjglo
+           dzonal_heat_atl(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
+           dzonal_salt_atl(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
+        END DO
+
+        ! Pacific
+        zmask(:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+        DO jj=1,npjglo
+           dzonal_heat_pac(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
+           dzonal_salt_pac(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
+        END DO
+
+        ! Indian
+        zmask(:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
+        DO jj=1,npjglo
+           dzonal_heat_ind(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
+           dzonal_salt_ind(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
+        END DO
+
+        ! Austral
+        dzonal_heat_aus = 0.d0
+        dzonal_salt_aus = 0.d0
+        !    zmask(:,:)=getvar(cn_fbasins,'tmaskant',1,npiglo,npjglo)
+        !    DO jj=1,npjglo
+        !       dzonal_heat_aus(jj)= SUM( dtrph(:,jj)*zmask(:,jj))
+        !       dzonal_salt_aus(jj)= SUM( dtrps(:,jj)*zmask(:,jj))
+        !    END DO
+
+        !   ! Med
+        dzonal_heat_med = 0.d0
+        dzonal_salt_med = 0.d0
+
+        !    zmask(:,:)=getvar(cn_fbasins,'tmaskmed',1,npiglo,npjglo)
+        !    DO jj=1,npjglo
+        !       dzonal_heat_med(jj)= SUM( dtrph(:,jj)*zmask(:,jj))
+        !       dzonal_salt_med(jj)= SUM( dtrps(:,jj)*zmask(:,jj))
+        !    END DO
+     ENDIF
+
+
+     DO jvar=1,npvar   !  MHT [ and MST ]  (1 or 2 )
+        IF ( jvar == 1 ) THEN
+           ! MHT
+           ivar=1
+           dmtrp(:) = dzonal_heat_glo(:)/1.d15                        ! GLO
+           WHERE ( dmtrp == 0 ) dmtrp = ppspval
+           ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+           ivar=ivar+1
+           IF ( nbasins == 5 ) THEN
+              dmtrp(:) = dzonal_heat_atl(:)/1.d15                      ! ATL
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval         
+              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+              dmtrp(:) = (dzonal_heat_ind(:) + dzonal_heat_pac(:))/1.d15  ! INP
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval
+              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+              dmtrp(:) = dzonal_heat_ind(:)/1.d15                      ! IND
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval
+              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+              dmtrp(:) = dzonal_heat_pac(:)/1.d15                      ! PAC
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval
+              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+           ENDIF
+        ELSE
+           ! MST
+           dmtrp(:) = dzonal_salt_glo(:)/1.d6                        ! GLO
+           WHERE ( dmtrp == 0 ) dmtrp = ppspval
+           ierr=putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+           ivar=ivar+1
+           IF ( nbasins == 5 ) THEN
+              dmtrp(:) = dzonal_salt_atl(:)/1.d6                      ! ATL
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval
+              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+              dmtrp(:) = (dzonal_salt_ind(:) + dzonal_salt_pac(:))/1.d6  ! INP
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval
+              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+              dmtrp(:) = dzonal_salt_ind(:)/1.d6                      ! IND
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval
+              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+              dmtrp(:) = dzonal_salt_pac(:)/1.d6                      ! PAC
+              WHERE ( dmtrp == 0 ) dmtrp = ppspval
+              ierr=putvar(ncout, id_varout(ivar), REAL(dmtrp), 1, 1, npjglo, ktime=jt)
+              ivar=ivar+1
+           ENDIF
+        ENDIF
      END DO
-  ENDIF       
-  !               
-  CLOSE(numout)
 
-  OPEN(numout,FILE=cfileouts,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
-  WRITE(numout,*)' ! Zonal salt transport (integrated alon I-model coordinate) (in 10^6 kg/s)'
-  IF ( llglo ) THEN
-     WRITE(numout,*)' ! J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
-  !               
-     DO jj=npjglo, 1, -1
-        WRITE(numout,9001) jj, &
-          dumlat(1,jj),  zonal_salt_glo(jj)/1e6 , &
-           zonal_salt_atl(jj)/1e6, &
-           zonal_salt_pac(jj)/1e6, &
-           zonal_salt_ind(jj)/1e6, &
-           zonal_salt_med(jj)/1e6, &
-           zonal_salt_aus(jj)/1e6
-     END DO
-  ELSE
-     WRITE(numout,*)' J        Global  '
-     DO jj=npjglo, 1, -1
-        WRITE(numout,9001) jj, &
-          dumlat(1,jj),  zonal_salt_glo(jj)/1e6  
-     ENDDO
-   ENDIF
+     WRITE(numouth,*)'! Zonal heat transport (integrated alon I-model coordinate) (in Pw)'
+     IF ( llglo ) THEN
+        WRITE(numouth,*)'! J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
+        WRITE(numouth,*)' ! time : ', jt
+        DO jj=npjglo, 1, -1
+           WRITE(numouth,9000) jj, &
+                rdumlat(1,jj),  dzonal_heat_glo(jj)/1d15 , &
+                dzonal_heat_atl(jj)/1d15, &
+                dzonal_heat_pac(jj)/1d15, &
+                dzonal_heat_ind(jj)/1d15, &
+                dzonal_heat_med(jj)/1d15, &
+                dzonal_heat_aus(jj)/1d15
+        END DO
+     ELSE
+        WRITE(numouth,*)'! J        Global        '
+        WRITE(numouth,*)' ! time : ', jt
+        DO jj=npjglo, 1, -1
+           WRITE(numouth,9000) jj, &
+                rdumlat(1,jj),  dzonal_heat_glo(jj)/1d15  
+        END DO
+     ENDIF
+     !               
+     WRITE(numouts,*)' ! Zonal salt transport (integrated alon I-model coordinate) (in 10^6 kg/s)'
+     IF ( llglo ) THEN
+        WRITE(numouts,*)' ! J        Global          Atlantic         Pacific          Indian           Mediteranean     Austral  '
+        WRITE(numouts,*)' ! time : ', jt
+        !               
+        DO jj=npjglo, 1, -1
+           WRITE(numouts,9001) jj, &
+                rdumlat(1,jj),  dzonal_salt_glo(jj)/1d6 , &
+                dzonal_salt_atl(jj)/1d6, &
+                dzonal_salt_pac(jj)/1d6, &
+                dzonal_salt_ind(jj)/1d6, &
+                dzonal_salt_med(jj)/1d6, &
+                dzonal_salt_aus(jj)/1d6
+        END DO
+     ELSE
+        WRITE(numouts,*)' J        Global  '
+        WRITE(numouts,*)' ! time : ', jt
+        DO jj=npjglo, 1, -1
+           WRITE(numouts,9001) jj, &
+                rdumlat(1,jj),  dzonal_salt_glo(jj)/1d6  
+        ENDDO
+     ENDIF
 
-   CLOSE(numout)
-
+  ENDDO  ! time loop
+  ierr = closeout(ncout)
+  CLOSE(numouth)
+  CLOSE(numouts)
 
 9000 FORMAT(I4,6(1x,f9.3,1x,f8.4))
 9001 FORMAT(I4,6(1x,f9.2,1x,f9.3))
-
 
 END PROGRAM cdfmhst

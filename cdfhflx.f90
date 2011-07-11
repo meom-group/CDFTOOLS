@@ -1,238 +1,240 @@
 PROGRAM cdfhflx
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfhflx  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfhflx  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the Meridional Heat Transport from the 
+  !!               forcing fluxes.
   !!
-  !!  **  Purpose  :  Compute the Meridional Heat Transport from the forcing fluxes
-  !!                  PARTIAL STEPS
-  !!  
-  !!  **  Method   :   Compute the zonaly integrated heat flux.
-  !!                  The program looks for the file "new_maskglo.nc". If it does not exist, 
-  !!                  only the calculation over all the domain is performed (this is adequate 
-  !!                  for a basin configuration like NATL4).
-  !!                  In new_maskglo.nc the masking corresponds to the global
-  !!                  configuration. (Global, Atlantic, Indo-Pacific, Indian,Pacific ocean)
+  !!  ** Method  : Compute the zonaly integrated heat flux.
+  !!               The program looks for the file "new_maskglo.nc". 
+  !!               If it does not exist, only the calculation over all 
+  !!               the whole domain is performed (this is adequate for 
+  !!               a basin configuration like NATL4).
+  !!               In new_maskglo.nc the masking corresponds to the global
+  !!               configuration. (Global, Atlantic, Indo-Pacific, 
+  !!               Indian,Pacific ocean)
   !!
-  !!
-  !! history ;
-  !!  Original :  J.M. Molines (jul. 2005) 
-  !!              A.M. Treguier (april 2006) adaptation to NATL4 case 
-  !!              R. Dussin (Jul. 2009) : Add netcdf output
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 07/2005  : J.M. Molines  : Original code
+  !!           2.1  : 04/2006  : A.M. Treguier : adaptation to NATL4 case
+  !!           2.1  : 07/2009  : R. Dussin     : Netcdf output
+  !!           3.0  : 01/2011  : J.M. Molines  : Doctor norm + Lic. + generalization
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jpbasins
-  INTEGER   :: jbasin, jj, jk ,ji                  !: dummy loop index
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER   :: ncout, np, imean
-  INTEGER   :: numout=10
-  INTEGER, DIMENSION(2)          ::  iloc
-  ! added to write in netcdf
-  INTEGER :: kx=1, ky=1                ! dims of netcdf output file
-  INTEGER :: nboutput                  ! number of values to write in cdf output
-  INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout
 
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  e1t, e2t, gphit, zflx !:  metrics, velocity
-  REAL(KIND=4), DIMENSION (:,:,:),   ALLOCATABLE ::  zmask             !:  jpbasins x npiglo x npjglo
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlon              !: dummy longitude = 0.
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlat              !: latitude for i = north pole
-  REAL(KIND=4) ,DIMENSION(:,:) , ALLOCATABLE ::  gphimean,htrp    !: jpbasins x npjglo
+  INTEGER(KIND=4)                             :: jbasin, ji, jj, jk, jt ! dummy loop index
+  INTEGER(KIND=4)                             :: npbasins               ! number of subbasins
+  INTEGER(KIND=4)                             :: ierr                   ! error status
+  INTEGER(KIND=4)                             :: narg, iargc            ! command line 
+  INTEGER(KIND=4)                             :: npiglo, npjglo         ! size of the domain
+  INTEGER(KIND=4)                             :: npk, npt               ! size of the domain
+  INTEGER(KIND=4)                             :: ncout                  ! ncid of output file
+  INTEGER(KIND=4)                             :: numout=10              ! logical unit of txt output file
+  INTEGER(KIND=4)                             :: ikx=1, iky=1           ! dims of netcdf output file
+  INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipk, id_varout         ! levels and varid's of output vars
+  INTEGER(KIND=4), DIMENSION(2)               :: iloc                   ! used for maxloc
 
-  REAL(KIND=8) ,DIMENSION(:,:) , ALLOCATABLE ::  zmht    !: jpbasins x npjglo 
-  ! added to write in netcdf
-  REAL(KIND=4) :: threedmeanout, pmissing_value
-  REAL(KIND=4), DIMENSION (1)               ::  tim ! time counter
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: meanout
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: zmask                  ! npbasins x npiglo x npjglo
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1t, e2t               ! horizontal metrics
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphit                  ! Latitide
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zflx                   ! fluxes read on file
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdumlon                ! dummy longitude = 0.
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdumlat                ! latitude for i = north pole
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim                    ! time counter
 
-  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar  ! structure of output
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dmht                   ! cumulated heat trp
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: dhtrp                   ! MHT from fluxes
 
-  CHARACTER(LEN=256) :: cfilet , cfileout='hflx.out'
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',cbasinmask='new_maskglo.nc'
-  ! added to write in netcdf
-  CHARACTER(LEN=256) :: cfileoutnc='cdfhflx.nc' 
-  CHARACTER(LEN=256) :: cdunits, cdlong_name, cdshort_name
+  TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar                ! attributes output
 
-  LOGICAL    :: llglo = .FALSE.                          !: indicator for presence of new_maskglo.nc file 
-  ! added to write in netcdf
-  LOGICAL :: lwrtcdf=.TRUE.
+  CHARACTER(LEN=256)                          :: cf_tfil                ! input file
+  CHARACTER(LEN=256)                          :: cf_out='hflx.out'      ! output txt file
+  CHARACTER(LEN=256)                          :: cf_outnc='cdfhflx.nc'  ! output nc file
 
-  INTEGER    :: istatus
+  LOGICAL                                     :: lglo = .FALSE.         ! global or subbasin computation
+  LOGICAL                                     :: lchk = .FALSE.         ! missing file flag
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
-  !!  Read command line and output usage message if not compliant.
-  narg= iargc()
-  IF ( narg == 1 ) THEN
-     CALL getarg (1, cfilet)
-     npiglo= getdim (cfilet,'x')
-     npjglo= getdim (cfilet,'y')
-     npk   = getdim (cfilet,'depth')
+  narg = iargc()
 
-     PRINT *, 'npiglo=', npiglo
-     PRINT *, 'npjglo=', npjglo
-     PRINT *, 'npk   =', npk
-  ELSE
-     PRINT *,' Usage : cdfhflx  T-file '
-     PRINT *,' Computes the MHT from heat fluxes '
-     PRINT *,' Files mesh_hgr.nc, new_maskglo.nc must be in the current directory '
-     PRINT *,' Output on hflx.out (ascii file ) and hflx.nc '
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfhflx  T-file '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Computes the Meridional Heat Transport (MHT) from surface heat fluxes,' 
+     PRINT *,'       in function of the latitude.'
+     PRINT *,'       If a sub-basin file is available, MHT is computed for each sub-basin.'
+     PRINT *,'       Note that the latitude is in fact a line of constant J coordinate, not'
+     PRINT *,'       a true parallel, if the model grid is distorted as in the northern most'
+     PRINT *,'       part of ORCA configurations.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       T-file : a file with heat fluxes (gridT). '
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       Files ', TRIM(cn_fhgr),', ',TRIM(cn_fbasins),' and ',TRIM(cn_fmsk),'.' 
+     PRINT *,'       If ',TRIM(cn_fbasins),' is not available, only global MHT is computed.'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       ASCII file  : ', TRIM(cf_out  )
+     PRINT *,'       netcdf file : ', TRIM(cf_outnc) 
+     PRINT *,'         variables : hflx_glo, [hflx_atl, hflx_inp, hflx_pac, hflx_ind]'
      STOP
   ENDIF
 
+  CALL getarg (1, cf_tfil)
+
+  lchk = chkfile(cn_fhgr)
+  lchk = chkfile(cn_fmsk) .OR. lchk
+  lchk = chkfile(cf_tfil) .OR. lchk
+  IF ( lchk ) STOP ! missing file
+
+  npiglo = getdim (cf_tfil,cn_x)
+  npjglo = getdim (cf_tfil,cn_y)
+  npk    = getdim (cf_tfil,cn_z)
+  npt    = getdim (cf_tfil,cn_t)
+
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
+
   !  Detects newmaskglo file 
-  INQUIRE( FILE='new_maskglo.nc', EXIST=llglo )
-  IF (llglo) THEN
-     jpbasins = 5
+  lglo = .NOT. ( chkfile(cn_fbasins) )
+
+  IF (lglo) THEN
+     npbasins = 5
   ELSE
-     jpbasins = 1
+     npbasins = 1
   ENDIF
 
   ! Allocate arrays
-  ALLOCATE ( zmask(jpbasins,npiglo,npjglo) )
+  ALLOCATE ( zmask(npbasins,npiglo,npjglo) )
   ALLOCATE ( zflx(npiglo,npjglo) )
-  ALLOCATE ( e1t(npiglo,npjglo),e2t(npiglo,npjglo), gphit(npiglo,npjglo) )
-  ALLOCATE ( htrp (jpbasins,npjglo) )
-  ALLOCATE ( zmht(jpbasins, npjglo) )
-  ALLOCATE ( dumlon(1,npjglo) , dumlat(1,npjglo))
+  ALLOCATE ( e1t(npiglo,npjglo), e2t(npiglo,npjglo), gphit(npiglo,npjglo) )
+  ALLOCATE ( dhtrp (npbasins,npjglo) )
+  ALLOCATE ( dmht(npbasins, npjglo) )
+  ALLOCATE ( rdumlon(1,npjglo), rdumlat(1,npjglo) )
+  ALLOCATE ( tim(npt) )
 
-  IF (lwrtcdf) THEN
-     nboutput=jpbasins 
-     ALLOCATE (typvar(nboutput), ipk(nboutput), id_varout(nboutput))
+  ALLOCATE (stypvar(npbasins), ipk(npbasins), id_varout(npbasins))
 
-     DO jj=1,jpbasins
-        ipk(jj)=1
-     ENDDO
+  ! define new variables for output 
+  ipk(:)                    = 1
+  stypvar%cunits            = 'PW'
+  stypvar%rmissing_value    = 99999.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         = 1000.
+  stypvar%scale_factor      = 1.
+  stypvar%add_offset        = 0.
+  stypvar%savelog10         = 0.
+  stypvar%cunits            = 'PW' 
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'T'
 
-     ! define new variables for output 
-     typvar(1)%name='hflx_glo'
-     typvar%units=TRIM(cdunits)
-     typvar%missing_value=99999.
-     typvar%valid_min= -1000.
-     typvar%valid_max= 1000.
-     typvar%scale_factor= 1.
-     typvar%add_offset= 0.
-     typvar%savelog10= 0.
-     typvar%units='PW' 
-     typvar(1)%long_name='Heat_Fluxes_Global'
-     typvar(1)%short_name='hflx_glo'
-     typvar%online_operation='N/A'
-     typvar%axis='ZT'
+  stypvar(1)%cname          = 'hflx_glo'
+  stypvar(1)%clong_name     = 'Heat_Fluxes_Global'
+  stypvar(1)%cshort_name    = 'hflx_glo'
 
-     IF (llglo) THEN
+  IF (lglo) THEN
+     stypvar(2)%cname       = 'hflx_atl'             ; stypvar(3)%cname       = 'hflx_inp'
+     stypvar(2)%clong_name  = 'Heat_Fluxes_Atlantic' ; stypvar(3)%clong_name  = 'Heat_Fluxes_Indo-Pacific'
+     stypvar(2)%cshort_name = 'hflx_atl'             ; stypvar(3)%cshort_name = 'hflx_inp'
 
-        typvar(2)%name='hflx_atl'
-        typvar(2)%long_name='Heat_Fluxes_Atlantic'
-        typvar(2)%short_name='hflx_atl'
-
-        typvar(3)%name='hflx_inp'
-        typvar(3)%long_name='Heat_Fluxes_Indo-Pacific'
-        typvar(3)%short_name='hflx_inp'
-
-        typvar(4)%name='hflx_ind'
-        typvar(4)%long_name='Heat_Fluxes_Indian'
-        typvar(4)%short_name='hflx_ind'
-
-        typvar(5)%name='hflx_pac'
-        typvar(5)%long_name='Heat_Fluxes_Pacific'
-        typvar(5)%short_name='hflx_pac'
-
-     ENDIF
+     stypvar(4)%cname       = 'hflx_ind'             ; stypvar(5)%cname       = 'hflx_pac'
+     stypvar(4)%clong_name  = 'Heat_Fluxes_Indian'   ; stypvar(5)%clong_name  = 'Heat_Fluxes_Pacific'
+     stypvar(4)%cshort_name = 'hflx_ind'             ; stypvar(5)%cshort_name = 'hflx_pac'
   ENDIF
 
-  e1t(:,:) = getvar(coordhgr, 'e1t', 1,npiglo,npjglo) 
-  e2t(:,:) = getvar(coordhgr, 'e2t', 1,npiglo,npjglo) 
-  gphit(:,:) = getvar(coordhgr, 'gphit', 1,npiglo,npjglo)
+  e1t(  :,:) = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo) 
+  e2t(  :,:) = getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo) 
+  gphit(:,:) = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
 
-  iloc=MAXLOC(gphit)
-  dumlat(1,:) = gphit(iloc(1),:)
-  dumlon(:,:) = 0.   ! set the dummy longitude to 0
+  iloc         = MAXLOC(gphit)
+  rdumlat(1,:) = gphit(iloc(1),:)
+  rdumlon(:,:) = 0.   ! set the dummy longitude to 0
+
+  ! create output fileset
+  ncout = create      (cf_outnc, 'none',  ikx,      npjglo, npk                                  )
+  ierr  = createvar   (ncout,    stypvar, npbasins, ipk,    id_varout                            )
+  ierr  = putheadervar(ncout,    cf_tfil, ikx,      npjglo, npk, pnavlon=rdumlon, pnavlat=rdumlat)
+
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,   tim,       npt, 'T')
+
+  OPEN(numout, FILE=cf_out, FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
+  WRITE(numout,*)'! Zonal heat transport (integrated from surface fluxes) (in Pw)'
 
   ! reading the masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
-  zmask(1,:,:)=getvar('mask.nc','vmask',1,npiglo,npjglo)
+  zmask(1,:,:)= getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
 
-  IF (llglo) THEN
-     zmask(2,:,:)=getvar(cbasinmask,'tmaskatl',1,npiglo,npjglo)
-     zmask(4,:,:)=getvar(cbasinmask,'tmaskind',1,npiglo,npjglo)
-     zmask(5,:,:)=getvar(cbasinmask,'tmaskpac',1,npiglo,npjglo)
-     zmask(3,:,:)=zmask(5,:,:)+zmask(4,:,:)
+  IF (lglo) THEN
+     zmask(2,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
+     zmask(4,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
+     zmask(5,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+     zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
-     !       change global mask for GLOBAL periodic condition
+     ! change global mask for GLOBAL periodic condition
      zmask(1,1,:) = 0.
      zmask(1,npiglo,:) = 0.
   ENDIF
 
-  ! initialize zmht
-  zmht(:,:) = 0.
-  htrp(:,:) = 0.
+  DO jt = 1, npt
+  ! initialize dmht
+     dmht(:,:)  = 0.d0
+     dhtrp(:,:) = 0.d0
+     WRITE(numout,*)' TIME =', jt, tim(jt)/86400.,' days'
 
+     ! Get fluxes
+     zflx(:,:)= getvar(cf_tfil, cn_sohefldo, 1, npiglo, npjglo, ktime=jt)
 
-  ! Get fluxes
-  zflx(:,:)= getvar(cfilet, 'sohefldo',  1 ,npiglo,npjglo)
+     ! integrates 'zonally' (along i-coordinate)
+     DO ji=1,npiglo
+        ! For all basins 
+        DO jbasin = 1, npbasins
+           dmht(jbasin,:) = dmht(jbasin,:) + e1t(ji,:)*e2t(ji,:)* zmask(jbasin,ji,:)*zflx(ji,:)*1.d0
+        END DO
+     END DO
 
-  ! integrates 'zonally' (along i-coordinate)
-  DO ji=1,npiglo
-     ! For all basins 
-     DO jbasin = 1, jpbasins
-        DO jj=1,npjglo
-           zmht(jbasin,jj)=zmht(jbasin,jj) + e1t(ji,jj)*e2t(ji,jj)* zmask(jbasin,ji,jj)*zflx(ji,jj)
+     ! cumulates transport from north to south
+     DO jj=npjglo-1,1,-1
+           dhtrp(:,jj) = dhtrp(:,jj+1) - dmht(:,jj)
+     END DO
+
+     ! transform to peta watt
+     dhtrp(:,:) = dhtrp(:,:) / 1.d15    
+
+     IF (lglo) THEN
+        WRITE(numout,*)'! J        Global          Atlantic         INDO-PACIF    INDIAN  PACIF '
+        DO jj=npjglo, 1, -1
+           WRITE(numout,9000) jj, &
+                rdumlat(1,jj), dhtrp(1,jj),      dhtrp(2,jj),        dhtrp(3,jj), dhtrp(4,jj), dhtrp(5,jj)
         ENDDO
-     END DO
-  END DO
+     ELSE
+        WRITE(numout,*)'! J        Global   '
+        DO jj=npjglo, 1, -1
+           WRITE(numout,9000) jj, rdumlat(1,jj), dhtrp(1,jj)  
+        ENDDO
+     ENDIF
 
-  ! cumulates transport from north to south
-  DO jj=npjglo-1,1,-1
-     DO jbasin=1, jpbasins
-        htrp(jbasin,jj) = htrp(jbasin,jj+1) - zmht(jbasin,jj)
-     END DO
-  END DO
-
-  OPEN(numout,FILE=cfileout,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
-  WRITE(numout,*)'! Zonal heat transport (integrated from surface fluxes) (in Pw)'
-  IF (llglo) THEN
-     WRITE(numout,*)'! J        Global          Atlantic         INDO-PACIF    INDIAN  PACIF '
-     DO jj=npjglo, 1, -1
-        WRITE(numout,9000) jj, &
-             dumlat(1,jj),  htrp(1,jj)/1e15 , &
-             htrp(2,jj)/1e15, &
-             htrp(3,jj)/1e15, &
-             htrp(4,jj)/1e15, &
-             htrp(5,jj)/1e15
-     ENDDO
-  ELSE
-     WRITE(numout,*)'! J        Global   '
-     DO jj=npjglo, 1, -1
-        WRITE(numout,9000) jj, &
-             dumlat(1,jj),  htrp(1,jj)/1e15  
-     ENDDO
-  ENDIF
-
-  CLOSE(numout)
 9000 FORMAT(I4,5(1x,f9.3,1x,f8.4))
 
-  IF (lwrtcdf) THEN
-
-     ! create output fileset
-     ncout =create(cfileoutnc,'none',kx,npjglo,npk)
-     ierr= createvar(ncout,typvar,nboutput,ipk,id_varout )
-     ierr= putheadervar(ncout, cfilet ,kx, npjglo,npk,pnavlon=dumlon,pnavlat=dumlat)
-     tim=getvar1d(cfilet,'time_counter',1)
-     ierr=putvar1d(ncout,tim,1,'T')
-
-     ! netcdf output 
-     DO jj=1, jpbasins
-        ierr = putvar(ncout, id_varout(jj), htrp(jj,:)/1e15, ipk(jj), kx, npjglo )
+     DO jj=1, npbasins
+        ierr = putvar(ncout, id_varout(jj), REAL(dhtrp(jj,:)), ipk(jj), ikx, npjglo, ktime=jt )
      END DO
+  END DO   ! time loop
 
-     ierr = closeout(ncout)
-
-  ENDIF
+  ierr = closeout(ncout)
+  CLOSE(numout)
 
 END PROGRAM cdfhflx

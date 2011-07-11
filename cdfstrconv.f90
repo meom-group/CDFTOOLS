@@ -139,26 +139,26 @@ PROGRAM cdfstrconv
   ALLOCATE ( typvartauy(nvar), ipktauy(nvar), id_varouttauy(nvar) )
   jvar=1
   ipktaux(jvar)      = 1
-  typvartaux(jvar)%name='sozotaux'    ! taux dim 1 of dimgfile
-  typvartaux(jvar)%units='N/m2'
-  typvartaux(jvar)%missing_value=0.
+  typvartaux(jvar)%cname='sozotaux'    ! taux dim 1 of dimgfile
+  typvartaux(jvar)%cunits='N/m2'
+  typvartaux(jvar)%rmissing_value=0.
   typvartaux(jvar)%valid_min= -0.1
   typvartaux(jvar)%valid_max= 0.1
-  typvartaux(jvar)%long_name='Zonal Wind Stress'
-  typvartaux(jvar)%short_name='sozotaux'
-  typvartaux(jvar)%online_operation='N/A'
-  typvartaux(jvar)%axis='TYX'
+  typvartaux(jvar)%clong_name='Zonal Wind Stress'
+  typvartaux(jvar)%cshort_name='sozotaux'
+  typvartaux(jvar)%conline_operation='N/A'
+  typvartaux(jvar)%caxis='TYX'
 
   ipktauy(jvar)      = 1
-  typvartauy(jvar)%name='sometauy'    ! tauy dim 2 of dimgfile
-  typvartauy(jvar)%units='N/m2'
-  typvartauy(jvar)%missing_value=0.
+  typvartauy(jvar)%cname='sometauy'    ! tauy dim 2 of dimgfile
+  typvartauy(jvar)%cunits='N/m2'
+  typvartauy(jvar)%rmissing_value=0.
   typvartauy(jvar)%valid_min= -0.1
   typvartauy(jvar)%valid_max= 0.1
-  typvartauy(jvar)%long_name='Meridional Wind Stress'
-  typvartauy(jvar)%short_name='sometauy'
-  typvartauy(jvar)%online_operation='N/A'
-  typvartauy(jvar)%axis='TYX'
+  typvartauy(jvar)%clong_name='Meridional Wind Stress'
+  typvartauy(jvar)%cshort_name='sometauy'
+  typvartauy(jvar)%conline_operation='N/A'
+  typvartauy(jvar)%caxis='TYX'
 
   ncouttaux =create(ctaux, 'none',npiglo,npjglo,npk,cdep='deptht' )
   istatus= createvar(ncouttaux ,typvartaux,nvar, ipktaux,id_varouttaux )

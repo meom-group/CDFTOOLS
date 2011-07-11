@@ -1,127 +1,149 @@
 PROGRAM cdf2matlab
-  !!-------------------------------------------------------------------
-  !!             ***  PROGRAM cdf2matlab  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdf2matlab  ***
+  !!=====================================================================
+  !!  ** Purpose : Reshapes ORCA grids to be matlab-friendly
   !!
-  !!  **  Purpose: Reshapes ORCA grids to be matlab-friendly
-  !!  
-  !!  **  Method: Try to avoid 3 d arrays 
+  !!  ** Method  : transform input file with monotonically increasing
+  !!               longitudes.
   !!
-  !! history :
-  !!  Original :  R. Dussin (Jan 2011 )
-  !!             
-  !!-------------------------------------------------------------------
-  !!  $Rev: 256 $
-  !!  $Date: 2009-07-21 17:49:27 +0200 (mar. 21 juil. 2009) $
-  !!  $Id: cdf2matlab.f90 256 2009-07-21 15:49:27Z molines $
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 01/2011  : R. Dussin    : Original code
+  !!           3.0  : 03/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: ji, jj
-  INTEGER   :: narg, iargc                           !: 
-  INTEGER   :: npiglo, npjglo, npk, npiglox2         !: size of the domain
-  INTEGER   :: zlev , zindex, ztmp
-  INTEGER, DIMENSION(3) :: ipk, id_varout
-  REAL(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: zlon, zlat, zvar          ! input arrays
-  REAL(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: zlonout, zlatout, zvarout ! output arrays
-  REAL(KIND=4) , DIMENSION(:,:), ALLOCATABLE :: zlonwork, zlatwork, zvarwork ! working arrays arrays
-  REAL(KIND=4) , DIMENSION(1)                :: timean
 
-  CHARACTER(LEN=256) :: cfile, cvarin, cdum, cfileout='output.nc'        !: file name
+  INTEGER(KIND=4)                           :: ji, jj              ! dummy loop index
+  INTEGER(KIND=4)                           :: narg, iargc         ! 
+  INTEGER(KIND=4)                           :: npiglo, npjglo, npk ! size of the domain
+  INTEGER(KIND=4)                           :: npiglox2            ! new model size in x
+  INTEGER(KIND=4)                           :: ilev, iindex, itmp
+  INTEGER(KIND=4)                           :: ncout
+  INTEGER(KIND=4)                           :: ierr
+  INTEGER(KIND=4), DIMENSION(3)             :: ipk, id_varout
 
-  TYPE(variable), DIMENSION(3) :: typvar          !: structure for attribute
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlon, zlat, zvar    ! input arrays
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlonout, zlatout    ! output arrays
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlonwork, zlatwork  ! working arrays arrays
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvarout, zvarwork   ! working arrays arrays
+  REAL(KIND=4), DIMENSION(1)                :: tim
 
-  INTEGER    :: ncout
-  INTEGER    :: istatus, ierr
+  CHARACTER(LEN=256)                        :: cf_in               ! input file name
+  CHARACTER(LEN=256)                        :: cf_out='output.nc'  ! output file name
+  CHARACTER(LEN=256)                        :: cv_in               ! input variable  name
+  CHARACTER(LEN=256)                        :: cldum               !  dummy character variable
 
-  !!  Read command line
+  TYPE(variable), DIMENSION(3)              :: stypvar             ! structure for attribute
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
   narg= iargc()
   IF ( narg /= 3 ) THEN
-     PRINT *,' Usage : cdf2matlab file variable level '
-     PRINT *,'   Output on output.nc '
+     PRINT *,' usage : cdf2matlab IN-file IN-var level '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Convert global nemo input file (ORCA configurations) into' 
+     PRINT *,'       a file with monotonically increasing longitudes.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       IN-file : input model file.' 
+     PRINT *,'       IN-var  : netcdf variable name to process.'
+     PRINT *,'       level   : level to process.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        none'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables : same name than in input file.'
      STOP
   ENDIF
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
-  CALL getarg (1, cfile)
-  CALL getarg (2, cvarin)
-  CALL getarg (3, cdum) ; READ(cdum,*) zlev
+  CALL getarg (1, cf_in)
+  CALL getarg (2, cv_in)
+  CALL getarg (3, cldum) ; READ(cldum,*) ilev
 
-  npiglo= getdim (cfile,'x')
-  npjglo= getdim (cfile,'y')
-  npk   = getdim (cfile,'depth')
+  IF ( chkfile (cf_in) ) STOP  ! missing file
 
-  ipk(:) = 1
-  typvar(1)%name= 'lon'
-  typvar(1)%units='degrees'
-  typvar(1)%valid_min= -180.
-  typvar(1)%valid_max= 540.
-  typvar(1)%long_name='longitude'
-  typvar(1)%short_name='lon'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='YX'
+  npiglo = getdim (cf_in,cn_x)
+  npjglo = getdim (cf_in,cn_y)
+  npk    = getdim (cf_in,cn_z)
 
-  typvar(2)%name= 'lat'
-  typvar(2)%units='degrees'
-  typvar(2)%missing_value=0.
-  typvar(2)%valid_min= -90.
-  typvar(2)%valid_max= 90.
-  typvar(2)%long_name='latitude'
-  typvar(2)%short_name='lat'
-  typvar(2)%online_operation='N/A'
-  typvar(2)%axis='YX'
+  ipk(:)                       = 1
+  stypvar(1)%cname             = 'lon'
+  stypvar(1)%cunits            = 'degrees'
+  stypvar(1)%valid_min         = -180.
+  stypvar(1)%valid_max         = 540.
+  stypvar(1)%clong_name        = 'longitude'
+  stypvar(1)%cshort_name       = 'lon'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'YX'
 
-  typvar(3)%name= cvarin
-  typvar(3)%units=''
-  typvar(3)%missing_value=0.
-  typvar(3)%long_name=''
-  typvar(3)%short_name=cvarin
-  typvar(3)%online_operation='N/A'
-  typvar(3)%axis='TYX'
+  stypvar(2)%cname             = 'lat'
+  stypvar(2)%cunits            = 'degrees'
+  stypvar(2)%rmissing_value    = 0.
+  stypvar(2)%valid_min         = -90.
+  stypvar(2)%valid_max         = 90.
+  stypvar(2)%clong_name        = 'latitude'
+  stypvar(2)%cshort_name       = 'lat'
+  stypvar(2)%conline_operation = 'N/A'
+  stypvar(2)%caxis             = 'YX'
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
+  stypvar(3)%cname             = cv_in
+  stypvar(3)%cunits            = ''
+  stypvar(3)%rmissing_value    = 0.
+  stypvar(3)%clong_name        = ''
+  stypvar(3)%cshort_name       = cv_in
+  stypvar(3)%conline_operation = 'N/A'
+  stypvar(3)%caxis             = 'TYX'
+
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
 
   npiglox2 = 2 * npiglo
 
   ALLOCATE( zvar(npiglo,npjglo), zlon(npiglo,npjglo), zlat(npiglo,npjglo) )
-  ALLOCATE( zvarout(npiglox2,npjglo),zlonout(npiglox2,npjglo),zlatout(npiglox2,npjglo) )
+  ALLOCATE( zvarout(npiglox2,npjglo), zlonout(npiglox2,npjglo), zlatout(npiglox2,npjglo) )
 
-  ncout =create(cfileout, cfile,npiglox2,npjglo,1)
-  ierr= createvar(ncout ,typvar,3, ipk,id_varout )
+  ncout = create    (cf_out,   cf_in,   npiglox2, npjglo, 1         )
+  ierr  = createvar (ncout,    stypvar, 3,        ipk,    id_varout )
 
-  zlon(:,:) = getvar(cfile,'nav_lon',1, npiglo, npjglo)
-  zlat(:,:) = getvar(cfile,'nav_lat',1, npiglo, npjglo)
-  zvar(:,:) = getvar(cfile,cvarin,zlev, npiglo, npjglo)
+  zlon(:,:) = getvar(cf_in, cn_vlon2d, 1,    npiglo, npjglo)
+  zlat(:,:) = getvar(cf_in, cn_vlat2d, 1,    npiglo, npjglo)
+  zvar(:,:) = getvar(cf_in, cv_in,     ilev, npiglo, npjglo)
 
   DO jj=1,npjglo
+     iindex = MINLOC( ABS(zlon(:,jj) + 180 ),1 ) ! find the discontinuity in lon array
+     itmp   = npiglo - iindex + 1
 
-     zindex = MINLOC( ABS(zlon(:,jj) + 180 ),1 ) ! find the discontinuity in lon array
-     ztmp   = npiglo - zindex + 1
+     zlonout(1:itmp,jj) = zlon(iindex:npiglo,jj) ; zlonout(itmp+1:npiglo,jj) = zlon(1:iindex-1,jj)
+     zlonout(npiglo+1:npiglo+itmp  ,jj) = zlon(iindex:npiglo,jj) + 360. 
+     zlonout(npiglo+itmp+1:npiglox2,jj) = zlon(1:iindex-1,   jj) + 360.
 
-     zlonout(1:ztmp,jj) = zlon(zindex:npiglo,jj) ; zlonout(ztmp+1:npiglo,jj) = zlon(1:zindex-1,jj)
-     zlonout(npiglo+1:npiglo+ztmp,jj) = zlon(zindex:npiglo,jj) + 360. 
-     zlonout(npiglo+ztmp+1:npiglox2,jj) = zlon(1:zindex-1,jj) + 360.
+     zlatout(1:itmp,jj) = zlat(iindex:npiglo,jj) ; zlatout(itmp+1:npiglo,jj) = zlat(1:iindex-1,jj)
+     zlatout(npiglo+1:npiglo+itmp,  jj) = zlat(iindex:npiglo,jj)  
+     zlatout(npiglo+itmp+1:npiglox2,jj) = zlat(1:iindex-1,   jj) 
 
-     zlatout(1:ztmp,jj) = zlat(zindex:npiglo,jj) ; zlatout(ztmp+1:npiglo,jj) = zlat(1:zindex-1,jj)
-     zlatout(npiglo+1:npiglo+ztmp,jj) = zlat(zindex:npiglo,jj)  
-     zlatout(npiglo+ztmp+1:npiglox2,jj) = zlat(1:zindex-1,jj) 
-
-     zvarout(1:ztmp,jj) = zvar(zindex:npiglo,jj) ; zvarout(ztmp+1:npiglo,jj) = zvar(1:zindex-1,jj)
-     zvarout(npiglo+1:npiglo+ztmp,jj) = zvar(zindex:npiglo,jj)  
-     zvarout(npiglo+ztmp+1:npiglox2,jj) = zvar(1:zindex-1,jj) 
-
+     zvarout(1:itmp,jj) = zvar(iindex:npiglo,jj) ; zvarout(itmp+1:npiglo,jj) = zvar(1:iindex-1,jj)
+     zvarout(npiglo+1:npiglo+itmp,  jj) = zvar(iindex:npiglo,jj)  
+     zvarout(npiglo+itmp+1:npiglox2,jj) = zvar(1:iindex-1,   jj) 
   END DO
 
   ! Special treatement for ORCA2
 
-  IF ( ( npiglo .EQ. 182 ) .AND. ( npjglo .EQ. 149 ) ) THEN
-     PRINT *, 'Assuming that config is ORCA2'
+  IF ( ( npiglo == 182 ) .AND. ( npjglo == 149 ) ) THEN
+     PRINT *, 'Assuming that this config is ORCA2 !'
 
-     ALLOCATE( zvarwork(npiglox2,npjglo),zlonwork(npiglox2,npjglo),zlatwork(npiglox2,npjglo) )
+     ALLOCATE( zvarwork(npiglox2,npjglo), zlonwork(npiglox2,npjglo), zlatwork(npiglox2,npjglo) )
 
      !! init the arryas
      zlonwork(:,:) = zlonout(:,:)
@@ -137,20 +159,20 @@ PROGRAM cdf2matlab
      zlatwork(130,:) = zlatout(131,:) ; zlatwork(npiglo+130,:) = zlatout(npiglo+131,:)
      zvarwork(130,:) = zvarout(131,:) ; zvarwork(npiglo+130,:) = zvarout(npiglo+131,:)
 
-   !! swapping the arrays
-   zlonout(:,:) = zlonwork(:,:)
-   zlatout(:,:) = zlatwork(:,:)
-   zvarout(:,:) = zvarwork(:,:)
+     !! swapping the arrays
+     zlonout(:,:) = zlonwork(:,:)
+     zlatout(:,:) = zlatwork(:,:)
+     zvarout(:,:) = zvarwork(:,:)
 
-   ENDIF
+  ENDIF
+ 
+  ierr = putvar(ncout,id_varout(1), zlonout, 1, npiglox2, npjglo)
+  ierr = putvar(ncout,id_varout(2), zlatout, 1, npiglox2, npjglo)
+  ierr = putvar(ncout,id_varout(3), zvarout, 1, npiglox2, npjglo)
 
-  ierr=putvar(ncout,id_varout(1), zlonout, 1, npiglox2, npjglo)
-  ierr=putvar(ncout,id_varout(2), zlatout, 1, npiglox2, npjglo)
-  ierr=putvar(ncout,id_varout(3), zvarout, 1, npiglox2, npjglo)
-
-  timean=getvar1d(cfile,'time_counter',1)
-  ierr=putvar1d(ncout,timean,1,'T')
-  istatus = closeout(ncout)
+  tim  = getvar1d(cf_in, cn_vtimec, 1     )
+  ierr = putvar1d(ncout, tim,       1, 'T')
+  ierr = closeout(ncout)
 
   PRINT *, 'Tip : in matlab, do not plot the last line (e.g. maximum northern latitude) '
 

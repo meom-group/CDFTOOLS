@@ -1,160 +1,203 @@
 PROGRAM cdfgeo_uv
-  !!---------------------------------------------------------------------------
-  !!         ***  PROGRAM  cdfgeo_uv  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfgeo_uv  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the ug and vg component of the geostrophic 
+  !!               velocity from the SSH field
   !!
-  !!  **  Purpose: Compute the ug and vg component of the geostrophic velocity
-  !!               from the SSH field
-  !! 
-  !!  **  Method :  ug = -g/f * d(ssh)/dy
-  !!                vg =  g/f * d(ssh)/dx
-  !!  
+  !!  ** Method  : ug = -g/f * d(ssh)/dy
+  !!               vg =  g/f * d(ssh)/dx
+  !!
   !!  **  Note : ug is located on a V grid point
-  !!             vg                 U grid point 
+  !!             vg                 U grid point
   !!
   !!
-  !! history :
-  !!   Original :  J. Jouanno (Feb 2008)
-  !     remark JMM : use of fmask ? use of ff ?  
-  !!---------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 02/2008  : J. Juanno    : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic. and bug fix
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER :: ji,jj                                !: dummy loop index
-  INTEGER :: npiglo, npjglo , npk                 !: size of the domain
-  INTEGER :: narg, iargc, ncoutu, ncoutv , ierr              !: 
-  INTEGER, DIMENSION(1) ::  ipk, id_varoutu ,  id_varoutv         ! 
 
-  REAL(kind=8), DIMENSION(:,:), ALLOCATABLE  :: e1u, e2v , ff !, e1t, e2t  !: metrics
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: glamt, gphit , glamv , gphiv , glamu , gphiu      !: longitude latitude
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: un, vn  
-  REAL(KIND=4) , DIMENSION (:), ALLOCATABLE  :: dep 
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: sshn , fmask 
-  REAL(KIND=4) ,DIMENSION(1)                 :: tim
-  REAL(KIND=4)                               :: g 
-  CHARACTER(LEN=256) :: cfilt
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'
-  CHARACTER(LEN=256) :: cfiloutu='ugeo.nc' , cfileoutv='vgeo.nc'
-  CHARACTER(LEN=256) :: cvart='sossheig', cvaru='vozocrtx', cvarv='vomecrty' 
+  INTEGER(KIND=4)                           :: ji, jj, jt     ! dummy loop index
+  INTEGER(KIND=4)                           :: npiglo, npjglo ! size of the domain
+  INTEGER(KIND=4)                           :: npk, npt       ! size of the domain
+  INTEGER(KIND=4)                           :: narg, iargc    ! browse line
+  INTEGER(KIND=4)                           :: ncoutu         ! ncid for ugeo file
+  INTEGER(KIND=4)                           :: ncoutv         ! ncid for vgeo file
+  INTEGER(KIND=4)                           :: ierr           ! error status
+  INTEGER(KIND=4), DIMENSION(1)             :: ipk            ! levels of output vars
+  INTEGER(KIND=4), DIMENSION(1)             :: id_varoutu     ! varid for ugeo
+  INTEGER(KIND=4), DIMENSION(1)             :: id_varoutv     ! varid for vgeo
 
-  TYPE(variable), DIMENSION(1)      :: typvaru ,typvarv     !: structure for attributes
+  REAL(KIND=4)                              :: grav           ! gravity
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim            ! time counter
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1u, e2v, ff   ! horiz metrics, coriolis (f-point)
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamu, gphiu   ! longitude latitude u-point
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamv, gphiv   ! longitude latitude v-point
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn         ! velocity components
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsshn          ! ssh
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: umask, vmask   ! mask at u and v points
 
-  g=9.81
+  CHARACTER(LEN=256)                        :: cf_tfil        ! input file name
+  CHARACTER(LEN=256)                        :: cf_uout='ugeo.nc' 
+  CHARACTER(LEN=256)                        :: cf_vout='vgeo.nc'
 
-  !!
+  TYPE(variable), DIMENSION(1)              :: stypvaru       ! attributes for ugeo
+  TYPE(variable), DIMENSION(1)              :: stypvarv       ! attributes for vgeo
+
+  LOGICAL                                   :: lchk           ! file existence flag
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  grav = 9.81  ! gravity
+
   narg = iargc()
-  IF ( narg < 1 ) THEN
-     PRINT *,' USAGE : cdfgeo-uv fileT'
-     PRINT *,'        Read sossheig on grid T'
-     PRINT *,'        Produce 2 cdf file ugeo.nc and vgeo.nc with vozocrtx and vomecrty variables'
-     PRINT *,'        Names of the variable have been chosen to be compatible with cdfeke, but note '
-     PRINT *,'        that Ugeo and Vgeo are now respectively on V and U grid points'
-     PRINT *,'        Need mesh_hgr.nc mesh_zgr.nc'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfgeo-uv T-file'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute the geostrophic velocity component from the gradient '
+     PRINT *,'       of the SSH read in the input file. Note that in the C-grid '
+     PRINT *,'       output file, the zonal component is located on V point and the'
+     PRINT *,'       meridional component is located on U point.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       T-file : netcdf file with SSH.' 
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       - netcdf file : ', TRIM(cf_uout) 
+     PRINT *,'           variables : ', TRIM(cn_vozocrtx)
+     PRINT *,'             *** CAUTION:  this variable is located on V-point ***'
+     PRINT *,'       - netcdf file : ', TRIM(cf_vout) 
+     PRINT *,'           variables : ', TRIM(cn_vomecrty)
+     PRINT *,'             *** CAUTION:  this variable is located on U-point ***'
      STOP
   ENDIF
 
-  CALL getarg(1, cfilt)
+  CALL getarg(1, cf_tfil)
 
-  npiglo = getdim(cfilt,'x')
-  npjglo = getdim(cfilt,'y')
-  npk    = getdim(cfilt,'depth') 
+  lchk = chkfile(cn_fhgr)
+  lchk = chkfile(cn_fzgr) .OR. lchk
+  lchk = chkfile(cf_tfil) .OR. lchk
+  IF ( lchk ) STOP ! missing file
 
-  ipk(1)=1
-  
-  typvaru(1)%name=TRIM(cvaru)
-  typvaru(1)%units='m/s'
-  typvaru(1)%missing_value=0.
-  typvaru(1)%valid_min= 0.
-  typvaru(1)%valid_max= 20.
-  typvaru(1)%long_name='Zonal_Geostrophic_Velocity'
-  typvaru(1)%short_name=TRIM(cvaru)
-  typvaru(1)%online_operation='N/A'
-  typvaru(1)%axis='TYX'
-  
-  typvarv(1)%name=TRIM(cvarv)
-  typvarv(1)%units='m/s'
-  typvarv(1)%missing_value=0.
-  typvarv(1)%valid_min= 0.
-  typvarv(1)%valid_max= 20.
-  typvarv(1)%long_name='Meridional_Geostrophic_Velocity'
-  typvarv(1)%short_name=TRIM(cvarv)
-  typvarv(1)%online_operation='N/A'
-  typvarv(1)%axis='TYX'
+  npiglo = getdim(cf_tfil, cn_x)
+  npjglo = getdim(cf_tfil, cn_y)
+  npk    = getdim(cf_tfil, cn_z) 
+  npt    = getdim(cf_tfil, cn_t) 
 
+  ipk(1)                        = 1
+  stypvaru(1)%cname             = TRIM(cn_vozocrtx)
+  stypvaru(1)%cunits            = 'm/s'
+  stypvaru(1)%rmissing_value    = 0.
+  stypvaru(1)%valid_min         = 0.
+  stypvaru(1)%valid_max         = 20.
+  stypvaru(1)%clong_name        = 'Zonal_Geostrophic_Velocity'
+  stypvaru(1)%cshort_name       = TRIM(cn_vozocrtx)
+  stypvaru(1)%conline_operation = 'N/A'
+  stypvaru(1)%caxis             = 'TYX'
+
+  stypvarv(1)%cname             = TRIM(cn_vomecrty)
+  stypvarv(1)%cunits            = 'm/s'
+  stypvarv(1)%rmissing_value    = 0.
+  stypvarv(1)%valid_min         = 0.
+  stypvarv(1)%valid_max         = 20.
+  stypvarv(1)%clong_name        = 'Meridional_Geostrophic_Velocity'
+  stypvarv(1)%cshort_name       = TRIM(cn_vomecrty)
+  stypvarv(1)%conline_operation = 'N/A'
+  stypvarv(1)%caxis             = 'TYX'
 
   ! Allocate the memory
-  ALLOCATE ( e1u(npiglo,npjglo) ,e2v(npiglo,npjglo) )
+  ALLOCATE ( e1u(npiglo,npjglo), e2v(npiglo,npjglo) )
   ALLOCATE ( ff(npiglo,npjglo) )
-  ALLOCATE ( glamt(npiglo,npjglo), gphit(npiglo,npjglo)  )
   ALLOCATE ( glamu(npiglo,npjglo), gphiu(npiglo,npjglo)  )
   ALLOCATE ( glamv(npiglo,npjglo), gphiv(npiglo,npjglo)  )
-  ALLOCATE ( un(npiglo,npjglo)  , vn(npiglo,npjglo)  )
-  ALLOCATE ( sshn(npiglo,npjglo) , fmask(npiglo,npjglo) )
+  ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo)  )
+  ALLOCATE ( zsshn(npiglo,npjglo) )
+  ALLOCATE ( umask(npiglo,npjglo), vmask(npiglo,npjglo) )
 
   ! Read the metrics from the mesh_hgr file
-  e2v=  getvar(coordhgr, 'e2v', 1,npiglo,npjglo)
-  e1u=  getvar(coordhgr, 'e1u', 1,npiglo,npjglo)
-  ff(:,:)  = getvar(coordhgr, 'ff', 1,npiglo,npjglo) 
- 
-  ! and the coordinates   from the mesh_hgr file
-  glamt = getvar(coordhgr, 'glamt', 1,npiglo,npjglo)
-  gphit = getvar(coordhgr, 'gphit', 1,npiglo,npjglo)
- 
-  ! create output fileset
-  glamu=getvar(coordhgr,'glamu',1,npiglo,npjglo)
-  gphiu=getvar(coordhgr,'gphiu',1,npiglo,npjglo)
-  dep=getvare3(coordzgr,'gdept',1)
+  e2v   = getvar(cn_fhgr, cn_ve2v,  1, npiglo, npjglo)
+  e1u   = getvar(cn_fhgr, cn_ve1u,  1, npiglo, npjglo)
+  ff    = getvar(cn_fhgr, cn_vff,   1, npiglo, npjglo) 
 
-  ncoutu =create(cfiloutu,cfilt,npiglo,npjglo,0)
-  ierr= createvar(ncoutu,typvaru(1),1,ipk,id_varoutu )
-  ierr= putheadervar(ncoutu,cfilt,npiglo,npjglo,0,pnavlon=glamv,pnavlat=gphiv)
+  glamu = getvar(cn_fhgr, cn_glamu, 1, npiglo, npjglo)
+  gphiu = getvar(cn_fhgr, cn_gphiu, 1, npiglo, npjglo)
+  glamv = getvar(cn_fhgr, cn_glamv, 1, npiglo, npjglo)
+  gphiv = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
 
-  tim=getvar1d(cfilt,'time_counter',1)
-  ierr=putvar1d(ncoutu,tim,1,'T')
+  ! create output filesets
+  ! U geo  ! @ V-point !
+  ncoutu = create      (cf_uout, cf_tfil,  npiglo, npjglo, 0                              )
+  ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu                     )
+  ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
 
-  glamv=getvar(coordhgr,'glamv',1,npiglo,npjglo)
-  gphiv=getvar(coordhgr,'gphiv',1,npiglo,npjglo)
-  dep=getvare3(coordzgr,'gdept',1)
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncoutu,  tim,       npt, 'T')
 
-  ncoutv =create(cfileoutv,cfilt,npiglo,npjglo,0)
-  ierr= createvar(ncoutv,typvarv(1),1,ipk,id_varoutv )
-  ierr= putheadervar(ncoutv,cfilt,npiglo,npjglo,0,pnavlon=glamu,pnavlat=gphiu)
+  ! V geo  ! @ U-point !
+  ncoutv = create      (cf_vout, cf_tfil,  npiglo, npjglo, 0                              )
+  ierr   = createvar   (ncoutv,  stypvarv, 1,      ipk,    id_varoutv                     )
+  ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
 
-  tim=getvar1d(cfilt,'time_counter',1)
-  ierr=putvar1d(ncoutv,tim,1,'T')
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncoutv,  tim,       npt, 'T')
 
   ! Read ssh
-  sshn(:,:) =  getvar(cfilt, cvart,1, npiglo,npjglo)
+  DO jt=1,npt
+     zsshn = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
 
-  ! compute the masks
-  fmask=0.
-  DO jj = 1, npjglo - 1
-     DO ji = 1, npiglo - 1
-        fmask(ji,jj)=0.
-        fmask(ji,jj)= sshn(ji,jj)*sshn(ji,jj+1)*sshn(ji+1,jj)
-        IF (fmask(ji,jj) /= 0.) fmask(ji,jj)=1.
-     ENDDO
-  ENDDO
+     IF ( jt == 1 ) THEN
+        ! compute the masks
+        umask=0. ; vmask = 0
+        DO jj = 1, npjglo 
+           DO ji = 1, npiglo - 1
+              umask(ji,jj) = zsshn(ji,jj)*zsshn(ji+1,jj)
+              IF (umask(ji,jj) /= 0.) umask(ji,jj) = 1.
+           END DO
+        END DO
 
-  ! Calculation of geostrophic velocity :
-  un(:,:) = 0.
-  vn(:,:) = 0.
+        DO jj = 1, npjglo - 1
+           DO ji = 1, npiglo
+              vmask(ji,jj) = zsshn(ji,jj)*zsshn(ji,jj+1)
+              IF (vmask(ji,jj) /= 0.) vmask(ji,jj) = 1.
+           END DO
+        END DO
+        ! e1u and e1v are modified to simplify the computation below
+        DO jj=2, npjglo - 1
+           DO ji=2, npiglo - 1
+              e1u(ji,jj)= 2.* grav * umask(ji,jj) / ( ff(ji,jj) + ff(ji,  jj-1) ) / e1u(ji,jj)
+              e2v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ff(ji,jj) + ff(ji-1,jj  ) ) / e2v(ji,jj)
+           END DO
+        END DO
+     END IF
 
-  DO jj = 2, npjglo - 1
-    DO ji = 2, npiglo -1 
-               vn(ji,jj) =   g * fmask(ji,jj) * ( sshn(ji+1,jj  ) -sshn(ji,jj) )  / ( ff(ji,jj) * e1u(ji,jj) ) 
-               un(ji,jj) = - g * fmask(ji,jj) * ( sshn(ji  ,jj+1) -sshn(ji,jj) )  / ( ff(ji,jj) * e2v(ji,jj) )
-    END DO
-  END DO
-     
-  ! write un and vn  ...
-  ierr = putvar(ncoutu,id_varoutu(1),un(:,:),1,npiglo,npjglo)
-  ierr = putvar(ncoutv,id_varoutv(1),vn(:,:),1,npiglo,npjglo)
+     ! Calculation of geostrophic velocity :
+     un(:,:) = 0.
+     vn(:,:) = 0.
+
+     DO jj = 2,npjglo - 1
+        DO ji = 2,npiglo -1
+           vn(ji,jj) = e1u(ji,jj) * ( zsshn(ji+1,jj  ) - zsshn(ji,jj) ) 
+           un(ji,jj) = e2v(ji,jj) * ( zsshn(ji  ,jj+1) - zsshn(ji,jj) ) 
+        END DO
+     END DO
+
+     ! write un and vn  ...
+     ierr = putvar(ncoutu, id_varoutu(1), un(:,:), 1, npiglo, npjglo, ktime=jt)
+     ierr = putvar(ncoutv, id_varoutv(1), vn(:,:), 1, npiglo, npjglo, ktime=jt)
+
+  END DO  ! time loop
 
   ierr = closeout(ncoutu)
   ierr = closeout(ncoutv)

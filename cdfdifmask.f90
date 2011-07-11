@@ -1,102 +1,106 @@
 PROGRAM cdfdifmask
-  !!-------------------------------------------------------------------
-  !!             ***  PROGRAM cdfdifmask  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfdifmask  ***
+  !!=====================================================================
+  !!  ** Purpose : Build the difference between 2 mask files
   !!
-  !!  **  Purpose: Build mask file from a salinity output
-  !!  
-  !!  **  Method:  Read vosaline and set tmask to 1 where sal is not 0
-  !!               then umask, vmask and fmask are deduced from tmask
-  !!               REM: the result may be locally different for fmask than
-  !!                   fmask produced online as there are computed on line
   !!
-  !! history: 
-  !!     Original :   J.M. Molines November 2005
-  !!-------------------------------------------------------------------
-  !!  $Rev: 255 $
-  !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $
-  !!  $Id: cdfdifmask.f90 255 2009-07-21 15:49:27Z molines $
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : ??????   : ???          : Original code
+  !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2010, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: ji,jj,jk,jt, jvar                   !: dummy loop index
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc , ntags                 !: 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER, DIMENSION(4) ::  ipk, &                 !: outptut variables : number of levels,
-       &                    id_varout              !: ncdf varid's
-  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE ::     zmask,zmask2            !: 2D mask at current level
 
-  CHARACTER(LEN=256)                 :: cvar       !: array of var name
-  CHARACTER(LEN=256)                 :: cfile1, cfile2, cline,cfileout='mask_diff.nc'
-  TYPE(variable), DIMENSION(4) :: typvar
-  REAL(KIND=4) ,DIMENSION(1)                  :: timean
+  INTEGER(KIND=4)                            :: jk, jvar               ! dummy loop index
+  INTEGER(KIND=4)                            :: ierr                   ! working integer
+  INTEGER(KIND=4)                            :: narg, iargc            ! browsing command line
+  INTEGER(KIND=4)                            :: npiglo, npjglo, npk    ! size of the domain
+  INTEGER(KIND=4)                            :: ncout                  ! ncid of output file
+  INTEGER(KIND=4), DIMENSION(4)              :: ipk                    ! outptut variables : levels,
+  INTEGER(KIND=4), DIMENSION(4)              :: id_varout              ! ncdf varid's
 
-  INTEGER    :: ncout, npt
-  INTEGER    :: istatus
-  REAL(4) :: ss
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zmask, zmask2          ! 2D mask at current level
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                    ! dummy time variable
 
-  !!  Read command line
-  narg= iargc()
+  CHARACTER(LEN=256)                         :: cf_out='mask_diff.nc'  ! Output file name
+  CHARACTER(LEN=256)                         :: cf_msk1, cf_msk2       ! name of input files
+  CHARACTER(LEN=256)                         :: cv_in                  ! variable name
+
+  TYPE(variable), DIMENSION(4)               :: stypvar                ! data structure
+
+  LOGICAL                                    :: lchk                   ! checking file existence
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfdifmask  mask1 mask2'
+     PRINT *,' usage : cdfdifmask  mask1 mask2'
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute the difference between 2 mask files.' 
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       mask1, mask2 : model files to be compared.' 
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        none'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       variables : tmask, umask, vmask, fmask'
      STOP
   ENDIF
+  CALL getarg (1, cf_msk1)
+  CALL getarg (2, cf_msk2)
 
-  CALL getarg (1, cfile1)
-  CALL getarg (2, cfile2)
-  npiglo= getdim (cfile1,'x')
-  npjglo= getdim (cfile1,'y')
-  npk   = getdim (cfile1,'z')
+  lchk =           chkfile ( cf_msk1 )
+  lchk = lchk .OR. chkfile ( cf_msk2 )
+  IF ( lchk ) STOP ! missing file
 
-   print *, npiglo, npjglo, npk
+  npiglo = getdim (cf_msk1, cn_x)
+  npjglo = getdim (cf_msk1, cn_y)
+  npk    = getdim (cf_msk1, 'z' )  ! mask file have a z depth dim instead of depth ...
 
-  ipk(1:4)      = npk
-  typvar(1)%name='tmask'
-  typvar(2)%name='umask'
-  typvar(3)%name='vmask'
-  typvar(4)%name='fmask'
-  typvar(1:4)%units='1/0'
-  typvar(1:4)%missing_value=9999.
-  typvar(1:4)%valid_min= 0.
-  typvar(1:4)%valid_max= 1.
-  typvar(1)%long_name='tmask'
-  typvar(2)%long_name='umask'
-  typvar(3)%long_name='vmask'
-  typvar(4)%long_name='fmask'
-  typvar(1)%short_name='tmask'
-  typvar(2)%short_name='umask'
-  typvar(3)%short_name='vmask'
-  typvar(4)%short_name='fmask'
-  typvar(1:4)%online_operation='N/A'
-  typvar(1:4)%axis='TZYX'
-  typvar(1:4)%precision='by'
+  ipk(:) = npk
+  stypvar(:)%cunits            = '1/0'
+  stypvar(:)%rmissing_value    = 9999.
+  stypvar(:)%valid_min         = 0.
+  stypvar(:)%valid_max         = 1.
+  stypvar(:)%conline_operation = 'N/A'
+  stypvar(:)%caxis             = 'TZYX'
+  stypvar(:)%cprecision        = 'by'
 
-  ncout =create(cfileout, cfile1,npiglo,npjglo,npk,cdep='z',cdepvar='nav_lev')
+  stypvar(1)%cname='tmask' ;  stypvar(1)%clong_name='tmask' ;  stypvar(1)%cshort_name='tmask'
+  stypvar(2)%cname='umask' ;  stypvar(2)%clong_name='umask' ;  stypvar(2)%cshort_name='umask'
+  stypvar(3)%cname='vmask' ;  stypvar(3)%clong_name='vmask' ;  stypvar(3)%cshort_name='vmask'
+  stypvar(4)%cname='fmask' ;  stypvar(4)%clong_name='fmask' ;  stypvar(4)%cshort_name='fmask'
 
-  ierr= createvar(ncout ,typvar,4, ipk,id_varout )
-  ierr= putheadervar(ncout, cfile1, npiglo, npjglo,npk,cdep='nav_lev')
+  ncout = create      (cf_out, cf_msk1, npiglo, npjglo, npk,      cdep='z', cdepvar='nav_lev')
+  ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout                            )
+  ierr  = putheadervar(ncout,  cf_msk1, npiglo, npjglo, npk,      cdep='nav_lev'             )
 
+  ALLOCATE (zmask(npiglo,npjglo), zmask2(npiglo,npjglo))
 
-  ALLOCATE (zmask(npiglo,npjglo),zmask2(npiglo,npjglo))
-
-  npt= 0
   DO jvar=1,4
-     cvar=typvar(jvar)%name
-     PRINT *, ' making difference for ', TRIM(cvar)
-  DO jk=1, npk
-     PRINT * ,'jk = ', jk
-     zmask(:,:)= getvar(cfile1, cvar,  jk ,npiglo, npjglo)
-     zmask2(:,:)= getvar(cfile2, cvar,  jk ,npiglo, npjglo)
-     zmask(:,:)= zmask2(:,:) - zmask(:,:)
-     ierr=putvar(ncout,id_varout(jvar), zmask, jk ,npiglo, npjglo)
-  END DO  ! loop to next level
+     cv_in = stypvar(jvar)%cname
+     PRINT *, ' making difference for ', TRIM(cv_in)
+     DO jk=1, npk
+        PRINT * ,'jk = ', jk
+        zmask(:,:)  = getvar(cf_msk1, cv_in, jk, npiglo, npjglo)
+        zmask2(:,:) = getvar(cf_msk2, cv_in, jk, npiglo, npjglo)
+        zmask(:,:)  = zmask2(:,:) - zmask(:,:)
+        ierr        = putvar(ncout, id_varout(jvar), zmask, jk, npiglo, npjglo)
+     END DO  ! loop to next level
   END DO
-  timean(:)=0.
-  ierr=putvar1d(ncout,timean,1,'T')
-  istatus = closeout(ncout)
 
+  tim(:) = 0.
+  ierr   = putvar1d(ncout, tim, 1, 'T')
+  ierr   = closeout(ncout)
 
 END PROGRAM cdfdifmask

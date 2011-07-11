@@ -1,324 +1,370 @@
 MODULE cdftools
-  !!---------------------------------------------------------------------------
-  !!             ***   MODULE  cdftools  ***
-  !!    
-  !!   Purpose : this module holds subroutine that corresponds to cdftools.
-  !!             for example cdf_findij is the subroutine equivalent to cdffindij
-  !!
-  !!   Method : when necessery or usefull, an existing cdftools is transformed in
-  !!            a callable routine. We decided to call the routine cdf_xxxx, in
-  !!            order to make the difference with the corresponding program
-  !!  
-  !!  history: Original: J.M. Molines, A. Melet-Dieudonne (May 2010)
-  !!---------------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
+  !!======================================================================
+  !!                     ***  MODULE  cdftools  ***
+  !! This module holds subroutine that corresponds to cdftools.
+  !! For example cdf_findij is the subroutine equivalent to cdffindij 
+  !!=====================================================================
+  !! History : 2.1  !  05/2010  : J.M. Molines, A. Melet : Original
+  !!           3.0  !  12/2010  : J.M. Molines : Doctor + Lic.
+  !!----------------------------------------------------------------------
+  !!----------------------------------------------------------------------
+  !!   routines      : description
+  !!   cdf_findij    : the routine version of cdffindij
+  !!   NearestPoint : determine the nearest point from a lon lat location
+  !!   dist          : compute the distance along othodromic route
+  !!----------------------------------------------------------------------
   USE cdfio
+  USE modcdfnames
+
   IMPLICIT NONE
 
   PRIVATE     
   ! list of public subroutines that can be called
-  PUBLIC :: cdf_findij 
+  PUBLIC  :: cdf_findij 
+  PRIVATE :: NearestPoint
+  PRIVATE :: dist 
 
-  CONTAINS
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2010, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
 
-  SUBROUTINE cdf_findij ( pxmin, pxmax, pymin, pymax,             &
-             &            kimin, kimax, kjmin, kjmax,             &
-             &                       cd_coord, cd_point )
-   !!--------------------------------------------------------------------------
-   !!             ***   SUBROUTINE CDF_FINDIJ   ***
-   !!           
-   !!   Purpose : the routine equivalent of cdffindij
-   !!--------------------------------------------------------------------------
-   !! Arguments
-    REAL(KIND=4), INTENT(in) :: pxmin, pxmax, pymin, pymax   !: geographical window in lon-lat
-    INTEGER,     INTENT(out) :: kimin, kimax, kjmin, kjmax   !: equivalent in model coordinates
-    CHARACTER(*), OPTIONAL, INTENT(in) :: cd_coord !: coordinate file name (default coordinates.nc)
-    CHARACTER(*), OPTIONAL, INTENT(in) :: cd_point !: point type (default F )
+CONTAINS
 
-  !! * Local variables
-  INTEGER :: niter
-  INTEGER :: imin, imax, jmin, jmax
-  INTEGER, SAVE  :: iloc, jloc
-  INTEGER :: npiglo, npjglo
-  INTEGER, PARAMETER :: jpitermax=15
+  SUBROUTINE cdf_findij ( pxmin, pxmax, pymin, pymax,           &
+       &         kimin, kimax, kjmin, kjmax, cd_coord, cd_point )
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE cdf_findij  ***
+    !!
+    !! ** Purpose :  the routine equivalent of cdffindij 
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=4),                  INTENT(in) :: pxmin, pxmax, pymin, pymax !: geographical window in lon-lat
+    INTEGER(KIND=4),              INTENT(out) :: kimin, kimax, kjmin, kjmax !: equivalent in model coordinates
+    CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_coord                   !: coordinate file name (D: cn_fcoo)
+    CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_point                   !: point type           (D: F )
 
-  REAL(KIND=8)                              :: xmin, xmax, ymin, ymax, rdis
-  REAL(KIND=4)                              :: glamfound, glamin, glamax
-  REAL(KIND=8)                              :: glam0, emax
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: glam, gphi, e1, e2
- 
-  CHARACTER(LEN=256) :: cdum, coord='coordinates.nc', ctype='F'
-
-  LOGICAL  :: lagain, lbord
-
-  xmin = pxmin
-  xmax = pxmax
-  ymin = pymin
-  ymax = pymax
-
-  IF ( PRESENT( cd_coord) ) coord=cd_coord
-  IF ( PRESENT( cd_point) ) ctype=cd_point
-
-  npiglo= getdim (coord,'x')
-  npjglo= getdim (coord,'y')
+    INTEGER(KIND=4)                           :: initer
+    INTEGER(KIND=4)                           :: imin, imax, jmin, jmax
+    INTEGER(KIND=4), SAVE                     :: iloc, jloc
+    INTEGER(KIND=4)                           :: ipiglo, ipjglo
+    INTEGER(KIND=4), PARAMETER                :: jp_itermax=15
   
-  ALLOCATE (glam(npiglo,npjglo), gphi(npiglo,npjglo) )
-  ALLOCATE (e1(npiglo,npjglo), e2(npiglo,npjglo) )
+    REAL(KIND=8)                              :: dl_xmin, dl_xmax, dl_ymin, dl_ymax
+    REAL(KIND=8)                              :: dl_dis
+    REAL(KIND=8)                              :: dl_glam0, dl_emax
+    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_glam, dl_gphi, dl_e1, dl_e2
 
-  SELECT CASE ( ctype )
-  CASE ('T' , 't' )
-     glam(:,:) = getvar(coord, 'glamt',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphit',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1t'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2t'  ,1,npiglo,npjglo)
-  CASE ('U','u' )
-     glam(:,:) = getvar(coord, 'glamu',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphiu',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1u'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2u'  ,1,npiglo,npjglo)
-  CASE ('V','v' )
-     glam(:,:) = getvar(coord, 'glamv',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphiv',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1v'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2v'  ,1,npiglo,npjglo)
-  CASE ('F','f' )
-     glam(:,:) = getvar(coord, 'glamf',1,npiglo,npjglo)
-     gphi(:,:) = getvar(coord, 'gphif',1,npiglo,npjglo)
-     e1  (:,:) = getvar(coord, 'e1f'  ,1,npiglo,npjglo)
-     e2  (:,:) = getvar(coord, 'e2f'  ,1,npiglo,npjglo)
-  CASE DEFAULT
-     PRINT *,' ERROR : type of point not known: ', TRIM(ctype)
-  END SELECT
-  ! work with longitude between 0 and 360 to avoid  the date line.
-    WHERE( glam < 0 ) glam=glam+360.
-  ! For Orca grid, the longitude of ji=1 is about 70 E
-  glam0=glam(1, npjglo/2)
-  WHERE( glam < glam0 ) glam=glam+360.
+    REAL(KIND=4)                              :: zglamfound, zglamin, zglamax
 
-    IF (xmin < 0.) xmin = xmin +360.
-    IF (xmax < 0.) xmax = xmax +360.
-    
-    IF (xmin < glam0) xmin = xmin +360.
-    IF (xmax < glam0) xmax = xmax +360.
+    CHARACTER(LEN=256)                        :: cl_type='F'
+
+    LOGICAL                                   :: ll_again, ll_bnd
+    !!--------------------------------------------------------------------------
+    CALL ReadCdfNames()
+
+    dl_xmin = pxmin
+    dl_xmax = pxmax
+    dl_ymin = pymin
+    dl_ymax = pymax
+
+    IF ( PRESENT( cd_coord) ) cn_fcoo=cd_coord
+    IF ( PRESENT( cd_point) ) cl_type=cd_point
+
+    IF (chkfile (cn_fcoo) ) STOP ! missing file
+
+    ipiglo= getdim (cn_fcoo,cn_x)
+    ipjglo= getdim (cn_fcoo,cn_y)
+
+    ALLOCATE (dl_glam(ipiglo,ipjglo), dl_gphi(ipiglo,ipjglo) )
+    ALLOCATE (dl_e1  (ipiglo,ipjglo), dl_e2  (ipiglo,ipjglo) )
+
+    SELECT CASE ( cl_type )
+    CASE ('T' , 't' )
+       dl_glam(:,:) = getvar(cn_fcoo, cn_glamt, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphit, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1t,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2t,  1, ipiglo, ipjglo)
+    CASE ('U','u' )
+       dl_glam(:,:) = getvar(cn_fcoo, cn_glamu, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphiu, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1u,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2u,  1, ipiglo, ipjglo)
+    CASE ('V','v' )
+       dl_glam(:,:) = getvar(cn_fcoo, cn_glamv, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphiv, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1v,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2v,  1, ipiglo, ipjglo)
+    CASE ('F','f' )
+       dl_glam(:,:) = getvar(cn_fcoo, cn_glamf, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphif, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1f,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2f,  1, ipiglo, ipjglo)
+    CASE DEFAULT
+       PRINT *,' ERROR : type of point not known: ', TRIM(cl_type)
+    END SELECT
+
+    ! work with longitude between 0 and 360 to avoid  the date line.
+    WHERE( dl_glam < 0 ) dl_glam = dl_glam + 360.d0
+
+    ! For Orca grid, the longitude of ji=1 is about 70 E
+    dl_glam0 = dl_glam(1, ipjglo/2)
+    WHERE( dl_glam < dl_glam0 ) dl_glam =dl_glam + 360.d0
+
+    IF (dl_xmin < 0.) dl_xmin = dl_xmin + 360.d0
+    IF (dl_xmax < 0.) dl_xmax = dl_xmax + 360.d0
+
+    IF (dl_xmin < dl_glam0) dl_xmin = dl_xmin + 360.d0
+    IF (dl_xmax < dl_glam0) dl_xmax = dl_xmax + 360.d0
 
 
-  lagain = .TRUE.
-  niter = 1
-  DO WHILE (lagain)
-     CALL Nearestpoint(xmin,ymin,npiglo,npjglo,glam,gphi,iloc,jloc,lbord)
-     ! distance between the target point and the nearest point
-     rdis=dist(xmin,glam(iloc,jloc),ymin,gphi(iloc,jloc) ) ! in km
-     ! typical grid size (diagonal) in the vicinity of nearest point
-     emax= MAX(e1(iloc,jloc),e2(iloc,jloc))/1000.*SQRT(2.) ! in km
+    ! deal with xmin, ymin
+    ll_again = .TRUE.
+    initer = 1
 
-!    rdis = (xmin - glam(iloc,jloc))**2 + (ymin - gphi(iloc,jloc))**2
-!    rdis = SQRT(rdis)
-     IF (rdis  > emax ) THEN
-         glamfound=glam(iloc,jloc) ; IF (glamfound > 180.)  glamfound=glamfound -360.
-        PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc)&
-             &               , iloc, jloc 
-        PRINT *,' Algorithme ne converge pas ', rdis 
-        IF ( niter >=  jpitermax ) STOP ' pas de convergence apres iteration'
-        lagain = .TRUE.
-        niter = niter +1
-        ! change location of first guess point for next interation
-        jloc = (niter -1)* npjglo/niter
-        iloc = (niter -1)* npiglo/jpitermax
-     ELSE
-        PRINT '("#  rdis= ",f8.3," km")', rdis
-        lagain = .FALSE.
-     END IF
-  END DO
-  IF (lbord) THEN
-     WRITE (*,*)'Point  Out of domain or on boundary'
-  ELSE
-     imin=iloc
-     jmin=jloc
-     !      PRINT 9000, 'Long= ',glam(iloc,jloc),' lat = ',gphi(iloc,jloc), iloc, jloc 
-  ENDIF
-  !
-  lagain = .TRUE.
-  niter = 1
-  iloc=npiglo/2 ; jloc=npjglo/2
-  DO WHILE (lagain)
-     CALL Nearestpoint(xmax,ymax,npiglo,npjglo,glam,gphi,iloc,jloc,lbord)
-     ! distance between the target point and the nearest point
-     rdis=dist(xmax,glam(iloc,jloc),ymax,gphi(iloc,jloc) ) ! in km
-     ! typical grid size (diagonal) in the vicinity of nearest point
-     emax= MAX(e1(iloc,jloc),e2(iloc,jloc))/1000.*SQRT(2.) ! in km
-!    rdis = (xmax - glam(iloc,jloc))**2 + (ymax - gphi(iloc,jloc))**2
-!    rdis = SQRT(rdis)
-     IF (rdis >  emax ) THEN
-         glamfound=glam(iloc,jloc) ; IF (glamfound > 180.)  glamfound=glamfound -360.
-        PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc) &
-             &               , iloc, jloc
-        PRINT *,' Algorithme ne converge pas ', rdis
-        IF ( niter >= jpitermax ) STOP ' pas de convergence apres iteration'
-        lagain = .TRUE.
-        niter = niter +1
-        jloc = (niter -1)* npjglo/niter
-        iloc = (niter -1)* npiglo/jpitermax
-     ELSE
-        PRINT '("#  rdis= ",f8.3," km")', rdis
-        lagain = .FALSE.
-     END IF
-  END DO
-  IF (lbord) THEN
-     WRITE (*,*) 'Point  Out of domain or on boundary'
-  ELSE
-     imax=iloc
-     jmax=jloc
-     !      PRINT 9000, 'Long= ',glam(iloc,jloc),' lat = ',gphi(iloc,jloc), iloc, jloc
-  ENDIF
-  
-  PRINT 9001, imin,imax, jmin, jmax
-  kimin=imin ; kimax=imax; kjmin=jmin ; kjmax=jmax
-  glamin=glam(imin,jmin) ;glamax=glam(imax,jmax)
-  IF ( glamin > 180 ) glamin=glamin-360.
-  IF ( glamax > 180 ) glamax=glamax-360.
-  PRINT 9002, glamin, glamax, gphi(imin,jmin),gphi(imax,jmax)
+    DO WHILE (ll_again)
+       CALL NearestPoint(dl_xmin, dl_ymin, ipiglo, ipjglo, dl_glam, dl_gphi, iloc, jloc, ll_bnd)
+
+       ! distance between the target point and the nearest point
+       dl_dis = dist(dl_xmin, dl_glam(iloc,jloc), dl_ymin, dl_gphi(iloc,jloc) ) ! in km
+
+       ! typical grid size (diagonal) in the vicinity of nearest point
+       dl_emax= MAX(dl_e1(iloc,jloc), dl_e2(iloc,jloc))/1000.*SQRT(2.) ! in km
+
+       IF (dl_dis  > dl_emax ) THEN
+          zglamfound = dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound - 360.
+
+          PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc) , iloc, jloc 
+          PRINT *,' Algorithm does''nt converge ', dl_dis
+
+          IF ( initer >= jp_itermax ) THEN
+            PRINT *, ' no convergence after ', jp_itermax,' iterations'
+            iloc     = -1000
+            jloc     = -1000
+            ll_again = .FALSE.
+          ELSE
+            ll_again = .TRUE.
+            initer   = initer +1
+            jloc     = (initer -1)* ipjglo/initer
+            iloc     = (initer -1)* ipiglo/jp_itermax
+          ENDIF
+       ELSE
+          PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
+          ll_again = .FALSE.
+       END IF
+    END DO
+
+    IF (ll_bnd) THEN
+       WRITE (*,*)'Point  Out of domain or on boundary'
+    ELSE
+       imin=iloc
+       jmin=jloc
+    ENDIF
+
+    ! deal with xmax, ymax
+    IF (  pxmin == pxmax .AND. pymin == pymax ) THEN
+      ! job already done with first point
+      imax=imin
+      jmax=jmin
+    ELSE
+    ll_again = .TRUE.
+    initer = 1
+    iloc=ipiglo/2 ; jloc=ipjglo/2
+
+    DO WHILE (ll_again)
+       CALL NearestPoint(dl_xmax, dl_ymax, ipiglo, ipjglo, dl_glam, dl_gphi, iloc, jloc, ll_bnd)
+
+       ! distance between the target point and the nearest point
+       dl_dis = dist(dl_xmax, dl_glam(iloc,jloc), dl_ymax, dl_gphi(iloc,jloc) ) ! in km
+
+       ! typical grid size (diagonal) in the vicinity of nearest point
+       dl_emax = MAX(dl_e1(iloc,jloc),dl_e2(iloc,jloc))/1000.*SQRT(2.) ! in km
+
+       IF (dl_dis >  dl_emax ) THEN
+          zglamfound=dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound -360.
+
+          PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc), iloc, jloc
+          PRINT *,' Algorithm does''nt converge ', dl_dis
+
+          IF ( initer >= jp_itermax ) THEN
+            PRINT *, ' no convergence after ', jp_itermax,' iterations'
+            iloc     = -1000
+            jloc     = -1000
+            ll_again = .FALSE.
+          ELSE
+            ll_again = .TRUE.
+            initer   = initer +1
+            jloc     = (initer -1)* ipjglo/initer
+            iloc     = (initer -1)* ipiglo/jp_itermax
+          ENDIF
+       ELSE
+          PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
+          ll_again = .FALSE.
+       END IF
+    END DO
+    IF (ll_bnd) THEN
+       WRITE (*,*) 'Point  Out of domain or on boundary'
+    ELSE
+       imax=iloc
+       jmax=jloc
+    ENDIF
+    ENDIF
+
+    PRINT 9001, imin, imax, jmin, jmax
+
+    kimin   = imin ; kimax = imax ; kjmin   = jmin ; kjmax = jmax
+    zglamin = dl_glam(imin,jmin)  ; zglamax = dl_glam(imax,jmax)
+
+    IF ( zglamin > 180 ) zglamin=zglamin-360.
+    IF ( zglamax > 180 ) zglamax=zglamax-360.
+
+    PRINT 9002, zglamin, zglamax, dl_gphi(imin,jmin),dl_gphi(imax,jmax)
+
 9000 FORMAT(a,f8.2,a,f8.2,2i5)
 9001 FORMAT(4i10)
 9002 FORMAT(4f10.4)
-   END SUBROUTINE cdf_findij
 
-  SUBROUTINE Nearestpoint(pplon,pplat,kpi,kpj,plam,pphi,kpiloc,kpjloc,ldbord)
-    !!----------------------------------------------------------------------------
-    !!            ***  SUBROUTINE NEARESTPOINT  ***
-    !!
-    !!   ** Purpose:  Computes the positions of the nearest i,j in the grid
-    !!                from the given longitudes and latitudes
-    !!
-    !!   ** Method :  Starts on the middle of the grid, search in a 20x20 box, and move
-    !!     the box in the direction where the distance between the box and the
-    !!     point is minimum
-    !!     Iterates ...
-    !!     Stops when the point is outside the grid.
-    !!     This algorithm does not work on the Mediteranean grid !
-    !!
-    !!   * history:
-    !!        Anne de Miranda et Pierre-Antoine Darbon Jul. 2000 (CLIPPER)
-    !!        Jean-Marc Molines : In NEMO form
-    !!----------------------------------------------------------------------------
-    IMPLICIT NONE
-    !* arguments
-    REAL(KIND=8),INTENT(in)   ::  pplon,pplat   !: lon and lat of target point
-    INTEGER,INTENT (in)       ::  kpi,kpj       !: grid size
-    INTEGER,INTENT (inout)    :: kpiloc,kpjloc  !: nearest point location
-    REAL(KIND=8),DIMENSION(kpi,kpj),INTENT(in) ::  pphi,plam  !: model grid layout
-    LOGICAL                   :: ldbord         !: reach boundary flag
+  END SUBROUTINE cdf_findij
 
-    ! * local variables
-    INTEGER :: ji,jj,i0,j0,i1,j1
-    INTEGER :: itbl
-    REAL(KIND=4) ::  zdist,zdistmin,zdistmin0
-    LOGICAL, SAVE ::  lbordcell, lfirst=.TRUE.
+
+  SUBROUTINE NearestPoint(ddlon, ddlat, kpi, kpj, ddlam, ddphi, kpiloc, kpjloc, ld_bnd)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE NearestPoint  ***
     !!
-    ! Initial values
-    IF ( lfirst ) THEN
-      kpiloc = kpi/2 ; kpjloc = kpj/2    ! seek from the middle of domain
-      lfirst=.FALSE.
+    !! ** Purpose : Computes the positions of the nearest i,j in the grid
+    !!              from the given longitudes and latitudes
+    !!
+    !! ** Method  : Starts on the middle of the grid, search in a 20x20 box,
+    !!              and move the box in the direction where the distance 
+    !!              between the box and the point is minimum.
+    !!              Iterates ...
+    !!              Stops when the point is outside the grid.
+    !!
+    !! References : P.A. Darbon and A. de Miranda acknowledged for this 
+    !!              clever algorithm developped in CLIPPER.
+    !!----------------------------------------------------------------------
+    REAL(KIND=8),                     INTENT(in) :: ddlon, ddlat        !: lon and lat of target point
+    INTEGER(KIND=4),                 INTENT (in) :: kpi, kpj          !: grid size
+    REAL(KIND=8), DIMENSION(kpi,kpj), INTENT(in) :: ddlam, ddphi        !: model grid layout
+    INTEGER(KIND=4),              INTENT (inout) :: kpiloc, kpjloc    !: nearest point location
+    LOGICAL                                      :: ld_bnd            !: reach boundary flag
+
+    INTEGER(KIND=4)                              :: ji, jj
+    INTEGER(KIND=4), PARAMETER                   :: jp_blk=10
+    INTEGER(KIND=4)                              :: ii0, ij0
+    INTEGER(KIND=4)                              :: ii1, ij1
+    REAL(KIND=4)                                 :: zdist
+    REAL(KIND=4)                                 :: zdistmin, zdistmin0
+    LOGICAL, SAVE                                :: ll_bndcell, ll_first=.TRUE.
+    !!----------------------------------------------------------------------
+    IF ( ll_first ) THEN
+       kpiloc = kpi/2 ; kpjloc = kpj/2    ! seek from the middle of domain
+       ll_first=.FALSE.
     ENDIF
-    itbl = 10                          ! block size for search
+
     zdistmin=1000000. ; zdistmin0=1000000.
-    i0=kpiloc ;  j0=kpjloc
-    lbordcell=.TRUE.;   ldbord=.FALSE.
+    ii0 = kpiloc      ; ij0 = kpjloc
+    ll_bndcell=.TRUE. ; ld_bnd=.FALSE.
 
     ! loop until found or boundary reach
-    DO  WHILE ( lbordcell .AND. .NOT. ldbord)
-       i0=kpiloc-itbl ;  i1=kpiloc+itbl
-       j0=kpjloc-itbl ;  j1=kpjloc+itbl
+    DO  WHILE ( ll_bndcell .AND. .NOT. ld_bnd )
+       ii0 = kpiloc - jp_blk ;  ii1 = kpiloc + jp_blk
+       ij0 = kpjloc - jp_blk ;  ij1 = kpjloc + jp_blk
 
        ! search only the inner domain
-       IF (i0 <= 0) i0=2
-       IF (i1 > kpi) i1=kpi-1
-       IF (j0 <= 0) j0=2
-       IF( j1 > kpj) j1=kpj-1
+       IF (ii0 <= 0 ) ii0 = 2
+       IF (ii1 > kpi) ii1 = kpi - 1
+       IF (ij0 <= 0 ) ij0 = 2
+       IF( ij1 > kpj) ij1 = kpj - 1
 
-       ! within a block itbl+1 x itbl+1:
-       DO jj=j0,j1
-          DO ji=i0,i1
+       ! within a block jp_blk+1 x jp_blk+1:
+       DO jj=ij0,ij1
+          DO ji=ii0,ii1
              ! compute true distance (orthodromy) between target point and grid point
-             zdist=dist(pplon,plam(ji,jj),pplat,pphi(ji,jj) )
-             zdistmin=MIN(zdistmin,zdist)
+             zdist    = dist(ddlon, ddlam(ji,jj), ddlat, ddphi(ji,jj) )
+             zdistmin = MIN(zdistmin, zdist)
              ! update kpiloc, kpjloc if distance decreases
-             IF (zdistmin .NE. zdistmin0 ) THEN
+             IF (zdistmin /=  zdistmin0 ) THEN
                 kpiloc=ji
                 kpjloc=jj
              ENDIF
              zdistmin0=zdistmin
           END DO
        END DO
-       lbordcell=.FALSE.
+
+       ll_bndcell=.FALSE.
        ! if kpiloc, kpjloc belong to block boundary proceed to next block, centered on kpiloc, kpjloc
-       IF (kpiloc == i0 .OR. kpiloc == i1) lbordcell=.TRUE.
-       IF (kpjloc == j0 .OR. kpjloc == j1) lbordcell=.TRUE.
+       IF (kpiloc == ii0 .OR. kpiloc == ii1) ll_bndcell=.TRUE.
+       IF (kpjloc == ij0 .OR. kpjloc == ij1) ll_bndcell=.TRUE.
+
        ! boundary reach ---> not found
-       IF (kpiloc == 2  .OR. kpiloc ==kpi-1) ldbord=.TRUE.
-       IF (kpjloc == 2  .OR. kpjloc ==kpj-1) ldbord=.TRUE.
+       IF (kpiloc == 2  .OR. kpiloc ==kpi-1) ld_bnd=.TRUE.
+       IF (kpjloc == 2  .OR. kpjloc ==kpj-1) ld_bnd=.TRUE.
     END DO
+
   END SUBROUTINE  NEARESTPOINT
-  FUNCTION dist(plona,plonb,plata,platb)
-    !!----------------------------------------------------------
-    !!           ***  FUNCTION  DIST  ***
-    !!
-    !!  ** Purpose : Compute the distance (km) between
-    !!          point A (lona, lata) and B(lonb,latb)
-    !!
-    !!  ** Method : Compute the distance along the orthodromy
-    !!
-    !! * history : J.M. Molines in CHART, f90, may 2007
-    !!----------------------------------------------------------
-    IMPLICIT NONE
-    ! Argument
-    REAL(KIND=8), INTENT(in) :: plata, plona, platb, plonb
-    REAL(KIND=8) :: dist
-    ! Local variables
-    REAL(KIND=8),SAVE ::  zlatar, zlatbr, zlonar, zlonbr
-    REAL(KIND=8) ::  zpds
-    REAL(KIND=8),SAVE :: zux, zuy, zuz
-    REAL(KIND=8) :: zvx, zvy, zvz
 
-    REAL(KIND=8), SAVE :: prevlat=-1000., prevlon=-1000, zr, zpi, zconv
-    LOGICAL :: lfirst=.TRUE.
 
+  REAL(KIND=8) FUNCTION dist(ddlona, ddlonb, ddlata, ddlatb)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION dist  ***
+    !!
+    !! ** Purpose : Compute the distance (km) between
+    !!              point A (lona, lata) and B (lonb, latb)  
+    !!
+    !! ** Method  : Use of double precision is important. Compute the 
+    !!              distance along the orthodromy
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=8), INTENT(in) :: ddlata, ddlona, ddlatb, ddlonb
+
+    REAL(KIND=8), SAVE :: dl_latar, dl_latbr, dl_lonar, dl_lonbr
+    REAL(KIND=8)       :: dl_pds
+    REAL(KIND=8), SAVE :: dl_ux, dl_uy, dl_uz
+    REAL(KIND=8)       :: dl_vx, dl_vy, dl_vz
+    REAL(KIND=8), SAVE :: dl_prevlat=-1000.d0
+    REAL(KIND=8), SAVE :: dl_prevlon=-1000.d0
+    REAL(KIND=8), SAVE :: dl_r, dl_pi, dl_conv
+
+    LOGICAL :: ll_first=.TRUE.
+    !!----------------------------------------------------------------------
     ! initialise some values at first call
-    IF ( lfirst ) THEN
-       lfirst=.FALSE.
+    IF ( ll_first ) THEN
+       ll_first = .FALSE.
        ! constants
-       zpi=ACOS(-1.)
-       zconv=zpi/180.  ! for degree to radian conversion
+       dl_pi   = ACOS(-1.d0)
+       dl_conv = dl_pi/180.d0  ! for degree to radian conversion
        ! Earth radius
-       zr=(6378.137+6356.7523)/2.0 ! km
+       dl_r    = (6378.137d0+6356.7523d0)/2.0d0 ! km
     ENDIF
 
     ! compute these term only if they differ from previous call
-    IF ( plata /= prevlat .OR. plona /= prevlon) THEN
-       zlatar=plata*zconv
-       zlonar=plona*zconv
-       zux=COS(zlonar)*COS(zlatar)
-       zuy=SIN(zlonar)*COS(zlatar)
-       zuz=SIN(zlatar)
-       prevlat=plata
-       prevlon=plona
+    IF ( ddlata /= dl_prevlat .OR. ddlona /= dl_prevlon) THEN
+       dl_latar   = ddlata*dl_conv
+       dl_lonar   = ddlona*dl_conv
+       dl_ux      = COS(dl_lonar)*COS(dl_latar)
+       dl_uy      = SIN(dl_lonar)*COS(dl_latar)
+       dl_uz      = SIN(dl_latar)
+       dl_prevlat = ddlata
+       dl_prevlon = ddlona
     ENDIF
 
-    zlatbr=platb*zconv
-    zlonbr=plonb*zconv
-    zvx=COS(zlonbr)*COS(zlatbr)
-    zvy=SIN(zlonbr)*COS(zlatbr)
-    zvz=SIN(zlatbr)
+    dl_latbr = ddlatb*dl_conv
+    dl_lonbr = ddlonb*dl_conv
+    dl_vx    = COS(dl_lonbr)*COS(dl_latbr)
+    dl_vy    = SIN(dl_lonbr)*COS(dl_latbr)
+    dl_vz    = SIN(dl_latbr)
 
-    zpds=zux*zvx+zuy*zvy+zuz*zvz
+    dl_pds   = dl_ux*dl_vx + dl_uy*dl_vy + dl_uz*dl_vz
 
-    IF (zpds >= 1.) THEN
-       dist=0.
+    IF (dl_pds >= 1.) THEN
+       dist = 0.
     ELSE
-       dist=zr*ACOS(zpds)
+       dist = dl_r*ACOS(dl_pds)
     ENDIF
+
   END FUNCTION dist
 
 END MODULE cdftools

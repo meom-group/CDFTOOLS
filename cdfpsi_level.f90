@@ -75,15 +75,15 @@ PROGRAM cdfpsi_level
   npk   = getdim (cfileu,'depth')
 
  ! define new variables for output ( must update att.txt)
-  typvar(1)%name= 'sobarstf'
-  typvar(1)%units='m3/s'
-  typvar(1)%missing_value=0.
+  typvar(1)%cname= 'sobarstf'
+  typvar(1)%cunits='m3/s'
+  typvar(1)%rmissing_value=0.
   typvar(1)%valid_min= -300.e6
   typvar(1)%valid_max= 300.e6
-  typvar(1)%long_name='Barotropic_Stream_Function'
-  typvar(1)%short_name='sobarstf'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TZYX'
+  typvar(1)%clong_name='Barotropic_Stream_Function'
+  typvar(1)%cshort_name='sobarstf'
+  typvar(1)%conline_operation='N/A'
+  typvar(1)%caxis='TZYX'
   ipk(1) = npk  !  3D ( X, Y , Z, T )
 
   PRINT *, 'npiglo=', npiglo
@@ -127,14 +127,14 @@ PROGRAM cdfpsi_level
      IF ( coption == 'V' ) THEN
         zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)
         e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo, ldiom=.true.)
-        ztrpv(:,:) = zv(:,:)*e1v(:,:)*e3v(:,:)  ! meridional transport of each grid cell
+        ztrpv(:,:) = zv(:,:)*e1v(:,:)*e3v(:,:)*1.d0  ! meridional transport of each grid cell
      ELSE
      ! Get zonal velocity  at jk
         zu(:,:)= getvar(cfileu, 'vozocrtx',  jk ,npiglo,npjglo)
      ! get e3v at level jk
         e3u(:,:) = getvar(coordzgr, 'e3u_ps', jk,npiglo,npjglo, ldiom=.true.)
      ! integrates vertically 
-        ztrpu(:,:) = zu(:,:)*e2u(:,:)*e3u(:,:)  ! zonal transport of each grid cell
+        ztrpu(:,:) = zu(:,:)*e2u(:,:)*e3u(:,:)*1.d0  ! zonal transport of each grid cell
      ENDIF
 
   IF (coption == 'V' ) THEN
@@ -144,8 +144,8 @@ PROGRAM cdfpsi_level
         psiv(ji,:) = psiv(ji+1,:) - ztrpv(ji,:)  ! psi at f point
      END DO
      psiv(:,:) = psiv(:,:) *zmask(:,:)
-     !ierr = putvar(ncout, id_varout(1) ,REAL(psiv),   jk, npiglo, npjglo)
-     ierr = putvar(ncout, id_varout(1) ,REAL(ztrpv),   jk, npiglo, npjglo)
+     ierr = putvar(ncout, id_varout(1) ,REAL(psiv),   jk, npiglo, npjglo)
+     !ierr = putvar(ncout, id_varout(1) ,REAL(ztrpv),   jk, npiglo, npjglo)
 
   ELSE
   ! integrate from the south to the north with zonal transport

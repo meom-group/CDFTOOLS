@@ -1,156 +1,157 @@
 PROGRAM cdfmax
-  !!----------------------------------------------------------------------------
-  !!                ***   PROGRAM cdfmax ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfmax  ***
+  !!=====================================================================
+  !!  ** Purpose : Find the min/max of a variable of an nc file. Give its 
+  !!               location. A sub-area can be specified either horizontally
+  !!               and/or vertically.
   !!
-  !!  ** Purpose:    Find the min/max of a variable of an nc file. Give its location.
-  !!                 A sub-area can be specified either horizontally and/or vertically
-  !!
-  !!  ** Method:     Read command line, open the file get the variable and display the values
-  !!
-  !!  ** Usage :
-  !!    cdfmax -f file  -var cdfvarname  [-lev kmin kmax -zoom imin imax jmin jmax ]
-  !!           [-fact mutlfactor] [-xy]
-  !!
-  !!   History: 
-  !!       2006 : J-M Molines :  from cdfzoom.
-  !!
-  !!----------------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  ! * Module used
+  !! History : 2.1  : 11/2006  : J.M. Molines : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  ! * Local Variable
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  !
-  INTEGER :: ji,jk,jvar, idep, jt
-  INTEGER :: narg, iargc
-  INTEGER :: ni,nj,nk,nt,ndim, ntype
-  INTEGER :: i1,i2,j1,j2
-  INTEGER :: niz,njz, nkz, itime, nvars
-  INTEGER :: imin=1, imax=0, jmin=1, jmax=0,kext, istatus, kmin=1, kmax=0
-  INTEGER :: ipmin, ipmax, jpmin, jpmax
-  INTEGER, DIMENSION (2) :: ilmin, ilmax   
-  !
-  REAL ,DIMENSION(:),ALLOCATABLE     :: h, rtime
-  REAL ,DIMENSION (:,:), ALLOCATABLE :: v2d, rlon, rlat
-  REAL                               :: rfact=1.0
-  REAL                               :: rmissing=0.
-  !
-  CHARACTER(LEN=256) ::  cfilein, cline1, cline2
-  CHARACTER(LEN=256) :: cvar='none', cdim
-  CHARACTER(LEN=256), DIMENSION(:),ALLOCATABLE :: cvarnames
-  TYPE(variable), DIMENSION(:),ALLOCATABLE :: typvar
-  !
-  LOGICAL :: lvar=.FALSE., lfil=.FALSE.,  lforcexy=.FALSE.
-  LOGICAL, DIMENSION(:,:), ALLOCATABLE :: lmask
-  !!
-  !! Initializations:
-  !!-----------------
-  !!
-  narg = iargc()
-  IF (narg == 0) THEN
-     PRINT *,'USAGE :cdfmax -f file '// &
-          ' -var cdfvarname ' //&
-          ' [-lev kmin kmax ' //  &
-          ' -zoom imin imax jmin jmax  -fact multfact -xy ]'
-     PRINT *, '   -lev and -zoom limit the area for min/max computation'
-     PRINT *, '    if not specified : the 3D data is taken '
-     PRINT *, '    if either imin=imax or jmin=jmax a vertical slab is considered'
-     PRINT *, '     UNLESS -xy option is specified !!! '
 
+  INTEGER(KIND=4)                               :: ji, jk, jvar, jt
+  INTEGER(KIND=4)                               :: idep
+  INTEGER(KIND=4)                               :: narg, iargc, ijarg
+  INTEGER(KIND=4)                               :: ni, nj, nk, nt       ! size of the global domain
+  INTEGER(KIND=4)                               :: ndim                 ! dimension of the variables
+  INTEGER(KIND=4)                               :: ntype                ! type of slab (xy, xz, yz ...)
+  INTEGER(KIND=4)                               :: ii1, ii2, ij1, ij2   ! index of min max  
+  INTEGER(KIND=4)                               :: niz, njz, nkz, nvars ! size of the domain
+  INTEGER(KIND=4)                               :: iimin=1, iimax=0     ! i-limit of the domain
+  INTEGER(KIND=4)                               :: ijmin=1, ijmax=0     ! j-limit of the domain
+  INTEGER(KIND=4)                               :: ikmin=1, ikmax=0     ! k-limit of the domain
+  INTEGER(KIND=4)                               :: itmin=1, itmax=0     ! t-limit of the domain
+  INTEGER(KIND=4)                               :: istatus              ! working integer
+  INTEGER(KIND=4), DIMENSION(2)                 :: ilmin, ilmax         ! working array for minloc, maxloc
+
+  REAL(KIND=4)                                  :: rfact=1.0            ! multiplying factor
+  REAL(KIND=4)                                  :: zspval               ! missing value or spval
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE     :: h                    ! depth 
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE     :: v2d, rlon, rlat      ! data array, longitude, latitude
+
+  CHARACTER(LEN=256)                            :: cf_in                ! input file name
+  CHARACTER(LEN=256)                            :: cv_in='none'         ! current variable name
+  CHARACTER(LEN=256)                            :: cldum                ! dummy char variable
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names             ! list of variables in file
+
+  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar              ! dummy dtructure to read var names
+
+  LOGICAL                                       :: lforcexy=.FALSE.     ! flag for forced horizontal slab
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  narg = iargc()
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfmax -f file -var cdfvar ...'
+     PRINT *,'      ... [-lev kmin kmax ] [-zoom imin imax jmin jmax] ...'
+     PRINT *,'      ... [-time tmin tmax ] [-fact multfact]  [-xy ]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'        Find minimum and maximum of a file as well as their '
+     PRINT *,'        respective location. Options allow to restrict the '
+     PRINT *,'        finding to a sub area in time and space. This program'
+     PRINT *,'        also deal with vertical slabs in a domain.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       -f file  : input file '
+     PRINT *,'       -var cdfvar : input variable'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-lev kmin kmax ] : restrict to level between kmin and kmax. '
+     PRINT *,'       [-zoom imin imax jmin jmax] : restrict to sub area specified'
+     PRINT *,'                       by the given limits. If the zoomed area is '
+     PRINT *,'                       degenerated to a single line, then the vertical'
+     PRINT *,'                       slab is considered as domain.'
+     PRINT *,'       [-time tmin tmax ] : restrict to the indicated time windows.'
+     PRINT *,'       [-fact multfact] : use a multiplicative factor for the output'
+     PRINT *,'       [-xy ] : force horizontal slab even in the case of a degenerated'
+     PRINT *,'                       zoomed area.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       none' 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       output is done on standard output.'
      STOP
-  END IF
-  !
-  kext=1
-  ji=1
-  ! Read command line
-  DO  WHILE (ji <=  narg)
-     CALL getarg(ji,cline1)
-     ji = ji + 1
-     IF (cline1 == '-f') THEN
-        lfil=.TRUE.
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        cfilein=cline2
-     ELSE IF (cline1 == '-lev') THEN
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        READ(cline2,*) kmin
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        READ(cline2,*) kmax
-     ELSE IF (cline1 == '-fact') THEN
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        READ(cline2,*) rfact
-     ELSE IF (cline1 == '-zoom') THEN
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        READ(cline2,*) imin
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        READ(cline2,*) imax
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        READ(cline2,*) jmin
-        CALL getarg(ji,cline2)
-        ji = ji + 1
-        READ(cline2,*) jmax
-     ELSE IF ( cline1 == '-var') THEN
-        lvar=.TRUE.
-        CALL getarg(ji,cvar)
-        ji = ji + 1
-     ELSE IF ( cline1 == '-xy') THEN
-        lforcexy=.TRUE.
-     ELSE
-        PRINT *, cline1,' : unknown option '
+  ENDIF
+
+  ijarg=1
+  DO  WHILE (ijarg <=  narg)
+     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
+     SELECT CASE (cldum )
+     CASE ( '-f'    )
+        CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
+     CASE ( '-lev'  )
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ( '-fact'   )
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rfact
+     CASE ( '-zoom' )
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+     CASE ( '-time' )
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
+        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
+     CASE ( '-var'  )
+        CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
+     CASE ( '-xy'   )
+        lforcexy = .TRUE.
+     CASE DEFAULT
+        PRINT *, cldum,' : unknown option '
         STOP
-     END IF
+     END SELECT
   END DO
-  ! IF ( .not. lvar .OR. .not. lfil ) THEN
-  !       PRINT *,' ERROR : you must specify a variable name with -var option AND a filename (-f) '
-  !       STOP
-  ! ENDIF
-  !
-  ! Look for dimensions of the variables in the file
+
+  IF ( chkfile(cf_in) ) STOP ! missing file
+
   ni=0 ; nj=0; nk=0; nt=0 
 
-  ni=getdim(cfilein,'x',cdim,istatus)
+  ni = getdim(cf_in, cn_x, cldum, istatus)
   IF ( istatus == 1 ) THEN 
-     ni=getdim(cfilein,'lon',cdim,istatus)
+     ni = getdim(cf_in, 'lon', cldum, istatus)
      IF ( istatus == 1 ) THEN
         PRINT *,' No X or lon dim found ' ; STOP
      ENDIF
   ENDIF
-  IF ( imax == 0 ) imax =ni
+  IF ( iimax == 0 ) iimax = ni
 
-  nj=getdim(cfilein,'y',cdim,istatus)
+  nj = getdim(cf_in, cn_y, cldum, istatus)
   IF ( istatus == 1 ) THEN 
-     nj=getdim(cfilein,'lat',cdim,istatus)
+     nj = getdim(cf_in, 'lat', cldum, istatus)
      IF ( istatus == 1 ) THEN
         PRINT *,' No y or lat dim found ' ; STOP
      ENDIF
   ENDIF
-  IF ( jmax == 0 ) jmax =nj
+  IF ( ijmax == 0 ) ijmax = nj
 
-  nk=getdim(cfilein,'dep',cdim,istatus)
+  nk=getdim(cf_in, cn_z, cldum, istatus)
   IF ( istatus == 1 ) THEN 
-     nk=getdim(cfilein,'z',cdim,istatus)
+     nk = getdim(cf_in, 'z', cldum, istatus)
      IF ( istatus == 1 ) THEN 
-        nk=getdim(cfilein,'lev',cdim,istatus)
+        nk = getdim(cf_in, 'lev', cldum, istatus)
         IF ( istatus == 1 ) THEN
            PRINT *,' No dep or z or lev  dim found ' 
         ENDIF
      ENDIF
   ENDIF
-  IF ( kmax == 0 ) kmax =nk
+  IF ( ikmax == 0 ) ikmax = nk
 
-  nt=getdim(cfilein,'time',cdim,istatus)
+  nt = getdim(cf_in, cn_t, cldum, istatus)
+
   IF ( istatus == 1 ) THEN 
-     nt=getdim(cfilein,'step',cdim,istatus)
+     nt = getdim(cf_in, 'step', cldum, istatus)
      IF ( istatus == 1 ) THEN
         PRINT *,' No time or step dim found ' 
      ENDIF
@@ -158,121 +159,121 @@ PROGRAM cdfmax
 
 
   ! fix the size of the zoomed area, or the whole domain if no zoom
-  niz=imax-imin+1
-  njz=jmax-jmin+1
-  nkz=kmax-kmin+1
+  niz = iimax - iimin + 1
+  njz = ijmax - ijmin + 1
+  nkz = ikmax - ikmin + 1
 
-  IF (nk == 0 ) nk = 1 ; kext=1  ! assume a 2D variable
-  IF (nt == 0 ) nt = 1 ; itime=1 ! assume a 1 time frame file
+  IF (nt == 0 ) nt = 1  ! assume a 1 time frame file
+  IF ( itmax == 0 ) itmax = nt
   ! allocate arrays
-  ALLOCATE (h(nk), rtime(nt), rlon(niz,njz),rlat(niz,njz))
+  ALLOCATE (h(nk), rlon(niz,njz), rlat(niz,njz))
 
   ! Look for variable name starting with dep
-  nvars=getnvar(cfilein)
-  ALLOCATE (cvarnames(nvars), typvar(nvars))
-  cvarnames=getvarname(cfilein,nvars,typvar)
+  nvars     = getnvar(cf_in)
+  ALLOCATE (cv_names(nvars), stypvar(nvars))
+  cv_names = getvarname(cf_in,nvars,stypvar)
   DO jvar=1,nvars
-     idep=INDEX(cvarnames(jvar),'dep') + INDEX(cvarnames(jvar),'lev')
+     idep = INDEX(cv_names(jvar),'dep') + INDEX(cv_names(jvar),'lev')
      IF (idep /= 0 ) EXIT
   END DO
+
   IF ( jvar == nvars +1 ) THEN
      ! no depth variable found ... we initialize it to levels
-     h=(/(ji,ji=1,nk)/)
+     h = (/(ji,ji=1,nk)/)
   ELSE
-     h=getvar1d(cfilein,cvarnames(jvar),nk)
+     h = getvar1d(cf_in, cv_names(jvar), nk)
   ENDIF
+  zspval = getatt(cf_in, cv_in, cn_missing_value)
 
   ! Allocate memory and define ntype : (1) = horizontal i-j slab eventually many layers.
   !                                    (2) = vertical j-k slab, at a given i
   !                                    (3) = vertical i-k slab, at a given j
   IF ( (niz /= 1 .AND. njz /= 1 ) .OR. lforcexy  ) THEN 
-     ALLOCATE (v2d(niz,njz) ,lmask(niz,njz))
-     ntype=1
+     ALLOCATE (v2d(niz,njz) )
+     ntype = 1    ! horizontal x-y slabs
   ELSE  
      IF ( niz == 1 ) THEN
-        ALLOCATE (v2d(njz,nkz),lmask(njz,nkz))
-        ntype=2
+        ALLOCATE (v2d(njz,nkz))
+        ntype = 2 ! vertical y-z slab
      ELSE
-        ALLOCATE(v2d(niz,nkz),lmask(niz,nkz))
-        ntype=3
+        ALLOCATE(v2d(niz,nkz))
+        ntype = 3 ! vertical x-z slab
      ENDIF
   ENDIF
 
   ! read latitude, longitude from the header
-  rlon=getvar(cfilein,'nav_lon',1,niz,njz,imin,jmin)
-  rlat=getvar(cfilein,'nav_lat',1,niz,njz,imin,jmin)
+  rlon = getvar(cf_in, cn_vlon2d, 1, niz, njz, iimin, ijmin)
+  rlat = getvar(cf_in, cn_vlat2d, 1, niz, njz, iimin, ijmin)
 
-  rmissing=getatt(cfilein, cvar,'missing_value')
   DO
-     ndim=getvdim(cfilein,cvar)+1   ! getvdim gives ndim-1 !
-     PRINT *,TRIM(cvar),' with multiplying factor of ', rfact
+     ndim = getvdim(cf_in, cv_in) + 1   ! getvdim gives ndim-1 !
+     PRINT *,TRIM(cv_in),' with multiplying factor of ', rfact
      ! ndim <=3 corresponds to purely 2D variables (x,y) or (x,y,t)
      IF ( ndim <= 3 ) THEN
-        kmin=1 ; kmax=1 ; nkz=1
+        ikmin = 1 ; ikmax = 1 ; nkz = 1
      ENDIF
 
      SELECT CASE (ntype)
      CASE (1)
-        ipmin=imin ; ipmax=imax; jpmin=jmin; jpmax=jmax
         SELECT CASE (ndim)
-        CASE( 2,3,4 )  ! assume x,y variable
+        CASE( 2,3,4 )  ! assume x,y,z,t variable
            PRINT 9000,'time  level     dep  MAX:   i    long    j    lat   MaxValue   MIN:     i    long    j   lat    MinValue'
-           DO jt=1,nt
-              DO jk =kmin,kmax
-                 v2d(:,:)=getvar(cfilein,cvar,jk,niz,njz,kimin=imin,kjmin=jmin,ktime=jt)
-                 lmask(:,:)=.TRUE. ; WHERE ( v2d == rmissing ) lmask=.FALSE.
-                 ilmax=MAXLOC(v2d,lmask)
-                 ilmin=MINLOC(v2d,lmask)
-                 i1=ilmax(1) ; j1=ilmax(2)
-                 i2=ilmin(1) ; j2=ilmin(2)
-                 PRINT 9003, jt, jk, h(jk),i1+imin -1, rlon(i1,j1),j1+jmin -1,rlat(i1,j1),v2d(i1,j1)*rfact, &
-                      &             i2+imin -1, rlon(i2,j2),j2+jmin -1,rlat(i2,j2),v2d(i2,j2)*rfact
+           DO jt=itmin, itmax
+              DO jk=ikmin,ikmax
+                 v2d(:,:) = getvar(cf_in, cv_in, jk, niz, njz, kimin=iimin, kjmin=ijmin, ktime=jt)
+                 ilmax = MAXLOC(v2d,(v2d /= zspval) )
+                 ilmin = MINLOC(v2d,(v2d /= zspval) )
+                 ii1=ilmax(1) ; ij1=ilmax(2)
+                 ii2=ilmin(1) ; ij2=ilmin(2)
+                 PRINT 9003, jt, jk, h(jk),ii1+iimin -1, rlon(ii1,ij1),ij1+ijmin -1,rlat(ii1,ij1),v2d(ii1,ij1)*rfact, &
+                      &             ii2+iimin -1, rlon(ii2,ij2),ij2+ijmin -1,rlat(ii2,ij2),v2d(ii2,ij2)*rfact
               END DO
            END DO
            EXIT
 
         CASE DEFAULT
            PRINT *,' Non mapable variables x-y :('
-           cvar='none'
+           cv_in='none'
         END SELECT
 
      CASE (2)
         SELECT CASE (ndim)
         CASE( 4 )  ! assume x,y,z,t variable
-           ipmin=jmin ; ipmax=jmax; jpmin=kmin; jpmax=kmax
-           v2d(:,:)=getvaryz(cfilein,cvar,imin,njz,nkz,jmin,kmin)
-           lmask(:,:)=.TRUE. ; WHERE ( v2d == rmissing ) lmask=.FALSE.
-           ilmax=MAXLOC(v2d,lmask)
-           ilmin=MINLOC(v2d,lmask)
-           i1=ilmax(1) ; j1=ilmax(2)
-           i2=ilmin(1) ; j2=ilmin(2)
-           ! sorry for nice identation but if not .. rhodes complains
- PRINT 9000,' i-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
- PRINT 9002, imin, imin, rlon(1,i1),i1+jmin -1,rlat(1,i1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
-                &             imin, rlon(1,i2),i2+jmin -1,rlat(1,i2),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
+           PRINT 9000,' time i-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    &
+                & long   j     lat   k     dep    MinValue'
+           DO jt=itmin, itmax
+              v2d(:,:) = getvaryz(cf_in, cv_in, iimin, njz, nkz, ijmin, ikmin, ktime=jt)
+              ilmax = MAXLOC(v2d,(v2d/= zspval) )
+              ilmin = MINLOC(v2d,(v2d/= zspval) )
+              ii1=ilmax(1) ; ij1=ilmax(2)
+              ii2=ilmin(1) ; ij2=ilmin(2)
+              PRINT 9002, jt, iimin, iimin, rlon(1,ii1),ii1+ijmin -1,rlat(1,ii1),ij1+ikmin-1, h(ij1+ikmin-1), v2d(ii1,ij1)*rfact, &
+                   &             iimin, rlon(1,ii2),ii2+ijmin -1,rlat(1,ii2),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
+           END DO
            EXIT
         CASE DEFAULT
            PRINT *,' Non mapable variables x-z or y-z :('
-           cvar='none'
+           cv_in='none'
         END SELECT
 
      CASE (3)
         SELECT CASE (ndim)
         CASE( 4 )  ! assume x,y,z,t variable
-           ipmin=imin ; ipmax=imax; jpmin=kmin; jpmax=kmax
-           v2d(:,:)=getvarxz(cfilein,cvar,jmin,niz,nkz,imin,kmin)
-           lmask(:,:)=.TRUE. ; WHERE ( v2d == rmissing ) lmask=.FALSE.
-           ilmax=MAXLOC(v2d,lmask)
-           ilmin=MINLOC(v2d,lmask)
-           i1=ilmax(1) ; j1=ilmax(2)
-           i2=ilmin(1) ; j2=ilmin(2)
- PRINT 9000,' j-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue'
- PRINT 9002, jmin, i1, rlon(i1,1),jmin,rlat(i1,1),j1+kmin-1, h(j1+kmin-1), v2d(i1,j1)*rfact, &
-                &             i2, rlon(i2,1),jmin,rlat(i2,1),j2+kmin-1, h(j2+kmin-1), v2d(i2,j2)*rfact
+           PRINT 9000,' time j-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    &
+                & long   j     lat   k     dep    MinValue'
+           DO jt=itmin, itmax
+              v2d(:,:) = getvarxz(cf_in, cv_in, ijmin, niz, nkz, iimin, ikmin, ktime=jt)
+              ilmax = MAXLOC(v2d,(v2d /= zspval) )
+              ilmin = MINLOC(v2d,(v2d /= zspval) )
+              ii1=ilmax(1) ; ij1=ilmax(2)
+              ii2=ilmin(1) ; ij2=ilmin(2)
+              PRINT 9002, jt, ijmin, ii1, rlon(ii1,1),ijmin,rlat(ii1,1),ij1+ikmin-1, h(ij1+ikmin-1), v2d(ii1,ij1)*rfact, &
+                   &             ii2, rlon(ii2,1),ijmin,rlat(ii2,1),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
+           END DO
            EXIT
         CASE DEFAULT
            PRINT *,' Non mapable variables x-z or y-z :('
-           cvar='none'
+           cv_in='none'
         END SELECT
 
      CASE DEFAULT
@@ -281,8 +282,7 @@ PROGRAM cdfmax
   ENDDO
 
 9000 FORMAT(a)
-9001 FORMAT(i4,1x,f7.2,5x,i5,f8.2, i5, f7.2, e14.5, 5x,i5,f8.2, i5, f7.2, e14.5)
-9002 FORMAT(i4,9x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5, 6x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5 )
+9002 FORMAT(I5, x,i4,9x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5, 6x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5 )
 9003 FORMAT(I5, x,i5,1x,f7.2,5x,i5,f8.2, i5, f7.2, e14.5, 5x,i5,f8.2, i5, f7.2, e14.5)
 
 END PROGRAM cdfmax

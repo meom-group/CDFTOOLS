@@ -1,171 +1,181 @@
 PROGRAM cdfheatc
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfheatc  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfheatc  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the heat content of the ocean : 1 single value
   !!
-  !!  **  Purpose  :  Compute the heat content 
-  !!                  PARTIAL STEPS
-  !!  
-  !!  **  Method   :  compute the sum ( rho cp T  * e1 *e2 * e3 *mask )
+  !!  ** Method  : compute the sum ( rho cp T  * e1t *e2t * e3t * tmask )
   !!
-  !!
-  !! history ;
-  !!  Original :  J.M. Molines (March 2006) 
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 03/2006  : J.M. Molines : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jk, ik
-  INTEGER   :: imin=0, imax=0, jmin=0, jmax=0      !: domain limitation for computation
-  INTEGER   :: kmin=0, kmax=0                      !: domain limitation for computation
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER   :: nvpk                                !: vertical levels in working variable
 
-  REAL(KIND=8), PARAMETER :: rprho0=1020., rpcp=4000.
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e1, e2, e3,  zv   !:  metrics, velocity
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask             !:   npiglo x npjglo
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE ::  gdep
+  INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
+  INTEGER(KIND=4)                           :: ik                  ! working integer
+  INTEGER(KIND=4)                           :: ierr                ! working integer
+  INTEGER(KIND=4)                           :: iimin=0, iimax=0    ! domain limitation for computation
+  INTEGER(KIND=4)                           :: ijmin=0, ijmax=0    ! domain limitation for computation
+  INTEGER(KIND=4)                           :: ikmin=0, ikmax=0    ! domain limitation for computation
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg  ! command line 
+  INTEGER(KIND=4)                           :: npiglo, npjglo      ! size of the domain
+  INTEGER(KIND=4)                           :: npk, npt            ! size of the domain
+  INTEGER(KIND=4)                           :: nvpk                ! vertical levels in working variable
 
-  REAL(KIND=8)      :: zvol, zsum, zvol2d, zsum2d, zsurf
-  CHARACTER(LEN=256) :: cfilev , cdum
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cmask='mask.nc'
-  CHARACTER(LEN=256) :: cvar, cvartype
-  CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
+  REAL(KIND=4), PARAMETER                   :: pprho0=1020.        ! water density (kg/m3)
+  REAL(KIND=4), PARAMETER                   :: ppcp=4000.          ! calorific capacity (J/kg/m3)
 
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1t, e2t            ! horizontal metrics
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp                ! temperature
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! tmask
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdept               ! depth
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
 
-  INTEGER    :: istatus
+  REAL(KIND=8)                              :: dvol                ! 3D volume of the ocean
+  REAL(KIND=8)                              :: dsum                ! weighted sum 3D
+  REAL(KIND=8)                              :: dvol2d              ! volume of a layer
+  REAL(KIND=8)                              :: dsum2d              ! weigthed sum per layer
+  REAL(KIND=8)                              :: dsurf               ! surface of a layer
 
-  ! constants
+  CHARACTER(LEN=256)                        :: cf_tfil             ! input gridT file
+  CHARACTER(LEN=256)                        :: cldum               ! dummy character variable
 
-  !!  Read command line and output usage message if not compliant.
-  narg= iargc()
+  LOGICAL                                   :: lfull=.FALSE.       ! flag for full step computation
+  LOGICAL                                   :: lchk                ! flag for missing files
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfheatc  gridTfile  [imin imax jmin jmax kmin kmax] '
-     PRINT *,' Computes the heat content in the specified area (Joules)'
-     PRINT *,' imin imax jmin jmax kmin kmax can be given in option '
-     PRINT *,'    if imin = 0 then ALL i are taken'
-     PRINT *,'    if jmin = 0 then ALL j are taken'
-     PRINT *,'    if kmin = 0 then ALL k are taken'
-     PRINT *,' PARTIAL CELLS VERSION'
-     PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc '
-     PRINT *,'  must be in the current directory'
-     PRINT *,' Output on standard output'
+     PRINT *,' usage :  cdfheatc  T-file ...'
+     PRINT *,'    ... [imin imax jmin jmax kmin kmax] [-full] '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'        Computes the heat content in the specified area (Joules)'
+     PRINT *,'        A sub-domain can be specified in option.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       T-file : a file with temperature and salinity' 
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [imin imax jmin jmax kmin kmax] : limit of a sub domain where'
+     PRINT *,'                      the heat content will be calculated.'
+     PRINT *,'                   - if imin = 0 then ALL i are taken'
+     PRINT *,'                   - if jmin = 0 then ALL j are taken'
+     PRINT *,'                   - if kmin = 0 then ALL k are taken'
+     PRINT *,'       [-full ] : assume full step model output instead of default'
+     PRINT *,'                  partial steps.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : to be done ....'
+     PRINT *,'       Standard output'
      STOP
   ENDIF
 
-  CALL getarg (1, cfilev)
-  cvar='votemper'
-  cvartype='T'
+  ijarg = 1 
+  CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
 
-  IF (narg > 1 ) THEN
-    IF ( narg /= 7 ) THEN
-       PRINT *, ' ERROR : You must give 6 optional values (imin imax jmin jmax kmin kmax)'
-       STOP
-    ELSE
-    ! input optional imin imax jmin jmax
-      CALL getarg ( 2,cdum) ; READ(cdum,*) imin
-      CALL getarg ( 3,cdum) ; READ(cdum,*) imax
-      CALL getarg ( 4,cdum) ; READ(cdum,*) jmin
-      CALL getarg ( 5,cdum) ; READ(cdum,*) jmax
-      CALL getarg ( 6,cdum) ; READ(cdum,*) kmin
-      CALL getarg ( 7,cdum) ; READ(cdum,*) kmax
-    ENDIF
-  ENDIF
+  lchk = chkfile(cn_fhgr)
+  lchk = chkfile(cn_fzgr) .OR. lchk
+  lchk = chkfile(cn_fmsk) .OR. lchk
+  lchk = chkfile(cf_tfil) .OR. lchk
+  IF ( lchk ) STOP ! missing files
 
-  npiglo= getdim (cfilev,'x')
-  npjglo= getdim (cfilev,'y')
-  npk   = getdim (cfilev,'depth')
-  nvpk  = getvdim(cfilev,cvar)
-  IF (imin /= 0 ) THEN ; npiglo=imax -imin + 1;  ELSE ; imin=1 ; ENDIF
-  IF (jmin /= 0 ) THEN ; npjglo=jmax -jmin + 1;  ELSE ; jmin=1 ; ENDIF
-  IF (kmin /= 0 ) THEN ; npk   =kmax -kmin + 1;  ELSE ; kmin=1 ; ENDIF
+  DO WHILE ( ijarg <= narg ) 
+     CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1
+     SELECT CASE ( cldum )
+     CASE ( '-full' ) ; lfull = .true.
+     CASE DEFAULT
+        PRINT *,' Reading 6 values : imin imax jmin jmax kmin kmax '
+                                                          READ(cldum,*) iimin
+        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     END SELECT
+  END DO
 
+  npiglo = getdim (cf_tfil,cn_x)
+  npjglo = getdim (cf_tfil,cn_y)
+  npk    = getdim (cf_tfil,cn_z)
+  npt    = getdim (cf_tfil,cn_t)
+
+  IF (iimin /= 0 ) THEN ; npiglo = iimax - iimin + 1;  ELSE ; iimin=1 ; ENDIF
+  IF (ijmin /= 0 ) THEN ; npjglo = ijmax - ijmin + 1;  ELSE ; ijmin=1 ; ENDIF
+  IF (ikmin /= 0 ) THEN ; npk    = ikmax - ikmin + 1;  ELSE ; ikmin=1 ; ENDIF
+
+  nvpk   = getvdim(cf_tfil,cn_votemper)
   IF (nvpk == 2 ) nvpk = 1
   IF (nvpk == 3 ) nvpk = npk
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
-  PRINT *, 'nvpk  =', nvpk
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
+  PRINT *, 'nvpk   = ', nvpk
 
   ! Allocate arrays
-  ALLOCATE ( zmask(npiglo,npjglo) )
-  ALLOCATE ( zv(npiglo,npjglo) )
-  ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo), e3(npiglo,npjglo) )
-  ALLOCATE ( gdep(npk) )
-  SELECT CASE (TRIM(cvartype))
-  CASE ( 'T' )
-     ce1='e1t'
-     ce2='e2t'
-     ce3='e3t_ps'
-     cvmask='tmask'
-     cdep='gdept'
-  CASE ( 'U' )
-     ce1='e1u'
-     ce2='e2u'
-     ce3='e3t_ps'
-     cvmask='umask'
-     cdep='gdept'
-  CASE ( 'V' )
-     ce1='e1v'
-     ce2='e2v'
-     ce3='e3t_ps'
-     cvmask='vmask'
-     cdep='gdept'
-  CASE ( 'F' )
-     ce1='e1f'
-     ce2='e2f'
-     ce3='e3t_ps'
-     cvmask='fmask'
-     cdep='gdept'
-  CASE ( 'W' )
-     ce1='e1t'
-     ce2='e2t'
-     ce3='e3w_ps'
-     cvmask='tmask'
-     cdep='gdepw'
-  CASE DEFAULT
-      PRINT *, 'this type of variable is not known :', trim(cvartype)
-      STOP
-  END SELECT
+  ALLOCATE ( tmask(npiglo,npjglo) )
+  ALLOCATE ( temp (npiglo,npjglo) )
+  ALLOCATE ( e1t  (npiglo,npjglo), e2t(npiglo,npjglo), e3t(npiglo,npjglo) )
+  ALLOCATE ( gdept(npk), tim(npt) )
+  IF ( lfull ) ALLOCATE ( e31d(npk) )
 
-  e1(:,:) = getvar(coordhgr, ce1, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
-  e2(:,:) = getvar(coordhgr, ce2, 1,npiglo,npjglo,kimin=imin,kjmin=jmin)
-  gdep(:) = getvare3(coordzgr,cdep,npk)
+  e1t(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+  e2t(:,:) = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+  gdept(:) = getvare3(cn_fzgr, cn_gdept,  npk)
+  tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
+  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
 
-  zvol=0.d0
-  zsum=0.d0
-   DO jk = 1,nvpk
-     ik = jk+kmin-1
-     ! Get velocities v at ik
-     zv(:,:)= getvar(cfilev, cvar,  ik ,npiglo,npjglo,kimin=imin,kjmin=jmin)
-     zmask(:,:)=getvar(cmask,cvmask,ik,npiglo,npjglo,kimin=imin,kjmin=jmin)
-!    zmask(:,npjglo)=0.
+  DO jt=1,npt
+     dvol = 0.d0
+     dsum = 0.d0
+     PRINT * ,'TIME : ', tim(jt)/86400.,' days'
 
-     ! get e3 at level ik ( ps...)
-     e3(:,:) = getvar(coordzgr, ce3, ik,npiglo,npjglo,kimin=imin,kjmin=jmin,ldiom=.true.)
+     DO jk = 1,nvpk
+        ik = jk + ikmin -1
+        ! Get velocities v at ik
+        temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
+        tmask(:,:)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
+
+        ! get e3t at level ik ( ps...)
+        IF ( lfull ) THEN
+           e3t(:,:) = e31d(jk)
+        ELSE
+           e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
+        ENDIF
+
+        dsurf  = SUM(e1t * e2t       * tmask)
+        dvol2d = SUM(e1t * e2t * e3t * tmask)
+        dvol   = dvol + dvol2d
+
+        dsum2d = SUM(e1t * e2t * e3t * temp * tmask)
+        dsum   = dsum + dsum2d
+
+        IF (dvol2d /= 0 )THEN
+           PRINT *, ' Heat Content  at level ',ik,'(',gdept(ik),' m) ',pprho0*ppcp*dsum2d, 'surface = ',dsurf/1.e6,' km^2'
+        ELSE
+           PRINT *, ' No points in the water at level ',ik,'(',gdept(ik),' m) '
+        ENDIF
+
+     END DO
      
-     ! 
-     zsurf=sum(e1 * e2 * zmask)
-     zvol2d=sum(e1 * e2 * e3 * zmask)
-     zvol=zvol+zvol2d
-     zsum2d=sum(zv*e1*e2*e3*zmask)
-     zsum=zsum+zsum2d
-     IF (zvol2d /= 0 )THEN
-        PRINT *, ' Heat Content  at level ',ik,'(',gdep(ik),' m) ',rprho0*rpcp*zsum2d, 'surface = ',zsurf/1.e6,' km^2'
-     ELSE
-        PRINT *, ' No points in the water at level ',ik,'(',gdep(ik),' m) '
-     ENDIF
- 
+     PRINT * ,' Total Heat content        : ', pprho0*ppcp*dsum ,' Joules'
+     PRINT * ,' Total Heat content/volume : ', pprho0*ppcp*dsum/dvol ,' Joules/m3 '
   END DO
-  PRINT * ,' Total Heat content : ', rprho0*rpcp*zsum ,' Joules'
-  PRINT * ,' Total Heat content/volume : ', rprho0*rpcp*zsum/zvol ,' Joules/m3 '
 
-   END PROGRAM cdfheatc
+END PROGRAM cdfheatc

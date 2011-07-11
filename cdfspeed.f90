@@ -1,144 +1,205 @@
 PROGRAM cdfspeed
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfspeed  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfspeed  ***
+  !!=====================================================================
+  !!  ** Purpose : combine u and v to obtains the wind speed
   !!
-  !!  **  Purpose  :  combine u and v to obtains the wind speed
-  !!  
-  !!  **  Method   :  sqrt(u**2 + v**2)
+  !!  ** Method  : speed=sqrt(u**2 + v**2)
   !!
-  !!
-  !! history ;
-  !!  Original :  P. Mathiot (Nov. 2007) from cdfmeanvar
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 11/2007  : P. Mathiot   : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jk, ik, jt, ji, jj
-  INTEGER   :: narg, iargc, ncout, ierr            !: command line 
-  INTEGER   :: npiglo,npjglo,npk,nt                !: size of the domain
-  INTEGER   :: nvpk                                !: vertical levels in working variable
-  INTEGER, DIMENSION(1) ::  ipk, id_varout         ! 
 
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: zu, zv, U
+  INTEGER(KIND=4)                            :: ji, jj, jk, jt, jlev ! dummy loop index
+  INTEGER(KIND=4)                            :: narg, iargc, ijarg   ! command line 
+  INTEGER(KIND=4)                            :: ncout, ierr          ! output file stuff
+  INTEGER(KIND=4)                            :: npiglo, npjglo       ! size of the domain
+  INTEGER(KIND=4)                            :: npk, npt, nlev       ! size of the domain
+  INTEGER(KIND=4)                            :: nvpk                 ! vertical levels in working variable
+  INTEGER(KIND=4)                            :: ik                   ! level counter
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: nklevel              ! requested levels
+  INTEGER(KIND=4), DIMENSION(1)              :: ipk, id_varout       ! output variable vertical level, varid
 
-  REAL(kind=4), DIMENSION(:), ALLOCATABLE  :: tim
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                  ! time counter array
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdept, gdeptall      ! deptht values for requested/all levels
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zu, zv, zspeed       ! working arrays, speed
 
-  CHARACTER(LEN=256) :: cfilev, cfileu
-  CHARACTER(LEN=256) :: cfileout='speed.nc'
-  CHARACTER(LEN=256) :: cvaru, cvarv, cvartype
-  CHARACTER(LEN=20) :: ce1, ce2, ce3, cvmask, cvtype, cdep
+  CHARACTER(LEN=256)                         :: cf_vfil, cf_ufil     ! file for u and v components
+  CHARACTER(LEN=256)                         :: cf_tfil              ! file for T point position
+  CHARACTER(LEN=256)                         :: cv_u, cv_v           ! name of u and v variable
+  CHARACTER(LEN=256)                         :: cf_out='speed.nc'  ! output file name
+  CHARACTER(LEN=256)                         :: cldum                ! dummy char variable
 
-  LOGICAL    :: lforcing
-  INTEGER    :: istatus
+  TYPE (variable), DIMENSION(1)              :: stypvar              ! structure for attibutes
 
-  TYPE (variable), DIMENSION(1) :: typvar         !: structure for attibutes
-  ! constants
+  LOGICAL                                    :: lforcing             ! forcing flag
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
-  !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfspeed  ncfileU ncfileV cdfvarU cdfvarV' 
-     PRINT *,' Computes the speed current or wind'
-     PRINT *,' If the input files are 3D, the input is assumed to be '
-     PRINT *,' a model output on native C-grid. Speed is computed on the A-grid.'
-     PRINT *,' If the input file is 2D and have many time steps, then '
-     PRINT *,' we assume that this is a forcing file already on the A-grid.'
-     PRINT *,' Output on speed.nc, variable U'
+     PRINT *,' usage : cdfspeed  U-file V-file U-var V-var [-t T-file] ...'
+     PRINT *,'                  ... [-lev level_list]' 
+     PRINT *,'    PURPOSE :'
+     PRINT *,'       Computes the speed of ocean currents or wind speed'
+     PRINT *,'       '
+     PRINT *,'       If the input files are 3D, the input is assumed to be '
+     PRINT *,'       a model output on native C-grid. Speed is computed on the A-grid.'
+     PRINT *,'       '
+     PRINT *,'       If the input file is 2D and then we assume that this is '
+     PRINT *,'       a forcing file already on the A-grid.'
+     PRINT *,'    '
+     PRINT *,'    ARGUMENTS :'
+     PRINT *,'       U-file : netcdf file for U component'
+     PRINT *,'       V-file : netcdf file for V component'
+     PRINT *,'       U-var  : netcdf variable name for U component'
+     PRINT *,'       V-var  : netcdf variable name for V component'
+     PRINT *,'    '
+     PRINT *,'    OPTIONS :'
+     PRINT *,'       [-t T-file ] : indicate any file on gridT for correct header'
+     PRINT *,'                 of the output file (usefull for 3D files)'
+     PRINT *,'       [-lev level_list ] : indicate a list of levels to be processed'
+     PRINT *,'                 If not used, all levels are processed.'
+     PRINT *,'                 This option should be the last on the command line'
+     PRINT *,'    '
+     PRINT *,'    OUTPUT :'
+     PRINT *,'       Output on ',TRIM(cf_out),'  variable U '
      STOP
   ENDIF
 
-  CALL getarg (1, cfileu)
-  CALL getarg (2, cfilev)
-  CALL getarg (3, cvaru)
-  CALL getarg (4, cvarv)
+  nlev =0
+  ijarg=1
+  DO WHILE ( ijarg <= narg ) 
+     CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
+     SELECT CASE ( cldum )
+     CASE ( '-lev' ) 
+       nlev = narg -ijarg + 1
+       ALLOCATE ( nklevel(nlev) )
+       DO jlev = 1, nlev 
+          CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ( cldum,*) nklevel(jlev)
+       END DO
+     CASE ( '-t' ) 
+       CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1
+       IF ( chkfile (cf_tfil) ) STOP ! missing file
+     CASE DEFAULT
+       cf_ufil = cldum
+       CALL getarg(ijarg, cf_vfil ) ; ijarg = ijarg + 1
+       IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) ) STOP ! missing file
+       CALL getarg(ijarg, cv_u ) ; ijarg = ijarg + 1
+       CALL getarg(ijarg, cv_v ) ; ijarg = ijarg + 1
+     END SELECT 
+  ENDDO
 
-  IF (narg > 4 ) THEN
-       PRINT *, ' ERROR : You must give just fileU and fileV and cvaru and cvarv'
-       STOP
-  ENDIF
+  npiglo = getdim (cf_vfil,cn_x)
+  npjglo = getdim (cf_vfil,cn_y)
+  npk    = getdim (cf_vfil,cn_z)
+  nvpk   = getvdim(cf_vfil,cv_v)
+  npt    = getdim (cf_vfil,cn_t)
 
-  npiglo= getdim (cfilev,'x')
-  npjglo= getdim (cfilev,'y')
-  npk   = getdim (cfilev,'depth')
-  nvpk  = getvdim(cfilev,cvarv)
-  nt    = getdim (cfilev,'time_counter')
-
-  IF (nvpk == 2 ) nvpk = 1
-  IF (nvpk == 3 ) nvpk = npk
-
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
-  PRINT *, 'nvpk  =', nvpk
-  PRINT *, 'nt    =', nt
-
-  lforcing=.FALSE.
-  IF ((npk .EQ. 0) .AND. (nt .GT. 1)) THEN
+  IF ( (npk == 0) ) THEN
      lforcing=.TRUE.
      npk=1
      PRINT *, 'W A R N I N G : you used a forcing field'
+  ELSE
+     lforcing=.FALSE.
+     IF ( TRIM(cf_tfil) == 'none' ) THEN
+       PRINT *,'  ERROR: you must specify a griT file as fifth argument '
+       PRINT *,'     This is for the proper header of output file '
+       STOP
+     ENDIF
   END IF
 
+  IF ( nlev == 0 ) THEN 
+    nlev = npk 
+    ALLOCATE ( nklevel(nlev) )
+    DO jlev =1, nlev
+      nklevel(jlev) = jlev
+    ENDDO
+  ENDIF
+
+  IF (nvpk == 2 ) nvpk = 1
+  IF (nvpk == 3 ) nvpk = nlev
+
+  PRINT *, 'npiglo =', npiglo
+  PRINT *, 'npjglo =', npjglo
+  PRINT *, 'npk    =', npk
+  PRINT *, 'nvpk   =', nvpk
+  PRINT *, 'nlev   =', nlev
+  PRINT *, 'npt    =', npt
+
   ! define new variables for output
-  typvar(1)%name='U'
-  typvar(1)%units='m.s-1'
-  typvar(1)%missing_value=0.
-  typvar(1)%valid_min= -1000.
-  typvar(1)%valid_max= 1000.
-  typvar(1)%long_name='Current or wind speed'
-  typvar(1)%short_name='U'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TZYX'
+  stypvar(1)%cname             = 'U'
+  stypvar(1)%cunits            = 'm.s-1'
+  stypvar(1)%rmissing_value    = 0.
+  stypvar(1)%valid_min         = -1000.
+  stypvar(1)%valid_max         = 1000.
+  stypvar(1)%clong_name        = 'Current or wind speed'
+  stypvar(1)%cshort_name       = 'U'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TZYX'
 
   ! create output fileset
   IF (lforcing ) THEN
-     ipk(1) = 1 !  2D
-     ncout =create(cfileout, cfilev, npiglo,npjglo,0)
-     ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-     ierr= putheadervar(ncout, cfilev, npiglo, npjglo,0)
+     ipk(1) = 1 !  2D  no dep variable
+     ncout  = create      (cf_out, cf_vfil, npiglo, npjglo, 0         )
+     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
+     ierr   = putheadervar(ncout,  cf_vfil, npiglo, npjglo, 0         )
+     nlev=1 ; nklevel(nlev) = 1
   ELSE
-     ipk(1)=npk
-     ncout =create(cfileout, cfilev, npiglo,npjglo,npk)
-     ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-     ierr= putheadervar(ncout, cfilev, npiglo, npjglo,npk)
+     ALLOCATE ( gdept(nlev), gdeptall(npk) )
+     gdeptall = getvar1d ( cf_tfil, cn_vdeptht, npk )
+     DO jlev = 1, nlev
+       gdept(jlev) = gdeptall( nklevel(jlev) )
+     END DO
+     ipk(1) = nlev
+     ncout  = create      (cf_out, cf_tfil, npiglo, npjglo, nlev              )
+     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout         )
+     ierr   = putheadervar(ncout,  cf_tfil, npiglo, npjglo, nlev,  pdep=gdept )
   END IF
-  ! Allocate arrays
-  ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), U(npiglo,npjglo), tim(nt))
 
-  DO jt=1,nt
+  ! Allocate arrays
+  ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), zspeed(npiglo,npjglo), tim(npt))
+
+  DO jt=1,npt
      tim(jt)=jt
   END DO
-  ierr=putvar1d(ncout,tim,nt,'T')
 
-  DO jt = 1,nt
-     DO jk = 1,nvpk
-        ! Get velocities v at ik
-           zv(:,:)= getvar(cfilev, cvarv,jk,npiglo,npjglo,ktime=jt)
-           zu(:,:)= getvar(cfileu, cvaru,jk,npiglo,npjglo,ktime=jt)
+  ierr=putvar1d(ncout, tim, npt, 'T')
+
+  DO jt = 1,npt
+     DO jlev = 1, nlev
+           ik = nklevel(jlev)
+        ! Get velocities v at jk
+           zu(:,:) = getvar(cf_ufil, cv_u, ik, npiglo, npjglo, ktime=jt)
+           zv(:,:) = getvar(cf_vfil, cv_v, ik, npiglo, npjglo, ktime=jt)
         IF ( lforcing ) THEN
-          ! u and v are already on the T grid points
+           ! u and v are already on the T grid points
         ELSE
-           ! in this case we are on the C-grid and the speed mus be computed on the A-grid
-           DO ji=1,npiglo -1
+           ! in this case we are on the C-grid and the speed must be computed 
+           ! on the A-grid. We use reverse loop in order to use only one array
+           DO ji=npiglo,2,-1
              DO jj=1,npjglo
-               zu(ji,jj)=0.5*(zu(ji,jj)+zu(ji+1,jj))
+               zu(ji,jj) = 0.5*(zu(ji-1,jj)+zu(ji,jj))
              ENDDO
            ENDDO
+
            DO ji=1,npiglo 
-             DO jj=1,npjglo-1
-               zv(ji,jj)=0.5*(zv(ji,jj)+zv(ji,jj+1))
+             DO jj=npjglo,2 -1
+               zv(ji,jj) = 0.5*(zv(ji,jj-1)+zv(ji,jj))
              ENDDO
            ENDDO
         END IF
-        
-        U=SQRT(zv*zv+zu*zu)
-        ierr = putvar(ncout, id_varout(1) ,U, jk ,npiglo, npjglo, ktime=jt)
+        zspeed    = SQRT(zv*zv+zu*zu)
+        ierr = putvar(ncout, id_varout(1), zspeed, jlev ,npiglo, npjglo, ktime=jt)
      END DO
   END DO
   ierr = closeout(ncout)

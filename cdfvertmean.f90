@@ -1,189 +1,250 @@
 PROGRAM cdfvertmean
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfvertmean  ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfvertmean  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the vertical average of a scalar quantity
+  !!               between 2 z layers. Can handle full step configuration
+  !!               using the -full option.
   !!
-  !!  **  Purpose  :  Compute the vertical average of a scalar quantity
-  !!                  between z layers
-  !!                  PARTIAL STEPS
-  !!  
-  !!  **  Method   :  compute the sum ( V  * e1 *e2 * e3 *mask )
-  !!                  for the mixed layer stored into gridT file
+  !!  ** Method  : compute the sum ( V  * e1 *e2 * e3 *mask )
   !!
-  !!
-  !! history ;
-  !!  Original :  J.M. Molines ( 2008) January
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 11/2008  : J.M. Molines : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  USE modutils
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jk, jvar
-  INTEGER   :: k1,k2
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER   :: nvars, ivar
 
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  e3,  zs   !:  metrics, salinity
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  hdep              !:  mxl depth
-  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask             !:  npiglo x npjglo
-  REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE ::  zvol2d             !:  npiglo x npjglo
-  REAL(KIND=4),DIMENSION(:), ALLOCATABLE       ::  gdep             !:  
+  INTEGER(KIND=4)                               :: jk, jvar, jt        ! dummy loop index
+  INTEGER(KIND=4)                               :: ik1, ik2            ! vertical limit of integration
+  INTEGER(KIND=4)                               :: narg, iargc         ! command line 
+  INTEGER(KIND=4)                               :: ijarg, ireq         ! command line 
+  INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
+  INTEGER(KIND=4)                               :: npk, npt            ! size of the domain,
+  INTEGER(KIND=4)                               :: nvars, ivar         ! variables in input
+  INTEGER(KIND=4)                               :: ncout, ierr         ! ncid and error status
+  INTEGER(KIND=4), DIMENSION(1)                 :: ipk, id_varout      ! levels and varid's of output vars
 
-  REAL(KIND=8)      :: zvol,  dep_up, dep_down
-  REAL(KIND=8), DIMENSION (:,:),   ALLOCATABLE ::  zvertmean         !:  mxl salt content
+  REAL(KIND=4)                                  :: rdep_up             ! upper level of integration
+  REAL(KIND=4)                                  :: rdep_down           ! lower level of integration
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: e3                  ! metrics
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zv                  ! working variable
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: hdep                ! depth of the levels
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zmask               ! mask
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdep                ! vertical levels
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d                ! vertical metric full
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                 ! time counter
+  REAL(KIND=4), DIMENSION(1)                    :: rdep                ! dummy depth output
 
-  CHARACTER(LEN=256) :: cfilet 
-  CHARACTER(LEN=256) :: coordzgr='mesh_zgr.nc',cmask='mask.nc'
-  CHARACTER(LEN=256)               :: ctype='T'
-  CHARACTER(LEN=256)               :: cdum
-  CHARACTER(LEN=256)               :: cvarnam, cdep, ce3, cvmask
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cvarname    !: name of input variables
-  TYPE(variable), DIMENSION(:),ALLOCATABLE    :: typvarin     !: stucture for attributes
+  REAL(KIND=8)                                  :: dvol                ! total volume
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dvol2d              ! layer volume
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dvertmean           ! value of integral
 
-  ! Output stuff
-  INTEGER                         :: ncout, ierr
-  INTEGER,           DIMENSION(1) :: ipk, id_varout  !: only one output variable
-  REAL(KIND=4),      DIMENSION(1) :: tim,dep       !: time output
-  CHARACTER(LEN=256)               :: cfileout='vertmean.nc'
+  CHARACTER(LEN=256)                            :: cf_in               ! input file name
+  CHARACTER(LEN=256)                            :: cf_out='vertmean.nc'! output file
+  CHARACTER(LEN=256)                            :: cv_in               ! variable name
+  CHARACTER(LEN=256)                            :: cv_out='sovertmean' ! variable name
+  CHARACTER(LEN=256)                            :: cv_dep              ! depth name
+  CHARACTER(LEN=256)                            :: cv_e3               ! vertical metric name (partial)
+  CHARACTER(LEN=256)                            :: cv_e31d             ! vertical metric name (full)
+  CHARACTER(LEN=256)                            :: cv_msk              ! mask variable name
+  CHARACTER(LEN=256)                            :: ctype='T'           ! position of the variable
+  CHARACTER(LEN=256)                            :: cglobal             ! global attribute
+  CHARACTER(LEN=256)                            :: cldum               ! dummy string
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! name of input variables
+ 
+  TYPE(variable), DIMENSION(:), ALLOCATABLE     :: stypvarin           ! stucture for attributes (input)
+  TYPE(variable), DIMENSION(1)                  :: stypvar             ! stucture for attributes (output)
 
-  TYPE(variable), DIMENSION(1)    :: typvar         !: stucture for attributes
-  !!  Read command line and output usage message if not compliant.
-  narg= iargc()
+  LOGICAL                                       :: lfull=.FALSE.       ! full step flag
+  LOGICAL                                       :: lchk                ! file existence flag (true if missing)
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfvertmean  datafile varname T|U|V|W z1 z2  '
-     PRINT *,' Computes the vertical mean value of variable between z1 and z2'
-     PRINT *,' PARTIAL CELLS VERSION'
-     PRINT *,' Files mesh_zgr.nc ,mask.nc '
-     PRINT *,'  must be in the current directory'
-     PRINT *,' Output ncdf file vertmean.nc, variable 2D sovertmean'
+     PRINT *,' usage :  cdfvertmean IN-file IN-var v-type dep1 dep2 [-full]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute the vertical mean between dep1 and dep2 given in m,'
+     PRINT *,'       for variable IN-var in the input file.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       IN-file  : netcdf input file.' 
+     PRINT *,'       IN-var   : netcdf input variable.'
+     PRINT *,'       v-type   : one of T U V W indicating position of variable on C-grid'
+     PRINT *,'       dep1 dep2 : depths limit for vertical integration (meters). '
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-full ] : for full step configurations. Default is partial step.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       ', TRIM(cn_fzgr),' and ',TRIM(cn_fmsk)
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables : ', TRIM(cv_out),' (same units as input variable)'
+     PRINT *,'      '
      STOP
   ENDIF
 
-  CALL getarg (1, cfilet)
-  CALL getarg (2, cvarnam)
-  CALL getarg (3, ctype)
-  CALL getarg (4, cdum) ; READ(cdum,*) dep_up
-  CALL getarg (5, cdum) ; READ(cdum,*) dep_down
+  ijarg = 1 ; ireq=0
+  DO WHILE ( ijarg <= narg ) 
+    CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
+    SELECT CASE ( cldum )
+    CASE ( '-full' ) ; lfull = .TRUE.
+    CASE DEFAULT
+       ireq=ireq+1
+       SELECT CASE ( ireq )
+       CASE ( 1 ) ; cf_in=cldum
+       CASE ( 2 ) ; cv_in=cldum
+       CASE ( 3 ) ; ctype=cldum
+       CASE ( 4 ) ; READ(cldum,*) rdep_up
+       CASE ( 5 ) ; READ(cldum,*) rdep_down
+       CASE DEFAULT
+          PRINT *,' Too many arguments ...' ; STOP
+       END SELECT
+    END SELECT
+  ENDDO
 
-  IF (dep_down < dep_up ) THEN
-    PRINT *,'Give depth limits in increasing order !'
-    STOP
+  lchk = chkfile (cn_fzgr)
+  lchk = chkfile (cn_fmsk) .OR. lchk
+  lchk = chkfile (cf_in  ) .OR. lchk
+  IF ( lchk ) STOP ! missing files
+
+  CALL SetGlobalAtt (cglobal)
+
+  IF (rdep_down < rdep_up ) THEN
+     PRINT *,'Give depth limits in increasing order !'
+     STOP
   ENDIF
 
-  npiglo= getdim (cfilet,'x')
-  npjglo= getdim (cfilet,'y')
-  npk   = getdim (cfilet,'depth')
+  npiglo = getdim (cf_in,cn_x)
+  npjglo = getdim (cf_in,cn_y)
+  npk    = getdim (cf_in,cn_z)
+  npt    = getdim (cf_in,cn_t)
 
-  nvars = getnvar(cfilet)
-  ALLOCATE( cvarname(nvars), typvarin(nvars) )
-  cvarname(:)=getvarname(cfilet,nvars,typvarin)
+  nvars       = getnvar(cf_in)
+  ALLOCATE( cv_names(nvars), stypvarin(nvars) )
+  cv_names(:) = getvarname(cf_in, nvars, stypvarin)
   ivar=1
   DO jvar=1,nvars
-    IF ( TRIM(cvarname(jvar)) == TRIM(cvarnam) ) THEN
-      EXIT
-    ENDIF
-   ivar=ivar+1
+     IF ( TRIM(cv_names(jvar)) == TRIM(cv_in) ) THEN
+        EXIT
+     ENDIF
+     ivar=ivar+1
   ENDDO
+
   IF ( ivar == nvars+1 ) THEN
-     PRINT *,' Variable ',TRIM(cvarnam),' not found in ', TRIM(cfilet)
+     PRINT *,' Variable ',TRIM(cv_in),' not found in ', TRIM(cf_in)
      STOP
   ENDIF
-  
-  
-  dep(1) = 0.
-  ipk(:) = 1
-  typvar(1)%name= 'sovertmean'
-  typvar(1)%units=typvarin(ivar)%units
-  typvar(1)%missing_value=typvarin(ivar)%missing_value
-  typvar(1)%valid_min= typvarin(ivar)%valid_min
-  typvar(1)%valid_max= typvarin(ivar)%valid_max
-  typvar(1)%long_name='vertical average of '//TRIM(typvarin(ivar)%long_name)
-  typvar(1)%short_name='sovertmean'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TYX'
 
+  rdep(1)                      = 0.
+  ipk(:)                       = 1
+  stypvar(1)%cname             = cv_out
+  stypvar(1)%cunits            = stypvarin(ivar)%cunits
+  stypvar(1)%rmissing_value    = stypvarin(ivar)%rmissing_value
+  stypvar(1)%valid_min         = stypvarin(ivar)%valid_min
+  stypvar(1)%valid_max         = stypvarin(ivar)%valid_max
+  stypvar(1)%clong_name        = 'vertical average of '//TRIM(stypvarin(ivar)%clong_name)
+  stypvar(1)%cshort_name       = cv_out
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TYX'
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
 
   ! Allocate arrays
-  ALLOCATE ( zmask(npiglo,npjglo) , zvertmean(npiglo, npjglo) )
-  ALLOCATE ( zs(npiglo,npjglo) ,hdep(npiglo,npjglo)  )
-  ALLOCATE ( e3(npiglo,npjglo) ,zvol2d(npiglo,npjglo) )
-  ALLOCATE ( gdep(npk) )
+  ALLOCATE ( zmask(npiglo,npjglo), dvertmean(npiglo, npjglo) )
+  ALLOCATE ( zv(npiglo,npjglo), hdep(npiglo,npjglo)          )
+  ALLOCATE ( e3(npiglo,npjglo), dvol2d(npiglo,npjglo)        )
+  ALLOCATE ( gdep(npk), tim(npt)                             )
+
+  IF ( lfull ) ALLOCATE ( e31d(npk) )
 
   ! Initialize output file
-  ncout = create(cfileout, cfilet, npiglo,npjglo,1)
-  ierr=createvar(ncout ,typvar,1, ipk,id_varout )
-  ierr=putheadervar(ncout, cfilet,npiglo, npjglo,1,pdep=dep)
-  tim=getvar1d(cfilet,'time_counter',1)
-  ierr=putvar1d(ncout,tim,1,'T')
+  ncout = create      (cf_out, cf_in,   npiglo, npjglo, 1)
+  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, cdglobal=cglobal  )
+  ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, 1, pdep=rdep)
 
-  ! Read vertical depth at w point
+  tim  = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, tim,       npt, 'T')
+
   SELECT CASE ( ctype)
-  CASE( 'T','U','V','t','u','v');  cdep='gdepw' ; ce3='e3t_ps' 
-  CASE( 'W' ,'w')               ;  cdep='gdept' ; ce3='e3w_ps' 
+  CASE( 'T','U','V','t','u','v');  cv_dep=cn_gdepw ; cv_e3='e3t_ps' ; cv_e31d=cn_ve3t 
+  CASE( 'W' ,'w')               ;  cv_dep=cn_gdept ; cv_e3='e3w_ps' ; cv_e31d=cn_ve3w
   CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP
   END SELECT
-     gdep(:) = getvare3(coordzgr,cdep,npk)
+
+               gdep(:) = getvare3(cn_fzgr, cv_dep,  npk)
+  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cv_e31d, npk)
 
   ! set mask variable name
   SELECT CASE (ctype )
-  CASE ('T','t','W','w') ; cvmask='tmask'
-  CASE ('U','u')         ; cvmask='umask'
-  CASE ('V','v')         ; cvmask='vmask'
+  CASE ('T','t','W','w') ; cv_msk='tmask'
+  CASE ('U','u')         ; cv_msk='umask'
+  CASE ('V','v')         ; cv_msk='vmask'
   END SELECT
 
-  ! Look for k1 and k2 as nearest level of dep_up and dep_down
-  k1=1; k2=npk
+  ! Look for ik1 and ik2 as nearest level of rdep_up and rdep_down
+  ik1 = 1; ik2 = npk
   DO jk=1,npk
-   IF ( gdep(jk) <= dep_up ) k1=jk
-   IF ( gdep(jk) <= dep_down ) k2=jk
+     IF ( gdep(jk) <= rdep_up   ) ik1 = jk
+     IF ( gdep(jk) <= rdep_down ) ik2 = jk
   ENDDO
-    
-  PRINT *, dep_up, dep_down, k1, k2 , gdep(k1), gdep(k2+1)
-     
 
-  zvol=0.d0
-  zvertmean(:,:)=0.d0
+  PRINT '(a,2f8.3)', 'depth limit of integration : ', rdep_up, rdep_down
+  PRINT '(a,2i8  )', 'nearest level found        : ', ik1,     ik2
+  PRINT '(a,2f8.3)', 'corresponding depth        : ', gdep(ik1), gdep(ik2+1)
 
-  DO jk = k1, k2
-     ! Get temperatures at jk
-     zs(:,:)= getvar(cfilet, cvarnam,  jk ,npiglo,npjglo)
-     zmask(:,:)=getvar(cmask,cvmask,jk,npiglo,npjglo)
+  dvol           = 0.d0
+  dvertmean(:,:) = 0.d0
 
-     ! get e3 at level jk ( ps...)
-     e3(:,:) = getvar(coordzgr, ce3, jk,npiglo,npjglo, ldiom=.true.)
-     IF (jk == k1 ) THEN
-       hdep(:,:)=gdep(jk)+e3(:,:)
-       e3(:,:)=MIN(e3,hdep-REAL(dep_up))
-     ENDIF
-     IF ( jk == k2 ) THEN
-      e3(:,:)=MIN(e3,REAL(dep_down)-gdep(jk))
-     ENDIF
+  DO jt=1,npt
+     DO jk = ik1, ik2
+        ! Get values at jk
+        zv(   :,:) = getvar(cf_in,   cv_in,  jk, npiglo, npjglo, ktime=jt)
+        zmask(:,:) = getvar(cn_fmsk, cv_msk, jk, npiglo, npjglo          )
 
-     zvol=SUM( e3 * zmask)
-     zvol2d=e3(:,:)*zmask+ zvol2d(:,:)
-     zvertmean(:,:)=zvertmean(:,:)+ zs*e3*zmask
+        ! get e3 at level jk ( ps...)
+        IF ( lfull ) THEN ; e3(:,:) = e31d(jk)
+        ELSE              ; e3(:,:) = getvar(cn_fzgr, cv_e3, jk, npiglo, npjglo, ldiom=.TRUE.)
+        ENDIF
 
-     IF (zvol /= 0 )THEN
-        !   go on !
-     ELSE
-        !   no more layer below !    
-        EXIT   ! get out of the jk loop
-     ENDIF
+        IF ( jk == ik1 ) THEN
+           hdep(:,:) = gdep(jk) + e3(:,:)
+           e3(  :,:) = MIN(e3, hdep -rdep_up          )
+        ENDIF
 
-  END DO
+        IF ( jk == ik2 ) THEN
+           e3(  :,:) = MIN(e3, (rdep_down) - gdep(jk) )
+        ENDIF
 
-  ! Output to netcdf file : kg/m2
-  WHERE ( zvol2d /= 0 )  zvertmean=zvertmean/zvol2d
-  ierr = putvar(ncout, id_varout(1) ,REAL(zvertmean), 1,npiglo, npjglo)
-  ierr=closeout(ncout)
+        dvol       = SUM( DBLE(e3 * zmask) )
+        dvol2d     =      e3 * zmask * 1.d0  + dvol2d
+        dvertmean  = zv * e3 * zmask * 1.d0  + dvertmean
+
+        IF (dvol == 0 )THEN
+                  ! no more layer below !    
+           EXIT   ! get out of the jk loop
+        ENDIF
+     END DO
+
+     ! Output to netcdf file 
+     WHERE ( dvol2d /= 0 )  dvertmean = dvertmean/dvol2d
+     ierr = putvar(ncout, id_varout(1), REAL(dvertmean), 1, npiglo, npjglo, ktime=jt)
+  END DO  ! loop on time
+
+  ierr = closeout(ncout)
 
 END PROGRAM cdfvertmean

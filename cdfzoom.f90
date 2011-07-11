@@ -1,102 +1,116 @@
 PROGRAM cdfzoom
-  !!----------------------------------------------------------------------------
-  !!                ***   PROGRAM cdfzoom ***
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfzoom  ***
+  !!=====================================================================
+  !!  ** Purpose : Extract a sub area of a cdf output file and print it 
+  !!               on the screen with an easy to read format.
   !!
-  !!  ** Purpose:    Extract a sub area of a cdf output file and print it on the screen
-  !!                   with an easy to read format
+  !!  ** Method  : specify the variable name and file on the command line
   !!
-  !!  ** Method:     Read command line, open the file get the variable and show the sub area
-  !!
-  !!  ** Usage :  cdfzoom -f file -zoom imin imax jmin jmax -fact factor -lev klev 
-  !!
-  !!   History: 
-  !!       1999 : Anne de Miranda (bimgzoom)
-  !!       2001 : J-M Molines for normalization
-  !!       2004 : J-M Molines : support for NetCdf IOIPSL files
-  !!       2006 : J-M Molines : included as cdfzoom in cdftools
-  !!
-  !!----------------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  ! * Module used
+  !! History : ---  : 1999     : A. de Miranda : Original code in bimgtools
+  !! History : 2.1  : 11/2004  : J.M. Molines  : port to CDFTOOLS
+  !!           3.0  : 12/2010  : J.M. Molines  : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  ! * Local Variable
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2010, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER ,PARAMETER :: jpk=100, jpt=700
   !
-  INTEGER :: numin,jk,ji,jj,jt,jl, jd, jarg
-  INTEGER ::  narg, iargc
-  INTEGER :: isdirect
-  INTEGER :: ni,nj,nk,nt,icod,ndim
-  INTEGER :: niz,njz, nkz, itime, nvars
-  INTEGER :: imin, imax, jmin, jmax,kext, istatus, kmin, kmax
-  INTEGER :: ipmin, ipmax, jpmin, jpmax
+  INTEGER(KIND=4)                           :: ji, jj, jt             ! dummy loop index
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg     ! browse line
+  INTEGER(KIND=4)                           :: ni, nj, nk, nt, ndim   ! domain dimension
+  INTEGER(KIND=4)                           :: niz, njz, nkz          ! size of zoom
+  INTEGER(KIND=4)                           :: iimin, iimax           ! i-limits
+  INTEGER(KIND=4)                           :: ijmin, ijmax           ! j-limits
+  INTEGER(KIND=4)                           :: ikmin, ikmax           ! k-limits
+  INTEGER(KIND=4)                           :: itmin, itmax           ! t-limit
+  INTEGER(KIND=4)                           :: ikext, ierr            ! 
+  INTEGER(KIND=4)                           :: iipmin, iipmax         ! 
+  INTEGER(KIND=4)                           :: ijpmin, ijpmax         !
   !
-  REAL ,DIMENSION(:),ALLOCATABLE     :: h, rtime
-  REAL ,DIMENSION (:,:), ALLOCATABLE :: v2d
-  REAL                               :: fact
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: v2d                    ! data array
+  REAL(KIND=4)                              :: fact                   ! multiplying factor
   !
-  CHARACTER(LEN=256) ::  cfilein, cline1, cline2
-  CHARACTER(LEN=256) :: cvar='none', cdim
-  !!
-  !! 1. Initializations:
-  !! -------------------
-  !!
-  narg = iargc()
-  IF (narg == 0) THEN
-     PRINT *,'usage :cdfzoom -f file '// &
-          ' -lev kmin kmax -fact facteur' //  &
-          ' -zoom imin imax jmin jmax' // &
-          ' -var cdfvarname '
-     STOP
-  END IF
-  !
-  kext=1 ; kmin=1 ; kmax=1
-  fact=1
-  numin = 10
-  jarg=1
-  ! Read command line
-  DO  WHILE (jarg <=  narg)
-     CALL getarg(jarg,cline1)
-     jarg = jarg + 1
-     IF (cline1 == '-f') THEN
-        CALL getarg(jarg,cline2); jarg = jarg + 1
-        cfilein=cline2
-     ELSE IF (cline1 == '-lev') THEN
-        CALL getarg(jarg,cline2) ; jarg = jarg + 1
-        READ(cline2,*) kmin
-        CALL getarg(jarg,cline2) ; jarg = jarg + 1
-        READ(cline2,*) kmax
-     ELSE IF (cline1 == '-fact') THEN
-        CALL getarg(jarg,cline2) ; jarg = jarg + 1
-        READ(cline2,*) fact
-     ELSE IF (cline1 == '-zoom') THEN
-        CALL getarg(jarg,cline2) ; jarg = jarg + 1
-        READ(cline2,*) imin
-        CALL getarg(jarg,cline2) ; jarg = jarg + 1
-        READ(cline2,*) imax
-        CALL getarg(jarg,cline2) ; jarg = jarg + 1
-        READ(cline2,*) jmin
-        CALL getarg(jarg,cline2) ; jarg = jarg + 1
-        READ(cline2,*) jmax
-     ELSE IF ( cline1 == '-var') THEN
-        CALL getarg(jarg,cvar) ; jarg = jarg + 1
-     ELSE
-        PRINT *, cline1,' : unknown option '
-        STOP
-     END IF
-  END DO
-  !
-  ni=0 ; nj=0; nk=0; nt=0 
-  niz=imax-imin+1
-  njz=jmax-jmin+1
-  nkz=kmax-kmin+1
-  kext=kmin
+  CHARACTER(LEN=256)                        :: cldum                  ! summy character variable
+  CHARACTER(LEN=256)                        :: cf_in                  ! input file name
+  CHARACTER(LEN=256)                        :: cv_in='none'           ! variable name
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
-  IF (nkz > 1 ) THEN
+  narg = iargc()
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfzoom -f file -zoom imin imax jmin jmax  ...'
+     PRINT *,'               ... -var cdfvar [-lev kmin kmax ] ...'
+     PRINT *,'               ... [ -time tmin tmax ] [ -fact factor] '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'      Display the numerical values of a zoomed area. By'
+     PRINT *,'      default, all times and levels are shown. If the zoomed'
+     PRINT *,'      area is degenerated to a single line, then the vertical'
+     PRINT *,'      slab is displayed.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       -f file : name of input file' 
+     PRINT *,'       -zoom imin imax jmin jmax : spatial window definition'
+     PRINT *,'       -var cdfvar : cdf variable name to work with.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-lev kmin kmax ]  : vertical limits for display.' 
+     PRINT *,'       [-time tmin tmax ] : time limits for display.' 
+     PRINT *,'       [-fact factor ]    : use a multiplicative factor for display.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        none'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       display on standard output'
+     STOP
+  ENDIF
+  !
+  ikext = 1 ; ikmin = 1 ; ikmax = 1 ; itmin = 1 ; itmax = 1
+  fact  = 1
+
+  ijarg  = 1
+  ! Read command line
+  DO  WHILE (ijarg <=  narg)
+     CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
+     SELECT CASE ( cldum )
+     CASE ( '-f' )
+        CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
+     CASE ( '-lev' )
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ( '-time' )
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
+     CASE ( '-fact' )
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) fact
+     CASE ( '-zoom' )
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+     CASE ( '-var' )
+        CALL getarg(ijarg,cv_in) ; ijarg = ijarg + 1
+     CASE DEFAULT
+        PRINT *, TRIM(cldum),' : unknown option '
+        STOP
+     END SELECT
+  END DO
+
+  IF ( chkfile (cf_in) ) STOP ! missing file
+  !
+  ni=0 ; nj=0 ; nk=0 ; nt=0 
+  niz  = iimax - iimin + 1
+  njz  = ijmax - ijmin + 1
+  nkz  = ikmax - ikmin + 1
+  ikext= ikmin
+
+  IF ( nkz > 1 ) THEN
      !working with vertical slab, either niz or njz must be 1
      IF ( niz == 1  ) THEN ! y/z slab
      ELSE IF ( njz == 1 ) THEN ! x/z slab
@@ -106,106 +120,112 @@ PROGRAM cdfzoom
      ENDIF
   ENDIF
 
-  ni=getdim(cfilein,'x',cdim,istatus)
-  IF ( istatus == 1 ) THEN 
-     ni=getdim(cfilein,'lon',cdim,istatus)
-     IF ( istatus == 1 ) THEN
+  ni = getdim(cf_in, cn_x, cldum, ierr)
+  IF ( ierr == 1 ) THEN 
+     ni = getdim(cf_in, 'lon', cldum, ierr)
+     IF ( ierr == 1 ) THEN
         PRINT *,' No X or lon dim found ' ; STOP
      ENDIF
   ENDIF
 
-  nj=getdim(cfilein,'y',cdim,istatus)
-  IF ( istatus == 1 ) THEN 
-     nj=getdim(cfilein,'lat',cdim,istatus)
-     IF ( istatus == 1 ) THEN
+  nj = getdim(cf_in, cn_y, cldum, ierr)
+  IF ( ierr == 1 ) THEN 
+     nj = getdim(cf_in, 'lat', cldum, ierr)
+     IF ( ierr == 1 ) THEN
         PRINT *,' No y or lat dim found ' ; STOP
      ENDIF
   ENDIF
 
-  nk=getdim(cfilein,'dep',cdim,istatus)
-  IF ( istatus == 1 ) THEN 
-     nk=getdim(cfilein,'z',cdim,istatus)
-     IF ( istatus == 1 ) THEN 
-        nk=getdim(cfilein,'lev',cdim,istatus)
-        IF ( istatus == 1 ) THEN
+  nk = getdim(cf_in, cn_z, cldum, ierr)
+  IF ( ierr == 1 ) THEN 
+     nk = getdim(cf_in, 'z', cldum, ierr)
+     IF ( ierr == 1 ) THEN 
+        nk = getdim(cf_in, 'lev', cldum, ierr)
+        IF ( ierr == 1 ) THEN
            PRINT *,' No dep or z or lev  dim found ' 
         ENDIF
      ENDIF
   ENDIF
 
-  nt=getdim(cfilein,'time',cdim,istatus)
-  IF ( istatus == 1 ) THEN 
-     nt=getdim(cfilein,'step',cdim,istatus)
-     IF ( istatus == 1 ) THEN
+  nt = getdim(cf_in, cn_t, cldum, ierr)
+  IF ( ierr == 1 ) THEN 
+     nt = getdim(cf_in, 'step', cldum, ierr)
+     IF ( ierr == 1 ) THEN
         PRINT *,' No time or step dim found ' 
      ENDIF
   ENDIF
 
-  IF (nk == 0 ) THEN ; nk = 1 ; kext=1  ; ENDIF  ! assume a 2D variable
-  IF (nt == 0 ) THEN ; nt = 1 ; itime=1 ; ENDIF! assume a 1 time frame file
-  ALLOCATE (h(nk), rtime(nt))
+  IF ( itmax > nt ) THEN 
+     PRINT *,' Not enough time steps in this file' 
+     STOP
+  ENDIF
 
-  IF (nkz == 1 ) THEN 
-     ALLOCATE (v2d(niz,njz) )
+  IF (nk == 0 ) THEN ; nk = 1 ; ikext = 1 ; ENDIF  ! assume a 2D variable
+  IF (nt == 0 ) THEN ; nt = 1             ; ENDIF  ! assume a 1 time frame file
+
+  IF ( nkz == 1 ) THEN 
+     ALLOCATE ( v2d(niz,njz) )
   ELSE  
      IF ( niz == 1 ) THEN
-        ALLOCATE (v2d(njz,nkz))
+        ALLOCATE( v2d(njz,nkz))
      ELSE
-        ALLOCATE(v2d(niz,nkz))
+        ALLOCATE( v2d(niz,nkz))
      ENDIF
   ENDIF
 
-  DO 
-     ndim=getvdim(cfilein,cvar)+1   ! getvdim gives ndim-1 !
-     PRINT *,TRIM(cvar), ndim, kext
-     SELECT CASE (nkz)
-     CASE (1)
-        ipmin=imin ; ipmax=imax; jpmin=jmin; jpmax=jmax
-        SELECT CASE (ndim)
-        CASE( 2 )  ! assume x,y variable
-           v2d(:,:)=getvar(cfilein,cvar,1,niz,njz,imin,jmin)
-           EXIT
-        CASE( 3 )  ! assume x,y,t variable
-           v2d(:,:)=getvar(cfilein,cvar,1,niz,njz,imin,jmin)
-           EXIT
-        CASE( 4 )  ! assume x,y,z,t variable
-           v2d(:,:)=getvar(cfilein,cvar,kext,niz,njz,imin,jmin)
-           EXIT
-        CASE DEFAULT
-           PRINT *,' Non mapable variables x-y :('
-           cvar='none'
-        END SELECT
+  DO jt = itmin, itmax
+     DO   ! for exit statement
+        ndim = getvdim(cf_in, cv_in)+1   ! getvdim gives ndim-1 !
+        PRINT *,TRIM(cv_in), ndim, ikext
+        SELECT CASE (nkz)
+        CASE (1)
+           iipmin=iimin ; iipmax=iimax; ijpmin=ijmin; ijpmax=ijmax
+           SELECT CASE (ndim)
+           CASE( 2 )  ! assume x,y variable
+              v2d(:,:) = getvar(cf_in, cv_in, 1,     niz, njz, iimin, ijmin, ktime=jt)
+              EXIT
+           CASE( 3 )  ! assume x,y,t variable
+              v2d(:,:) = getvar(cf_in, cv_in, 1,     niz, njz, iimin, ijmin, ktime=jt)
+              EXIT
+           CASE( 4 )  ! assume x,y,z,t variable
+              v2d(:,:) = getvar(cf_in, cv_in, ikext, niz, njz, iimin, ijmin, ktime=jt)
+              EXIT
+           CASE DEFAULT
+              PRINT *,' Non mapable variables x-y :('
+              cv_in='none'
+           END SELECT
 
-     CASE DEFAULT
-       SELECT CASE (ndim)
-        CASE( 4 )  ! assume x,y,z,t variable
-           IF ( njz == 1 ) THEN
-             ipmin=imin ; ipmax=imax; jpmin=kmin; jpmax=kmax
-             v2d(:,:)=getvarxz(cfilein,cvar,jmin,niz,nkz,imin,kmin)
-           ELSE
-             ipmin=jmin ; ipmax=jmax; jpmin=kmin; jpmax=kmax
-             v2d(:,:)=getvaryz(cfilein,cvar,imin,njz,nkz,jmin,kmin)
-           ENDIF
-           EXIT
         CASE DEFAULT
-           PRINT *,' Non mapable variables x-z or y-z :('
-           cvar='none'
-        END SELECT
+           SELECT CASE (ndim)
+           CASE( 4 )  ! assume x,y,z,t variable
+              IF ( njz == 1 ) THEN
+                 iipmin=iimin ; iipmax=iimax; ijpmin=ikmin; ijpmax=ikmax
+                 v2d(:,:) = getvarxz(cf_in, cv_in, ijmin, niz, nkz, iimin, ikmin, ktime=jt)
+              ELSE
+                 iipmin=ijmin ; iipmax=ijmax; ijpmin=ikmin; ijpmax=ikmax
+                 v2d(:,:) = getvaryz(cf_in, cv_in, iimin, njz, nkz, ijmin, ikmin, ktime=jt)
+              ENDIF
+              EXIT
+           CASE DEFAULT
+              PRINT *,' Non mapable variables x-z or y-z :('
+              cv_in='none'
+           END SELECT
 
-     END SELECT ! nkz
+        END SELECT ! nkz
+     ENDDO
+
+     PRINT *,'IMIN IMAX JMIN JMAX KMIN KMAX TIME', iimin,iimax,ijmin,ijmax,ikmin,ikmax, jt
+     PRINT 9001,'      ',(ji,ji=iipmin,iipmax)
+     IF (nkz == 1 ) THEN
+        DO jj=ijpmax,ijpmin,-1
+           PRINT 9000,jj,'  ',(v2d(ji-iipmin+1,jj-ijpmin+1)/fact,ji=iipmin,iipmax)
+        END DO
+     ELSE
+        DO jj=ijpmin,ijpmax
+           PRINT 9000,jj,'  ',(v2d(ji-iipmin+1,jj-ijpmin+1)/fact,ji=iipmin,iipmax)
+        END DO
+     ENDIF
   ENDDO
-
-  PRINT *,'IMIN IMAX JMIN JMAX KMIN KMAX', imin,imax,jmin,jmax,kmin,kmax
-  PRINT 9001,'      ',(ji,ji=ipmin,ipmax)
-  IF (nkz == 1 ) THEN
-    DO jj=jpmax,jpmin,-1
-       PRINT 9000,jj,'  ',(v2d(ji-ipmin+1,jj-jpmin+1)/fact,ji=ipmin,ipmax)
-    END DO
-  ELSE
-    DO jj=jpmin,jpmax
-       PRINT 9000,jj,'  ',(v2d(ji-ipmin+1,jj-jpmin+1)/fact,ji=ipmin,ipmax)
-    END DO
-  ENDIF
 9000 FORMAT(i4,a,20f12.4)
 9001 FORMAT(a,20i12)
 

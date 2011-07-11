@@ -1,545 +1,607 @@
 PROGRAM cdfconvert
-  !!-------------------------------------------------------------------
-  !!              PROGRAM CDFCONVERT
-  !!              ******************
-  !!
-  !!  **  Purpose: Convert a set of dimgfile (Clipper like)
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfconvert  ***
+  !!=====================================================================
+  !!  ** Purpose : Convert a set of dimgfile (Clipper like)
   !!               to a set of CDF files (Drakkar like )
-  !!  
-  !!  **  Method: Read tag then open the respective T S 2D U V files to create 
+  !!
+  !!  ** Method  : Read tag then open the respective T S 2D U V files to create
   !!              gridT, gridU and gridV files.
   !!              Requires  mesh_hgr.nc and mesh_zgr.nc  files
   !!
-  !! history:
-  !!    Original:  J.M. Molines (Jan. 2007 )
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !!
-  !! * Modules used
+  !! History : 2.1  : 01/2007  : J.M. Molines : Original code
+  !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
+  !!----------------------------------------------------------------------
+  !!   routines      : description
+  !!  isdirect       : integer function which return the record length
+  !!                   of the file in argument if a dimgfile, 0 else.
+  !!                  
+  !!----------------------------------------------------------------------
   USE cdfio 
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: ji,jj,jk, jvar
-  INTEGER   :: narg, iargc, nvar
-  INTEGER   :: npiglo,npjglo, npk                           !: size of the domain
 
-  REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: v2d, glam, gphi
-  REAL(KIND=4) , DIMENSION (:), ALLOCATABLE :: dep
-  REAL(KIND=4) ,DIMENSION(1)                  :: timean
+  INTEGER(KIND=4)                            :: ji, jj, jk      ! dummy loop index
+  INTEGER(KIND=4)                            :: jt, jvar        ! dummy loop index
+  INTEGER(KIND=4)                            :: narg, iargc     ! command line
+  INTEGER(KIND=4)                            :: nvar            ! number of output variables
+  INTEGER(KIND=4)                            :: npiglo, npjglo  ! size of the domain
+  INTEGER(KIND=4)                            :: npk, npt        ! size of the domain
+  INTEGER(KIND=4)                            :: irecl, ii, ndim ! dimg stuff variables
+  INTEGER(KIND=4)                            :: numu=10         ! logical id for input dimg file
+  INTEGER(KIND=4)                            :: numv=11         !      "             "
+  INTEGER(KIND=4)                            :: numt=12         !      "             "
+  INTEGER(KIND=4)                            :: nums=14         !      "             "
+  INTEGER(KIND=4)                            :: num2d=15        !      "             "
+  INTEGER(KIND=4)                            :: numssh=16       !      "             "
+  INTEGER(KIND=4)                            :: numuu=17        !      "             "
+  INTEGER(KIND=4)                            :: numvv=18        !      "             "
+  INTEGER(KIND=4)                            :: ncout           ! ncid of output netcdf file
+  INTEGER(KIND=4)                            :: ierr            ! error status
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout  ! outpur variables levels and id's
 
-  CHARACTER(LEN=256) :: ctag, confcase
+  REAL(KIND=4)                               :: x1, y1          ! dimg header ( SW corner)
+  REAL(KIND=4)                               :: dx, dy          ! dimg header ( x,y step)
+  REAL(KIND=4)                               :: zspval          ! dimg header ( special value)
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: v2d, glam, gphi ! working arrays
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: zdep            ! depth
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim             ! time counter
 
-  ! Dimg stuff
-  INTEGER   :: irecl, ii, nt, ndim
-  INTEGER   :: numu=10, numv=11, numt=12,  nums=14, num2d=15, numssh=16, numuu=17, numvv=18
-  CHARACTER(LEN=256) :: cdimgu, cdimgv,cdimgt, cdimgs, cdimg2d !: file name dimg
-  CHARACTER(LEN=256) :: cdimguu, cdimgvv, cdimgssh             !: file name dimg (optional)
-  CHARACTER(LEN=80) :: cheader
-  CHARACTER(LEN=4) :: cver
-  REAL(KIND=4) :: x1,y1, dx,dy, spval
-  LOGICAL :: lexist
+  CHARACTER(LEN=256)                         :: cf_ufil         ! output gridU file
+  CHARACTER(LEN=256)                         :: cf_vfil         ! output gridV file
+  CHARACTER(LEN=256)                         :: cf_tfil         ! output gridT file
+  CHARACTER(LEN=256)                         :: cf_bsfil        ! output BSF file
+  CHARACTER(LEN=256)                         :: cf_dimgu        ! input dimg U file
+  CHARACTER(LEN=256)                         :: cf_dimgv        ! input dimg V file
+  CHARACTER(LEN=256)                         :: cf_dimgt        ! input dimg T file
+  CHARACTER(LEN=256)                         :: cf_dimgs        ! input dimg S file
+  CHARACTER(LEN=256)                         :: cf_dimg2d       ! input dimg 2D file
+  CHARACTER(LEN=256)                         :: cf_dimguu       ! input dimg U2 file
+  CHARACTER(LEN=256)                         :: cf_dimgvv       ! input dimg V2 file
+  CHARACTER(LEN=256)                         :: cf_dimgssh      ! input dimg SSH file
+  CHARACTER(LEN=256)                         :: ctag            ! time tag
+  CHARACTER(LEN=256)                         :: confcase        ! config-case
+  CHARACTER(LEN=80 )                         :: cheader         ! comment in header of dimg file
+  CHARACTER(LEN=4  )                         :: cver            ! dimg version
 
-  ! Netcdf Stuff
-  CHARACTER(LEN=256) :: cfilu ,cfilv ,cfilt, cfilbsf                   !: file name nc
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc', coordzgr='mesh_zgr.nc'
-  TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvar
-  INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout
-  INTEGER    :: ncout
-  INTEGER    :: istatus
+  TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar         ! output data structure
+
+  LOGICAL                                    :: lexist          ! flag for existing file
+  LOGICAL                                    :: lchk = .FALSE.  ! flag for missing files
+  !!----------------------------------------------------------------------
 
   !!  Read command line
   narg= iargc()
   IF ( narg /= 2 ) THEN
-     PRINT *,' Usage : cdfconvert ''Clipper tag '' ''CLIPPER confcase'' '
-     PRINT *,'    Output on gridT.nc, gridU.nc and gridV.nc '
-     PRINT *,'    mesh_hgr and mesh_zgr must be in the current directory'
+     PRINT *,' usage : cdfconvert CLIPPER_tag CLIPPER_Confcase'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Convert dimg files (CLIPPER like) to netcdf (DRAKKAR like).'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       CLIPPER_tag      : a string such as y2000m01d15 for time identification.' 
+     PRINT *,'       CLIPPER_confcase : CONFIG-CASE of the files to be converted (eg ATL6-V6)'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr)
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : gridT, gridU, gridV files'
+     PRINT *,'         variables : same as in standard NEMO output'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'       cdfflxconv, cdfsstconv, cdfstrconv'
+     PRINT *,'      '
      STOP
   ENDIF
   !!
   CALL getarg (1, ctag)
   CALL getarg (2, confcase)
 
+  lchk = lchk .OR. chkfile( cn_fhgr )
+  lchk = lchk .OR. chkfile (cn_fzgr )
+
   !! Build dimg file names
-  cdimgu=TRIM(confcase)//'_U_'//TRIM(ctag)//'.dimg'
-  cdimgv=TRIM(confcase)//'_V_'//TRIM(ctag)//'.dimg'
-  cdimgt=TRIM(confcase)//'_T_'//TRIM(ctag)//'.dimg'
-  cdimgs=TRIM(confcase)//'_S_'//TRIM(ctag)//'.dimg'
-  cdimg2d=TRIM(confcase)//'_2D_'//TRIM(ctag)//'.dimg'
+  cf_dimgu   = TRIM(confcase)//'_U_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgu )
+  cf_dimgv   = TRIM(confcase)//'_V_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgv )
+  cf_dimgt   = TRIM(confcase)//'_T_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgt )
+  cf_dimgs   = TRIM(confcase)//'_S_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgs )
+  cf_dimg2d  = TRIM(confcase)//'_2D_' //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimg2d)
+  IF ( lchk ) STOP ! missing file
 
-  cdimgssh=TRIM(confcase)//'_SSH_'//TRIM(ctag)//'.dimg'
-  cdimguu=TRIM(confcase)//'_UU_'//TRIM(ctag)//'.dimg'
-  cdimgvv=TRIM(confcase)//'_VV_'//TRIM(ctag)//'.dimg'
+  cf_dimgssh = TRIM(confcase)//'_SSH_'//TRIM(ctag)//'.dimg'
+  cf_dimguu  = TRIM(confcase)//'_UU_' //TRIM(ctag)//'.dimg'
+  cf_dimgvv  = TRIM(confcase)//'_VV_' //TRIM(ctag)//'.dimg'
 
-  cfilu=TRIM(confcase)//'_'//TRIM(ctag)//'_gridU.nc'
-  cfilv=TRIM(confcase)//'_'//TRIM(ctag)//'_gridV.nc'
-  cfilt=TRIM(confcase)//'_'//TRIM(ctag)//'_gridT.nc'
-  cfilbsf=TRIM(confcase)//'_'//TRIM(ctag)//'_PSI.nc'
+  cf_ufil    = TRIM(confcase)//'_'    //TRIM(ctag)//'_gridU.nc'
+  cf_vfil    = TRIM(confcase)//'_'    //TRIM(ctag)//'_gridV.nc'
+  cf_tfil    = TRIM(confcase)//'_'    //TRIM(ctag)//'_gridT.nc'
+  cf_bsfil   = TRIM(confcase)//'_'    //TRIM(ctag)//'_PSI.nc'
 
   ! open (and check ?? if they exists )
-  irecl=isdirect(cdimgu)  ; OPEN( numu,FILE=cdimgu, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-  irecl=isdirect(cdimgv)  ; OPEN( numv,FILE=cdimgv, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-  irecl=isdirect(cdimgt)  ; OPEN( numt,FILE=cdimgt, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-  irecl=isdirect(cdimgs)  ; OPEN( nums,FILE=cdimgs, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-  irecl=isdirect(cdimg2d) ; OPEN( num2d,FILE=cdimg2d, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+  irecl=isdirect(cf_dimgu ) ; OPEN( numu,  FILE=cf_dimgu,  FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+  irecl=isdirect(cf_dimgv ) ; OPEN( numv,  FILE=cf_dimgv,  FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+  irecl=isdirect(cf_dimgt ) ; OPEN( numt,  FILE=cf_dimgt,  FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+  irecl=isdirect(cf_dimgs ) ; OPEN( nums,  FILE=cf_dimgs,  FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+  irecl=isdirect(cf_dimg2d) ; OPEN( num2d, FILE=cf_dimg2d, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
   
-  READ(numt,REC=1) cver, cheader, ii, npiglo, npjglo, npk
+  READ(numt,REC=1) cver, cheader, ii, npiglo, npjglo, npk, npt
 
-  ALLOCATE (v2d(npiglo, npjglo), glam(npiglo,npjglo), gphi(npiglo,npjglo), dep(npk) )
-  READ(numt,REC=1) cver, cheader, ii, npiglo, npjglo, npk, nt, ndim, &
-                        x1,y1,dx,dy,spval,   &
-                        (dep(jk),jk=1,npk), &
-                        timean(1)
+  ALLOCATE (v2d(npiglo, npjglo), glam(npiglo,npjglo), gphi(npiglo,npjglo), zdep(npk), tim(npt) )
+
+  READ(numt,REC=1) cver, cheader, ii, npiglo, npjglo, npk, npt, ndim, &
+                   &      x1,y1,dx,dy,zspval, &
+                   &    ( zdep(jk),jk=1,npk), &
+                        ( tim(jt), jt=1,npt)
+
   ! transform Clipper days to drakkar seconds ...
-  timean(1)=timean(1)*86400.
+  tim(:)=tim(:)*86400.
 
+  !###############
+  !# GRID T FILE #
+  !###############
   ! Build gridT file with votemper, vosaline, sossheig, ... fluxes ...
-  INQUIRE(FILE=cdimgssh, EXIST=lexist)
+  INQUIRE(FILE=cf_dimgssh, EXIST=lexist)
   IF ( lexist ) THEN
-    irecl=isdirect(cdimgssh); OPEN( numssh,FILE=cdimgssh, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-    nvar=10 
+    irecl = isdirect(cf_dimgssh) 
+    OPEN( numssh,FILE=cf_dimgssh, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+    nvar = 10 
   ELSE
-    nvar=9
+    nvar = 9
   ENDIF
 
-  ALLOCATE ( typvar(nvar), ipk(nvar), id_varout(nvar) )
-  jvar=1
-  ipk(jvar)      = npk
-  typvar(jvar)%name='votemper'
-  typvar(jvar)%units='C'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= -2.
-  typvar(jvar)%valid_max= 40.
-  typvar(jvar)%long_name='Potential Temperature'
-  typvar(jvar)%short_name='votemper'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TZYX'
+  ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
+  jvar=1 
+  ipk(jvar)                       = npk       
+  stypvar(jvar)%cname             = cn_votemper
+  stypvar(jvar)%cunits            = 'C'      
+  stypvar(jvar)%rmissing_value    = 0.      
+  stypvar(jvar)%valid_min         = -2.    
+  stypvar(jvar)%valid_max         = 40.   
+  stypvar(jvar)%clong_name        = 'Potential Temperature'
+  stypvar(jvar)%cshort_name       = cn_votemper
+  stypvar(jvar)%conline_operation = 'N/A'                
+  stypvar(jvar)%caxis             = 'TZYX'              
   jvar=jvar+1
 
-  ipk(jvar)      = npk
-  typvar(jvar)%name='vosaline'
-  typvar(jvar)%units='PSU'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 45.
-  typvar(jvar)%long_name='Salinity'
-  typvar(jvar)%short_name='vosaline'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TZYX'
+  ipk(jvar)                       = npk
+  stypvar(jvar)%cname             = cn_vosaline
+  stypvar(jvar)%cunits            = 'PSU'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 45.
+  stypvar(jvar)%clong_name        = 'Salinity'
+  stypvar(jvar)%cshort_name       = cn_vosaline
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TZYX'
   jvar=jvar+1
 
   IF ( lexist ) THEN
-  ipk(jvar)      = 1
-  typvar(jvar)%name='sossheig'
-  typvar(jvar)%units='m'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= -10.
-  typvar(jvar)%valid_max= 10.
-  typvar(jvar)%long_name='Sea_Surface_height'
-  typvar(jvar)%short_name='sossheig'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = cn_sossheig
+  stypvar(jvar)%cunits            = 'm'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = -10.
+  stypvar(jvar)%valid_max         = 10.
+  stypvar(jvar)%clong_name        = 'Sea_Surface_height'
+  stypvar(jvar)%cshort_name       = cn_sossheig
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
   ENDIF
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='somxl010'         ! rec 12 of dimg file 2D
-  typvar(jvar)%units='m'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 7000.
-  typvar(jvar)%long_name='Mixed_Layer_Depth_on_0.01_rho_crit'
-  typvar(jvar)%short_name='somxl010'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = cn_somxl010         ! rec 12 of dimg file 2D
+  stypvar(jvar)%cunits            = 'm'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 7000.
+  stypvar(jvar)%clong_name        = 'Mixed_Layer_Depth_on_0.01_rho_crit'
+  stypvar(jvar)%cshort_name       = cn_somxl010
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='sohefldo'         ! rec 4 of dimg file 2D
-  typvar(jvar)%units='W/m2'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= -1000.
-  typvar(jvar)%valid_max= 1000.
-  typvar(jvar)%long_name='Net_Downward_Heat_Flux'
-  typvar(jvar)%short_name='sohefldo'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = 'sohefldo'         ! rec 4 of dimg file 2D
+  stypvar(jvar)%cunits            = 'W/m2'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = -1000.
+  stypvar(jvar)%valid_max         = 1000.
+  stypvar(jvar)%clong_name        = 'Net_Downward_Heat_Flux'
+  stypvar(jvar)%cshort_name       = 'sohefldo'
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='soshfldo'         ! rec 8 of dimg file 2D (qsr)
-  typvar(jvar)%units='W/m2'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= -1000.
-  typvar(jvar)%valid_max= 1000.
-  typvar(jvar)%long_name='Short_Wave_Radiation'
-  typvar(jvar)%short_name='soshfldo'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = cn_soshfldo         ! rec 8 of dimg file 2D (qsr)
+  stypvar(jvar)%cunits            = 'W/m2'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = -1000.
+  stypvar(jvar)%valid_max         = 1000.
+  stypvar(jvar)%clong_name        = 'Short_Wave_Radiation'
+  stypvar(jvar)%cshort_name       = cn_soshfldo
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='sowaflup'         ! rec 5 of dimg file 2D (emp)
-  typvar(jvar)%units='kg/m2/s'         ! conversion required from CLIPPER /86400.
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= -1000.
-  typvar(jvar)%valid_max= 1000.
-  typvar(jvar)%long_name='Net_Upward_Water_Flux'
-  typvar(jvar)%short_name='sowaflup'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = cn_sowaflup       ! rec 5 of dimg file 2D (emp)
+  stypvar(jvar)%cunits            = 'kg/m2/s'         ! conversion required from CLIPPER /86400.
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = -1000.
+  stypvar(jvar)%valid_max         = 1000.
+  stypvar(jvar)%clong_name        = 'Net_Upward_Water_Flux'
+  stypvar(jvar)%cshort_name       = cn_sowaflup
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='sowafldp'         ! rec 10 of dimg file 2D (erp)
-  typvar(jvar)%units='kg/m2/s'         ! conversion required from CLIPPER /jvar.
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= -1000.
-  typvar(jvar)%valid_max= 1000.
-  typvar(jvar)%long_name='Surface_Water_Flux:Damping'
-  typvar(jvar)%short_name='sowafldp'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = 'sowafldp'       ! rec 10 of dimg file 2D (erp)
+  stypvar(jvar)%cunits            = 'kg/m2/s'         ! conversion required from CLIPPER /jvar.
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = -1000.
+  stypvar(jvar)%valid_max         = 1000.
+  stypvar(jvar)%clong_name        = 'Surface_Water_Flux:Damping'
+  stypvar(jvar)%cshort_name       = 'sowafldp'
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='soicecov'         ! rec 13 of dimg file 2D (erp)
-  typvar(jvar)%units='%'         
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 1.
-  typvar(jvar)%long_name='Ice Cover'
-  typvar(jvar)%short_name='soicecov'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = cn_soicecov         ! rec 13 of dimg file 2D (erp)
+  stypvar(jvar)%cunits            = '%'         
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 1.
+  stypvar(jvar)%clong_name        = 'Ice Cover'
+  stypvar(jvar)%cshort_name       = cn_soicecov
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='sohefldp'         ! rec 9 of dimg file 2D (erp)
-  typvar(jvar)%units='W/m2'         
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= -10.
-  typvar(jvar)%valid_max= 10.
-  typvar(jvar)%long_name='Surface Heat Flux: Damping'
-  typvar(jvar)%short_name='sohefldp'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = 'sohefldp'         ! rec 9 of dimg file 2D (erp)
+  stypvar(jvar)%cunits            = 'W/m2'         
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = -10.
+  stypvar(jvar)%valid_max         = 10.
+  stypvar(jvar)%clong_name        = 'Surface Heat Flux: Damping'
+  stypvar(jvar)%cshort_name       = 'sohefldp'
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
 
-  glam=getvar(coordhgr,'glamt',1,npiglo,npjglo)
-  gphi=getvar(coordhgr,'gphit',1,npiglo,npjglo)
-  dep=getvare3(coordzgr,'gdept',npk)
+  glam = getvar  (cn_fhgr, cn_glamt, 1, npiglo, npjglo)
+  gphi = getvar  (cn_fhgr, cn_gphit, 1, npiglo, npjglo)
+  zdep = getvare3(cn_fzgr, cn_gdept, npk              )
 
-  ncout =create(cfilt, 'none',npiglo,npjglo,npk,cdep='deptht' )
-  istatus= createvar(ncout ,typvar,nvar, ipk,id_varout )
-  istatus= putheadervar(ncout, 'none', npiglo, npjglo,npk,&
-                     pnavlon=glam,pnavlat=gphi,pdep=dep )
+  ncout = create      (cf_tfil, 'none',  npiglo, npjglo, npk, cdep=cn_vdeptht                       )
+  ierr  = createvar   (ncout,   stypvar, nvar,   ipk,    id_varout                                  )
+  ierr  = putheadervar(ncout,   'none',  npiglo, npjglo, npk, pnavlon=glam, pnavlat=gphi, pdep=zdep )
 
   jvar=1
   ! T
   DO jk=1, npk
    READ(numt,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   istatus=putvar(ncout, id_varout(jvar),v2d, jk, npiglo, npjglo)
+   ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
-  jvar=jvar+1
-
-  print *, 'Done for T'
+  jvar  = jvar+1
+  PRINT *, 'Done for T'
 
   ! S
   DO jk=1, npk
    READ(nums,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   istatus=putvar(ncout, id_varout(jvar),v2d, jk, npiglo, npjglo)
+   ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
-  jvar=jvar+1
-  print *, 'Done for S'
+  jvar  = jvar+1
+  PRINT *, 'Done for S'
 
   IF ( lexist ) THEN
   ! SSH
   READ(numssh,REC=2) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for SSH'
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for SSH'
   ENDIF
 
   ! MXL
   READ(num2d,REC=12) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for MXL'
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for MXL'
 
   ! QNET
-  READ(num2d,REC=4) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for QNET'
+  READ(num2d,REC=4 ) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for QNET'
 
   ! QSR
-  READ(num2d,REC=8) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for QSR'
+  READ(num2d,REC=8)  (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for QSR'
 
   ! EMP
-  READ(num2d,REC=5) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  v2d=v2d/86400. ! to change units
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for EMP'
+  READ(num2d,REC=5)  (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+  v2d  = v2d/86400. ! to change units
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for EMP'
 
   ! ERP
   READ(num2d,REC=10) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  v2d=v2d/86400. ! to change units
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for ERP'
+  v2d  = v2d/86400. ! to change units
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for ERP'
 
   ! FREEZE
   READ(num2d,REC=13) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for FREEZE'
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for FREEZE'
 
   ! QRP
-  READ(num2d,REC=9) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for QRP'
+  READ(num2d,REC=9)  (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for QRP'
 
-  istatus=putvar1d(ncout,timean,1,'T')
-  istatus=CLOSEOUT(ncout)
-  DEALLOCATE ( typvar, ipk, id_varout )
+  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = closeout(ncout)
+  DEALLOCATE ( stypvar, ipk, id_varout )
 
 
-!!!!! GRID U !!!!!
- ! Build gridU file with vozocrtx, sozotaux
-  INQUIRE(FILE=cdimguu, EXIST=lexist)
+  !###############
+  !# GRID U FILE #
+  !###############
+  ! Build gridU file with vozocrtx, sozotaux
+  INQUIRE(FILE=cf_dimguu, EXIST=lexist)
   IF ( lexist ) THEN
-    irecl=isdirect(cdimguu); OPEN( numuu,FILE=cdimguu, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+    irecl = isdirect(cf_dimguu)
+    OPEN( numuu, FILE=cf_dimguu, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
     nvar=3 
   ELSE
     nvar=2
   ENDIF
-  ALLOCATE ( typvar(nvar), ipk(nvar), id_varout(nvar) )
-  
-  jvar=1
-  ipk(jvar)      = npk
-  typvar(jvar)%name='vozocrtx'
-  typvar(jvar)%units='m/s'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 20.
-  typvar(jvar)%long_name='Zonal Velocity '
-  typvar(jvar)%short_name='vozocrtx'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TZYX'
-  jvar=jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='sozotaux'
-  typvar(jvar)%units='N/m2'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 20.
-  typvar(jvar)%long_name='Zonal Wind Stress'
-  typvar(jvar)%short_name='sozotaux'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
-  jvar=jvar+1
+  ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
+  
+  jvar = 1
+  ipk(jvar)                       = npk
+  stypvar(jvar)%cname             = cn_vozocrtx
+  stypvar(jvar)%cunits            = 'm/s'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 20.
+  stypvar(jvar)%clong_name        = 'Zonal Velocity '
+  stypvar(jvar)%cshort_name       = cn_vozocrtx
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TZYX'
+  jvar = jvar+1
+
+  ipk(jvar)                       =  1
+  stypvar(jvar)%cname             = 'sozotaux'
+  stypvar(jvar)%cunits            = 'N/m2'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 20.
+  stypvar(jvar)%clong_name        = 'Zonal Wind Stress'
+  stypvar(jvar)%cshort_name       = 'sozotaux'
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
+  jvar = jvar+1
 
   IF ( lexist ) THEN
   ipk(jvar)      = npk
-  typvar(jvar)%name='vozocrtx_sqd'
-  typvar(jvar)%units='m2/s2'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 100.
-  typvar(jvar)%long_name='MS_Zonal_Velocity'
-  typvar(jvar)%short_name='vozocrtx_sqd'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TZYX'
+  stypvar(jvar)%cname             = TRIM(cn_vozocrtx)//'_sqd'
+  stypvar(jvar)%cunits            = 'm2/s2'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 100.
+  stypvar(jvar)%clong_name        = 'MS_Zonal_Velocity'
+  stypvar(jvar)%cshort_name       = TRIM(cn_vozocrtx)//'_sqd'
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TZYX'
   ENDIF
 
-  glam=getvar(coordhgr,'glamu',1,npiglo,npjglo)
-  gphi=getvar(coordhgr,'gphiu',1,npiglo,npjglo)
-  dep=getvare3(coordzgr,'gdept',npk)
+  glam = getvar  (cn_fhgr, cn_glamu, 1, npiglo, npjglo)
+  gphi = getvar  (cn_fhgr, cn_gphiu, 1, npiglo, npjglo)
+  zdep = getvare3(cn_fzgr, cn_gdept, npk              )
 
-  ncout =create(cfilu, 'none',npiglo,npjglo,npk,cdep='depthu' )
-  istatus= createvar(ncout ,typvar,nvar, ipk,id_varout )
-  istatus= putheadervar(ncout, 'none', npiglo, npjglo,npk,&
-                     pnavlon=glam,pnavlat=gphi,pdep=dep )
+  ncout = create      (cf_ufil, 'none',  npiglo, npjglo, npk, cdep=cn_vdepthu                       )
+  ierr  = createvar   (ncout,   stypvar, nvar,   ipk,    id_varout                                  )
+  ierr  = putheadervar(ncout,   'none',  npiglo, npjglo, npk, pnavlon=glam, pnavlat=gphi, pdep=zdep )
 
   jvar=1
   DO jk=1, npk
    READ(numu,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   istatus=putvar(ncout, id_varout(jvar),v2d, jk, npiglo, npjglo)
+   ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
-  jvar=jvar+1
-  print *, 'Done for U'
+  jvar  = jvar+1
+  PRINT *, 'Done for U'
 
   READ(num2d, REC=2 ) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
-  jvar=jvar+1
-  print *, 'Done for TAUX'
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1,  npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for TAUX'
 
   IF ( lexist ) THEN
   DO jk=1, npk
    READ(numuu,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   istatus=putvar(ncout, id_varout(jvar),v2d, jk, npiglo, npjglo)
+   ierr = putvar(ncout, id_varout(jvar), v2d, jk,  npiglo, npjglo)
   END DO
-  print *, 'Done for UU'
+  PRINT *, 'Done for UU'
   ENDIF
 
+  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = closeout(ncout               )
 
-  istatus=putvar1d(ncout,timean,1,'T')
-  istatus=CLOSEOUT(ncout)
-  DEALLOCATE ( typvar, ipk, id_varout )
+  DEALLOCATE ( stypvar, ipk, id_varout )
 
-!!!!! GRID V !!!!!
+  !###############
+  !# GRID V FILE #
+  !###############
   ! Build gridV file with vomecrty, sometauy
-  INQUIRE(FILE=cdimgvv, EXIST=lexist)
+  INQUIRE(FILE=cf_dimgvv, EXIST=lexist)
   IF ( lexist ) THEN
-    irecl=isdirect(cdimgvv); OPEN( numvv,FILE=cdimgvv, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+    irecl = isdirect(cf_dimgvv)
+    OPEN( numvv, FILE=cf_dimgvv, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
     nvar=3 
   ELSE
     nvar=2
   ENDIF
-  ALLOCATE ( typvar(nvar), ipk(nvar), id_varout(nvar) )
+  ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
 
   jvar=1
-  ipk(jvar)      = npk
-  typvar(jvar)%name='vomecrty'
-  typvar(jvar)%units='m/s'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 20.
-  typvar(jvar)%long_name='Meridinal  Velocity '
-  typvar(jvar)%short_name='vomecrty'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TZYX'
-  jvar=jvar+1
+  ipk(jvar)                       = npk
+  stypvar(jvar)%cname             = cn_vomecrty
+  stypvar(jvar)%cunits            = 'm/s'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 20.
+  stypvar(jvar)%clong_name        = 'Meridinal  Velocity '
+  stypvar(jvar)%cshort_name       = cn_vomecrty
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TZYX'
+  jvar = jvar+1
 
-  ipk(jvar)      = 1
-  typvar(jvar)%name='sometauy'
-  typvar(jvar)%units='N/m2'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 20.
-  typvar(jvar)%long_name='Meridional Wind Stress'
-  typvar(jvar)%short_name='sometauy'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TYX'
+  ipk(jvar)                       = 1
+  stypvar(jvar)%cname             = 'sometauy'
+  stypvar(jvar)%cunits            = 'N/m2'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 20.
+  stypvar(jvar)%clong_name        = 'Meridional Wind Stress'
+  stypvar(jvar)%cshort_name       = 'sometauy'
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TYX'
   jvar=jvar+1
 
   IF ( lexist ) THEN
-  ipk(jvar)      = npk
-  typvar(jvar)%name='vomecrty_sqd'
-  typvar(jvar)%units='m2/s2'
-  typvar(jvar)%missing_value=0.
-  typvar(jvar)%valid_min= 0.
-  typvar(jvar)%valid_max= 100.
-  typvar(jvar)%long_name='MS_Meridional_Velocity'
-  typvar(jvar)%short_name='vomecrty_sqd'
-  typvar(jvar)%online_operation='N/A'
-  typvar(jvar)%axis='TZYX'
+  ipk(jvar)                       = npk
+  stypvar(jvar)%cname             = TRIM(cn_vomecrty)//'_sqd'
+  stypvar(jvar)%cunits            = 'm2/s2'
+  stypvar(jvar)%rmissing_value    = 0.
+  stypvar(jvar)%valid_min         = 0.
+  stypvar(jvar)%valid_max         = 100.
+  stypvar(jvar)%clong_name        = 'MS_Meridional_Velocity'
+  stypvar(jvar)%cshort_name       = TRIM(cn_vomecrty)//'_sqd'
+  stypvar(jvar)%conline_operation = 'N/A'
+  stypvar(jvar)%caxis             = 'TZYX'
   ENDIF
 
 
-  glam=getvar(coordhgr,'glamv',1,npiglo,npjglo)
-  gphi=getvar(coordhgr,'gphiv',1,npiglo,npjglo)
-  dep=getvare3(coordzgr,'gdept',npk)
+  glam = getvar  (cn_fhgr, cn_glamv, 1,  npiglo, npjglo)
+  gphi = getvar  (cn_fhgr, cn_gphiv, 1,  npiglo, npjglo)
+  zdep = getvare3(cn_fzgr, cn_gdept, npk               )
   
-  ncout =create(cfilv, 'none',npiglo,npjglo,npk,cdep='depthv' )
-  istatus= createvar(ncout ,typvar,nvar, ipk,id_varout )
-  istatus= putheadervar(ncout, 'none', npiglo, npjglo,npk,&
-                     pnavlon=glam,pnavlat=gphi,pdep=dep )
+  ncout = create      (cf_vfil, 'none',  npiglo, npjglo, npk, cdep=cn_vdepthv                       )
+  ierr  = createvar   (ncout,   stypvar, nvar,   ipk,    id_varout                                  )
+  ierr  = putheadervar(ncout,   'none',  npiglo, npjglo, npk, pnavlon=glam, pnavlat=gphi, pdep=zdep )
 
+  jvar = 1
   DO jk=1, npk
-   READ(numv,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   istatus=putvar(ncout, id_varout(1),v2d, jk, npiglo, npjglo)
+   READ(numv,REC=jk+1)  (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+   ierr = putvar (ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
-  print *, 'Done for V'
+  jvar  = jvar+1
+  PRINT *, 'Done for V'
 
-  READ(num2d, REC=3 ) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  istatus=putvar(ncout, id_varout(2),v2d, 1, npiglo, npjglo)
-  print *, 'Done for TAUY'
+  READ(num2d, REC=3) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+  jvar = jvar+1
+  PRINT *, 'Done for TAUY'
 
   IF ( lexist ) THEN
   DO jk=1, npk
    READ(numvv,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   istatus=putvar(ncout, id_varout(jvar),v2d, jk, npiglo, npjglo)
+   ierr = putvar(ncout, id_varout(jvar), v2d, jk,  npiglo, npjglo)
   END DO
-  print *, 'Done for VV'
+  PRINT *, 'Done for VV'
   ENDIF
 
-  istatus=putvar1d(ncout,timean,1,'T')
-  istatus=CLOSEOUT(ncout)
+  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = closeout(ncout               )
 
-  DEALLOCATE ( typvar, ipk, id_varout )
+  DEALLOCATE ( stypvar, ipk, id_varout )
 
-!!!!! PSI !!!!!
+  !###############
+  !# PSI FILE #
+  !###############
   ! Build PSI file with sobarstf
   nvar=1  
-  ALLOCATE ( typvar(nvar), ipk(nvar), id_varout(nvar) )
-  ipk(1)      = 1
-  typvar(1)%name='sobarstf'
-  typvar(1)%units='m3/s'
-  typvar(1)%missing_value=0.
-  typvar(1)%valid_min= -3.e8
-  typvar(1)%valid_max= 3.e8
-  typvar(1)%long_name='Barotropic_Stream_Function'
-  typvar(1)%short_name='sobarstf'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TYX'
+  ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
+  ipk(1)                       = 1
+  stypvar(1)%cname             = 'sobarstf'
+  stypvar(1)%cunits            = 'm3/s'
+  stypvar(1)%rmissing_value    = 0.
+  stypvar(1)%valid_min         = -3.e8
+  stypvar(1)%valid_max         = 3.e8
+  stypvar(1)%clong_name        = 'Barotropic_Stream_Function'
+  stypvar(1)%cshort_name       = 'sobarstf'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TYX'
 
-  glam=getvar(coordhgr,'glamf',1,npiglo,npjglo)
-  gphi=getvar(coordhgr,'gphif',1,npiglo,npjglo)
-  dep=getvare3(coordzgr,'gdept',1)
+  glam = getvar  (cn_fhgr, cn_glamf, 1, npiglo, npjglo)
+  gphi = getvar  (cn_fhgr, cn_gphif, 1, npiglo, npjglo)
+  zdep = getvare3(cn_fzgr, cn_gdept, 1                )
   
-  ncout =create(cfilbsf, 'none',npiglo,npjglo,1,cdep='depthu' )
-  istatus= createvar(ncout ,typvar,nvar, ipk,id_varout )
-  istatus= putheadervar(ncout, 'none', npiglo, npjglo,1,&
-                     pnavlon=glam,pnavlat=gphi,pdep=dep )
+  ncout = create      (cf_bsfil, 'none',  npiglo, npjglo, 1, cdep=cn_vdepthu                       )
+  ierr  = createvar   (ncout,    stypvar, nvar,   ipk,    id_varout                                )
+  ierr  = putheadervar(ncout,    'none',  npiglo, npjglo, 1, pnavlon=glam, pnavlat=gphi, pdep=zdep )
 
-   READ(num2d,REC=7) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   istatus=putvar(ncout, id_varout(1),v2d, 1, npiglo, npjglo)
-  print *, 'Done for PSI'
+  jvar = 1
+  READ(num2d,REC=7) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+  ierr = putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
+  PRINT *, 'Done for PSI'
 
-  istatus=putvar1d(ncout,timean,1,'T')
-  istatus=CLOSEOUT(ncout)
+  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = closeout(ncout               )
 
-  DEALLOCATE ( typvar, ipk, id_varout )
+  DEALLOCATE ( stypvar, ipk, id_varout )
 
 CONTAINS
-        INTEGER FUNCTION isdirect(clname)
-!!!                     FUNCTION ISDIRECT
-!!!                     *****************
-!!!
-!!!    PURPOSE : This integer function returns the record length if clname
-!!!              is a valid dimg file, it returns 0 either.
-!!!
-!!!    METHOD : Open the file and look for the key characters (@!01) for
-!!!             identification.
-!!!
-!!!    AUTHOR : Jean-Marc Molines (Apr. 1998)
-!!! -------------------------------------------------------------------------
-      IMPLICIT NONE
-      CHARACTER(LEN=*), INTENT(in) ::  clname
-      CHARACTER(LEN=4)  ::  cver
-      CHARACTER(LEN=80) ::  clheader
-!
-      INTEGER :: irecl
+
+    INTEGER(KIND=4) FUNCTION isdirect(cdname)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION isdirect  ***
+    !!
+    !! ** Purpose :  This integer function returns the record length if cdname 
+    !!               is a valid dimg file, it returns 0 either.
+    !!
+    !! ** Method  :  Open the file and look for the key characters (@!01) for
+    !!               identification.
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdname
+
+    ! --
+    INTEGER(KIND=4)              :: irecl
+    INTEGER(KIND=4)              :: inum = 100
+
+    CHARACTER(LEN=4)             :: clver
+    CHARACTER(LEN=80)            :: clheader
+    !!----------------------------------------------------------------------
 
 !
-      OPEN(100,FILE=clname, FORM   ='UNFORMATTED', ACCESS ='DIRECT', RECL   =88)
-       READ(100,REC=1) cver ,clheader,irecl
-      CLOSE(100)
+      OPEN(inum,FILE=cdname, FORM = 'UNFORMATTED', ACCESS = 'DIRECT', RECL = 88)
+      READ(inum,REC=1) clver ,clheader, irecl
+      CLOSE(inum)
 !
-      IF (cver ==  '@!01' ) THEN
-       isdirect=irecl
+      IF (clver ==  '@!01' ) THEN
+         isdirect = irecl
       ELSE
-       isdirect=0
+         isdirect = 0
       END IF
 !
       END FUNCTION isdirect

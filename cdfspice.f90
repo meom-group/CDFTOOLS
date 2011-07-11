@@ -1,134 +1,176 @@
 PROGRAM cdfspice
-  !!---------------------------------------------------------------------------------
-  !!             ***  PROGRAM cdfspice  ***
-  !!
-  !!  **  Purpose: Compute spiciness 3D field from gridT file
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfspice  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute spiciness 3D field from gridT file
   !!               Store the results on a 'similar' cdf file.
-  !!  
-  !!  **  Method: Try to avoid 3 d arrays 
-  !!              Following Flament (2002) "A state variable for characterizing water
-  !!              masses and their diffusive stability: spiciness."
-  !!              Progress in Oceanography Volume 54, 2002, Pages 493-501.   
   !!
-  !!  **  Definition:  spiciness = sum(i=0,5)[sum(j=0,4)[b(i,j)*theta^i*(s-35)^j]] 
+  !!  ** Method  :  spiciness = sum(i=0,5)[sum(j=0,4)[b(i,j)*theta^i*(s-35)^j]]
   !!                   with:  b     -> coefficients
   !!                          theta -> potential temperature
-  !!                          s     -> salinity 
+  !!                          s     -> salinity
   !!
-  !!  **  Example: 
+  !!  **  Example:
   !!       spice(15,33)=   0.5445863      0.544586321373410  calcul en double
   !!       spice(15,33)=   0.5445864      (calcul en simple precision)
   !!
-  !! history: 
-  !!     Original :   C.O. Dufour (Mar 2010) 
-  !!----------------------------------------------------------------------------------
-  !!----------------------------------------------------------------------------------
-  !! * Modules used
+  !!  ** References : Flament (2002) "A state variable for characterizing 
+  !!              water masses and their diffusive stability: spiciness."
+  !!              Progress in Oceanography Volume 54, 2002, Pages 493-501.
+  !!
+  !! History : 2.1  : 03/2010  : C.O. Dufour  : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jk, jt, ji, jj                      !: dummy loop index
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: 
-  INTEGER   :: npiglo,npjglo, npk, npt             !: size of the domain
-  INTEGER, DIMENSION(1) ::  ipk, &                 !: outptut variables : number of levels,
-       &                    id_varout              !: ncdf varid's
-  REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE :: ztemp, zsal ,&             !: Array to read a layer of data
-       &                                         ztempt, zsalt, zsalref ,&  !: temporary arrays
-       &                                         zspi , &                   !: potential density (sig-0)
-       &                                         zmask                      !: 2D mask at current level
 
-  REAL(KIND=8) , DIMENSION (6,5) ::              beta             !: coefficients of spiciness formula
-  REAL(KIND=4),DIMENSION(:),ALLOCATABLE   ::  tim
+  INTEGER(KIND=4)                           :: ji, jj, jk, jt     ! dummy loop index
+  INTEGER(KIND=4)                           :: ierr               ! error status
+  INTEGER(KIND=4)                           :: narg, iargc        ! browse command line
+  INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
+  INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
+  INTEGER(KIND=4)                           :: ncout              ! ncid of output file
+  INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout     ! level and  varid's
 
-  CHARACTER(LEN=256) :: cfilet ,cfileout='spice.nc' !:
+  REAL(KIND=4)                              :: zspval             ! missing value
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
 
-  TYPE(variable) , DIMENSION(1) :: typvar         !: structure for attributes
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtemp              ! temperature
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtempt             ! temperature
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsal               ! salinity
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsalt              ! salinity
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsalref            ! reference salinity
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dspi               ! spiceness
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dmask              ! 2D mask at current level
+  REAL(KIND=8), DIMENSION(6,5)              :: dbet               ! coefficients of spiciness formula
 
-  INTEGER    :: ncout
-  INTEGER    :: istatus
+  CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
+  CHARACTER(LEN=256)                        :: cf_out='spice.nc'  ! output file name
 
-  !!  Read command line
-  narg= iargc()
+  TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
+
+  narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfspice  gridT '
-     PRINT *,' Output on spice.nc, variable vospice'
+     PRINT *,' usage : cdfspice T-file '
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute the spiceness corresponding to temperatures and salinities'
+     PRINT *,'       given in the input file.' 
+     PRINT *,'      '
+     PRINT *,'       spiciness = sum(i=0,5)[sum(j=0,4)[b(i,j)*theta^i*(s-35)^j]]'
+     PRINT *,'                 with:  b     -> coefficients'
+     PRINT *,'                        theta -> potential temperature'
+     PRINT *,'                        s     -> salinity'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       T-file : netcdf file with temperature and salinity (gridT)' 
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       none'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables : vospice'
+     PRINT *,'      '
+     PRINT *,'     REFERENCE :'
+     PRINT *,'       Flament (2002) "A state variable for characterizing '
+     PRINT *,'             water masses and their diffusive stability: spiciness."'
+     PRINT *,'             Progress in Oceanography Volume 54, 2002, Pages 493-501.'
+     STOP
+  ENDIF
+  IF ( narg == 0 ) THEN
+     PRINT *,'usage : cdfspice  gridT '
+     PRINT *,'    Output on spice.nc, variable vospice'
      STOP
   ENDIF
 
-  CALL getarg (1, cfilet)
-  npiglo= getdim (cfilet,'x')
-  npjglo= getdim (cfilet,'y')
-  npk   = getdim (cfilet,'depth')
-  npt   = getdim (cfilet,'time')
+  CALL getarg (1, cf_tfil)
 
-  ipk(:)= npk  ! all variables (input and output are 3D)
-  typvar(1)%name= 'vospice'
-  typvar(1)%units='kg/m3'
-  typvar(1)%missing_value=0.
-  typvar(1)%valid_min= -300.
-  typvar(1)%valid_max= 300.
-  typvar(1)%long_name='spiciness'
-  typvar(1)%short_name='vospice'
-  typvar(1)%online_operation='N/A'
-  typvar(1)%axis='TZYX'
+  IF ( chkfile(cf_tfil) ) STOP ! missing files
 
+  npiglo = getdim (cf_tfil,cn_x)
+  npjglo = getdim (cf_tfil,cn_y)
+  npk    = getdim (cf_tfil,cn_z)
+  npt    = getdim (cf_tfil,cn_t)
 
-  PRINT *, 'npiglo=', npiglo
-  PRINT *, 'npjglo=', npjglo
-  PRINT *, 'npk   =', npk
-  PRINT *, 'npt   =', npt
+  ipk(:)                       = npk 
+  stypvar(1)%cname             = 'vospice'
+  stypvar(1)%cunits            = 'kg/m3'
+  stypvar(1)%rmissing_value    = 0.
+  stypvar(1)%valid_min         = -300.
+  stypvar(1)%valid_max         = 300.
+  stypvar(1)%clong_name        = 'spiciness'
+  stypvar(1)%cshort_name       = 'vospice'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TZYX'
 
-  ALLOCATE (ztemp(npiglo,npjglo), zsal(npiglo,npjglo), zspi(npiglo,npjglo) ,zmask(npiglo,npjglo))
-  ALLOCATE (ztempt(npiglo,npjglo), zsalt(npiglo,npjglo), zsalref(npiglo,npjglo))
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
+
+  ALLOCATE (dtemp(npiglo,npjglo), dsal (npiglo,npjglo) )
+  ALLOCATE (dspi( npiglo,npjglo), dmask(npiglo,npjglo) )
+  ALLOCATE (dtempt(npiglo,npjglo), dsalt(npiglo,npjglo))
+  ALLOCATE (dsalref(npiglo,npjglo))
   ALLOCATE (tim(npt))
 
   ! create output fileset
+  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
+  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
+  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
-  ncout =create(cfileout, cfilet, npiglo,npjglo,npk)
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,   tim,       npt, 'T')
 
-  ierr= createvar(ncout ,typvar,1, ipk,id_varout )
-  ierr= putheadervar(ncout, cfilet,npiglo, npjglo,npk)
-  tim=getvar1d(cfilet,'time_counter',npt)
-  ierr=putvar1d(ncout,tim,npt,'T')
+  zspval = getatt(cf_tfil, cn_vosaline, 'missing_value')
 
-  ! Define coefficients to compute spiciness
-  beta(1,1) = 0           ; beta(1,2) = 7.7442e-01  ; beta(1,3) = -5.85e-03   ; beta(1,4) = -9.84e-04   ; beta(1,5) = -2.06e-04
-  beta(2,1) = 5.1655e-02  ; beta(2,2) = 2.034e-03   ; beta(2,3) = -2.742e-04  ; beta(2,4) = -8.5e-06    ; beta(2,5) = 1.36e-05
-  beta(3,1) = 6.64783e-03 ; beta(3,2) = -2.4681e-04 ; beta(3,3) = -1.428e-05  ; beta(3,4) = 3.337e-05   ; beta(3,5) = 7.894e-06
-  beta(4,1) = -5.4023e-05 ; beta(4,2) = 7.326e-06   ; beta(4,3) = 7.0036e-06  ; beta(4,4) = -3.0412e-06 ; beta(4,5) = -1.0853e-06
-  beta(5,1) = 3.949e-07   ; beta(5,2) = -3.029e-08  ; beta(5,3) = -3.8209e-07 ; beta(5,4) = 1.0012e-07  ; beta(5,5) = 4.7133e-08
-  beta(6,1) = -6.36e-10   ; beta(6,2) = -1.309e-09  ; beta(6,3) = 6.048e-09   ; beta(6,4) = -1.1409e-09 ; beta(6,5) = -6.676e-10
+  ! Define coefficients to compute spiciness (R*8)
+  dbet(1,1) = 0           ; dbet(1,2) = 7.7442d-01  ; dbet(1,3) = -5.85d-03   ; dbet(1,4) = -9.84d-04   ; dbet(1,5) = -2.06d-04
+  dbet(2,1) = 5.1655d-02  ; dbet(2,2) = 2.034d-03   ; dbet(2,3) = -2.742d-04  ; dbet(2,4) = -8.5d-06    ; dbet(2,5) = 1.36d-05
+  dbet(3,1) = 6.64783d-03 ; dbet(3,2) = -2.4681d-04 ; dbet(3,3) = -1.428d-05  ; dbet(3,4) = 3.337d-05   ; dbet(3,5) = 7.894d-06
+  dbet(4,1) = -5.4023d-05 ; dbet(4,2) = 7.326d-06   ; dbet(4,3) = 7.0036d-06  ; dbet(4,4) = -3.0412d-06 ; dbet(4,5) = -1.0853d-06
+  dbet(5,1) = 3.949d-07   ; dbet(5,2) = -3.029d-08  ; dbet(5,3) = -3.8209d-07 ; dbet(5,4) = 1.0012d-07  ; dbet(5,5) = 4.7133d-08
+  dbet(6,1) = -6.36d-10   ; dbet(6,2) = -1.309d-09  ; dbet(6,3) = 6.048d-09   ; dbet(6,4) = -1.1409d-09 ; dbet(6,5) = -6.676d-10
 
   ! Compute spiciness
   DO jt=1,npt
      PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
      DO jk = 1, npk
-        zmask(:,:)=1.
+        dmask(:,:) = 1.
 
-        ztemp(:,:)= getvar(cfilet, 'votemper',  jk ,npiglo, npjglo,ktime=jt)
-        zsal(:,:) = getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo,ktime=jt)
+        dtemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
+        dsal( :,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
-        WHERE(zsal == 0 ) zmask = 0
+        WHERE(dsal == zspval ) dmask = 0
 
         ! spiciness at time jt, at level jk  
-        zspi(:,:) = 0
-        zsalref(:,:) = zsal(:,:) - 35.
-        ztempt(:,:) = 1.
+        dspi(:,:)    = 0.d0
+        dsalref(:,:) = dsal(:,:) - 35.d0
+        dtempt(:,:)  = 1.d0
         DO ji=1,6
-           zsalt(:,:) = 1.
+           dsalt(:,:) = 1.d0
            DO jj=1,5
-              zspi(:,:) = zspi(:,:) + beta(ji,jj)*ztempt(:,:)*zsalt(:,:)
-              zsalt(:,:) = zsalt(:,:)*zsalref(:,:)
+              dspi( :,:) = dspi (:,:) + dbet   (ji,jj) * dtempt(:,:) * dsalt(:,:)
+              dsalt(:,:) = dsalt(:,:) * dsalref( :,: )
            END DO
-           ztempt(:,:) = ztempt(:,:)*ztemp(:,:)     
+           dtempt(:,:) = dtempt(:,:) * dtemp(:,:)     
         END DO
 
-        ierr = putvar(ncout, id_varout(1) ,REAL(zspi)*zmask, jk,npiglo, npjglo,ktime=jt)
+        ierr = putvar(ncout, id_varout(1), REAL(dspi*dmask), jk, npiglo, npjglo, ktime=jt)
 
      END DO  ! loop to next level
   END DO  ! next time frame
 
-  istatus = closeout(ncout)
+  ierr = closeout(ncout)
+
 END PROGRAM cdfspice

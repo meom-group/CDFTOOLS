@@ -1,143 +1,156 @@
 PROGRAM cdfnrjcomp
-  !!---------------------------------------------------------------------------
-  !!         ***  PROGRAM  cdfnrjcomp  ***
-  !!
-  !!  **  Purpose: Compute the terms for energy components 
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfnrjcomp  ***
+  !!=====================================================================
+  !!  ** Purpose : Compute the terms for energy components
   !!               (Mean Kinetic Energy, Eddy Kinetic Energy,
   !!                Mean Potential Energy, Eddy Potential Energy )
-  !!               compute : tbar,ubar,vbar,anotsqrt,anousqrt,anovsqrt
+  !!               compute : tbar, ubar, vbar, anotsqrt, anousqrt, anovsqrt
   !!
-  !! history :
-  !!   Original :  A. Melet (Feb 2008)
-  !!---------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-  !! * Modules used
+  !! History : 2.1  : 02/2008  : A. Melet     : Original code
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!----------------------------------------------------------------------
   USE cdfio
-
-  !! * Local variables
+  USE modcdfnames
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_3.0 , MEOM 2011
+  !! $Id$
+  !! Copyright (c) 2011, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !!----------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER :: ji,jj,jk, jt, ilev
-  INTEGER :: npiglo, npjglo, npk, nt
-  INTEGER :: narg, iargc, ncout, ierr
-  INTEGER, DIMENSION(6) ::  ipk, id_varout         ! 
 
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: un, vn, u2n, v2n
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: tn, t2n, anotsqrt
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: umask, vmask
-  REAL(kind=4), DIMENSION(:,:), ALLOCATABLE  :: anousqrt, anovsqrt 
-  REAL(KIND=4) ,DIMENSION(1)                 :: tim
+  INTEGER(KIND=4)                            :: ji, jj, jk           ! dummy loop index
+  INTEGER(KIND=4)                            :: npiglo, npjglo       ! domain size
+  INTEGER(KIND=4)                            :: npk, npt             ! domain size
+  INTEGER(KIND=4)                            :: narg, iargc          ! browse line
+  INTEGER(KIND=4)                            :: ierr                 ! error status
+  INTEGER(KIND=4)                            :: ncout                ! ncid of output file
+  INTEGER(KIND=4), DIMENSION(6)              :: ipk, id_varout       ! level and varid's of output var
 
-  CHARACTER(LEN=256) :: cfile
-  CHARACTER(LEN=256) :: cfileout='nrjcomp.nc'
-  TYPE (variable), DIMENSION(6) :: typvar         !: structure for attibutes
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: un, vn, u2n, v2n
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: tn, t2n, anotsqrt
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: umask, vmask
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: anousqrt, anovsqrt 
+  REAL(KIND=4), DIMENSION(1)                 :: tim                   ! time counter
 
+  CHARACTER(LEN=256)                         :: cf_in                 ! input filename
+  CHARACTER(LEN=256)                         :: cf_out='nrjcomp.nc'   ! output file name
+  TYPE (variable), DIMENSION(6)              :: stypvar               ! structure for attibutes
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
   !!
   narg = iargc()
   IF ( narg /= 1 ) THEN
-     PRINT *,' USAGE : cdfnrjcomp file'
-     PRINT *,'        Produce a cdf file nrjcomp.nc with variables'
-     PRINT *,'        tbar,ubar,vbar,anotsqrt,anousqrt,anovsqrt on T point'
-     PRINT *,'        file is from cdfmoyuvwt'
-     PRINT *,'        the mean must have been computed on a period long enough'
-     PRINT *,'        for the statistics to be meaningful'
-     PRINT *,'                         '
-     PRINT *,'        if file is in grid B or C, check the code (PM)' 
+     PRINT *,' usage : cdfnrjcomp IN-file'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute contributing terms of the energy equation at T-points.'
+     PRINT *,'       Input file contains mean values processed by cdfmoyuvwt.' 
+     PRINT *,'       The means must have been computed on long enough period'
+     PRINT *,'       for the statistics to be meaningful'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       IN-file   : netcdf file produced by cdfmoyuvwt.' 
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       none'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         all variables are located at T point.'
+     PRINT *,'         variables : tbar : mean temperature '
+     PRINT *,'                     ubar : mean zonal velocity'
+     PRINT *,'                     vbar : mean meridional velocity'
+     PRINT *,'                     anotsqrt : mean squared temperature anomaly'
+     PRINT *,'                     anousqrt : mean squared zonal velocity anomaly'
+     PRINT *,'                     anovsqrt : mean squared meridional velocity anomaly'
      STOP
   ENDIF
 
-  CALL getarg(1, cfile)
-  npiglo = getdim(cfile,'x')
-  npjglo = getdim(cfile,'y')
-  npk    = getdim(cfile,'depth')
-  nt     = getdim(cfile,'time_counter')
+  CALL getarg(1, cf_in)
 
-  PRINT *, 'npiglo =',npiglo
-  PRINT *, 'npjglo =',npjglo
-  PRINT *, 'npk    =',npk
-  PRINT *, 'nt     =',nt
+  IF ( chkfile(cf_in) ) STOP ! missing file
 
-  ! define new variables for output ( must update att.txt)
-  typvar(1)%name='tbar'
-  typvar(1)%long_name='temporal mean of the temperature on T point'
-  typvar(1)%short_name='tbar'
+  npiglo = getdim(cf_in,cn_x)
+  npjglo = getdim(cf_in,cn_y)
+  npk    = getdim(cf_in,cn_z)
+  npt    = getdim(cf_in,cn_t)
 
-  typvar(2)%name='ubar'
-  typvar(2)%long_name='temporal mean of the zonal velocity on T point'
-  typvar(2)%short_name='ubar'
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
  
-  typvar(3)%name='vbar'
-  typvar(3)%long_name='temporal mean of the meridional velocity on T point'
-  typvar(3)%short_name='vbar'
+  ! define new variables for output 
+  ipk(:)                 = npk  
+  stypvar(1)%cname       = 'tbar'
+  stypvar(1)%clong_name  = 'temporal mean of the temperature on T point'
+  stypvar(1)%cshort_name = 'tbar'
+
+  stypvar(2)%cname       = 'ubar'
+  stypvar(2)%clong_name  = 'temporal mean of the zonal velocity on T point'
+  stypvar(2)%cshort_name = 'ubar'
+ 
+  stypvar(3)%cname       = 'vbar'
+  stypvar(3)%clong_name  = 'temporal mean of the meridional velocity on T point'
+  stypvar(3)%cshort_name = 'vbar'
   
-  typvar(4)%name='anotsqrt'
-  typvar(4)%long_name='temporal mean of the square of the temperature anomaly on T point (*1000)'
-  typvar(4)%short_name='anotsqrt'
+  stypvar(4)%cname       = 'anotsqrt'
+  stypvar(4)%clong_name  = 'temporal mean of the square of the temperature anomaly on T point (*1000)'
+  stypvar(4)%cshort_name = 'anotsqrt'
 
-  typvar(5)%name='anousqrt'
-  typvar(5)%long_name='temporal mean of the square of the zonal speed anomaly on T point (*1000)'
-  typvar(5)%short_name='anousqrt'
+  stypvar(5)%cname       = 'anousqrt'
+  stypvar(5)%clong_name  = 'temporal mean of the square of the zonal speed anomaly on T point (*1000)'
+  stypvar(5)%cshort_name = 'anousqrt'
 
-  typvar(6)%name='anovsqrt'
-  typvar(6)%long_name='temporal mean of the square of the meridional speed anomaly on T point (*1000)'
-  typvar(6)%short_name='anovsqrt'
+  stypvar(6)%cname       = 'anovsqrt'
+  stypvar(6)%clong_name  = 'temporal mean of the square of the meridional speed anomaly on T point (*1000)'
+  stypvar(6)%cshort_name = 'anovsqrt'
 
-
-  typvar%units=' '
-  typvar%missing_value=0.
-  typvar%valid_min= -1000.
-  typvar%valid_max= 1000.
-  typvar%online_operation='N/A'
-  typvar%axis='TYX'
-
-  ipk(:) = npk  
+  stypvar%cunits            = ' '
+  stypvar%rmissing_value    = 0.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         = 1000.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TZYX'
   
-  !test if lev exists
-  IF ((npk==0) .AND. (ilev .GT. 0) ) THEN
-     PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
-     STOP
-  END IF
-
   ! create output fileset
-  ncout =create(cfileout, cfile, npiglo,npjglo,npk)
-  ierr= createvar(ncout ,typvar,6, ipk,id_varout )
-  ierr= putheadervar(ncout, cfile, npiglo, npjglo,npk)
+  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk       )
+  ierr  = createvar   (ncout,  stypvar, 6,      ipk,    id_varout )
+  ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk       )
 
   ! Allocate the memory
-  ALLOCATE ( un(npiglo,npjglo)  , vn(npiglo,npjglo)  )
-  ALLOCATE ( umask(npiglo,npjglo) , vmask(npiglo,npjglo) )
-  ALLOCATE ( u2n(npiglo,npjglo)  , v2n(npiglo,npjglo)  )
-  ALLOCATE ( anousqrt(npiglo,npjglo) , anovsqrt(npiglo,npjglo)  )
-  ALLOCATE ( tn(npiglo,npjglo)  , t2n(npiglo,npjglo)  )
+  ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo)  )
+  ALLOCATE ( umask(npiglo,npjglo), vmask(npiglo,npjglo) )
+  ALLOCATE ( u2n(npiglo,npjglo), v2n(npiglo,npjglo)  )
+  ALLOCATE ( anousqrt(npiglo,npjglo), anovsqrt(npiglo,npjglo)  )
+  ALLOCATE ( tn(npiglo,npjglo), t2n(npiglo,npjglo)  )
   ALLOCATE ( anotsqrt(npiglo,npjglo) )
- 
 
-  tim=getvar1d(cfile,'time_counter',nt)
-  ierr=putvar1d(ncout,tim,1,'T')
+  tim  = getvar1d(cf_in,cn_vtimec, npt     )
+  ierr = putvar1d(ncout, tim,      npt, 'T')
      
   DO jk=1, npk
      PRINT *,'            level ',jk
-           
-     anousqrt(:,:) = 0.d0
-     anovsqrt(:,:) = 0.d0      
-     anotsqrt(:,:) = 0.d0
+     anousqrt(:,:) = 0.0
+     anovsqrt(:,:) = 0.0      
+     anotsqrt(:,:) = 0.0
      
-     un(:,:)  =  getvar(cfile, 'ubar', jk ,npiglo,npjglo, ktime=1)
-     vn(:,:)  =  getvar(cfile, 'vbar', jk ,npiglo,npjglo, ktime=1)
-     u2n(:,:) =  getvar(cfile, 'u2bar', jk ,npiglo,npjglo, ktime=1)
-     v2n(:,:) =  getvar(cfile, 'v2bar', jk ,npiglo,npjglo, ktime=1)
-     tn(:,:)  =  getvar(cfile, 'tbar', jk ,npiglo,npjglo, ktime=1)
-     t2n(:,:) =  getvar(cfile, 't2bar', jk ,npiglo,npjglo, ktime=1)
+     un(:,:)  = getvar(cf_in, 'ubar',  jk, npiglo, npjglo, ktime=1)
+     vn(:,:)  = getvar(cf_in, 'vbar',  jk, npiglo, npjglo, ktime=1)
+     u2n(:,:) = getvar(cf_in, 'u2bar', jk, npiglo, npjglo, ktime=1)
+     v2n(:,:) = getvar(cf_in, 'v2bar', jk, npiglo, npjglo, ktime=1)
+     tn(:,:)  = getvar(cf_in, 'tbar',  jk, npiglo, npjglo, ktime=1)
+     t2n(:,:) = getvar(cf_in, 't2bar', jk, npiglo, npjglo, ktime=1)
 
      ! compute the mask
      DO jj = 2, npjglo
         DO ji = 2, npiglo
-           umask(ji,jj)=0.
-           vmask(ji,jj)=0.
-           umask(ji,jj)= un(ji,jj)*un(ji-1,jj) 
-           vmask(ji,jj)= vn(ji,jj)*vn(ji,jj-1)
+           umask(ji,jj) = 0.
+           vmask(ji,jj) = 0.
+           umask(ji,jj) = un(ji,jj)*un(ji-1,jj) 
+           vmask(ji,jj) = vn(ji,jj)*vn(ji,jj-1)
            IF (umask(ji,jj) /= 0.) umask(ji,jj)=1.
            IF (vmask(ji,jj) /= 0.) vmask(ji,jj)=1.
         ENDDO
@@ -145,24 +158,23 @@ PROGRAM cdfnrjcomp
 
      DO jj = 2, npjglo  
         DO ji = 2, npiglo    ! vector opt.
-
-           anotsqrt(ji,jj) = 1000 * ( t2n(ji,jj) - tn(ji,jj) * tn(ji,jj) )
-           anousqrt(ji,jj) = 1000/2 * umask(ji,jj)*( ( u2n(ji,jj) - un(ji,jj)*un(ji,jj) ) &
+           anotsqrt(ji,jj) = 1000. * ( t2n(ji,jj) - tn(ji,jj) * tn(ji,jj) )
+           anousqrt(ji,jj) = 1000./2. * umask(ji,jj)*( ( u2n(ji,jj) - un(ji,jj)*un(ji,jj) ) &
                 &                     + ( u2n(ji-1,jj) - un(ji-1,jj)*un(ji-1,jj) ) )       
                 
-           anovsqrt(ji,jj) = 1000/2 * vmask(ji,jj)*( ( v2n(ji,jj) - vn(ji,jj)*vn(ji,jj) ) &
+           anovsqrt(ji,jj) = 1000./2. * vmask(ji,jj)*( ( v2n(ji,jj) - vn(ji,jj)*vn(ji,jj) ) &
                 &                     + ( v2n(ji,jj-1) - vn(ji,jj)*vn(ji,jj-1) ) ) 
-
         END DO
      END DO
      ! 
-     ierr = putvar(ncout, id_varout(1) ,tn, jk, npiglo, npjglo, ktime=1)
-     ierr = putvar(ncout, id_varout(2) ,un, jk, npiglo, npjglo, ktime=1)
-     ierr = putvar(ncout, id_varout(3) ,vn, jk, npiglo, npjglo, ktime=1)
-     ierr = putvar(ncout, id_varout(4) ,anotsqrt, jk, npiglo, npjglo, ktime=1)
-     ierr = putvar(ncout, id_varout(5) ,anousqrt, jk, npiglo, npjglo, ktime=1) 
-     ierr = putvar(ncout, id_varout(6) ,anovsqrt, jk, npiglo, npjglo, ktime=1)
+     ierr = putvar(ncout, id_varout(1), tn,       jk, npiglo, npjglo, ktime=1)
+     ierr = putvar(ncout, id_varout(2), un,       jk, npiglo, npjglo, ktime=1)
+     ierr = putvar(ncout, id_varout(3), vn,       jk, npiglo, npjglo, ktime=1)
+     ierr = putvar(ncout, id_varout(4), anotsqrt, jk, npiglo, npjglo, ktime=1)
+     ierr = putvar(ncout, id_varout(5), anousqrt, jk, npiglo, npjglo, ktime=1) 
+     ierr = putvar(ncout, id_varout(6), anovsqrt, jk, npiglo, npjglo, ktime=1)
   END DO
+
   ierr = closeout(ncout)
 
 END PROGRAM cdfnrjcomp
