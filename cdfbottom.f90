@@ -78,7 +78,7 @@ PROGRAM cdfbottom
   ijarg = 1
   CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
 
-  IF ( chkfile(cf_in) /= 0 ) STOP  ! missing files
+  IF ( chkfile(cf_in) ) STOP  ! missing files
 
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)

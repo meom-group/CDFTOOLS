@@ -91,8 +91,9 @@ PROGRAM cdfcoloc
   CALL ReadCdfNames()
 
   ! exhaustive list of supported field     
-  ctype    = (/'T','S','SSH','CFCINV','CFCCONC','PENDEP',   &
-     &        'MXL','MXL01','MXLT02','ISOTHICK','U ','V ','Sx','Sy','H ','etopo'/)
+  ctype    = (/'T       ','S       ','SSH     ','CFCINV  ','CFCCONC ','PENDEP  ',   &
+     &        'MXL     ','MXL01   ','MXLT02  ','ISOTHICK','U       ','V       ', &
+     &        'Sx      ','Sy      ','H       ','etopo   '/)
   ctmplst0 = 'U,V,Sx,Sy,H'                 ! default list
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
@@ -534,7 +535,7 @@ CONTAINS
     ! check if all fields are supported:
     DO jtyp=1, ntyp
        DO jt =1 , jptyp
-          IF ( cltype(jtyp) == ctype(jt) )  EXIT
+          IF ( cltype(jtyp) == TRIM(ctype(jt)) )  EXIT
        ENDDO
        IF ( jt == jptyp + 1 ) THEN
           PRINT *, 'ERROR in field list :', TRIM(cltype(jtyp) ),' not supported'
@@ -626,7 +627,7 @@ CONTAINS
           &       ' -b etopo ' /)
 
     DO jtyp=1, jptyp
-      PRINT '( 12a,x,24a,x,10a)', ctype(jtyp), comments(jtyp), crequired(jtyp)
+      PRINT '( 12a,x,24a,x,10a)', TRIM(ctype(jtyp)), comments(jtyp), crequired(jtyp)
     ENDDO
     STOP
 

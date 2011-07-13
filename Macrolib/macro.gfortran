@@ -6,9 +6,10 @@
 #NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
 NCDF = -I/usr/include -lnetcdff -lnetcdf
 
-F90=gfortran -v
+#F90=gfortran -v
+F90=gfortran 
 MPF90=
-FFLAGS= -O  $(NCDF)  -fno-second-underscore
+FFLAGS= -O  $(NCDF)  -fno-second-underscore -ffree-line-length-256
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin
