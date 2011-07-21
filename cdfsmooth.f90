@@ -15,6 +15,7 @@ PROGRAM cdfsmooth
   !!         : 2.1  : 07/2007  : J.M. Molines : port in cdftools
   !!         : 2.1  : 05/2010  : R. Dussin    : Add shapiro filter
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!           3.0  : 07/2011  : R. Dussin    : Add anisotropic box 
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -59,6 +60,7 @@ PROGRAM cdfsmooth
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, w2d          ! raw data,  filtered result
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim               ! time array
   REAL(KIND=4)                                  :: fn, rspval        ! cutoff freq/wavelength, spval
+  REAL(KIND=4)                                  :: ranis             ! anistropy
 
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dec2d             ! working array
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dec, de           ! weight in r8, starting index 0:nband
@@ -88,10 +90,11 @@ PROGRAM cdfsmooth
      PRINT *,'        ncut     : number of grid step to be filtered'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        [filter_type] : Lanczos, L, l  (default)'
-     PRINT *,'                        Hanning, H, h'
-     PRINT *,'                        Shapiro, S, s'
-     PRINT *,'                        Box    , B, b'
+     PRINT *,'        [filter_type] : Lanczos      , L, l  (default)'
+     PRINT *,'                        Hanning      , H, h'
+     PRINT *,'                        Shapiro      , S, s'
+     PRINT *,'                        Box          , B, b'
+     PRINT *,'                        Anis. Box    , B, b + anisotropy ratio' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Output file name is build from input file name with indication'
@@ -113,7 +116,7 @@ PROGRAM cdfsmooth
 
   WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'L',ncut   ! default name
 
-  IF ( narg  == 3 ) THEN
+  IF ( narg  >= 3 ) THEN
      CALL getarg(3,  ctyp)
      SELECT CASE ( ctyp)
      CASE ( 'Lanczos','L','l') 
@@ -137,6 +140,13 @@ PROGRAM cdfsmooth
         PRINT *, TRIM(ctyp),' : undefined filter ' ; STOP
      END SELECT
   ENDIF
+
+  IF ( narg  == 4 ) THEN
+     CALL getarg(4,cldum) ;  READ(cldum,*) ranis
+     PRINT *, 'Anisotropic box car with ratio Lx = ', ranis, 'x Ly'
+  ELSE
+     ranis=1.
+  ENDIF   
 
   CALL filterinit (nfilter, fn, nband)
   ! Look for input file and create outputfile
@@ -253,7 +263,7 @@ CONTAINS
     CASE ( jp_shap )
        CALL lisshapiro1d (px, kpx, py, ncut, npiglo, npjglo)
     CASE ( jp_boxc )
-       CALL lisbox       (px, kpx, py, npiglo, npjglo, fn, nband)
+       CALL lisbox       (px, kpx, py, npiglo, npjglo, fn, nband, ranis)
     END SELECT
 
   END SUBROUTINE filter
@@ -558,7 +568,7 @@ CONTAINS
   END SUBROUTINE lisshapiro1d
 
 
-  SUBROUTINE lisbox(px, kiw, py, kpi, kpj, pfn, knj)
+  SUBROUTINE lisbox(px, kiw, py, kpi, kpj, pfn, knj,anis)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE lisbox  ***
     !!
@@ -571,6 +581,7 @@ CONTAINS
     INTEGER(KIND=4),                 INTENT(in ) :: kpi, kpj         ! size of input/output
     REAL(KIND=4),                    INTENT(in ) :: pfn              ! cutoff frequency/wavelength
     INTEGER(KIND=4),                 INTENT(in ) :: knj              ! filter bandwidth
+    REAL(KIND=4),                    INTENT(in ) :: anis             ! anisotrop
 
     INTEGER(KIND=4)                              :: ji, jj
     INTEGER(KIND=4)                              :: ik1x, ik2x, ik1y, ik2y
@@ -580,8 +591,8 @@ CONTAINS
     ll_mask=.TRUE.
     WHERE (kiw == 0 ) ll_mask=.FALSE.
     DO ji=1,kpi
-       ik1x = ji-knj       ; ik2x = ji+knj
-       ik1x = MAX(1,ik1x)  ; ik2x = MIN(kpi,ik2x)
+       ik1x = ji-NINT( anis * knj)  ; ik2x = ji+NINT( anis * knj)
+       ik1x = MAX(1,ik1x)           ; ik2x = MIN(kpi,ik2x)
        DO jj=1,kpj
           ik1y = jj-knj       ; ik2y = jj+knj
           ik1y = MAX(1,ik1y)  ; ik2y = MIN(kpj,ik2y)
