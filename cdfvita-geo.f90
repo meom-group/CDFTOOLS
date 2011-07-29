@@ -121,6 +121,8 @@ PROGRAM cdfvita_geo
   npk    = getdim (cf_ufil,cn_z)
   npt    = getdim (cf_ufil,cn_t)
 
+  IF ( npk == 0 ) THEN ; npk = 1 ; ENDIF
+
   IF ( nlev == 0 ) THEN ! take all levels
      nlev = npk
      ALLOCATE (nklev(nlev) )
