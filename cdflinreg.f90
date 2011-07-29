@@ -29,7 +29,7 @@ PROGRAM cdflinreg
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4), PARAMETER                    :: jptmax=365                ! maximum number of time frame
+  INTEGER(KIND=4), PARAMETER                    :: jptmax=1000               ! maximum number of time frame
   INTEGER(KIND=4)                               :: jk, jfil, jvar, jv, jt    ! dummy loop index
   INTEGER(KIND=4)                               :: ierr, ijvar               ! working integer
   INTEGER(KIND=4)                               :: narg, iargc               ! 
