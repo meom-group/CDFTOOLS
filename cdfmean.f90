@@ -368,7 +368,7 @@ PROGRAM cdfmean
         ELSE
            WRITE(6,*) ' No points in the water at level ',ik,'(',gdep(ik),' m) '
            dvmeanout(jk) = 99999.
-           dvariance(jk) = 99999.
+           IF( lvar ) dvariance(jk) = 99999.
         ENDIF
 
         rdummymean(1,1) = dvmeanout(jk)
