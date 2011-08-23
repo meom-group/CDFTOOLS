@@ -11,6 +11,7 @@ PROGRAM cdficediag
   !! History : 2.1  : 01/2006  : J.M. Molines : Original code
   !!         : 2.1  : 07/2009  : R. Dussin    : Add Ncdf output
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !! Modified: 3.0  : 08/2011  : P.   Mathiot : Add LIM3 option
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -48,12 +49,16 @@ PROGRAM cdficediag
   !
   CHARACTER(LEN=256)                         :: cf_ifil              ! input ice file
   CHARACTER(LEN=256)                         :: cf_out='icediags.nc' ! output file
+  CHARACTER(LEN=256)                         :: cldum                ! dummy string
+  !
+  LOGICAL                                    :: lchk  = .false.      ! missing file flag
+  LOGICAL                                    :: llim3 = .false.      ! LIM3 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
-  IF ( narg /= 1 ) THEN
-     PRINT *,' usage : cdficediag ICE-file'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdficediag ICE-file [-lim3] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the ice volume, area and extent for each hemisphere.'
@@ -66,7 +71,10 @@ PROGRAM cdficediag
      PRINT *,'        ice concentration, but it will be deprecated soon.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       ICE-file : netcdf icemod file' 
+     PRINT *,'       ICE-file : netcdf icemod file (LIM2 by default)' 
+     PRINT *,'      '
+     PRINT *,'     OPTION :'
+     PRINT *,'       [-lim3 ] : LIM3 variable name convention is used'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fmsk)
@@ -84,7 +92,22 @@ PROGRAM cdficediag
   ENDIF
 
   CALL getarg (1, cf_ifil)
-  IF ( chkfile(cf_ifil) ) STOP ! missing file
+
+  lchk = lchk .OR. chkfile(cn_fhgr) 
+  lchk = lchk .OR. chkfile(cn_fmsk) 
+  lchk = lchk .OR. chkfile(cf_ifil)
+
+  IF ( lchk ) STOP ! missing file
+
+  IF ( narg == 2 ) THEN
+     CALL getarg (2, cldum)
+     IF (TRIM(cldum) == '-lim3') THEN
+        llim3 = .true.
+     ELSE IF (TRIM(cldum) == '-lim2') THEN
+     ELSE
+        PRINT *,' For this sea-ice data format use a namelist '
+     END IF
+  END IF
 
   npiglo = getdim (cf_ifil,cn_x)
   npjglo = getdim (cf_ifil,cn_y)
@@ -173,8 +196,26 @@ PROGRAM cdficediag
      STOP
   END SELECT
 
+  ricethick(:,:)=0.
+  riceldfra(:,:)=0.
+
+  IF (llim3) THEN
+     cn_iicethic = cn_iicethic3
+     cn_ileadfra = cn_ileadfra3
+  END IF
+
+  ! Check variable
+  IF (chkvar(cf_ifil, cn_iicethic)) THEN
+     cn_iicethic='missing'
+     PRINT *,'' 
+     PRINT *,' WARNING, ICE THICKNESS IS SET TO 0. '
+     PRINT *,' '
+  END IF
+
+  IF (chkvar(cf_ifil, cn_ileadfra)) STOP
+  !
   DO jt = 1, npt
-     ricethick(:,:) = getvar(cf_ifil, cn_iicethic, 1, npiglo, npjglo, ktime=jt)
+     IF (TRIM(cn_iicethic) .NE. 'missing') ricethick(:,:) = getvar(cf_ifil, cn_iicethic, 1, npiglo, npjglo, ktime=jt)
      riceldfra(:,:) = getvar(cf_ifil, cn_ileadfra, 1, npiglo, npjglo, ktime=jt)
 
      ! North : ff > 0 

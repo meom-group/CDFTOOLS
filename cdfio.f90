@@ -6,6 +6,7 @@
   !! History : 2.1 : 2005  : J.M. Molines   : Original code
   !!               : 2009  : R. Dussin      : add putvar_0d function
   !!           3.0 : 12/2010 : J.M. Molines : Doctor + Licence     
+  !! Modified: 3.0 : 08/2011 : P.   Mathiot : Add chkvar function           
   !!----------------------------------------------------------------------
 
   !!----------------------------------------------------------------------
@@ -18,6 +19,7 @@
   !!   functions     : description
   !! .............................
   !!   chkfile       : check the existence of a file
+  !!   chkvar        : check the existence of a variable in a file
   !!   closeout      : close output file
   !!   copyatt       : copy attributes from a file taken as model
   !!   create        : create a netcdf data set
@@ -98,7 +100,7 @@
      MODULE PROCEDURE atted_char, atted_r4
   END INTERFACE
 
-  PUBLIC :: chkfile
+  PUBLIC :: chkfile, chkvar
   PUBLIC :: copyatt, create, createvar, getvaratt, cvaratt
   PUBLIC :: putatt, putheadervar, putvar, putvar1d, putvar0d, atted
   PUBLIC :: getatt, getdim, getvdim, getipk, getnvar, getvarname, getvarid, getspval
@@ -2141,6 +2143,48 @@ CONTAINS
     ENDIF
 
   END FUNCTION chkfile
+
+  LOGICAL FUNCTION chkvar (cd_file, cd_var)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION chkvar  ***
+    !!
+    !! ** Purpose :  Check if cd_var exists in file cd_file.
+    !!               Return false if it exists, true if it does not
+    !!               Do nothing is varname is 'none'
+    !!
+    !! ** Method  : Doing it this way allow statements such as
+    !!              IF ( chkvar( cf_toto, cv_toto) ) STOP  ! missing var
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cd_file
+    CHARACTER(LEN=*), INTENT(in) :: cd_var
+
+    INTEGER(KIND=4)              :: istatus
+    INTEGER(KIND=4)              :: incid, id_t, id_var
+
+    !!----------------------------------------------------------------------
+    IF ( TRIM(cd_var) /= 'none')  THEN
+    
+       ! Open cdf dataset
+       istatus = NF90_OPEN(cd_file, NF90_NOWRITE,incid)
+       ! Read variable
+       istatus = NF90_INQ_VARID(incid, cd_var, id_var)
+
+       IF ( istatus == NF90_NOERR ) THEN
+          chkvar = .false.
+       ELSE
+          PRINT *, ' '
+          PRINT *, ' Var ',TRIM(cd_var),' is missing in file ',TRIM(cd_file)
+          chkvar = .true.
+       ENDIF
+       
+       ! Close file
+       istatus = NF90_CLOSE(incid) 
+    ELSE
+       chkvar = .false.  ! 'none' file is not checked
+    ENDIF
+
+  END FUNCTION chkvar
 
 END MODULE cdfio
 

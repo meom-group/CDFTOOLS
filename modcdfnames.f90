@@ -5,6 +5,7 @@ MODULE modCdfNames
   !! This will ease the generalization of CDFTOOLS
   !!=====================================================================
   !! History : 3.0  !  12/2010 ! J.M. Molines : Original code
+  !! Modified: 3.0  !  08/2010 ! P.   Mathiot : Add LIM3 variables
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -107,6 +108,8 @@ MODULE modCdfNames
   ! ice variable names
   CHARACTER(LEN=20) :: cn_iicethic='iicethic' !: ice thickness
   CHARACTER(LEN=20) :: cn_ileadfra='ileadfra' !: ice concentration
+  CHARACTER(LEN=20) :: cn_iicethic3='iicethic'!: ice thickness (LIM3)
+  CHARACTER(LEN=20) :: cn_ileadfra3='iiceconc'!: ice concentration (LIM3)
   
   ! Bathymetry
   CHARACTER(LEN=20) :: cn_fbathymet='bathy_meter.nc' !: file Bathymetry in meters
