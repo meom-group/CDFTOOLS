@@ -204,8 +204,8 @@ CONTAINS
     CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar
     !!----------------------------------------------------------------------
     istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncid=icout)
-    istatus = NF90_DEF_DIM(icout, 'x', kx, nid_x)
-    istatus = NF90_DEF_DIM(icout, 'y', ky, nid_y)
+    istatus = NF90_DEF_DIM(icout, cn_x, kx, nid_x)
+    istatus = NF90_DEF_DIM(icout, cn_y, ky, nid_y)
 
     IF ( kz /= 0 ) THEN
        ! try to find out the name I will use for depth dimension in the new file ...
@@ -214,7 +214,7 @@ CONTAINS
           idum=getdim(cdfilref,cldep,cldepref)   ! look for depth dimension name in ref file
          IF (cldepref =='unknown' ) cldepref=cdep
        ELSE 
-          idum=getdim(cdfilref,'depth',cldep   )   ! look for depth dimension name in ref file
+          idum=getdim(cdfilref,cn_z,cldep   )   ! look for depth dimension name in ref file
           cldepref=cldep
        ENDIF
        cldepvar=cldep
@@ -225,7 +225,7 @@ CONTAINS
     ENDIF
 
 
-    istatus = NF90_DEF_DIM(icout,'time_counter',NF90_UNLIMITED, nid_t)
+    istatus = NF90_DEF_DIM(icout,cn_t,NF90_UNLIMITED, nid_t)
 
     invdim(1) = nid_x ; invdim(2) = nid_y ; invdim(3) = nid_z ; invdim(4) = nid_t
 
@@ -237,18 +237,18 @@ CONTAINS
     ENDIF
 
     ! define variables and copy attributes
-    istatus = NF90_DEF_VAR(icout,'nav_lon',NF90_FLOAT,(/nid_x, nid_y/), nid_lon)
-    istatus = copyatt('nav_lon', nid_lon,incid,icout)
-    istatus = NF90_DEF_VAR(icout,'nav_lat',NF90_FLOAT,(/nid_x, nid_y/), nid_lat)
-    istatus = copyatt('nav_lat', nid_lat,incid,icout)
+    istatus = NF90_DEF_VAR(icout,cn_vlon2d,NF90_FLOAT,(/nid_x, nid_y/), nid_lon)
+    istatus = copyatt(cn_vlon2d, nid_lon,incid,icout)
+    istatus = NF90_DEF_VAR(icout,cn_vlat2d,NF90_FLOAT,(/nid_x, nid_y/), nid_lat)
+    istatus = copyatt(cn_vlat2d, nid_lat,incid,icout)
     IF ( kz /= 0 ) THEN
        istatus = NF90_DEF_VAR(icout,TRIM(cldepvar),NF90_FLOAT,(/nid_z/), nid_dep)
        ! JMM bug fix : if cdep present, then chose attribute from cldepref
        istatus = copyatt(TRIM(cldepvar), nid_dep,incid,icout)
     ENDIF
 
-    istatus = NF90_DEF_VAR(icout,'time_counter',NF90_FLOAT,(/nid_t/), nid_tim)
-    istatus = copyatt('time_counter', nid_tim,incid,icout)
+    istatus = NF90_DEF_VAR(icout,cn_vtimec,NF90_FLOAT,(/nid_t/), nid_tim)
+    istatus = copyatt(cn_vtimec, nid_tim,incid,icout)
 
     istatus = NF90_CLOSE(incid)
 
@@ -1588,14 +1588,14 @@ CONTAINS
     IF (PRESENT(pnavlon) ) THEN 
        z2d = pnavlon
     ELSE
-       z2d=getvar(cdfile,'nav_lon', 1,kpi,kpj)
+       z2d=getvar(cdfile,cn_vlon2d, 1,kpi,kpj)
     ENDIF
     istatus = putvar(kout, nid_lon,z2d,1,kpi,kpj)
 
     IF (PRESENT(pnavlat) ) THEN
        z2d = pnavlat
     ELSE
-       z2d=getvar(cdfile,'nav_lat', 1,kpi,kpj)
+       z2d=getvar(cdfile,cn_vlat2d, 1,kpi,kpj)
     ENDIF
 
     istatus = putvar(kout, nid_lat,z2d,1,kpi,kpj)

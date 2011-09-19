@@ -132,6 +132,7 @@ PROGRAM cdfmoyt
 
   IF ( chkfile (cf_list(1)) ) STOP ! missing file
 
+  cf_in  = cf_list(1)
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)
   npk    = getdim (cf_in,cn_z, cdtrue=cv_dep, kstatus=ierr)
