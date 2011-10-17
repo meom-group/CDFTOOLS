@@ -145,8 +145,9 @@ MODULE modCdfNames
     NAMELIST/namdim/ cn_x, cn_y, cn_z, cn_t                        ! dimensions
 
     ! dimension variables
-    NAMELIST/namdimvar/ cn_vlon2d, cn_vlat2d, cn_vdeptht, cn_vtimec
+    NAMELIST/namdimvar/ cn_vlon2d, cn_vlat2d
     NAMELIST/namdimvar/ cn_vdeptht, cn_vdepthu, cn_vdepthv, cn_vdepthw
+    NAMELIST/namdimvar/ cn_vtimec
    
     ! attributes
     NAMELIST/namdimvar/ cn_missing_value
