@@ -89,10 +89,11 @@ PROGRAM cdfw
   CALL getarg(ijarg, cf_vfil) ; ijarg = ijarg + 1
 
   DO WHILE (ijarg <= narg )
-     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
+     CALL getarg(ijarg, cldum) 
      SELECT CASE ( cldum )
      CASE ( '-full' ) 
         lfull = .TRUE.
+        ijarg = ijarg + 1
      CASE DEFAULT
         CALL getarg(ijarg, cn_vozocrtx) ; ijarg = ijarg + 1
         CALL getarg(ijarg, cn_vomecrty) ; ijarg = ijarg + 1
