@@ -14,7 +14,7 @@ PROGRAM cdfmkmask
   !!
   !! History : 2.1  : 11/2005  : J.M. Molines : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
-  !! Modified : 3.0 : 08/2011  : P.   Mathiot : Add zoomij and zoombat option
+  !! Modified : 3.0 : 08/2011  : P.   Mathiot : Add zoomij, zoombat, zoomvar and time option
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -26,10 +26,10 @@ PROGRAM cdfmkmask
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                           :: ji, jj, jk               ! dummy loop index
+  INTEGER(KIND=4)                           :: ji, jj, jk, jt           ! dummy loop index
   INTEGER(KIND=4)                           :: ierr                     ! working integer
   INTEGER(KIND=4)                           :: narg, iargc, ijarg       ! 
-  INTEGER(KIND=4)                           :: npiglo, npjglo, npk      ! size of the domain
+  INTEGER(KIND=4)                           :: npiglo, npjglo, npk, nt  ! size of the domain
   INTEGER(KIND=4)                           :: iimin, iimax             ! limit in i
   INTEGER(KIND=4)                           :: ijmin, ijmax             ! limit in j
   INTEGER(KIND=4)                           :: ncout                    ! ncid of output file
@@ -38,7 +38,8 @@ PROGRAM cdfmkmask
   REAL(KIND=4)                              :: rlonmin, rlonmax         ! limit in longitude
   REAL(KIND=4)                              :: rlatmin, rlatmax         ! limit in latitude
   REAL(KIND=4)                              :: rbatmin, rbatmax         ! limit in latitude
-  REAL(KIND=4), DIMENSION(1)                :: tim                      ! time counter
+  REAL(KIND=4)                              :: rvarmin, rvarmax         ! limit in variable
+  REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: tim                      ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, zmask             ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat               ! latitude and longitude
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rbat                     ! bathymetry 
@@ -53,6 +54,8 @@ PROGRAM cdfmkmask
   LOGICAL                                   :: lzoom    = .false.       ! zoom flag lat/lon
   LOGICAL                                   :: lzoomij  = .false.       ! zoom flag i/j
   LOGICAL                                   :: lzoombat = .false.       ! zoom flag bat
+  LOGICAL                                   :: lzoomvar = .false.       ! zoom flag var
+  LOGICAL                                   :: ltime    = .false.       ! time flag    
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -83,6 +86,11 @@ PROGRAM cdfmkmask
      PRINT *,'                        limit the area where the mask is builded. Outside'
      PRINT *,'                        this area, the mask is set to 0.' 
      PRINT *,'                        Need mesh_zgr.nc'
+     PRINT *,'       [-zoomvar varname varmin varmax] : range of varname used to'
+     PRINT *,'                        limit the area where the mask is builded. Outside'
+     PRINT *,'                        this area, the mask is set to 0.'
+     PRINT *,'       [-time ] : If further time step is available'
+     PRINT *,'                        a mask for each time step is done'
      PRINT *,'       [-o OUT-file ] : output file name to be used in place of standard'
      PRINT *,'                        name [ ',TRIM(cf_out),' ]'
      PRINT *,'      '
@@ -124,6 +132,13 @@ PROGRAM cdfmkmask
        CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rbatmin
        CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rbatmax
     !
+    CASE ( '-zoomvar' ) ! read a zoom variable area
+       lzoomvar = .true.
+       CALL getarg (ijarg, cv_mask) ; ijarg = ijarg + 1 ;
+       CALL getarg (ijarg, cldum)   ; ijarg = ijarg + 1 ; READ(cldum,*) rvarmin 
+       CALL getarg (ijarg, cldum)   ; ijarg = ijarg + 1 ; READ(cldum,*) rvarmax 
+    CASE ( '-time' )  ! create a mask for each time step of the file
+       ltime=.true.
     CASE ( '-o'    )  ! change output file name
        CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
     !
@@ -135,7 +150,7 @@ PROGRAM cdfmkmask
 
   IF ( lzoom .AND. lzoomij ) PRINT *, 'WARNING 2 spatial condition for mask'
   
-  cv_mask = cn_vosaline
+  IF (.NOT. lzoomvar) cv_mask = cn_vosaline
   IF (TRIM(cf_tfil)=='-maskfile') THEN
      cv_mask = 'tmask'
      cf_tfil = cn_fmsk
@@ -147,10 +162,18 @@ PROGRAM cdfmkmask
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
+  nt     = getdim (cf_tfil,cn_t)
 
   PRINT *,' npiglo = ', npiglo
   PRINT *,' npjglo = ', npjglo
   PRINT *,' npk    = ', npk
+  PRINT *,' nt     = ', nt 
+  
+  IF ((nt .GT. 1) .AND. (.NOT. ltime)) THEN 
+     PRINT *, "WARNING nt > 1"
+     PRINT *, "we used only the first time step"
+     nt=1
+  END IF
 
 
   ipk(1:4)                       = npk
@@ -182,8 +205,8 @@ PROGRAM cdfmkmask
   ierr  = createvar   (ncout,    stypvar, 4,      ipk,    id_varout )
   ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk)
 
-  ALLOCATE (tmask(npiglo,npjglo), zmask(npiglo,npjglo) )
-  IF ( lzoombat ) ALLOCATE ( rbat(npiglo,npjglo) )
+  !! Allocate only usefull variable and read only usefull variable
+  ALLOCATE (tmask(npiglo,npjglo), zmask(npiglo,npjglo), tim(nt))
 
   IF ( lzoom ) THEN
     ALLOCATE (rlon(npiglo,npjglo), rlat(npiglo,npjglo))
@@ -191,11 +214,27 @@ PROGRAM cdfmkmask
     rlat(:,:) = getvar(cf_tfil, cn_vlat2d, 1, npiglo, npjglo)
   ENDIF
 
+  IF ( lzoombat ) THEN
+     ALLOCATE ( rbat  (npiglo,npjglo) )
+     rbat(:,:)= getvar(cn_fzgr, cn_hdepw,  1 ,npiglo, npjglo)
+  END IF
+
+  !! Now compute the mask 
+  DO jt=1, nt
+    IF (MOD(jt,10)==0) PRINT *,jt,'/',nt,' ...'
   DO jk=1, npk
      ! tmask
-     tmask(:,:) = getvar(cf_tfil, cv_mask,  jk, npiglo, npjglo)
-     WHERE (tmask > 0 ) tmask = 1
-     WHERE (tmask <=0 ) tmask = 0
+      tmask(:,:) = getvar(cf_tfil, cv_mask,  jk, npiglo, npjglo, ktime=jt)
+      
+      IF ( lzoomvar ) THEN
+	    zmask=tmask
+	    WHERE ((tmask .GE. rvarmin) .AND. (tmask .LE. rvarmax)) zmask = 1
+	    WHERE ((tmask .LT. rvarmin) .OR.  (tmask .GT. rvarmax)) zmask = 0
+	    tmask=zmask
+      ELSE
+        WHERE (tmask > 0 ) tmask = 1
+        WHERE (tmask <=0 ) tmask = 0
+      ENDIF
 
      IF ( lzoom ) THEN
         IF (rlonmax > rlonmin) THEN
@@ -217,11 +256,10 @@ PROGRAM cdfmkmask
      ENDIF
 
      IF ( lzoombat ) THEN
-        rbat(:,:)= getvar(cn_fzgr, cn_hdepw,  1 ,npiglo, npjglo)
         WHERE (rbat < rbatmin .OR. rbat > rbatmax) tmask = 0
      ENDIF
 
-     ierr       = putvar(ncout, id_varout(1), tmask, jk ,npiglo, npjglo)
+      ierr       = putvar(ncout, id_varout(1), tmask, jk ,npiglo, npjglo, ktime=jt)
      ! umask
      zmask = 0.
      DO ji=1,npiglo-1
@@ -229,7 +267,7 @@ PROGRAM cdfmkmask
         zmask(ji,jj) = tmask(ji,jj)*tmask(ji+1,jj)
        END DO
      END DO
-     ierr       = putvar(ncout, id_varout(2), zmask, jk ,npiglo, npjglo)
+      ierr       = putvar(ncout, id_varout(2), zmask, jk ,npiglo, npjglo, ktime=jt)
     ! vmask
      zmask=0.
      DO ji=1,npiglo
@@ -237,7 +275,7 @@ PROGRAM cdfmkmask
         zmask(ji,jj) = tmask(ji,jj)*tmask(ji,jj+1)
        END DO
      END DO
-     ierr       = putvar(ncout, id_varout(3), zmask, jk, npiglo, npjglo)
+      ierr       = putvar(ncout, id_varout(3), zmask, jk, npiglo, npjglo, ktime=jt)
      !fmask
      zmask=0.
      DO ji=1,npiglo-1
@@ -245,11 +283,15 @@ PROGRAM cdfmkmask
         zmask(ji,jj) = tmask(ji,jj)*tmask(ji,jj+1)*tmask(ji+1,jj)*tmask(ji+1,jj+1)
        END DO
      END DO
-     ierr       = putvar(ncout, id_varout(4), zmask, jk, npiglo, npjglo)
+      ierr       = putvar(ncout, id_varout(4), zmask, jk, npiglo, npjglo, ktime=jt)
   END DO  ! loop to next level
+  END DO
 
   tim(:) = 0.
-  ierr   = putvar1d(ncout, tim, 1,'T')
+  ierr   = putvar1d(ncout, tim, nt,'T')
   ierr   = closeout(ncout              )
 
+  PRINT *,''
+  PRINT *,'Mask file ',TRIM(cf_out),' has been created' 
+ 
 END PROGRAM cdfmkmask
