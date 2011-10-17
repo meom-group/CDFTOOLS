@@ -10,6 +10,8 @@ PROGRAM cdfmoy_freq
   !!
   !! History : 2.1  : 06/2007  : P. Mathiot   : Original code from cdfmoy
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !!           3.0  : 10/2011  : P. Mathiot   : Add seasonal option and 
+  !!                                            allow file with 73 time steps
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
@@ -27,13 +29,14 @@ PROGRAM cdfmoy_freq
   INTEGER(KIND=4)                               :: ierr            ! working integer
   INTEGER(KIND=4)                               :: itime    ! dummy loop index
   INTEGER(KIND=4)                               :: narg, iargc     ! 
-  INTEGER(KIND=4)                               :: ijmonth
   INTEGER(KIND=4)                               :: npiglo, npjglo  ! size of the domain
   INTEGER(KIND=4)                               :: npk ,npt        ! size of the domain
   INTEGER(KIND=4)                               :: nvars           ! Number of variables in a file
   INTEGER(KIND=4)                               :: ntframe         ! Cumul of time frame
   INTEGER(KIND=4)                               :: ncout, ncout2
-  INTEGER(KIND=4), DIMENSION(12)                :: njm
+  INTEGER(KIND=4), DIMENSION(365)               :: njd  ! day vector
+  INTEGER(KIND=4), DIMENSION( 12)               :: njm  ! month vector
+  INTEGER(KIND=4), DIMENSION(  4)               :: njs  !season vector
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var, ipk, id_varout
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, rmean
@@ -48,10 +51,10 @@ PROGRAM cdfmoy_freq
   CHARACTER(LEN=256)                            :: cv_dep
   CHARACTER(LEN=256)                            :: cfreq_out, cfreq_in
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var nam
-  
+
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar
 
-  LOGICAL                                       :: lcaltmean
+  LOGICAL                                       :: lcaltmean, lprint
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -64,8 +67,8 @@ PROGRAM cdfmoy_freq
      PRINT *,'       input forcing file given on input.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file : netcdf input file corresponding to 1 year of forcing variable '
-     PRINT *,'       output_frequency : either one of montly, daily or annual.'
+     PRINT *,'       IN-file : netcdf input file corresponding to 1 year of forcing variable (1460, 365, 73 or 12 time step) '
+     PRINT *,'       output_frequency : either one of monthly, daily, seasonal or annual.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none.'
@@ -89,9 +92,10 @@ PROGRAM cdfmoy_freq
   SELECT CASE ( cfreq_out )
   CASE ('daily'   ) ; nt_out = 365
   CASE ('monthly' ) ; nt_out =  12
+  CASE ('seasonal') ; nt_out =   4
   CASE ('annual'  ) ; nt_out =   1
   CASE DEFAULT 
-     PRINT *, 'Pb : this frequency is not allowed, please use daily, monthly or annual'
+     PRINT *, 'Pb : this output_frequency is not allowed, please use daily, monthly, seasonal or annual'
      STOP
   END SELECT
 
@@ -102,17 +106,20 @@ PROGRAM cdfmoy_freq
   IF (ierr /= 0 ) THEN
      npk   = getdim (cf_in,'z',cdtrue=cv_dep,kstatus=ierr)
      IF (ierr /= 0 ) THEN
-       npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
+        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
         IF ( ierr /= 0 ) THEN 
-          PRINT *,' assume file with no depth'
-          npk=0
+           PRINT *,' assume file with no depth'
+           npk=0
         ENDIF
      ENDIF
   ENDIF
 
+  npt   = getdim (cf_in, cn_t)
+
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
 
   ALLOCATE( dtab(npiglo,npjglo), v2d(npiglo,npjglo) )
   ALLOCATE( rmean(npiglo,npjglo)                    )
@@ -134,15 +141,13 @@ PROGRAM cdfmoy_freq
   WHERE( ipk == 0 ) cv_names='none'
   stypvar(:)%cname = cv_names
 
-  PRINT *, '',cv_names
-
-  ! create output fileset
-  cf_out = 'cdfmoy_'//TRIM(cfreq_out)//'.nc'
+  !
   ! create output file taking the sizes in cf_in
 
-  ncout = create      (cf_out, cf_in,   npiglo, npjglo, 0         )
+  cf_out = 'cdfmoy_'//TRIM(cfreq_out)//'.nc'
+  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdep=cv_dep )
   ierr  = createvar   (ncout,  stypvar, nvars,  ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_in,   npiglo,  npjglo, 0        )
+  ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk, cdep=cv_dep )
 
   time=getvar1d(cf_in, cn_vtimec, 1)
   ierr=putvar1d(ncout, time, 1, 'T')
@@ -153,16 +158,19 @@ PROGRAM cdfmoy_freq
   SELECT CASE ( npt )
   CASE ( 1460 ) ; PRINT *, 'Frequency of this file : 6h '
   CASE (  365 ) ; PRINT *, 'Frequency of this file : daily '
+  CASE (   73 ) ; PRINT *, 'Frequency of this file : 5 day '
   CASE (   12 ) ; PRINT *, 'Frequency of this file : monthly '
   END SELECT
 
   IF (npt <= nt_out) THEN
-     PRINT *, 'You don''t need to use it, or it is impossible'
+     PRINT *, 'You don''t need to use it, or it is impossible (npt_in <= npt_out)'
      STOP
   END IF
 
-  itime=0
+  ! number of day by month, season and day
+  njd(:)= 1
   njm= (/ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
+  njs= (/ 90, 91, 92, 92 /)
 
   DO jvar = 1,nvars
      IF ( cv_names(jvar) == cn_vlon2d .OR.                            &
@@ -170,35 +178,44 @@ PROGRAM cdfmoy_freq
         ! skip these variable
      ELSE
         PRINT *,' Working with ', TRIM(cv_names(jvar))
-        dtab(:,:) = 0.d0 ; dtotal_time = 0.d0;  ntframe=0; ijmonth=1
-        DO jtt=1, nt_in
-           ntframe=ntframe+1
-           ! If forcing fields is without depth dimension
-           v2d(:,:)  = getvar(cf_in, cv_names(jvar), 1, npiglo, npjglo, ktime=jtt )
-           dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
+	DO jk=1,ipk(jvar)
 
-           IF (nt_out==12) THEN
-              IF ( ntframe == njm(ijmonth) * nt_in/365 ) THEN
-                 PRINT *, ijmonth, jtt,'/',npt
-                 itime=itime+1
-                 ! finish with level jk ; compute mean (assume spval is 0 )
+    ! initialisation
+           dtab(:,:) = 0.d0 ; dtotal_time = 0.d0;  ntframe=0; itime=1; 
+
+	   ! time loop
+           DO jtt=1, nt_in
+	      lprint=.FALSE.
+              ntframe=ntframe+1
+              ! load data
+              v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jtt )
+              dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
+
+              ! detection of time when you have to print the average
+              IF (nt_out==365) THEN
+	         IF (MOD(jtt,FLOOR(SUM(njd(1:itime)) * nt_in/365.))==0) lprint=.TRUE.
+              ELSE IF (nt_out==12) THEN
+	         IF (MOD(jtt,FLOOR(SUM(njm(1:itime)) * nt_in/365.))==0) lprint=.TRUE.
+              ELSE IF (nt_out==4) THEN   
+	         IF (MOD(jtt,FLOOR(SUM(njs(1:itime)) * nt_in/365.))==0) lprint=.TRUE.
+              ELSE IF (nt_out==1) THEN
+	         IF (MOD(jtt,                          nt_in      )==0) lprint=.TRUE.
+              END IF
+              !
+              ! Compute and print the average at the right time              
+              IF ( lprint ) THEN
+                 IF (jk==1) PRINT *, itime, jtt,'/',npt 
+                 ! compute mean
                  rmean(:,:) = dtab(:,:)/ntframe
                  ! store variable on outputfile
-                 ierr = putvar(ncout, id_varout(jvar) ,rmean, itime, npiglo, npjglo, itime)
-                 dtab(:,:) = 0.d0 ; dtotal_time = 0.;  ntframe=0; ijmonth=ijmonth+1
+                 ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo, ktime=itime)
+                 dtab(:,:) = 0.d0 ; dtotal_time = 0.;  ntframe=0; itime=itime+1
               END IF
-           ELSE
-              IF (MOD(jtt,nt_in/nt_out)==0) THEN
-                 itime=itime+1
-                 PRINT *, jtt,'/',npt,' dumping every ',nt_in/nt_out
-                 ! finish with level jk ; compute mean (assume spval is 0 )
-                 rmean(:,:) = dtab(:,:)/ntframe
-                 ! store variable on outputfile
-                 ierr = putvar(ncout, id_varout(jvar) ,rmean, itime, npiglo, npjglo, itime)
-                 dtab(:,:) = 0.d0 ; dtotal_time = 0.;  ntframe=0
-              END IF
-           END IF
-        ENDDO
+	      !
+           ENDDO ! loop to next time
+
+	ENDDO ! loop to next level
+
      END IF
   END DO ! loop to next var in file
 
