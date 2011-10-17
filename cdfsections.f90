@@ -437,9 +437,12 @@ DO p=1,Nsec
    ! recherche du point le plus proche (on fait comme ça parceque la grille est bizarre vers les poles)
     do i=1,mx
     do j=1,my
-      dtmp_T= RT * acos(cos(nav_lat_T(i,j)*rr)*cos(latsec(s)*rr)*cos(nav_lon_T(i,j)*rr-lonsec(s)*rr)+sin(nav_lat_T(i,j)*rr)*sin(latsec(s)*rr))
-      dtmp_U= RT * acos(cos(nav_lat_U(i,j)*rr)*cos(latsec(s)*rr)*cos(nav_lon_U(i,j)*rr-lonsec(s)*rr)+sin(nav_lat_U(i,j)*rr)*sin(latsec(s)*rr))
-      dtmp_V= RT * acos(cos(nav_lat_V(i,j)*rr)*cos(latsec(s)*rr)*cos(nav_lon_V(i,j)*rr-lonsec(s)*rr)+sin(nav_lat_V(i,j)*rr)*sin(latsec(s)*rr))
+      dtmp_T= RT * acos(cos(nav_lat_T(i,j)*rr)*cos(latsec(s)*rr)*cos(nav_lon_T(i,j)*rr- &
+     &        lonsec(s)*rr)+sin(nav_lat_T(i,j)*rr)*sin(latsec(s)*rr))
+      dtmp_U= RT * acos(cos(nav_lat_U(i,j)*rr)*cos(latsec(s)*rr)*cos(nav_lon_U(i,j)*rr- &
+     &        lonsec(s)*rr)+sin(nav_lat_U(i,j)*rr)*sin(latsec(s)*rr))
+      dtmp_V= RT * acos(cos(nav_lat_V(i,j)*rr)*cos(latsec(s)*rr)*cos(nav_lon_V(i,j)*rr- &
+     &        lonsec(s)*rr)+sin(nav_lat_V(i,j)*rr)*sin(latsec(s)*rr))
       if (dtmp_T.lt.miniT) then
           miniT=dtmp_T
           iiT=i
