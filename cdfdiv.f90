@@ -16,7 +16,7 @@ PROGRAM cdfdiv
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
-  !! $Id: cdfw.f90 539 2011-07-11 10:33:35Z molines $
+  !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
