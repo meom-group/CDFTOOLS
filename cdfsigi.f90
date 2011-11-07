@@ -43,6 +43,7 @@ PROGRAM cdfsigi
   CHARACTER(LEN=256)                        :: cldum           ! dummy string
 
   TYPE (variable), DIMENSION(1)             :: stypvar         ! structure for attributes
+  !!
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
