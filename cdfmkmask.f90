@@ -169,7 +169,12 @@ PROGRAM cdfmkmask
   PRINT *,' npk    = ', npk
   PRINT *,' nt     = ', nt 
   
-  IF ((nt .GT. 1) .AND. (.NOT. ltime)) THEN 
+  IF ( nt == 0 ) THEN
+    PRINT *,' nt is forced to 1'
+    nt = 1
+  ENDIF
+  
+  IF ((nt > 1) .AND. (.NOT. ltime)) THEN 
      PRINT *, "WARNING nt > 1"
      PRINT *, "we used only the first time step"
      nt=1
@@ -249,10 +254,10 @@ PROGRAM cdfmkmask
      ENDIF
 
      IF ( lzoomij ) THEN
-        tmask(1:iimin-1,:)      = 0
-        tmask(iimax+1:npiglo,:) = 0
-        tmask(:,ijmax+1:npjglo) = 0
-        tmask(:,ijmax+1:npjglo) = 0   
+        tmask(1:iimin-1,:     ) = 0   ! West
+        tmask(iimax+1:npiglo,:) = 0   ! East
+        tmask(:,ijmax+1:npjglo) = 0   ! North
+        tmask(:,1:ijmin-1     ) = 0   ! South
      ENDIF
 
      IF ( lzoombat ) THEN
