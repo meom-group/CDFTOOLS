@@ -47,6 +47,7 @@ PROGRAM cdfmax
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar              ! dummy dtructure to read var names
 
   LOGICAL                                       :: lforcexy=.FALSE.     ! flag for forced horizontal slab
+  LOGICAL                                       :: lflag=.FALSE.        ! flag set when all data are missing
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -225,6 +226,7 @@ PROGRAM cdfmax
                  ilmin = MINLOC(v2d,(v2d /= zspval) )
                  ii1=ilmax(1) ; ij1=ilmax(2)
                  ii2=ilmin(1) ; ij2=ilmin(2)
+                 lflag = lchkflag()
                  PRINT 9003, jt, jk, h(jk),ii1+iimin -1, rlon(ii1,ij1),ij1+ijmin -1,rlat(ii1,ij1),v2d(ii1,ij1)*rfact, &
                       &             ii2+iimin -1, rlon(ii2,ij2),ij2+ijmin -1,rlat(ii2,ij2),v2d(ii2,ij2)*rfact
               END DO
@@ -247,6 +249,7 @@ PROGRAM cdfmax
               ilmin = MINLOC(v2d,(v2d/= zspval) )
               ii1=ilmax(1) ; ij1=ilmax(2)
               ii2=ilmin(1) ; ij2=ilmin(2)
+              lflag = lchkflag()
               PRINT 9002, jt, iimin, iimin, rlon(1,ii1),ii1+ijmin -1,rlat(1,ii1),ij1+ikmin-1, h(ij1+ikmin-1), v2d(ii1,ij1)*rfact, &
                    &             iimin, rlon(1,ii2),ii2+ijmin -1,rlat(1,ii2),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
            END DO
@@ -267,6 +270,7 @@ PROGRAM cdfmax
               ilmin = MINLOC(v2d,(v2d /= zspval) )
               ii1=ilmax(1) ; ij1=ilmax(2)
               ii2=ilmin(1) ; ij2=ilmin(2)
+              lflag = lchkflag()
               PRINT 9002, jt, ijmin, ii1, rlon(ii1,1),ijmin,rlat(ii1,1),ij1+ikmin-1, h(ij1+ikmin-1), v2d(ii1,ij1)*rfact, &
                    &             ii2, rlon(ii2,1),ijmin,rlat(ii2,1),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
            END DO
@@ -284,5 +288,29 @@ PROGRAM cdfmax
 9000 FORMAT(a)
 9002 FORMAT(I5, x,i4,9x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5, 6x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5 )
 9003 FORMAT(I5, x,i5,1x,f7.2,5x,i5,f8.2, i5, f7.2, e14.5, 5x,i5,f8.2, i5, f7.2, e14.5)
+
+CONTAINS
+   LOGICAL FUNCTION lchkflag()
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION lchkflag  ***
+    !!
+    !! ** Purpose :  Set flag to true when all data are missing. 
+    !!
+    !! ** Method  :  When all data are missing, MAXLOC or MINLOC return 0 index
+    !!               which cannot be used in v2d, or any other array.
+    !!               In this case, faulty indices are set to 1,1 and 1,2 and
+    !!               corresponding v2d is set to a flag value 999999999.999
+    !!               REM: the return value is T or F, btw not used in the code.
+    !!----------------------------------------------------------------------
+
+    lflag=.false.
+    IF ( ii1 == 0 ) THEN ; ii1=1 ; lflag=.true. ; ENDIF
+    IF ( ii2 == 0 ) THEN ; ii2=1 ; lflag=.true. ; ENDIF
+    IF ( ij1 == 0 ) THEN ; ij1=1 ; lflag=.true. ; ENDIF
+    IF ( ij2 == 0 ) THEN ; ij2=2 ; lflag=.true. ; ENDIF
+    IF ( lflag ) v2d(ii1,ij1)=-999999999.999
+    IF ( lflag ) v2d(ii2,ij2)=+999999999.999
+    lchkflag = lflag
+   END FUNCTION lchkflag
 
 END PROGRAM cdfmax
