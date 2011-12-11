@@ -32,7 +32,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
-       cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfnamelist \
+       cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime
 
 all: $(EXEC)
@@ -359,6 +359,9 @@ cdfcsp: cdfio.o cdfcsp.f90
 
 cdfnan: cdfio.o cdfnan.f90
 	$(F90)   cdfnan.f90  -o $(BINDIR)/cdfnan cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfscale: cdfio.o cdfscale.f90
+	$(F90)   cdfscale.f90  -o $(BINDIR)/cdfscale cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
 	$(F90)   cdfnorth_unfold.f90  -o $(BINDIR)/cdfnorth_unfold cdfio.o modcdfnames.o $(FFLAGS)
