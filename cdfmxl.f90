@@ -129,7 +129,7 @@ PROGRAM cdfmxl
   ALLOCATE (hmlp1(npiglo,npjglo), hmlp2(npiglo,npjglo), hmlt(npiglo,npjglo) )
   ALLOCATE (mbathy(npiglo,npjglo)                                           )
   ALLOCATE (nmln1(npiglo,npjglo), nmln2(npiglo,npjglo), nmlnt(npiglo,npjglo))
-  ALLOCATE (gdepw(npk), tim(npt)                                            )
+  ALLOCATE (gdepw(0:npk), tim(npt)                                            )
 
   ! read mbathy and gdepw use real rtem(:,:) as template (getvar is used for real only)
   IF ( chkfile( cn_fbathylev)  ) THEN
