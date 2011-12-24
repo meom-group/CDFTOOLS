@@ -85,6 +85,8 @@ PROGRAM cdfmoy_weighted
      STOP
   ENDIF
 
+  ! default values
+  lold5d = .FALSE.
   ! scan command line and check if files exist
   ijarg = 1
   ntags = narg
