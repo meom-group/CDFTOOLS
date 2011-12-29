@@ -187,6 +187,9 @@ cdfpsi_level: cdfio.o  cdfpsi_level.f90
 cdftransport: cdfio.o  modutils.o cdftransport.f90
 	$(F90) cdftransport.f90 -o $(BINDIR)/cdftransport cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
+cdfvFWov: cdfio.o  modutils.o cdfvFWov.f90
+	$(F90) cdfvFWov.f90 -o $(BINDIR)/cdfvFWov cdfio.o modcdfnames.o modutils.o $(FFLAGS)
+
 cdfsigtrp: cdfio.o eos.o  modutils.o cdfsigtrp.f90 
 	$(F90)  cdfsigtrp.f90 -o $(BINDIR)/cdfsigtrp cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
 
