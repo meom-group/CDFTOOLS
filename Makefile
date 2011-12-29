@@ -22,7 +22,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfbn2 cdfrichardson cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig cdfspice\
        cdfbottom cdfets cdfcurl cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfsigintegr cdfpvor \
-       cdfmhst cdfvhst cdfvtrp cdftransport  \
+       cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
        cdfsigtrp cdftempvol-full\
        cdfpsi cdfmoc  cdfmocsig cdfmean \
        cdfheatc cdfzonalmean cdfhflx cdfwflx cdfbuoyflx\
