@@ -9,6 +9,8 @@ NCDF= -I/opt/software/SGI/netcdf/4.0/include -L/opt/software/SGI/netcdf/4.0/lib 
 F90=ifort
 MPF90=mpif90
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
+
 FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian -g -traceback -fpe0 -ftrapuv -CB
 LMPI=-lmpich

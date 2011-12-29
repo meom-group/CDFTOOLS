@@ -32,10 +32,12 @@ PROGRAM cdffindij
 
   REAL(KIND=4)       :: xmin, xmax, ymin, ymax     ! geographical window
 
-  CHARACTER(LEN=256) :: ctype='F'                  ! point type to search for
+  CHARACTER(LEN=256) :: cltype='F'                 ! point type to search for
   CHARACTER(LEN=256) :: cldum                      ! dummy character variable
+  CHARACTER(LEN=256) :: clcoo                      ! dummy character variable
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  clcoo = cn_fcoo
 
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
@@ -53,7 +55,7 @@ PROGRAM cdffindij
      PRINT *,'       [-c COOR-file ] : specify a particular coordinate file' 
      PRINT *,'                     default is ',TRIM(cn_fcoo)
      PRINT *,'       [-p point type] : specify the point on the C-grid (T U V F)'
-     PRINT *,'                     default is ',TRIM(ctype)
+     PRINT *,'                     default is ',TRIM(cltype)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fcoo),' or the specified coordinates file.' 
@@ -67,8 +69,8 @@ PROGRAM cdffindij
   DO WHILE ( ijarg <= narg ) 
     CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
     SELECT CASE ( cldum )
-    CASE ( '-c' ) ; CALL getarg(ijarg, cn_fcoo ) ; ijarg=ijarg+1
-    CASE ( '-p' ) ; CALL getarg(ijarg, ctype   ) ; ijarg=ijarg+1
+    CASE ( '-c' ) ; CALL getarg(ijarg, clcoo  ) ; ijarg=ijarg+1
+    CASE ( '-p' ) ; CALL getarg(ijarg, cltype ) ; ijarg=ijarg+1
     CASE DEFAULT
        ireq=ireq+1
        SELECT CASE (ireq)
@@ -82,6 +84,6 @@ PROGRAM cdffindij
     END SELECT
   END DO
 
-  CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, cd_coord=cn_fcoo, cd_point=ctype)
+  CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, cd_point=cltype)
 
 END PROGRAM cdffindij

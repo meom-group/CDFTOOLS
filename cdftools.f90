@@ -60,6 +60,7 @@ CONTAINS
     REAL(KIND=4)                              :: zglamfound, zglamin, zglamax
 
     CHARACTER(LEN=256)                        :: cl_type='F'
+    CHARACTER(LEN=256)                        :: clcoo
 
     LOGICAL                                   :: ll_again, ll_bnd
     !!--------------------------------------------------------------------------
@@ -70,38 +71,38 @@ CONTAINS
     dl_ymin = pymin
     dl_ymax = pymax
 
-    IF ( PRESENT( cd_coord) ) cn_fcoo=cd_coord
+    IF ( PRESENT( cd_coord) ) clcoo=cd_coord
     IF ( PRESENT( cd_point) ) cl_type=cd_point
 
-    IF (chkfile (cn_fcoo) ) STOP ! missing file
+    IF (chkfile (clcoo) ) STOP ! missing file
 
-    ipiglo= getdim (cn_fcoo,cn_x)
-    ipjglo= getdim (cn_fcoo,cn_y)
+    ipiglo= getdim (clcoo, cn_x)
+    ipjglo= getdim (clcoo, cn_y)
 
     ALLOCATE (dl_glam(ipiglo,ipjglo), dl_gphi(ipiglo,ipjglo) )
     ALLOCATE (dl_e1  (ipiglo,ipjglo), dl_e2  (ipiglo,ipjglo) )
 
     SELECT CASE ( cl_type )
     CASE ('T' , 't' )
-       dl_glam(:,:) = getvar(cn_fcoo, cn_glamt, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphit, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1t,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2t,  1, ipiglo, ipjglo)
+       dl_glam(:,:) = getvar(clcoo, cn_glamt, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(clcoo, cn_gphit, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(clcoo, cn_ve1t,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(clcoo, cn_ve2t,  1, ipiglo, ipjglo)
     CASE ('U','u' )
-       dl_glam(:,:) = getvar(cn_fcoo, cn_glamu, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphiu, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1u,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2u,  1, ipiglo, ipjglo)
+       dl_glam(:,:) = getvar(clcoo, cn_glamu, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(clcoo, cn_gphiu, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(clcoo, cn_ve1u,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(clcoo, cn_ve2u,  1, ipiglo, ipjglo)
     CASE ('V','v' )
-       dl_glam(:,:) = getvar(cn_fcoo, cn_glamv, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphiv, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1v,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2v,  1, ipiglo, ipjglo)
+       dl_glam(:,:) = getvar(clcoo, cn_glamv, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(clcoo, cn_gphiv, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(clcoo, cn_ve1v,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(clcoo, cn_ve2v,  1, ipiglo, ipjglo)
     CASE ('F','f' )
-       dl_glam(:,:) = getvar(cn_fcoo, cn_glamf, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(cn_fcoo, cn_gphif, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(cn_fcoo, cn_ve1f,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(cn_fcoo, cn_ve2f,  1, ipiglo, ipjglo)
+       dl_glam(:,:) = getvar(clcoo, cn_glamf, 1, ipiglo, ipjglo)
+       dl_gphi(:,:) = getvar(clcoo, cn_gphif, 1, ipiglo, ipjglo)
+       dl_e1  (:,:) = getvar(clcoo, cn_ve1f,  1, ipiglo, ipjglo)
+       dl_e2  (:,:) = getvar(clcoo, cn_ve2f,  1, ipiglo, ipjglo)
     CASE DEFAULT
        PRINT *,' ERROR : type of point not known: ', TRIM(cl_type)
     END SELECT
