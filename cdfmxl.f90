@@ -139,8 +139,8 @@ PROGRAM cdfmxl
      rtem(:,:) = getvar(cn_fbathylev, cn_bathylev, 1, npiglo, npjglo)
   ENDIF
 
-  mbathy(:,:) = rtem(:,:)
-  gdepw(:)    = getvare3(cn_fzgr, cn_gdepw, npk)
+  mbathy(:,:)     = rtem(:,:)
+  gdepw(1:npk)    = getvare3(cn_fzgr, cn_gdepw, npk)
 
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1           )
   ierr  = createvar   (ncout,  stypvar, 3,      ipk,    id_varout   )
