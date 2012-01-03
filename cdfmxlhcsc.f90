@@ -172,7 +172,7 @@ PROGRAM cdfmxlhcsc
   ALLOCATE (nmln(npiglo,npjglo),hmld(npiglo,npjglo)          )
   ALLOCATE (dmxlheatc(npiglo,npjglo),dmxlsaltc(npiglo,npjglo))
   ALLOCATE (e3(npiglo,npjglo)                                )
-  ALLOCATE (gdepw(npk), tim(npt)                             )
+  ALLOCATE (gdepw(0:npk), tim(npt)                             )
 
   ! read mbathy and gdepw use real rtem(:,:) as template (getvar is used for real only)
   INQUIRE (FILE=cn_fbathylev, EXIST=lfull)
@@ -183,8 +183,9 @@ PROGRAM cdfmxlhcsc
      rtem(:,:) = getvar(cn_fzgr,      'mbathy',    1, npiglo, npjglo)
   ENDIF
 
-  mbathy(:,:) = rtem(:,:)
-  gdepw(:)    = getvare3(cn_fzgr, cn_gdepw, npk) 
+  mbathy(:,:)  = rtem(:,:)
+  gdepw(0)     = 999999.  ! dummy values normaly always masked
+  gdepw(1:npk) = getvare3(cn_fzgr, cn_gdepw, npk) 
   IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t, npk )
 
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1           )

@@ -126,7 +126,7 @@ PROGRAM cdfmxlheatc
   ALLOCATE ( zmask(npiglo,npjglo), dmxlheatc(npiglo, npjglo) )
   ALLOCATE ( zt(npiglo,npjglo), zmxl(npiglo,npjglo)  )
   ALLOCATE ( e3(npiglo,npjglo) )
-  ALLOCATE ( gdepw(npk), tim(npt) )
+  ALLOCATE ( gdepw(0:npk), tim(npt) )
 
   IF ( lfull ) ALLOCATE ( e31d(npk) )
 
@@ -138,7 +138,8 @@ PROGRAM cdfmxlheatc
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
   ierr = putvar1d(ncout,   tim,       npt, 'T')
 
-               gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+           gdepw(0)     = 99999. ! dummy value always masked
+           gdepw(1:npk) = getvare3(cn_fzgr, cn_gdepw, npk)
   IF ( lfull ) e31d( :) = getvare3(cn_fzgr, cn_ve3t,  npk)
 
 
