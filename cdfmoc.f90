@@ -500,7 +500,7 @@ PROGRAM cdfmoc
            ! thus, dgeo is -f.rau0/g. Dv/Dz 
            DO jj = 2, npjglo -1
               DO ji = 2, npiglo -1
-                 zmsv =  1. / MAX (1, iumask(ji-1,jj+1)+iumask(ji,jj+1)+iumask(ji-1,jj)+iumask(ji,jj) )
+                 zmsv =  1. / MAX (1_2, iumask(ji-1,jj+1)+iumask(ji,jj+1)+iumask(ji-1,jj)+iumask(ji,jj) )
                  dgeo = ( ( zsig0(ji,  jj+1) - zsig0(ji-1,jj+1) ) * iumask(ji-1, jj+1) / e1u(ji-1, jj+1) &
                       &  +( zsig0(ji+1,jj+1) - zsig0(ji  ,jj+1) ) * iumask(ji,   jj+1) / e1u(ji,   jj+1) &
                       &  +( zsig0(ji,  jj  ) - zsig0(ji-1,jj  ) ) * iumask(ji-1, jj  ) / e1u(ji-1, jj  ) &
