@@ -137,7 +137,11 @@ PROGRAM cdfnan
               DO jt=1,npt
                  DO jk = 1, ipk(jvar) 
                     tab(:,:) = getvar(cf_inout, cv_names(jvar), jk, npiglo, npjglo, ktime=jt )
-                    WHERE( isnan(tab(:,:)) ) tab(:,:) = zspval
+!                   WHERE( isnan(tab(:,:)) ) tab(:,:) = zspval
+                    ! isnan function is not available on xlf90 compiler
+                    ! we replace it by the following test that gives the same results
+                    ! reference : http://www.unixguide.net/ibm/faq/faq3.03.shtml
+                    WHERE( tab(:,:) /= tab(:,:) ) tab(:,:) = zspval
                     ierr = putvar(ncid, id_var(jvar), tab, jk, npiglo, npjglo, ktime=jt)
                  ENDDO
               END DO

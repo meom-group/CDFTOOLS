@@ -382,7 +382,7 @@ cdffixtime: cdfio.o  cdffixtime.f90
 	$(F90)  cdffixtime.f90  -o $(BINDIR)/cdffixtime cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfnamelist: modcdfnames.o  cdfnamelist.f90
-	$(F90)  cdfnamelist.f90  -o $(BINDIR)/cdfnamelist  modcdfnames.o $(FFLAGS)
+	$(F90)  cdfnamelist.f90  -o $(BINDIR)/cdfnamelist  modcdfnames.o $(FFLAGS) $(FDATE_FLAG)
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
 cdfsections: eos.o cdfsections.f90
