@@ -204,7 +204,7 @@ PROGRAM cdfstd
 
            WHERE ( dtab2 - dtab*dtab >= 0 ) 
              dstd = SQRT(dtab2 - dtab*dtab)
-           ELSE WHERE
+           ELSEWHERE
              dstd = 0.d0
            END WHERE
 

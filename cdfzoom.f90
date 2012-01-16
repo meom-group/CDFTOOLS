@@ -34,7 +34,7 @@ PROGRAM cdfzoom
   INTEGER(KIND=4)                           :: ijpmin, ijpmax         !
   !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: v2d                    ! data array
-  REAL(KIND=4)                              :: fact                   ! multiplying factor
+  REAL(KIND=4)                              :: fact                   ! scaling factor
   !
   CHARACTER(LEN=256)                        :: cldum                  ! summy character variable
   CHARACTER(LEN=256)                        :: cf_in                  ! input file name
@@ -61,7 +61,8 @@ PROGRAM cdfzoom
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-lev kmin kmax ]  : vertical limits for display.' 
      PRINT *,'       [-time tmin tmax ] : time limits for display.' 
-     PRINT *,'       [-fact factor ]    : use a multiplicative factor for display.'
+     PRINT *,'       [-fact factor ]    : use a scaling factor for display.'
+     PRINT *,'                            Values are DIVIDED by factor'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
