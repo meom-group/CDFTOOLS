@@ -41,6 +41,7 @@ PROGRAM cdfmkmask
    REAL(KIND=4)                              :: rbatmin, rbatmax         ! limit in latitude
    REAL(KIND=4)                              :: rvarmin, rvarmax         ! limit in variable
    REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: tim                      ! time counter
+   REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: rdep                     ! depth 
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, zmask             ! 2D mask at current level
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat               ! latitude and longitude
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rbat                     ! bathymetry 
@@ -48,6 +49,7 @@ PROGRAM cdfmkmask
    CHARACTER(LEN=256)                        :: cf_tfil                  ! file name
    CHARACTER(LEN=256)                        :: cf_out = 'mask_sal.nc'   ! output file
    CHARACTER(LEN=256)                        :: cv_mask                  ! variable name
+   CHARACTER(LEN=256)                        :: cv_dep                   ! variable name
    CHARACTER(LEN=256)                        :: cldum                    ! dummy string
 
    TYPE (variable), DIMENSION(4)             :: stypvar                  ! output attribute
@@ -166,6 +168,7 @@ PROGRAM cdfmkmask
 
    IF (TRIM(cf_tfil)=='-mbathy') THEN
       cv_mask = 'mbathy'
+      cv_dep  = 'nav_lev'
       cf_tfil = 'bathylevel.nc'
       cn_z    = 'z'
       lmbathy = .TRUE.
@@ -178,6 +181,7 @@ PROGRAM cdfmkmask
    npjglo = getdim (cf_tfil,cn_y)
    IF ( lmbathy ) THEN
       npk  = getdim (cn_fzgr,cn_z)
+      ALLOCATE ( rdep(npk) )
    ELSE
       npk  = getdim (cf_tfil,cn_z)
    ENDIF
@@ -227,8 +231,10 @@ PROGRAM cdfmkmask
 
    ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk)
    ierr  = createvar   (ncout,    stypvar, 4,      ipk,    id_varout )
+
    IF ( lmbathy ) THEN
-     ierr  = putheadervar(ncout,    cn_fzgr,  npiglo, npjglo, npk)
+     rdep(:) = getvare3(cn_fzgr, cv_dep ,npk)
+     ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=rdep, cdep='nav_lev')
    ELSE
      ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk)
    ENDIF
