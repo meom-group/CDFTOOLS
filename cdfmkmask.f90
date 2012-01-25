@@ -227,7 +227,11 @@ PROGRAM cdfmkmask
 
    ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk)
    ierr  = createvar   (ncout,    stypvar, 4,      ipk,    id_varout )
-   ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk)
+   IF ( lmbathy ) THEN
+     ierr  = putheadervar(ncout,    cn_fzgr,  npiglo, npjglo, npk)
+   ELSE
+     ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk)
+   ENDIF
 
    !! Allocate only usefull variable and read only usefull variable
    ALLOCATE (tmask(npiglo,npjglo), zmask(npiglo,npjglo), tim(nt))
