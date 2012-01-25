@@ -207,10 +207,11 @@ PROGRAM cdfvertmean
   PRINT '(a,2i8  )', 'nearest level found        : ', ik1,     ik2
   PRINT '(a,2f8.3)', 'corresponding depth        : ', gdep(ik1), gdep(ik2+1)
 
-  dvol           = 0.d0
-  dvertmean(:,:) = 0.d0
-
   DO jt=1,npt
+     dvol           = 0.d0
+     dvol2d(:,:)    = 0.d0
+     dvertmean(:,:) = 0.d0
+
      DO jk = ik1, ik2
         ! Get values at jk
         zv(   :,:) = getvar(cf_in,   cv_in,  jk, npiglo, npjglo, ktime=jt)
