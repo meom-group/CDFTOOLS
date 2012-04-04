@@ -165,6 +165,7 @@ PROGRAM cdfprofile
      IF ( l_vert_interp ) THEN
        rdummy(1,1) = vinterp (rprofile, gdept , rdep, npk )
        ierr        = putvar(ncout, id_varout(1), rdummy, 1, ikx, iky, ktime=jt)
+       PRINT *, ' Interpolated value is : ', rdummy(1,1)
      ENDIF
 
      ! Ascii output
