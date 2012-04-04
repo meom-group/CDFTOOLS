@@ -54,7 +54,7 @@ PROGRAM cdfprofile
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg /= 4 ) THEN
+  IF ( narg < 4 ) THEN
      PRINT *,' usage : cdfprofile  I J IN-file IN-var [-dep depth ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
