@@ -281,10 +281,10 @@ PROGRAM cdfmean
   rdumlon(:,:) = 0.
   rdumlat(:,:) = 0.
 
-  ipk(1) = npk ! mean for each level
+  ipk(1) = nvpk ! mean for each level
   ipk(2) = 1   ! 3D mean
   IF ( lvar ) THEN
-    ipk(3) = npk ! variance for each level
+    ipk(3) = nvpk ! variance for each level
     ipk(4) = 1   ! 3D variance
   ENDIF
 
@@ -327,9 +327,9 @@ PROGRAM cdfmean
   OPEN(numout,FILE=cf_out)
   IF ( lvar ) OPEN(numvar,FILE=cf_var)
   ! create output fileset
-  ncout = create      (cf_ncout,   'none',  ikx,   iky,   npk, cdep=cv_dep)
+  ncout = create      (cf_ncout,   'none',  ikx,   iky,   nvpk, cdep=cv_dep)
   ierr  = createvar   (ncout,      stypvar, nvars, ipk,   id_varout, cdglobal=TRIM(cglobal) )
-  ierr  = putheadervar(ncout,      cf_in,  ikx, iky, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep, cdep=cv_dep)
+  ierr  = putheadervar(ncout,      cf_in,  ikx, iky, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep(1:nvpk), cdep=cv_dep)
   tim   = getvar1d(cf_in, cn_vtimec, npt)
   ierr  = putvar1d(ncout,  tim,       npt, 'T')
 
