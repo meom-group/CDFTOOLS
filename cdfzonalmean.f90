@@ -33,7 +33,7 @@ PROGRAM cdfzonalmean
   INTEGER(KIND=4)                               :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                               :: nvarin, nvar        ! number of input variables: all/valid
   INTEGER(KIND=4)                               :: ncout               ! ncid of output file
-  INTEGER(KIND=4)                               :: ierr                ! working integer
+  INTEGER(KIND=4)                               :: ierr, ik            ! working integers
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipki, id_varin      ! jpbasin x nvar
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipko, id_varout     ! jpbasin x nvar
   INTEGER(KIND=4), DIMENSION(2)                 :: ijloc               ! working array for maxloc
@@ -65,9 +65,11 @@ PROGRAM cdfzonalmean
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvari            ! structure for input variables
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvaro            ! structure for output variables
 
-  LOGICAL                                       :: lpdep =.FALSE.      ! flag for depth sign (default dep < 0)
-  LOGICAL                                       :: l2d   =.FALSE.      ! flag for 2D files
-  LOGICAL                                       :: lchk  =.FALSE.      ! flag for missing files
+  LOGICAL                                       :: lpdep    =.FALSE.   ! flag for depth sign (default dep < 0)
+  LOGICAL                                       :: lndep_in =.FALSE.   ! flag for depth sign (default dep < 0) in input file
+  LOGICAL                                       :: ldebug   =.FALSE.   ! flag for activated debug print 
+  LOGICAL                                       :: l2d      =.FALSE.   ! flag for 2D files
+  LOGICAL                                       :: lchk     =.FALSE.   ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -97,6 +99,9 @@ PROGRAM cdfzonalmean
      PRINT *,'                      as option, only the global zonal mean is computed.'
      PRINT *,'       [-pdep | --positive_depths ] : use positive depths in the output file.'
      PRINT *,'                      Default behaviour is to have negative depths.'
+     PRINT *,'       [-ndep_in ] : negative depths are used in the input file.'
+     PRINT *,'                      Default behaviour is to have positive depths.'
+     PRINT *,'       [-debug   ] : add some print for debug'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cn_fmsk)
@@ -115,7 +120,9 @@ PROGRAM cdfzonalmean
   DO WHILE ( ijarg <= narg ) 
     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
     SELECT CASE (cldum)
-    CASE ( '-pdep' , '--positive_depths' ) ; lpdep =.TRUE.
+    CASE ( '-pdep' , '--positive_depths' ) ; lpdep    =.TRUE.
+    CASE ( '-ndep_in'                    ) ; lndep_in =.TRUE.
+    CASE ( '-debug'                      ) ; ldebug   =.TRUE.
     CASE DEFAULT
       ireq=ireq+1
       SELECT CASE (ireq)
@@ -250,6 +257,8 @@ PROGRAM cdfzonalmean
      gdep(:) = 0
   ELSE
      gdep(:) = getvare3(cn_fzgr, cv_depi ,npk)
+     IF (ldebug) PRINT *, 'getvare3 : ', TRIM(cn_fzgr), TRIM(cv_depi), npk
+     IF (ldebug) PRINT *, 'getvare3 : ', gdep
   ENDIF
 
   IF ( .NOT. lpdep ) gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
@@ -269,11 +278,13 @@ PROGRAM cdfzonalmean
 
   ! reading the surface masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
-  zmask(1,:,:) = getvar(cn_fmsk, cv_msk, 1, npiglo, npjglo)
+  ik=1
+  IF ( lndep_in ) ik = npk   ! some model are numbered from the bottom
+  zmask(1,:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo)
   IF ( cf_basins /= 'none' ) THEN
-     zmask(2,:,:) = getvar(cf_basins, 'tmaskatl', 1, npiglo, npjglo )
-     zmask(4,:,:) = getvar(cf_basins, 'tmaskind', 1, npiglo, npjglo )
-     zmask(5,:,:) = getvar(cf_basins, 'tmaskpac', 1, npiglo, npjglo )
+     zmask(2,:,:) = getvar(cf_basins, 'tmaskatl', ik, npiglo, npjglo )
+     zmask(4,:,:) = getvar(cf_basins, 'tmaskind', ik, npiglo, npjglo )
+     zmask(5,:,:) = getvar(cf_basins, 'tmaskpac', ik, npiglo, npjglo )
      zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
@@ -286,7 +297,7 @@ PROGRAM cdfzonalmean
      DO jt = 1,npt
         IF (MOD(jt,100)==0) PRINT *, jt,'/',npt
         DO jk = 1, ipki(ijvar)
-           PRINT *,TRIM(cv_namesi(ijvar)), ' level ',jk
+           IF (ldebug) PRINT *,TRIM(cv_namesi(ijvar)), ' level ',jk
            ! Get variables and mask at level jk
            zv(:,:)       = getvar(cf_in,   cv_namesi(ijvar),jk ,npiglo, npjglo, ktime=jt)
            zmaskvar(:,:) = getvar(cn_fmsk, cv_msk ,         jk ,npiglo, npjglo          )

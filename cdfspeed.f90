@@ -34,9 +34,9 @@ PROGRAM cdfspeed
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zu, zv, zspeed       ! working arrays, speed
 
   CHARACTER(LEN=256)                         :: cf_vfil, cf_ufil     ! file for u and v components
-  CHARACTER(LEN=256)                         :: cf_tfil              ! file for T point position
+  CHARACTER(LEN=256)                         :: cf_tfil='none'       ! file for T point position
   CHARACTER(LEN=256)                         :: cv_u, cv_v           ! name of u and v variable
-  CHARACTER(LEN=256)                         :: cf_out='speed.nc'  ! output file name
+  CHARACTER(LEN=256)                         :: cf_out='speed.nc'    ! output file name
   CHARACTER(LEN=256)                         :: cldum                ! dummy char variable
 
   TYPE (variable), DIMENSION(1)              :: stypvar              ! structure for attibutes
@@ -135,6 +135,11 @@ PROGRAM cdfspeed
   PRINT *, 'nvpk   =', nvpk
   PRINT *, 'nlev   =', nlev
   PRINT *, 'npt    =', npt
+
+  IF ( nlev >  nvpk ) THEN
+     PRINT *, 'W A R N I N G : nlev larger than nvpk, we assume nlev=nvpk'
+     nlev = nvpk
+  END IF
 
   ! define new variables for output
   stypvar(1)%cname             = 'U'
