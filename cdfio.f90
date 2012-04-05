@@ -921,7 +921,7 @@ CONTAINS
     IF (PRESENT(kimin) ) THEN
        imin=kimin
 
-       ipiglo=getdim(cdfile,'x', ldexact=.true.)
+       ipiglo=getdim(cdfile, cn_x, ldexact=.true.)
        IF (imin+kpi-1 > ipiglo ) THEN 
          llperio=.true.
          imax=kpi+1 +imin -ipiglo
@@ -1579,8 +1579,6 @@ CONTAINS
     REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: z2d
     REAL(KIND=4), DIMENSION(kpk)              :: z1d
     CHARACTER(LEN=256), DIMENSION(jpdep )     :: cldept= (/'deptht ','depthu ','depthv ','depthw ','nav_lev','z      '/)
-
-!   CHARACTER(LEN=256), DIMENSION(jpdep )     :: cldept=(/'deptht','depthu','depthv','depthw','nav_lev','z'/)
     CHARACTER(LEN=256)                        :: cldep
     !!----------------------------------------------------------------------
     ALLOCATE ( z2d (kpi,kpj) )
@@ -1609,6 +1607,13 @@ CONTAINS
           IF ( PRESENT (cdep)) THEN
              z1d=getvar1d(cdfile,cdep,kpk,idep)
           ENDIF
+
+          ! Test name specified in the namelist (P.M.)
+          z1d=getvar1d(cdfile,cn_vdeptht,kpk,idep)
+          IF ( idep /= NF90_NOERR ) z1d=getvar1d(cdfile,cn_vdepthu,kpk,idep)
+          IF ( idep /= NF90_NOERR ) z1d=getvar1d(cdfile,cn_vdepthv,kpk,idep)
+          IF ( idep /= NF90_NOERR ) z1d=getvar1d(cdfile,cn_vdepthw,kpk,idep)
+          ! End (P.M.)
 
           IF ( .NOT. PRESENT(cdep) .OR. idep /= NF90_NOERR ) THEN  ! look for standard dep name
              DO jj = 1,jpdep
