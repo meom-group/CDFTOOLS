@@ -27,7 +27,7 @@ MODULE modCdfNames
   CHARACTER(LEN=20) :: cn_vtimec  = 'time_counter' !: time 
 
   ! Attribute of a variable
-  CHARACTER(LEN=20) :: cn_missing_value = 'missing_value' !: missing value (to be replaced bby _Fill_Value)
+  CHARACTER(LEN=20) :: cn_missing_value = '_FillValue' !: missing value (to be replaced bby _Fill_Value)
 
   ! Metrics
   CHARACTER(LEN=20) :: cn_ve1t='e1t', cn_ve2t='e2t'   !: e.t

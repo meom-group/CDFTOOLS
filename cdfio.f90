@@ -60,7 +60,6 @@
   IMPLICIT NONE
 
   PRIVATE 
-
   INTEGER(KIND=4) :: nid_x, nid_y, nid_z, nid_t, nid_lat, nid_lon, nid_dep, nid_tim
   LOGICAL         :: l_mbathy=.false.
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mbathy         !: for reading e3._ps in nemo3.x
@@ -83,6 +82,9 @@
      CHARACTER(LEN=256) :: caxis             !# string defining the dim of the variable
      CHARACTER(LEN=256) :: cprecision='r4'   !# possible values are i2, r4, r8
   END TYPE variable
+
+  INTEGER(KIND=4), PARAMETER :: jp_missing_nm = 3
+  CHARACTER(LEN=256), DIMENSION(jp_missing_nm) :: cl_missing_nm = (/'missing_value','Fillvalue','_Fillvalue'/)
 
   INTERFACE putvar
      MODULE PROCEDURE putvarr8, putvarr4, putvari2, putvarzo, reputvarr4
@@ -367,10 +369,10 @@ CONTAINS
     istatus = NF90_OPEN(cdfile, NF90_NOWRITE, incid)
     istatus = NF90_INQ_VARID(incid, cdvar, ivarid)
 
-    istatus = NF90_GET_ATT(incid, ivarid, 'units',         cdunits        )
-    istatus = NF90_GET_ATT(incid, ivarid, 'missing_value', pmissing_value )
-    istatus = NF90_GET_ATT(incid, ivarid, 'long_name',     cdlong_name    )
-    istatus = NF90_GET_ATT(incid, ivarid, 'short_name',    cdshort_name   )
+    istatus = NF90_GET_ATT(incid, ivarid, 'units',           cdunits        )
+    pmissing_value = getspval ( cdfile, cdvar )
+    istatus = NF90_GET_ATT(incid, ivarid, 'long_name',       cdlong_name    )
+    istatus = NF90_GET_ATT(incid, ivarid, 'short_name',      cdshort_name   )
 
     getvaratt = istatus
     istatus   = NF90_CLOSE(incid)
@@ -391,13 +393,16 @@ CONTAINS
 
     INTEGER(KIND=4) :: istatus
     INTEGER(KIND=4) :: incid, ivarid
+    REAL(KIND=4)    :: zspval
+    CHARACTER(LEN=256) :: clmissing   ! get the actual missing_value attribute name
     !!----------------------------------------------------------------------
     istatus = NF90_OPEN (cdfile, NF90_WRITE, incid)
     istatus = NF90_REDEF(incid)
     istatus = NF90_INQ_VARID(incid, cdvar, ivarid)
 
     istatus=NF90_RENAME_ATT(incid, ivarid, 'units',         cdunits        )
-    istatus=NF90_PUT_ATT   (incid, ivarid, 'missing_value', pmissing_value )
+    zspval = getspval      ( cdfile, cdvar, clmissing                       )
+    istatus=NF90_PUT_ATT   (incid, ivarid, clmissing, pmissing_value        )
     istatus=NF90_RENAME_ATT(incid, ivarid, 'long_name',     cdlong_name    )
     istatus=NF90_RENAME_ATT(incid, ivarid, 'short_name',    cdshort_name   )
 
@@ -420,36 +425,36 @@ CONTAINS
     CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdglobal   !: global attribute
     !!----------------------------------------------------------------------
     putatt=NF90_PUT_ATT(kout,kid,'units',sdtyvar%cunits) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt units'; ENDIF
-    putatt=NF90_PUT_ATT(kout,kid,'missing_value',sdtyvar%rmissing_value)  
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt missing value'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt units'; ENDIF
+    putatt=NF90_PUT_ATT(kout,kid,cn_missing_value,sdtyvar%rmissing_value)  
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt missing value'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'valid_min',sdtyvar%valid_min) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_min'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_min'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'valid_max',sdtyvar%valid_max)
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_max'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_max'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'long_name',sdtyvar%clong_name)
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt longname'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt longname'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'short_name',sdtyvar%cshort_name) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt short name'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt short name'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'iweight',sdtyvar%iwght) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt iweight'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt iweight'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'online_operation',sdtyvar%conline_operation) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt online oper'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt online oper'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'axis',sdtyvar%caxis) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt axis'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt axis'; ENDIF
 
     ! Optional attributes (scale_factor, add_offset )
     putatt=NF90_PUT_ATT(kout,kid,'scale_factor',sdtyvar%scale_factor) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt scale fact'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt scale fact'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'add_offset',sdtyvar%add_offset) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt add offset'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt add offset'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'savelog10',sdtyvar%savelog10) 
-    IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt savelog0'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt savelog0'; ENDIF
 
     ! Global attribute
     IF ( PRESENT(cdglobal) ) THEN
       putatt=NF90_PUT_ATT(kout,NF90_GLOBAL,'history',cdglobal)
-      IF (putatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt global'; ENDIF
+      IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt global'; ENDIF
     ENDIF
 
   END FUNCTION putatt
@@ -643,23 +648,37 @@ CONTAINS
   END FUNCTION getdim
 
 
-  REAL(KIND=4) FUNCTION  getspval (cdfile, cdvar)
+  REAL(KIND=4) FUNCTION  getspval (cdfile, cdvar, cdmissing )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION getspval  ***
     !!
     !! ** Purpose : return the SPVAL value of the variable cdvar in cdfile
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=*), INTENT(in) :: cdfile      ! File name to look at
-    CHARACTER(LEN=*), INTENT(in) :: cdvar       ! variable name
+    CHARACTER(LEN=*),           INTENT(in ) :: cdfile    ! File name to look at
+    CHARACTER(LEN=*),           INTENT(in ) :: cdvar     ! variable name
+    CHARACTER(LEN=*), OPTIONAL, INTENT(out) :: cdmissing ! missing att. name
 
     INTEGER(KIND=4) :: incid, id_var
     INTEGER(KIND=4) :: istatus
+    INTEGER(KIND=4) :: jtry
     !!----------------------------------------------------------------------
 
-    istatus=NF90_OPEN      (cdfile, NF90_NOWRITE, incid )
-    istatus=NF90_INQ_VARID (incid, cdvar, id_var )
-    istatus=NF90_GET_ATT   (incid, id_var, "missing_value", getspval)
+    IF ( PRESENT (cdmissing) ) cdmissing = cn_missing_value
+
+    istatus=NF90_OPEN      (cdfile, NF90_NOWRITE, incid               )
+    istatus=NF90_INQ_VARID (incid, cdvar, id_var                      )
+    istatus=NF90_GET_ATT   (incid, id_var, cn_missing_value, getspval )
+
+    IF ( istatus /= NF90_NOERR ) THEN 
+      DO jtry = 1, jp_missing_nm
+         IF ( PRESENT (cdmissing) ) cdmissing = TRIM(cl_missing_nm(jtry))
+         istatus = NF90_GET_ATT (incid, id_var, cl_missing_nm(jtry) , getspval )
+         IF ( istatus == NF90_NOERR ) EXIT
+         IF ( PRESENT (cdmissing) ) cdmissing = cn_missing_value
+         getspval = 0.
+      ENDDO
+    ENDIF
     istatus=NF90_CLOSE     (incid )
 
   END FUNCTION getspval
@@ -810,12 +829,7 @@ CONTAINS
           sdtypvar(jv)%cunits = 'N/A'
        ENDIF
 
-       IF ( NF90_INQUIRE_ATTRIBUTE(incid, jv, 'missing_value') == NF90_NOERR ) THEN
-          istatus=NF90_GET_ATT(incid, jv, 'missing_value', zatt)
-          sdtypvar(jv)%rmissing_value = zatt
-       ELSE 
-          sdtypvar(jv)%rmissing_value = 0.
-       ENDIF
+       sdtypvar(jv)%rmissing_value = getspval ( cdfile, sdtypvar(jv)%cname )
 
        IF ( NF90_INQUIRE_ATTRIBUTE(incid, jv, 'valid_min') == NF90_NOERR ) THEN
           istatus=NF90_GET_ATT(incid, jv, 'valid_min', zatt)
@@ -1052,13 +1066,7 @@ CONTAINS
     icount(3)=1
     icount(4)=1
 
-    istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'missing_value')
-    IF (istatus == NF90_NOERR ) THEN
-       istatus=NF90_GET_ATT(incid,id_var,'missing_value',spval)
-    ELSE
-       ! assume spval is 0 ?
-       spval = 0.
-    ENDIF
+    spval = getspval ( cdfile, cdvar)  ! try many kind of missing_value (eg _FillValue _Fillvalue Fillvalue ...)
 
     istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'savelog10')
     IF (istatus == NF90_NOERR ) THEN
@@ -1286,13 +1294,7 @@ CONTAINS
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
     CALL ERR_HDL(NF90_INQ_VARID ( incid,cdvar,id_var))
 
-    istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'missing_value')
-    IF (istatus == NF90_NOERR ) THEN
-       istatus=NF90_GET_ATT(incid,id_var,'missing_value',spval)
-    ELSE
-       ! assume spval is 0 ?
-       spval = 0.
-    ENDIF
+    spval = getspval ( cdfile, cdvar )
 
     istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'savelog10')
     IF (istatus == NF90_NOERR ) THEN
@@ -1397,13 +1399,7 @@ CONTAINS
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
     CALL ERR_HDL(NF90_INQ_VARID ( incid,cdvar,id_var))
 
-    istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'missing_value')
-    IF (istatus == NF90_NOERR ) THEN
-       istatus=NF90_GET_ATT(incid,id_var,'missing_value',spval)
-    ELSE
-       ! assume spval is 0 ?
-       spval = 0.
-    ENDIF
+    spval = getspval ( cdfile, cdvar )
 
     istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'savelog10')
     IF (istatus == NF90_NOERR ) THEN
