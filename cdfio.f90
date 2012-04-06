@@ -84,7 +84,9 @@
   END TYPE variable
 
   INTEGER(KIND=4), PARAMETER :: jp_missing_nm = 3
-  CHARACTER(LEN=256), DIMENSION(jp_missing_nm) :: cl_missing_nm = (/'missing_value','Fillvalue','_Fillvalue'/)
+  
+  CHARACTER(LEN=256), DIMENSION(jp_missing_nm) :: & ! take care of same length for each element
+        & cl_missing_nm = (/'missing_value','Fillvalue    ','_Fillvalue   '/)
 
   INTERFACE putvar
      MODULE PROCEDURE putvarr8, putvarr4, putvari2, putvarzo, reputvarr4
