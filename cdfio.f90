@@ -1580,6 +1580,8 @@ CONTAINS
     CHARACTER(LEN=256)                        :: cldep
     !!----------------------------------------------------------------------
     ALLOCATE ( z2d (kpi,kpj) )
+    
+    cldept = (/cn_vdeptht, cn_vdepthu, cn_vdepthv, cn_vdepthw,'nav_lev','z      '/)
 
     IF (PRESENT(pnavlon) ) THEN 
        z2d = pnavlon
@@ -1605,13 +1607,6 @@ CONTAINS
           IF ( PRESENT (cdep)) THEN
              z1d=getvar1d(cdfile,cdep,kpk,idep)
           ENDIF
-
-          ! Test name specified in the namelist (P.M.)
-          z1d=getvar1d(cdfile,cn_vdeptht,kpk,idep)
-          IF ( idep /= NF90_NOERR ) z1d=getvar1d(cdfile,cn_vdepthu,kpk,idep)
-          IF ( idep /= NF90_NOERR ) z1d=getvar1d(cdfile,cn_vdepthv,kpk,idep)
-          IF ( idep /= NF90_NOERR ) z1d=getvar1d(cdfile,cn_vdepthw,kpk,idep)
-          ! End (P.M.)
 
           IF ( .NOT. PRESENT(cdep) .OR. idep /= NF90_NOERR ) THEN  ! look for standard dep name
              DO jj = 1,jpdep
