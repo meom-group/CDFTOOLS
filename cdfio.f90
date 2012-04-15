@@ -66,6 +66,15 @@
   REAL(KIND=4),    DIMENSION(:,:), ALLOCATABLE :: e3t_ps, e3w_ps !: for reading e3._ps in nemo3.x
   REAL(KIND=4),    DIMENSION(:),   ALLOCATABLE :: e3t_0, e3w_0   !: for readinf e3._ps in nemo3.x
 
+  
+  INTEGER(KIND=4)    :: nstart_date  = -1                      !# from global file attribute
+  CHARACTER(LEN=256) :: ctime_units  = 'seconds since 0000-01-01 00:00:00'
+  CHARACTER(LEN=256) :: ctime_origin = 'N/A'                   !# 
+  CHARACTER(LEN=256) :: calendar     = 'N/A'                   !# gregorian noleap xxxd
+  CHARACTER(LEN=256) :: config                                 !# config name associated with file
+  CHARACTER(LEN=256) :: ccase                                  !# case name associated with  file
+  CHARACTER(LEN=10 ) :: cfreq                                  !# raw model output frequency (5d, 30d 1h ..)
+
   TYPE, PUBLIC ::   variable 
      CHARACTER(LEN=256) :: cname             !# variable name
      CHARACTER(LEN=256) :: cunits            !# variable unit
@@ -148,37 +157,37 @@ CONTAINS
        END DO
     ELSE                        ! no reference file
        SELECT CASE (TRIM(cdvar) )
-       CASE ('nav_lon' )
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'units', 'degrees_east')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', -180.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max', 180.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name', 'Longitude')
+       CASE ('nav_lon', 'lon', 'x', 'longitude' )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'units',     'degrees_east')
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', -180.         )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max',  180.         )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name', 'Longitude'   )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'nav_model', 'Default grid')
-       CASE ('nav_lat' )
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'units', 'degrees_north')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', -90.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max', 90.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name', 'Latitude')
+       CASE ('nav_lat' ,'lat', 'y', 'latitude' )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'units',    'degrees_north')
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', -90.          )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max',  90.          )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name','Latitude'     )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'nav_model', 'Default grid')
-       CASE ('time_counter' )
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'calendar', 'gregorian')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'units', 'seconds since 0006-01-01 00:00:00')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'time_origin', '0001-JAN-01 00:00:00')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'title', 'Time')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name', 'Time axis')
-       CASE ('deptht', 'depthu' ,'depthv' , 'depthw', 'dep')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'units', 'm')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'positive', 'unknown')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', 0.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max', 5875.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'title', TRIM(cdvar))
+       CASE ('time_counter', 'time', 't' )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'calendar',   calendar     )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'units',      ctime_units  )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'time_origin',ctime_origin )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'title',      'Time'       )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name',  'Time axis'  )
+       CASE ('deptht', 'depthu' ,'depthv' , 'depthw', 'dep', 'gdept'     )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'units',      'm'          )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'positive',  'unknown'     )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min',  0.           )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max',  5875.        )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'title',     TRIM(cdvar)   )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name', 'Vertical Levels')
-       CASE ('sigma')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'units', 'kg/m3')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'positive', 'unknown')
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', 0.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max', 40.)
-          istatus=NF90_PUT_ATT(kcout, kidvar, 'title', TRIM(cdvar))
+       CASE ('sigma', 'levels')
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'units', 'kg/m3'           )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'positive', 'unknown'      )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_min', 0.            )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max', 40.           )
+          istatus=NF90_PUT_ATT(kcout, kidvar, 'title', TRIM(cdvar)       )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name', 'Sigma bin limits')
        END SELECT
     ENDIF
@@ -253,6 +262,12 @@ CONTAINS
 
     istatus = NF90_DEF_VAR(icout,cn_vtimec,NF90_FLOAT,(/nid_t/), nid_tim)
     istatus = copyatt(cn_vtimec, nid_tim,incid,icout)
+
+    ! Add Global General attribute at first call
+    istatus=NF90_PUT_ATT(icout,NF90_GLOBAL,'start_date', nstart_date )
+    istatus=NF90_PUT_ATT(icout,NF90_GLOBAL,'output_frequency', cfreq )
+    istatus=NF90_PUT_ATT(icout,NF90_GLOBAL,'CONFIG',          config )
+    istatus=NF90_PUT_ATT(icout,NF90_GLOBAL,'CASE',             ccase )
 
     istatus = NF90_CLOSE(incid)
 
@@ -601,11 +616,12 @@ CONTAINS
     LOGICAL,            OPTIONAL, INTENT(in ) :: ldexact    ! when true look for exact cdim_name
 
     INTEGER(KIND=4)    :: jdim
-    INTEGER(KIND=4)    :: incid, id_dim
+    INTEGER(KIND=4)    :: incid, id_dim, idv
     INTEGER(KIND=4)    :: istatus
     INTEGER(KIND=4)    :: idims
     CHARACTER(LEN=256) :: clnam
-    LOGICAL            :: lexact = .false.
+    LOGICAL            :: lexact   = .false.
+    LOGICAL, SAVE      :: ll_first = .true.
     !!-----------------------------------------------------------
     clnam = '-------------'
 
@@ -638,6 +654,47 @@ CONTAINS
           IF ( PRESENT(kstatus) ) kstatus=1    ! error send optionally to the calling program
           getdim=0
           IF ( PRESENT(cdtrue) ) cdtrue='unknown'
+       ENDIF
+       ! first call 
+       IF ( ll_first ) THEN
+          ll_first = .false. 
+          ! take the opportunity to initialize time_counter attributes :
+          istatus = NF90_INQ_VARID(incid, cn_vtimec, idv )
+          IF ( istatus == NF90_NOERR ) THEN 
+             istatus = NF90_GET_ATT(incid, idv, 'units',  ctime_units  )
+             istatus = NF90_GET_ATT(incid, idv, 'time_origin', ctime_origin )
+             istatus = NF90_GET_ATT(incid, idv, 'calendar',    calendar     )
+          ENDIF
+ 
+          ! read global attributes 
+          ! start_date
+          istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'start_date')
+          IF ( istatus == NF90_NOERR ) THEN
+             istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'start_date', nstart_date )
+          ELSE
+             nstart_date = -1
+          ENDIF
+          ! output_frequency 
+          istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'output_frequency')
+          IF ( istatus == NF90_NOERR ) THEN
+             istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'output_frequency', cfreq )
+          ELSE
+             cfreq = 'N/A'
+          ENDIF
+          ! CONFIG
+          istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'CONFIG')
+          IF ( istatus == NF90_NOERR ) THEN
+             istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'CONFIG', config )
+          ELSE
+             config = 'N/A'
+          ENDIF
+          ! CASE
+          istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'CASE')
+          IF ( istatus == NF90_NOERR ) THEN
+             istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'CASE', ccase )
+          ELSE
+             ccase = 'N/A'
+          ENDIF
        ENDIF
        istatus=NF90_CLOSE(incid)
     ELSE              ! problem with the file
@@ -807,7 +864,7 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*),          INTENT(in) :: cdfile
-    INTEGER(KIND=4),           INTENT(in) :: knvars                  ! Number of variables in cdfile
+    INTEGER(KIND=4),           INTENT(in) :: knvars    ! Number of variables in cdfile
     TYPE (variable),   DIMENSION (knvars) :: sdtypvar  ! Retrieve variables attribute
     CHARACTER(LEN=256), DIMENSION(knvars) :: getvarname
 
@@ -822,6 +879,7 @@ CONTAINS
     DO jv = 1, knvars
        istatus=NF90_INQUIRE_VARIABLE(incid, jv, name=getvarname(jv) )
        sdtypvar(jv)%cname=getvarname(jv)
+
        ! look for standard attibutes
        IF ( NF90_INQUIRE_ATTRIBUTE(incid, jv, 'units', len=ilen) == NF90_NOERR ) THEN
           istatus=NF90_GET_ATT(incid, jv, 'units', cldum(1:ilen))
