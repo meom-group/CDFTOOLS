@@ -443,8 +443,17 @@ CONTAINS
     !!----------------------------------------------------------------------
     putatt=NF90_PUT_ATT(kout,kid,'units',sdtyvar%cunits) 
     IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt units'; ENDIF
-    putatt=NF90_PUT_ATT(kout,kid,cn_missing_value,sdtyvar%rmissing_value)  
+
+    ! With netcdf4, missing value must have the same precision than the variable. Need to convert
+    ! to sdtyvar%cprecision previous PUT_ATT
+    SELECT CASE (sdtyvar%cprecision )
+    CASE ( 'r8' ) ; putatt=NF90_PUT_ATT(kout,kid,cn_missing_value,REAL(sdtyvar%rmissing_value,8) )  
+    CASE ( 'i2' ) ; putatt=NF90_PUT_ATT(kout,kid,cn_missing_value, INT(sdtyvar%rmissing_value,2) )  
+    CASE ( 'by' ) ; putatt=NF90_PUT_ATT(kout,kid,cn_missing_value, INT(sdtyvar%rmissing_value,1) )  
+    CASE DEFAULT  ; putatt=NF90_PUT_ATT(kout,kid,cn_missing_value,REAL(sdtyvar%rmissing_value,4) )
+    END SELECT
     IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt missing value'; ENDIF
+
     putatt=NF90_PUT_ATT(kout,kid,'valid_min',sdtyvar%valid_min) 
     IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_min'; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'valid_max',sdtyvar%valid_max)
