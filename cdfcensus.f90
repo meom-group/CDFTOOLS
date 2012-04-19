@@ -89,7 +89,6 @@ PROGRAM cdfcensus
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
-  dvoltotal=0.d0
 
   narg = iargc()
   IF ( narg == 0 ) THEN
@@ -191,11 +190,11 @@ PROGRAM cdfcensus
      CASE ( '-srange' )
         CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmin ; ijarg = ijarg+1
         CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmax ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zds  ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) zds   ; ijarg = ijarg+1
      CASE ( '-trange' )
         CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmin ; ijarg = ijarg+1
         CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmax ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zdt  ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) zdt   ; ijarg = ijarg+1
      CASE ( '-full' )
         lfull = .TRUE.
      CASE DEFAULT
@@ -222,7 +221,6 @@ PROGRAM cdfcensus
   ALLOCATE ( dcensus (ns,nt), ddump(ns,nt) )
   ALLOCATE ( rsigma0(ns,nt), rsigma2(ns,nt), rsigma4(ns,nt) )
   ALLOCATE ( zsx (ns,nt), zty(ns,nt), rdumdep(1), tim(npt))
-  dcensus(:,:)=0.d0
 
   ! fill up rsigma0 array with theoretical density
   DO ji=1,ns
@@ -270,6 +268,9 @@ PROGRAM cdfcensus
   ENDIF
 
   DO jt = 1, npt
+     ! reset cumulating variables to 0
+     dcensus(:,:) = 0.d0
+     dvoltotal    = 0.d0
      ! Enter main loop
      DO jk=ik1,ik2
         zt(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
