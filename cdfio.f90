@@ -96,6 +96,7 @@
   
   CHARACTER(LEN=256), DIMENSION(jp_missing_nm) :: & ! take care of same length for each element
         & cl_missing_nm = (/'missing_value','Fillvalue    ','_Fillvalue   '/)
+  CHARACTER(LEN=256 ) :: cl_dum              !# dummy char argument
 
   INTERFACE putvar
      MODULE PROCEDURE putvarr8, putvarr4, putvari2, putvarzo, reputvarr4
@@ -676,31 +677,47 @@ CONTAINS
           ENDIF
  
           ! read global attributes 
+
           ! start_date
+          cl_dum = Get_Env ( 'start_date' )  ! look for environment variable
           istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'start_date')
           IF ( istatus == NF90_NOERR ) THEN
              istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'start_date', nstart_date )
+          ELSE IF ( cl_dum /= '' ) THEN 
+             READ(cl_dum, * ) nstart_date
           ELSE
              nstart_date = -1
           ENDIF
+
           ! output_frequency 
+          cl_dum = Get_Env ( 'output_frequency' )  ! look for environment variable
           istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'output_frequency')
           IF ( istatus == NF90_NOERR ) THEN
              istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'output_frequency', cfreq )
+          ELSE IF ( cl_dum /= '' ) THEN
+             cfreq = TRIM(cl_dum)
           ELSE
              cfreq = 'N/A'
           ENDIF
+
           ! CONFIG
+          cl_dum = Get_Env ( 'CONFIG' )  ! look for environment variable
           istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'CONFIG')
           IF ( istatus == NF90_NOERR ) THEN
              istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'CONFIG', config )
+          ELSE IF ( cl_dum /= '' ) THEN
+             config = TRIM(cl_dum)
           ELSE
              config = 'N/A'
           ENDIF
+
           ! CASE
+          cl_dum = Get_Env ( 'CASE' )  ! look for environment variable
           istatus = NF90_INQUIRE_ATTRIBUTE(incid, NF90_GLOBAL, 'CASE')
           IF ( istatus == NF90_NOERR ) THEN
              istatus = NF90_GET_ATT(incid, NF90_GLOBAL, 'CASE', ccase )
+          ELSE IF ( cl_dum /= '' ) THEN
+             ccase = TRIM(cl_dum)
           ELSE
              ccase = 'N/A'
           ENDIF
@@ -2250,6 +2267,26 @@ CONTAINS
     ENDIF
 
   END FUNCTION chkvar
+
+  CHARACTER(LEN=256) FUNCTION Get_Env ( cd_env )
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION Get_Env  ***
+    !!
+    !! ** Purpose :  A wrapper for system routine getenv
+    !!
+    !! ** Method  :  Call getenv
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cd_env
+    !!----------------------------------------------------------------------
+    CALL getenv( TRIM(cd_env), Get_Env )
+    IF ( TRIM(Get_Env) /= '' ) THEN
+      PRINT *,'Environment found : ',TRIM(cd_env),' = ', TRIM(Get_Env)
+    ENDIF
+
+  END FUNCTION Get_Env
+
+
 
 END MODULE cdfio
 

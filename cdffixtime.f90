@@ -63,13 +63,14 @@ PROGRAM cdffixtime
 
   LOGICAL                    :: lnoleap=.true.  ! flag for noleap years
   LOGICAL                    :: lagrif=.false.  ! flag for agrif files
+  LOGICAL                    :: lkeep=.false.  ! flag for agrif files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg=iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdffixtime  -f IN-file -i initial date [-t tag] [-dt freq] ... '
-     PRINT *,'               ...  [-leap] [ -noleap]'
+     PRINT *,'               ...  [-keep ] [-leap] [ -noleap]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Change time_counter in file to set it according to drakkar rule,' 
@@ -92,6 +93,8 @@ PROGRAM cdffixtime
      PRINT *,'       [ -dt freq] : number of days between model output [ 5d ]'
      PRINT *,'       [-leap ]    : assume a calendar with leap years'
      PRINT *,'       [-noleap ]  : assume a calendar without leap years (default)'
+     PRINT *,'       [-keep ]    : keep the actual value of time_counter, adjust time_counter'
+     PRINT *,'                    attributes only;'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none ' 
@@ -123,6 +126,8 @@ PROGRAM cdffixtime
      CASE ( '-noleap' )
         rpp_one_year=365
         lnoleap=.true.
+     CASE ( '-keep' )
+        lkeep=.true.
      CASE DEFAULT 
          PRINT *,' Option ',TRIM(cldum),' unknown'
          STOP
@@ -205,7 +210,9 @@ PROGRAM cdffixtime
   rseconds=(rdaycnes - rday0 +1 ) * 86400. 
 
   ! Modify cdfile !! CAUTION : Original file will be modified  !!
-  ierr = putvar1d( cf_in, cn_vtimec, rseconds, 1 )
+  IF ( .NOT. lkeep )  THEN
+    ierr = putvar1d( cf_in, cn_vtimec, rseconds, 1 )
+  ENDIF
   ierr = atted   ( cf_in, cn_vtimec, 'units',       ctim_unit  )
   ierr = atted   ( cf_in, cn_vtimec, 'time_origin', ctim_origin)
 
@@ -327,7 +334,7 @@ CONTAINS
     ! number of years since 1950
     IF ( lnoleap ) THEN ! no leap years
       ky=1950 + INT(pjcnes)/365
-      idays= ( INT(pjcnes)/ 365. - INT(pjcnes)/365 )* 365
+      idays= ( INT(pjcnes)/ 365. - INT(pjcnes)/365 )* 365 
       km=1 ; kd=0
       DO jd=1, idays
        IF ( jd > icumul(km) ) THEN
@@ -338,8 +345,104 @@ CONTAINS
        ENDIF
       ENDDO
     ELSE
-      PRINT *, 'Not done yet for leap years'
+      ! use caldat from Numerical Recipe
+      CALL caldat_nr ( pjcnes, ky, km, kd, kh, kmn, ksec )
     ENDIF
     END SUBROUTINE caldatjm
+
+  SUBROUTINE caldat_nr( pjcnes, kiyyy, kmm, kid, kh, kmn, ksec ) 
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE caldat_nr  ***
+    !!
+    !! ** Purpose : This routine convert a julian day in calendar date.
+    !!
+    !! ** Method  :  This routine comes directly from the Numerical Recipe Book,
+    !!
+    !!   Arguments
+    !!     kjulian : input julian day number
+    !!     kmm     : output, corresponding month
+    !!     kid     : output, corresponding day
+    !!     kiyyy   : output, corresponding year, positive IF a.d, negative b.c.
+    !!
+    !! References  : Numerical Recipe Book,  Press et al., numerical recipes,
+    !!               cambridge univ. press, 1986.
+    !!----------------------------------------------------------------------
+    IMPLICIT NONE
+
+    REAL(KIND=4),    INTENT(in)  :: pjcnes
+    INTEGER(KIND=4), INTENT(out) :: kiyyy, kmm, kid, kh, kmn, ksec
+    ! * Local
+    INTEGER(KIND=4), PARAMETER  :: jpgreg = 2299161
+    INTEGER(KIND=4)             :: ijulian
+    INTEGER(KIND=4)             :: ia, ialpha, ib, ic, id, ie, isec
+    REAL(KIND=4)                :: zjul1950
+    !!----------------------------------------------------------------------
+    ! look for time part of pjcnes
+    isec = (pjcnes-INT(pjcnes) ) * 86400.
+    kh   = isec/3600
+    kmn  = (isec - kh * 3600 )/60
+    ksec =  isec - kh * 3600 - kmn * 60
+    zjul1950 = julday_nr( 01, 01, 1950)
+    ijulian  = INT(pjcnes + zjul1950)
+   !
+    IF ( ijulian >= jpgreg) THEN
+       ialpha = INT ((( ijulian - 1867216) - 0.25)/36524.25 )
+       ia     = ijulian +1 + ialpha -INT (0.25*ialpha)
+    ELSE
+       ia = ijulian
+    END IF
+    !
+    ib = ia + 1524
+    ic = INT (6680. + (( ib -2439870) - 122.1)/365.25 )
+    id = 365* ic + INT (0.25*ic)
+    ie = INT (( ib - id )/30.6001)
+    !
+    kid = ib - id - INT (30.6001*ie)
+    kmm = ie -1
+    IF ( kmm > 12 ) kmm = kmm - 12
+    kiyyy = ic - 4715
+    IF ( kmm   >  2 ) kiyyy = kiyyy - 1
+    IF ( kiyyy <= 0 ) kiyyy = kiyyy - 1
+  END SUBROUTINE caldat_nr
+
+  INTEGER(KIND=4) FUNCTION julday_nr(kmm,kid,kiyyy)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION julday_nr  ***
+    !!
+    !! ** Purpose : his routine returns the julian day number which begins at noon
+    !!         of the calendar date specified by month kmm, day kid, and year kiyyy.
+    !!         positive year signifies a.d.; negative, b.c.  (remember that the
+    !!         year after 1 b.c. was 1 a.d.)
+    !!         routine handles changeover to gregorian calendar on oct. 15, 1582.
+    !!
+    !! ** Method:  This routine comes directly from the Numerical Recipe Book,
+    !!
+    !!----------------------------------------------------------------------
+   INTEGER, INTENT(in) :: kiyyy
+   INTEGER, INTENT(in) :: kmm, kid
+   !  * Local
+   INTEGER, PARAMETER ::jpgreg=15+31*(10+12*1582)
+   INTEGER  ::ky, iy, im, ia
+    !!----------------------------------------------------------------------
+    ky = kiyyy
+    ! ... Year 0 never existed ...
+    IF (ky == 0) STOP 101
+    !
+    IF (ky < 0) ky = ky + 1
+    IF (kmm > 2) THEN
+       iy = ky
+       im = kmm + 1
+    ELSE
+       iy = ky - 1
+       im = kmm + 13
+    END IF
+    !
+    julday_nr = INT(365.25*iy) + INT(30.6001*im) + kid + 1720995
+    IF (kid+31*(kmm+12*ky).GE.jpgreg) THEN
+       ia = INT(0.01*iy)
+       julday_nr = julday_nr + 2 - ia + INT(0.25*ia)
+    END IF
+  END FUNCTION julday_nr
+
   
 END PROGRAM cdffixtime
