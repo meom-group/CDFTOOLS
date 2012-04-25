@@ -410,7 +410,7 @@ PROGRAM cdfmean
 
     ! re-read file and rest mean value from the variable and store on file
     nvars = getnvar(cf_in)
-    ALLOCATE ( stypvarin(nvars), cv_names(nvars), stypvarzero(1) )
+    ALLOCATE ( stypvarin(nvars), cv_names(nvars)    )
     ALLOCATE ( id_varout(1), ipk(1), stypvarzero(1) )
     cv_names(:) = getvarname(cf_in, nvars, stypvarin)
 
