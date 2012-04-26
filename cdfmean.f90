@@ -358,15 +358,15 @@ PROGRAM cdfmean
 
         IF (dvol2d /= 0 )THEN
            dvmeanout(jk) = dsum2d/dvol2d
-           WRITE(6,*)' Mean value at level ',ik,'(',gdep(ik),' m) ',dvmeanout(jk), 'surface = ',dsurf/1.e6,' km^2'
-           WRITE(numout,9004) gdep(ik), ik, dvmeanout(jk)
+           WRITE(6,*)' Mean value at level ',ik,'(',gdep(jk),' m) ',dvmeanout(jk), 'surface = ',dsurf/1.e6,' km^2'
+           WRITE(numout,9004) gdep(jk), ik, dvmeanout(jk)
            IF ( lvar ) THEN
              dvariance(jk) = dvar2d/dvol2d - dvmeanout(jk) * dvmeanout(jk)
-             WRITE(6,*)' Variance value at level ',ik,'(',gdep(ik),' m) ',dvariance(jk), 'surface = ',dsurf/1.e6,' km^2'
-             WRITE(numvar,9004) gdep(ik), ik, dvariance(jk)
+             WRITE(6,*)' Variance value at level ',ik,'(',gdep(jk),' m) ',dvariance(jk), 'surface = ',dsurf/1.e6,' km^2'
+             WRITE(numvar,9004) gdep(jk), ik, dvariance(jk)
            ENDIF
         ELSE
-           WRITE(6,*) ' No points in the water at level ',ik,'(',gdep(ik),' m) '
+           WRITE(6,*) ' No points in the water at level ',ik,'(',gdep(jk),' m) '
            dvmeanout(jk) = 99999.
            IF( lvar ) dvariance(jk) = 99999.
         ENDIF
