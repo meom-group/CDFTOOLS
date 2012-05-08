@@ -199,8 +199,8 @@ cdftransig_xy3d: cdfio.o eos.o  modutils.o cdftransig_xy3d.f90
 cdftempvol-full: cdfio.o  cdftempvol-full.f90
 	$(F90) cdftempvol-full.f90 -o $(BINDIR)/cdftempvol-full cdfio.o modcdfnames.o  $(FFLAGS)
 
-cdfmoc: cdfio.o  eos.o cdfmoc.f90
-	$(F90) cdfmoc.f90 -o $(BINDIR)/cdfmoc cdfio.o eos.o modcdfnames.o $(FFLAGS)
+cdfmoc: cdfio.o  eos.o cdftools.o cdfmoc.f90
+	$(F90) cdfmoc.f90 -o $(BINDIR)/cdfmoc cdfio.o eos.o modcdfnames.o cdftools.o $(FFLAGS)
 
 cdfmht_gsop: cdfio.o eos.o  cdfmht_gsop.f90
 	$(F90) cdfmht_gsop.f90 -o $(BINDIR)/cdfmht_gsop cdfio.o eos.o modcdfnames.o $(FFLAGS)

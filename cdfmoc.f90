@@ -81,7 +81,8 @@ PROGRAM cdfmoc
   LOGICAL                                     :: lbas  = .FALSE. ! new_maskglo.nc file  flag
   LOGICAL                                     :: lfull = .FALSE. ! full step flag
   LOGICAL                                     :: lchk  = .FALSE. ! check for missing files
-  LOGICAL                                     :: ldec  = .FALSE. ! check for missing files
+  LOGICAL                                     :: ldec  = .FALSE. ! flag for decomposition option
+  LOGICAL                                     :: lrap  = .FALSE. ! flag for rapid option
 
   ! Variables used only when MOC decomposition is requested
   INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: iumask         ! iumask (used if decomposition)
@@ -114,7 +115,7 @@ PROGRAM cdfmoc
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoc  V_file [-full] [-decomp ] [T_file] '
+     PRINT *,' usage : cdfmoc  V_file [-full] [-decomp ] [T_file] [-rapid] '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the MOC for oceanic sub basins as described '
      PRINT *,'       in ',TRIM(cn_fbasins)
@@ -129,6 +130,14 @@ PROGRAM cdfmoc
      PRINT *,'       [-decomp ] : decompose MOC in 3 components: Geostrophic,'
      PRINT *,'                 Barotropic,  Ageostrophic). For this option a '
      PRINT *,'                 gridT file is required.'
+     PRINT *,'       [-rapid ] : Compute the AMOC at 26.5 N in the same waay than the'
+     PRINT *,'                  RAPID MOCHA array, separating the Gulfstream transport,'
+     PRINT *,'                  and the contribution of different water masses :'
+     PRINT *,'                   - 0-800m      : Thermocline recirculation'
+     PRINT *,'                   - 800-1100m   : AIW recirculation'
+     PRINT *,'                   - 1100-3000m  : upper-NADW recirculation'
+     PRINT *,'                   - 3000-5000m  : lower-NADW recirculation'
+     PRINT *,'                   - 5000-bottom : AABW recirculation'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ',TRIM(cn_fhgr),' ', TRIM(cn_fhgr),' and ', TRIM(cn_fmsk)
@@ -145,6 +154,10 @@ PROGRAM cdfmoc
      PRINT *,'      '
      PRINT *,'       If decomposition is required , ( option -decomp ) add 3 additional'
      PRINT *,'       variables per basin with suffixes _sh, _bt, _ag.'
+     PRINT *,'      '
+     PRINT *,'       If option -rapid in use the output file (rapid_moc.nc)is degenerated '
+     PRINT *,'       into 6 scalar values : tr_gs, tr_THERM, tr_AIW, tr_UNADW, tr_LNADW, '
+     PRINT *,'       tr_BW and a vertical profile of the AMOC at 26.5N, as computed traditionally.'
      STOP
   ENDIF
 
@@ -158,6 +171,8 @@ PROGRAM cdfmoc
         cglobal = 'Full step computation'
      CASE ('-decomp') 
         ldec    = .TRUE.
+     CASE ('-rapid') 
+        lrap    = .TRUE.
      CASE DEFAULT
         ii=ii+1
         SELECT CASE (ii)
@@ -176,6 +191,12 @@ PROGRAM cdfmoc
   lchk = lchk .OR. chkfile ( cf_vfil )
   IF ( ldec ) lchk = lchk .OR. chkfile ( TRIM(cf_tfil) ) 
   IF ( lchk ) STOP  ! missing file(s)
+
+  IF ( lrap ) THEN 
+    ! all the work will be done in a separated routine for RAPID-MOCHA section
+    CALL rapid_amoc 
+    STOP  ! program stops here in this case
+  ENDIF
 
   npiglo = getdim (cf_vfil,cn_x)
   npjglo = getdim (cf_vfil,cn_y)
@@ -621,7 +642,190 @@ CONTAINS
         get_e3v(:,:) = get_e3v(:,:) * ivmask(:,:)
    
    END FUNCTION get_e3v
- 
 
+   SUBROUTINE rapid_amoc
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE rapid_amoc  ***
+    !!
+    !! ** Purpose :  Decompose AMOC at 26.5N (Rapid-Mocha array) the same way 
+    !!               it is done with observations.
+    !!
+    !! ** Method  :  Use code provided by N. Ferry (Mercator-ocean) for the
+    !!               choice of the components. 
+    !!
+    !! References : RAPID-MOCHA paper ... 
+    !!----------------------------------------------------------------------
+    USE cdftools  ! for cdf_findij
+    ! Geographical settings for Rapid/Mocha Array
+    REAL(KIND=4), PARAMETER :: rp_lat_rapid  = 26.5  ! latitude of Rapid array
+    REAL(KIND=4), PARAMETER :: rp_lonw_rapid = -80.1 ! longitude of the western most point
+    REAL(KIND=4), PARAMETER :: rp_lone_rapid = 12.7  ! longitude of the eastern most point
+    REAL(KIND=4), PARAMETER :: rp_lon_gs = -77.4     !  Gulf Stream limit (eastward from the US coast).
+
+    INTEGER(KIND=4), PARAMETER :: jp_class = 5      ! number of depth range classes
+    REAL(KIND=4), PARAMETER, DIMENSION(jp_class+1) :: rp_zlim = (/0.,800.,1100.,3000.,5000., 10000./) ! limit of depth classes
+    !
+    INTEGER(KIND=4) :: ijrapid ! J-index of the rapid section
+    INTEGER(KIND=4) :: iiw     ! I-index of the western limit of the section
+    INTEGER(KIND=4) :: iie     ! I-index of the eastern limit of the section
+    INTEGER(KIND=4) :: iigs    ! I-index of the eastern limit of the gulfstream
+    INTEGER(KIND=4), DIMENSION(jp_class+1) :: iklim ! K-index of the vertical limits for the depth classes
+    INTEGER(KIND=4) :: idum    ! dummy integer value
+    INTEGER(KIND=4) :: npigs   ! number of point in the Gulf-stream band
+    INTEGER(KIND=4) :: jclass  ! dummy loop index
+    !
+    REAL(KIND=8), DIMENSION (:,:,:), ALLOCATABLE :: damocrapid         ! (1,1,npk)
+    REAL(KIND=8), DIMENSION (:,:,:), ALLOCATABLE :: dtrp               ! (1,1,1)
+    REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: vrapid, e3vrapid   ! (i,k) vertical slab
+    REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zwk                !
+    REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: e1rapid            !
+    REAL(KIND=4)            :: zmin, zmax, zbot, zalpha
+    !!----------------------------------------------------------------------
+    ! 1) look for integer indices corresponding to the section characteristics
+    CALL cdf_findij ( rp_lonw_rapid,  rp_lone_rapid, rp_lat_rapid, rp_lat_rapid, &
+       &              iiw          ,  iie          , ijrapid,      idum   ,      &
+       &              cd_coord=cn_fhgr, cd_point='F')
+    CALL cdf_findij ( rp_lonw_rapid,  rp_lon_gs,     rp_lat_rapid, rp_lat_rapid, &
+       &              idum         ,  iigs         , idum,         idum,         &
+       &              cd_coord=cn_fhgr, cd_point='F')
+
+! ORCA2 fails to cdf_findij ( Med sea ... )
+!   iiw     = 99
+!   iie     = 138
+!   iigs    = 103
+!   ijrapid = 98
+
+    npiglo =  iie -iiw+1 ! size of the rapid section
+    npigs  =  iigs-iiw+1 ! size of the rapid section
+    !  1.1 ) read vertical slabs corresponding to ijrapid
+    npk    = getdim (cf_vfil,cn_z)
+    npt    = getdim (cf_vfil,cn_t)
+    ALLOCATE ( vrapid(npiglo , npk), e3vrapid(npiglo, npk) )
+    ALLOCATE ( zwk(npiglo, 1), e1rapid(npiglo) )
+    ALLOCATE ( damocrapid(1,1,npk), gdepw(npk), e31d(npk)  )
+    ALLOCATE ( dtrp(1,1,1) )
+    ALLOCATE ( rdumlon(1,1), rdumlat(1,1), tim(npt) )
+
+    zwk(:,:)     = getvar (cn_fhgr, cn_gphiv, 1, npiglo, 1, kimin=iiw,kjmin=ijrapid )
+    rdumlon(:,:) = 0.0
+    rdumlat(:,:) = zwk(1,1)
+
+    IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk )
+
+    DO jk = 1, npk
+      IF ( lfull ) THEN
+         e3vrapid(:,jk) = e31d(jk)
+      ELSE
+         zwk(:,:) = getvar(cn_fzgr,'e3v_ps',jk,npiglo,1,kimin=iiw,kjmin=ijrapid,ldiom=.TRUE.)
+         e3vrapid(:,jk) = zwk(:,1)
+      ENDIF
+    ENDDO
+    zwk(:,:)   = getvar (cn_fhgr, cn_ve1v, 1, npiglo, 1, kimin=iiw,kjmin=ijrapid )
+    e1rapid(:) = zwk(:,1)
+    gdepw(:)   = getvare3(cn_fzgr, cn_gdepw, npk             )
+
+    ! prepare output dataset: 7 variables
+    cf_moc = 'rapid_moc.nc'
+    nvarout =  7
+    ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
+    stypvar%cunits            = 'Sverdrup'
+    stypvar%rmissing_value    = 99999.
+    stypvar%valid_min         = -1000.
+    stypvar%valid_max         =  1000.
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+    stypvar%conline_operation = 'N/A'
+
+    stypvar%caxis             = 'T'
+    ipk(:) = 1  ! only amoc_rapid has ipk=npk
+    ! overturning classical way
+    stypvar(1)%cname          = 'amoc_rapid'
+    stypvar(1)%clong_name     = 'Rapid Overturning '
+    stypvar(1)%cshort_name    = 'amoc_rapid'
+    ipk(1)                    = npk
+
+    stypvar(2)%cname          = 'tr_gs'
+    stypvar(2)%clong_name     = 'Gulf Stream Contribution'
+    stypvar(2)%cshort_name    = 'tr_gs'
+
+    stypvar(3)%cname          = 'tr_THERM'
+    stypvar(3)%clong_name     = 'Overturning contrib of Thermocline waters'
+    stypvar(3)%cshort_name    = 'tr_THERM'
+
+    stypvar(4)%cname          = 'tr_AIW'
+    stypvar(4)%clong_name     = 'Overturning contrib of intermediate waters'
+    stypvar(4)%cshort_name    = 'tr_AIW'
+
+    stypvar(5)%cname          = 'tr_UNADW'
+    stypvar(5)%clong_name     = 'Overturning contrib of Upper NADW '
+    stypvar(5)%cshort_name    = 'tr_UNADW'
+
+    stypvar(6)%cname          = 'tr_LNADW'
+    stypvar(6)%clong_name     = 'Overturning contrib of Lower NADW '
+    stypvar(6)%cshort_name    = 'tr_LNADW'
+
+    stypvar(7)%cname          = 'tr_BW'
+    stypvar(7)%clong_name     = 'Overturning contrib of Bottom Waters'
+    stypvar(7)%cshort_name    = 'tr_BW'
+
+    ncout = create      ( cf_moc,  'none',    1, 1, npk, cdep=cn_vdepthw )
+    ierr  = createvar   ( ncout,   stypvar,   nvarout,   ipk, id_varout                                   )
+    ierr  = putheadervar( ncout,   cf_vfil,   1, 1, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepw)
+
+    DO jt = 1, npt
+      DO jk = 1 , npk
+         zwk(:,:) = getvar(cf_vfil,cn_vomecrty,jk,npiglo,1,kimin=iiw,kjmin=ijrapid, ktime = jt, ldiom=.TRUE.)
+         vrapid(:,jk) = zwk(:,1)
+      ENDDO
+      ! 2) compute the amoc at 26.5 N, traditional way ( from top to bottom as in MOCHA)
+      damocrapid(:,:,1) = 0.d0
+      DO jk = 2, npk
+         damocrapid(1,1,jk) = damocrapid(1,1,jk-1)
+         DO ji = 1, npiglo   ! remember : this is a local index
+           damocrapid(1,1,jk) = damocrapid(1,1,jk) + vrapid(ji,jk-1) * e1rapid(ji) * e3vrapid(ji,jk-1)*1.d0
+         ENDDO
+         ierr = putvar (ncout, id_varout(1), REAL(damocrapid(:,:,jk)/1.d6), jk, 1, 1, ktime=jt)
+      ENDDO
+
+      ! 3) compute the Gulf-stream transport (western most part of the section)
+      dtrp(:,:,:) = 0.d0
+      DO ji = 1, npigs
+        DO jk = 1, npk
+           dtrp(1,1,1) = dtrp(1,1,1) + vrapid(ji,jk) * e1rapid(ji) * e3vrapid(ji,jk)*1.d0
+        ENDDO
+      ENDDO
+      ierr = putvar (ncout, id_varout(2), REAL(dtrp(:,:,1)/1.d6), 1, 1, 1, ktime=jt)
+      PRINT *, 'JT = ', jt ,' GS = ', dtrp(:,:,1)/1.d6,' Sv'
+
+    ! 4) compute the contributions of the eastern part of the section, sorted by depth range
+      DO jclass = 1, jp_class
+        zmin = rp_zlim(jclass   )
+        zmax = rp_zlim(jclass+1 )
+        dtrp(:,:,:) = 0.d0
+        DO ji = npigs+1 , npiglo
+           DO jk = 1, npk
+             ! use Nicolas Ferry code ( can be improved )
+             zbot =  gdepw(jk) + e3vrapid(ji,jk) 
+             IF ( gdepw(jk) >= zmin .AND.  zbot <= zmax ) zalpha=1.0
+             IF ( gdepw(jk) >= zmax .OR.  zbot <= zmin ) zalpha=0.0
+             IF ( gdepw(jk) <= zmin .AND.  zbot >= zmin ) &
+                &  zalpha = ( zbot - zmin     ) / e3vrapid ( ji,jk) 
+             IF ( gdepw(jk) <= zmax .AND.  zbot >= zmax ) &
+                &  zalpha = ( zmax - gdepw(jk)) / e3vrapid ( ji,jk) 
+             dtrp(1,1,1) = dtrp(1,1,1) + vrapid(ji,jk) * e1rapid(ji) * e3vrapid(ji,jk)*1.d0 * zalpha
+           ENDDO
+        ENDDO
+
+        ierr = putvar (ncout, id_varout(jclass+2), REAL(dtrp(:,:,1)/1.d6), 1, 1, 1, ktime=jt)
+        PRINT *, 'JT = ', jt ,' trp_class:', zmin, zmax, dtrp(:,:,1)/1.d6,' Sv'
+      END DO
+    END DO   ! time loop
+
+    tim  = getvar1d( cf_vfil, cn_vtimec, npt     )
+    ierr = putvar1d( ncout,   tim,       npt, 'T')
+    ierr = closeout( ncout                       )
+
+   END SUBROUTINE rapid_amoc
 
 END PROGRAM cdfmoc
