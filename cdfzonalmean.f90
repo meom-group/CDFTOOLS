@@ -309,8 +309,8 @@ PROGRAM cdfzonalmean
               ! integrates 'zonally' (along i-coordinate)
               DO ji=1,npiglo
                  DO jj=1,npjglo
-                    dzomean(jj,jk) = dzomean(jj,jk) + e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)*1.d0
-                    darea(jj,jk)   = darea(jj,jk)   + e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*1.d0
+                    dzomean(jj,jk) = dzomean(jj,jk) + 1.d0*e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
+                    darea(jj,jk)   = darea(jj,jk)   + 1.d0*e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
                  END DO
               END DO
 
