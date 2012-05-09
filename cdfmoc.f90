@@ -681,6 +681,8 @@ CONTAINS
     REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: e1rapid            !
     REAL(KIND=4)            :: zmin, zmax, zbot, zalpha
     !!----------------------------------------------------------------------
+    npk    = getdim (cf_vfil,cn_z)
+    npt    = getdim (cf_vfil,cn_t)
     ! 1) look for integer indices corresponding to the section characteristics
     CALL cdf_findij ( rp_lonw_rapid,  rp_lone_rapid, rp_lat_rapid, rp_lat_rapid, &
        &              iiw          ,  iie          , ijrapid,      idum   ,      &
@@ -698,8 +700,6 @@ CONTAINS
     npiglo =  iie -iiw+1 ! size of the rapid section
     npigs  =  iigs-iiw+1 ! size of the rapid section
     !  1.1 ) read vertical slabs corresponding to ijrapid
-    npk    = getdim (cf_vfil,cn_z)
-    npt    = getdim (cf_vfil,cn_t)
     ALLOCATE ( vrapid(npiglo , npk), e3vrapid(npiglo, npk) )
     ALLOCATE ( zwk(npiglo, 1), e1rapid(npiglo) )
     ALLOCATE ( damocrapid(1,1,npk), gdepw(npk), e31d(npk)  )
@@ -769,13 +769,13 @@ CONTAINS
     stypvar(7)%clong_name     = 'Overturning contrib of Bottom Waters'
     stypvar(7)%cshort_name    = 'tr_BW'
 
-    ncout = create      ( cf_moc,  'none',    1, 1, npk, cdep=cn_vdepthw )
-    ierr  = createvar   ( ncout,   stypvar,   nvarout,   ipk, id_varout                                   )
-    ierr  = putheadervar( ncout,   cf_vfil,   1, 1, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepw)
+    ncout = create      ( cf_moc, 'none',  1, 1, npk, cdep=cn_vdepthw )
+    ierr  = createvar   ( ncout,  stypvar, nvarout,   ipk, id_varout                              )
+    ierr  = putheadervar( ncout,  cf_vfil, 1, 1, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepw)
 
     DO jt = 1, npt
       DO jk = 1 , npk
-         zwk(:,:) = getvar(cf_vfil,cn_vomecrty,jk,npiglo,1,kimin=iiw,kjmin=ijrapid, ktime = jt, ldiom=.TRUE.)
+         zwk(:,:) = getvar(cf_vfil,cn_vomecrty,jk,npiglo,1,kimin=iiw,kjmin=ijrapid, ktime = jt )
          vrapid(:,jk) = zwk(:,1)
       ENDDO
       ! 2) compute the amoc at 26.5 N, traditional way ( from top to bottom as in MOCHA)
