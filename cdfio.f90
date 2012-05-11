@@ -1670,14 +1670,24 @@ CONTAINS
     IF (PRESENT(pnavlon) ) THEN 
        z2d = pnavlon
     ELSE
-       z2d=getvar(cdfile,cn_vlon2d, 1,kpi,kpj)
+       IF ( chkvar ( cdfile, cn_vlon2d )) THEN
+         PRINT *, '... dummy value used!'
+         z2d = 0.
+       ELSE
+         z2d=getvar(cdfile,cn_vlon2d, 1,kpi,kpj)
+       ENDIF
     ENDIF
     istatus = putvar(kout, nid_lon,z2d,1,kpi,kpj)
 
     IF (PRESENT(pnavlat) ) THEN
        z2d = pnavlat
     ELSE
-       z2d=getvar(cdfile,cn_vlat2d, 1,kpi,kpj)
+       IF ( chkvar ( cdfile, cn_vlat2d )) THEN
+         PRINT *, '... dummy value used!'
+         z2d = 0.
+       ELSE
+         z2d=getvar(cdfile,cn_vlat2d, 1,kpi,kpj)
+       ENDIF
     ENDIF
 
     istatus = putvar(kout, nid_lat,z2d,1,kpi,kpj)
