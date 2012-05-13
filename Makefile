@@ -33,7 +33,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
-       cdfisopsi cdf2matlab cdffixtime
+       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy
 
 all: $(EXEC)
 
@@ -131,6 +131,9 @@ cdfw: cdfio.o  cdfw.f90
 
 cdfgeo-uv: cdfio.o  cdfgeo-uv.f90
 	$(F90) cdfgeo-uv.f90 -o $(BINDIR)/cdfgeo-uv cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfgeostrophy: cdfio.o eos.o cdfgeostrophy.f90
+	$(F90) cdfgeostrophy.f90 -o $(BINDIR)/cdfgeostrophy cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfmxl: cdfio.o eos.o  cdfmxl.f90
 	$(F90) cdfmxl.f90 -o $(BINDIR)/cdfmxl cdfio.o eos.o modcdfnames.o $(FFLAGS)
