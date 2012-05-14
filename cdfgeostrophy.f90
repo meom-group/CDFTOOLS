@@ -209,6 +209,7 @@ PROGRAM cdfgeostrophy
   ALLOCATE ( deptht(npk), depthw(npk) )
   ALLOCATE ( zsigsurf(npiglo,npjglo) , zsiglevel(npiglo,npjglo) )
   ALLOCATE ( e3(npiglo,npjglo) )
+  ALLOCATE ( tim(npt) )
 
   ! Read the metrics from the mesh_hgr file
   e2u   = getvar(cn_fhgr, cn_ve2u,  1, npiglo, npjglo)
@@ -220,14 +221,13 @@ PROGRAM cdfgeostrophy
   glamv = getvar(cn_fhgr, cn_glamv, 1, npiglo, npjglo)
   gphiv = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
 
-  deptht(:) = getvare3(cn_fhgr, 'gdept',npk)
+  deptht(:) = getvar1d(cf_tfil, cn_vdeptht, npk    )
 
   ! create output filesets
   ! U geo  
   ncoutu = create      (cf_uout, cf_tfil,  npiglo, npjglo, npk                            )
   ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu                     )
   ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, npk, pnavlon=glamu, pnavlat=gphiu)
-
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
   ierr = putvar1d(ncoutu,  tim,       npt, 'T')
 
