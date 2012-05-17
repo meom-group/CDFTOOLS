@@ -164,12 +164,14 @@ PROGRAM cdfnorth_unfold
   tim  = getvar1d(cf_in, cn_vtimec, npt     )
   ierr = putvar1d(ncout, tim,       npt, 'T')
 
+  ! default value
+  isig =  1
+
   DO jvar = 1,nvars
      PRINT *,' Working with ', TRIM(cv_names(jvar)), ipk(jvar)
      DO jk = 1, ipk(jvar)
         PRINT *,'level ',jk
         tab(:,:) = 0.
-        isig =  1
         DO jt=1,npt
            v2d(:,:) = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jt )
 
