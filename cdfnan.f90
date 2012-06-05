@@ -49,6 +49,7 @@ PROGRAM cdfnan
      PRINT *,'     PURPOSE :'
      PRINT *,'       Detect NaN values in the input files, and change them to '
      PRINT *,'       either spval (missing_value) or the value given as option.'
+     PRINT *,'       Does the same for absolute values > huge(0.0)'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       list of model output files. They must be of same type and have'
@@ -66,14 +67,13 @@ PROGRAM cdfnan
 
   ijarg=1
   DO WHILE ( ijarg <= narg )
-     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
+     CALL getarg(ijarg, cldum) ;   ijarg = ijarg + 1
      SELECT CASE (cldum)
-     CASE ('-value' ) 
+     CASE ('-value' )
         CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; 
         READ(cldum,*) replace ; l_replace=.true.
      CASE DEFAULT
-        CALL getarg( ijarg, cf_inout)
-        ijarg = ijarg + 1
+        cf_inout=TRIM(cldum)
      END SELECT
   END DO
   IF ( chkfile (cf_inout) )  STOP ! missing file
@@ -141,7 +141,9 @@ PROGRAM cdfnan
                     ! isnan function is not available on xlf90 compiler
                     ! we replace it by the following test that gives the same results
                     ! reference : http://www.unixguide.net/ibm/faq/faq3.03.shtml
-                    WHERE( tab(:,:) /= tab(:,:) ) tab(:,:) = zspval
+                    WHERE( tab(:,:) /=  tab(:,:) ) tab(:,:) = zspval
+                    WHERE( tab(:,:) < -huge(0.0) ) tab(:,:) = zspval
+                    WHERE( tab(:,:) >  huge(0.0) ) tab(:,:) = zspval
                     ierr = putvar(ncid, id_var(jvar), tab, jk, npiglo, npjglo, ktime=jt)
                  ENDDO
               END DO
