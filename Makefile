@@ -35,9 +35,20 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy
 
-.PHONY: all clean cleanexe install man installman
+.PHONY: all help clean cleanexe install man installman
 
 all: $(EXEC)
+
+help:
+	@echo "#-------------------------------------------------"
+	@echo "# List of make targets:"
+	@echo "#  all      : build cdftools binary"
+	@echo "#  man      : build manual"
+	@echo "#  clean    : remove building object (.o, .mod...)"
+	@echo "#  cleanexe : remove binary executable"
+	@echo "#  install  : install binary in INSTALL folder"
+	@echo "#  install  : install manual in INSTALL_MAN folder"
+	@echo "#-------------------------------------------------"
 
 ## Statistical programs
 cdfmoy: cdfio.o   cdfmoy.f90
