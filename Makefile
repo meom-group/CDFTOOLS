@@ -35,6 +35,8 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy
 
+.PHONY: all clean cleanexe install man installman
+
 all: $(EXEC)
 
 ## Statistical programs
@@ -413,10 +415,28 @@ modutils.o: cdfio.o modutils.f90
 
 ## Utilities
 clean:
-	\rm -f *.mod *.o  *~
+	\rm -f *.mod *.o  *~ *.1 *.opod
 
 cleanexe: clean
 	( cd $(BINDIR) ; \rm -f $(EXEC) )
 
+man: cdftools.1
+
+cdftools.1: cdftools.opod
+	pod2man --center "CDFTOOLS / NEMO Documentation" \
+	  --release "SVN Revision $$(LANG=C svn update | grep '^At rev' | awk '{print $$3}' | cut -f 1 -d '.')" \
+	  cdftools.opod > cdftools.1
+
+cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod
+	cat cdftools-begin.pod > cdftools.opod
+	for s in $$( cd $(BINDIR); ls -1 ); do echo ''; echo "=head2 $$s"; echo ''; $$s; done >> cdftools.opod
+	cat cdftools-end.pod >> cdftools.opod
+
 install:
+	@mkdir -p $(INSTALL)
 	cd bin ; \cp $(EXEC)  $(INSTALL)
+
+installman:
+	@mkdir -p $(INSTALL_MAN)/man1;
+	\cp -f cdftools.1 $(INSTALL_MAN)/man1/;
+	for s in $$( cd $(BINDIR); ls -1 ); do ( cd $(INSTALL_MAN)/man1/; ln -sf cdftools.1 $$s.1 ); done;
