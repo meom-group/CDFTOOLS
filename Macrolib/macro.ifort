@@ -14,3 +14,4 @@ FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin
+INSTALL_MAN=$(HOME)/man

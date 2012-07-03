@@ -29,6 +29,7 @@ PROGRAM cdfnan
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var                 ! arrays of var id
 
   REAL(KIND=4)                                  :: zspval, replace        ! spval, replace value
+  REAL(KIND=4)                                  :: rabsmax                ! spval, replace value
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tab                    ! Arrays for data
 
   CHARACTER(LEN=256)                            :: cldum                  ! dummy string for getarg
@@ -44,7 +45,7 @@ PROGRAM cdfnan
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfnan list_of_model_output_files [-value replace] '
+     PRINT *,' usage : cdfnan list_of_model_output_files [-value replace] [-absmax rabsmax ] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Detect NaN values in the input files, and change them to '
@@ -65,6 +66,7 @@ PROGRAM cdfnan
      STOP
   ENDIF
 
+  rabsmax=huge(0.0)
   ijarg=1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum) ;   ijarg = ijarg + 1
@@ -72,6 +74,9 @@ PROGRAM cdfnan
      CASE ('-value' )
         CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; 
         READ(cldum,*) replace ; l_replace=.true.
+     CASE ('-absmax' )
+        CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; 
+        READ(cldum,*) rabsmax 
      CASE DEFAULT
         cf_inout=TRIM(cldum)
      END SELECT
@@ -108,11 +113,13 @@ PROGRAM cdfnan
   ijarg = 1
   DO WHILE (ijarg <=  narg ) 
      CALL getarg (ijarg, cf_inout) ; ijarg = ijarg + 1 
-     IF ( chkfile (cf_inout) )  STOP ! missing file
 
      SELECT CASE ( cf_inout)
      CASE ('-value' )
         ! replace already read, just skip
+        ijarg = ijarg + 1
+     CASE ('-absmax' )
+        !  already read, just skip
         ijarg = ijarg + 1
      CASE DEFAULT  ! reading files
         PRINT *, 'Change NaN on file ', cf_inout
@@ -142,8 +149,8 @@ PROGRAM cdfnan
                     ! we replace it by the following test that gives the same results
                     ! reference : http://www.unixguide.net/ibm/faq/faq3.03.shtml
                     WHERE( tab(:,:) /=  tab(:,:) ) tab(:,:) = zspval
-                    WHERE( tab(:,:) < -huge(0.0) ) tab(:,:) = zspval
-                    WHERE( tab(:,:) >  huge(0.0) ) tab(:,:) = zspval
+                    WHERE( tab(:,:) < -rabsmax ) tab(:,:) = zspval
+                    WHERE( tab(:,:) >  rabsmax ) tab(:,:) = zspval
                     ierr = putvar(ncid, id_var(jvar), tab, jk, npiglo, npjglo, ktime=jt)
                  ENDDO
               END DO

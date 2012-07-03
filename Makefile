@@ -42,12 +42,12 @@ all: $(EXEC)
 help:
 	@echo "#-------------------------------------------------"
 	@echo "# List of make targets:"
-	@echo "#  all      : build cdftools binary"
-	@echo "#  man      : build manual"
-	@echo "#  clean    : remove building object (.o, .mod...)"
-	@echo "#  cleanexe : remove binary executable"
-	@echo "#  install  : install binary in INSTALL folder"
-	@echo "#  install  : install manual in INSTALL_MAN folder"
+	@echo "#  all          : build cdftools binary"
+	@echo "#  man          : build manual"
+	@echo "#  clean        : remove building object (.o, .mod...)"
+	@echo "#  cleanexe     : remove binary executable"
+	@echo "#  install      : install binary in INSTALL folder"
+	@echo "#  install_man  : install manual in INSTALL_MAN folder"
 	@echo "#-------------------------------------------------"
 
 ## Statistical programs
