@@ -33,8 +33,11 @@ PROGRAM cdfwhereij
   CHARACTER(LEN=256)                        :: cv_phi         ! latitude name
   CHARACTER(LEN=256)                        :: ctype='T'      ! type of point on C-grid
   CHARACTER(LEN=256)                        :: cldum          ! dummmy string
+  CHARACTER(LEN=256)                        :: clcoo          ! dummy character variable
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  clcoo = cn_fcoo
+
 
   narg= iargc()
   IF ( narg < 4 ) THEN
@@ -65,8 +68,8 @@ PROGRAM cdfwhereij
   DO WHILE ( ijarg <= narg) 
      CALL getarg( ijarg, cldum ) ; ijarg= ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-c' ) ; CALL getarg(ijarg, cn_fcoo ) ; ijarg=ijarg+1
-     CASE ( '-p' ) ; CALL getarg(ijarg, ctype   ) ; ijarg=ijarg+1
+     CASE ( '-c' ) ; CALL getarg(ijarg, clcoo ) ; ijarg=ijarg+1
+     CASE ( '-p' ) ; CALL getarg(ijarg, ctype ) ; ijarg=ijarg+1
      CASE DEFAULT
         ireq=ireq+1
         SELECT CASE (ireq)
@@ -80,10 +83,10 @@ PROGRAM cdfwhereij
      END SELECT
   END DO
 
-  IF ( chkfile(cn_fcoo) ) STOP ! missing file
+  IF ( chkfile(clcoo) ) STOP ! missing file
 
-  npiglo = getdim (cn_fcoo, cn_x)
-  npjglo = getdim (cn_fcoo, cn_y)
+  npiglo = getdim (clcoo, cn_x)
+  npjglo = getdim (clcoo, cn_y)
 
   IF ( iimax > npiglo ) THEN
      PRINT *,' ERROR : imax is greater than the maximum size ', iimax, npiglo
@@ -106,8 +109,8 @@ PROGRAM cdfwhereij
      PRINT *,' ERROR : type of point not known: ', TRIM(ctype)
   END SELECT
 
-  glam(:,:) = getvar(cn_fcoo, cv_lam, 1, npiglo, npjglo)
-  gphi(:,:) = getvar(cn_fcoo, cv_phi, 1, npiglo, npjglo)
+  glam(:,:) = getvar(clcoo, cv_lam, 1, npiglo, npjglo)
+  gphi(:,:) = getvar(clcoo, cv_phi, 1, npiglo, npjglo)
 
   PRINT '(2a)'     ,' Type of point   : ', TRIM(ctype)
   PRINT '(a,4i6)'  ,'   I J zoom      : ', iimin, iimax, ijmin, ijmax
