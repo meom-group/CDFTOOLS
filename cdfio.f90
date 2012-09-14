@@ -1108,7 +1108,7 @@ CONTAINS
              istatus=NF90_GET_VAR(incid,id_var,e3w_0, start=(/1,1/), count=(/ik0,1/) )
              DO ji=1,ii
                 DO jj=1,ij
-                   IF ( e3t_ps (ji,jj) == 0 ) e3t_ps(ji,jj)=e3t_0(mbathy(ji,jj))
+                   IF ( e3t_ps (ji,jj) == 0 .AND. mbathy(ji,jj) /= 0 ) e3t_ps(ji,jj)=e3t_0(mbathy(ji,jj))
                 END DO
              END DO
            ENDIF
@@ -1291,7 +1291,7 @@ CONTAINS
           END DO
          END DO
            ! not very satisfactory but still....
-           getvar(:,kpj)=getvar(:,kpj-1)
+           IF ( kpj /= 1 ) getvar(:,kpj)=getvar(:,kpj-1)
          ENDIF
 
          CASE ( 'e3w_ps')

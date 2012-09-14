@@ -62,6 +62,7 @@ MODULE modCdfNames
   CHARACTER(LEN=20) :: cn_sossheig='sossheig' !: Sea Surface Height
   CHARACTER(LEN=20) :: cn_somxl010='somxl010' !: Mixed layer depth (density criterium)
   CHARACTER(LEN=20) :: cn_somxlt02='somxlt02' !: Mixed layer depth (temperature criterium)
+  CHARACTER(LEN=20) :: cn_sozotaux='sozotaux' !: Zonal wind stress
 
   CHARACTER(LEN=20) :: cn_sohefldo='sohefldo' !: Total Heat FLux
   CHARACTER(LEN=20) :: cn_solhflup='solhflup' !: Latent Heat FLux 
