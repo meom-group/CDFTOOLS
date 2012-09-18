@@ -33,7 +33,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
-       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy
+       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp
 
 .PHONY: all help clean cleanexe install man installman
 
@@ -405,6 +405,12 @@ cdffixtime: cdfio.o  cdffixtime.f90
 
 cdfnamelist: modcdfnames.o  cdfnamelist.f90
 	$(F90)  cdfnamelist.f90  -o $(BINDIR)/cdfnamelist  modcdfnames.o $(FFLAGS) $(FDATE_FLAG)
+
+cdfchgrid: cdfio.o cdfchgrid.f90
+	$(F90) cdfchgrid.f90  -o $(BINDIR)/cdfchgrid cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfcmp: cdfio.o cdfcmp.f90
+	$(F90) cdfcmp.f90  -o $(BINDIR)/cdfcmp cdfio.o modcdfnames.o $(FFLAGS)
 
 # OLD bimg/dimg stuff: use by the trpsig monitoring....
 cdfsections: eos.o cdfsections.f90
