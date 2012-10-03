@@ -21,7 +21,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfbn2 cdfrichardson cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig cdfspice\
        cdfbottom cdfets cdfokubo-w cdfcurl cdfw cdfgeo-uv cdfmxl \
-       cdfrhoproj  cdfizisot cdfsigintegr cdfpvor \
+       cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
        cdfsigtrp cdftempvol-full\
        cdfpsi cdfmoc  cdfmocsig cdfmean \
