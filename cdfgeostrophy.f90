@@ -68,7 +68,7 @@ PROGRAM cdfgeostrophy
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
-  !! $Id: cdfgeo-uv.f90 539 2011-07-11 10:33:35Z molines $
+  !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
@@ -94,18 +94,19 @@ PROGRAM cdfgeostrophy
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3             ! vertic metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamu, gphiu   ! longitude latitude u-point
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamv, gphiv   ! longitude latitude v-point
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: un, vn         ! velocity components
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: zsshn          ! ssh
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: umask, vmask   ! mask at u and v points
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask          ! mask at t points
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsigsurf       ! density at first level (used for zpsurf)
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsiglevel      ! density at current level (used for zplevel/zphalflevel)
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt, zsal       ! temporary arrays for temperature and salinity
+
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: un, vn         ! velocity components
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: zsshn          ! ssh
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: zpupper        ! total pressure above current level
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: zphalflevel    ! pressure at T-point of current level
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: zplevel        ! pressure at bottom W-point of current level
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: zpsurf         ! pressure due to SSH
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: zptot          ! total pressure at current level
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsigsurf       ! density at first level (used for zpsurf)
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsiglevel      ! density at current level (used for zplevel/zphalflevel)
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt, zsal       ! temporary arrays for temperature and salinity
 
   REAL(KIND=4)                              :: zhlevel        ! thickness of current level
   REAL(KIND=4)                              :: zhhalflevel    ! thickness of half the current level
@@ -252,7 +253,7 @@ PROGRAM cdfgeostrophy
      ! Compute psurf (pressure due to SSH)
      zpsurf(:,:) = zsigsurf * grav * zsshn
 
-     zpupper(:,:) = 0.
+     zpupper(:,:) = 0.d0
 
      DO jk=1,npk
 
@@ -286,8 +287,8 @@ PROGRAM cdfgeostrophy
 
          !! 2. We compute the velocities from geostrophic balance
 
-         un(:,:) = 0.
-         vn(:,:) = 0.
+         un(:,:) = 0.d0
+         vn(:,:) = 0.d0
 
          DO jj=2,npjglo-1
             DO ji=2,npiglo-1
@@ -314,8 +315,8 @@ PROGRAM cdfgeostrophy
             ENDDO
          ENDDO
 
-     WHERE ( ABS(ff) < 1.e-5 ) un(:,:) = 0.
-     WHERE ( ABS(ff) < 1.e-5 ) vn(:,:) = 0.
+     WHERE ( ABS(ff) < 1.e-5 ) un(:,:) = 0.d0
+     WHERE ( ABS(ff) < 1.e-5 ) vn(:,:) = 0.d0
  
      un(:,:) = un(:,:) * umask(:,:)
      vn(:,:) = vn(:,:) * vmask(:,:)
