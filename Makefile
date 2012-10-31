@@ -306,6 +306,9 @@ cdfcoloc2: cdfio.o  cdfcoloc2.f90
 cdfcoloc3: cdfio.o  cdfcoloc3.f90
 	$(F90) cdfcoloc3.f90  -o $(BINDIR)/cdfcoloc3 cdfio.o $(FFLAGS)
 
+cdf2levitusgrid2d: cdfio.o cdftools.o modutils.o cdf2levitusgrid2d.f90
+	$(F90) cdf2levitusgrid2d.f90  -o $(BINDIR)/cdf2levitusgrid2d  cdfio.o modcdfnames.o cdftools.o modutils.o $(FFLAGS)
+
 cdfstatcoord: cdfio.o  cdfstatcoord.f90
 	$(F90) cdfstatcoord.f90  -o $(BINDIR)/cdfstatcoord cdfio.o modcdfnames.o $(FFLAGS)
 
