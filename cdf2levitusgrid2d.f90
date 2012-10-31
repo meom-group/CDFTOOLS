@@ -102,6 +102,7 @@ PROGRAM cdf2levitusgrid2d
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'       ',TRIM(cn_fhgr)
+      PRINT *,'       ',TRIM(cn_fmsk)
       PRINT *,'       ',TRIM(cf_levitus_mask)
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
@@ -116,8 +117,9 @@ PROGRAM cdf2levitusgrid2d
    CALL getarg(ijarg, cv_nam) ; ijarg = ijarg + 1
 
    lchk = chkfile (cn_fhgr)
+   lchk = chkfile (cn_fmsk)         .OR. lchk
    lchk = chkfile (cf_levitus_mask) .OR. lchk
-   lchk = chkfile (cf_in) .OR. lchk
+   lchk = chkfile (cf_in)           .OR. lchk
    IF ( lchk ) STOP ! missing files
 
    npiglo = getdim(cf_in,cn_x)
