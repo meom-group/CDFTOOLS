@@ -262,7 +262,7 @@ PROGRAM cdf2levitusgrid2d
                      IF ( rlat1 > gphitmin ) THEN
                         ! Search the closest point of ORCA grid for this Levitus point
                         CALL cdf_findij (rlonlev(jilev,jjlev), rlonlev(jilev,jjlev), rlatlev(jilev,jjlev), rlatlev(jilev,jjlev), &
-                             &         iimin, iimax, ijmin, ijmax,cd_coord=cn_fhgr,cd_point='T' ) !,  cd_verbose='N')
+                             &         iimin, iimax, ijmin, ijmax,cd_coord=cn_fhgr,cd_point='T',  cd_verbose='N')
 
                         ! Next valid grid point going northward on ORCA grid
                         ltest = .TRUE. ; ij = ijmin ; ii =  iimin
@@ -345,7 +345,7 @@ PROGRAM cdf2levitusgrid2d
 
                   ! Search the closest point of ORCA grid for this Levitus point
                   CALL cdf_findij (rlonlev(jilev,ijlev), rlonlev(jilev,ijlev), rlatlev(jilev,ijlev), rlatlev(jilev,ijlev), &
-                       & iimin, iimax, ijmin, ijmax,cd_coord=cn_fhgr,cd_point='T') !,  cd_verbose='N')
+                       & iimin, iimax, ijmin, ijmax,cd_coord=cn_fhgr,cd_point='T', cd_verbose='N')
 
                   ! Next valid grid point going southward on ORCA grid
                   ltest = .TRUE. ; ij = ijmin ; ii =  iimin

@@ -34,7 +34,7 @@ MODULE cdftools
 CONTAINS
 
   SUBROUTINE cdf_findij ( pxmin, pxmax, pymin, pymax,           &
-       &         kimin, kimax, kjmin, kjmax, cd_coord, cd_point )
+       &         kimin, kimax, kjmin, kjmax, cd_coord, cd_point, cd_verbose)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE cdf_findij  ***
     !!
@@ -45,6 +45,7 @@ CONTAINS
     INTEGER(KIND=4),              INTENT(out) :: kimin, kimax, kjmin, kjmax !: equivalent in model coordinates
     CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_coord                   !: coordinate file name (D: cn_fcoo)
     CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_point                   !: point type           (D: F )
+    CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_verbose                 !: verbose flag         (D: N ) Y
 
     INTEGER(KIND=4)                           :: initer
     INTEGER(KIND=4)                           :: imin, imax, jmin, jmax
@@ -62,7 +63,7 @@ CONTAINS
     CHARACTER(LEN=256)                        :: cl_type='F'
     CHARACTER(LEN=256)                        :: clcoo
 
-    LOGICAL                                   :: ll_again, ll_bnd
+    LOGICAL                                   :: ll_again, ll_bnd, ll_verbose=.false.
     !!--------------------------------------------------------------------------
     CALL ReadCdfNames()
 
@@ -71,8 +72,11 @@ CONTAINS
     dl_ymin = pymin
     dl_ymax = pymax
 
-    IF ( PRESENT( cd_coord) ) clcoo=cd_coord
-    IF ( PRESENT( cd_point) ) cl_type=cd_point
+    IF ( PRESENT( cd_coord)  ) clcoo=cd_coord
+    IF ( PRESENT( cd_point)  ) cl_type=cd_point
+    IF ( PRESENT( cd_verbose))   THEN
+      IF ( cd_verbose(1:1) == 'Y' .OR. cd_verbose(1:1) == 'y' ) ll_verbose=.true.
+    ENDIF
 
     IF (chkfile (clcoo) ) STOP ! missing file
 
@@ -152,12 +156,14 @@ CONTAINS
             iloc     = (initer -1)* ipiglo/jp_itermax
           ENDIF
        ELSE
-          PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
+          IF ( ll_verbose ) THEN
+             PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
+          ENDIF
           ll_again = .FALSE.
        END IF
     END DO
 
-    IF (ll_bnd) THEN
+    IF (ll_bnd .AND. ll_verbose ) THEN
        WRITE (*,*)'Point  Out of domain or on boundary'
     ELSE
        imin=iloc
@@ -201,11 +207,13 @@ CONTAINS
             iloc     = (initer -1)* ipiglo/jp_itermax
           ENDIF
        ELSE
-          PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
+          IF ( ll_verbose ) THEN
+             PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
+          ENDIF
           ll_again = .FALSE.
        END IF
     END DO
-    IF (ll_bnd) THEN
+    IF (ll_bnd .AND. ll_verbose ) THEN
        WRITE (*,*) 'Point  Out of domain or on boundary'
     ELSE
        imax=iloc
@@ -213,7 +221,7 @@ CONTAINS
     ENDIF
     ENDIF
 
-    PRINT 9001, imin, imax, jmin, jmax
+    IF (ll_verbose) PRINT 9001, imin, imax, jmin, jmax
 
     kimin   = imin ; kimax = imax ; kjmin   = jmin ; kjmax = jmax
     zglamin = dl_glam(imin,jmin)  ; zglamax = dl_glam(imax,jmax)
@@ -221,7 +229,7 @@ CONTAINS
     IF ( zglamin > 180 ) zglamin=zglamin-360.
     IF ( zglamax > 180 ) zglamax=zglamax-360.
 
-    PRINT 9002, zglamin, zglamax, dl_gphi(imin,jmin),dl_gphi(imax,jmax)
+    IF ( ll_verbose) PRINT 9002, zglamin, zglamax, dl_gphi(imin,jmin),dl_gphi(imax,jmax)
 
 9000 FORMAT(a,f8.2,a,f8.2,2i5)
 9001 FORMAT(4i10)
