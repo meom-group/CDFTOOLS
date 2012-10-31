@@ -34,6 +34,7 @@
   !!   getspval      : get spval of a given variable
   !!   getvar1d      : read 1D variable (eg depth, time_counter) from a file
   !!   getvaratt     : read variable attributes
+  !!   gettimeatt    : get time attributes
   !!   getvar        : read the variable
   !!   getvare3      : read e3 type variable
   !!   getvarid      : get the varid of a variable in a file
@@ -43,6 +44,7 @@
   !!   getvdim       : get the number of dim of a variable
   !!   ncopen        : open a netcdf file and return its ncid
   !!   putatt        : write variable attribute
+  !!   puttimeatt    : write time variable attribute
   !!   putheadervar  : write header variables such as nav_lon, nav_lat etc ... from a file taken
   !!                 : as template
   !!   putvar0d      : write a 0d variable (constant)
@@ -115,13 +117,14 @@
   END INTERFACE
 
   PUBLIC :: chkfile, chkvar
-  PUBLIC :: copyatt, create, createvar, getvaratt, cvaratt
-  PUBLIC :: putatt, putheadervar, putvar, putvar1d, putvar0d, atted
+  PUBLIC :: copyatt, create, createvar, getvaratt, cvaratt, gettimeatt
+  PUBLIC :: putatt, putheadervar, putvar, putvar1d, putvar0d, atted, puttimeatt
   PUBLIC :: getatt, getdim, getvdim, getipk, getnvar, getvarname, getvarid, getspval
   PUBLIC :: getvar, getvarxz, getvaryz, getvar1d, getvare3
   PUBLIC :: gettimeseries
   PUBLIC :: closeout, ncopen
   PUBLIC :: ERR_HDL
+
 
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
@@ -396,6 +399,72 @@ CONTAINS
     istatus   = NF90_CLOSE(incid)
 
   END FUNCTION getvaratt
+
+
+  INTEGER(KIND=4) FUNCTION gettimeatt (cdfile, cdvartime, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION gettimeatt  ***
+    !!
+    !! ** Purpose : Get specific attributes for time variable
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=256), INTENT(in)  :: cdfile
+    CHARACTER(LEN=20),  INTENT(in)  :: cdvartime
+    CHARACTER(LEN=256), INTENT(out) :: ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin
+
+    INTEGER(KIND=4) :: istatus
+    INTEGER(KIND=4) :: incid, ivarid
+
+    istatus = NF90_OPEN(cdfile, NF90_NOWRITE, incid)
+    istatus = NF90_INQ_VARID(incid, cdvartime, ivarid)
+
+    istatus = NF90_GET_ATT(incid, ivarid, 'calendar',         ctcalendar    )
+    istatus = NF90_GET_ATT(incid, ivarid, 'title',            cttitle       )
+    istatus = NF90_GET_ATT(incid, ivarid, 'long_name',        ctlong_name   )
+    istatus = NF90_GET_ATT(incid, ivarid, 'axis',             ctaxis        )
+    istatus = NF90_GET_ATT(incid, ivarid, 'units',            ctunits       )
+    istatus = NF90_GET_ATT(incid, ivarid, 'time_origin',      cttime_origin )
+
+    gettimeatt = istatus
+    istatus   = NF90_CLOSE(incid)
+
+  END FUNCTION gettimeatt
+
+  INTEGER(KIND=4) FUNCTION puttimeatt (kout, cdvartime, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION puttimeatt  ***
+    !!
+    !! ** Purpose : Put specific attributes for time variable
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4),     INTENT(in) :: kout
+    CHARACTER(LEN=20),  INTENT(in)  :: cdvartime
+    CHARACTER(LEN=256), INTENT(out) :: ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin
+
+    INTEGER(KIND=4) :: ivarid
+
+    puttimeatt=NF90_INQ_VARID(kout, cdvartime, ivarid)
+    IF (puttimeatt /= 0 ) THEN 
+      PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt var does not exist'
+    ENDIF
+   
+    puttimeatt = NF90_REDEF(kout)
+    puttimeatt=NF90_PUT_ATT(kout,ivarid,'calendar',ctcalendar)
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt calendar'; ENDIF
+    puttimeatt=NF90_PUT_ATT(kout,ivarid,'title',cttitle)
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt title'; ENDIF
+    puttimeatt=NF90_PUT_ATT(kout,ivarid,'long_name',ctlong_name)
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt long_name'; ENDIF
+    puttimeatt=NF90_PUT_ATT(kout,ivarid,'axis',ctaxis)
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt axis'; ENDIF
+    puttimeatt=NF90_PUT_ATT(kout,ivarid,'units',ctunits)
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt units'; ENDIF
+    puttimeatt=NF90_PUT_ATT(kout,ivarid,'time_origin',cttime_origin)
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt time_origin'; ENDIF
+
+    puttimeatt=NF90_ENDDEF(kout)
+
+  END FUNCTION puttimeatt
 
 
   INTEGER(KIND=4) FUNCTION cvaratt (cdfile, cdvar, cdunits, pmissing_value, cdlong_name, cdshort_name)
