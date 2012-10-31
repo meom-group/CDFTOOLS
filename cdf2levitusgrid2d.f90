@@ -498,7 +498,7 @@ CONTAINS
      REAL(KIND=4), INTENT(out) :: plon, plat
 
      REAL(KIND=8), PARAMETER   :: dp_p1= 1.745329D-02  ! radians per degree
-     REAL(KIND=8), PARAMETER   :: dp_p2= 111.1940      ! dp_p1 * earth radius in km (6370.949)
+     REAL(KIND=8), PARAMETER   :: dp_p2= 111.1940D0    ! dp_p1 * earth radius in km (6370.949)
      REAL(KIND=8)              :: dl_rx, dl_ry
      REAL(KIND=8)              :: dl_r0
      REAL(KIND=8)              :: dl_r1, dl_r2, dl_r3
