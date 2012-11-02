@@ -82,6 +82,7 @@ MODULE modCdfNames
   CHARACTER(LEN=20) :: cn_zomsfpac='zomsfpac' !: moc in the Pacific
   CHARACTER(LEN=20) :: cn_zomsfinp='zomsfinp' !: moc in the Indo-Pacific
   CHARACTER(LEN=20) :: cn_zomsfind='zomsfind' !: moc in the Indian ocean
+  CHARACTER(LEN=20) :: cn_zomsfinp0='zomsfinp0' !: moc in the Indo-Pacific Net
   
   ! transport variables
   CHARACTER(LEN=20) :: cn_vozout='vozout'     !: product U x T at U point

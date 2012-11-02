@@ -200,7 +200,7 @@ CONTAINS
   END FUNCTION copyatt
 
 
-  INTEGER(KIND=4) FUNCTION create( cdfile, cdfilref ,kx,ky,kz ,cdep, cdepvar)
+  INTEGER(KIND=4) FUNCTION create( cdfile, cdfilref ,kx,ky,kz ,cdep, cdepvar, ld_xycoo)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION create  ***
     !!
@@ -215,10 +215,12 @@ CONTAINS
     CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep    ! name of vertical dim name if not standard
     CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdepvar ! name of vertical var name if it differs
                                                       ! from vertical dimension name
-  
+    LOGICAL,          OPTIONAL, INTENT(in) :: ld_xycoo ! if false then DO NOT read nav_lat nav_lat from input file
+
     INTEGER(KIND=4)               :: istatus, icout, incid, idum
     INTEGER(KIND=4) ,DIMENSION(4) :: invdim
     CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar
+    LOGICAL                       :: ll_xycoo
     !!----------------------------------------------------------------------
     istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncid=icout)
     istatus = NF90_DEF_DIM(icout, cn_x, kx, nid_x)
@@ -253,11 +255,18 @@ CONTAINS
        incid = -9999
     ENDIF
 
+    IF (PRESENT (ld_xycoo) ) THEN
+      ll_xycoo = ld_xycoo
+    ELSE
+      ll_xycoo = .true.
+    ENDIF 
     ! define variables and copy attributes
-    istatus = NF90_DEF_VAR(icout,cn_vlon2d,NF90_FLOAT,(/nid_x, nid_y/), nid_lon)
-    istatus = copyatt(cn_vlon2d, nid_lon,incid,icout)
-    istatus = NF90_DEF_VAR(icout,cn_vlat2d,NF90_FLOAT,(/nid_x, nid_y/), nid_lat)
-    istatus = copyatt(cn_vlat2d, nid_lat,incid,icout)
+    IF ( ll_xycoo ) THEN
+       istatus = NF90_DEF_VAR(icout,cn_vlon2d,NF90_FLOAT,(/nid_x, nid_y/), nid_lon)
+       istatus = copyatt(cn_vlon2d, nid_lon,incid,icout)
+       istatus = NF90_DEF_VAR(icout,cn_vlat2d,NF90_FLOAT,(/nid_x, nid_y/), nid_lat)
+       istatus = copyatt(cn_vlat2d, nid_lat,incid,icout)
+    ENDIF
     IF ( kz /= 0 ) THEN
        istatus = NF90_DEF_VAR(icout,TRIM(cldepvar),NF90_FLOAT,(/nid_z/), nid_dep)
        ! JMM bug fix : if cdep present, then chose attribute from cldepref
@@ -1699,7 +1708,7 @@ CONTAINS
   END FUNCTION getvare3
 
 
-  INTEGER(KIND=4) FUNCTION putheadervar(kout, cdfile, kpi, kpj, kpk, pnavlon, pnavlat , pdep, cdep)
+  INTEGER(KIND=4) FUNCTION putheadervar(kout, cdfile, kpi, kpj, kpk, pnavlon, pnavlat , pdep, cdep, ld_xycoo)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  putheadervar  ***
     !!
@@ -1720,6 +1729,7 @@ CONTAINS
     CHARACTER(LEN=*),                           INTENT(in) :: cdfile   ! file from where the headers will be copied
     INTEGER(KIND=4),                            INTENT(in) :: kpi, kpj ! dimension of nav_lon (kpi,kpj)
     INTEGER(KIND=4),                            INTENT(in) :: kpk      ! dimension of depht(kpk)
+    LOGICAL,      OPTIONAL,                     INTENT(in) :: ld_xycoo ! option to put yx info
     REAL(KIND=4), OPTIONAL, DIMENSION(kpi,kpj), INTENT(in) :: pnavlon  ! array provided optionaly to overrid the
     REAL(KIND=4), OPTIONAL, DIMENSION(kpi,kpj), INTENT(in) :: pnavlat  ! corresponding arrays in cdfile 
     REAL(KIND=4), OPTIONAL, DIMENSION(kpk),     INTENT(in) :: pdep     ! dep array if not on cdfile
@@ -1731,35 +1741,45 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpk)              :: z1d
     CHARACTER(LEN=256), DIMENSION(jpdep )     :: cldept= (/'deptht ','depthu ','depthv ','depthw ','nav_lev','z      '/)
     CHARACTER(LEN=256)                        :: cldep
+    LOGICAL                                   :: ll_xycoo
     !!----------------------------------------------------------------------
-    ALLOCATE ( z2d (kpi,kpj) )
-    
+    IF (PRESENT(ld_xycoo) ) THEN 
+      ll_xycoo = ld_xycoo
+    ELSE
+      ll_xycoo = .true.
+    ENDIF
+
     cldept = (/cn_vdeptht, cn_vdepthu, cn_vdepthv, cn_vdepthw,'nav_lev','z      '/)
 
-    IF (PRESENT(pnavlon) ) THEN 
-       z2d = pnavlon
-    ELSE
-       IF ( chkvar ( cdfile, cn_vlon2d )) THEN
-         PRINT *, '... dummy value used!'
-         z2d = 0.
+    IF ( ll_xycoo  ) THEN   
+       ALLOCATE ( z2d (kpi,kpj) )
+   
+       IF (PRESENT(pnavlon) ) THEN 
+          z2d = pnavlon
        ELSE
-         z2d=getvar(cdfile,cn_vlon2d, 1,kpi,kpj)
+          IF ( chkvar ( cdfile, cn_vlon2d )) THEN
+            PRINT *, '... dummy value used!'
+            z2d = 0.
+          ELSE
+            z2d=getvar(cdfile,cn_vlon2d, 1,kpi,kpj)
+          ENDIF
        ENDIF
-    ENDIF
-    istatus = putvar(kout, nid_lon,z2d,1,kpi,kpj)
-
-    IF (PRESENT(pnavlat) ) THEN
-       z2d = pnavlat
-    ELSE
-       IF ( chkvar ( cdfile, cn_vlat2d )) THEN
-         PRINT *, '... dummy value used!'
-         z2d = 0.
+       istatus = putvar(kout, nid_lon,z2d,1,kpi,kpj)
+   
+       IF (PRESENT(pnavlat) ) THEN
+          z2d = pnavlat
        ELSE
-         z2d=getvar(cdfile,cn_vlat2d, 1,kpi,kpj)
+          IF ( chkvar ( cdfile, cn_vlat2d )) THEN
+            PRINT *, '... dummy value used!'
+            z2d = 0.
+          ELSE
+            z2d=getvar(cdfile,cn_vlat2d, 1,kpi,kpj)
+          ENDIF
        ENDIF
+   
+       istatus = putvar(kout, nid_lat,z2d,1,kpi,kpj)
+       DEALLOCATE (z2d)
     ENDIF
-
-    istatus = putvar(kout, nid_lat,z2d,1,kpi,kpj)
 
     IF (kpk /= 0 ) THEN
        IF (PRESENT(pdep) ) THEN
@@ -1788,8 +1808,6 @@ CONTAINS
     ENDIF
 
     putheadervar=istatus
-
-    DEALLOCATE (z2d)
 
   END FUNCTION putheadervar
 
@@ -2274,7 +2292,7 @@ CONTAINS
 
   END SUBROUTINE gettimeseries
 
-  LOGICAL FUNCTION chkfile (cd_file) 
+  LOGICAL FUNCTION chkfile (cd_file, ld_verbose ) 
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION chkfile  ***
     !!
@@ -2286,17 +2304,24 @@ CONTAINS
     !!              IF ( chkfile( cf_toto) ) STOP  ! missing file
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=*), INTENT(in) :: cd_file
+    CHARACTER(LEN=*),  INTENT(in) :: cd_file
+    LOGICAL, OPTIONAL, INTENT(in) :: ld_verbose
 
-    LOGICAL                      :: ll_exist
+    LOGICAL                      :: ll_exist, ll_verbose
     !!----------------------------------------------------------------------
+    IF ( PRESENT(ld_verbose) ) THEN
+       ll_verbose = ld_verbose
+    ELSE
+       ll_verbose = .TRUE.
+    ENDIF
+
     IF ( TRIM(cd_file) /= 'none')  THEN 
        INQUIRE (file = TRIM(cd_file), EXIST=ll_exist)
 
        IF (ll_exist) THEN
           chkfile = .false.
        ELSE
-          PRINT *, ' File ',TRIM(cd_file),' is missing '
+          IF ( ll_verbose ) PRINT *, ' File ',TRIM(cd_file),' is missing '
           chkfile = .true.
        ENDIF
     ELSE  

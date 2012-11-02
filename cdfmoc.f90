@@ -12,15 +12,17 @@ PROGRAM cdfmoc
   !!               is performed (this is adequate for a basin configuration).
   !!               In new_maskglo.nc the masking corresponds to the global
   !!               configuration. MOC for Global, Atlantic, Indo-Pacific, 
-  !!               Indian, Pacific ocean.
+  !!               Indian, Pacific ocean, inp0=Global-Atlantic
   !!               Results are saved on moc.nc file with variables name 
-  !!               respectively zomsfglo, zomsfatl, zomsfinp, zomsfind, zomsfpac
+  !!               respectively zomsfglo, zomsfatl, zomsfinp, zomsfind, zomsfpac, zomsinp0
   !!
   !! History : 2.1  : 07/2005  : J.M. Molines  : Original code
   !!                : 04/2006  : A.M. Treguier : Adaptation to NATL4 case
   !!                : 09/2007  : G. Smith      : MOC decomposition
   !!                : 01/2008  : A. Lecointre  : MOC decomposition adaptation 
   !!           3.0  : 03/2011  : J.M. Molines  : Merge all MOC prog, Doctor norm + Lic.
+  !!                : 10/2012  : M.A. Balmaseda: it adds basin INP0=GLOBAL-ATL, different from INP.            : Avoid 3d variables in e3v
+  !!         
   !!
   !! References :  For MOC decomposition : Lee & Marotzke (1998), 
   !!               Baehr, Hirschi, Beismann &  Marotzke (2004),
@@ -44,12 +46,12 @@ PROGRAM cdfmoc
 
   INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: ibmask       !  nbasins x npiglo x npjglo
   INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: ivmask         ! ivmask (used to mask e3v)
-
-  INTEGER(KIND=4)                             :: npglo, npatl, npinp
+  INTEGER(KIND=4)                             :: npglo, npatl, npinp, npinp0
   INTEGER(KIND=4)                             :: npind, nppac
   INTEGER(KIND=4)                             :: jbasin, jj, jk  ! dummy loop index
   INTEGER(KIND=4)                             :: ji, jt          ! dummy loop index
   INTEGER(KIND=4)                             :: nbasins, ibasin ! number of sub basins
+  INTEGER(KIND=4)                             :: nbasinso        ! number of sub output basins nbasins+1 to include INDP0
   INTEGER(KIND=4)                             :: ierr            ! working integer
   INTEGER(KIND=4)                             :: narg, iargc     ! command line browser
   INTEGER(KIND=4)                             :: ijarg, ii       !  "             "
@@ -157,6 +159,7 @@ PROGRAM cdfmoc
      PRINT *,'       variables ',TRIM( cn_zomsfinp),' : Indo Pacific '
      PRINT *,'       variables ',TRIM( cn_zomsfind),' : Indian Ocean alone'
      PRINT *,'       variables ',TRIM( cn_zomsfpac),' : Pacific Ocean alone'
+     PRINT *,'       variables ',TRIM( cn_zomsfinp0),' : Indo Pacific Net'
      PRINT *,'      '
      PRINT *,'       If decomposition is required , ( option -decomp ) add 3 additional'
      PRINT *,'       variables per basin with suffixes _sh, _bt, _ag.'
@@ -224,14 +227,16 @@ PROGRAM cdfmoc
 
   IF (lbas) THEN
      nbasins = 5
+     nbasinso= 6
   ELSE
      nbasins = 1
+     nbasinso= 1
   ENDIF
 
   IF ( ldec ) THEN
-     nvarout=nbasins * 4   ! total, _sh, _bt, _ag
+     nvarout=nbasinso * 4   ! total, _sh, _bt, _ag
   ELSE
-     nvarout=nbasins       ! total
+     nvarout=nbasinso       ! total
   ENDIF
 
   ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
@@ -372,6 +377,31 @@ PROGRAM cdfmoc
         stypvar(ii)%cname       = TRIM(cn_zomsfpac)//'_ag'
         stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_Pacif'
         stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)//'_ag'
+        ii=ii+1
+     ENDIF
+
+     npinp0=ibasin  ; ibasin = ibasin + 1
+     PRINT *, 'Variable ',ii,' is zomsfinp0'
+     stypvar(ii)%cname       = TRIM(cn_zomsfinp0)
+     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_IndPac0'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)
+     ii= ii+1
+
+     IF ( ldec ) THEN
+        PRINT *, 'Variable ',ii,' is zomsfinp0_sh'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_sh'
+        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_IndPac0'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_sh'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfinp0_bt'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_bt'
+        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_IndPac0'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_bt'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfinp0_ag'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_ag'
+        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_IndPac0'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_ag'
      ENDIF
   ENDIF
 
@@ -384,6 +414,7 @@ PROGRAM cdfmoc
   ALLOCATE ( tim(npt) )
   ALLOCATE ( dmoc( nbasins, npjglo, npk   ) )
   ALLOCATE ( ivmask(npiglo, npjglo) )
+
   IF ( ldec ) THEN 
      ALLOCATE ( iumask(npiglo, npjglo) )
      ALLOCATE ( itmask(npiglo, npjglo) )
@@ -524,7 +555,7 @@ PROGRAM cdfmoc
               iumask(:,:) = getvar(cn_fmsk, 'umask', jk, npiglo, npjglo)
               itmask(:,:) = getvar(cn_fmsk, 'tmask', jk, npiglo, npjglo)
               ztemp(:,:)  = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt )
-              zsal(:,:)   = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt )
+              zsal(:,:)   = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt )
               zsig0(:,:)  = sigmai (ztemp, zsal, gdept(jk), npiglo, npjglo )* itmask(:,:)
 
               ! dgeo is Drho/dx at V point ( average on the 4 neighbours U points)
@@ -608,6 +639,7 @@ PROGRAM cdfmoc
               ierr = putvar (ncout, id_varout(ijvar), REAL(dmoc(jbasin,:,jk)), jk, 1, npjglo, ktime=jt)
            END DO
            ijvar = ijvar + 1
+
            IF ( ldec ) THEN
               !           print *, dmoc_sh(jbasin,60,10)
               DO jk = 1, npk 
@@ -626,6 +658,30 @@ PROGRAM cdfmoc
               ijvar = ijvar + 1 
            ENDIF
         END DO
+
+        jbasin=nbasinso
+           DO jk = 1, npk
+              ierr = putvar (ncout, id_varout(ijvar), REAL(dmoc(npglo,:,jk)-dmoc(npatl,:,jk)), jk, 1, npjglo, ktime=jt)
+           END DO
+           ijvar = ijvar + 1
+           IF ( ldec ) THEN
+
+              DO jk = 1, npk 
+                 ierr = putvar (ncout, id_varout(ijvar), REAL(dmoc_sh(npglo,:,jk)-dmoc_sh(npatl,:,jk)), jk, 1, npjglo, ktime=jt)
+              END DO
+
+              ijvar = ijvar + 1 
+              DO jk = 1, npk 
+                 ierr = putvar (ncout, id_varout(ijvar), REAL(dmoc_bt(npglo,:,jk)-dmoc_bt(npatl,:,jk)), jk, 1, npjglo, ktime=jt)
+              END DO
+
+              ijvar = ijvar + 1 
+              DO jk = 1, npk 
+                 ierr = putvar (ncout, id_varout(ijvar), REAL(dmoc_ag(npglo,:,jk)-dmoc_ag(npatl,:,jk)), jk, 1, npjglo, ktime=jt)
+              END DO
+              ijvar = ijvar + 1 
+           ENDIF
+
      ENDDO  ! time loop
 
      ierr = closeout(ncout)

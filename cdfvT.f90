@@ -11,6 +11,7 @@ PROGRAM cdfvT
   !! History : 2.1  : 11/2004  : J.M. Molines : Original code
   !!           2.1  : 02/2010  : J.M. Molines : handle multiframes input files.
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
+  !!                : 10/2012  : M. Balmaseda : Split T and S file eventually
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -43,7 +44,8 @@ PROGRAM cdfvT
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulvt, dcumulvs   ! Arrays for cumulated values
   REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
-  CHARACTER(LEN=256)                        :: cf_tfil              ! TS file name
+  CHARACTER(LEN=256)                        :: cf_tfil              ! T file name
+  CHARACTER(LEN=256)                        :: cf_sfil              ! S file name [default: idem T file]
   CHARACTER(LEN=256)                        :: cf_ufil              ! zonal velocity file
   CHARACTER(LEN=256)                        :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                        :: cf_out='vt.nc'       ! output file
@@ -68,6 +70,8 @@ PROGRAM cdfvT
      PRINT *,'       CONFIG is the config name of a given experiment (eg ORCA025-G70)'
      PRINT *,'            The program will look for gridT, gridU and gridV files for' 
      PRINT *,'            this config ( grid_T, grid_U and grid_V are also accepted).'
+     PRINT *,'            Additionaly, if gridS or grid_S file is found, it will be taken'
+     PRINT *,'            in place of gridT for the salinity variable.'
      PRINT *,'       list_of_tags : a list of time tags that will be used for time'
      PRINT *,'            averaging. e.g. y2000m01d05 y2000m01d10 ...'
      PRINT *,'      '
@@ -120,10 +124,10 @@ PROGRAM cdfvT
   ALLOCATE( zmean(npiglo,npjglo))
 
   ! create output fileset
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
-
+  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            )
+  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+  
   lcaltmean=.TRUE.
   DO jk = 1, npk
      PRINT *,'level ',jk
@@ -133,7 +137,9 @@ PROGRAM cdfvT
      DO jt = 2, narg           ! loop on tags
         CALL getarg (jt, ctag)
 
-        cf_tfil = SetFileName( config, ctag, 'T' )
+        cf_tfil = SetFileName( config, ctag, 'T', ld_stop=.TRUE. )
+        cf_sfil = SetFileName( config, ctag, 'S', ld_stop=.FALSE.)      ! do not stop if gridS/grid_S not found !
+        IF ( chkfile (cf_sfil, ld_verbose=.FALSE.) ) cf_sfil = cf_tfil  ! do not complain if not found
 
         npt = getdim (cf_tfil, cn_t)
         IF ( lcaltmean ) THEN
@@ -152,7 +158,7 @@ PROGRAM cdfvT
            zu(:,:)    = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jtt )
            zv(:,:)    = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jtt )
            ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jtt )
-           zsal(:,:)  = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
+           zsal(:,:)  = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
 
            ! temperature at u point, v points
            zworku(:,:) = 0. ; zworkv(:,:) = 0.

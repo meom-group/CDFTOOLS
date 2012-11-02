@@ -68,7 +68,7 @@ CONTAINS
 
   END SUBROUTINE SetGlobalAtt
 
-  CHARACTER(LEN=256) FUNCTION SetFileName(cdconf, cdtag, cdgrid )
+  CHARACTER(LEN=256) FUNCTION SetFileName(cdconf, cdtag, cdgrid ,ld_stop )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION SetFileName  ***
     !!
@@ -78,12 +78,21 @@ CONTAINS
     !!               error is file is missing
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=*), INTENT(in) :: cdconf, cdtag, cdgrid
+    CHARACTER(LEN=*),  INTENT(in) :: cdconf, cdtag, cdgrid
+    LOGICAL, OPTIONAL, INTENT(in) :: ld_stop
+
+    LOGICAL :: ll_stop
     !!----------------------------------------------------------------------
+    IF ( PRESENT(ld_stop) ) THEN
+       ll_stop = ld_stop
+    ELSE
+       ll_stop = .TRUE.
+    ENDIF
+
     WRITE( SetFileName,'(a,"_",a,"_grid",a,".nc")') TRIM(cdconf), TRIM(cdtag), TRIM(cdgrid)
     IF ( chkfile(SetFileName ) ) THEN ! look for another name
        WRITE(SetFileName,'(a,"_",a,"_grid_",a,".nc")') TRIM(cdconf), TRIM(cdtag), TRIM(cdgrid)
-       IF ( chkfile( SetFileName)  ) THEN
+       IF ( chkfile( SetFileName) .AND. ll_stop  ) THEN
           PRINT *,' ERROR : missing grid',TRIM(cdgrid),'or even grid_',TRIM(cdgrid),' file '
           STOP
        ENDIF

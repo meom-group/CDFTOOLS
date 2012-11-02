@@ -120,7 +120,7 @@ PROGRAM cdfmhst
      PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(1),' : Meridional Salt Transport (global) ] '
      PRINT *,'       If ',TRIM(cn_fbasins),' is available, per basin meridional transport '
      PRINT *,'       are also available:' 
-              DO jbasins=2, 5
+              DO jbasins=2, 6
      PRINT *,'                       ', TRIM(cv_zomht),cbasin(jbasins),' : Meridional Heat Transport'
      PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(jbasins),' : Meridional Salt Transport ]'
               END DO
