@@ -32,6 +32,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
+       cdf2levitusgrid2d \
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp
 
