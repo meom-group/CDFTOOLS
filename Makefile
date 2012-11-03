@@ -19,6 +19,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfvsig cdfspeed cdfsum\
        cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
+       cdfstats \
        cdfbn2 cdfrichardson cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig cdfspice\
        cdfbottom cdfets cdfokubo-w cdfcurl cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
@@ -93,6 +94,9 @@ cdfspeed: cdfio.o  cdfspeed.f90
 
 cdfimprovechk: cdfio.o  cdfimprovechk.f90
 	$(F90) cdfimprovechk.f90 -o $(BINDIR)/cdfimprovechk cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfstats: cdfio.o  cdfstats.f90
+	$(F90) cdfstats.f90 -o $(BINDIR)/cdfstats cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdflinreg: cdfio.o  cdflinreg.f90
 	$(F90) cdflinreg.f90 -o $(BINDIR)/cdflinreg cdfio.o modcdfnames.o $(FFLAGS)
