@@ -84,6 +84,6 @@ PROGRAM cdffindij
     END SELECT
   END DO
 
-  CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, cd_point=cltype)
+  CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, cd_point=cltype, cd_verbose='y')
 
 END PROGRAM cdffindij
