@@ -90,7 +90,7 @@ PROGRAM cdfmhst
   CHARACTER(LEN=256)                           :: cv_zomht='zomht' ! MHT variable name
   CHARACTER(LEN=256)                           :: cv_zomst='zomst' ! MST variable name
   CHARACTER(LEN=256)                           :: cldum            ! dummy character variable
-  CHARACTER(LEN=5),  DIMENSION(6)              :: cbasin=(/'_glo','_atl','_inp','_ind','_pac','_inp0'/)
+  CHARACTER(LEN=5),  DIMENSION(6)              :: cbasin=(/'_glo ','_atl ','_inp ','_ind ','_pac ','_inp0'/)
   CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cvarname         ! varname arrays
   CHARACTER(LEN=256)                           :: cldimension      ! varname arrays
 
