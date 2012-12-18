@@ -61,13 +61,13 @@ PROGRAM cdfvT
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvT CONFIG ''list_of_tags'' '
+     PRINT *,' usage : cdfvT CONFIG-CASE ''list_of_tags'' '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order products ' 
      PRINT *,'       V.T, V.S, U.T and U.S used in heat and salt transport computation.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       CONFIG is the config name of a given experiment (eg ORCA025-G70)'
+     PRINT *,'       CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)'
      PRINT *,'            The program will look for gridT, gridU and gridV files for' 
      PRINT *,'            this config ( grid_T, grid_U and grid_V are also accepted).'
      PRINT *,'            Additionaly, if gridS or grid_S file is found, it will be taken'

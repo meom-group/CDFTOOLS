@@ -58,16 +58,16 @@ PROGRAM cdfmaxmoc
   narg=iargc()
   
   IF ( narg /= 6 ) THEN
-     PRINT *,' usage : cdfmaxmoc OVT-file cbasin latmin latmax depmin depmax'
+     PRINT *,' usage : cdfmaxmoc OVT-file basin_name latmin latmax depmin depmax'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the maximum and minimum of the overturning, from file IVT-file,' 
+     PRINT *,'        Compute the maximum and minimum of the overturning, from file OVT-file,' 
      PRINT *,'        for oceanic basin specified by cbasin, and in the geographical frame '
      PRINT *,'        defined by latmin latmax, depmin, depmax.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       OVT-file : overturning file produced by cdfmoc, with of w/o sub basins.' 
-     PRINT *,'       cbasin : name of oceanic subbasin as defined in ',TRIM(cn_fbasins)
+     PRINT *,'       OVT-file   : overturning file from cdfmoc, with or w/o sub basins.' 
+     PRINT *,'       basin_name : name of oceanic subbasin as defined in ',TRIM(cn_fbasins)
      PRINT *,'                usually it can be one of atl, glo, inp, ind or pac'
      PRINT *,'                glo means no subbasins.'
      PRINT *,'      '
