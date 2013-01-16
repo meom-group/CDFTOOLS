@@ -20,7 +20,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
-       cdfbn2 cdfrichardson cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig cdfspice\
+       cdfbn2 cdfrichardson cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
        cdfbottom cdfets cdfokubo-w cdfcurl cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
@@ -122,6 +122,9 @@ cdfsiginsitu: cdfio.o  eos.o  cdfsiginsitu.f90
 
 cdfbottomsig: cdfio.o  eos.o  cdfbottomsig.f90
 	$(F90) cdfbottomsig.f90 -o $(BINDIR)/cdfbottomsig cdfio.o eos.o modcdfnames.o $(FFLAGS)
+
+cdfbotpressure: cdfio.o  eos.o modutils.o  cdfbotpressure.f90
+	$(F90) cdfbotpressure.f90 -o $(BINDIR)/cdfbotpressure cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfbottom: cdfio.o    cdfbottom.f90
 	$(F90) cdfbottom.f90 -o $(BINDIR)/cdfbottom cdfio.o  modcdfnames.o $(FFLAGS)
