@@ -98,7 +98,8 @@ PROGRAM cdfstd
     CASE ( '-save' ) 
       lsave = .true.
     CASE DEFAULT 
-       CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
+       cf_in = cldum
+!      CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
        EXIT  ! got the first file
     END SELECT
   END DO
