@@ -168,7 +168,7 @@ PROGRAM cdfbotpressure
 
    DO jt = 1, npt
       IF ( lssh ) THEN
-        zt(:,:)       = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo           )
+        zt(:,:)       = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * pp_rau0 * zt(:,:)
       ELSE IF ( lssh2 ) THEN 
          zt(:,:)    = getvar(cf_in,   cn_votemper, 1, npiglo, npjglo, ktime=jt )
@@ -176,8 +176,8 @@ PROGRAM cdfbotpressure
      
          dl_sigi(:,:) = 1000. + sigmai(zt, zs, 0., npiglo, npjglo)
 
-         !  CAUTION : hdept is used for reading SSH in the next line 
-         hdept(:,:)   = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo           )
+         !  CAUTION : hdept is used for reading SSH in the next line
+         hdept(:,:)   = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * dl_sigi * hdept(:,:)
       ELSE
         dl_psurf(:,:)=0.d0
