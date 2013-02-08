@@ -34,10 +34,11 @@ PROGRAM cdfvita
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: nklev                   ! selected levels
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout          ! output stuff
 
+  REAL(KIND=4)                               :: pi                      ! pi
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                     ! time counter array
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdeptall, gdept         ! depths and selected depths
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: uc, vc                  ! velocity component on C grid
-  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ua, va, vmod            ! velocity component on A grid
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ua, va, vmod, vdir      ! velocity component on A grid
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar                 ! data attributes
 
@@ -85,6 +86,7 @@ PROGRAM cdfvita
 
   nlev = 0
   ijarg=1
+  pi=ACOS(-1.)
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
@@ -105,8 +107,8 @@ PROGRAM cdfvita
   ENDDO
 
   ! adjust number of variable according to -w option
-  nvar=3
-  IF ( lvertical )  nvar = 4
+  nvar=4
+  IF ( lvertical )  nvar = 5
 
   ALLOCATE ( ipk(nvar), id_varout(nvar), stypvar(nvar) )
 
@@ -167,6 +169,20 @@ PROGRAM cdfvita
   stypvar(3)%conline_operation = 'N/A'
   stypvar(3)%caxis             = 'TZYX'
 
+  ! Velocity module T point
+  ipk(4)                       = nlev
+  stypvar(4)%cname             = 'sovitdir'
+  stypvar(4)%cunits            = 'deg N'
+  stypvar(4)%rmissing_value    = 0.
+  stypvar(4)%valid_min         = 0.
+  stypvar(4)%valid_max         = 360.
+  stypvar(4)%clong_name        = 'Velocity direction T point'
+  stypvar(4)%cshort_name       = 'sovitdir'
+  stypvar(4)%conline_operation = 'N/A'
+  stypvar(4)%caxis             = 'TZYX'
+
+
+
   IF ( lvertical ) THEN
      ! Vertical Velocity at T point
      ipk(nvar)                       = nlev
@@ -188,7 +204,8 @@ PROGRAM cdfvita
   PRINT *, 'nlev   =', nlev
 
   ALLOCATE( uc(npiglo,npjglo), vc(npiglo,npjglo)  )
-  ALLOCATE( ua(npiglo,npjglo), va(npiglo,npjglo), vmod(npiglo,npjglo) )
+  ALLOCATE( ua(npiglo,npjglo), va(npiglo,npjglo)  )
+  ALLOCATE( vmod(npiglo,npjglo), vdir(npiglo, npjglo)  )
   ALLOCATE( tim(npt), gdeptall(npk) )
 
   gdeptall(:) = getvar1d(cf_tfil,cn_vdeptht, npk)
@@ -220,17 +237,21 @@ PROGRAM cdfvita
               ua(ji,jj)   = 0.5* (uc(ji,jj)+ uc(ji-1,jj))
               va(ji,jj)   = 0.5* (vc(ji,jj)+ vc(ji,jj-1))
               vmod(ji,jj) = SQRT( ua(ji,jj)*ua(ji,jj) + va(ji,jj)*va(ji,jj) )
+              vdir(ji,jj) = 90. - atan2(va(ji,jj),ua(ji,jj))*180./pi
+              IF ( vdir(ji,jj) < 0. ) vdir(ji,jj) = 360.+vdir(ji,jj)
            END DO
         END DO
         IF ( lperio) THEN  ! periodic E-W boundary ...
           ua  (1,:) = ua  (npiglo-1,:)
           va  (1,:) = va  (npiglo-1,:)
           vmod(1,:) = vmod(npiglo-1,:)
+          vdir(1,:) = vdir(npiglo-1,:)
         ENDIF
 
         ierr=putvar(ncout, id_varout(1), ua,   jlev ,npiglo, npjglo, ktime=jt )
         ierr=putvar(ncout, id_varout(2), va,   jlev ,npiglo, npjglo, ktime=jt )
         ierr=putvar(ncout, id_varout(3), vmod, jlev ,npiglo, npjglo, ktime=jt )
+        ierr=putvar(ncout, id_varout(4), vdir, jlev ,npiglo, npjglo, ktime=jt )
      END DO
   END DO
 
