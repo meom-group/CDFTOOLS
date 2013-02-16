@@ -360,8 +360,8 @@ PROGRAM cdfcoloc
   cf_weight = cf_weight_t
   OPEN(numbin, FILE=cf_weight, FORM='unformatted')
   DO jid=1, nid   ! loop on all stations
-     READ(numbin) id, dymin, dxmin, idep, nimin, njmin, nkmin, nquadran, dhN
-     IF ( dxmin > 180.d0) dxmin = dxmin - 360.d0
+     READ(numbin) id, ymin, xmin, rdep, nimin, njmin, nkmin, nquadran, dhN
+     IF ( xmin > 180.0) xmin = xmin - 360.0
      ! output only stations with no problems ( dinterp > -99990 )
      dlmin=MINVAL(dinterp(jid,:) )
      IF ( dlmin > -99990.d0 ) THEN
@@ -372,10 +372,10 @@ PROGRAM cdfcoloc
         IF ( nU > 0 ) THEN    ! (U, V pair)
           CALL rotation( dinterp(jid,nU), dinterp(jid,nV), dhN)  
         ENDIF
-        WRITE(numout, cformat) id, idep, (dinterp(jid,jtyp),jtyp=1,ntyp)
+        WRITE(numout, cformat) id, rdep, (dinterp(jid,jtyp),jtyp=1,ntyp)
      ELSE
         ! save discarted stations for control
-        WRITE(numskip, cformat) id, idep, (dinterp(jid,jtyp),jtyp=1,ntyp)
+        WRITE(numskip, cformat) id, rdep, (dinterp(jid,jtyp),jtyp=1,ntyp)
      ENDIF
   END DO
   CLOSE(numbin)
