@@ -53,7 +53,8 @@ PROGRAM cdfcoloc
   INTEGER(KIND=4)                                :: nSx, nSy      ! index of the Sx and Sy for rotation
   INTEGER(KIND=4)                                :: nU, nV        ! index of the U and V for rotation
   INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: mask          ! 3D working mask
-
+  
+  REAL(KIND=4)                                   :: xmin, ymin, rdep
   REAL(KIND=4)                                   :: vup, vdo, wup, wdo  ! Working variables
   REAL(KIND=4), DIMENSION(:,:,:),    ALLOCATABLE :: v3d           ! 3D  ! working variable (unavoidable)
 
@@ -342,7 +343,8 @@ PROGRAM cdfcoloc
      ENDIF
 
      DO jid=1,nid
-        READ(numbin) id, dymin, dxmin, idep ,nimin, njmin, nkmin, nquadran, dhN, dalpha, dbeta, dgama
+!       READ(numbin) id, dymin, dxmin, idep ,nimin, njmin, nkmin, nquadran, dhN, dalpha, dbeta, dgama
+        READ(numbin) id, ymin, xmin, rdep ,nimin, njmin, nkmin, nquadran, dhN, dalpha, dbeta, dgama
         dinterp(jid,jtyp)=interp()
         ! do not scale dummy values
         IF ( dinterp (jid,jtyp) > -99990.d0 )  dinterp (jid,jtyp) = dinterp (jid,jtyp) * dscale
