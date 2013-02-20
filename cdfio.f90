@@ -588,6 +588,8 @@ CONTAINS
     IF ( istatus /= NF90_NOERR ) THEN
        PRINT *,' getatt problem :',NF90_STRERROR(istatus)
        PRINT *,' attribute :', TRIM(cdatt)
+       PRINT *,' variable  :', TRIM(cdvar)
+       PRINT *,' file      :', TRIM(cdfile)
        PRINT *,' return default 0 '
        getatt=0.
     ENDIF
