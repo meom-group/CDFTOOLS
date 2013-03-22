@@ -37,6 +37,7 @@ PROGRAM cdfgeo_uv
   INTEGER(KIND=4), DIMENSION(1)             :: id_varoutv     ! varid for vgeo
 
   REAL(KIND=4)                              :: grav           ! gravity
+  REAL(KIND=4)                              :: ffu, ffv       ! coriolis param f at U and V point
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1u, e2v, ff   ! horiz metrics, coriolis (f-point)
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamu, gphiu   ! longitude latitude u-point
@@ -96,6 +97,11 @@ PROGRAM cdfgeo_uv
   npk    = getdim(cf_tfil, cn_z) 
   npt    = getdim(cf_tfil, cn_t) 
 
+ PRINT *, ' NPIGLO= ', npiglo
+ PRINT *, ' NPJGLO= ', npjglo
+ PRINT *, ' NPK   = ', npk
+ PRINT *, ' NPT   = ', npt
+
   ipk(1)                        = 1
   stypvaru(1)%cname             = TRIM(cn_vozocrtx)
   stypvaru(1)%cunits            = 'm/s'
@@ -119,7 +125,7 @@ PROGRAM cdfgeo_uv
 
   ! Allocate the memory
   ALLOCATE ( e1u(npiglo,npjglo), e2v(npiglo,npjglo) )
-  ALLOCATE ( ff(npiglo,npjglo) )
+  ALLOCATE ( ff(npiglo,npjglo), tim(npt)  )
   ALLOCATE ( glamu(npiglo,npjglo), gphiu(npiglo,npjglo)  )
   ALLOCATE ( glamv(npiglo,npjglo), gphiv(npiglo,npjglo)  )
   ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo)  )
@@ -141,7 +147,7 @@ PROGRAM cdfgeo_uv
   ncoutu = create      (cf_uout, cf_tfil,  npiglo, npjglo, 0                              )
   ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu                     )
   ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
-
+  
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
   ierr = putvar1d(ncoutu,  tim,       npt, 'T')
 
@@ -174,10 +180,22 @@ PROGRAM cdfgeo_uv
            END DO
         END DO
         ! e1u and e1v are modified to simplify the computation below
+        ! note that geostrophy is not available near the equator ( f=0)
         DO jj=2, npjglo - 1
            DO ji=2, npiglo - 1
-              e1u(ji,jj)= 2.* grav * umask(ji,jj) / ( ff(ji,jj) + ff(ji,  jj-1) ) / e1u(ji,jj)
-              e2v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ff(ji,jj) + ff(ji-1,jj  ) ) / e2v(ji,jj)
+              ffu = ff(ji,jj) + ff(ji,  jj-1)
+              IF ( ffu /= 0. ) THEN 
+                e1u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e1u(ji,jj)
+              ELSE
+                e1u(ji,jj)= 0.  ! spvalue
+              ENDIF
+
+              ffv = ff(ji,jj) + ff(ji-1,jj  )
+              IF ( ffv /= 0. ) THEN 
+                e2v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e2v(ji,jj)
+              ELSE
+                e2v(ji,jj)= 0.  ! spvalue
+              ENDIF
            END DO
         END DO
      END IF
