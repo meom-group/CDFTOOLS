@@ -410,19 +410,27 @@ CONTAINS
   END FUNCTION getvaratt
 
 
-  INTEGER(KIND=4) FUNCTION gettimeatt (cdfile, cdvartime, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
+  INTEGER(KIND=4) FUNCTION gettimeatt (cdfile, cdvartime, ctcalendar, cttitle, &
+        &                            ctlong_name, ctaxis, ctunits, cttime_origin )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION gettimeatt  ***
     !!
     !! ** Purpose : Get specific attributes for time variable
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=256), INTENT(in)  :: cdfile
-    CHARACTER(LEN=20),  INTENT(in)  :: cdvartime
-    CHARACTER(LEN=256), INTENT(out) :: ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin
+    CHARACTER(LEN=*), INTENT(in)  :: cdfile
+    CHARACTER(LEN=*), INTENT(in)  :: cdvartime
+    CHARACTER(LEN=*), INTENT(out) :: ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin
 
     INTEGER(KIND=4) :: istatus
     INTEGER(KIND=4) :: incid, ivarid
+    !!----------------------------------------------------------------------
+    ctcalendar    = 'unknown'
+    cttitle       = 'unknown'
+    ctlong_name   = 'unknown'
+    ctaxis        = 'unknown'
+    ctunits       = 'unknown'
+    cttime_origin = 'unknown'
 
     istatus = NF90_OPEN(cdfile, NF90_NOWRITE, incid)
     istatus = NF90_INQ_VARID(incid, cdvartime, ivarid)
@@ -439,7 +447,8 @@ CONTAINS
 
   END FUNCTION gettimeatt
 
-  INTEGER(KIND=4) FUNCTION puttimeatt (kout, cdvartime, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
+  INTEGER(KIND=4) FUNCTION puttimeatt (kout, cdvartime, ctcalendar, cttitle, &
+        &                          ctlong_name, ctaxis, ctunits, cttime_origin )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION puttimeatt  ***
     !!
@@ -451,6 +460,7 @@ CONTAINS
     CHARACTER(LEN=256), INTENT(out) :: ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin
 
     INTEGER(KIND=4) :: ivarid
+    !!----------------------------------------------------------------------
 
     puttimeatt=NF90_INQ_VARID(kout, cdvartime, ivarid)
     IF (puttimeatt /= 0 ) THEN 

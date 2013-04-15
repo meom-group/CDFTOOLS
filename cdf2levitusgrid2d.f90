@@ -151,8 +151,8 @@ PROGRAM cdf2levitusgrid2d
       IF ( TRIM(cv_names(jk)) == TRIM(cv_nam) ) THEN
          ipkout(ii) = ipk(jk)
          stypvarout(ii) = stypvar(jk)
-         stypvarout(ji)%rmissing_value=getspval ( cf_in, TRIM(cv_nam) )
-         PRINT*, 'rmissing_value = ', stypvarout(ji)%rmissing_value
+         stypvarout(ii)%rmissing_value=getspval ( cf_in, TRIM(cv_nam) )
+         PRINT*, 'rmissing_value = ', stypvarout(ii)%rmissing_value
          nvarsout = ii
          numvar0 = jk
       ENDIF
