@@ -63,6 +63,7 @@
 
   PRIVATE 
   INTEGER(KIND=4) :: nid_x, nid_y, nid_z, nid_t, nid_lat, nid_lon, nid_dep, nid_tim
+  INTEGER(KIND=4) :: nid_lon1d, nid_lat1d
   LOGICAL         :: l_mbathy=.false.
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mbathy         !: for reading e3._ps in nemo3.x
   REAL(KIND=4),    DIMENSION(:,:), ALLOCATABLE :: e3t_ps, e3w_ps !: for reading e3._ps in nemo3.x
@@ -200,7 +201,8 @@ CONTAINS
   END FUNCTION copyatt
 
 
-  INTEGER(KIND=4) FUNCTION create( cdfile, cdfilref ,kx,ky,kz ,cdep, cdepvar, ld_xycoo)
+  INTEGER(KIND=4) FUNCTION create( cdfile, cdfilref ,kx,ky,kz ,cdep, cdepvar, &
+       &                           cdlonvar, cdlatvar,  ld_xycoo)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION create  ***
     !!
@@ -212,14 +214,16 @@ CONTAINS
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*),           INTENT(in) :: cdfile, cdfilref ! input file and reference file
     INTEGER(KIND=4),            INTENT(in) :: kx, ky, kz       ! dimension of the variable
-    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep    ! name of vertical dim name if not standard
-    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdepvar ! name of vertical var name if it differs
-                                                      ! from vertical dimension name
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep     ! name of vertical dim name if not standard
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdepvar  ! name of vertical var name if it differs
+                                                       ! from vertical dimension name
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdlonvar ! name of 1D longitude
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdlatvar ! name of 1D latitude
     LOGICAL,          OPTIONAL, INTENT(in) :: ld_xycoo ! if false then DO NOT read nav_lat nav_lat from input file
 
     INTEGER(KIND=4)               :: istatus, icout, incid, idum
     INTEGER(KIND=4) ,DIMENSION(4) :: invdim
-    CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar
+    CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar, clonvar, clatvar
     LOGICAL                       :: ll_xycoo
     !!----------------------------------------------------------------------
     istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncid=icout)
@@ -266,6 +270,12 @@ CONTAINS
        istatus = copyatt(cn_vlon2d, nid_lon,incid,icout)
        istatus = NF90_DEF_VAR(icout,cn_vlat2d,NF90_FLOAT,(/nid_x, nid_y/), nid_lat)
        istatus = copyatt(cn_vlat2d, nid_lat,incid,icout)
+    ENDIF
+    IF ( PRESENT(cdlonvar) ) THEN
+       istatus = NF90_DEF_VAR(icout,cdlonvar,NF90_FLOAT,(/nid_x/), nid_lon1d)
+    ENDIF
+    IF ( PRESENT(cdlatvar) ) THEN
+       istatus = NF90_DEF_VAR(icout,cdlatvar,NF90_FLOAT,(/nid_y/), nid_lat1d)
     ENDIF
     IF ( kz /= 0 ) THEN
        istatus = NF90_DEF_VAR(icout,TRIM(cldepvar),NF90_FLOAT,(/nid_z/), nid_dep)
@@ -2069,12 +2079,13 @@ CONTAINS
     !!               kid, into file id kout 
     !!
     !! ** Method  : cdtype is either T (time_counter) or D (depth.)
+    !!                         LON (1D longitude) or LAT (1D latitude)
     !!
     !!----------------------------------------------------------------------
     INTEGER(KIND=4),            INTENT(in) :: kout   ! ncid of output file
     REAL(KIND=4), DIMENSION(kk),INTENT(in) :: ptab   ! 1D array to write in file
     INTEGER(KIND=4),            INTENT(in) :: kk     ! number of elements in ptab
-    CHARACTER(LEN=1),           INTENT(in) :: cdtype ! either T or D
+    CHARACTER(LEN=1),           INTENT(in) :: cdtype ! either T or D LON or LAT
 
     INTEGER(KIND=4)               :: istatus, iid
     INTEGER(KIND=4), DIMENSION(1) :: istart, icount
@@ -2084,6 +2095,10 @@ CONTAINS
        iid = nid_tim
     CASE ('D', 'd' )
        iid = nid_dep
+    CASE ('X', 'x' )
+       iid = nid_lon1d
+    CASE ('Y', 'y' )
+       iid = nid_lat1d
     END SELECT
 
     istart(:) = 1

@@ -188,7 +188,7 @@ PROGRAM cdf2levitusgrid2d
    tmasklev(:,:) = getvar(cf_levitus_mask, 'mask',     1, npilev, npjlev)
 
    ! create output fileset
-   ncout = create      (cf_out, cf_levitus_mask, npilev, npjlev, 0   )
+   ncout = create      (cf_out, cf_levitus_mask, npilev, npjlev, 0 ,cdlonvar='lon', cdlatvar='lat'  )
    ierr  = createvar   (ncout ,  stypvarout, 1,      ipkout,    id_varout    )
    ierr  = putheadervar(ncout ,  'dummy', npilev, npjlev, 0 , pnavlon=rlonlev, pnavlat=rlatlev )
 
@@ -196,6 +196,8 @@ PROGRAM cdf2levitusgrid2d
    ierr = putvar1d(ncout, tim,       npt, 'T')
    ierr = gettimeatt(cf_in, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
    ierr = puttimeatt(ncout, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
+   ierr = putvar1d( ncout, rlonlev(:,1), npilev, 'X')
+   ierr = putvar1d( ncout, rlatlev(1,:), npjlev, 'Y')
 
    zbt(:,:) = e1t(:,:) * e2t(:,:)    ! for surface weighting
 
