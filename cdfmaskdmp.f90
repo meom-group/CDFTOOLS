@@ -52,6 +52,7 @@ PROGRAM cdfmaskdmp
   CHARACTER(LEN=256)                        :: cf_sfil            ! input filename for salinity
   CHARACTER(LEN=256)                        :: cf_out='mask_dmp.nc' ! output file name
   CHARACTER(LEN=256)                        :: cldum              ! dummy string
+  CHARACTER(LEN=256)                        :: cglobal            ! Global attribute with command name
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
   !!----------------------------------------------------------------------
@@ -119,6 +120,8 @@ PROGRAM cdfmaskdmp
      CALL getarg (8, cldum) ; READ(cldum,*) rlatmax
      CALL getarg (9, cldum) ; READ(cldum,*) rlatwidth
   ENDIF
+  WRITE(cglobal,'(a,a,1x,a,7f9.3)') 'cdfmaskdmp ', TRIM(cf_tfil), TRIM(cf_sfil), ref_dep, zsnmin, &
+           &                      zswidth, hmin, hwidth, rlatmax, rlatwidth
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -127,8 +130,13 @@ PROGRAM cdfmaskdmp
 
   ipk(:)                    = npk  
   stypvar(1)%cname          = 'wdmp'
+  stypvar(1)%cunits         = '[0-1]'
   stypvar(1)%rmissing_value = 1.e+20
   stypvar(1)%caxis          = 'TZYX'
+  stypvar(1)%valid_min      = 0.
+  stypvar(1)%valid_max      = 1.
+  stypvar(1)%clong_name     = 'Damping mask build on density criteria'
+  stypvar(1)%cshort_name    = 'wdmp'
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -141,9 +149,9 @@ PROGRAM cdfmaskdmp
   ALLOCATE (tim(npt) , zdep(npk) )
 
   ! create output fileset
-  ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar,  1,     ipk,     id_varout )
-  ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
+  ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk                        )
+  ierr  = createvar   (ncout,  stypvar,  1,     ipk,     id_varout, cdglobal=cglobal)
+  ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk                        )
 
   tim(:)    = getvar1d(cf_tfil, cn_vtimec,  npt              )
   zdep(:)   = getvar1d(cf_tfil, cn_vdeptht, npk              )
