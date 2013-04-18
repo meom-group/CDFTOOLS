@@ -59,6 +59,8 @@ PROGRAM cdfnan
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-value replace ] : use replace instead of missing_value for'
      PRINT *,'                           changing NaN.'
+     PRINT *,'       [-absmax rabsmax ] : replace values whose absolute value is greater '
+     PRINT *,'                           than rabsmax.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : input file is rewritten without NaN.' 
