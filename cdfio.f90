@@ -399,9 +399,9 @@ CONTAINS
     !!              long_name, short_name
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=256), INTENT(in)  :: cdfile, cdvar
+    CHARACTER(LEN=*), INTENT(in)  :: cdfile, cdvar
     REAL(KIND=4), INTENT(out)       :: pmissing_value
-    CHARACTER(LEN=256), INTENT(out) :: cdunits, cdlong_name, cdshort_name
+    CHARACTER(LEN=*), INTENT(out) :: cdunits, cdlong_name, cdshort_name
 
     INTEGER(KIND=4) :: istatus
     INTEGER(KIND=4) :: incid, ivarid
