@@ -43,6 +43,7 @@ PROGRAM cdfsum
   REAL(KIND=8)                              :: dvol, dvol2d        ! volume of the ocean/ layer
   REAL(KIND=8)                              :: dsurf               ! surface of the ocean
   REAL(KIND=8)                              :: dsum, dsum2d        ! global sum /layer sum
+  REAL(KIND=8)                              :: dsumt               ! global sum over time
 
   CHARACTER(LEN=256)                        :: cldum               ! dummy string
   CHARACTER(LEN=256)                        :: cf_in               ! file name 
@@ -185,6 +186,7 @@ PROGRAM cdfsum
   e2(:,:) = getvar  (cn_fhgr, cv_e2, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   gdep(:) = getvare3(cn_fzgr, cv_dep,   npk                                   )
 
+  dsumt = 0.d0
   DO jt = 1,npt
      dvol = 0.d0
      dsum = 0.d0
@@ -215,11 +217,16 @@ PROGRAM cdfsum
            dsum2d = SUM(DBLE(zv * e1 * e2 * zmask))
            dsum   = dsum + dsum2d
            PRINT *, ' Sum value at time ',jt,' = ', dsum2d
+           PRINT *, '          Surface  = ', dsurf/1.d6,' km^2'
+           PRINT *, '       mean value  = ', dsum2d/dsurf
            WRITE (numout,'(i4," ",1e12.6)') jt, dsum2d
         END IF
      END DO
+     dsumt = dsumt + dsum
      IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: ', dsum
   END DO  ! time loop
+  
+  PRINT *, ' mean Sum over time ', dsumt/npt
 
   CLOSE(numout)
 
