@@ -40,7 +40,7 @@ PROGRAM cdfsigintegr
   INTEGER(KIND=4)                               :: ijk              ! layer index
   INTEGER(KIND=4)                               :: numin=10         ! logical unit for ascii input file
   INTEGER(KIND=4)                               :: ncout, ierr      ! ncid and status variable
-  INTEGER(KIND=4), DIMENSION(3)                 :: ipk, id_varout   ! levels and id's of output variables
+  INTEGER(KIND=4), DIMENSION(4)                 :: ipk, id_varout   ! levels and id's of output variables
   !
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d              ! 3D working array (npk)
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zint             ! pseudo 3D working array (2)
@@ -65,11 +65,12 @@ PROGRAM cdfsigintegr
   CHARACTER(LEN=256)                            :: cf_out           ! output file
   CHARACTER(LEN=256)                            :: cv_in            ! name of input variable
   CHARACTER(LEN=256)                            :: cldum            ! dummy string variable
+  CHARACTER(LEN=256)                            :: cluni            ! dummy string variable for variable units
   CHARACTER(LEN=256)                            :: cglobal          ! global attribute
   CHARACTER(LEN=256)                            :: ctype='T'        ! position of variable on C grid
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names         ! temporary arry for variable name in file
 
-  TYPE(variable), DIMENSION(3)                  :: stypvar          ! structure for attributes
+  TYPE(variable), DIMENSION(4)                  :: stypvar          ! structure for attributes
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypzvar         ! structure for attributes
 
   LOGICAL                                       :: lfull = .FALSE.  ! flag for full step
@@ -115,6 +116,7 @@ PROGRAM cdfsigintegr
      PRINT *,'         variables : inv_IN-var  : inventory of IN-var from input file.'
      PRINT *,'                     ', TRIM(cn_vodepiso),' (m) : depth of isopycnal.'
      PRINT *,'                     ', TRIM(cn_isothick),' (m) : thickness of isopycnal layer.'
+     PRINT *,'                     mean_IN-var (same unit as IN-var) : mean IN-var in the isopycnal'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdfsigtrp, cdfisopycdep'
@@ -158,6 +160,7 @@ PROGRAM cdfsigintegr
   OPEN(numin,file=cf_rholev)
   READ(numin,*) npiso
   ALLOCATE (rho_lev(npiso) )
+  PRINT *,' Density limits read in ',TRIM(cf_rholev)
   DO jiso=1,npiso
      READ(numin,*) rho_lev(jiso)
      PRINT *,rho_lev(jiso)
@@ -227,7 +230,7 @@ PROGRAM cdfsigintegr
   END DO
 
   ! define header of all files
-  ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso 
+  ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso ; ipk(4)=npiso-1
 
   DO jvar=1,nvars
      IF ( cv_in == stypzvar(jvar)%cname ) THEN 
@@ -235,10 +238,14 @@ PROGRAM cdfsigintegr
         EXIT
      ENDIF
   END DO
+  ! save original long name for further process
+  cldum = TRIM(stypvar(1)%clong_name)
+  cluni = TRIM(stypvar(1)%cunits)
 
-  stypvar(1)%cname             = 'inv'//TRIM(stypvar(1)%cname)
-  stypvar(1)%clong_name        = TRIM(stypvar(1)%clong_name)//' integrated on sigma bin'
-  stypvar(1)%cunits            = TRIM(stypvar(1)%cunits)//'.m'
+  stypvar(1)%cname             = 'inv'//TRIM(cv_in)
+  stypvar(1)%clong_name        = TRIM(cldum)//' integrated on sigma bin'
+  stypvar(1)%cshort_name       = stypvar(1)%cname
+  stypvar(1)%cunits            = TRIM(cluni)//'.m'
   stypvar(1)%rmissing_value    = zspval
   stypvar(1)%caxis             = 'TRYX'
 
@@ -262,10 +269,21 @@ PROGRAM cdfsigintegr
   stypvar(3)%conline_operation = 'N/A'
   stypvar(3)%caxis             = 'TRYX'
 
-  !! ** Loop on the scalar files to project on choosen isopycnics surfaces
-  DO jfich=istrt_arg, nfiles
+  stypvar(4)%cname             = 'mean'//TRIM(cv_in)
+  stypvar(4)%cunits            = TRIM(cluni)
+  stypvar(4)%rmissing_value    = zspval
+  stypvar(4)%valid_min         = stypvar(1)%valid_min
+  stypvar(4)%valid_max         = stypvar(1)%valid_min
+  stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
+  stypvar(4)%cshort_name       = stypvar(4)%cname
+  stypvar(4)%conline_operation = 'N/A'
+  stypvar(4)%caxis             = 'TRYX'
 
-     CALL getarg(jfich, cf_in)
+
+  !! ** Loop on the scalar files to project on choosen isopycnics surfaces
+  DO jfich=1, nfiles
+
+     CALL getarg(jfich+istrt_arg-1, cf_in)
      IF ( chkfile (cf_in) ) STOP ! missing file
      PRINT *,'working with ', TRIM(cf_in)
 
@@ -273,7 +291,7 @@ PROGRAM cdfsigintegr
      cf_out=TRIM(cf_in)//'.integr'
 
      ncout = create      (cf_out, cf_rho,  npiglo, npjglo, npiso                       )
-     ierr  = createvar   (ncout,  stypvar, 3,      ipk,    id_varout, cdglobal=cglobal )
+     ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout, cdglobal=cglobal )
      ierr  = putheadervar(ncout,  cf_rho,  npiglo, npjglo, npiso, pdep=rho_lev         )
 
      ! copy time arrays in output file
@@ -363,6 +381,14 @@ PROGRAM cdfsigintegr
 
               zdum=zint  (:,:,1) - zint  (:,:,2) ; WHERE ((tmask == 0.)  .OR. (zdum < 0 ) ) zdum = zspval
               ierr = putvar(ncout, id_varout(2), zdum, jiso-1, npiglo, npjglo, ktime=jt)
+
+              WHERE ( zdum /= zspval .AND. zdum /= 0.) 
+                 zdum=(dv2dint(:,:,1) - dv2dint(:,:,2))/ zdum
+              ELSEWHERE
+                 zdum=zspval
+              ENDWHERE
+              ierr = putvar(ncout, id_varout(4), zdum, jiso-1, npiglo, npjglo, ktime=jt)
+
            ENDIF
            dv2dint(:,:,2) = dv2dint(:,:,1)
            zint   (:,:,2) = zint   (:,:,1)
