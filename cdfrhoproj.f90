@@ -94,12 +94,15 @@ PROGRAM cdfrhoproj
      PRINT *,'                    default is ''T''.'
      PRINT *,'       [-sig sigma_name] : name of the density variable in RHO_file.'
      PRINT *,'                    default is ', TRIM(cv_sig)
-     PRINT *,'       [-isodep ] : only compute the isopycnal depth. In this case you must'
-     PRINT *,'                    still specify a IN-var variable (in fact a dummy name).'
+     PRINT *,'       [-isodep ] : only compute the isopycnal depth. then stop. In this case'
+     PRINT *,'                    you must still specify a IN-var variable (in fact a dummy'
+     PRINT *,'                     name).'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       no metrics, information is taken from depth variable in input files.'
      PRINT *,'       ', TRIM(cf_rholev),' if not using -s0 option.'
+     PRINT *,'       ', TRIM(cf_rholev),' is an ascii file, first line giving the number of isopycnal'
+     PRINT *,'                           following lines with isopycnal value, 1 per line.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       There are as many output files as input files.'
@@ -250,6 +253,7 @@ PROGRAM cdfrhoproj
         ierr = putvar(ncout, id_varout(1), zint , jsig, npiglo, npjglo)
      END DO
      ierr = closeout(ncout    )
+     STOP ' -isodep option in use: only compute depth of isopycnal surfaces.'
   ENDIF
 
   !! ** Loop on the scalar files to project on choosen isopycnics surfaces
@@ -309,6 +313,7 @@ PROGRAM cdfrhoproj
        ENDIF
      END DO
      stypvar(2)%clong_name        = TRIM(stypvar(2)%clong_name)//' on iso sigma'
+     stypvar(2)%rmissing_value    = zspvalo
      stypvar(2)%caxis             = 'TRYX'
 
      stypvar(1)%cname             = cn_vodepiso
