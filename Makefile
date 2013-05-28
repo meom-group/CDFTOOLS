@@ -411,6 +411,9 @@ cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)
 
+cdf_xtrac_brokenline: cdfio.o  modcdfnames.o cdftools.o  cdf_xtrac_brokenline.f90
+	$(F90) cdf_xtrac_brokenline.f90  -o $(BINDIR)/cdf_xtrac_brokenline cdfio.o cdftools.o modcdfnames.o $(FFLAGS)
+
 cdfmppini: cdfio.o  cdfmppini.f90
 	$(F90)  cdfmppini.f90  -o $(BINDIR)/cdfmppini cdfio.o modcdfnames.o $(FFLAGS)
 
