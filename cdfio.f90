@@ -2244,7 +2244,7 @@ CONTAINS
   END SUBROUTINE ERR_HDL
 
 
-  SUBROUTINE gettimeseries (cdfile, cdvar, kilook, kjlook, klev)
+  SUBROUTINE gettimeseries (cdfile, cdvar, kilook, kjlook, klev, ldncdf)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE gettimeseries  ***
     !!
@@ -2255,6 +2255,7 @@ CONTAINS
     CHARACTER(LEN=*),          INTENT(in) :: cdfile, cdvar
     INTEGER(KIND=4),           INTENT(in) :: kilook,kjlook
     INTEGER(KIND=4), OPTIONAL, INTENT(in) :: klev
+    LOGICAL,         OPTIONAL, INTENT(in) :: ldncdf
 
     INTEGER(KIND=4)                         :: jt, jk
     INTEGER(KIND=4)                         :: iint
@@ -2264,6 +2265,8 @@ CONTAINS
     REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: ztime, zval
     REAL(KIND=4)                            :: ztmp  
     REAL(KIND=4)                            :: zao=0., zsf=1.0   !: add_offset, scale_factor
+    CHARACTER(LEN=256)                      :: clname
+    LOGICAL                                 :: ll_netcdf=.false.
     !!----------------------------------------------------------------------
     ! Klev can be used to give the model level we want to look at
     IF ( PRESENT(klev) ) THEN
@@ -2271,6 +2274,13 @@ CONTAINS
     ELSE
        jk=1
     ENDIF
+
+    IF ( PRESENT(ldncdf) ) THEN
+       ll_netcdf=ldncdf
+    ELSE
+       ll_netcdf=.false.
+    ENDIF
+
 
     ! Open cdf dataset
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,incid)
@@ -2316,6 +2326,10 @@ CONTAINS
     ENDDO
 
     istatus=NF90_CLOSE(incid)
+    IF ( ll_netcdf )  THEN
+      WRITE (clname,'("probe_",i4.4,"_",i4.4,"_",a,".nc")') kilook, kjlook, TRIM(cdvar)
+    ENDIF
+    ! not finished ...
 
   END SUBROUTINE gettimeseries
 

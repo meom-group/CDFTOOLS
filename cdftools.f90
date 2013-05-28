@@ -21,8 +21,11 @@ MODULE cdftools
   PRIVATE     
   ! list of public subroutines that can be called
   PUBLIC  :: cdf_findij 
+  PUBLIC  :: broken_line
+
   PRIVATE :: NearestPoint
   PRIVATE :: dist 
+  PRIVATE :: interm_pt
 
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
@@ -52,7 +55,7 @@ CONTAINS
     INTEGER(KIND=4), SAVE                     :: iloc, jloc
     INTEGER(KIND=4)                           :: ipiglo, ipjglo
     INTEGER(KIND=4), PARAMETER                :: jp_itermax=15
-  
+
     REAL(KIND=8)                              :: dl_xmin, dl_xmax, dl_ymin, dl_ymax
     REAL(KIND=8)                              :: dl_dis
     REAL(KIND=8)                              :: dl_glam0, dl_emax
@@ -77,7 +80,7 @@ CONTAINS
     IF ( PRESENT( cd_coord)  ) clcoo  = cd_coord
     IF ( PRESENT( cd_point)  ) cl_type= cd_point
     IF ( PRESENT( cd_verbose))   THEN
-      IF ( cd_verbose(1:1) == 'Y' .OR. cd_verbose(1:1) == 'y' ) ll_verbose=.true.
+       IF ( cd_verbose(1:1) == 'Y' .OR. cd_verbose(1:1) == 'y' ) ll_verbose=.true.
     ENDIF
 
     IF (chkfile (clcoo) ) STOP ! missing file
@@ -147,15 +150,15 @@ CONTAINS
           PRINT *,' Algorithm does''nt converge ', dl_dis
 
           IF ( initer >= jp_itermax ) THEN
-            PRINT *, ' no convergence after ', jp_itermax,' iterations'
-            iloc     = -1000
-            jloc     = -1000
-            ll_again = .FALSE.
+             PRINT *, ' no convergence after ', jp_itermax,' iterations'
+             iloc     = -1000
+             jloc     = -1000
+             ll_again = .FALSE.
           ELSE
-            ll_again = .TRUE.
-            initer   = initer +1
-            jloc     = (initer -1)* ipjglo/initer
-            iloc     = (initer -1)* ipiglo/jp_itermax
+             ll_again = .TRUE.
+             initer   = initer +1
+             jloc     = (initer -1)* ipjglo/initer
+             iloc     = (initer -1)* ipiglo/jp_itermax
           ENDIF
        ELSE
           IF ( ll_verbose ) THEN
@@ -174,53 +177,53 @@ CONTAINS
 
     ! deal with xmax, ymax
     IF (  pxmin == pxmax .AND. pymin == pymax ) THEN
-      ! job already done with first point
-      imax=imin
-      jmax=jmin
+       ! job already done with first point
+       imax=imin
+       jmax=jmin
     ELSE
-    ll_again = .TRUE.
-    initer = 1
-    iloc=ipiglo/2 ; jloc=ipjglo/2
+       ll_again = .TRUE.
+       initer = 1
+       iloc=ipiglo/2 ; jloc=ipjglo/2
 
-    DO WHILE (ll_again)
-       CALL NearestPoint(dl_xmax, dl_ymax, ipiglo, ipjglo, dl_glam, dl_gphi, iloc, jloc, ll_bnd)
+       DO WHILE (ll_again)
+          CALL NearestPoint(dl_xmax, dl_ymax, ipiglo, ipjglo, dl_glam, dl_gphi, iloc, jloc, ll_bnd)
 
-       ! distance between the target point and the nearest point
-       dl_dis = dist(dl_xmax, dl_glam(iloc,jloc), dl_ymax, dl_gphi(iloc,jloc) ) ! in km
+          ! distance between the target point and the nearest point
+          dl_dis = dist(dl_xmax, dl_glam(iloc,jloc), dl_ymax, dl_gphi(iloc,jloc) ) ! in km
 
-       ! typical grid size (diagonal) in the vicinity of nearest point
-       dl_emax = MAX(dl_e1(iloc,jloc),dl_e2(iloc,jloc))/1000.*SQRT(2.) ! in km
+          ! typical grid size (diagonal) in the vicinity of nearest point
+          dl_emax = MAX(dl_e1(iloc,jloc),dl_e2(iloc,jloc))/1000.*SQRT(2.) ! in km
 
-       IF (dl_dis >  dl_emax ) THEN
-          zglamfound=dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound -360.
+          IF (dl_dis >  dl_emax ) THEN
+             zglamfound=dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound -360.
 
-          PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc), iloc, jloc
-          PRINT *,' Algorithm does''nt converge ', dl_dis
+             PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc), iloc, jloc
+             PRINT *,' Algorithm does''nt converge ', dl_dis
 
-          IF ( initer >= jp_itermax ) THEN
-            PRINT *, ' no convergence after ', jp_itermax,' iterations'
-            iloc     = -1000
-            jloc     = -1000
-            ll_again = .FALSE.
+             IF ( initer >= jp_itermax ) THEN
+                PRINT *, ' no convergence after ', jp_itermax,' iterations'
+                iloc     = -1000
+                jloc     = -1000
+                ll_again = .FALSE.
+             ELSE
+                ll_again = .TRUE.
+                initer   = initer +1
+                jloc     = (initer -1)* ipjglo/initer
+                iloc     = (initer -1)* ipiglo/jp_itermax
+             ENDIF
           ELSE
-            ll_again = .TRUE.
-            initer   = initer +1
-            jloc     = (initer -1)* ipjglo/initer
-            iloc     = (initer -1)* ipiglo/jp_itermax
-          ENDIF
+             IF ( ll_verbose ) THEN
+                PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
+             ENDIF
+             ll_again = .FALSE.
+          END IF
+       END DO
+       IF (ll_bnd .AND. ll_verbose ) THEN
+          WRITE (*,*) 'Point  Out of domain or on boundary'
        ELSE
-          IF ( ll_verbose ) THEN
-             PRINT '("#  dl_dis= ",f8.3," km")', dl_dis
-          ENDIF
-          ll_again = .FALSE.
-       END IF
-    END DO
-    IF (ll_bnd .AND. ll_verbose ) THEN
-       WRITE (*,*) 'Point  Out of domain or on boundary'
-    ELSE
-       imax=iloc
-       jmax=jloc
-    ENDIF
+          imax=iloc
+          jmax=jloc
+       ENDIF
     ENDIF
 
     IF (ll_verbose) PRINT 9001, imin, imax, jmin, jmax
@@ -239,7 +242,156 @@ CONTAINS
 
   END SUBROUTINE cdf_findij
 
+  SUBROUTINE  broken_line( kimin, kimax, kjmin, kjmax, & 
+       &                     pxx, pyy, knn , kpi, kpj, knormu, knormv)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE broken_line  ***
+    !!
+    !! ** Purpose :  determine the broken line between 2 points 
+    !!
+    !! ** Method  :  Compute the equation of the strait line joining
+    !!               the 2 points, on the model I,J domain. Compute
+    !!               both y(x) and x(y) and work with the minimum sloping
+    !!               line. 
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4),            INTENT(in ) :: kimin, kimax, kjmin, kjmax
+    INTEGER(KIND=4),            INTENT(out) :: knn
+    INTEGER(KIND=4),            INTENT(in ) :: kpi, kpj
+    INTEGER(KIND=4),            INTENT(out) :: knormu, knormv
+    REAL(KIND=4), DIMENSION(kpi+kpj), INTENT(out) :: pxx, pyy
 
+    INTEGER(KIND=4) :: ji, jj, jk   ! dummy loop index
+    INTEGER(KIND=4) :: ii0, ij0, ii1, ij1, iitmp, ijtmp
+    INTEGER(KIND=4) :: iist, ijst
+    INTEGER(KIND=4) :: ii, ij
+    INTEGER(KIND=4) :: idirx, idiry
+    INTEGER(KIND=4) :: ipts
+
+    REAL(KIND=4)    :: zxi0, zyj0, zxi1, zyj1
+    REAL(KIND=4)    :: zai, zbi
+    REAL(KIND=4)    :: zaj, zbj
+    REAL(KIND=4)    :: zd
+
+    COMPLEX, DIMENSION(kpi+kpj) :: ylpt           ! array of points coordinates in a section
+    COMPLEX                     :: ylpti          ! working point
+    !!----------------------------------------------------------------------
+
+    !! Find the broken line between P1 (kimin,kjmin) and P2 (kimax, kjmax)
+    ! ... Initialization
+    ii0  = kimin ; ij0  = kjmin ; ii1  = kimax ;  ij1 = kjmax
+    zxi0 = ii0   ; zyj0 = ij0   ; zxi1 = ii1   ; zyj1 = ij1
+
+    ! compute direction of integrations and signs
+    !The transport across the section is the dot product of
+    !integral(line){(Mx,My)*dS}
+    !Mx=integral(u*dz)  My=integral(v*dz)) and dS=(dy,-dx)}
+
+    !By defining the direction of the integration as
+    idirx = SIGN(1,ii1-ii0) !positive to the east or if ii1=ii0
+    idiry = SIGN(1,ij1-ij0) !positive to the north or if ij1=ij0
+
+    !Then dS=(e2u*idiry,-e1v*idirx)
+    !This will produce the following sign convention:
+    !    West-to-est line (dx>0, dy=0)=> -My*dx (-ve for a northward flow)
+    !    South-to-north   (dy>0, dx=0)=>  Mx*dy (+ve for an eastward flow)
+    knormu =  idiry
+    knormv = -idirx
+
+    ! .. Compute equation:  ryj = zaj rxi + zbj [valid in the (i,j) plane]
+    IF ( (zxi1 -zxi0) /=  0 ) THEN
+       zaj = (zyj1 - zyj0 ) / (zxi1 -zxi0)
+       zbj = zyj0 - zaj * zxi0
+    ELSE
+       zaj = 10000.  ! flag value
+       zbj = 0.
+    END IF
+    ! .. Compute equation:  rxi = zai ryj + zbi [valid in the (i,j) plane]
+    IF ( (zyj1 -zyj0) /=  0 ) THEN
+       zai = (zxi1 - zxi0 ) / ( zyj1 -zyj0 )
+       zbi = zxi0 - zai * zyj0
+    ELSE
+       zai = 10000. ! flag value
+       zbi = 0.
+    END IF
+
+    ! ..  Compute the integer pathway: a succession of F points
+    ipts=0
+    ! .. Chose the strait line with the smallest slope
+    IF (ABS(zaj) <=  1 ) THEN
+       ! ... Here, the best line is y(x)
+       ! ... If ii1 < ii0 swap points [ always describe section from left to right ]
+       IF (ii1 <  ii0 ) THEN
+          iitmp = ii0   ; ijtmp = ij0
+          ii0   = ii1   ; ij0   = ij1
+          ii1   = iitmp ; ij1   = ijtmp
+       END IF
+
+       ! iist,ijst is the grid offset to pass from F point to either U/V point
+       IF ( ij1 >= ij0 ) THEN     ! line heading NE
+          iist = 1 ; ijst = 1
+       ELSE                       ! line heading SE
+          iist = 1 ; ijst = 0
+       END IF
+
+       ! ... compute the nearest ji point on the line crossing at ji
+       DO ji=ii0, ii1
+          ipts=ipts+1
+          IF (ipts > kpi+kpj) STOP 'ipts > kpi+kpj !'
+          ij=NINT(zaj*ji + zbj )
+          ylpt(ipts) = CMPLX(ji,ij)
+       END DO
+    ELSE
+       ! ... Here, the best line is x(y)
+       ! ... If ij1 < ij0 swap points [ always describe section from bottom to top ]
+       IF (ij1 <  ij0 ) THEN
+          iitmp = ii0   ; ijtmp = ij0
+          ii0   = ii1   ; ij0   = ij1
+          ii1   = iitmp ; ij1   = ijtmp
+       END IF
+
+       ! iist,ijst is the grid offset to pass from F point to either U/V point
+       IF ( ii1 >=  ii0 ) THEN
+          iist = 1 ; ijst = 1
+       ELSE
+          iist = 0 ; ijst = 1
+       END IF
+
+       ! ... compute the nearest ji point on the line crossing at jj
+       DO jj=ij0,ij1
+          ipts=ipts+1
+          IF (ipts > kpi+kpj) STOP 'ipts > kpi+kpj !'
+          ii=NINT(zai*jj + zbi)
+          ylpt(ipts) = CMPLX(ii,jj)
+       END DO
+    END IF
+    !!
+    !! Look for intermediate points to be added.
+    !  ..  The final positions are saved in pxx,pyy
+    pxx(1) = REAL(ylpt(1))
+    pyy(1) = IMAG(ylpt(1))
+    knn     = 1
+
+    DO jk=2,ipts
+       ! .. distance between 2 neighbour points
+       zd=ABS(ylpt(jk)-ylpt(jk-1))
+       ! .. intermediate points required if zd > 1
+       IF ( zd > 1 ) THEN
+          CALL interm_pt(ylpt, jk, zai, zbi, zaj, zbj, ylpti)
+          knn=knn+1
+          IF (knn > kpi+kpj) STOP 'knn>kpi+kpj !'
+          pxx(knn) = REAL(ylpti)
+          pyy(knn) = IMAG(ylpti)
+       END IF
+       knn=knn+1
+       IF (knn > kpi+kpj) STOP 'knn>kpi+kpj !'
+       pxx(knn) = REAL(ylpt(jk))
+       pyy(knn) = IMAG(ylpt(jk))
+    END DO
+
+  END SUBROUTINE broken_line
+
+! Private subroutines and functions
   SUBROUTINE NearestPoint(ddlon, ddlat, kpi, kpj, ddlam, ddphi, kpiloc, kpjloc, ld_bnd)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE NearestPoint  ***
@@ -315,7 +467,7 @@ CONTAINS
        IF (kpjloc == 2  .OR. kpjloc ==kpj-1) ld_bnd=.TRUE.
     END DO
 
-  END SUBROUTINE  NEARESTPOINT
+  END SUBROUTINE  NearestPoint
 
 
   REAL(KIND=8) FUNCTION dist(ddlona, ddlonb, ddlata, ddlatb)
@@ -378,4 +530,101 @@ CONTAINS
 
   END FUNCTION dist
 
+
+  SUBROUTINE interm_pt (ydpt, kk, pai, pbi, paj, pbj, ydpti)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE nterm_pt  ***
+    !!
+    !! ** Purpose : Find the best intermediate points on a pathway.
+    !!
+    !! ** Method  : ydpt : complex vector of the positions of the nearest points
+    !!               kk  : current working index
+    !!          pai, pbi : slope and original ordinate of x(y)
+    !!          paj, pbj : slope and original ordinate of y(x)
+    !!             ydpti : Complex holding the position of intermediate point 
+    !!
+    !! ** Reference : 19/07/1999 : J.M. Molines in Clipper
+    !!----------------------------------------------------------------------
+    COMPLEX, DIMENSION(:), INTENT(in ) :: ydpt
+    COMPLEX,               INTENT(out) :: ydpti
+    REAL(KIND=4),          INTENT(in ) :: pai, pbi, paj, pbj
+    INTEGER(KIND=4),       INTENT(in ) :: kk
+    ! ... local
+    COMPLEX                            :: ylptmp1, ylptmp2
+    REAL(KIND=4)                       :: za0, zb0
+    REAL(KIND=4)                       :: za1, zb1
+    REAL(KIND=4)                       :: zd1, zd2
+    REAL(KIND=4)                       :: zxm, zym
+    REAL(KIND=4)                       :: zxp, zyp
+    !!----------------------------------------------------------------------
+    ! ... Determines whether we use y(x) or x(y):
+    IF (ABS(paj) <=  1) THEN
+       ! .....  use y(x)
+       ! ... possible intermediate points:
+       ylptmp1=ydpt(kk-1)+(1.,0.)                 ! M1 
+       ylptmp2=ydpt(kk-1)+CMPLX(0.,SIGN(1.,paj))  ! M2
+       !
+       ! ... M1 is the candidate point:
+       zxm=REAL(ylptmp1)
+       zym=IMAG(ylptmp1)
+       za0=paj
+       zb0=pbj
+       !
+       za1=-1./za0
+       zb1=zym - za1*zxm
+       ! ... P1 is the projection of M1 on the strait line
+       zxp=-(zb1-zb0)/(za1-za0)
+       zyp=za0*zxp + zb0
+       ! ... zd1 is the distance M1P1
+       zd1=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+       !
+       ! ... M2 is the candidate point:
+       zxm=REAL(ylptmp2)
+       zym=IMAG(ylptmp2)
+       za1=-1./za0
+       zb1=zym - za1*zxm
+       ! ... P2 is the projection of M2 on the strait line
+       zxp=-(zb1-zb0)/(za1-za0)
+       zyp=za0*zxp + zb0
+       ! ... zd2 is the distance M2P2
+       zd2=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+       ! ... chose the smallest (zd1,zd2)
+       IF (zd2 <=  zd1) THEN
+          ydpti=ylptmp2   ! use M2
+       ELSE
+          ydpti=ylptmp1   ! use M1
+       END IF
+       !
+    ELSE   
+       ! ...  use x(y)
+       ! ... possible intermediate points:
+       ylptmp1=ydpt(kk-1)+CMPLX(SIGN(1.,pai),0.)  ! M1
+       ylptmp2=ydpt(kk-1)+(0.,1.)                 ! M2
+       ! 
+       ! ... M1 is the candidate point:
+       zxm=REAL(ylptmp1)
+       zym=IMAG(ylptmp1)
+       za0=pai
+       zb0=pbi
+       !
+       za1=-1./za0
+       zb1=zxm - za1*zym
+       zyp=-(zb1-zb0)/(za1-za0)
+       zxp=za0*zyp + zb0
+       zd1=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+       !
+       zxm=REAL(ylptmp2)
+       zym=IMAG(ylptmp2)
+       za1=-1./za0
+       zb1=zxm - za1*zym
+       zyp=-(zb1-zb0)/(za1-za0)
+       zxp=za0*zyp + zb0
+       zd2=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+       IF (zd2 <=  zd1) THEN
+          ydpti=ylptmp2
+       ELSE
+          ydpti=ylptmp1
+       END IF
+    END IF
+  END SUBROUTINE interm_pt
 END MODULE cdftools
