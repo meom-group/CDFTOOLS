@@ -72,8 +72,10 @@ CONTAINS
     dl_ymin = pymin
     dl_ymax = pymax
 
-    IF ( PRESENT( cd_coord)  ) clcoo=cd_coord
-    IF ( PRESENT( cd_point)  ) cl_type=cd_point
+    clcoo = cn_fhgr
+
+    IF ( PRESENT( cd_coord)  ) clcoo  = cd_coord
+    IF ( PRESENT( cd_point)  ) cl_type= cd_point
     IF ( PRESENT( cd_verbose))   THEN
       IF ( cd_verbose(1:1) == 'Y' .OR. cd_verbose(1:1) == 'y' ) ll_verbose=.true.
     ENDIF

@@ -11,6 +11,7 @@ PROGRAM cdfovide
   !!
   !! History : 2.1  : 12/2009  : R. Dussin    : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!           3.1  : 05/2013  : T. Penduff & R. Dussin  : Saving new variables
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -35,7 +36,11 @@ PROGRAM cdfovide
   INTEGER(KIND=4) :: nsec=0 ! nb total de points le long de la section
   INTEGER(KIND=4), DIMENSION (:), ALLOCATABLE :: isec, jsec ! indices des points a recuperer
   
-  INTEGER(KIND=4), PARAMETER :: nsta=4
+!	R. Dussin's initial choice 
+!  INTEGER(KIND=4), PARAMETER :: nsta=4
+!	IFREMER (D. Desbruyeres') choice
+  INTEGER(KIND=4), PARAMETER :: nsta=5
+
   INTEGER(KIND=4), DIMENSION(nsta) :: ista, jsta
   INTEGER(KIND=4), DIMENSION(nsta-1) :: ikeepn
 
@@ -70,9 +75,11 @@ PROGRAM cdfovide
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: lonsec, latsec, dumisec, dumjsec
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1tsec, e1usec, e1vsec, e2tsec, e2usec, e2vsec
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e3tsec, e3usec, e3vsec
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e2join, e3join, dummyvmask
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: glamu, glamv
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw
 
+  REAL(KIND=8)                              :: tmp,barot
 
 ! constants
   REAL(KIND=4)   ::  rau0=1000.,  rcp=4000.
@@ -88,7 +95,7 @@ PROGRAM cdfovide
   TYPE (variable), DIMENSION(:), ALLOCATABLE   :: stypvar
   INTEGER(KIND=4)    :: ierr, ncout
   REAL(KIND=4), DIMENSION(1)                    ::  tim
-  INTEGER(KIND=4)    :: nfield=10
+  INTEGER(KIND=4)    :: nfield=14
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -112,11 +119,20 @@ PROGRAM cdfovide
   lchk = chkfile(cfilev ) .OR. lchk
   IF ( lchk ) STOP ! missing files
 
-  ! Location of leg points that define the 3 legs of OVIDE section
-  rlonsta(1) = -43.00 ; rlatsta(1) = 60.60    ! Greenland
-  rlonsta(2) = -31.30 ; rlatsta(2) = 58.90    ! Reykjanes Ridge
-  rlonsta(3) = -12.65 ; rlatsta(3) = 40.33    ! Off Portugal
-  rlonsta(4) =  -8.70 ; rlatsta(4) = 40.33    ! Lisboa
+  ! R. Dussin : Location of leg points that define the 3 legs of OVIDE section
+  !rlonsta(1) = -43.00 ; rlatsta(1) = 60.60    ! Greenland
+  !rlonsta(2) = -31.30 ; rlatsta(2) = 58.90    ! Reykjanes Ridge
+  !rlonsta(3) = -12.65 ; rlatsta(3) = 40.33    ! Off Portugal
+  !rlonsta(4) =  -8.70 ; rlatsta(4) = 40.33    ! Lisboa
+
+  ! D. Desbruyeres : Location of leg points that define the 4 legs of the OVIDE section
+  rlonsta(1) = -43.70 ; rlatsta(1) = 59.90    ! 
+  rlonsta(2) = -30.30 ; rlatsta(2) = 58.90    ! 
+  rlonsta(3) = -19.40 ; rlatsta(3) = 44.90    ! 
+  rlonsta(4) = -12.65 ; rlatsta(4) = 40.33    ! 
+  rlonsta(5) = -08.70 ; rlatsta(5) = 40.33    ! 
+
+
 
   PRINT *, '###########################################################'
   PRINT *, '#                                                          '
@@ -129,7 +145,7 @@ PROGRAM cdfovide
   PRINT *, '~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~'
 
   !!---------------------------------------------------------------------
-  !!  Find the indexes of the 3 legs (from cdffindij) 
+  !!  Find the indexes of the legs (from cdffindij) 
   !!---------------------------------------------------------------------
 
   npiglo = getdim (cn_fhgr,cn_x)
@@ -169,7 +185,7 @@ PROGRAM cdfovide
   glam0=glam(1, npjglo/2)
   WHERE( glam < glam0 ) glam=glam+360.
 
-  !! loop on the 3 legs
+  !! loop on the legs
   DO k = 1,nsta-1
 
    xmin=rlonsta(k)
@@ -220,8 +236,6 @@ PROGRAM cdfovide
      !      PRINT 9000, 'Long= ',glam(iloc,jloc),' lat = ',gphi(iloc,jloc), iloc, jloc 
   ENDIF
   
-
-
   lagain = .TRUE.
   niter = 0
   !! --- while loop ----------------------------------------------------------------
@@ -389,7 +403,7 @@ PROGRAM cdfovide
   ! compute the number of total points
   ikeepn(k)=nn
   nsec = nsec + nn
-  END DO !! loop on the 3 legs
+  END DO !! loop on the legs
 
 ! fancy control print
 WRITE(*,*) '------------------------------------------------------------'
@@ -403,6 +417,10 @@ WRITE(*,*) '------------------------------------------------------------'
 WRITE(*,*) '------------------------------------------------------------'
 WRITE(*,9100) 'leg 3 start at ', rlonsta(3) ,'°N ', rlatsta(3), '°W and ends at ', rlonsta(4) ,'°N ', rlatsta(4), '°W'
 WRITE(*,9101) 'corresponding to F-gridpoints(', ista(3),',',jsta(3),') and (', ista(4),',',jsta(4),')' 
+WRITE(*,*) '------------------------------------------------------------'
+WRITE(*,*) '------------------------------------------------------------'
+WRITE(*,9100) 'leg 4 start at ', rlonsta(4) ,'°N ', rlatsta(4), '°W and ends at ', rlonsta(5) ,'°N ', rlatsta(5), '°W'
+WRITE(*,9101) 'corresponding to F-gridpoints(', ista(4),',',jsta(4),') and (', ista(5),',',jsta(5),')' 
 WRITE(*,*) '------------------------------------------------------------'
 
 9100 FORMAT(a,f6.2,a,f6.2,a,f6.2,a,f6.2,a)
@@ -435,9 +453,16 @@ WRITE(*,*) '------------------------------------------------------------'
   ALLOCATE(e1vsec(1,nsec-1), e3vsec(nsec-1,npk) )
   ALLOCATE(ovidetemper(nsec-1,npk), ovidesaline(nsec-1,npk) )
   ALLOCATE(ovidezonalu(nsec-1,npk), ovidemeridv(nsec-1,npk) )
+  ALLOCATE(dummyvmask(nsec-1,npk))
+    
+  
+  e1vsec=-9999.
+  e2usec=-9999.
+  
   
   dumisec(:,:)=0
   dumjsec(:,:)=0
+  
 
   navlon(:,:) = getvar(cfilet, 'nav_lon' ,1,npiglo,npjglo)
   navlat(:,:) = getvar(cfilet, 'nav_lat' ,1,npiglo,npjglo)
@@ -459,30 +484,34 @@ WRITE(*,*) '------------------------------------------------------------'
 
   END DO
 
-  DO iloop=1,nsec-1
+	jk=1
 
+  DO iloop=1,nsec-1
+	 !PRINT*, 'iloop=', iloop
+	
   IF ( jsec(iloop+1) == jsec(iloop) ) THEN ! horizontal segment
     IF ( isec(iloop+1) > isec(iloop) ) THEN ! eastward
 
-       e2usec(iloop,jk) = 0.
-       e1vsec(iloop,jk) = e1v(isec(iloop)+1,jsec(iloop))
+       e2usec(jk,iloop) = 0.
+       e1vsec(jk,iloop) = e1v(isec(iloop)+1,jsec(iloop))
 
     ELSE
 
-       e2usec(iloop,jk) = 0.
-       e1vsec(iloop,jk) = e1v(isec(iloop),jsec(iloop))
+       e2usec(jk,iloop) = 0.
+       e1vsec(jk,iloop) = e1v(isec(iloop),jsec(iloop))
 
     ENDIF
   ELSEIF ( isec(iloop+1) == isec(iloop) ) THEN ! vertical segment
     IF ( jsec(iloop+1) < jsec(iloop) ) THEN ! southward
 
-       e2usec(iloop,jk) = e2u(isec(iloop),jsec(iloop))
-       e1vsec(iloop,jk) = 0.
+       e2usec(jk,iloop) = e2u(isec(iloop),jsec(iloop))
+       e1vsec(jk,iloop) = 0.
 
     ELSE
 
-       e2usec(iloop,jk) = e2u(isec(iloop),jsec(iloop)+1)
-       e1vsec(iloop,jk) = 0.
+       e2usec(jk,iloop) = e2u(isec(iloop),jsec(iloop)+1)
+       e1vsec(jk,iloop) = 0.
+
     ENDIF
   ELSE
        PRINT *, 'problem'
@@ -490,6 +519,11 @@ WRITE(*,*) '------------------------------------------------------------'
   ENDIF
   END DO
 
+!	PRINT*,nsec
+!	PRINT*, MINVAL(e1v),MAXVAL(e1v),MINVAL(e2u),MAXVAL(e2u)  
+!	PRINT*, MINVAL(e1vsec),MAXVAL(e1vsec),MINVAL(e2usec),MAXVAL(e2usec)  
+!	PAUSE		
+	
   ! loop on 3d arrays
   DO jk=1,npk
   temper(:,:) = getvar(cfilet, 'votemper',jk,npiglo,npjglo)
@@ -565,6 +599,7 @@ WRITE(*,*) '------------------------------------------------------------'
   END DO
   END DO
 
+
   ALLOCATE ( stypvar(nfield), ipk(nfield), id_varout(nfield) )
 
   DO iloop=1,nfield
@@ -583,7 +618,7 @@ WRITE(*,*) '------------------------------------------------------------'
   stypvar(1)%clong_name='Temperature along OVIDE section'
   stypvar(1)%cshort_name='votemper'
   stypvar%conline_operation='N/A'
-  stypvar%caxis='TYZ'
+  stypvar%caxis='TXZ'
 
   stypvar(2)%cname= 'vosaline'
   stypvar(2)%cunits='PSU'
@@ -592,14 +627,14 @@ WRITE(*,*) '------------------------------------------------------------'
   stypvar(2)%clong_name='Salinity along OVIDE section'
   stypvar(2)%cshort_name='vosaline'
 
-  stypvar(3)%cname= 'vozocrtx'
+  stypvar(3)%cname= 'vozocrtx_native'
   stypvar(3)%cunits='m.s-1'
   stypvar(3)%valid_min= -20.
   stypvar(3)%valid_max= 20.
   stypvar(3)%clong_name='Zonal velocity along OVIDE section'
   stypvar(3)%cshort_name='vozocrtx'
 
-  stypvar(4)%cname= 'vomecrty'
+  stypvar(4)%cname= 'vomecrty_native'
   stypvar(4)%cunits='m.s-1'
   stypvar(4)%valid_min= -20.
   stypvar(4)%valid_max= 20.
@@ -612,38 +647,99 @@ WRITE(*,*) '------------------------------------------------------------'
   stypvar(6)%cname= 'jsec'
   stypvar(6)%valid_min= 0.
   stypvar(6)%valid_max= npjglo 
-  stypvar(7)%cname= 'e2u'
+  stypvar(7)%cname= 'e2u_native'
   stypvar(7)%valid_min= MINVAL(e2usec(1,:))
   stypvar(7)%valid_max= MAXVAL(e2usec(1,:)) 
-  stypvar(8)%cname= 'e1v'
+  stypvar(8)%cname= 'e1v_native'
   stypvar(8)%valid_min= MINVAL(e1vsec(1,:))
   stypvar(8)%valid_max= MAXVAL(e1vsec(1,:))
-  stypvar(9)%cname= 'e3u'
+  stypvar(9)%cname= 'e3u_native'
   stypvar(9)%valid_min= MINVAL(e3usec(:,:))
   stypvar(9)%valid_max= MAXVAL(e3usec(:,:)) 
-  stypvar(10)%cname= 'e3v'
+  stypvar(10)%cname= 'e3v_native'
   stypvar(10)%valid_min= MINVAL(e3vsec(:,:))
   stypvar(10)%valid_max= MAXVAL(e3vsec(:,:)) 
 
+  stypvar(11)%cname= 'vomecrty'
+  stypvar(11)%cunits='m.s-1'
+  stypvar(11)%valid_min= -20.
+  stypvar(11)%valid_max= 20.
+  stypvar(11)%clong_name='Normal velocity along OVIDE section'
+  stypvar(11)%cshort_name='vomecrty'
+
+  stypvar(12)%cname= 'e1v'
+  stypvar(12)%cunits='m'
+  stypvar(12)%valid_min= 0.
+  stypvar(12)%valid_max= 1000000.
+  stypvar(12)%clong_name='Local horiz. resolution along OVIDE section'
+  stypvar(12)%cshort_name='e1v'
+
+  stypvar(13)%cname= 'e3v_ps'
+  stypvar(13)%cunits='m'
+  stypvar(13)%valid_min= 0.
+  stypvar(13)%valid_max= 100000000.
+  stypvar(13)%clong_name='Local vert. resolution along OVIDE section'
+  stypvar(13)%cshort_name='e3v_ps'
+
+  stypvar(14)%cname= 'vmask'
+  stypvar(12)%cunits=''
+  stypvar(12)%valid_min= 0.
+  stypvar(12)%valid_max= 1.
+  stypvar(12)%clong_name='Mask along OVIDE section'
+  stypvar(12)%cshort_name='vmask'
+
   ! create output fileset
-   ncout =create(cfileoutnc, 'none', 1,nsec,npk,cdep='depthw')
+   ncout =create(cfileoutnc, 'none', nsec,1, npk,cdep='depthw')
    ierr= createvar(ncout ,stypvar,nfield, ipk,id_varout )
-   ierr= putheadervar(ncout, cfilet,1, nsec,npk,pnavlon=lonsec,pnavlat=latsec,pdep=gdepw)
+   ierr= putheadervar(ncout, cfilet,nsec,1, npk,pnavlon=lonsec,pnavlat=latsec,pdep=gdepw)
    tim=getvar1d(cfilet,'time_counter',1)
    ierr=putvar1d(ncout,tim,1,'T')
 
+
+  dummyvmask(:,:) = 1.
+  WHERE( ovidesaline(:,:) == 0. ) dummyvmask(:,:) = 0.
+
+
+	!PRINT*, MINVAL(e1v),MAXVAL(e1v),MINVAL(e2u),MAXVAL(e2u)  
+	!PRINT*, MINVAL(e1vsec),MAXVAL(e1vsec),MINVAL(e2usec),MAXVAL(e2usec)  
+	!PAUSE
+
+!------------------- BAROTROPIC TRANSPORT
+    barot = 0.
+    
+  DO iloop=1,nsec-1
+  DO jk=1,npk
+	tmp=(ovidezonalu(iloop,jk)+ovidemeridv(iloop,jk))*&
+	    (e2usec(1,iloop)+e1vsec(1,iloop))*&
+	    (e3usec(iloop,jk)+e3vsec(iloop,jk))*&
+	    dummyvmask(iloop,jk)
+    barot=barot+tmp
+  ENDDO
+	    !jk=1
+		!PRINT*,iloop,(ovidezonalu(iloop,jk)+ovidemeridv(iloop,jk)),(e2usec(1,iloop)+e1vsec(1,iloop)),&
+		!(e3usec(iloop,jk)+e3vsec(iloop,jk)),dummyvmask(iloop,jk),barot
+  ENDDO
+	PRINT*, 'BAROTROPIC TRANSPORT = ', barot/1.e6, ' Sv.'
+!--------------------------------------------
+
+
   ! netcdf output 
     DO jk =1, npk
-    ierr = putvar (ncout, id_varout(1), REAL(ovidetemper(:,jk)), jk,1,nsec-1)
-    ierr = putvar (ncout, id_varout(2), REAL(ovidesaline(:,jk)), jk,1,nsec-1)
-    ierr = putvar (ncout, id_varout(3), REAL(ovidezonalu(:,jk)), jk,1,nsec-1)
-    ierr = putvar (ncout, id_varout(4), REAL(ovidemeridv(:,jk)), jk,1,nsec-1)
+    ierr = putvar (ncout, id_varout(1), REAL(ovidetemper(:,jk)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(2), REAL(ovidesaline(:,jk)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(3), REAL(ovidezonalu(:,jk)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(4), REAL(ovidemeridv(:,jk)), jk,nsec-1,1)
     ierr = putvar (ncout, id_varout(5), REAL(dumisec(1,:)), jk,1,nsec)
     ierr = putvar (ncout, id_varout(6), REAL(dumjsec(1,:)), jk,1,nsec)
-    ierr = putvar (ncout, id_varout(7),REAL(e2usec(1,:)), jk,1,nsec-1)
-    ierr = putvar (ncout, id_varout(8),REAL(e1vsec(1,:)), jk,1,nsec-1)
-    ierr = putvar (ncout, id_varout(9),REAL(e3usec(:,jk)), jk,1,nsec-1)
-    ierr = putvar (ncout, id_varout(10),REAL(e3vsec(:,jk)), jk,1,nsec-1)
+    ierr = putvar (ncout, id_varout(7), REAL(e2usec(1,:)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(8), REAL(e1vsec(1,:)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(9), REAL(e3usec(:,jk)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(10),REAL(e3vsec(:,jk)), jk,nsec-1,1)
+  ! along-track normal velocity, horiz. and vert. resolution, and mask
+    ierr = putvar (ncout, id_varout(11),REAL(ovidezonalu(:,jk) + ovidemeridv(:,jk)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(12),REAL(e2usec(1,:) + e1vsec(1,:)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(13),REAL(e3usec(:,jk) + e3vsec(:,jk)), jk,nsec-1,1)
+    ierr = putvar (ncout, id_varout(14),REAL(dummyvmask(:,jk)), jk,nsec-1,1)
     END DO
 
   ierr = closeout(ncout)
