@@ -61,6 +61,7 @@ PROGRAM cdf_xtract_brokenline
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat          ! model long and lat of T points
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temper, saline      ! model Temperature and salinity
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: uzonal, vmerid      ! model zonal and meridional velocity
+   ! along section array (dimension x,z or x,1 )
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tempersec, salinesec, uzonalsec, vmeridsec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonsec, rlatsec, risec, rjsec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1vsec, e2usec
@@ -280,13 +281,13 @@ PROGRAM cdf_xtract_brokenline
    ALLOCATE(e3u(npiglo,npjglo), e3v(npiglo,npjglo))
 
    ! output fields
-   ALLOCATE(rlonsec(1,nsec), rlatsec(1,nsec) )
-   ALLOCATE(risec(1,nsec), rjsec(1,nsec) )
-   ALLOCATE(e2usec(1,nsec-1), e3usec(nsec-1,npk) )
-   ALLOCATE(e1vsec(1,nsec-1), e3vsec(nsec-1,npk) )
+   ALLOCATE(rlonsec(nsec,1), rlatsec(nsec,1) )
+   ALLOCATE(risec  (nsec,1), rjsec  (nsec,1) )
+   ALLOCATE(e2usec(nsec-1,1), e3usec(nsec-1,npk) )
+   ALLOCATE(e1vsec(nsec-1,1), e3vsec(nsec-1,npk) )
    ALLOCATE(tempersec(nsec-1,npk), salinesec(nsec-1,npk) )
    ALLOCATE(uzonalsec(nsec-1,npk), vmeridsec(nsec-1,npk) )
-   ALLOCATE(vmasksec(nsec-1,npk))
+   ALLOCATE(vmasksec (nsec-1,npk))
 
    e1vsec = -9999.
    e2usec = -9999.
@@ -309,31 +310,30 @@ PROGRAM cdf_xtract_brokenline
       ii = iisec(jipt)
       ij = ijsec(jipt)
 
-      risec  (1,jipt) = ii
-      rjsec  (1,jipt) = ij
-      rlonsec(1,jipt) = rlon(ii, ij)
-      rlatsec(1,jipt) = rlat(ii, ij)
+      risec  (jipt,1) = ii
+      rjsec  (jipt,1) = ij
+      rlonsec(jipt,1) = rlon(ii, ij)
+      rlatsec(jipt,1) = rlat(ii, ij)
    END DO
 
-   jk=1
 
    DO jipt=1,nsec-1
       !PRINT*, 'jipt=', jipt
 
       IF ( ijsec(jipt+1) == ijsec(jipt) ) THEN ! horizontal segment
-         e2usec(jk,jipt) = 0.
+         e2usec(jipt,1) = 0.
          IF ( iisec(jipt+1) > iisec(jipt) ) THEN ! eastward
-            e1vsec(jk,jipt) = e1v(iisec(jipt)+1,ijsec(jipt))
+            e1vsec(jipt,1) = e1v(iisec(jipt)+1,ijsec(jipt))
          ELSE
-            e1vsec(jk,jipt) = e1v(iisec(jipt),ijsec(jipt))
+            e1vsec(jipt,1) = e1v(iisec(jipt),ijsec(jipt))
          ENDIF
 
       ELSEIF ( iisec(jipt+1) == iisec(jipt) ) THEN ! vertical segment
-         e1vsec(jk,jipt) = 0.
+         e1vsec(jipt,1) = 0.
          IF ( ijsec(jipt+1) < ijsec(jipt) ) THEN ! southward
-            e2usec(jk,jipt) = e2u(iisec(jipt),ijsec(jipt))
+            e2usec(jipt,1) = e2u(iisec(jipt),ijsec(jipt))
          ELSE
-            e2usec(jk,jipt) = e2u(iisec(jipt),ijsec(jipt)+1)
+            e2usec(jipt,1) = e2u(iisec(jipt),ijsec(jipt)+1)
          ENDIF
 
       ELSE
@@ -425,7 +425,7 @@ PROGRAM cdf_xtract_brokenline
    DO jipt=1,nsec-1
       DO jk=1,npk
          dtmp=1.d0* (uzonalsec(jipt,jk) + vmeridsec(jipt,jk))*&
-              (e2usec(1,jipt )+ e1vsec(1,jipt ))*                 &
+              (e2usec(jipt,1 )+ e1vsec(jipt,1 ))*                 &
               (e3usec(jipt,jk)+ e3vsec(jipt,jk))*                 &
               vmasksec(jipt,jk)
          dbarot=dbarot+dtmp
@@ -494,14 +494,14 @@ PROGRAM cdf_xtract_brokenline
    ipk(6)                 = 1
 
    stypvar(7)%cname       = TRIM(cn_ve2u)//'_native'
-   stypvar(7)%valid_min   = MINVAL(e2usec(1,:))
-   stypvar(7)%valid_max   = MAXVAL(e2usec(1,:)) 
+   stypvar(7)%valid_min   = MINVAL(e2usec(:,1))
+   stypvar(7)%valid_max   = MAXVAL(e2usec(:,1)) 
    stypvar(7)%caxis       = 'TX'
    ipk(7)                 = 1
 
    stypvar(8)%cname       = TRIM(cn_ve1v)//'_native'
-   stypvar(8)%valid_min   = MINVAL(e1vsec(1,:))
-   stypvar(8)%valid_max   = MAXVAL(e1vsec(1,:))
+   stypvar(8)%valid_min   = MINVAL(e1vsec(:,1))
+   stypvar(8)%valid_max   = MAXVAL(e1vsec(:,1))
    stypvar(8)%caxis       = 'TX'
    ipk(8)                 = 1
 
@@ -577,11 +577,11 @@ PROGRAM cdf_xtract_brokenline
       ierr = putvar (ncout, id_varout(13),e3usec(:,jk) + e3vsec(:,jk),           jk, nsec-1, 1 )
       ierr = putvar (ncout, id_varout(14),vmasksec(:,jk),                        jk, nsec-1, 1 )
    END DO
-      ierr = putvar (ncout, id_varout(5), risec(1,:),                            1,  nsec  , 1 )
-      ierr = putvar (ncout, id_varout(6), rjsec(1,:),                            1,  nsec  , 1 )
-      ierr = putvar (ncout, id_varout(7), e2usec(1,:),                           1,  nsec-1, 1 )
-      ierr = putvar (ncout, id_varout(8), e1vsec(1,:),                           1,  nsec-1, 1 )
-      ierr = putvar (ncout, id_varout(12),e2usec(1,:) + e1vsec(1,:),             1,  nsec-1, 1 )
+      ierr = putvar (ncout, id_varout(5), risec(:,1),                            1,  nsec  , 1 )
+      ierr = putvar (ncout, id_varout(6), rjsec(:,1),                            1,  nsec  , 1 )
+      ierr = putvar (ncout, id_varout(7), e2usec(:,1),                           1,  nsec-1, 1 )
+      ierr = putvar (ncout, id_varout(8), e1vsec(:,1),                           1,  nsec-1, 1 )
+      ierr = putvar (ncout, id_varout(12),e2usec(:,1) + e1vsec(:,1),             1,  nsec-1, 1 )
 
    ierr = closeout(ncout)
 
