@@ -32,16 +32,15 @@ PROGRAM cdf_xtract_brokenline
    !!----------------------------------------------------------------------
    IMPLICIT NONE
 
-   INTEGER(KIND=4) :: jleg,  jk,  jipt         ! dummy loop index
+   INTEGER(KIND=4) :: jleg,  jk,  jipt, jvar         ! dummy loop index
    INTEGER(KIND=4) :: narg, iargc, ijarg, ifree         ! command line
    INTEGER(KIND=4) :: numin=10                 ! logical unit for input section file
    INTEGER(KIND=4) :: npiglo, npjglo, npk, npt ! size of the domain
    INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax
    INTEGER(KIND=4) :: ii, ij , ipoint
-   INTEGER(KIND=4) :: iloop
 
    INTEGER(KIND=4) :: nsec=0 ! total number of points on the broken line
-   INTEGER(KIND=4), DIMENSION (:), ALLOCATABLE :: isec, jsec ! indices des points a recuperer
+   INTEGER(KIND=4), DIMENSION (:), ALLOCATABLE :: iisec, ijsec ! indices des points a recuperer
 
    ! broken line definition
    INTEGER(KIND=4) :: nsta=5    ! number of points defining the broken line
@@ -53,7 +52,7 @@ PROGRAM cdf_xtract_brokenline
 !  INTEGER(KIND=4) :: i0,j0,i1,j1, i, j
    INTEGER(KIND=4) :: nn
    INTEGER(KIND=4) :: norm_u, norm_v
-   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: xlegs, ylegs   ! nsta-1, jpseg
+   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: iilegs, ijlegs   ! nsta-1, jpseg
 
    REAL(KIND=4), DIMENSION(:), ALLOCATABLE   :: rlonsta, rlatsta       ! nsta
    REAL(KIND=4)                              :: xmin, xmax, ymin, ymax, rdis
@@ -196,11 +195,17 @@ PROGRAM cdf_xtract_brokenline
    npjglo = getdim (cn_fhgr, cn_y)
    npk    = getdim (cf_tfil, cn_z)
    npt    = getdim (cf_tfil, cn_t)
+   IF ( lverbose ) THEN
+     PRINT *, 'NPIGLO = ', npiglo
+     PRINT *, 'NPJGLO = ', npjglo
+     PRINT *, 'NPK    = ', npk
+     PRINT *, 'NPT    = ', npt
+   ENDIF
 
-   ALLOCATE ( xlegs(nsta-1, npiglo+npjglo), ylegs(nsta-1, npiglo+npjglo) )
+   ALLOCATE ( iilegs(nsta-1, npiglo+npjglo), ijlegs(nsta-1, npiglo+npjglo) )
    ALLOCATE ( rxx(npiglo+npjglo), ryy(npiglo+npjglo) )
    ALLOCATE ( tim (npt) )
-   xlegs = 0  ; ylegs = 0
+   iilegs = 0  ; ijlegs = 0
 
    !! loop on the legs
    DO jleg = 1, nsta-1
@@ -222,14 +227,22 @@ PROGRAM cdf_xtract_brokenline
       !! Find the broken line between P1 (iimin,ijmin) and P2 (iimax, ijmax)
       !! ---------------------------------------------------------------
       CALL broken_line( iimin, iimax, ijmin, ijmax, rxx, ryy, nn, npiglo, npjglo, norm_u, norm_v )
+      IF ( lverbose) PRINT *, 'Leg ', jleg,' : npoints : ', nn
 
       IF (rxx(1) < rxx(nn) ) THEN ! leg is oriented eastward
-         xlegs(jleg,:)=rxx
-         ylegs(jleg,:)=ryy
+         iilegs(jleg,1:nn)=rxx(1:nn)
+         ijlegs(jleg,1:nn)=ryy(1:nn)
       ELSE                        ! leg is oriented westward
-         xlegs(jleg,:)=rxx(nn:1:-1)
-         ylegs(jleg,:)=ryy(nn:1:-1)
+         iilegs(jleg,1:nn)=rxx(nn:1:-1)
+         ijlegs(jleg,1:nn)=ryy(nn:1:-1)
       END IF
+
+      IF ( lverbose) THEN
+        PRINT *, 'Leg  rxx   ryy '
+        DO jk = 1, nn
+           PRINT *, jleg, iilegs(jleg,jk), ijlegs(jleg,jk) ,rxx(jk), ryy(jk)
+        END DO
+      ENDIF
 
       ! compute the number of total points
       ikeepn(jleg) = nn  ! point on leg jleg
@@ -237,34 +250,24 @@ PROGRAM cdf_xtract_brokenline
    END DO !! loop on the legs
 
    ! fancy control print
-   WRITE(*,*) '------------------------------------------------------------'
-   WRITE(*,9100) 'leg 1 start at ', rlonsta(1) ,'N ', rlatsta(1), 'W and ends at ', rlonsta(2) ,'N ', rlatsta(2), 'W'
-   WRITE(*,9101) 'corresponding to F-gridpoints(', iista(1),',',ijsta(1),') and (', iista(2),',',ijsta(2),')' 
-   WRITE(*,*) '------------------------------------------------------------'
-   WRITE(*,*) '------------------------------------------------------------'
-   WRITE(*,9100) 'leg 2 start at ', rlonsta(2) ,'N ', rlatsta(2), 'W and ends at ', rlonsta(3) ,'N ', rlatsta(3), 'W'
-   WRITE(*,9101) 'corresponding to F-gridpoints(', iista(2),',',ijsta(2),') and (', iista(3),',',ijsta(3),')' 
-   WRITE(*,*) '------------------------------------------------------------'
-   WRITE(*,*) '------------------------------------------------------------'
-   WRITE(*,9100) 'leg 3 start at ', rlonsta(3) ,'N ', rlatsta(3), 'W and ends at ', rlonsta(4) ,'N ', rlatsta(4), 'W'
-   WRITE(*,9101) 'corresponding to F-gridpoints(', iista(3),',',ijsta(3),') and (', iista(4),',',ijsta(4),')' 
-   WRITE(*,*) '------------------------------------------------------------'
-   WRITE(*,*) '------------------------------------------------------------'
-   WRITE(*,9100) 'leg 4 start at ', rlonsta(4) ,'N ', rlatsta(4), 'W and ends at ', rlonsta(5) ,'N ', rlatsta(5), 'W'
-   WRITE(*,9101) 'corresponding to F-gridpoints(', iista(4),',',ijsta(4),') and (', iista(5),',',ijsta(5),')' 
-   WRITE(*,*) '------------------------------------------------------------'
+   DO jleg = 1, nsta -1
+     WRITE(*,*) '------------------------------------------------------------'
+     WRITE(*,9100) 'leg ',jleg,'  start at ', rlonsta(jleg) ,'N ', rlatsta(jleg), 'W and ends at ', rlonsta(jleg+1) ,'N ', rlatsta(jleg+1), 'W'
+     WRITE(*,9101) 'corresponding to F-gridpoints(', iista(jleg),',',ijsta(jleg),') and (', iista(jleg+1),',',ijsta(jleg+1),')' 
+     WRITE(*,*) '------------------------------------------------------------'
+   ENDDO
 
-9100 FORMAT(a,f6.2,a,f6.2,a,f6.2,a,f6.2,a)
+9100 FORMAT(a,i3,a,f6.2,a,f6.2,a,f6.2,a,f6.2,a)
 9101 FORMAT(a,i4,a,i4,a,i4,a,i4,a)
 
-   ALLOCATE (isec(nsec), jsec(nsec)) 
+   ALLOCATE (iisec(nsec), ijsec(nsec)) 
 
    ipoint = 0
    DO jleg=1, nsta-1  ! loop on legs 
       DO jipt=1, ikeepn(jleg) 
          ipoint = ipoint + 1
-         isec(ipoint)=xlegs(jleg,jipt)  ! i-index
-         jsec(ipoint)=ylegs(jleg,jipt)  ! j-index
+         iisec(ipoint)=iilegs(jleg,jipt)  ! i-index
+         ijsec(ipoint)=ijlegs(jleg,jipt)  ! j-index
       END DO
    END DO
 
@@ -304,8 +307,8 @@ PROGRAM cdf_xtract_brokenline
 
    ! loop on 2d arrays
    DO jipt = 1,nsec
-      ii = isec(jipt)
-      ij = jsec(jipt)
+      ii = iisec(jipt)
+      ij = ijsec(jipt)
 
       risec  (1,jipt) = ii
       rjsec  (1,jipt) = ij
@@ -315,33 +318,25 @@ PROGRAM cdf_xtract_brokenline
 
    jk=1
 
-   DO iloop=1,nsec-1
-      !PRINT*, 'iloop=', iloop
+   DO jipt=1,nsec-1
+      !PRINT*, 'jipt=', jipt
 
-      IF ( jsec(iloop+1) == jsec(iloop) ) THEN ! horizontal segment
-         IF ( isec(iloop+1) > isec(iloop) ) THEN ! eastward
-
-            e2usec(jk,iloop) = 0.
-            e1vsec(jk,iloop) = e1v(isec(iloop)+1,jsec(iloop))
-
+      IF ( ijsec(jipt+1) == ijsec(jipt) ) THEN ! horizontal segment
+         e2usec(jk,jipt) = 0.
+         IF ( iisec(jipt+1) > iisec(jipt) ) THEN ! eastward
+            e1vsec(jk,jipt) = e1v(iisec(jipt)+1,ijsec(jipt))
          ELSE
-
-            e2usec(jk,iloop) = 0.
-            e1vsec(jk,iloop) = e1v(isec(iloop),jsec(iloop))
-
+            e1vsec(jk,jipt) = e1v(iisec(jipt),ijsec(jipt))
          ENDIF
-      ELSEIF ( isec(iloop+1) == isec(iloop) ) THEN ! vertical segment
-         IF ( jsec(iloop+1) < jsec(iloop) ) THEN ! southward
 
-            e2usec(jk,iloop) = e2u(isec(iloop),jsec(iloop))
-            e1vsec(jk,iloop) = 0.
-
+      ELSEIF ( iisec(jipt+1) == iisec(jipt) ) THEN ! vertical segment
+         e1vsec(jk,jipt) = 0.
+         IF ( ijsec(jipt+1) < ijsec(jipt) ) THEN ! southward
+            e2usec(jk,jipt) = e2u(iisec(jipt),ijsec(jipt))
          ELSE
-
-            e2usec(jk,iloop) = e2u(isec(iloop),jsec(iloop)+1)
-            e1vsec(jk,iloop) = 0.
-
+            e2usec(jk,jipt) = e2u(iisec(jipt),ijsec(jipt)+1)
          ENDIF
+
       ELSE
          PRINT *, 'problem'
          exit 
@@ -361,61 +356,57 @@ PROGRAM cdf_xtract_brokenline
       e3u(:,:)    = getvar(cn_fzgr, 'e3u_ps',    jk, npiglo, npjglo, ldiom=.true.)
       e3v(:,:)    = getvar(cn_fzgr, 'e3v_ps',    jk, npiglo, npjglo, ldiom=.true.)
 
-      DO iloop=1,nsec-1
-         IF ( jsec(iloop+1) == jsec(iloop) ) THEN ! horizontal segment
-            IF ( isec(iloop+1) > isec(iloop) ) THEN ! eastward
+      DO jipt=1,nsec-1
+         IF ( ijsec(jipt+1) == ijsec(jipt) ) THEN ! horizontal segment
+            ovidezonalu(jipt,jk) = 0.
+            e3usec(jipt,jk) = 0.
+            IF ( iisec(jipt+1) > iisec(jipt) ) THEN ! eastward
 
-               IF ( min( temper(isec(iloop)+1,jsec(iloop)) , temper(isec(iloop)+1,jsec(iloop)+1) ) == 0. ) THEN
-                  ovidetemper(iloop,jk) = 0. ; ovidesaline(iloop,jk) = 0.
+               IF ( MIN( saline(iisec(jipt)+1,ijsec(jipt)) , saline(iisec(jipt)+1,ijsec(jipt)+1) ) == 0. ) THEN
+                  ovidetemper(jipt,jk) = 0. ; ovidesaline(jipt,jk) = 0.
                ELSE
-                  ovidetemper(iloop,jk) = 0.5 * ( temper(isec(iloop)+1,jsec(iloop)) + temper(isec(iloop)+1,jsec(iloop)+1) )
-                  ovidesaline(iloop,jk) = 0.5 * ( saline(isec(iloop)+1,jsec(iloop)) + saline(isec(iloop)+1,jsec(iloop)+1) )
+                  ovidetemper(jipt,jk) = 0.5 * ( temper(iisec(jipt)+1,ijsec(jipt)) + temper(iisec(jipt)+1,ijsec(jipt)+1) )
+                  ovidesaline(jipt,jk) = 0.5 * ( saline(iisec(jipt)+1,ijsec(jipt)) + saline(iisec(jipt)+1,ijsec(jipt)+1) )
                ENDIF
-               ovidezonalu(iloop,jk) = 0.
-               ovidemeridv(iloop,jk) = vmerid(isec(iloop)+1,jsec(iloop))
-               e3usec(iloop,jk) = 0.
-               e3vsec(iloop,jk) = e3v(isec(iloop)+1,jsec(iloop))
+               ovidemeridv(jipt,jk) = vmerid(iisec(jipt)+1,ijsec(jipt))
+               e3vsec(jipt,jk) = e3v(iisec(jipt)+1,ijsec(jipt))
 
             ELSE ! westward
 
-               IF ( min( temper(isec(iloop),jsec(iloop)) , temper(isec(iloop),jsec(iloop)+1) ) == 0. ) THEN
-                  ovidetemper(iloop,jk) = 0. ; ovidesaline(iloop,jk) = 0.
+               IF ( MIN( saline(iisec(jipt),ijsec(jipt)) , saline(iisec(jipt),ijsec(jipt)+1) ) == 0. ) THEN
+                  ovidetemper(jipt,jk) = 0. ; ovidesaline(jipt,jk) = 0.
                ELSE
-                  ovidetemper(iloop,jk) = 0.5 * ( temper(isec(iloop),jsec(iloop)) + temper(isec(iloop),jsec(iloop)+1) )
-                  ovidesaline(iloop,jk) = 0.5 * ( saline(isec(iloop),jsec(iloop)) + saline(isec(iloop),jsec(iloop)+1) )
+                  ovidetemper(jipt,jk) = 0.5 * ( temper(iisec(jipt),ijsec(jipt)) + temper(iisec(jipt),ijsec(jipt)+1) )
+                  ovidesaline(jipt,jk) = 0.5 * ( saline(iisec(jipt),ijsec(jipt)) + saline(iisec(jipt),ijsec(jipt)+1) )
                ENDIF
-               ovidezonalu(iloop,jk) = 0.
-               ovidemeridv(iloop,jk) = vmerid(isec(iloop),jsec(iloop))
-               e3usec(iloop,jk) = 0.
-               e3vsec(iloop,jk) = e3v(isec(iloop),jsec(iloop))
+               ovidemeridv(jipt,jk) = vmerid(iisec(jipt),ijsec(jipt))
+               e3vsec(jipt,jk) = e3v(iisec(jipt),ijsec(jipt))
 
             ENDIF
-         ELSEIF ( isec(iloop+1) == isec(iloop) ) THEN ! vertical segment
-            IF ( jsec(iloop+1) < jsec(iloop) ) THEN ! southward
+         ELSEIF ( iisec(jipt+1) == iisec(jipt) ) THEN ! vertical segment
+            ovidemeridv(jipt,jk) = 0.
+            e3vsec(jipt,jk) = 0.
+            IF ( ijsec(jipt+1) < ijsec(jipt) ) THEN ! southward
 
-               IF ( min( temper(isec(iloop),jsec(iloop)) , temper(isec(iloop)+1,jsec(iloop)) ) == 0. ) THEN
-                  ovidetemper(iloop,jk) = 0. ; ovidesaline(iloop,jk) = 0.
+               IF ( min( saline(iisec(jipt),ijsec(jipt)) , saline(iisec(jipt)+1,ijsec(jipt)) ) == 0. ) THEN
+                  ovidetemper(jipt,jk) = 0. ; ovidesaline(jipt,jk) = 0.
                ELSE
-                  ovidetemper(iloop,jk) = 0.5 * ( temper(isec(iloop),jsec(iloop)) + temper(isec(iloop)+1,jsec(iloop)) )
-                  ovidesaline(iloop,jk) = 0.5 * ( saline(isec(iloop),jsec(iloop)) + saline(isec(iloop)+1,jsec(iloop)) )
+                  ovidetemper(jipt,jk) = 0.5 * ( temper(iisec(jipt),ijsec(jipt)) + temper(iisec(jipt)+1,ijsec(jipt)) )
+                  ovidesaline(jipt,jk) = 0.5 * ( saline(iisec(jipt),ijsec(jipt)) + saline(iisec(jipt)+1,ijsec(jipt)) )
                ENDIF
-               ovidezonalu(iloop,jk) = uzonal(isec(iloop),jsec(iloop))
-               ovidemeridv(iloop,jk) = 0.
-               e3usec(iloop,jk) = e3u(isec(iloop),jsec(iloop))
-               e3vsec(iloop,jk) = 0.
+               ovidezonalu(jipt,jk) = uzonal(iisec(jipt),ijsec(jipt))
+               e3usec(jipt,jk) = e3u(iisec(jipt),ijsec(jipt))
 
             ELSE ! northward
 
-               IF ( min( temper(isec(iloop),jsec(iloop)+1) , temper(isec(iloop)+1,jsec(iloop)+1) ) == 0. ) THEN
-                  ovidetemper(iloop,jk) = 0. ; ovidesaline(iloop,jk) = 0.
+               IF ( min( saline(iisec(jipt),ijsec(jipt)+1) , saline(iisec(jipt)+1,ijsec(jipt)+1) ) == 0. ) THEN
+                  ovidetemper(jipt,jk) = 0. ; ovidesaline(jipt,jk) = 0.
                ELSE
-                  ovidetemper(iloop,jk) = 0.5 * ( temper(isec(iloop),jsec(iloop)+1) + temper(isec(iloop)+1,jsec(iloop)+1) )
-                  ovidesaline(iloop,jk) = 0.5 * ( saline(isec(iloop),jsec(iloop)+1) + saline(isec(iloop)+1,jsec(iloop)+1) )
+                  ovidetemper(jipt,jk) = 0.5 * ( temper(iisec(jipt),ijsec(jipt)+1) + temper(iisec(jipt)+1,ijsec(jipt)+1) )
+                  ovidesaline(jipt,jk) = 0.5 * ( saline(iisec(jipt),ijsec(jipt)+1) + saline(iisec(jipt)+1,ijsec(jipt)+1) )
                ENDIF
-               ovidezonalu(iloop,jk) = uzonal(isec(iloop),jsec(iloop)+1)
-               ovidemeridv(iloop,jk) = 0.
-               e3usec(iloop,jk) = e3u(isec(iloop),jsec(iloop)+1)
-               e3vsec(iloop,jk) = 0.
+               ovidezonalu(jipt,jk) = uzonal(iisec(jipt),ijsec(jipt)+1)
+               e3usec(jipt,jk) = e3u(iisec(jipt),ijsec(jipt)+1)
 
             ENDIF
 
@@ -430,108 +421,130 @@ PROGRAM cdf_xtract_brokenline
 
    ALLOCATE ( stypvar(nfield), ipk(nfield), id_varout(nfield) )
 
-   DO iloop=1,nfield
-      ipk(iloop) = npk
-   END DO
-
-   ! define new variables for output 
-   stypvar(1)%cname= 'votemper'
-   stypvar(1)%cunits='deg C'
-   stypvar%rmissing_value=0.
-   stypvar(1)%valid_min= -2.
-   stypvar(1)%valid_max= 40.
    stypvar%scale_factor= 1.
    stypvar%add_offset= 0.
    stypvar%savelog10= 0.
-   stypvar(1)%clong_name='Temperature along OVIDE section'
-   stypvar(1)%cshort_name='votemper'
+   stypvar%rmissing_value=0.
    stypvar%conline_operation='N/A'
-   stypvar%caxis='TXZ'
 
-   stypvar(2)%cname= 'vosaline'
-   stypvar(2)%cunits='PSU'
-   stypvar(2)%valid_min= 0.
-   stypvar(2)%valid_max= 50.
-   stypvar(2)%clong_name='Salinity along OVIDE section'
-   stypvar(2)%cshort_name='vosaline'
+   ! define new variables for output 
+   stypvar(1)%cname       = cn_votemper
+   stypvar(1)%cunits      = 'deg C'
+   stypvar(1)%valid_min   = -2.
+   stypvar(1)%valid_max   = 40.
+   stypvar(1)%clong_name  = 'Temperature along OVIDE section'
+   stypvar(1)%cshort_name = cn_votemper
+   stypvar(1)%caxis       = 'TZX'
+   ipk(1)                 = npk
 
-   stypvar(3)%cname= 'vozocrtx_native'
-   stypvar(3)%cunits='m.s-1'
-   stypvar(3)%valid_min= -20.
-   stypvar(3)%valid_max= 20.
-   stypvar(3)%clong_name='Zonal velocity along OVIDE section'
-   stypvar(3)%cshort_name='vozocrtx'
+   stypvar(2)%cname       = cn_vosaline
+   stypvar(2)%cunits      = 'PSU'
+   stypvar(2)%valid_min   = 0.
+   stypvar(2)%valid_max   = 50.
+   stypvar(2)%clong_name  = 'Salinity along OVIDE section'
+   stypvar(2)%cshort_name = cn_vosaline
+   stypvar(2)%caxis       = 'TZX'
+   ipk(2)                 = npk
 
-   stypvar(4)%cname= 'vomecrty_native'
-   stypvar(4)%cunits='m.s-1'
-   stypvar(4)%valid_min= -20.
-   stypvar(4)%valid_max= 20.
-   stypvar(4)%clong_name='Meridionnal velocity along OVIDE section'
-   stypvar(4)%cshort_name='vomecrty'
+   stypvar(3)%cname       = TRIM(cn_vozocrtx)//'_native'
+   stypvar(3)%cunits      = 'm.s-1'
+   stypvar(3)%valid_min   = -20.
+   stypvar(3)%valid_max   = 20.
+   stypvar(3)%clong_name  = 'Zonal velocity along OVIDE section'
+   stypvar(3)%cshort_name = TRIM(cn_vozocrtx)//'_native'
+   stypvar(3)%caxis       = 'TZX'
+   ipk(3)                 = npk
 
-   stypvar(5)%cname= 'isec'
-   stypvar(5)%valid_min= 0.
-   stypvar(5)%valid_max= npiglo 
+   stypvar(4)%cname       = TRIM(cn_vomecrty)//'_native'
+   stypvar(4)%cunits      = 'm.s-1'
+   stypvar(4)%valid_min   = -20.
+   stypvar(4)%valid_max   = 20.
+   stypvar(4)%clong_name  = 'Meridionnal velocity along OVIDE section'
+   stypvar(4)%cshort_name = TRIM(cn_vomecrty)//'_native'
+   stypvar(4)%caxis       = 'TZX'
+   ipk(4)                 = npk
 
-   stypvar(6)%cname= 'jsec'
-   stypvar(6)%valid_min= 0.
-   stypvar(6)%valid_max= npjglo 
+   stypvar(5)%cname       = 'isec'
+   stypvar(5)%valid_min   = 0.
+   stypvar(5)%valid_max   = npiglo 
+   stypvar(5)%caxis       = 'TX'
+   ipk(5)                 = 1
 
-   stypvar(7)%cname= 'e2u_native'
-   stypvar(7)%valid_min= MINVAL(e2usec(1,:))
-   stypvar(7)%valid_max= MAXVAL(e2usec(1,:)) 
+   stypvar(6)%cname       = 'jsec'
+   stypvar(6)%valid_min   = 0.
+   stypvar(6)%valid_max   = npjglo 
+   stypvar(6)%caxis       = 'TX'
+   ipk(6)                 = 1
 
-   stypvar(8)%cname= 'e1v_native'
-   stypvar(8)%valid_min= MINVAL(e1vsec(1,:))
-   stypvar(8)%valid_max= MAXVAL(e1vsec(1,:))
+   stypvar(7)%cname       = TRIM(cn_ve2u)//'_native'
+   stypvar(7)%valid_min   = MINVAL(e2usec(1,:))
+   stypvar(7)%valid_max   = MAXVAL(e2usec(1,:)) 
+   stypvar(7)%caxis       = 'TX'
+   ipk(7)                 = 1
 
-   stypvar(9)%cname= 'e3u_native'
-   stypvar(9)%valid_min= MINVAL(e3usec(:,:))
-   stypvar(9)%valid_max= MAXVAL(e3usec(:,:)) 
+   stypvar(8)%cname       = TRIM(cn_ve1v)//'_native'
+   stypvar(8)%valid_min   = MINVAL(e1vsec(1,:))
+   stypvar(8)%valid_max   = MAXVAL(e1vsec(1,:))
+   stypvar(8)%caxis       = 'TX'
+   ipk(8)                 = 1
 
-   stypvar(10)%cname= 'e3v_native'
-   stypvar(10)%valid_min= MINVAL(e3vsec(:,:))
-   stypvar(10)%valid_max= MAXVAL(e3vsec(:,:)) 
+   stypvar(9)%cname       = 'e3u_native'
+   stypvar(9)%valid_min   = MINVAL(e3usec(:,:))
+   stypvar(9)%valid_max   = MAXVAL(e3usec(:,:)) 
+   stypvar(9)%caxis       = 'TZX'
+   ipk(9)                 =  npk
 
-   stypvar(11)%cname= 'vomecrty'
-   stypvar(11)%cunits='m.s-1'
-   stypvar(11)%valid_min= -20.
-   stypvar(11)%valid_max= 20.
-   stypvar(11)%clong_name='Normal velocity along OVIDE section'
-   stypvar(11)%cshort_name='vomecrty'
+   stypvar(10)%cname      = 'e3v_native'
+   stypvar(10)%valid_min  = MINVAL(e3vsec(:,:))
+   stypvar(10)%valid_max  = MAXVAL(e3vsec(:,:)) 
+   stypvar(10)%caxis      = 'TZX'
+   ipk(10)                =  npk
 
-   stypvar(12)%cname= 'e1v'
-   stypvar(12)%cunits='m'
-   stypvar(12)%valid_min= 0.
-   stypvar(12)%valid_max= 1000000.
-   stypvar(12)%clong_name='Local horiz. resolution along OVIDE section'
-   stypvar(12)%cshort_name='e1v'
+   stypvar(11)%cname       = cn_vomecrty
+   stypvar(11)%cunits      = 'm.s-1'
+   stypvar(11)%valid_min   = -20.
+   stypvar(11)%valid_max   = 20.
+   stypvar(11)%clong_name  = 'Normal velocity along OVIDE section'
+   stypvar(11)%cshort_name = cn_vomecrty
+   stypvar(11)%caxis       = 'TZX'
+   ipk(11)                 =  npk
 
-   stypvar(13)%cname= 'e3v_ps'
-   stypvar(13)%cunits='m'
-   stypvar(13)%valid_min= 0.
-   stypvar(13)%valid_max= 100000000.
-   stypvar(13)%clong_name='Local vert. resolution along OVIDE section'
-   stypvar(13)%cshort_name='e3v_ps'
+   stypvar(12)%cname       = cn_ve1v
+   stypvar(12)%cunits      = 'm'
+   stypvar(12)%valid_min   = 0.
+   stypvar(12)%valid_max   = 1000000.
+   stypvar(12)%clong_name  = 'Local horiz. resolution along OVIDE section'
+   stypvar(12)%cshort_name = cn_ve1v
+   stypvar(12)%caxis       = 'TX'
+   ipk(12)                 = 1
 
-   stypvar(14)%cname= 'vmask'
-   stypvar(12)%cunits=''
-   stypvar(12)%valid_min= 0.
-   stypvar(12)%valid_max= 1.
-   stypvar(12)%clong_name='Mask along OVIDE section'
-   stypvar(12)%cshort_name='vmask'
+   stypvar(13)%cname       = 'e3v_ps'
+   stypvar(13)%cunits      = 'm'
+   stypvar(13)%valid_min   = 0.
+   stypvar(13)%valid_max   = 100000000.
+   stypvar(13)%clong_name  = 'Local vert. resolution along OVIDE section'
+   stypvar(13)%cshort_name = 'e3v_ps'
+   stypvar(13)%caxis       = 'TZX'
+   ipk(13)                 =  npk
+
+   stypvar(14)%cname       = 'vmask'
+   stypvar(14)%cunits      ='1/0'
+   stypvar(14)%valid_min   = 0.
+   stypvar(14)%valid_max   = 1.
+   stypvar(14)%clong_name  ='Mask along OVIDE section'
+   stypvar(14)%cshort_name = 'vmask'
+   stypvar(14)%caxis       = 'TZX'
+   ipk(14)                 =  npk
 
    ! create output fileset
-   ncout =create(cf_out, 'none', nsec,1, npk,cdep='deptht')
-   ierr= createvar(ncout ,stypvar,nfield, ipk,id_varout )
-   ierr= putheadervar(ncout, cf_tfil,nsec,1, npk,pnavlon=rlonsec,pnavlat=rlatsec )
-   tim=getvar1d(cf_tfil,'time_counter',1)
-   ierr=putvar1d(ncout,tim,1,'T')
-
+   ncout = create      (cf_out, 'none', nsec,  1, npk, cdep='deptht'                    )
+   ierr  = createvar   (ncout ,stypvar, nfield,   ipk, id_varout                        )
+   ierr  = putheadervar(ncout, cf_tfil, nsec,  1, npk, pnavlon=rlonsec, pnavlat=rlatsec )
+   tim   = getvar1d    (cf_tfil, 'time_counter', npt                                    )
+   ierr  = putvar1d    (ncout, tim, npt, 'T'                                            )
 
    rvmask(:,:) = 1.
    WHERE( ovidesaline(:,:) == 0. ) rvmask(:,:) = 0.
-
 
    !PRINT*, MINVAL(e1v),MAXVAL(e1v),MINVAL(e2u),MAXVAL(e2u)  
    !PRINT*, MINVAL(e1vsec),MAXVAL(e1vsec),MINVAL(e2usec),MAXVAL(e2usec)  
@@ -540,17 +553,17 @@ PROGRAM cdf_xtract_brokenline
    !------------------- BAROTROPIC TRANSPORT
    dbarot = 0.d0
 
-   DO iloop=1,nsec-1
+   DO jipt=1,nsec-1
       DO jk=1,npk
-         dtmp=1.d0* (ovidezonalu(iloop,jk) + ovidemeridv(iloop,jk))*&
-              (e2usec(1,iloop )+ e1vsec(1,iloop ))*                 &
-              (e3usec(iloop,jk)+ e3vsec(iloop,jk))*                 &
-              rvmask(iloop,jk)
+         dtmp=1.d0* (ovidezonalu(jipt,jk) + ovidemeridv(jipt,jk))*&
+              (e2usec(1,jipt )+ e1vsec(1,jipt ))*                 &
+              (e3usec(jipt,jk)+ e3vsec(jipt,jk))*                 &
+              rvmask(jipt,jk)
          dbarot=dbarot+dtmp
       ENDDO
       !jk=1
-      !PRINT*,iloop,(ovidezonalu(iloop,jk)+ovidemeridv(iloop,jk)),(e2usec(1,iloop)+e1vsec(1,iloop)),&
-      !(e3usec(iloop,jk)+e3vsec(iloop,jk)),rvmask(iloop,jk),dbarot
+      !PRINT*,jipt,(ovidezonalu(jipt,jk)+ovidemeridv(jipt,jk)),(e2usec(1,jipt)+e1vsec(1,jipt)),&
+      !(e3usec(jipt,jk)+e3vsec(jipt,jk)),rvmask(jipt,jk),dbarot
    ENDDO
    PRINT*, 'BAROTROPIC TRANSPORT = ', dbarot/1.e6, ' Sv.'
    !--------------------------------------------
@@ -558,22 +571,23 @@ PROGRAM cdf_xtract_brokenline
 
    ! netcdf output 
    DO jk =1, npk
-      ierr = putvar (ncout, id_varout(1), ovidetemper(:,jk), jk, nsec-1, 1 )
-      ierr = putvar (ncout, id_varout(2), ovidesaline(:,jk), jk, nsec-1, 1 )
-      ierr = putvar (ncout, id_varout(3), ovidezonalu(:,jk), jk, nsec-1, 1 )
-      ierr = putvar (ncout, id_varout(4), ovidemeridv(:,jk), jk, nsec-1, 1 )
-      ierr = putvar (ncout, id_varout(5), risec(1,:), jk,1,nsec)
-      ierr = putvar (ncout, id_varout(6), rjsec(1,:), jk,1,nsec)
-      ierr = putvar (ncout, id_varout(7), e2usec(1,:), jk,nsec-1,1)
-      ierr = putvar (ncout, id_varout(8), e1vsec(1,:), jk,nsec-1,1)
-      ierr = putvar (ncout, id_varout(9), e3usec(:,jk), jk,nsec-1,1)
-      ierr = putvar (ncout, id_varout(10),e3vsec(:,jk), jk,nsec-1,1)
+      ierr = putvar (ncout, id_varout(1), ovidetemper(:,jk), jk, nsec-1, 1   )
+      ierr = putvar (ncout, id_varout(2), ovidesaline(:,jk), jk, nsec-1, 1   )
+      ierr = putvar (ncout, id_varout(3), ovidezonalu(:,jk), jk, nsec-1, 1   )
+      ierr = putvar (ncout, id_varout(4), ovidemeridv(:,jk), jk, nsec-1, 1   )
+      ierr = putvar (ncout, id_varout(9), e3usec(:,jk),      jk, nsec-1, 1   )
+      ierr = putvar (ncout, id_varout(10),e3vsec(:,jk),      jk, nsec-1, 1   )
+
       ! along-track normal velocity, horiz. and vert. resolution, and mask
-      ierr = putvar (ncout, id_varout(11),ovidezonalu(:,jk) + ovidemeridv(:,jk), jk,nsec-1,1)
-      ierr = putvar (ncout, id_varout(12),e2usec(1,:) + e1vsec(1,:), jk,nsec-1,1)
-      ierr = putvar (ncout, id_varout(13),e3usec(:,jk) + e3vsec(:,jk), jk,nsec-1,1)
-      ierr = putvar (ncout, id_varout(14),rvmask(:,jk), jk,nsec-1,1)
+      ierr = putvar (ncout, id_varout(11),ovidezonalu(:,jk) + ovidemeridv(:,jk), jk, nsec-1, 1)
+      ierr = putvar (ncout, id_varout(13),e3usec(:,jk) + e3vsec(:,jk),           jk, nsec-1, 1)
+      ierr = putvar (ncout, id_varout(14),rvmask(:,jk),                          jk, nsec-1, 1)
    END DO
+      ierr = putvar (ncout, id_varout(5), risec(1,:),                            1,  1,      nsec)
+      ierr = putvar (ncout, id_varout(6), rjsec(1,:),                            1,  1,      nsec)
+      ierr = putvar (ncout, id_varout(7), e2usec(1,:),                           1,  nsec-1, 1   )
+      ierr = putvar (ncout, id_varout(8), e1vsec(1,:),                           1,  nsec-1, 1   )
+      ierr = putvar (ncout, id_varout(12),e2usec(1,:) + e1vsec(1,:),             1,  nsec-1, 1   )
 
    ierr = closeout(ncout)
 
