@@ -44,14 +44,19 @@ PROGRAM cdfmoy
   INTEGER(KIND=4)                               :: ncout              ! ncid of output files
   INTEGER(KIND=4)                               :: ncout2             ! ncid of output files
   INTEGER(KIND=4)                               :: ncout3             ! ncid of output files
+  INTEGER(KIND=4)                               :: ncout4             ! ncid of output files
   INTEGER(KIND=4)                               :: nperio=4           ! ncid of output files
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var             ! arrays of var id's
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk4               ! arrays of vertical level for min/max
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout2         ! varid's of sqd average vars
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout3         ! varid's of cub average vars
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout4         ! varid's of cub average vars
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                ! array to read a layer of data
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmax               ! array for maximum value
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmin               ! array for minimum value
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmean              ! average
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmean2             ! squared average
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmean3             ! cubic average
@@ -67,28 +72,32 @@ PROGRAM cdfmoy
   CHARACTER(LEN=256)                            :: cf_out  = 'cdfmoy.nc'  ! output file for average
   CHARACTER(LEN=256)                            :: cf_out2 = 'cdfmoy2.nc' ! output file for squared average
   CHARACTER(LEN=256)                            :: cf_out3 = 'cdfmoy3.nc' ! output file for squared average
+  CHARACTER(LEN=256)                            :: cf_out4 = 'minmax.nc'  ! output file for min/max
   CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
   CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_list            ! list of input files
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam2            ! array of var2 name for output
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam3            ! array of var3 name for output
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam4            ! array of var3 name for output
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar2           ! attributes for square averaged values
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar3           ! attributes for cubic averaged values
+  TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar4           ! attributes for min/max
 
   LOGICAL                                       :: lcaltmean          ! mean time computation flag
   LOGICAL                                       :: lspval0 = .false.  ! cdfmoy_chsp flag
   LOGICAL                                       :: lcubic  = .false.  ! 3rd momment computation
   LOGICAL                                       :: lzermean = .false. ! flag for zero-mean process
+  LOGICAL                                       :: lmax    = .false.  ! flag for min/max computation
   LOGICAL                                       :: lchk    = .false.  ! flag for missing files
   !!----------------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoy list_of_model_files [-spval0] [-cub ] [-zeromean]'
+     PRINT *,' usage : cdfmoy list_of_model_files [-spval0] [-cub ] [-zeromean] [-max]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average of a list of files given as arguments.' 
@@ -121,6 +130,8 @@ PROGRAM cdfmoy
      PRINT *,'       [ -zeromean ] : with this option, the spatial mean value for each '
      PRINT *,'              time frame is substracted from the original field previous '
      PRINT *,'              averaging, square averaging and eventually cubic averaging'
+     PRINT *,'       [-max ] : with this option, a file with the minimum and maximum values'
+     PRINT *,'              of the variables is created.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       If -zeromean option is used, need ', TRIM(cn_fhgr),' and ',TRIM(cn_fmsk)
@@ -129,8 +140,10 @@ PROGRAM cdfmoy
      PRINT *,'       netcdf file : ', TRIM(cf_out),' and ',TRIM(cf_out2)
      PRINT *,'       variables : are the same than in the input files. For squared averages' 
      PRINT *,'       _sqd is append to the original variable name.'
-     PRINT *,'       IF -cub option is used, the file ', TRIM(cf_out3),' is also created'
+     PRINT *,'       If -cub option is used, the file ', TRIM(cf_out3),' is also created'
      PRINT *,'       with _cub append to the original variable name.'
+     PRINT *,'       If -max option is used, file ',TRIM(cf_out4),' is also created, with same variable'
+     PRINT *,'       names.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfmoy_weighted, cdfstdev'
@@ -152,6 +165,8 @@ PROGRAM cdfmoy
         lcubic = .true.
      CASE ( '-zeromean' )   ! option to reset spval to 0 in the output files
         lzermean = .true.
+     CASE ( '-max' )   ! option to reset spval to 0 in the output files
+        lmax = .true.
      CASE DEFAULT         ! then the argument is a file
         nfil          = nfil + 1
         cf_list(nfil) = TRIM(cldum)
@@ -211,6 +226,11 @@ PROGRAM cdfmoy
   IF ( lcubic ) THEN
      ALLOCATE (cv_nam3(nvars), stypvar3(nvars), id_varout3(nvars)  )
   ENDIF
+  IF ( lmax ) THEN
+     ALLOCATE ( ipk4(2*nvars) )
+     ALLOCATE ( cv_nam4(2*nvars), stypvar4(2*nvars), id_varout4(2*nvars)  )
+     ALLOCATE ( rmin(npiglo, npjglo), rmax(npiglo,npjglo) )
+  ENDIF
 
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_nam(:) = getvarname(cf_in,nvars,stypvar)
@@ -220,6 +240,7 @@ PROGRAM cdfmoy
      zspval_in(:) = stypvar(:)%rmissing_value
      stypvar(:)%rmissing_value = 0.
   ENDIF
+
   IF ( lcubic) THEN
      ! force votemper to be squared saved
      nn_sqdvar = nn_sqdvar + 1
@@ -238,7 +259,7 @@ PROGRAM cdfmoy
         stypvar2(jvar)%scale_factor      = 1.
         stypvar2(jvar)%add_offset        = 0.
         stypvar2(jvar)%savelog10         = 0.
-        stypvar2(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_Squared'   ! 
+        stypvar2(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_Squared'  ! 
         stypvar2(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_sqd'     !
         stypvar2(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation) 
         stypvar2(jvar)%caxis             = TRIM(stypvar(jvar)%caxis) 
@@ -258,12 +279,41 @@ PROGRAM cdfmoy
           stypvar3(jvar)%add_offset        = 0.
           stypvar3(jvar)%savelog10         = 0.
           stypvar3(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_Cubed'   ! 
-          stypvar3(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_cub'     !
+          stypvar3(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_cub'    !
           stypvar3(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation) 
           stypvar3(jvar)%caxis             = TRIM(stypvar(jvar)%caxis) 
        ELSE
           cv_nam3(jvar) = 'none'
        END IF
+     ENDIF  
+     IF ( lmax ) THEN
+          cv_nam4(jvar)                    = TRIM(cv_nam(jvar))//'_max'
+          stypvar4(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_max'         ! name
+          stypvar4(jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')'      ! unit
+          stypvar4(jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
+          stypvar4(jvar)%valid_min         = 0.                                        ! valid_min = zero
+          stypvar4(jvar)%valid_max         = stypvar(jvar)%valid_max                   ! valid_max *valid_max
+          stypvar4(jvar)%scale_factor      = 1.
+          stypvar4(jvar)%add_offset        = 0.
+          stypvar4(jvar)%savelog10         = 0.
+          stypvar4(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_max'   ! 
+          stypvar4(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_max'  !
+          stypvar4(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
+          stypvar4(jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
+      
+          cv_nam4(nvars+jvar)                    = TRIM(cv_nam(jvar))//'_min'
+          stypvar4(nvars+jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_min'         ! name
+          stypvar4(nvars+jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')'      ! unit
+          stypvar4(nvars+jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
+          stypvar4(nvars+jvar)%valid_min         = 0.                                        ! valid_min = zero
+          stypvar4(nvars+jvar)%valid_max         = stypvar(jvar)%valid_max                   ! valid_max *valid_max
+          stypvar4(nvars+jvar)%scale_factor      = 1.
+          stypvar4(nvars+jvar)%add_offset        = 0.
+          stypvar4(nvars+jvar)%savelog10         = 0.
+          stypvar4(nvars+jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_min'   ! 
+          stypvar4(nvars+jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_min'  !
+          stypvar4(nvars+jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
+          stypvar4(nvars+jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
      ENDIF
 
 
@@ -273,9 +323,15 @@ PROGRAM cdfmoy
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
   ipk(:)     = getipk (cf_in,nvars,cdep=cv_dep)
   WHERE( ipk == 0 ) cv_nam='none'
+  IF ( lmax ) THEN 
+      ipk4(1      :nvars  ) = ipk(1:nvars)
+      ipk4(nvars+1:2*nvars) = ipk(1:nvars)
+      WHERE( ipk4 == 0 ) cv_nam4='none'
+  ENDIF
                 stypvar (:)%cname = cv_nam
                 stypvar2(:)%cname = cv_nam2
   IF ( lcubic ) stypvar3(:)%cname = cv_nam3
+  IF ( lmax   ) stypvar4(:)%cname = cv_nam4
 
   ! create output file taking the sizes in cf_in
   ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
@@ -292,6 +348,12 @@ PROGRAM cdfmoy
      ierr   = putheadervar(ncout3,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
   ENDIF
 
+  IF ( lmax ) THEN
+     ncout4 = create      (cf_out4, cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
+     ierr   = createvar   (ncout4,  stypvar4, 2*nvars,  ipk4,    id_varout4   )
+     ierr   = putheadervar(ncout4,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
+  ENDIF
+
   lcaltmean=.TRUE.
   DO jvar = 1,nvars
      IF ( cv_nam(jvar) == cn_vlon2d .OR. &     ! nav_lon
@@ -302,7 +364,8 @@ PROGRAM cdfmoy
         DO jk = 1, ipk(jvar)
            PRINT *,'level ',jk
            dtab(:,:) = 0.d0 ; dtab2(:,:) = 0.d0 ; dtotal_time = 0.
-           IF ( lcubic ) THEN  ; dtab3(:,:) = 0.d0 ; ENDIF
+           IF ( lcubic ) THEN  ; dtab3(:,:) = 0.d0                       ; ENDIF
+           IF ( lmax   ) THEN  ; rmin (:,:) = 1.e20 ; rmax(:,:) = -1.e20 ; ENDIF
            ntframe = 0
            DO jfil = 1, nfil
               cf_in = cf_list(jfil)
@@ -327,6 +390,10 @@ PROGRAM cdfmoy
                 IF ( lcubic ) THEN
                    IF (cv_nam3(jvar) /= 'none' ) dtab3(:,:) = dtab3(:,:) + v2d(:,:)*v2d(:,:)*v2d(:,:) *1.d0
                 ENDIF
+                IF ( lmax ) THEN
+                  rmax(:,:) = MAX(v2d(:,:),rmax(:,:))
+                  rmin(:,:) = MIN(v2d(:,:),rmin(:,:))
+                ENDIF
               ENDDO
            END DO
            ! finish with level jk ; compute mean (assume spval is 0 )
@@ -347,12 +414,17 @@ PROGRAM cdfmoy
                  ierr = putvar(ncout3, id_varout3(jvar), rmean3, jk, npiglo, npjglo, kwght=ntframe)
               ENDIF
            ENDIF
+           IF ( lmax  ) THEN
+                 ierr = putvar(ncout4, id_varout4(      jvar), rmax, jk, npiglo, npjglo, kwght=ntframe)
+                 ierr = putvar(ncout4, id_varout4(nvars+jvar), rmin, jk, npiglo, npjglo, kwght=ntframe)
+           ENDIF
 
            IF (lcaltmean )  THEN
               timean(1) = dtotal_time/ntframe
                           ierr = putvar1d(ncout,  timean, 1, 'T')
                           ierr = putvar1d(ncout2, timean, 1, 'T')
               IF (lcubic) ierr = putvar1d(ncout3, timean, 1, 'T')
+              IF (lmax  ) ierr = putvar1d(ncout4, timean, 1, 'T')
            END IF
 
            lcaltmean=.FALSE. ! tmean already computed
@@ -363,6 +435,7 @@ PROGRAM cdfmoy
                 ierr = closeout(ncout)
                 ierr = closeout(ncout2)
   IF ( lcubic ) ierr = closeout(ncout3 ) 
+  IF ( lmax   ) ierr = closeout(ncout4 ) 
 
 CONTAINS 
 
