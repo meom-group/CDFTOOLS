@@ -473,704 +473,705 @@ PROGRAM cdftransport
             ENDIF
          ELSEIF ( lobc ) THEN
             IF      ( l_zonal ) THEN ; zu(:,1)=zuobc(:,jk) ; zv(:,1)=zvobc(:,jk) 
-            ELSE IF ( l_merid ) THEN ; zu(1,:)=zuobc(:,jk) ; zv(1,:)=zvobc(:,jk) ; ENDIF
-            ELSE
-               zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
-               zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
-               IF (lheat) THEN
-                  zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
-                  zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
-                  zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
-                  zvs(:,:) = getvar(cf_tfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
-               ENDIF
+            ELSE IF ( l_merid ) THEN ; zu(1,:)=zuobc(:,jk) ; zv(1,:)=zvobc(:,jk) 
             ENDIF
-
-            ! get e3u, e3v  at level jk
-            IF ( lfull ) THEN 
-               e3v(:,:) = e31d(jk)
-               e3u(:,:) = e31d(jk)
-            ELSE
-               e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-               e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-            ENDIF
-
-            dwku (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
-            dwkv (:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
-
-            IF ( lpm ) THEN 
-               dwkup = 0.d0 ; dwkum = 0.d0
-               WHERE ( zu >= 0. ) 
-                  dwkup(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
-               ELSEWHERE 
-                  dwkum(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
-               END WHERE
-
-               dwkvp = 0.d0 ; dwkvm = 0.d0
-               WHERE ( zv >= 0. )
-                  dwkvp(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
-               ELSEWHERE
-                  dwkvm(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
-               END WHERE
-            ENDIF
-
-            IF ( lheat ) THEN
-               dwkut(:,:) = zut(:,:)*e2u(:,:)*e3u(:,:)*1.d0
-               dwkvt(:,:) = zvt(:,:)*e1v(:,:)*e3v(:,:)*1.d0
-               dwkus(:,:) = zus(:,:)*e2u(:,:)*e3u(:,:)*1.d0
-               dwkvs(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)*1.d0
-            ENDIF
-
-            ! integrates vertically 
-            dtrpu (:,:,jclass) = dtrpu (:,:,jclass) + dwku (:,:)
-            dtrpv (:,:,jclass) = dtrpv (:,:,jclass) + dwkv (:,:)
-
-            IF ( lpm   ) THEN
-               dtrpup(:,:,jclass) = dtrpup(:,:,jclass) + dwkup(:,:)
-               dtrpvp(:,:,jclass) = dtrpvp(:,:,jclass) + dwkvp(:,:)
-               dtrpum(:,:,jclass) = dtrpum(:,:,jclass) + dwkum(:,:)
-               dtrpvm(:,:,jclass) = dtrpvm(:,:,jclass) + dwkvm(:,:)
-            ENDIF
-
-            IF ( lheat ) THEN
-               dtrput(:,:,jclass) = dtrput(:,:,jclass) + dwkut(:,:) * rau0*rcp
-               dtrpvt(:,:,jclass) = dtrpvt(:,:,jclass) + dwkvt(:,:) * rau0*rcp
-               dtrpus(:,:,jclass) = dtrpus(:,:,jclass) + dwkus(:,:)  
-               dtrpvs(:,:,jclass) = dtrpvs(:,:,jclass) + dwkvs(:,:)  
-            ENDIF
-
-         END DO  ! loop to next level
-      END DO    ! next class
-
-      OPEN(numout,FILE=cf_out)
-      ! also dump the results on txt files without any comments, some users  like it !
-      OPEN(numvtrp,FILE=cf_vtrp)
-      IF ( lheat ) THEN
-         OPEN(numhtrp,FILE=cf_htrp) ; OPEN(numstrp,FILE=cf_strp)
-      ENDIF
-
-      !################################################################################
-      ! enter interactive part 
-      !################################################################################
-      ! initialize all legs arrays and variable to 0 
-      dvolalleg = 0.d0 ; dvolallegcl(:) = 0.d0
-      IF ( lpm   ) THEN
-         dvolallegp = 0.d0 ; dvolallegclp(:) = 0.d0
-         dvolallegm = 0.d0 ; dvolallegclm(:) = 0.d0
-      ENDIF
-      IF ( lheat ) THEN
-         dheatalleg = 0.d0 ; dheatallegcl(:) = 0.d0
-         dsaltalleg = 0.d0 ; dsaltallegcl(:) = 0.d0
-      ENDIF
-      DO 
-         PRINT *, ' Give name of section (EOF to finish)'
-         READ(*,'(a)') cline
-         ii = 0
-         cldumt(:) = 'none'
-         ipos = index(cline,' ')
-         DO WHILE ( ipos > 1 )
-            ii = ii + 1
-            cldumt(ii) = cline(1:ipos - 1 )
-            cline = TRIM ( cline(ipos+1:) )
-            ipos  = index( cline,' ' )
-            IF ( ii >= 3 ) EXIT
-         END DO
-         csection = TRIM(cldumt(1) )
-         cvarname = TRIM(cldumt(2) )
-         clongname = TRIM(cldumt(3) )
-
-         IF (TRIM(csection) == 'EOF' ) THEN 
-            CLOSE(numout) ; CLOSE(numvtrp) 
-            IF ( lheat ) THEN 
-               CLOSE(numhtrp) ; CLOSE(numstrp) 
-            ENDIF
-            EXIT  ! infinite DO loop
-         ENDIF
-
-         ! create output fileset
-         CALL set_typvar( stypvar, csection, cvarname, clongname )
-         cf_outnc   = TRIM(csection)//'_transports.nc'
-         ncout      = create      (cf_outnc, 'none',    ikx,      iky, nclass, cdep='depth_class')
-         ierr       = createvar   (ncout,    stypvar,   nvarout,  ipk, id_varout, cdglobal=TRIM(cglobal) )
-         ierr       = putheadervar(ncout,    cf_ufil,   ikx, iky, nclass, pnavlon=rdum, pnavlat=rdum, pdep=rclass )
-         tim        = getvar1d    (cf_ufil,  cn_vtimec, npt     )
-         ierr       = putvar1d    (ncout,    tim,       npt, 'T')
-
-         PRINT *, ' Give iimin, iimax, ijmin, ijmax '
-         READ(*,*) iimin, iimax, ijmin, ijmax
-         !! Find the broken line between P1 (iimin,ijmin) and P2 (iimax, ijmax)
-         ! ... Initialization
-         ii0  = iimin ; ij0  = ijmin ; ii1  = iimax ;  ij1 = ijmax
-         rxi0 = ii0   ; ryj0 = ij0   ; rxi1 = ii1   ; ryj1 = ij1
-
-         ! compute direction of integrations and signs
-         !The transport across the section is the dot product of
-         !integral(line){(Mx,My)*dS} 
-         !Mx=integral(u*dz)  My=integral(v*dz)) and dS=(dy,-dx)}
-
-         !By defining the direction of the integration as 
-         idirx = SIGN(1,ii1-ii0) !positive to the east or if ii1=ii0
-         idiry = SIGN(1,ij1-ij0) !positive to the north or if ij1=ij0
-
-         !Then dS=(e2u*idiry,-e1v*idirx)
-         !This will produce the following sign convention:
-         !    West-to-est line (dx>0, dy=0)=> -My*dx (-ve for a northward flow)
-         !    South-to-north   (dy>0, dx=0)=>  Mx*dy (+ve for an eastward flow)
-         norm_u =  idiry
-         norm_v = -idirx
-
-         ! .. Compute equation:  ryj = aj rxi + bj [valid in the (i,j) plane]
-         IF ( (rxi1 -rxi0) /=  0 ) THEN
-            aj = (ryj1 - ryj0 ) / (rxi1 -rxi0)
-            bj = ryj0 - aj * rxi0
          ELSE
-            aj = 10000.  ! flag value
-            bj = 0.
-         END IF
+            zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
+            zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
+            IF (lheat) THEN
+               zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
+               zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
+               zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
+               zvs(:,:) = getvar(cf_tfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
+            ENDIF
+         ENDIF
 
-         ! .. Compute equation:  rxi = ai ryj + bi [valid in the (i,j) plane]
-         IF ( (ryj1 -ryj0) /=  0 ) THEN
-            ai = (rxi1 - rxi0 ) / ( ryj1 -ryj0 )
-            bi = rxi0 - ai * ryj0
+         ! get e3u, e3v  at level jk
+         IF ( lfull ) THEN 
+            e3v(:,:) = e31d(jk)
+            e3u(:,:) = e31d(jk)
          ELSE
-            ai = 10000. ! flag value
-            bi = 0.
-         END IF
-
-         ! ..  Compute the integer pathway: a succession of F points
-         np=0
-         ! .. Chose the strait line with the smallest slope
-         IF (ABS(aj) <=  1 ) THEN
-            ! ... Here, the best line is y(x)
-            ! ... If ii1 < ii0 swap points [ always describe section from left to right ]
-            IF (ii1 <  ii0 ) THEN
-               iitmp = ii0   ; ijtmp = ij0
-               ii0   = ii1   ; ij0   = ij1
-               ii1   = iitmp ; ij1   = ijtmp
-            END IF
-
-            ! iist,ijst is the grid offset to pass from F point to either U/V point
-            IF ( ij1 >= ij0 ) THEN     ! line heading NE
-               iist = 1 ; ijst = 1
-            ELSE                       ! line heading SE
-               iist = 1 ; ijst = 0
-            END IF
-
-            ! ... compute the nearest ji point on the line crossing at ji
-            DO ji=ii0, ii1
-               np=np+1
-               IF (np > jpseg) STOP 'np > jpseg !'
-               ij=NINT(aj*ji + bj )
-               yypt(np) = CMPLX(ji,ij)
-            END DO
-         ELSE
-            ! ... Here, the best line is x(y)
-            ! ... If ij1 < ij0 swap points [ always describe section from bottom to top ]
-            IF (ij1 <  ij0 ) THEN
-               iitmp = ii0   ; ijtmp = ij0
-               ii0   = ii1   ; ij0   = ij1
-               ii1   = iitmp ; ij1   = ijtmp
-            END IF
-
-            ! iist,ijst is the grid offset to pass from F point to either U/V point
-            IF ( ii1 >=  ii0 ) THEN
-               iist = 1 ; ijst = 1
-            ELSE
-               iist = 0 ; ijst = 1
-            END IF
-
-            ! ... compute the nearest ji point on the line crossing at jj
-            DO jj=ij0,ij1
-               np=np+1
-               IF (np > jpseg) STOP 'np > jpseg !'
-               ii=NINT(ai*jj + bi)
-               yypt(np) = CMPLX(ii,jj)
-            END DO
-         END IF
-
-         !!
-         !! Look for intermediate points to be added.
-         !  ..  The final positions are saved in rxx,ryy
-         rxx(1) = REAL(yypt(1))
-         ryy(1) = IMAG(yypt(1))
-         nn     = 1
-
-         DO jk=2,np
-            ! .. distance between 2 neighbour points
-            rd=ABS(yypt(jk)-yypt(jk-1))
-            ! .. intermediate points required if rd > 1
-            IF ( rd > 1 ) THEN
-               CALL interm_pt(yypt, jk, ai, bi, aj, bj, yypti)
-               nn=nn+1
-               IF (nn > jpseg) STOP 'nn>jpseg !'
-               rxx(nn) = REAL(yypti)
-               ryy(nn) = IMAG(yypti)
-            END IF
-            nn=nn+1
-            IF (nn > jpseg) STOP 'nn>jpseg !'
-            rxx(nn) = REAL(yypt(jk))
-            ryy(nn) = IMAG(yypt(jk))
-         END DO
-         ! record longitude and latitude of initial en endind point of the section
-         gla (1) = glamf( INT(rxx(1)),  INT(ryy(1))  ) 
-         gphi(1) = gphif( INT(rxx(1)),  INT(ryy(1))  ) 
-         gla (2) = glamf( INT(rxx(nn)), INT(ryy(nn)) ) 
-         gphi(2) = gphif( INT(rxx(nn)), INT(ryy(nn)) ) 
-
-         ! Now extract the transport through a section 
-         ! ... Check whether we need a u velocity or a v velocity
-         !   Think that the points are f-points and delimit either a U segment
-         !   or a V segment (iist and ijst are set in order to look for the correct
-         !   velocity point on the C-grid
-         PRINT *, TRIM(csection)
-         PRINT *, 'IMIN IMAX JMIN JMAX', iimin, iimax, ijmin, ijmax
-         WRITE(numout,*) '% Transport along a section by levels' ,TRIM(csection)
-         WRITE(numout,*) '% ---- IMIN IMAX JMIN JMAX'
-
-         dvoltrpbrtp  = 0.d0
-         dvoltrpbrtpp = 0.d0
-         dvoltrpbrtpm = 0.d0
-         dheatrpbrtp  = 0.d0
-         dsaltrpbrtp  = 0.d0
-         DO jclass=1,nclass
-            dvoltrpsum(jclass) = 0.d0
-            IF ( lpm   ) THEN
-               dvoltrpsump(jclass) = 0.d0
-               dvoltrpsumm(jclass) = 0.d0
-            ENDIF
-            IF ( lheat ) THEN
-               dheatrpsum(jclass) = 0.d0
-               dsaltrpsum(jclass) = 0.d0
-            ENDIF
-
-            ! segment jseg is a line between (rxx(jseg),ryy(jseg))  and (rxx(jseg+1),ryy(jseg+1))
-            DO jseg = 1, nn-1
-               ii0=rxx(jseg)
-               ij0=ryy(jseg)
-               IF ( rxx(jseg) ==  rxx(jseg+1) ) THEN    ! meridional segment, use U velocity
-                  dvoltrp(jseg)= dtrpu (ii0,ij0+ijst,jclass)*norm_u
-
-                  IF ( lpm   ) THEN 
-                     dvoltrpp(jseg)= dtrpup(ii0,ij0+ijst,jclass)*norm_u
-                     dvoltrpm(jseg)= dtrpum(ii0,ij0+ijst,jclass)*norm_u
-                  ENDIF
-
-                  IF ( lheat ) THEN
-                     dheatrp(jseg)= dtrput(ii0,ij0+ijst,jclass)*norm_u
-                     dsaltrp(jseg)= dtrpus(ii0,ij0+ijst,jclass)*norm_u
-                  ENDIF
-               ELSE IF ( ryy(jseg) == ryy(jseg+1) ) THEN ! zonal segment, use V velocity
-                  dvoltrp(jseg)=dtrpv (ii0+iist,ij0,jclass)*norm_v
-
-                  IF ( lpm   ) THEN 
-                     dvoltrpp(jseg)=dtrpvp(ii0+iist,ij0,jclass)*norm_v
-                     dvoltrpm(jseg)=dtrpvm(ii0+iist,ij0,jclass)*norm_v
-                  ENDIF
-
-                  IF ( lheat ) THEN
-                     dheatrp(jseg)=dtrpvt(ii0+iist,ij0,jclass)*norm_v
-                     dsaltrp(jseg)=dtrpvs(ii0+iist,ij0,jclass)*norm_v
-                  ENDIF
-               ELSE
-                  PRINT *,' ERROR :',  rxx(jseg),ryy(jseg),rxx(jseg+1),ryy(jseg+1) ! likely to never happen !
-               END IF
-               dvoltrpsum(jclass) = dvoltrpsum(jclass) + dvoltrp(jseg)
-               IF ( lpm   ) THEN 
-                  dvoltrpsump(jclass) = dvoltrpsump(jclass) + dvoltrpp(jseg)
-                  dvoltrpsumm(jclass) = dvoltrpsumm(jclass) + dvoltrpm(jseg)
-               ENDIF
-               IF ( lheat ) THEN
-                  dheatrpsum(jclass) = dheatrpsum(jclass) + dheatrp(jseg)
-                  dsaltrpsum(jclass) = dsaltrpsum(jclass) + dsaltrp(jseg)
-               ENDIF
-            END DO   ! next segment
-
-            ! Ascii outputs :      
-            IF (jclass == 1 ) THEN   ! print header when it is the first class
-               PRINT '(a,2f8.2,a,2f8.2)', 'FROM (LON LAT): ', gla(1),gphi(1),' TO (LON LAT) ', gla(2), gphi(2)
-               WRITE(numout,*)  '% ---- LONmin LATmin LONmax LATmax'
-               WRITE(numout,*)  '% Top(m)  Bottom(m)  MassTrans(Sv) HeatTrans(PW) SaltTrans(kt/s)'
-               WRITE(numout,*) 0 ,iimin, iimax, ijmin, ijmax
-               WRITE(numout,9003) 0. ,gla(1),gphi(1), gla(2), gphi(2)
-            ENDIF
-
-            PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
-            PRINT *, ' Mass transport : ', dvoltrpsum(jclass)/1.e6,' SV'
-            WRITE(numvtrp,'(e12.6)') dvoltrpsum(jclass) 
-            IF ( lpm   ) THEN
-               PRINT *, ' Positive Mass transport : ', dvoltrpsump(jclass)/1.e6,' SV'
-               PRINT *, ' Negative Mass transport : ', dvoltrpsumm(jclass)/1.e6,' SV'
-               WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), &
-                    &   dvoltrpsum(jclass)/1.e6, dvoltrpsump(jclass)/1.e6, dvoltrpsumm(jclass)/1.e6
-               WRITE(numvtrp,'(e12.6)') dvoltrpsump(jclass) 
-               WRITE(numvtrp,'(e12.6)') dvoltrpsumm(jclass) 
-            ENDIF
-
-            IF ( lheat ) THEN
-               PRINT *, ' Heat transport : ', dheatrpsum(jclass)/1.e15,' PW'
-               PRINT *, ' Salt transport : ', dsaltrpsum(jclass)/1.e6,' kT/s'
-               WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), &
-                    &   dvoltrpsum(jclass)/1.e6, dheatrpsum(jclass)/1.e15, dsaltrpsum(jclass)/1.e6
-               WRITE(numhtrp,'(e12.6)') dheatrpsum(jclass)
-               WRITE(numstrp,'(e12.6)') dsaltrpsum(jclass)
-            ELSE
-               IF ( .NOT. lpm ) WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), dvoltrpsum(jclass)/1.e6
-            ENDIF
-
-            ! netcdf output 
-            IF ( nclass > 1 ) THEN
-               rdum(1,1) = REAL(dvoltrpsum(jclass)/1.e6)
-               ierr = putvar(ncout,id_varout(ivtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
-               IF ( lpm   ) THEN
-                  rdum(1,1) =  REAL(dvoltrpsump(jclass)/1.e6)
-                  ierr = putvar(ncout,id_varout(iptrpcl), rdum, jclass, 1, 1, ktime=itime ) 
-                  rdum(1,1) =  REAL(dvoltrpsumm(jclass)/1.e6)
-                  ierr = putvar(ncout,id_varout(imtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
-               ENDIF
-               IF ( lheat ) THEN
-                  rdum(1,1) =  REAL(dheatrpsum(jclass)/1.e15)
-                  ierr = putvar(ncout,id_varout(ihtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
-                  rdum(1,1) =  REAL(dsaltrpsum(jclass)/1.e6)
-                  ierr = putvar(ncout,id_varout(istrpcl), rdum, jclass, 1, 1, ktime=itime )
-               ENDIF
-            ENDIF
-            rdum(1,1) = REAL(gdepw(ilev0(jclass)))
-            ierr = putvar(ncout,id_varout(itop), rdum, jclass, 1, 1, ktime=itime )
-            rdum(1,1) = REAL(gdepw(ilev1(jclass)+1))
-            ierr = putvar(ncout,id_varout(ibot), rdum, jclass, 1, 1, ktime=itime )
-
-            dvoltrpbrtp = dvoltrpbrtp +  dvoltrpsum(jclass)
-            IF ( lpm  ) THEN
-               dvoltrpbrtpp = dvoltrpbrtpp + dvoltrpsump(jclass)
-               dvoltrpbrtpm = dvoltrpbrtpm + dvoltrpsumm(jclass)
-            ENDIF
-            IF ( lheat) THEN
-               dheatrpbrtp = dheatrpbrtp +  dheatrpsum(jclass)
-               dsaltrpbrtp = dsaltrpbrtp +  dsaltrpsum(jclass)
-            ENDIF
-            ! save sum over legs
-            dvolallegcl(jclass) = dvolallegcl(jclass) + dvoltrpsum(jclass)
-            IF ( lpm   ) THEN
-               dvolallegclp(jclass) = dvolallegclp(jclass) + dvoltrpsump(jclass)
-               dvolallegclm(jclass) = dvolallegclm(jclass) + dvoltrpsumm(jclass)
-            ENDIF
-            IF ( lheat ) THEN
-               dheatallegcl(jclass) = dheatallegcl(jclass) + dheatrpsum(jclass)
-               dsaltallegcl(jclass) = dsaltallegcl(jclass) + dsaltrpsum(jclass)
-            ENDIF
-         END DO ! next class
-         ! save sum over legs 
-         dvolalleg = dvolalleg + dvoltrpbrtp
-         IF ( lpm   ) THEN
-            dvolallegp = dvolallegp + dvoltrpbrtpp
-            dvolallegm = dvolallegm + dvoltrpbrtpm
-         ENDIF
-         IF ( lheat ) THEN
-            dheatalleg = dheatalleg + dheatrpbrtp
-            dsaltalleg = dsaltalleg + dsaltrpbrtp
+            e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+            e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
          ENDIF
 
-         IF ( nclass > 1 ) THEN 
-            PRINT *, ' ====================================================='
-            PRINT *, ' total Mass transport : ', dvoltrpbrtp/1.e6,' SV'
-            IF ( lpm   ) THEN
-               PRINT *, ' total positive transport : ', dvoltrpbrtpp/1.e6,' SV'
-               PRINT *, ' total negative transport : ', dvoltrpbrtpm/1.e6,' SV'
-            ENDIF
-            IF ( lheat ) THEN
-               PRINT *, ' total Heat transport : ', dheatrpbrtp/1.e15,' PW'
-               PRINT *, ' total Salt transport : ', dsaltrpbrtp/1.e6,' kT/s'
-            ENDIF
-         ENDIF
-         ierr = putvar0d(ncout,id_varout(ivtrp), REAL(dvoltrpbrtp/1.e6)        )
-         IF ( lpm   ) THEN
-            ierr = putvar0d(ncout,id_varout(iptrp), REAL(dvoltrpbrtpp/1.e6)    )
-            ierr = putvar0d(ncout,id_varout(imtrp), REAL(dvoltrpbrtpm/1.e6)    )
-         ENDIF
-         IF ( lheat ) THEN
-            ierr = putvar0d(ncout,id_varout(ihtrp), REAL(dheatrpbrtp/1.e15)    )
-            ierr = putvar0d(ncout,id_varout(istrp), REAL(dsaltrpbrtp/1.e6 )    )
-         ENDIF
-         ierr = putvar0d(ncout,id_varout(ilonmin), REAL(gla(1))  )
-         ierr = putvar0d(ncout,id_varout(ilonmax), REAL(gla(2))  )
-         ierr = putvar0d(ncout,id_varout(ilatmin), REAL(gphi(1)) )
-         ierr = putvar0d(ncout,id_varout(ilatmax), REAL(gphi(2)) )
-         ierr = closeout(ncout)
-      END DO ! infinite loop : gets out when input is EOF 
-
-
-      PRINT *,'   '
-      PRINT *,' Overall transports (sum of all legs done so far)'
-      DO jclass = 1, nclass
-         PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
-         PRINT *, ' Mass transport : ', dvolallegcl(jclass)/1.e6,' SV'
-         IF ( lpm   ) THEN
-            PRINT *, ' Positive Mass transport : ', dvolallegclp(jclass)/1.e6,' SV'
-            PRINT *, ' Negative Mass transport : ', dvolallegclm(jclass)/1.e6,' SV'
-         ENDIF
-
-         IF ( lheat ) THEN
-            PRINT *, ' Heat transport : ', dheatallegcl(jclass)/1.e15,' PW'
-            PRINT *, ' Salt transport : ', dsaltallegcl(jclass)/1.e6,' kT/s'
-         ENDIF
-      ENDDO
-
-      IF ( nclass > 1 ) THEN
-         PRINT *, ' ====================================================='
-         PRINT *, '    Mass transport      : ', dvolalleg/1.e6,' SV'
-         IF ( lpm ) THEN
-            PRINT *, '     positive transport : ', dvolallegp/1.e6,' SV'
-            PRINT *, '     negative transport : ', dvolallegm/1.e6,' SV'
-         ENDIF
-         IF ( lheat ) THEN
-            PRINT *, '     heat transport     : ', dheatalleg/1.e15,' PW'
-            PRINT *, '     salt transport     : ', dsaltalleg/1.e6,' kT/s'
-         ENDIF
-      ENDIF
-
-
-9000  FORMAT(I4,6(f9.3,f8.4))
-9001  FORMAT(I4,6(f9.2,f9.3))
-9002  FORMAT(f9.0,f9.0,f9.2,f9.2,f9.2)
-9003  FORMAT(f9.2,f9.2,f9.2,f9.2,f9.2)
-
-   CONTAINS
-      SUBROUTINE set_typvar ( sd_typvar, cdsection, cdvarname, cdlongname ) 
-         !!---------------------------------------------------------------------
-         !!                  ***  ROUTINE set_typvar  ***
-         !!
-         !! ** Purpose : Initialize typvar structure for netcdfoutput at a given section
-         !!
-         !! ** Method  : use varname longname to suffix variable name and attributes
-         !!              If varname and/or logname are not given (ie 'none') take
-         !!              standard default names
-         !!              Netcdf id for variables are passed as global variables
-         !!----------------------------------------------------------------------
-         TYPE(variable), DIMENSION(:), INTENT(out) :: sd_typvar        ! structure of output
-         CHARACTER(LEN=*),             INTENT(in ) :: cdsection
-         CHARACTER(LEN=*),             INTENT(in ) :: cdvarname
-         CHARACTER(LEN=*),             INTENT(in ) :: cdlongname
-         !!
-         INTEGER(KIND=4)                           :: ivar
-         CHARACTER(LEN=255)                        :: csuffixvarnam
-         CHARACTER(LEN=255)                        :: cprefixlongnam
-         !!----------------------------------------------------------------------
-         ! set suffixes according to variable/longname 
-         IF ( cdvarname /= 'none' ) THEN
-            csuffixvarnam = '_'//TRIM(cdvarname)
-         ELSE
-            csuffixvarnam = ''
-         ENDIF
-
-         IF ( cdlongname /= 'none' ) THEN
-            cprefixlongnam = TRIM(cdlongname)//'_'
-         ELSE
-            cprefixlongnam = ''
-         ENDIF
-
-         ! set common values
-         sd_typvar%rmissing_value=99999.
-         sd_typvar%scale_factor= 1.
-         sd_typvar%add_offset= 0.
-         sd_typvar%savelog10= 0.
-         sd_typvar%conline_operation='N/A'
-         sd_typvar%caxis='T'
-
-         ! set particular values for individual variables
-         ivar = 1  ; ivtrp = ivar
-         ipk(ivar) = 1
-         sd_typvar(ivar)%cname       = 'vtrp'//TRIM(csuffixvarnam)
-         sd_typvar(ivar)%cunits      = 'Sverdrup'
-         sd_typvar(ivar)%valid_min   = -500.
-         sd_typvar(ivar)%valid_max   =  500.
-         sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Volume_Transport'
-         sd_typvar(ivar)%cshort_name = 'vtrp'
+         dwku (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
+         dwkv (:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
 
          IF ( lpm ) THEN 
-            ivar = ivar + 1 ; iptrp = ivar                                                  ;  imtrp = ivar+1
-            ipk(ivar) = 1                                                                   ;  ipk(ivar+1) = 1
-            sd_typvar(ivar)%cname       = 'ptrp'//TRIM(csuffixvarnam)                       ;  sd_typvar(ivar+1)%cname       = 'mtrp'//TRIM(csuffixvarnam)
-            sd_typvar(ivar)%cunits      = 'Sverdrup'                                        ;  sd_typvar(ivar+1)%cunits      = 'Sverdrup'
-            sd_typvar(ivar)%valid_min   = -500.                                             ;  sd_typvar(ivar+1)%valid_min   = -500.
-            sd_typvar(ivar)%valid_max   =  500.                                             ;  sd_typvar(ivar+1)%valid_max   =  500.
-            sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Positive_volume_transport' ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Negative_volume_transport'
-            sd_typvar(ivar)%cshort_name = 'ptrp'                                            ;  sd_typvar(ivar+1)%cshort_name = 'mtrp'
+            dwkup = 0.d0 ; dwkum = 0.d0
+            WHERE ( zu >= 0. ) 
+               dwkup(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
+            ELSEWHERE 
+               dwkum(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
+            END WHERE
+
+            dwkvp = 0.d0 ; dwkvm = 0.d0
+            WHERE ( zv >= 0. )
+               dwkvp(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
+            ELSEWHERE
+               dwkvm(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
+            END WHERE
+         ENDIF
+
+         IF ( lheat ) THEN
+            dwkut(:,:) = zut(:,:)*e2u(:,:)*e3u(:,:)*1.d0
+            dwkvt(:,:) = zvt(:,:)*e1v(:,:)*e3v(:,:)*1.d0
+            dwkus(:,:) = zus(:,:)*e2u(:,:)*e3u(:,:)*1.d0
+            dwkvs(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)*1.d0
+         ENDIF
+
+         ! integrates vertically 
+         dtrpu (:,:,jclass) = dtrpu (:,:,jclass) + dwku (:,:)
+         dtrpv (:,:,jclass) = dtrpv (:,:,jclass) + dwkv (:,:)
+
+         IF ( lpm   ) THEN
+            dtrpup(:,:,jclass) = dtrpup(:,:,jclass) + dwkup(:,:)
+            dtrpvp(:,:,jclass) = dtrpvp(:,:,jclass) + dwkvp(:,:)
+            dtrpum(:,:,jclass) = dtrpum(:,:,jclass) + dwkum(:,:)
+            dtrpvm(:,:,jclass) = dtrpvm(:,:,jclass) + dwkvm(:,:)
+         ENDIF
+
+         IF ( lheat ) THEN
+            dtrput(:,:,jclass) = dtrput(:,:,jclass) + dwkut(:,:) * rau0*rcp
+            dtrpvt(:,:,jclass) = dtrpvt(:,:,jclass) + dwkvt(:,:) * rau0*rcp
+            dtrpus(:,:,jclass) = dtrpus(:,:,jclass) + dwkus(:,:)  
+            dtrpvs(:,:,jclass) = dtrpvs(:,:,jclass) + dwkvs(:,:)  
+         ENDIF
+
+      END DO  ! loop to next level
+   END DO    ! next class
+
+   OPEN(numout,FILE=cf_out)
+   ! also dump the results on txt files without any comments, some users  like it !
+   OPEN(numvtrp,FILE=cf_vtrp)
+   IF ( lheat ) THEN
+      OPEN(numhtrp,FILE=cf_htrp) ; OPEN(numstrp,FILE=cf_strp)
+   ENDIF
+
+   !################################################################################
+   ! enter interactive part 
+   !################################################################################
+   ! initialize all legs arrays and variable to 0 
+   dvolalleg = 0.d0 ; dvolallegcl(:) = 0.d0
+   IF ( lpm   ) THEN
+      dvolallegp = 0.d0 ; dvolallegclp(:) = 0.d0
+      dvolallegm = 0.d0 ; dvolallegclm(:) = 0.d0
+   ENDIF
+   IF ( lheat ) THEN
+      dheatalleg = 0.d0 ; dheatallegcl(:) = 0.d0
+      dsaltalleg = 0.d0 ; dsaltallegcl(:) = 0.d0
+   ENDIF
+   DO 
+      PRINT *, ' Give name of section (EOF to finish)'
+      READ(*,'(a)') cline
+      ii = 0
+      cldumt(:) = 'none'
+      ipos = index(cline,' ')
+      DO WHILE ( ipos > 1 )
+         ii = ii + 1
+         cldumt(ii) = cline(1:ipos - 1 )
+         cline = TRIM ( cline(ipos+1:) )
+         ipos  = index( cline,' ' )
+         IF ( ii >= 3 ) EXIT
+      END DO
+      csection = TRIM(cldumt(1) )
+      cvarname = TRIM(cldumt(2) )
+      clongname = TRIM(cldumt(3) )
+
+      IF (TRIM(csection) == 'EOF' ) THEN 
+         CLOSE(numout) ; CLOSE(numvtrp) 
+         IF ( lheat ) THEN 
+            CLOSE(numhtrp) ; CLOSE(numstrp) 
+         ENDIF
+         EXIT  ! infinite DO loop
+      ENDIF
+
+      ! create output fileset
+      CALL set_typvar( stypvar, csection, cvarname, clongname )
+      cf_outnc = TRIM(csection)//'_transports.nc'
+      ncout    = create      (cf_outnc, 'none',    ikx,      iky, nclass, cdep='depth_class')
+      ierr     = createvar   (ncout,    stypvar,   nvarout,  ipk, id_varout, cdglobal=TRIM(cglobal) )
+      ierr     = putheadervar(ncout,    cf_ufil,   ikx, iky, nclass, pnavlon=rdum, pnavlat=rdum, pdep=rclass )
+      tim      = getvar1d    (cf_ufil,  cn_vtimec, npt     )
+      ierr     = putvar1d    (ncout,    tim,       npt, 'T')
+
+      PRINT *, ' Give iimin, iimax, ijmin, ijmax '
+      READ(*,*) iimin, iimax, ijmin, ijmax
+      !! Find the broken line between P1 (iimin,ijmin) and P2 (iimax, ijmax)
+      ! ... Initialization
+      ii0  = iimin ; ij0  = ijmin ; ii1  = iimax ;  ij1 = ijmax
+      rxi0 = ii0   ; ryj0 = ij0   ; rxi1 = ii1   ; ryj1 = ij1
+
+      ! compute direction of integrations and signs
+      !The transport across the section is the dot product of
+      !integral(line){(Mx,My)*dS} 
+      !Mx=integral(u*dz)  My=integral(v*dz)) and dS=(dy,-dx)}
+
+      !By defining the direction of the integration as 
+      idirx = SIGN(1,ii1-ii0) !positive to the east or if ii1=ii0
+      idiry = SIGN(1,ij1-ij0) !positive to the north or if ij1=ij0
+
+      !Then dS=(e2u*idiry,-e1v*idirx)
+      !This will produce the following sign convention:
+      !    West-to-est line (dx>0, dy=0)=> -My*dx (-ve for a northward flow)
+      !    South-to-north   (dy>0, dx=0)=>  Mx*dy (+ve for an eastward flow)
+      norm_u =  idiry
+      norm_v = -idirx
+
+      ! .. Compute equation:  ryj = aj rxi + bj [valid in the (i,j) plane]
+      IF ( (rxi1 -rxi0) /=  0 ) THEN
+         aj = (ryj1 - ryj0 ) / (rxi1 -rxi0)
+         bj = ryj0 - aj * rxi0
+      ELSE
+         aj = 10000.  ! flag value
+         bj = 0.
+      END IF
+
+      ! .. Compute equation:  rxi = ai ryj + bi [valid in the (i,j) plane]
+      IF ( (ryj1 -ryj0) /=  0 ) THEN
+         ai = (rxi1 - rxi0 ) / ( ryj1 -ryj0 )
+         bi = rxi0 - ai * ryj0
+      ELSE
+         ai = 10000. ! flag value
+         bi = 0.
+      END IF
+
+      ! ..  Compute the integer pathway: a succession of F points
+      np=0
+      ! .. Chose the strait line with the smallest slope
+      IF (ABS(aj) <=  1 ) THEN
+         ! ... Here, the best line is y(x)
+         ! ... If ii1 < ii0 swap points [ always describe section from left to right ]
+         IF (ii1 <  ii0 ) THEN
+            iitmp = ii0   ; ijtmp = ij0
+            ii0   = ii1   ; ij0   = ij1
+            ii1   = iitmp ; ij1   = ijtmp
+         END IF
+
+         ! iist,ijst is the grid offset to pass from F point to either U/V point
+         IF ( ij1 >= ij0 ) THEN     ! line heading NE
+            iist = 1 ; ijst = 1
+         ELSE                       ! line heading SE
+            iist = 1 ; ijst = 0
+         END IF
+
+         ! ... compute the nearest ji point on the line crossing at ji
+         DO ji=ii0, ii1
+            np=np+1
+            IF (np > jpseg) STOP 'np > jpseg !'
+            ij=NINT(aj*ji + bj )
+            yypt(np) = CMPLX(ji,ij)
+         END DO
+      ELSE
+         ! ... Here, the best line is x(y)
+         ! ... If ij1 < ij0 swap points [ always describe section from bottom to top ]
+         IF (ij1 <  ij0 ) THEN
+            iitmp = ii0   ; ijtmp = ij0
+            ii0   = ii1   ; ij0   = ij1
+            ii1   = iitmp ; ij1   = ijtmp
+         END IF
+
+         ! iist,ijst is the grid offset to pass from F point to either U/V point
+         IF ( ii1 >=  ii0 ) THEN
+            iist = 1 ; ijst = 1
+         ELSE
+            iist = 0 ; ijst = 1
+         END IF
+
+         ! ... compute the nearest ji point on the line crossing at jj
+         DO jj=ij0,ij1
+            np=np+1
+            IF (np > jpseg) STOP 'np > jpseg !'
+            ii=NINT(ai*jj + bi)
+            yypt(np) = CMPLX(ii,jj)
+         END DO
+      END IF
+
+      !!
+      !! Look for intermediate points to be added.
+      !  ..  The final positions are saved in rxx,ryy
+      rxx(1) = REAL(yypt(1))
+      ryy(1) = IMAG(yypt(1))
+      nn     = 1
+
+      DO jk=2,np
+         ! .. distance between 2 neighbour points
+         rd=ABS(yypt(jk)-yypt(jk-1))
+         ! .. intermediate points required if rd > 1
+         IF ( rd > 1 ) THEN
+            CALL interm_pt(yypt, jk, ai, bi, aj, bj, yypti)
+            nn=nn+1
+            IF (nn > jpseg) STOP 'nn>jpseg !'
+            rxx(nn) = REAL(yypti)
+            ryy(nn) = IMAG(yypti)
+         END IF
+         nn=nn+1
+         IF (nn > jpseg) STOP 'nn>jpseg !'
+         rxx(nn) = REAL(yypt(jk))
+         ryy(nn) = IMAG(yypt(jk))
+      END DO
+      ! record longitude and latitude of initial en endind point of the section
+      gla (1) = glamf( INT(rxx(1)),  INT(ryy(1))  ) 
+      gphi(1) = gphif( INT(rxx(1)),  INT(ryy(1))  ) 
+      gla (2) = glamf( INT(rxx(nn)), INT(ryy(nn)) ) 
+      gphi(2) = gphif( INT(rxx(nn)), INT(ryy(nn)) ) 
+
+      ! Now extract the transport through a section 
+      ! ... Check whether we need a u velocity or a v velocity
+      !   Think that the points are f-points and delimit either a U segment
+      !   or a V segment (iist and ijst are set in order to look for the correct
+      !   velocity point on the C-grid
+      PRINT *, TRIM(csection)
+      PRINT *, 'IMIN IMAX JMIN JMAX', iimin, iimax, ijmin, ijmax
+      WRITE(numout,*) '% Transport along a section by levels' ,TRIM(csection)
+      WRITE(numout,*) '% ---- IMIN IMAX JMIN JMAX'
+
+      dvoltrpbrtp  = 0.d0
+      dvoltrpbrtpp = 0.d0
+      dvoltrpbrtpm = 0.d0
+      dheatrpbrtp  = 0.d0
+      dsaltrpbrtp  = 0.d0
+      DO jclass=1,nclass
+         dvoltrpsum(jclass) = 0.d0
+         IF ( lpm   ) THEN
+            dvoltrpsump(jclass) = 0.d0
+            dvoltrpsumm(jclass) = 0.d0
+         ENDIF
+         IF ( lheat ) THEN
+            dheatrpsum(jclass) = 0.d0
+            dsaltrpsum(jclass) = 0.d0
+         ENDIF
+
+         ! segment jseg is a line between (rxx(jseg),ryy(jseg))  and (rxx(jseg+1),ryy(jseg+1))
+         DO jseg = 1, nn-1
+            ii0=rxx(jseg)
+            ij0=ryy(jseg)
+            IF ( rxx(jseg) ==  rxx(jseg+1) ) THEN    ! meridional segment, use U velocity
+               dvoltrp(jseg)= dtrpu (ii0,ij0+ijst,jclass)*norm_u
+
+               IF ( lpm   ) THEN 
+                  dvoltrpp(jseg)= dtrpup(ii0,ij0+ijst,jclass)*norm_u
+                  dvoltrpm(jseg)= dtrpum(ii0,ij0+ijst,jclass)*norm_u
+               ENDIF
+
+               IF ( lheat ) THEN
+                  dheatrp(jseg)= dtrput(ii0,ij0+ijst,jclass)*norm_u
+                  dsaltrp(jseg)= dtrpus(ii0,ij0+ijst,jclass)*norm_u
+               ENDIF
+            ELSE IF ( ryy(jseg) == ryy(jseg+1) ) THEN ! zonal segment, use V velocity
+               dvoltrp(jseg)=dtrpv (ii0+iist,ij0,jclass)*norm_v
+
+               IF ( lpm   ) THEN 
+                  dvoltrpp(jseg)=dtrpvp(ii0+iist,ij0,jclass)*norm_v
+                  dvoltrpm(jseg)=dtrpvm(ii0+iist,ij0,jclass)*norm_v
+               ENDIF
+
+               IF ( lheat ) THEN
+                  dheatrp(jseg)=dtrpvt(ii0+iist,ij0,jclass)*norm_v
+                  dsaltrp(jseg)=dtrpvs(ii0+iist,ij0,jclass)*norm_v
+               ENDIF
+            ELSE
+               PRINT *,' ERROR :',  rxx(jseg),ryy(jseg),rxx(jseg+1),ryy(jseg+1) ! likely to never happen !
+            END IF
+            dvoltrpsum(jclass) = dvoltrpsum(jclass) + dvoltrp(jseg)
+            IF ( lpm   ) THEN 
+               dvoltrpsump(jclass) = dvoltrpsump(jclass) + dvoltrpp(jseg)
+               dvoltrpsumm(jclass) = dvoltrpsumm(jclass) + dvoltrpm(jseg)
+            ENDIF
+            IF ( lheat ) THEN
+               dheatrpsum(jclass) = dheatrpsum(jclass) + dheatrp(jseg)
+               dsaltrpsum(jclass) = dsaltrpsum(jclass) + dsaltrp(jseg)
+            ENDIF
+         END DO   ! next segment
+
+         ! Ascii outputs :      
+         IF (jclass == 1 ) THEN   ! print header when it is the first class
+            PRINT '(a,2f8.2,a,2f8.2)', 'FROM (LON LAT): ', gla(1),gphi(1),' TO (LON LAT) ', gla(2), gphi(2)
+            WRITE(numout,*)  '% ---- LONmin LATmin LONmax LATmax'
+            WRITE(numout,*)  '% Top(m)  Bottom(m)  MassTrans(Sv) HeatTrans(PW) SaltTrans(kt/s)'
+            WRITE(numout,*) 0 ,iimin, iimax, ijmin, ijmax
+            WRITE(numout,9003) 0. ,gla(1),gphi(1), gla(2), gphi(2)
+         ENDIF
+
+         PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
+         PRINT *, ' Mass transport : ', dvoltrpsum(jclass)/1.e6,' SV'
+         WRITE(numvtrp,'(e12.6)') dvoltrpsum(jclass) 
+         IF ( lpm   ) THEN
+            PRINT *, ' Positive Mass transport : ', dvoltrpsump(jclass)/1.e6,' SV'
+            PRINT *, ' Negative Mass transport : ', dvoltrpsumm(jclass)/1.e6,' SV'
+            WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), &
+                 &   dvoltrpsum(jclass)/1.e6, dvoltrpsump(jclass)/1.e6, dvoltrpsumm(jclass)/1.e6
+            WRITE(numvtrp,'(e12.6)') dvoltrpsump(jclass) 
+            WRITE(numvtrp,'(e12.6)') dvoltrpsumm(jclass) 
+         ENDIF
+
+         IF ( lheat ) THEN
+            PRINT *, ' Heat transport : ', dheatrpsum(jclass)/1.e15,' PW'
+            PRINT *, ' Salt transport : ', dsaltrpsum(jclass)/1.e6,' kT/s'
+            WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), &
+                 &   dvoltrpsum(jclass)/1.e6, dheatrpsum(jclass)/1.e15, dsaltrpsum(jclass)/1.e6
+            WRITE(numhtrp,'(e12.6)') dheatrpsum(jclass)
+            WRITE(numstrp,'(e12.6)') dsaltrpsum(jclass)
+         ELSE
+            IF ( .NOT. lpm ) WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), dvoltrpsum(jclass)/1.e6
+         ENDIF
+
+         ! netcdf output 
+         IF ( nclass > 1 ) THEN
+            rdum(1,1) = REAL(dvoltrpsum(jclass)/1.e6)
+            ierr = putvar(ncout,id_varout(ivtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+            IF ( lpm   ) THEN
+               rdum(1,1) =  REAL(dvoltrpsump(jclass)/1.e6)
+               ierr = putvar(ncout,id_varout(iptrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+               rdum(1,1) =  REAL(dvoltrpsumm(jclass)/1.e6)
+               ierr = putvar(ncout,id_varout(imtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+            ENDIF
+            IF ( lheat ) THEN
+               rdum(1,1) =  REAL(dheatrpsum(jclass)/1.e15)
+               ierr = putvar(ncout,id_varout(ihtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+               rdum(1,1) =  REAL(dsaltrpsum(jclass)/1.e6)
+               ierr = putvar(ncout,id_varout(istrpcl), rdum, jclass, 1, 1, ktime=itime )
+            ENDIF
+         ENDIF
+         rdum(1,1) = REAL(gdepw(ilev0(jclass)))
+         ierr = putvar(ncout,id_varout(itop), rdum, jclass, 1, 1, ktime=itime )
+         rdum(1,1) = REAL(gdepw(ilev1(jclass)+1))
+         ierr = putvar(ncout,id_varout(ibot), rdum, jclass, 1, 1, ktime=itime )
+
+         dvoltrpbrtp = dvoltrpbrtp +  dvoltrpsum(jclass)
+         IF ( lpm  ) THEN
+            dvoltrpbrtpp = dvoltrpbrtpp + dvoltrpsump(jclass)
+            dvoltrpbrtpm = dvoltrpbrtpm + dvoltrpsumm(jclass)
+         ENDIF
+         IF ( lheat) THEN
+            dheatrpbrtp = dheatrpbrtp +  dheatrpsum(jclass)
+            dsaltrpbrtp = dsaltrpbrtp +  dsaltrpsum(jclass)
+         ENDIF
+         ! save sum over legs
+         dvolallegcl(jclass) = dvolallegcl(jclass) + dvoltrpsum(jclass)
+         IF ( lpm   ) THEN
+            dvolallegclp(jclass) = dvolallegclp(jclass) + dvoltrpsump(jclass)
+            dvolallegclm(jclass) = dvolallegclm(jclass) + dvoltrpsumm(jclass)
+         ENDIF
+         IF ( lheat ) THEN
+            dheatallegcl(jclass) = dheatallegcl(jclass) + dheatrpsum(jclass)
+            dsaltallegcl(jclass) = dsaltallegcl(jclass) + dsaltrpsum(jclass)
+         ENDIF
+      END DO ! next class
+      ! save sum over legs 
+      dvolalleg = dvolalleg + dvoltrpbrtp
+      IF ( lpm   ) THEN
+         dvolallegp = dvolallegp + dvoltrpbrtpp
+         dvolallegm = dvolallegm + dvoltrpbrtpm
+      ENDIF
+      IF ( lheat ) THEN
+         dheatalleg = dheatalleg + dheatrpbrtp
+         dsaltalleg = dsaltalleg + dsaltrpbrtp
+      ENDIF
+
+      IF ( nclass > 1 ) THEN 
+         PRINT *, ' ====================================================='
+         PRINT *, ' total Mass transport : ', dvoltrpbrtp/1.e6,' SV'
+         IF ( lpm   ) THEN
+            PRINT *, ' total positive transport : ', dvoltrpbrtpp/1.e6,' SV'
+            PRINT *, ' total negative transport : ', dvoltrpbrtpm/1.e6,' SV'
+         ENDIF
+         IF ( lheat ) THEN
+            PRINT *, ' total Heat transport : ', dheatrpbrtp/1.e15,' PW'
+            PRINT *, ' total Salt transport : ', dsaltrpbrtp/1.e6,' kT/s'
+         ENDIF
+      ENDIF
+      ierr = putvar0d(ncout,id_varout(ivtrp), REAL(dvoltrpbrtp/1.e6)        )
+      IF ( lpm   ) THEN
+         ierr = putvar0d(ncout,id_varout(iptrp), REAL(dvoltrpbrtpp/1.e6)    )
+         ierr = putvar0d(ncout,id_varout(imtrp), REAL(dvoltrpbrtpm/1.e6)    )
+      ENDIF
+      IF ( lheat ) THEN
+         ierr = putvar0d(ncout,id_varout(ihtrp), REAL(dheatrpbrtp/1.e15)    )
+         ierr = putvar0d(ncout,id_varout(istrp), REAL(dsaltrpbrtp/1.e6 )    )
+      ENDIF
+      ierr = putvar0d(ncout,id_varout(ilonmin), REAL(gla(1))  )
+      ierr = putvar0d(ncout,id_varout(ilonmax), REAL(gla(2))  )
+      ierr = putvar0d(ncout,id_varout(ilatmin), REAL(gphi(1)) )
+      ierr = putvar0d(ncout,id_varout(ilatmax), REAL(gphi(2)) )
+      ierr = closeout(ncout)
+   END DO ! infinite loop : gets out when input is EOF 
+
+
+   PRINT *,'   '
+   PRINT *,' Overall transports (sum of all legs done so far)'
+   DO jclass = 1, nclass
+      PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
+      PRINT *, ' Mass transport : ', dvolallegcl(jclass)/1.e6,' SV'
+      IF ( lpm   ) THEN
+         PRINT *, ' Positive Mass transport : ', dvolallegclp(jclass)/1.e6,' SV'
+         PRINT *, ' Negative Mass transport : ', dvolallegclm(jclass)/1.e6,' SV'
+      ENDIF
+
+      IF ( lheat ) THEN
+         PRINT *, ' Heat transport : ', dheatallegcl(jclass)/1.e15,' PW'
+         PRINT *, ' Salt transport : ', dsaltallegcl(jclass)/1.e6,' kT/s'
+      ENDIF
+   ENDDO
+
+   IF ( nclass > 1 ) THEN
+      PRINT *, ' ====================================================='
+      PRINT *, '    Mass transport      : ', dvolalleg/1.e6,' SV'
+      IF ( lpm ) THEN
+         PRINT *, '     positive transport : ', dvolallegp/1.e6,' SV'
+         PRINT *, '     negative transport : ', dvolallegm/1.e6,' SV'
+      ENDIF
+      IF ( lheat ) THEN
+         PRINT *, '     heat transport     : ', dheatalleg/1.e15,' PW'
+         PRINT *, '     salt transport     : ', dsaltalleg/1.e6,' kT/s'
+      ENDIF
+   ENDIF
+
+
+9000 FORMAT(I4,6(f9.3,f8.4))
+9001 FORMAT(I4,6(f9.2,f9.3))
+9002 FORMAT(f9.0,f9.0,f9.2,f9.2,f9.2)
+9003 FORMAT(f9.2,f9.2,f9.2,f9.2,f9.2)
+
+CONTAINS
+   SUBROUTINE set_typvar ( sd_typvar, cdsection, cdvarname, cdlongname ) 
+      !!---------------------------------------------------------------------
+      !!                  ***  ROUTINE set_typvar  ***
+      !!
+      !! ** Purpose : Initialize typvar structure for netcdfoutput at a given section
+      !!
+      !! ** Method  : use varname longname to suffix variable name and attributes
+      !!              If varname and/or logname are not given (ie 'none') take
+      !!              standard default names
+      !!              Netcdf id for variables are passed as global variables
+      !!----------------------------------------------------------------------
+      TYPE(variable), DIMENSION(:), INTENT(out) :: sd_typvar        ! structure of output
+      CHARACTER(LEN=*),             INTENT(in ) :: cdsection
+      CHARACTER(LEN=*),             INTENT(in ) :: cdvarname
+      CHARACTER(LEN=*),             INTENT(in ) :: cdlongname
+      !!
+      INTEGER(KIND=4)                           :: ivar
+      CHARACTER(LEN=255)                        :: csuffixvarnam
+      CHARACTER(LEN=255)                        :: cprefixlongnam
+      !!----------------------------------------------------------------------
+      ! set suffixes according to variable/longname 
+      IF ( cdvarname /= 'none' ) THEN
+         csuffixvarnam = '_'//TRIM(cdvarname)
+      ELSE
+         csuffixvarnam = ''
+      ENDIF
+
+      IF ( cdlongname /= 'none' ) THEN
+         cprefixlongnam = TRIM(cdlongname)//'_'
+      ELSE
+         cprefixlongnam = ''
+      ENDIF
+
+      ! set common values
+      sd_typvar%rmissing_value=99999.
+      sd_typvar%scale_factor= 1.
+      sd_typvar%add_offset= 0.
+      sd_typvar%savelog10= 0.
+      sd_typvar%conline_operation='N/A'
+      sd_typvar%caxis='T'
+
+      ! set particular values for individual variables
+      ivar = 1  ; ivtrp = ivar
+      ipk(ivar) = 1
+      sd_typvar(ivar)%cname       = 'vtrp'//TRIM(csuffixvarnam)
+      sd_typvar(ivar)%cunits      = 'Sverdrup'
+      sd_typvar(ivar)%valid_min   = -500.
+      sd_typvar(ivar)%valid_max   =  500.
+      sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Volume_Transport'
+      sd_typvar(ivar)%cshort_name = 'vtrp'
+
+      IF ( lpm ) THEN 
+         ivar = ivar + 1 ; iptrp = ivar                                                  ;  imtrp = ivar+1
+         ipk(ivar) = 1                                                                   ;  ipk(ivar+1) = 1
+         sd_typvar(ivar)%cname       = 'ptrp'//TRIM(csuffixvarnam)                       ;  sd_typvar(ivar+1)%cname       = 'mtrp'//TRIM(csuffixvarnam)
+         sd_typvar(ivar)%cunits      = 'Sverdrup'                                        ;  sd_typvar(ivar+1)%cunits      = 'Sverdrup'
+         sd_typvar(ivar)%valid_min   = -500.                                             ;  sd_typvar(ivar+1)%valid_min   = -500.
+         sd_typvar(ivar)%valid_max   =  500.                                             ;  sd_typvar(ivar+1)%valid_max   =  500.
+         sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Positive_volume_transport' ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Negative_volume_transport'
+         sd_typvar(ivar)%cshort_name = 'ptrp'                                            ;  sd_typvar(ivar+1)%cshort_name = 'mtrp'
+         ivar = ivar + 1
+      ENDIF
+
+      IF ( lheat ) THEN
+         ivar = ivar + 1 ; ihtrp = ivar                                                  ;  istrp = ivar+1
+         ipk(ivar) = 1                                                                   ;  ipk(ivar+1) = 1
+         sd_typvar(ivar)%cname       = 'htrp'//TRIM(csuffixvarnam)                       ;  sd_typvar(ivar+1)%cname       = 'strp'//TRIM(csuffixvarnam)
+         sd_typvar(ivar)%cunits      = 'PW'                                              ;  sd_typvar(ivar+1)%cunits      = 'kt/s'
+         sd_typvar(ivar)%valid_min   = -1000.                                            ;  sd_typvar(ivar+1)%valid_min   = -1000.
+         sd_typvar(ivar)%valid_max   =  1000.                                            ;  sd_typvar(ivar+1)%valid_max   =  1000.
+         sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Heat_Transport'            ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Salt_Transport'
+         sd_typvar(ivar)%cshort_name = 'htrp'                                            ;  sd_typvar(ivar+1)%cshort_name = 'strp'
+         ivar = ivar + 1
+      ENDIF
+
+      ivar = ivar + 1 ; ilonmin = ivar                                                   ;  ilonmax = ivar+1
+      ipk(ivar) = 1                                                                      ;  ipk(ivar+1) = 1
+      sd_typvar(ivar)%cname       = 'lonmin'//TRIM(csuffixvarnam)                        ;  sd_typvar(ivar+1)%cname       = 'lonmax'//TRIM(csuffixvarnam)
+      sd_typvar(ivar)%cunits      = 'deg'                                                ;  sd_typvar(ivar+1)%cunits      = 'deg'
+      sd_typvar(ivar)%valid_min   = -180.                                                ;  sd_typvar(ivar+1)%valid_min   = -180.
+      sd_typvar(ivar)%valid_max   =  180.                                                ;  sd_typvar(ivar+1)%valid_max   =  180.
+      sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'begin_longitude'              ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'end_longitude'
+      sd_typvar(ivar)%cshort_name = 'lonmin'                                             ;  sd_typvar(ivar+1)%cshort_name = 'lonmax'
+      ivar = ivar + 1
+
+      ivar = ivar + 1  ; ilatmin = ivar                                                  ;  ilatmax = ivar+1
+      ipk(ivar) = 1                                                                      ;  ipk(ivar+1) = 1
+      sd_typvar(ivar)%cname       = 'latmin'//TRIM(csuffixvarnam)                        ;  sd_typvar(ivar+1)%cname       = 'latmax'//TRIM(csuffixvarnam)
+      sd_typvar(ivar)%cunits      = 'deg'                                                ;  sd_typvar(ivar+1)%cunits      = 'deg'
+      sd_typvar(ivar)%valid_min   = -90.                                                 ;  sd_typvar(ivar+1)%valid_min   = -90.
+      sd_typvar(ivar)%valid_max   =  90.                                                 ;  sd_typvar(ivar+1)%valid_max   =  90.
+      sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'begin_latitude'               ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'end_latitude'
+      sd_typvar(ivar)%cshort_name = 'latmin'                                             ;  sd_typvar(ivar+1)%cshort_name = 'latmax'
+      ivar = ivar + 1
+
+      ivar = ivar + 1  ; itop = ivar                                                     ;  ibot = ivar+1
+      ipk(ivar) = nclass                                                                 ;  ipk(ivar+1) = nclass
+      sd_typvar(ivar)%cname       = 'top'                                                ;  sd_typvar(ivar+1)%cname       = 'bottom'
+      sd_typvar(ivar)%cunits      = 'meters'                                             ;  sd_typvar(ivar+1)%cunits      = 'meters'
+      sd_typvar(ivar)%valid_min   = 0.                                                   ;  sd_typvar(ivar+1)%valid_min   = 0.
+      sd_typvar(ivar)%valid_max   = 10000.                                               ;  sd_typvar(ivar+1)%valid_max   = 10000.
+      sd_typvar(ivar)%clong_name  = 'class_min_depth'                                    ;  sd_typvar(ivar+1)%clong_name  = 'class_max_depth'
+      sd_typvar(ivar)%cshort_name = 'top'                                                ;  sd_typvar(ivar+1)%cshort_name = 'bottom'
+      ivar = ivar + 1
+
+      ivtrpcl = -1  ; ihtrpcl = -1 ; istrpcl = -1
+      IF ( nclass > 1 ) THEN  ! define additional variable for vertical profile of transport (per class)
+         ivar = ivar + 1  ; ivtrpcl = ivar
+         ipk(ivar) = nclass                      
+         sd_typvar(ivar)%cname       = 'vtrp_dep'//TRIM(csuffixvarnam) 
+         sd_typvar(ivar)%cunits      = 'SV'  
+         sd_typvar(ivar)%valid_min   = 0.       
+         sd_typvar(ivar)%valid_max   = 10000.  
+         sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Volume_Transport_per_class' 
+         sd_typvar(ivar)%cshort_name = 'vtrp_dep'            
+
+         IF ( lpm )  THEN
+            ivar = ivar + 1  ; iptrpcl = ivar                                             ;  imtrpcl = ivar+1
+            ipk(ivar) = nclass                                                            ;  ipk(ivar+1) = nclass
+            sd_typvar(ivar)%cname       = 'ptrp_dep'//TRIM(csuffixvarnam)                 ;  sd_typvar(ivar+1)%cname       = 'mtrp_dep'//TRIM(csuffixvarnam)
+            sd_typvar(ivar)%cunits      = 'SV'                                            ;  sd_typvar(ivar+1)%cunits      = 'SV'
+            sd_typvar(ivar)%valid_min   = -500.                                           ;  sd_typvar(ivar+1)%valid_min   = -500.
+            sd_typvar(ivar)%valid_max   =  500.                                           ;  sd_typvar(ivar+1)%valid_max   =  500.
+            sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Positive_trp_per_class'  ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Negative_trp_per_class'
+            sd_typvar(ivar)%cshort_name = 'ptrp_dep'                                      ;  sd_typvar(ivar+1)%cshort_name = 'mtrp_dep'
             ivar = ivar + 1
          ENDIF
 
          IF ( lheat ) THEN
-            ivar = ivar + 1 ; ihtrp = ivar                                                  ;  istrp = ivar+1
-            ipk(ivar) = 1                                                                   ;  ipk(ivar+1) = 1
-            sd_typvar(ivar)%cname       = 'htrp'//TRIM(csuffixvarnam)                       ;  sd_typvar(ivar+1)%cname       = 'strp'//TRIM(csuffixvarnam)
-            sd_typvar(ivar)%cunits      = 'PW'                                              ;  sd_typvar(ivar+1)%cunits      = 'kt/s'
-            sd_typvar(ivar)%valid_min   = -1000.                                            ;  sd_typvar(ivar+1)%valid_min   = -1000.
-            sd_typvar(ivar)%valid_max   =  1000.                                            ;  sd_typvar(ivar+1)%valid_max   =  1000.
-            sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Heat_Transport'            ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Salt_Transport'
-            sd_typvar(ivar)%cshort_name = 'htrp'                                            ;  sd_typvar(ivar+1)%cshort_name = 'strp'
+            ivar = ivar + 1  ; ihtrpcl = ivar                                              ;  istrpcl = ivar+1
+            ipk(ivar) = nclass                                                             ;  ipk(ivar+1) = nclass
+            sd_typvar(ivar)%cname       = 'htrp_dep'//TRIM(csuffixvarnam)                  ;  sd_typvar(ivar+1)%cname       = 'strp_dep'//TRIM(csuffixvarnam)
+            sd_typvar(ivar)%cunits      = 'PW'                                             ;  sd_typvar(ivar+1)%cunits      = 'kt/s'
+            sd_typvar(ivar)%valid_min   = -1000.                                           ;  sd_typvar(ivar+1)%valid_min   = -1000.
+            sd_typvar(ivar)%valid_max   =  1000.                                           ;  sd_typvar(ivar+1)%valid_max   =  1000.
+            sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Heat_Transport_per_class' ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Salt_Transport_per_class'
+            sd_typvar(ivar)%cshort_name = 'htrp_dep'                                       ;  sd_typvar(ivar+1)%cshort_name = 'strp_dep'
             ivar = ivar + 1
          ENDIF
+      ENDIF
 
-         ivar = ivar + 1 ; ilonmin = ivar                                                   ;  ilonmax = ivar+1
-         ipk(ivar) = 1                                                                      ;  ipk(ivar+1) = 1
-         sd_typvar(ivar)%cname       = 'lonmin'//TRIM(csuffixvarnam)                        ;  sd_typvar(ivar+1)%cname       = 'lonmax'//TRIM(csuffixvarnam)
-         sd_typvar(ivar)%cunits      = 'deg'                                                ;  sd_typvar(ivar+1)%cunits      = 'deg'
-         sd_typvar(ivar)%valid_min   = -180.                                                ;  sd_typvar(ivar+1)%valid_min   = -180.
-         sd_typvar(ivar)%valid_max   =  180.                                                ;  sd_typvar(ivar+1)%valid_max   =  180.
-         sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'begin_longitude'              ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'end_longitude'
-         sd_typvar(ivar)%cshort_name = 'lonmin'                                             ;  sd_typvar(ivar+1)%cshort_name = 'lonmax'
-         ivar = ivar + 1
-
-         ivar = ivar + 1  ; ilatmin = ivar                                                  ;  ilatmax = ivar+1
-         ipk(ivar) = 1                                                                      ;  ipk(ivar+1) = 1
-         sd_typvar(ivar)%cname       = 'latmin'//TRIM(csuffixvarnam)                        ;  sd_typvar(ivar+1)%cname       = 'latmax'//TRIM(csuffixvarnam)
-         sd_typvar(ivar)%cunits      = 'deg'                                                ;  sd_typvar(ivar+1)%cunits      = 'deg'
-         sd_typvar(ivar)%valid_min   = -90.                                                 ;  sd_typvar(ivar+1)%valid_min   = -90.
-         sd_typvar(ivar)%valid_max   =  90.                                                 ;  sd_typvar(ivar+1)%valid_max   =  90.
-         sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'begin_latitude'               ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'end_latitude'
-         sd_typvar(ivar)%cshort_name = 'latmin'                                             ;  sd_typvar(ivar+1)%cshort_name = 'latmax'
-         ivar = ivar + 1
-
-         ivar = ivar + 1  ; itop = ivar                                                     ;  ibot = ivar+1
-         ipk(ivar) = nclass                                                                 ;  ipk(ivar+1) = nclass
-         sd_typvar(ivar)%cname       = 'top'                                                ;  sd_typvar(ivar+1)%cname       = 'bottom'
-         sd_typvar(ivar)%cunits      = 'meters'                                             ;  sd_typvar(ivar+1)%cunits      = 'meters'
-         sd_typvar(ivar)%valid_min   = 0.                                                   ;  sd_typvar(ivar+1)%valid_min   = 0.
-         sd_typvar(ivar)%valid_max   = 10000.                                               ;  sd_typvar(ivar+1)%valid_max   = 10000.
-         sd_typvar(ivar)%clong_name  = 'class_min_depth'                                    ;  sd_typvar(ivar+1)%clong_name  = 'class_max_depth'
-         sd_typvar(ivar)%cshort_name = 'top'                                                ;  sd_typvar(ivar+1)%cshort_name = 'bottom'
-         ivar = ivar + 1
-
-         ivtrpcl = -1  ; ihtrpcl = -1 ; istrpcl = -1
-         IF ( nclass > 1 ) THEN  ! define additional variable for vertical profile of transport (per class)
-            ivar = ivar + 1  ; ivtrpcl = ivar
-            ipk(ivar) = nclass                      
-            sd_typvar(ivar)%cname       = 'vtrp_dep'//TRIM(csuffixvarnam) 
-            sd_typvar(ivar)%cunits      = 'SV'  
-            sd_typvar(ivar)%valid_min   = 0.       
-            sd_typvar(ivar)%valid_max   = 10000.  
-            sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Volume_Transport_per_class' 
-            sd_typvar(ivar)%cshort_name = 'vtrp_dep'            
-
-            IF ( lpm )  THEN
-               ivar = ivar + 1  ; iptrpcl = ivar                                             ;  imtrpcl = ivar+1
-               ipk(ivar) = nclass                                                            ;  ipk(ivar+1) = nclass
-               sd_typvar(ivar)%cname       = 'ptrp_dep'//TRIM(csuffixvarnam)                 ;  sd_typvar(ivar+1)%cname       = 'mtrp_dep'//TRIM(csuffixvarnam)
-               sd_typvar(ivar)%cunits      = 'SV'                                            ;  sd_typvar(ivar+1)%cunits      = 'SV'
-               sd_typvar(ivar)%valid_min   = -500.                                           ;  sd_typvar(ivar+1)%valid_min   = -500.
-               sd_typvar(ivar)%valid_max   =  500.                                           ;  sd_typvar(ivar+1)%valid_max   =  500.
-               sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Positive_trp_per_class'  ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Negative_trp_per_class'
-               sd_typvar(ivar)%cshort_name = 'ptrp_dep'                                      ;  sd_typvar(ivar+1)%cshort_name = 'mtrp_dep'
-               ivar = ivar + 1
-            ENDIF
-
-            IF ( lheat ) THEN
-               ivar = ivar + 1  ; ihtrpcl = ivar                                              ;  istrpcl = ivar+1
-               ipk(ivar) = nclass                                                             ;  ipk(ivar+1) = nclass
-               sd_typvar(ivar)%cname       = 'htrp_dep'//TRIM(csuffixvarnam)                  ;  sd_typvar(ivar+1)%cname       = 'strp_dep'//TRIM(csuffixvarnam)
-               sd_typvar(ivar)%cunits      = 'PW'                                             ;  sd_typvar(ivar+1)%cunits      = 'kt/s'
-               sd_typvar(ivar)%valid_min   = -1000.                                           ;  sd_typvar(ivar+1)%valid_min   = -1000.
-               sd_typvar(ivar)%valid_max   =  1000.                                           ;  sd_typvar(ivar+1)%valid_max   =  1000.
-               sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Heat_Transport_per_class' ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Salt_Transport_per_class'
-               sd_typvar(ivar)%cshort_name = 'htrp_dep'                                       ;  sd_typvar(ivar+1)%cshort_name = 'strp_dep'
-               ivar = ivar + 1
-            ENDIF
-         ENDIF
-
-      END SUBROUTINE set_typvar
-      SUBROUTINE interm_pt (ydpt, kk, pai, pbi, paj, pbj, ydpti)
-         !!---------------------------------------------------------------------
-         !!                  ***  ROUTINE nterm_pt  ***
-         !!
-         !! ** Purpose : Find the best intermediate points on a pathway.
-         !!
-         !! ** Method  : ydpt : complex vector of the positions of the nearest points
-         !!               kk  : current working index
-         !!          pai, pbi : slope and original ordinate of x(y)
-         !!          paj, pbj : slope and original ordinate of y(x)
-         !!             ydpti : Complex holding the position of intermediate point 
-         !!
-         !! ** Reference : 19/07/1999 : J.M. Molines in Clipper
-         !!----------------------------------------------------------------------
-         COMPLEX, DIMENSION(:), INTENT(in ) :: ydpt
-         COMPLEX,               INTENT(out) :: ydpti
-         REAL(KIND=4),          INTENT(in ) :: pai, pbi, paj, pbj
-         INTEGER(KIND=4),       INTENT(in ) :: kk
-         ! ... local
-         COMPLEX                            :: ylptmp1, ylptmp2
-         REAL(KIND=4)                       :: za0, zb0
-         REAL(KIND=4)                       :: za1, zb1
-         REAL(KIND=4)                       :: zd1, zd2
-         REAL(KIND=4)                       :: zxm, zym
-         REAL(KIND=4)                       :: zxp, zyp
-         !!----------------------------------------------------------------------
-         ! ... Determines whether we use y(x) or x(y):
-         IF (ABS(paj) <=  1) THEN
-            ! .....  use y(x)
-            ! ... possible intermediate points:
-            ylptmp1=ydpt(kk-1)+(1.,0.)                 ! M1 
-            ylptmp2=ydpt(kk-1)+CMPLX(0.,SIGN(1.,paj))  ! M2
-            !
-            ! ... M1 is the candidate point:
-            zxm=REAL(ylptmp1)
-            zym=IMAG(ylptmp1)
-            za0=paj
-            zb0=pbj
-            !
-            za1=-1./za0
-            zb1=zym - za1*zxm
-            ! ... P1 is the projection of M1 on the strait line
-            zxp=-(zb1-zb0)/(za1-za0)
-            zyp=za0*zxp + zb0
-            ! ... zd1 is the distance M1P1
-            zd1=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
-            !
-            ! ... M2 is the candidate point:
-            zxm=REAL(ylptmp2)
-            zym=IMAG(ylptmp2)
-            za1=-1./za0
-            zb1=zym - za1*zxm
-            ! ... P2 is the projection of M2 on the strait line
-            zxp=-(zb1-zb0)/(za1-za0)
-            zyp=za0*zxp + zb0
-            ! ... zd2 is the distance M2P2
-            zd2=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
-            ! ... chose the smallest (zd1,zd2)
-            IF (zd2 <=  zd1) THEN
-               ydpti=ylptmp2   ! use M2
-            ELSE
-               ydpti=ylptmp1   ! use M1
-            END IF
-            !
-         ELSE   
-            ! ...  use x(y)
-            ! ... possible intermediate points:
-            ylptmp1=ydpt(kk-1)+CMPLX(SIGN(1.,pai),0.)  ! M1
-            ylptmp2=ydpt(kk-1)+(0.,1.)                 ! M2
-            ! 
-            ! ... M1 is the candidate point:
-            zxm=REAL(ylptmp1)
-            zym=IMAG(ylptmp1)
-            za0=pai
-            zb0=pbi
-            !
-            za1=-1./za0
-            zb1=zxm - za1*zym
-            zyp=-(zb1-zb0)/(za1-za0)
-            zxp=za0*zyp + zb0
-            zd1=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
-            !
-            zxm=REAL(ylptmp2)
-            zym=IMAG(ylptmp2)
-            za1=-1./za0
-            zb1=zxm - za1*zym
-            zyp=-(zb1-zb0)/(za1-za0)
-            zxp=za0*zyp + zb0
-            zd2=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
-            IF (zd2 <=  zd1) THEN
-               ydpti=ylptmp2
-            ELSE
-               ydpti=ylptmp1
-            END IF
+   END SUBROUTINE set_typvar
+   SUBROUTINE interm_pt (ydpt, kk, pai, pbi, paj, pbj, ydpti)
+      !!---------------------------------------------------------------------
+      !!                  ***  ROUTINE nterm_pt  ***
+      !!
+      !! ** Purpose : Find the best intermediate points on a pathway.
+      !!
+      !! ** Method  : ydpt : complex vector of the positions of the nearest points
+      !!               kk  : current working index
+      !!          pai, pbi : slope and original ordinate of x(y)
+      !!          paj, pbj : slope and original ordinate of y(x)
+      !!             ydpti : Complex holding the position of intermediate point 
+      !!
+      !! ** Reference : 19/07/1999 : J.M. Molines in Clipper
+      !!----------------------------------------------------------------------
+      COMPLEX, DIMENSION(:), INTENT(in ) :: ydpt
+      COMPLEX,               INTENT(out) :: ydpti
+      REAL(KIND=4),          INTENT(in ) :: pai, pbi, paj, pbj
+      INTEGER(KIND=4),       INTENT(in ) :: kk
+      ! ... local
+      COMPLEX                            :: ylptmp1, ylptmp2
+      REAL(KIND=4)                       :: za0, zb0
+      REAL(KIND=4)                       :: za1, zb1
+      REAL(KIND=4)                       :: zd1, zd2
+      REAL(KIND=4)                       :: zxm, zym
+      REAL(KIND=4)                       :: zxp, zyp
+      !!----------------------------------------------------------------------
+      ! ... Determines whether we use y(x) or x(y):
+      IF (ABS(paj) <=  1) THEN
+         ! .....  use y(x)
+         ! ... possible intermediate points:
+         ylptmp1=ydpt(kk-1)+(1.,0.)                 ! M1 
+         ylptmp2=ydpt(kk-1)+CMPLX(0.,SIGN(1.,paj))  ! M2
+         !
+         ! ... M1 is the candidate point:
+         zxm=REAL(ylptmp1)
+         zym=IMAG(ylptmp1)
+         za0=paj
+         zb0=pbj
+         !
+         za1=-1./za0
+         zb1=zym - za1*zxm
+         ! ... P1 is the projection of M1 on the strait line
+         zxp=-(zb1-zb0)/(za1-za0)
+         zyp=za0*zxp + zb0
+         ! ... zd1 is the distance M1P1
+         zd1=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+         !
+         ! ... M2 is the candidate point:
+         zxm=REAL(ylptmp2)
+         zym=IMAG(ylptmp2)
+         za1=-1./za0
+         zb1=zym - za1*zxm
+         ! ... P2 is the projection of M2 on the strait line
+         zxp=-(zb1-zb0)/(za1-za0)
+         zyp=za0*zxp + zb0
+         ! ... zd2 is the distance M2P2
+         zd2=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+         ! ... chose the smallest (zd1,zd2)
+         IF (zd2 <=  zd1) THEN
+            ydpti=ylptmp2   ! use M2
+         ELSE
+            ydpti=ylptmp1   ! use M1
          END IF
-      END SUBROUTINE interm_pt
+         !
+      ELSE   
+         ! ...  use x(y)
+         ! ... possible intermediate points:
+         ylptmp1=ydpt(kk-1)+CMPLX(SIGN(1.,pai),0.)  ! M1
+         ylptmp2=ydpt(kk-1)+(0.,1.)                 ! M2
+         ! 
+         ! ... M1 is the candidate point:
+         zxm=REAL(ylptmp1)
+         zym=IMAG(ylptmp1)
+         za0=pai
+         zb0=pbi
+         !
+         za1=-1./za0
+         zb1=zxm - za1*zym
+         zyp=-(zb1-zb0)/(za1-za0)
+         zxp=za0*zyp + zb0
+         zd1=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+         !
+         zxm=REAL(ylptmp2)
+         zym=IMAG(ylptmp2)
+         za1=-1./za0
+         zb1=zxm - za1*zym
+         zyp=-(zb1-zb0)/(za1-za0)
+         zxp=za0*zyp + zb0
+         zd2=(zxm-zxp)*(zxm-zxp) + (zym-zyp)*(zym-zyp)
+         IF (zd2 <=  zd1) THEN
+            ydpti=ylptmp2
+         ELSE
+            ydpti=ylptmp1
+         END IF
+      END IF
+   END SUBROUTINE interm_pt
 
-   END PROGRAM cdftransport
+END PROGRAM cdftransport
