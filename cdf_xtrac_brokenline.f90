@@ -46,7 +46,8 @@ PROGRAM cdf_xtract_brokenline
    INTEGER(KIND=4) :: nsta=5                         ! number of points defining the broken line
    INTEGER(KIND=4) :: nsec=0                         ! total number of points on the broken line
    INTEGER(KIND=4) :: nn                             ! working integer (number of points in a leg)
-   INTEGER(KIND=4) :: norm_u, norm_v                 ! velocity normalization (further use)
+   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: norm_u, norm_v   ! velocity normalization per leg
+   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: normu_sec, normv_sec ! velocity normalization per section
    INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: iista, ijsta     ! I,J position of the point on the broken line
    INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ikeepn           ! Number of points per leg
    INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: iisec, ijsec     ! F-index of points on the broken line
@@ -96,34 +97,54 @@ PROGRAM cdf_xtract_brokenline
       PRINT *,'                     ... [-verbose]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
-      PRINT *,'       ' 
-      PRINT *,'      '
+      PRINT *,'        This tool extracts model variables from model files for a geographical' 
+      PRINT *,'      broken line, similar to an oceanographic campaign where an oceanic '
+      PRINT *,'      section is formed by one or more legs.' 
+      PRINT *,'        The broken line is specified by the position of ending points of each'
+      PRINT *,'      leg, given in an ASCII file. OVIDE section is taken as default, when no'
+      PRINT *,'      section file is provided.'
+      PRINT *,'        This tool provides a netcdf file similar to a model file, but with a '
+      PRINT *,'      degenerated y dimension (1). In order to be able to use standard CDFTOOLS'
+      PRINT *,'      relevant metric variables are saved into the output file, such as pseudo'
+      PRINT *,'      e1v and e3v_ps and vmask. Therefore the output file can be considered as'
+      PRINT *,'      a mesh_hgr, mesh_zgr and mask file for any ''meridional'' computation.'
+      PRINT *,'        This tools works with temperatures, salinities and normal velocities.'
+      PRINT *,'      The broken line is approximated in the model, by a succession of segments'
+      PRINT *,'      joining F-points. The velocity is taken as either U or V depending on the'
+      PRINT *,'      orientation of the segment, temperatures and salinities are interpolated'
+      PRINT *,'      on the velocity points. When progressing along the broken line, velocity'
+      PRINT *,'      is positive when heading to the right of the progression.' 
+      PRINT *,'        The barotropic transport across the broken line is computed, using the'
+      PRINT *,'      same sign convention. On a closed broken line, the barotropic transport'
+      PRINT *,'      should be very small.'
+      PRINT *,'      ' 
       PRINT *,'     ARGUMENTS :'
-      PRINT *,'       T-file :  model gridT file '
-      PRINT *,'       U-file :  model gridU file '
-      PRINT *,'       V-file :  model gridV file '
+      PRINT *,'      T-file :  model gridT file '
+      PRINT *,'      U-file :  model gridU file '
+      PRINT *,'      V-file :  model gridV file '
       PRINT *,'      ' 
       PRINT *,'     OPTIONS :'
-      PRINT *,'       -f section_file : provide a file for section definition.'
-      PRINT *,'              section_file is an ascii file as follows:'
-      PRINT *,'              * line #1 : name of the section (e.g. ovide). '
-      PRINT *,'                   Will be used for naming the output file.'
-      PRINT *,'              * line #2 : number of points defining the broken line.'
-      PRINT *,'              * line #3-end : a pair of Longitude latitude values defining'
-      PRINT *,'                    the points. If not supplied, use hard-coded information'
-      PRINT *,'                    for OVIDE section. A comment can be added at the end of'
-      PRINT *,'                    of the lines, using a # as separator'
-      PRINT *,'       -verbose : increase verbosity  ' 
-      PRINT *,'      '
+      PRINT *,'      -f section_file : provide a file for section definition.'
+      PRINT *,'             section_file is an ascii file as follows:'
+      PRINT *,'             * line #1 : name of the section (e.g. ovide). '
+      PRINT *,'                  Will be used for naming the output file.'
+      PRINT *,'             * line #2 : number of points defining the broken line.'
+      PRINT *,'             * line #3-end : a pair of Longitude latitude values defining'
+      PRINT *,'                   the points. If not supplied, use hard-coded information'
+      PRINT *,'                   for OVIDE section. A comment can be added at the end of'
+      PRINT *,'                   of the lines, using a # as separator'
+      PRINT *,'      -verbose : increase verbosity  ' 
+      PRINT *,'     '
       PRINT *,'     REQUIRED FILES :'
-      PRINT *,'       ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' must be in the current directory ' 
+      PRINT *,'      ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' must be in the current directory ' 
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
       PRINT *,'       netcdf file : section_name.nc'
-      !     PRINT *,'         variables : ', TRIM(cv_out),' (    )'
+      PRINT *,'         variables : temperature, salinity, normal velocity, pseudo V metrics,'
+      PRINT *,'                     mask'
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
-      PRINT *,'      ' 
+      PRINT *,'        cdftransport, cdfmoc, cdfmocsig. This tool replace cdfovide.' 
       PRINT *,'      '
       STOP
    ENDIF
@@ -201,6 +222,7 @@ PROGRAM cdf_xtract_brokenline
    ENDIF
 
    ALLOCATE ( iilegs(nsta-1, npiglo+npjglo), ijlegs(nsta-1, npiglo+npjglo) )
+   ALLOCATE ( norm_u(nsta-1) , norm_v(nsta-1) )
    ALLOCATE ( rxx(npiglo+npjglo), ryy(npiglo+npjglo) )
    ALLOCATE ( tim (npt) )
 
@@ -225,17 +247,29 @@ PROGRAM cdf_xtract_brokenline
       ijsta(jleg+1) = ijmax
 
       ! find the broken line between P1 (iimin,ijmin) and P2 (iimax, ijmax)
-      CALL broken_line( iimin, iimax, ijmin, ijmax, rxx, ryy, nn, npiglo, npjglo, norm_u, norm_v )
+      CALL broken_line( iimin, iimax, ijmin, ijmax, rxx, ryy, nn, npiglo, npjglo, norm_u(jleg), norm_v(jleg) )
+      ikeepn(jleg) = nn  ! number of points (F) on leg jleg
+      nsec = nsec + nn   ! total number of points (F) on the broken line
 
       IF ( lverbose) PRINT *, 'Leg ', jleg,' : npoints : ', nn
 
-      IF (rxx(1) < rxx(nn) ) THEN ! leg is oriented eastward
+      IF ( jleg == 1 ) THEN
+        IF (rxx(1) < rxx(nn) ) THEN ! leg is oriented eastward
+           iilegs(jleg,1:nn)=rxx(1:nn)
+           ijlegs(jleg,1:nn)=ryy(1:nn)
+        ELSE                        ! leg is oriented westward
+           iilegs(jleg,1:nn)=rxx(nn:1:-1)
+           ijlegs(jleg,1:nn)=ryy(nn:1:-1)
+        END IF
+      ELSE  ! check the continuity between legs
+      IF ( iilegs(jleg-1, ikeepn(jleg-1)) == rxx(1) ) THEN  ! continuity
          iilegs(jleg,1:nn)=rxx(1:nn)
          ijlegs(jleg,1:nn)=ryy(1:nn)
-      ELSE                        ! leg is oriented westward
+      ELSE                          ! reverse sense
          iilegs(jleg,1:nn)=rxx(nn:1:-1)
          ijlegs(jleg,1:nn)=ryy(nn:1:-1)
       END IF
+      ENDIF
 
       IF ( lverbose) THEN
          PRINT *, 'Leg  rxx   ryy '
@@ -243,9 +277,6 @@ PROGRAM cdf_xtract_brokenline
             PRINT *, jleg, iilegs(jleg,jk), ijlegs(jleg,jk) ,rxx(jk), ryy(jk)
          END DO
       ENDIF
-
-      ikeepn(jleg) = nn  ! number of points (F) on leg jleg
-      nsec = nsec + nn   ! total number of points (F) on the broken line
    END DO !! loop on the legs
 
    ! fancy control print
@@ -262,15 +293,22 @@ PROGRAM cdf_xtract_brokenline
    ! 3. : Extraction along the legs
    ! ------------------------------
    ALLOCATE (iisec(nsec), ijsec(nsec)) 
+   ALLOCATE (normu_sec(nsec), normv_sec(nsec)) 
 
-   ipoint = 0
-   DO jleg=1, nsta-1  ! loop on legs 
+   ipoint = 1
+   DO jleg=1, nsta-1      ! loop on legs 
+      ipoint = ipoint -1  ! trick to avoid repetition of points in between legs
       DO jipt=1, ikeepn(jleg) 
          ipoint = ipoint + 1
          iisec(ipoint)=iilegs(jleg,jipt)  ! i-index
          ijsec(ipoint)=ijlegs(jleg,jipt)  ! j-index
+         normu_sec(ipoint) = norm_u(jleg)
+         normv_sec(ipoint) = norm_v(jleg)
       END DO
    END DO
+
+   ! adjust nsec to its real value ( 2nd part of the trick)
+   nsec = ipoint
 
    ! input fields
    ALLOCATE(rlonu(npiglo,npjglo), rlatu(npiglo,npjglo))
@@ -341,7 +379,9 @@ PROGRAM cdf_xtract_brokenline
          ENDIF
 
       ELSE
-         PRINT *, 'problem'
+         PRINT *, 'problem 1 for JIPT = ', jipt
+         PRINT *, '             I(P2)=',ii1, 'J(P1)=', ii
+         PRINT *, '             J(P2)=',ij1, 'J(P1)=', ij
          exit 
       ENDIF
    END DO
@@ -382,7 +422,7 @@ PROGRAM cdf_xtract_brokenline
                      tempersec(jipt,jk) = 0.5 * ( temper(ii+1,ij) + temper(ii+1,ij+1) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii+1,ij) + saline(ii+1,ij+1) )
                   ENDIF
-                  vmeridsec(jipt,jk) = vmerid(ii+1,ij)
+                  vmeridsec(jipt,jk) = vmerid(ii+1,ij) * normv_sec(jipt)
                   e3vsec   (jipt,jk) = e3v   (ii+1,ij)
 
                ELSE ! westward
@@ -393,7 +433,7 @@ PROGRAM cdf_xtract_brokenline
                      tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii,ij+1) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii,ij+1) )
                   ENDIF
-                  vmeridsec(jipt,jk) = vmerid(ii,ij)
+                  vmeridsec(jipt,jk) = vmerid(ii,ij) * normv_sec(jipt)
                   e3vsec   (jipt,jk) = e3v   (ii,ij)
 
                ENDIF
@@ -408,7 +448,7 @@ PROGRAM cdf_xtract_brokenline
                      tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii+1,ij) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii+1,ij) )
                   ENDIF
-                  uzonalsec(jipt,jk) = uzonal(ii,ij)
+                  uzonalsec(jipt,jk) = uzonal(ii,ij) * normu_sec(jipt)
                   e3usec   (jipt,jk) = e3u   (ii,ij)
 
                ELSE ! northward
@@ -419,17 +459,19 @@ PROGRAM cdf_xtract_brokenline
                      tempersec(jipt,jk) = 0.5 * ( temper(ii,ij+1) + temper(ii+1,ij+1) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii,ij+1) + saline(ii+1,ij+1) )
                   ENDIF
-                  uzonalsec(jipt,jk) = uzonal(ii,ij+1)
+                  uzonalsec(jipt,jk) = uzonal(ii,ij+1) * normu_sec(jipt)
                   e3usec   (jipt,jk) = e3u   (ii,ij+1)
 
                ENDIF
 
             ELSE
-               PRINT *, 'problem '
+               PRINT *, 'problem 2 for JIPT = ', jipt, 'JK=', jk
+               PRINT *, '             I(P2)=',ii1, 'J(P1)=', ii
+               PRINT *, '             J(P2)=',ij1, 'J(P1)=', ij
                exit 
             ENDIF
 
-            dtmp=1.d0* (uzonalsec(jipt,jk) + vmeridsec(jipt,jk))*&
+            dtmp=1.d0* (uzonalsec(jipt,jk) + vmeridsec(jipt,jk))*    &
                  (e2usec(jipt,1 )+ e1vsec(jipt,1 ))*                 &
                  (e3usec(jipt,jk)+ e3vsec(jipt,jk))
             dbarot=dbarot+dtmp
