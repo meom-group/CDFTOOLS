@@ -20,7 +20,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
-       cdfbn2 cdfrichardson cdfsig0 cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
+       cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
        cdfbottom cdfets cdfokubo-w cdfcurl cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
@@ -111,6 +111,9 @@ cdfrichardson: cdfio.o  eos.o  cdfrichardson.f90
 
 cdfsig0: cdfio.o  eos.o  cdfsig0.f90
 	$(F90) cdfsig0.f90 -o $(BINDIR)/cdfsig0 cdfio.o eos.o modcdfnames.o  $(FFLAGS)
+
+cdfsigntr: cdfio.o  eos.o  cdfsigntr.f90
+	$(F90) cdfsigntr.f90 -o $(BINDIR)/cdfsigntr cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 cdfspice: cdfio.o  eos.o  cdfspice.f90
 	$(F90) cdfspice.f90 -o $(BINDIR)/cdfspice cdfio.o modcdfnames.o  $(FFLAGS)

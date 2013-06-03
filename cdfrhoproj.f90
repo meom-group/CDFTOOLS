@@ -90,8 +90,9 @@ PROGRAM cdfrhoproj
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-s0 sigma ] : define a single sigma surface on the command line' 
      PRINT *,'                    instead of reading rho_lev ascii file.'
-     PRINT *,'       [VAR-type] : position of IN-var on the C-grid ( either T U V F W )'
-     PRINT *,'                    default is ''T''.'
+     PRINT *,'       [VAR-type] : position of IN-var on the C-grid ( either T U V F W S )'
+     PRINT *,'                    default is ''T''. '
+     PRINT *,'                    S is used in case of section files (cdf_xtract_brokenline).'
      PRINT *,'       [-sig sigma_name] : name of the density variable in RHO_file.'
      PRINT *,'                    default is ', TRIM(cv_sig)
      PRINT *,'       [-isodep ] : only compute the isopycnal depth. then stop. In this case'
@@ -274,7 +275,7 @@ PROGRAM cdfrhoproj
      DO jk=1,npk
         v2d(:,:) = getvar(cf_dta,cv_in,jk,npiglo,npjglo)
         SELECT CASE ( ctype )
-        CASE ('T', 't' )
+        CASE ('T', 't', 'S', 's' )
            zsig(:,:,jk) = v2d(:,:)
         CASE ('U','u' )
            DO ji=2,npiglo

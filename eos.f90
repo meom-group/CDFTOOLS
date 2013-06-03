@@ -19,8 +19,9 @@ MODULE eos
 
   PRIVATE
   PUBLIC :: sigma0
-  PUBLIC :: eosbn2
   PUBLIC :: sigmai
+  PUBLIC :: sigmantr
+  PUBLIC :: eosbn2
   PUBLIC :: albet
   PUBLIC :: beta
 
@@ -105,6 +106,58 @@ CONTAINS
 
   END FUNCTION sigma0
 
+  FUNCTION sigmantr( ptem, psal, kpi,kpj) 
+    !! --------------------------------------------------------------------
+    !! ** Purpose :   Compute the  neutral volumic mass (kg/m3) from known
+    !!      potential temperature and salinity fields using an equation of
+    !!      state. 
+    !!
+    !! ** Method  :
+    !!       McDougall and Jackett (2005) equation of state.
+    !!              potential temperature         t        deg celsius
+    !!              salinity                      s        psu
+    !!              neutral density               rho      kg/m**3
+    !!       result is not masked at this stage.
+    !!       Check value: rho(20,35) = 1024.59416751197 kg/m**3 
+    !!       t = 20 deg celcius, s=35 psu
+    !!
+    !! ** References : McDougall and Jackett, J. Mar Res., 2005
+    !! --------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptem, psal ! temperature salinity
+    INTEGER(KIND=4),                  INTENT(in) :: kpi,kpj    ! dimension of 2D arrays
+    REAL(KIND=8), DIMENSION(kpi,kpj) :: sigmantr          ! return value
+
+    INTEGER(KIND=4)                   :: ji, jj
+    REAL(KIND=8), DIMENSION (kpi,kpj) :: zws
+    REAL(KIND=8)                      :: zt, zs, zsr
+    REAL(KIND=8)                      :: zr1, zr2, zr3, zr4, zr5
+    !! --------------------------------------------------------------------
+    DO jj = 1, kpi
+       DO ji = 1, kpj
+          zt = ptem(ji,jj)
+          zs = psal(ji,jj)
+          zsr= SQRT( ABS(zs) )
+       ! Numerator
+          ! T-Polynome
+          zr1= ( ( -4.3159255086706703d-4*zt+8.1157118782170051d-2 )*zt+2.2280832068441331d-1 )*zt+1002.3063688892480d0
+          ! S-T Polynome
+          zr2= ( -1.7052298331414675d-7*zs-3.1710675488863952d-3*zt-1.0304537539692924d-4 )*zs
+       ! Denominator
+          ! T-Polynome
+          zr3= ( ( (-2.3850178558212048d-9*zt -1.6212552470310961d-7 )*zt+7.8717799560577725d-5 )*zt+4.3907692647825900d-5 )*zt+     1.0d0
+          ! S-T Polynome
+          zr4= ( ( -2.2744455733317707d-9*zt*zt+6.0399864718597388d-6)*zt-5.1268124398160734d-4 )*zs
+          ! S-T Polynome
+          zr5= ( -1.3409379420216683d-9*zt*zt-3.6138532339703262d-5)*zs*zsr
+
+          ! Neutral density
+          sigmantr(ji,jj) = ( zr1 + zr2 ) / ( zr3 + zr4 + zr5 )
+       ENDDO
+    ENDDO
+
+
+  END FUNCTION sigmantr
+
   FUNCTION sigmai_dep ( ptem, psal, pref, kpi,kpj)
     !! --------------------------------------------------------------------
     !! ** Purpose :   Compute the  density referenced to pref (ratio rho/rau0) 
@@ -140,7 +193,7 @@ CONTAINS
     REAL(KIND=8) :: dlt, dls      
     REAL(KIND=8) :: dla, dla1, dlaw, dlb, dlb1, dlbw, dlc, dle, dlk0, dlkw 
     REAL(kind=8) :: dlrhop, dlr1, dlr2, dlr3, dlref
-
+    !! --------------------------------------------------------------------
     dlref      = pref
     sigmai_dep = 0.d0
     DO jj = 1, kpj

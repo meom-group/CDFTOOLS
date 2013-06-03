@@ -99,6 +99,7 @@ MODULE modCdfNames
   ! density, isopycnal diagnostics
   CHARACTER(LEN=20) :: cn_vosigma0='vosigma0' !: potential density refered to surface
   CHARACTER(LEN=20) :: cn_vosigmai='vosigmai' !: potential density refered to a partiular depth
+  CHARACTER(LEN=20) :: cn_vosigntr='vosigntr' !: neutral density
   CHARACTER(LEN=20) :: cn_vodepiso='vodepiso' !: depth of isopycnal
   CHARACTER(LEN=20) :: cn_isothick='isothick' !: isopycnal tickness (from cdfsigintegr)
 
