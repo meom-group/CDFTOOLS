@@ -35,7 +35,7 @@ PROGRAM cdfsigntr
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
-  CHARACTER(LEN=256)                        :: cf_out='sig0.nc'   ! output file name
+  CHARACTER(LEN=256)                        :: cf_out='signtr.nc'   ! output file name
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
   !!----------------------------------------------------------------------
@@ -76,9 +76,9 @@ PROGRAM cdfsigntr
   stypvar(1)%cunits            = 'kg/m3'
   stypvar(1)%rmissing_value    = 0.
   stypvar(1)%valid_min         = 0.001
-  stypvar(1)%valid_max         = 40.
-  stypvar(1)%clong_name        = 'Potential_density:sigma-0'
-  stypvar(1)%cshort_name       = cn_vosigma0
+  stypvar(1)%valid_max         = 1040.
+  stypvar(1)%clong_name        = 'Neutral volumic mass'
+  stypvar(1)%cshort_name       = cn_vosigntr
   stypvar(1)%conline_operation = 'N/A'
   stypvar(1)%caxis             = 'TZYX'
 

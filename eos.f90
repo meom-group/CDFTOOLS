@@ -132,8 +132,8 @@ CONTAINS
     REAL(KIND=8)                      :: zt, zs, zsr
     REAL(KIND=8)                      :: zr1, zr2, zr3, zr4, zr5
     !! --------------------------------------------------------------------
-    DO jj = 1, kpi
-       DO ji = 1, kpj
+    DO ji = 1, kpi
+       DO jj = 1, kpj
           zt = ptem(ji,jj)
           zs = psal(ji,jj)
           zsr= SQRT( ABS(zs) )
