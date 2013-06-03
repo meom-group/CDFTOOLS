@@ -295,16 +295,19 @@ PROGRAM cdfmocsig
   END IF
 
   e1v(:,:)   = getvar(cn_fhgr,   cn_ve1v,  1, npiglo, npjglo) 
-  gphiv(:,:) = getvar(cn_fhgr,   cn_gphiv, 1, npiglo, npjglo)
 
   IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
 
-  iloc         = MAXLOC(gphiv)
-  rdumlat(1,:) = gphiv(iloc(1),:)
+  IF ( npjglo > 1 ) THEN 
+     gphiv(:,:) = getvar(cn_fhgr,   cn_gphiv, 1, npiglo, npjglo)
+     iloc         = MAXLOC(gphiv)
+     rdumlat(1,:) = gphiv(iloc(1),:)
+  ELSE
+     rdumlat(1,:) = 0.
+  ENDIF
   rdumlon(:,:) = 0.               ! set the dummy longitude to 0
 
   ! create output fileset
-! ncout = create      (cf_moc, cf_vfil, 1,       npjglo, nbins,  cdep='sigma')
   ncout = create      (cf_moc, 'none', 1,       npjglo, nbins,  cdep='sigma')
   ierr  = createvar   (ncout,  stypvar, nbasins, ipk ,id_varout, cdglobal=cglobal)
   ierr  = putheadervar(ncout,  cf_vfil, 1,       npjglo, nbins,  pnavlon=rdumlon, pnavlat=rdumlat, pdep=sigma)
@@ -345,9 +348,9 @@ PROGRAM cdfmocsig
 
         ! get e3v at latitude jj
         IF ( lfull ) THEN
-          e3v(:,:) = e31d(jk)
+           e3v(:,:) = e31d(jk)
         ELSE
-          e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
         ENDIF
         !
         !  finds density 
@@ -362,49 +365,43 @@ PROGRAM cdfmocsig
 
         IF ( npjglo > 1 ) THEN
 
-        DO jj=2,npjglo-1
-           dmoc_tmp = 0
-           !  converts transport in "k" to transport in "sigma"
-           !  indirect adresssing - do it once and not for each basin!
-           DO ji=2,npiglo-1
-              dmoc_tmp(ibin(ji,jj),ji)=dmoc_tmp(ibin(ji,jj),ji) - e1v(ji,jj)*e3v(ji,jj)*zv(ji,jj)
+           DO jj=2,npjglo-1
+              dmoc_tmp = 0.d0
+              !  converts transport in "k" to transport in "sigma"
+              !  indirect adresssing - do it once and not for each basin!
+              DO ji=2,npiglo-1
+                 dmoc_tmp(ibin(ji,jj),ji)=dmoc_tmp(ibin(ji,jj),ji) - e1v(ji,jj)*e3v(ji,jj)*zv(ji,jj)
+              END DO
+              ! integrates 'zonally' (along i-coordinate) 
+              ! add to dmoc the contributions from level jk  at all densities jbin
+              DO jbin =1,nbins  
+                 DO ji=2,npiglo-1
+                    DO jbasin= 1, nbasins
+                       ! For all basins 
+                       dmoc(jbasin,jj,jbin)=dmoc(jbasin,jj,jbin ) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
+                    ENDDO
+                 END DO
+              END DO
+              !               end of loop on latitude for filling dmoc
            END DO
-           ! integrates 'zonally' (along i-coordinate) 
-           ! add to dmoc the contributions from level jk  at all densities jbin
-           DO jbin =1,nbins  
+           !  end of loop on depths for calculating transports     
+
+        ELSE    ! input file has only one j ( case of extracted broken lines)
+
+           dmoc_tmp = 0.d0
+           DO ji=2,npiglo-1
+              dmoc_tmp(ibin(ji,1),ji)=dmoc_tmp(ibin(ji,1),ji) - e1v(ji,1)*e3v(ji,1)*zv(ji,1)
+           END DO
+
+           DO jbin =1,nbins
               DO ji=2,npiglo-1
                  DO jbasin= 1, nbasins
                     ! For all basins 
-                    dmoc(jbasin,jj,jbin)=dmoc(jbasin,jj,jbin ) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
+                    dmoc(jbasin,1,jbin)=dmoc(jbasin,1,jbin ) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,1)
                  ENDDO
               END DO
            END DO
-           !               end of loop on latitude for filling dmoc
-        END DO
-        !  end of loop on depths for calculating transports     
-
-     ELSE
-
-     dmoc_tmp = 0.
-
-     DO ji=2,npiglo-1
-        dmoc_tmp(ibin(ji,1),ji)=dmoc_tmp(ibin(ji,1),ji) - e1v(ji,1)*e3v(ji,1)*zv(ji,1)
-        
-        !PRINT*,ji, e1v(ji,1),e3v(ji,1),zv(ji,1),dmoc_tmp(ibin(ji,1),ji)
-        
-     END DO
-
-     DO jbin =1,nbins
-         DO ji=2,npiglo-1
-            DO jbasin= 1, nbasins
-               ! For all basins 
-               dmoc(jbasin,1,jbin)=dmoc(jbasin,1,jbin ) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,1)
-            ENDDO
-         END DO
-     END DO
-           !               end of loop on latitude for filling dmoc
-
-     ENDIF
+        ENDIF
 
      END DO
 
