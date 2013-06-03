@@ -28,7 +28,7 @@ PROGRAM cdfcofdis
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                           :: jpi, jpj, jpk
+  INTEGER(KIND=4)                           :: jpi, jpj, jpk, npk
   INTEGER(KIND=4)                           :: jpim1, jpjm1, nperio=4
   INTEGER(KIND=4)                           :: narg, iargc, iarg
   INTEGER(KIND=4)                           :: ncout, ierr
@@ -55,16 +55,18 @@ PROGRAM cdfcofdis
   TYPE(variable), DIMENSION(1)              :: stypvar
 
   LOGICAL                                   :: lchk
+  LOGICAL                                   :: lsurf = .false.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   !
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfcofdis mesh_hgr.nc mask.nc gridT.nc [-jperio jperio ]'
+     PRINT *,' usage :  cdfcofdis mesh_hgr.nc mask.nc gridT.nc [-jperio jperio ] [-surf]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the distance to the coast and create a file with '
-     PRINT *,'        the ',TRIM(cv_out),' variable, indicating the distance to the coast.'
+     PRINT *,'        Compute the distance to the coast and create a file with the ',TRIM(cv_out)
+     PRINT *,'        variable, indicating the distance to the coast.his computation is done'
+     PRINT *,'        for every model level, unless -surf option is used.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       HGR-file : name of the mesh_hgr file '
@@ -72,8 +74,9 @@ PROGRAM cdfcofdis
      PRINT *,'       T-file   : netcdf file at T point.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -jperio jperio ] : define the NEMO jperio variable for north fold condition' 
-     PRINT *,'                Default is  4.'
+     PRINT *,'       [ -jperio jperio ] : define the NEMO jperio variable for north fold '
+     PRINT *,'           condition. Default is  4.'
+     PRINT *,'       [ -surf ] : only compute  distance at the surface.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -101,6 +104,8 @@ PROGRAM cdfcofdis
     SELECT CASE ( cldum )
     CASE ( '-jperio' ) 
        CALL getarg (iarg,cldum) ; READ(cldum, * ) nperio  ; iarg = iarg + 1
+    CASE ( '-surf' ) 
+       lsurf = .true.
     CASE DEFAULT
        PRINT *,' unknown option : ', TRIM(cldum)
        STOP
@@ -146,7 +151,13 @@ PROGRAM cdfcofdis
   gphif(:,:) = getvar(cn_fhgr,cn_gphif,1,jpi,jpj)
 
   ! prepare file output
-  ipk(1)                       = jpk
+  IF ( lsurf ) THEN
+     npk                       = 1
+  ELSE
+     npk = jpk
+  ENDIF
+
+  ipk(1)                       = npk
   stypvar(1)%cname             = cv_out
   stypvar(1)%cunits            = 'm'
   stypvar(1)%rmissing_value    = 0
@@ -158,15 +169,15 @@ PROGRAM cdfcofdis
   stypvar(1)%caxis             = 'TZYX'
   stypvar(1)%cprecision        = 'r4'
 
-  ncout = create      (cf_out, cf_tfil, jpi, jpj, jpk       )
+  ncout = create      (cf_out, cf_tfil, jpi, jpj, npk       )
   ierr  = createvar   (ncout,  stypvar, 1,   ipk, id_varout )
-  ierr  = putheadervar(ncout,  cf_tfil, jpi, jpj, jpk       )
+  ierr  = putheadervar(ncout,  cf_tfil, jpi, jpj, npk       )
 
-  CALL cofdis
+  CALL cofdis (npk)
   
   CONTAINS
 
-  SUBROUTINE cofdis()
+  SUBROUTINE cofdis(kpk)
     !!----------------------------------------------------------------------
     !!                 ***  ROUTINE cofdis  ***
     !!
@@ -186,6 +197,8 @@ PROGRAM cdfcofdis
     !! ** Action  : - pdct, distance to the coastline (argument)
     !!              - NetCDF file 'dist.coast' 
     !!----------------------------------------------------------------------
+    INTEGER(KIND=4), INTENT(in) ::   kpk                 ! number of level to deal with
+
     INTEGER(KIND=4) ::   ji, jj, jk, jl      ! dummy loop indices
     INTEGER(KIND=4) ::   iju, ijt            ! temporary integers
     INTEGER(KIND=4) ::   icoast, itime
@@ -208,8 +221,7 @@ PROGRAM cdfcofdis
     ! 1. Loop on vertical levels
     ! --------------------------
     !                                             ! ===============
-!   DO jk = 1, jpk                                ! Horizontal slab
-    DO jk = 1, 1                                ! Horizontal slab
+    DO jk = 1, kpk                                ! Horizontal slab
        !                                          ! ===============
        PRINT *,'WORKING for level ', jk, nperio
        pdct(:,:) = 0.e0
