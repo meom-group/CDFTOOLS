@@ -11,6 +11,7 @@ NCDF = -I/usr/local/netcdf-3.6.1/ifort/include -L /usr/local/netcdf-3.6.1/ifort/
 F90=ifort
 MPF90=mpif90
 FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian 
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin

@@ -208,7 +208,8 @@ PROGRAM cdfcofdis
     ! 1. Loop on vertical levels
     ! --------------------------
     !                                             ! ===============
-    DO jk = 1, jpk                                ! Horizontal slab
+!   DO jk = 1, jpk                                ! Horizontal slab
+    DO jk = 1, 1                                ! Horizontal slab
        !                                          ! ===============
        PRINT *,'WORKING for level ', jk, nperio
        pdct(:,:) = 0.e0
@@ -216,9 +217,24 @@ PROGRAM cdfcofdis
        !    temp(:,:) = getvar(cbathy,'Bathy_level',1, npiglo, npjglo)
 
        tmask(:,:)=getvar(cn_fmsk,'tmask',jk,jpi,jpj)
-       umask(:,:)=getvar(cn_fmsk,'umask',jk,jpi,jpj)
-       vmask(:,:)=getvar(cn_fmsk,'vmask',jk,jpi,jpj)
-       fmask(:,:)=getvar(cn_fmsk,'fmask',jk,jpi,jpj)
+!      umask(:,:)=getvar(cn_fmsk,'umask',jk,jpi,jpj)
+!      vmask(:,:)=getvar(cn_fmsk,'vmask',jk,jpi,jpj)
+!      fmask(:,:)=getvar(cn_fmsk,'fmask',jk,jpi,jpj)
+       DO jj = 1, jpjm1
+          DO ji = 1, jpim1   ! vector loop
+             umask(ji,jj) = tmask(ji,jj ) * tmask(ji+1,jj  )
+             vmask(ji,jj) = tmask(ji,jj ) * tmask(ji  ,jj+1)
+          END DO
+          DO ji = 1, jpim1      ! NO vector opt.
+             fmask(ji,jj) = tmask(ji,jj  ) * tmask(ji+1,jj  )   &
+                &         * tmask(ji,jj+1) * tmask(ji+1,jj+1)
+          END DO
+       END DO
+       umask(jpi,:)=umask(2,:)
+       vmask(jpi,:)=vmask(2,:)
+       fmask(jpi,:)=fmask(2,:)
+
+
        PRINT *, '    READ masks done.'
        ! Define the coastline points (U, V and F)
        DO jj = 2, jpjm1

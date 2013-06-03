@@ -360,6 +360,8 @@ PROGRAM cdfmocsig
         ibin(:,:) = MAX( ibin(:,:), 1    )
         ibin(:,:) = MIN( ibin(:,:), nbins)
 
+        IF ( npjglo > 1 ) THEN
+
         DO jj=2,npjglo-1
            dmoc_tmp = 0
            !  converts transport in "k" to transport in "sigma"
@@ -380,6 +382,30 @@ PROGRAM cdfmocsig
            !               end of loop on latitude for filling dmoc
         END DO
         !  end of loop on depths for calculating transports     
+
+     ELSE
+
+     dmoc_tmp = 0.
+
+     DO ji=2,npiglo-1
+        dmoc_tmp(ibin(ji,1),ji)=dmoc_tmp(ibin(ji,1),ji) - e1v(ji,1)*e3v(ji,1)*zv(ji,1)
+        
+        !PRINT*,ji, e1v(ji,1),e3v(ji,1),zv(ji,1),dmoc_tmp(ibin(ji,1),ji)
+        
+     END DO
+
+     DO jbin =1,nbins
+         DO ji=2,npiglo-1
+            DO jbasin= 1, nbasins
+               ! For all basins 
+               dmoc(jbasin,1,jbin)=dmoc(jbasin,1,jbin ) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,1)
+            ENDDO
+         END DO
+     END DO
+           !               end of loop on latitude for filling dmoc
+
+     ENDIF
+
      END DO
 
      ! integrates across bins from highest to lowest density
