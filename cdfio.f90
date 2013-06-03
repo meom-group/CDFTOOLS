@@ -333,6 +333,9 @@ CONTAINS
           ELSE IF (kpk(jv) > 1 ) THEN
              idims=4
              iidims(1) = nid_x ; iidims(2) = nid_y ; iidims(3) = nid_z ; iidims(4) = nid_t
+          ELSE IF (kpk(jv) < 0 ) THEN
+             idims=1
+             iidims(1) = nid_t 
           ELSE
              PRINT *,' ERROR: ipk = ',kpk(jv), jv , sdtyvar(jv)%cname
              STOP

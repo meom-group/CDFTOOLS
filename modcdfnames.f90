@@ -120,6 +120,7 @@ MODULE modCdfNames
 
   CHARACTER(LEN=20) :: cn_bathymet='Bathymetry' !: variable Bathymetry in meters
   CHARACTER(LEN=20) :: cn_bathylev='bathy_level'!: variable Bathymetry in levels
+  CHARACTER(LEN=20) :: cn_mbathy  ='mbathy'     !: variable mbathy in levels
 
   ! variables to be squared when performing cdfmoy
   INTEGER(KIND=4), PARAMETER :: jp_sqdvarmax=10
@@ -178,7 +179,7 @@ MODULE modCdfNames
     NAMELIST/namvars/ cn_sozout, cn_somevt, cn_sozous, cn_somevs
     NAMELIST/namvars/ cn_sozoutrp, cn_somevtrp
     NAMELIST/namvars/ cn_soicecov
-    NAMELIST/namvars/ cn_vosigma0, cn_vosigmai, cn_vodepiso, cn_isothick
+    NAMELIST/namvars/ cn_vosigma0, cn_vosigmai, cn_vosigntr, cn_vodepiso, cn_isothick
     NAMELIST/namvars/ cn_iicethic, cn_ileadfra
     NAMELIST/namvars/ cn_invcfc,   cn_cfc11,    cn_pendep
 
@@ -192,7 +193,7 @@ MODULE modCdfNames
     NAMELIST/nammeshmask/ cn_fzgr, cn_fhgr, cn_fmsk, cn_fcoo, cn_fbasins
 
     ! Bathymetry
-    NAMELIST/nambathy/ cn_fbathymet, cn_fbathylev, cn_bathymet, cn_bathylev
+    NAMELIST/nambathy/ cn_fbathymet, cn_fbathylev, cn_bathymet, cn_bathylev, cn_mbathy
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
   !! $Id$

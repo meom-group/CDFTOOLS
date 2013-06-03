@@ -35,11 +35,12 @@ PROGRAM cdf_xtract_brokenline
    INTEGER(KIND=4) :: jleg, jt, jk,  jipt, jvar      ! dummy loop index
    INTEGER(KIND=4) :: narg, iargc, ijarg, ifree      ! command line
    INTEGER(KIND=4) :: numin=10                       ! logical unit for input section file
+   INTEGER(KIND=4) :: numout=11                      ! logical unit for output section.dat (used in cdftransport)
    INTEGER(KIND=4) :: npiglo, npjglo, npk, npt       ! size of the domain
    INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax     ! ending points of a leg in model I J
    INTEGER(KIND=4) :: ii, ij, ii1, ij1, ipoint       ! working integer
    INTEGER(KIND=4) :: ierr, ncout                    ! Netcdf error and ncid
-   INTEGER(KIND=4) :: nvar = 14                      ! number of output variables
+   INTEGER(KIND=4) :: nvar = 16                      ! number of output variables
    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout  ! netcdf output stuff
 
    ! broken line definition
@@ -59,8 +60,10 @@ PROGRAM cdf_xtract_brokenline
 
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1v, e3v            ! V point relevant metric
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2u, e3u            ! U point relevant metric
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: hdepw               ! model bathymetry
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonu, rlatu        ! model long and lat of U points
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonv, rlatv        ! model long and lat of U points
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonf, rlatf        ! model long and lat of F points
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temper, saline      ! model Temperature and salinity
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: uzonal, vmerid      ! model zonal and meridional velocity
    ! along section array (dimension x,z or x,1 )
@@ -68,17 +71,20 @@ PROGRAM cdf_xtract_brokenline
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonsec, rlatsec, risec, rjsec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1vsec, e2usec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3usec, e3vsec
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: batsec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: vmasksec
    REAL(KIND=4)                              :: xmin, xmax, ymin, ymax !
+   REAL(KIND=4)                              :: ztmp
 
    REAL(KIND=8)                              :: dtmp, dbarot  ! for barotropic transport computation
 
    CHARACTER(LEN=80) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
    CHARACTER(LEN=80) :: cf_out                       ! output file
+   CHARACTER(LEN=80) :: cf_secdat                    ! output section file (suitable for cdftransport or cdfsigtrp)
    CHARACTER(LEN=80) :: cf_sec                       ! input section file
    CHARACTER(LEN=80) :: csection                     ! section name
    CHARACTER(LEN=80) :: cverb='n'                    ! verbose key for findij
-   CHARACTER(LEN=80) :: cldum                        ! dummy character variable
+   CHARACTER(LEN=80) :: cldum, cstar, cend           ! dummy character variable
 
    LOGICAL  :: lchk                                  ! flag for missing files
    LOGICAL  :: lverbose = .FALSE.                    ! flag for verbosity
@@ -141,7 +147,8 @@ PROGRAM cdf_xtract_brokenline
       PRINT *,'     OUTPUT : '
       PRINT *,'       netcdf file : section_name.nc'
       PRINT *,'         variables : temperature, salinity, normal velocity, pseudo V metrics,'
-      PRINT *,'                     mask'
+      PRINT *,'                     mask, barotropic transport, bathymetry of velocity points.'
+      PRINT *,'       ASCII file : section_name_section.dat usefull for cdftransport '
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
       PRINT *,'        cdftransport, cdfmoc, cdfmocsig. This tool replace cdfovide.' 
@@ -206,6 +213,7 @@ PROGRAM cdf_xtract_brokenline
    ENDIF
 
    cf_out=TRIM(csection)//'.nc'
+   cf_secdat=TRIM(csection)//'_section.dat'
 
    ! 2. Find the model F-points along the legs of the section
    ! --------------------------------------------------------
@@ -279,17 +287,6 @@ PROGRAM cdf_xtract_brokenline
       ENDIF
    END DO !! loop on the legs
 
-   ! fancy control print
-   DO jleg = 1, nsta -1
-      WRITE(*,*) '------------------------------------------------------------'
-      WRITE(*,9100) 'leg ',jleg,'  start at ', rlonsta(jleg) ,'N ', rlatsta(jleg), 'W and ends at ', rlonsta(jleg+1) ,'N ', rlatsta(jleg+1), 'W'
-      WRITE(*,9101) 'corresponding to F-gridpoints(', iista(jleg),',',ijsta(jleg),') and (', iista(jleg+1),',',ijsta(jleg+1),')' 
-      WRITE(*,*) '------------------------------------------------------------'
-   ENDDO
-
-9100 FORMAT(a,i3,a,f6.2,a,f6.2,a,f6.2,a,f6.2,a)
-9101 FORMAT(a,i4,a,i4,a,i4,a,i4,a)
-
    ! 3. : Extraction along the legs
    ! ------------------------------
    ALLOCATE (iisec(nsec), ijsec(nsec)) 
@@ -313,17 +310,20 @@ PROGRAM cdf_xtract_brokenline
    ! input fields
    ALLOCATE(rlonu(npiglo,npjglo), rlatu(npiglo,npjglo))
    ALLOCATE(rlonv(npiglo,npjglo), rlatv(npiglo,npjglo))
+   ALLOCATE(rlonf(npiglo,npjglo), rlatf(npiglo,npjglo))
    ALLOCATE(temper(npiglo,npjglo), saline(npiglo,npjglo))
    ALLOCATE(uzonal(npiglo,npjglo), vmerid(npiglo,npjglo))
    ALLOCATE(e1v(npiglo,npjglo))
    ALLOCATE(e2u(npiglo,npjglo))
    ALLOCATE(e3u(npiglo,npjglo), e3v(npiglo,npjglo))
+   ALLOCATE(hdepw(npiglo,npjglo) )
 
    ! output fields
    ALLOCATE(rlonsec(nsec,1), rlatsec(nsec,1) )
    ALLOCATE(risec  (nsec,1), rjsec  (nsec,1) )
    ALLOCATE(e2usec(nsec-1,1), e3usec(nsec-1,npk) )
    ALLOCATE(e1vsec(nsec-1,1), e3vsec(nsec-1,npk) )
+   ALLOCATE(batsec(nsec-1,1) )
    ALLOCATE(tempersec(nsec-1,npk), salinesec(nsec-1,npk) )
    ALLOCATE(uzonalsec(nsec-1,npk), vmeridsec(nsec-1,npk) )
    ALLOCATE(vmasksec (nsec-1,npk))
@@ -338,9 +338,58 @@ PROGRAM cdf_xtract_brokenline
    rlatu(:,:) = getvar(cn_fhgr, cn_gphiu, 1, npiglo, npjglo)
    rlonv(:,:) = getvar(cn_fhgr, cn_glamv, 1, npiglo, npjglo)
    rlatv(:,:) = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
-   e1v(:,:)  = getvar(cn_fhgr, cn_ve1v,  1, npiglo, npjglo)
-   e2u(:,:)  = getvar(cn_fhgr, cn_ve2u,  1, npiglo, npjglo)
+   rlonf(:,:) = getvar(cn_fhgr, cn_glamf, 1, npiglo, npjglo)
+   rlatf(:,:) = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
+   e1v(:,:)   = getvar(cn_fhgr, cn_ve1v,  1, npiglo, npjglo)
+   e2u(:,:)   = getvar(cn_fhgr, cn_ve2u,  1, npiglo, npjglo)
+   hdepw(:,:) = getvar(cn_fzgr, cn_mbathy,1, npiglo, npjglo)
 
+  ! now that we know the model grid and bathy do fancy print of the legs.
+  PRINT 9005
+  PRINT 9000
+  PRINT 9005
+
+  OPEN(numout, file=cf_secdat )   ! open section.dat file for output
+
+  DO jleg = 1, nsta -1
+     ! start point 
+     ii = iista(jleg)  ; ij = ijsta(jleg)
+     ztmp = MIN (hdepw(ii,ij), hdepw(ii+1,ij), hdepw(ii+1,ij+1), hdepw(ii,ij+1) ) 
+     IF ( ztmp == 0. ) THEN 
+       cstar = 'LAND'
+     ELSE
+       cstar = ' SEA'
+     ENDIF
+
+     ! end  point 
+     ii1 = iista(jleg+1)  ; ij1 = ijsta(jleg+1)
+     ztmp = MIN (hdepw(ii1,ij1), hdepw(ii1+1,ij1), hdepw(ii1+1,ij1+1), hdepw(ii1,ij1+1) )
+     IF ( ztmp == 0. ) THEN
+       cend = 'LAND'
+     ELSE
+       cend = ' SEA'
+     ENDIF
+     PRINT 9001, jleg, rlatsta(jleg), rlonsta(jleg),    rlatsta(jleg+1), rlonsta(jleg+1)
+     PRINT 9002,          ii,ij,                        ii1,ij1
+     PRINT 9003, rlatf(ii,ij), rlonf(ii,ij),            rlatf(ii1,ij1), rlonf(ii1,ij1)
+     PRINT 9004, TRIM(cstar),                           TRIM(cend)
+     PRINT 9005
+     WRITE(numout,'("leg_",i2.2)') jleg
+     WRITE(numout,*) ii, ii1, ij, ij1
+  ENDDO
+
+  WRITE(numout,'("EOF")')
+  CLOSE(numout)
+
+9000 FORMAT ("  |  Leg #  |    Start point     |      End point     | ")
+9001 FORMAT ("  |   ",i3,"   | ", f6.2," N ", f7.2, " E | ", f6.2," N ", f7.2, " E |" )
+9002 FORMAT ("  |        F| I =", i5,", J =",i5 " | I =", i5,", J =",i5 " |" )
+9003 FORMAT ("  |      mod| ", f6.2," N ", f7.2, " E | ", f6.2," N ", f7.2, " E |" )
+9004 FORMAT ("  |         |      ",a4,"          |     ",a4,"           | ")
+9005 FORMAT ("  |---------|--------------------|--------------------| ")
+
+   ! now set hdepw to its true value
+   hdepw(:,:) = getvar(cn_fzgr, cn_hdepw, 1, npiglo, npjglo)
 
    ! loop on 2d arrays
    DO jipt = 1,nsec
@@ -360,10 +409,12 @@ PROGRAM cdf_xtract_brokenline
             e1vsec (jipt,1) = e1v  (ii+1,ij)
             rlonsec(jipt,1) = rlonv(ii+1,ij)
             rlatsec(jipt,1) = rlatv(ii+1,ij)
+            batsec (jipt,1) = MIN( hdepw(ii+1,ij),  hdepw(ii+1,ij+1) )
          ELSE
             e1vsec (jipt,1) = e1v  (ii,ij)
             rlonsec(jipt,1) = rlonv(ii,ij)
             rlatsec(jipt,1) = rlatv(ii,ij)
+            batsec (jipt,1) = MIN( hdepw(ii,ij),  hdepw(ii,ij+1) )
          ENDIF
 
       ELSEIF ( ii1 == ii ) THEN ! vertical segment
@@ -372,10 +423,12 @@ PROGRAM cdf_xtract_brokenline
             e2usec (jipt,1) = e2u  (ii,ij)
             rlonsec(jipt,1) = rlonu(ii,ij)
             rlatsec(jipt,1) = rlatu(ii,ij)
+            batsec (jipt,1) = MIN( hdepw(ii,ij),  hdepw(ii+1,ij) )
          ELSE
             e2usec (jipt,1) = e2u  (ii,ij+1)
             rlonsec(jipt,1) = rlonu(ii,ij+1)
             rlatsec(jipt,1) = rlatu(ii,ij+1)
+            batsec (jipt,1) = MIN( hdepw(ii,ij+1),  hdepw(ii+1,ij+1) )
          ENDIF
 
       ELSE
@@ -395,6 +448,7 @@ PROGRAM cdf_xtract_brokenline
    ierr = putvar (ncout, id_varout(7), e2usec(:,1),                           1,  nsec-1, 1 )
    ierr = putvar (ncout, id_varout(8), e1vsec(:,1),                           1,  nsec-1, 1 )
    ierr = putvar (ncout, id_varout(12),e2usec(:,1) + e1vsec(:,1),             1,  nsec-1, 1 )
+   ierr = putvar (ncout, id_varout(16),batsec(:,1),                           1,  nsec-1, 1 )
 
    ! Temperature and salinity are interpolated on the respective U or V  point for better flux computation
    DO jt=1, npt
@@ -496,6 +550,8 @@ PROGRAM cdf_xtract_brokenline
          ENDIF
       END DO
       PRINT *, 'BAROTROPIC TRANSPORT at time ',jt,' = ', dbarot/1.d6, ' Sv.'
+      ierr  = putvar0d ( ncout, id_varout(15), REAL(dbarot/1.d6), ktime = jt    )
+
    END DO
 
    ierr = closeout(ncout)
@@ -627,6 +683,26 @@ CONTAINS
       stypvar(14)%cshort_name = 'vmask'
       stypvar(14)%caxis       = 'TZX'
       ipk(14)                 =  npk
+
+      stypvar(15)%cname       = 'barotrop_'//TRIM(csection)
+      stypvar(15)%cunits      ='Sv'
+      stypvar(15)%valid_min   = -500.
+      stypvar(15)%valid_max   = 500.
+      stypvar(15)%rmissing_value = -99999.
+      stypvar(15)%clong_name  = 'Barotropic_transport for '//TRIM(csection)//' section'
+      stypvar(15)%cshort_name = 'barotrop_'//TRIM(csection)
+      stypvar(15)%caxis       = 'T'
+      ipk(15)                 =  -1
+
+      stypvar(16)%cname       = 'Bathymetry'
+      stypvar(16)%cunits      = 'm'
+      stypvar(16)%valid_min   = 0.
+      stypvar(16)%valid_max   = 1000000.
+      stypvar(16)%clong_name  = 'Bathymetry along '//TRIM(csection)//' section'
+      stypvar(16)%cshort_name = 'Bathymetry'
+      stypvar(16)%caxis       = 'TX'
+      ipk(16)                 = 1
+
 
       ! create output fileset
       ncout = create      (cf_out, cf_tfil, nsec,  1, npk, cdep='deptht'                   )
