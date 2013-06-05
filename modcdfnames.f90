@@ -104,8 +104,8 @@ MODULE modCdfNames
   CHARACTER(LEN=20) :: cn_isothick='isothick' !: isopycnal tickness (from cdfsigintegr)
 
   ! Passive tracer variable
-  CHARACTER(LEN=20) :: cn_invcfc='invcfc'     !: CFC inventory
-  CHARACTER(LEN=20) :: cn_cfc11='cfc11'       !: CFC concentration
+  CHARACTER(LEN=20) :: cn_invcfc='INVCFC'     !: CFC inventory
+  CHARACTER(LEN=20) :: cn_cfc11='CFC11'       !: CFC concentration
   CHARACTER(LEN=20) :: cn_pendep='pendep'     !: CFC penetration depth (from cdfpendep)
   
   ! ice variable names
