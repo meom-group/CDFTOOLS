@@ -26,7 +26,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
        cdfsigtrp cdftempvol-full\
        cdfpsi cdfmoc  cdfmocsig cdfmean \
-       cdfheatc cdfzonalmean cdfhflx cdfwflx cdfbuoyflx\
+       cdfheatc cdfzonalmean cdfzonalmeanvT cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfvint \
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
@@ -277,6 +277,9 @@ cdficediags: cdfio.o  cdficediags.f90
 
 cdfzonalmean: cdfio.o  cdfzonalmean.f90
 	$(F90) cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 
+
+cdfzonalmeanvT: cdfio.o  cdfzonalmeanvT.f90
+	$(F90) cdfzonalmeanvT.f90 -o $(BINDIR)/cdfzonalmeanvT cdfio.o modcdfnames.o $(FFLAGS) 
 
 cdfzonalsum: cdfio.o  cdfzonalsum.f90
 	$(F90) cdfzonalsum.f90 -o $(BINDIR)/cdfzonalsum cdfio.o modcdfnames.o $(FFLAGS) 

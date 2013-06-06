@@ -18,9 +18,6 @@ PROGRAM cdf_xtract_brokenline
    !!----------------------------------------------------------------------
    !!   routines      : description
    !!----------------------------------------------------------------------
-   !============================
-   ! WORK IN PROGRESS DO NOT USE 
-   !============================
    USE cdfio
    USE cdftools
    USE modcdfnames
