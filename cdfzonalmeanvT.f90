@@ -18,9 +18,6 @@ PROGRAM cdfzonalmeanvT
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
-! ###########################
-! WORK IN PROGRESS DO NOT USE
-! ###########################
   IMPLICIT NONE
 
   INTEGER(KIND=4)                              :: ji, jj, jk ,jt      ! dummy loop index
@@ -36,6 +33,7 @@ PROGRAM cdfzonalmeanvT
   INTEGER(KIND=4)                              :: ncout               ! ncid of output file
   INTEGER(KIND=4)                              :: ierr                ! working integers
   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ipk, id_varout      ! jpbasin x nvar
+  INTEGER(KIND=4), DIMENSION(2)                :: ijloc               ! for maxloc
 
   REAL(KIND=4)                                 :: zspval=99999.       ! missing value 
   REAL(KIND=4)                                 :: timmean             ! Mean time 
@@ -67,7 +65,6 @@ PROGRAM cdfzonalmeanvT
   LOGICAL                                      :: lpdep    =.FALSE.   ! flag for depth sign (default dep < 0)
   LOGICAL                                      :: lndep_in =.FALSE.   ! flag for depth sign (default dep < 0) in input file
   LOGICAL                                      :: ldebug   =.FALSE.   ! flag for activated debug print 
-  LOGICAL                                      :: l2d      =.FALSE.   ! flag for 2D files
   LOGICAL                                      :: lchk     =.FALSE.   ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -110,14 +107,15 @@ PROGRAM cdfzonalmeanvT
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'         variables : zovzotmean : mean product of zonal_mean(V) x zonal_mean(T)'
-     PRINT *,'                     zovzotmean : mean product of zonal_mean(V) x zonal_mean(S)'
+     PRINT *,'         variables : zovzot : mean product of zonal_mean(V) x zonal_mean(T)'
+     PRINT *,'                     zovzot : mean product of zonal_mean(V) x zonal_mean(S)'
      PRINT *,'                       A suffix _bas is append to variable name oin order to'
      PRINT *,'                     indicate the basin (atl, inp, ind, pac) or glo for global'
      PRINT *,'         '
      STOP
   ENDIF
 
+  ! decode command line
   ijarg = 1  ; ireq = 0
   DO WHILE ( ijarg <= narg ) 
     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
@@ -155,6 +153,7 @@ PROGRAM cdfzonalmeanvT
   IF ( lchk ) STOP ! missing files
 
   cf_tfil = SetFileName( confcase, cldum, 'T')  ! look in first T file for dimensions
+  IF ( chkfile (cf_tfil) ) STOP 
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -165,16 +164,28 @@ PROGRAM cdfzonalmeanvT
   ALLOCATE ( stypvar(2*npbasins) )
 
   ALLOCATE ( gdep (npk) )
-  ALLOCATE ( e1(npiglo,npjglo), e2(npiglo,npjglo) )
+  ALLOCATE ( e1(npiglo,npjglo), e2(npiglo,npjglo), gphi(npiglo,npjglo) )
   ALLOCATE ( zvmask(npiglo, npjglo))
   ALLOCATE ( zvel(npiglo,npjglo), ztem(npiglo,npjglo), zsal(npiglo,npjglo) )
-  ALLOCATE ( zdumlon(1,npiglo), zdumlat(1,npjglo) )
+  ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo) )
   ALLOCATE ( zmask(npbasins,npiglo, npjglo))
 
-  ALLOCATE ( dzovel(npjglo), dzotem(npjglo), dzosal(npjglo), darea(npjglo) )
+  ALLOCATE ( dzovel(npjglo), dzotem(npjglo), dzosal(npjglo), darea(npjglo), dl_tmp(npjglo) )
   ALLOCATE ( dzovt(1,npjglo, npk, npbasins), dzovs(1,npjglo, npk, npbasins) )
 
+  ! read config information previous to file creation
+  gdep(:)   = getvare3(cn_fzgr, cn_gdept, npk)
+  gphi(:,:) = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
+
+  ! Look for the i-index that go through the North Pole
+  ijloc        = MAXLOC(gphi)
+  zdumlat(1,:) = gphi(ijloc(1),:)  ! 
+  zdumlon(:,:) = 0.                ! set the dummy longitude to 0
+  IF ( .NOT. lpdep ) gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
+
+  IF ( ldebug ) PRINT *, 'Create Output files ...'
   CALL CreateOutput
+  IF ( ldebug ) PRINT *, 'done.'
 
 ! initialization of 2D time independant fields
   zmask(1,:,:) = getvar(cn_fmsk, 'tmask', 1, npiglo, npjglo)
@@ -195,24 +206,33 @@ PROGRAM cdfzonalmeanvT
 
  DO jtag = 1, ntag 
    CALL getarg ( ijarg, cldum ) ; ijarg = ijarg + 1
-   cf_tfil = SetFileName( confcase, cldum, 'T',ld_stop=.TRUE.   )
+   cf_tfil = SetFileName( confcase, cldum, 'T', ld_stop=.TRUE.  )
    cf_sfil = SetFileName( confcase, cldum, 'S', ld_stop=.FALSE. )
-   cf_vfil = SetFileName( confcase, cldum, 'V')
+   cf_vfil = SetFileName( confcase, cldum, 'V'                  )
    IF ( chkfile (cf_sfil, ld_verbose=.FALSE.) ) cf_sfil = cf_tfil  ! do not complain if not found
+   IF ( ldebug ) THEN
+     PRINT *, ' T-FILE = ', TRIM(cf_tfil)
+     PRINT *, ' S-FILE = ', TRIM(cf_sfil)
+     PRINT *, ' V-FILE = ', TRIM(cf_vfil)
+   ENDIF
 
    npt = getdim (cf_tfil,cn_t)   ! case of multiple time frames in a single file, assume identical of V file
    ALLOCATE( tim(npt) ) 
    tim = getvar1d(cf_tfil, cn_vtimec, npt)
+   IF ( ldebug ) PRINT *, 'TIME : ', tim(:)
    dtotal_time = dtotal_time + SUM(tim(1:npt) )
    DEALLOCATE( tim )
+   dzovt = 0.d0
+   dzovs = 0.d0
    
    DO jt = 1, npt  
       ntframe = ntframe + 1
       DO jk = 1, npk 
+         IF ( ldebug) PRINT *,' JTAG JT JK', jtag, jt, jk
          ! read variables 
          zsal(:,:) = getvar(cf_sfil,  cn_vosaline, jk, npiglo, npjglo, ktime=jt )
          ztem(:,:) = getvar(cf_tfil,  cn_votemper, jk, npiglo, npjglo, ktime=jt )
-         zvel(:,:) = getvar(cf_tfil,  cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
+         zvel(:,:) = getvar(cf_vfil,  cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
          ! do not read e3 metrics at level jk ( to do as in cdfzonal mean ... JMM : to be improved !
          zvmask(:,:) = getvar(cn_fmsk, 'vmask',    jk ,npiglo, npjglo          )
 
@@ -226,6 +246,7 @@ PROGRAM cdfzonalmeanvT
             dzotem(:) = 0.d0
             dzosal(:) = 0.d0
             darea (:) = 0.d0
+
             ! integrates V 'zonally' (along i-coordinate)
             DO ji=1,npiglo
                   dl_tmp(:) = 1.d0*e1(ji,:)*e2(ji,:)* zmask(jbasin,ji,:) 
@@ -240,14 +261,17 @@ PROGRAM cdfzonalmeanvT
                dzovel=dzovel/darea
                dzotem=dzotem/darea
                dzosal=dzosal/darea
+               ! cumulate in time
+               dzovt(1,:,jk,jbasin) = dzovt(1,:,jk,jbasin) + dzovel(:)*dzotem(:)
+               dzovs(1,:,jk,jbasin) = dzovs(1,:,jk,jbasin) + dzovel(:)*dzosal(:)
             ELSEWHERE
                dzovel=zspval
                dzotem=zspval
                dzosal=zspval
+               ! cumulate in time
+               dzovt(1,:,jk,jbasin) = zspval
+               dzovs(1,:,jk,jbasin) = zspval
             ENDWHERE
-            ! cumulate in time
-            dzovt(1,:,jk,jbasin) = dzovt(1,:,jk,jbasin) + dzovel(:)*dzotem(:)
-            dzovs(1,:,jk,jbasin) = dzovs(1,:,jk,jbasin) + dzovel(:)*dzosal(:)
 
          END DO  !next basin
       END DO ! next level
@@ -255,10 +279,17 @@ PROGRAM cdfzonalmeanvT
   ENDDO  ! next file
   
   ! normalize before output
-  dzovt(:,:,:,:) = dzovt(:,:,:,:) / ntframe
-  dzovs(:,:,:,:) = dzovs(:,:,:,:) / ntframe
+  WHERE ( dzovt /= zspval ) 
+     dzovt(:,:,:,:) = dzovt(:,:,:,:) / ntframe
+     dzovs(:,:,:,:) = dzovs(:,:,:,:) / ntframe
+  ELSEWHERE
+     dzovt(:,:,:,:) = zspval
+     dzovs(:,:,:,:) = zspval
+  ENDWHERE
+
   ALLOCATE ( tim(1) )
   tim(1) = dtotal_time/ntframe
+  IF ( ldebug ) PRINT *, ' mean time ', tim(1), ntframe
 
   ! output file 
   ierr   = putvar1d(ncout, tim, 1, 'T')

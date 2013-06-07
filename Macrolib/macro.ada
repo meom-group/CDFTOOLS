@@ -14,6 +14,7 @@ MPF90=mpiifort
 #FFLAGS= -O   -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
 
 FFLAGS= -O2 -assume byterecl -convert big_endian 
+#FFLAGS= -O2 -assume byterecl -convert big_endian -fpe0 -CB -ftrapuv -traceback -g
 
 INSTALL=$(WORKDIR)/bin
 INSTALL_MAN=$(WORKDIR)/man
