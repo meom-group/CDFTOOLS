@@ -7,14 +7,14 @@ PROGRAM cdfzonalmeanvT
   !!
   !!  ** Method  : In this program the 'zonal' meanvT is in fact a meanvT 
   !!               along the I coordinate. 
-/bin/bash: q: command not found
   !! History : 3.0  : 06/2013  : J.M. Molines : from cdfzonalmean and cdfvT
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
+  USE modutils
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
-  !! $Id: cdfzonalmeanvT.f90 600 2012-05-09 14:08:31Z molines $
+  !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
@@ -23,56 +23,52 @@ PROGRAM cdfzonalmeanvT
 ! ###########################
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                               :: ji, jj, jk ,jt      ! dummy loop index
-  INTEGER(KIND=4)                               :: jbasin, jvar        ! dummy loop index
-  INTEGER(KIND=4)                               :: ijvar               ! variable counter
-  INTEGER(KIND=4)                               :: npbasins=1          ! number of subbasin
-  INTEGER(KIND=4)                               :: ivar = 0            ! output variable counter
-  INTEGER(KIND=4)                               :: narg, iargc         ! command line 
-  INTEGER(KIND=4)                               :: ijarg, ireq         ! command line 
-  INTEGER(KIND=4)                               :: itag, ntag          ! arg index of 1rst tag, number of tags
-  INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
-  INTEGER(KIND=4)                               :: npk, npt            ! size of the domain
-  INTEGER(KIND=4)                               :: nvarin, nvar        ! number of input variables: all/valid
-  INTEGER(KIND=4)                               :: ncout               ! ncid of output file
-  INTEGER(KIND=4)                               :: ierr, ik            ! working integers
-  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipki, id_varin      ! jpbasin x nvar
-  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipko, id_varout     ! jpbasin x nvar
-  INTEGER(KIND=4), DIMENSION(2)                 :: ijloc               ! working array for maxloc
+  INTEGER(KIND=4)                              :: ji, jj, jk ,jt      ! dummy loop index
+  INTEGER(KIND=4)                              :: jbasin, jtag        ! dummy loop index
+  INTEGER(KIND=4)                              :: npbasins=1          ! number of subbasin
+  INTEGER(KIND=4)                              :: ivar = 0            ! output variable counter
+  INTEGER(KIND=4)                              :: narg, iargc         ! command line 
+  INTEGER(KIND=4)                              :: ijarg, ireq         ! command line 
+  INTEGER(KIND=4)                              :: itag, ntag          ! arg index of 1rst tag, number of tags
+  INTEGER(KIND=4)                              :: ntframe                ! time frame counter
+  INTEGER(KIND=4)                              :: npiglo, npjglo      ! size of the domain
+  INTEGER(KIND=4)                              :: npk, npt            ! size of the domain
+  INTEGER(KIND=4)                              :: ncout               ! ncid of output file
+  INTEGER(KIND=4)                              :: ierr                ! working integers
+  INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ipk, id_varout      ! jpbasin x nvar
 
-  REAL(KIND=4)                                  :: zspval=99999.       ! missing value 
-  REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: tim                 ! time counter
-  REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: gdep                ! gdept or gdepw
-  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: e1, e2, gphi, zv    ! metrics, latitude, data value
-  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zdumlon             ! dummy longitude = 0.
-  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zdumlat             ! latitude for i = north pole
-  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zmaskvar            ! variable mask
-  REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
+  REAL(KIND=4)                                 :: zspval=99999.       ! missing value 
+  REAL(KIND=4)                                 :: timmean             ! Mean time 
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: tim                 ! time counter
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep                ! gdept or gdepw
+  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: e1, e2, gphi        ! metrics, latitude
+  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: ztem, zsal, zvel    ! temp, sal and velocity
+  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zdumlon             ! dummy longitude = 0.
+  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zdumlat             ! latitude for i = north pole
+  REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zvmask              ! vmask
+  REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
 
-  REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzomean , darea     ! jpbasins x npjglo x npk
+  REAL(KIND=8)                                 :: dtotal_time         ! cumul of time in seconds
+  REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: dzovel, dzotem, dzosal  ! npjglo
+  REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: darea, dl_tmp       ! npjglo
+  REAL(KIND=8), DIMENSION (:,:,:,:), ALLOCATABLE :: dzovt, dzovs       ! 1xnpjglo x npk x npbasins
 
-  CHARACTER(LEN=256)                            :: cf_in               ! input file name
-  CHARACTER(LEN=256)                            :: cf_out='zonalmeanvt.nc' ! output file name
-  CHARACTER(LEN=256)                            :: cf_basins='none'    ! sub basin file name
-  CHARACTER(LEN=10 )                            :: cv_e1, cv_e2        ! horizontal metrics variable names
-  CHARACTER(LEN=10 )                            :: cv_phi              ! latitude variable name
-  CHARACTER(LEN=10 )                            :: cv_msk              ! mask variable name
-  CHARACTER(LEN=10 )                            :: cv_depi, cv_depo    ! depth variable name (input/output)
-  CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
-  CHARACTER(LEN=256)                            :: ctyp                ! variable type on C-grid
-  CHARACTER(LEN=256)                            :: confcase            ! confcase name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! input variable names
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nameso           ! output variable names
-  CHARACTER(LEN=4  ), DIMENSION(5)              :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/) ! sub basin suffixes
+  CHARACTER(LEN=256)                           :: cf_tfil, cf_sfil, cf_vfil   ! input files names
+  CHARACTER(LEN=256)                           :: cf_out='zonalmeanvt.nc' ! output file name
+  CHARACTER(LEN=256)                           :: cf_basins='none'    ! sub basin file name
+  CHARACTER(LEN=10 )                           :: cv_phi              ! latitude variable name
+  CHARACTER(LEN=10 )                           :: cv_depi, cv_depo    ! depth variable name (input/output)
+  CHARACTER(LEN=256)                           :: cldum               ! dummy character variable
+  CHARACTER(LEN=256)                           :: confcase            ! confcase name
+  CHARACTER(LEN=4  ), DIMENSION(5)             :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/) ! sub basin suffixes
 
-  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvari            ! structure for input variables
-  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvaro            ! structure for output variables
+  TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for input variables
 
-  LOGICAL                                       :: lpdep    =.FALSE.   ! flag for depth sign (default dep < 0)
-  LOGICAL                                       :: lndep_in =.FALSE.   ! flag for depth sign (default dep < 0) in input file
-  LOGICAL                                       :: ldebug   =.FALSE.   ! flag for activated debug print 
-  LOGICAL                                       :: l2d      =.FALSE.   ! flag for 2D files
-  LOGICAL                                       :: lchk     =.FALSE.   ! flag for missing files
+  LOGICAL                                      :: lpdep    =.FALSE.   ! flag for depth sign (default dep < 0)
+  LOGICAL                                      :: lndep_in =.FALSE.   ! flag for depth sign (default dep < 0) in input file
+  LOGICAL                                      :: ldebug   =.FALSE.   ! flag for activated debug print 
+  LOGICAL                                      :: l2d      =.FALSE.   ! flag for 2D files
+  LOGICAL                                      :: lchk     =.FALSE.   ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -153,7 +149,6 @@ PROGRAM cdfzonalmeanvT
   lchk = lchk .OR. chkfile (cn_fhgr)
   lchk = lchk .OR. chkfile (cn_fzgr)
   lchk = lchk .OR. chkfile (cn_fmsk)
-  lchk = lchk .OR. chkfile (cf_in  )
   IF ( npbasins /=1 ) THEN
      lchk = lchk .OR. chkfile (cf_basins  )
   ENDIF
@@ -166,6 +161,20 @@ PROGRAM cdfzonalmeanvT
   npk    = getdim (cf_tfil,cn_z)
 
 ! Allocation ...
+  ALLOCATE ( ipk(2*npbasins), id_varout(2*npbasins) )
+  ALLOCATE ( stypvar(2*npbasins) )
+
+  ALLOCATE ( gdep (npk) )
+  ALLOCATE ( e1(npiglo,npjglo), e2(npiglo,npjglo) )
+  ALLOCATE ( zvmask(npiglo, npjglo))
+  ALLOCATE ( zvel(npiglo,npjglo), ztem(npiglo,npjglo), zsal(npiglo,npjglo) )
+  ALLOCATE ( zdumlon(1,npiglo), zdumlat(1,npjglo) )
+  ALLOCATE ( zmask(npbasins,npiglo, npjglo))
+
+  ALLOCATE ( dzovel(npjglo), dzotem(npjglo), dzosal(npjglo), darea(npjglo) )
+  ALLOCATE ( dzovt(1,npjglo, npk, npbasins), dzovs(1,npjglo, npk, npbasins) )
+
+  CALL CreateOutput
 
 ! initialization of 2D time independant fields
   zmask(1,:,:) = getvar(cn_fmsk, 'tmask', 1, npiglo, npjglo)
@@ -180,29 +189,32 @@ PROGRAM cdfzonalmeanvT
   e1(:,:)   = getvar(cn_fhgr, cn_ve1v,  1, npiglo, npjglo) 
   e2(:,:)   = getvar(cn_fhgr, cn_ve2v,  1, npiglo, npjglo) 
 
-
 ! tag loop
  ijarg = itag
- nmoy  = 0  ! reset count index for time mean
+ ntframe  = 0  ! reset count index for time mean
 
  DO jtag = 1, ntag 
    CALL getarg ( ijarg, cldum ) ; ijarg = ijarg + 1
-   cf_tfile = SetFileName( confcase, cldum, 'T',ld_stop=.TRUE.   )
-   cf_sfile = SetFileName( confcase, cldum, 'S', ld_stop=.FALSE. )
-   cf_vfile = SetFileName( confcase, cldum, 'V')
+   cf_tfil = SetFileName( confcase, cldum, 'T',ld_stop=.TRUE.   )
+   cf_sfil = SetFileName( confcase, cldum, 'S', ld_stop=.FALSE. )
+   cf_vfil = SetFileName( confcase, cldum, 'V')
    IF ( chkfile (cf_sfil, ld_verbose=.FALSE.) ) cf_sfil = cf_tfil  ! do not complain if not found
 
    npt = getdim (cf_tfil,cn_t)   ! case of multiple time frames in a single file, assume identical of V file
+   ALLOCATE( tim(npt) ) 
+   tim = getvar1d(cf_tfil, cn_vtimec, npt)
+   dtotal_time = dtotal_time + SUM(tim(1:npt) )
+   DEALLOCATE( tim )
+   
    DO jt = 1, npt  
-      nmoy = nmoy + 1
+      ntframe = ntframe + 1
       DO jk = 1, npk 
          ! read variables 
          zsal(:,:) = getvar(cf_sfil,  cn_vosaline, jk, npiglo, npjglo, ktime=jt )
          ztem(:,:) = getvar(cf_tfil,  cn_votemper, jk, npiglo, npjglo, ktime=jt )
          zvel(:,:) = getvar(cf_tfil,  cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
          ! do not read e3 metrics at level jk ( to do as in cdfzonal mean ... JMM : to be improved !
-         ztmask(:,:) = getvar(cn_fmsk, 'tmask',    jk ,nnpiglo, npjglo          )
-         zvmask(:,:) = getvar(cn_fmsk, 'vmask',    jk ,nnpiglo, npjglo          )
+         zvmask(:,:) = getvar(cn_fmsk, 'vmask',    jk ,npiglo, npjglo          )
 
          ! put T and S at V points
          ztem(:,1:npjglo-1) = 0.5 * ( ztem(:,1:npjglo-1) + ztem(:,2:npjglo) ) * zvmask(:,1:npjglo-1)
@@ -216,10 +228,11 @@ PROGRAM cdfzonalmeanvT
             darea (:) = 0.d0
             ! integrates V 'zonally' (along i-coordinate)
             DO ji=1,npiglo
-                  dzovel(:) = dzovel(:) + 1.d0*e1(ji,:)*e2(ji,:)* zmask(jbasin,ji,;)*zvel(ji,;)
-                  dzotem(:) = dzotem(:) + 1.d0*e1(ji,:)*e2(ji,:)* zmask(jbasin,ji,;)*ztem(ji,;)
-                  dzosal(:) = dzosal(:) + 1.d0*e1(ji,:)*e2(ji,:)* zmask(jbasin,ji,;)*zsal(ji,;)
-                  darea (:) = darea (:) + 1.d0*e1(ji,:)*e2(ji,;)* zmask(jbasin,ji,;)*zvmask(ji,;)
+                  dl_tmp(:) = 1.d0*e1(ji,:)*e2(ji,:)* zmask(jbasin,ji,:) 
+                  dzovel(:) = dzovel(:) + dl_tmp(:)*zvel  (ji,:)
+                  dzotem(:) = dzotem(:) + dl_tmp(:)*ztem  (ji,:)
+                  dzosal(:) = dzosal(:) + dl_tmp(:)*zsal  (ji,:)
+                  darea (:) = darea (:) + dl_tmp(:)*zvmask(ji,:)
             END DO
 
             ! compute the mean value if the darea is not 0, else assign spval
@@ -233,8 +246,8 @@ PROGRAM cdfzonalmeanvT
                dzosal=zspval
             ENDWHERE
             ! cumulate in time
-            dzovt(:,jk,jbasin) = dzovt(:,jk,jbasin) + dzovel(:)*dzotem(:)
-            dzovs(:,jk,jbasin) = dzovs(:,jk,jbasin) + dzovel(:)*dzosal(:)
+            dzovt(1,:,jk,jbasin) = dzovt(1,:,jk,jbasin) + dzovel(:)*dzotem(:)
+            dzovs(1,:,jk,jbasin) = dzovs(1,:,jk,jbasin) + dzovel(:)*dzosal(:)
 
          END DO  !next basin
       END DO ! next level
@@ -242,10 +255,22 @@ PROGRAM cdfzonalmeanvT
   ENDDO  ! next file
   
   ! normalize before output
-  dzovt(:,:,:) = dzovt(:,:,:) / nmoy
-  dzovs(:,:,:) = dzovs(:,:,:) / nmoy
+  dzovt(:,:,:,:) = dzovt(:,:,:,:) / ntframe
+  dzovs(:,:,:,:) = dzovs(:,:,:,:) / ntframe
+  ALLOCATE ( tim(1) )
+  tim(1) = dtotal_time/ntframe
 
   ! output file 
+  ierr   = putvar1d(ncout, tim, 1, 'T')
+  ivar = 0
+  DO jbasin = 1, npbasins
+     ivar = ivar + 1
+     DO jk = 1, npk
+       ierr = putvar (ncout, id_varout(ivar  ), REAL(dzovt(:,:,jk,jbasin) ), jk, 1, npjglo, kwght=ntframe )
+       ierr = putvar (ncout, id_varout(ivar+1), REAL(dzovs(:,:,jk,jbasin) ), jk, 1, npjglo, kwght=ntframe )
+     ENDDO
+     ivar = ivar + 1
+  ENDDO
 
   ierr = closeout(ncout)
 
@@ -261,11 +286,36 @@ CONTAINS
       !!
       !!----------------------------------------------------------------------
       ipk(:) = npk
+      ivar = 0
+      DO jbasin = 1, npbasins
+         ivar = ivar + 1
+         stypvar(ivar)%cname             = 'zovzot'//TRIM(cbasin(jbasin) )
+         stypvar(ivar)%cunits            = 'm.DegC.s-1'
+         stypvar(ivar)%rmissing_value    = zspval
+         stypvar(ivar)%valid_min         = -50.
+         stypvar(ivar)%valid_max         =  50.
+         stypvar(ivar)%clong_name        = 'product of zonalmean V x zonalmean T for'//TRIM(cbasin(jbasin) )
+         stypvar(ivar)%cshort_name       = 'zovzot'//TRIM(cbasin(jbasin) )
+         stypvar(ivar)%conline_operation = 'N/A'
+         stypvar(ivar)%caxis             = 'TZY'
+
+         ivar = ivar + 1
+         stypvar(ivar)%cname             = 'zovzos'//TRIM(cbasin(jbasin) )
+         stypvar(ivar)%cunits            = 'm.PSU.s-1'
+         stypvar(ivar)%rmissing_value    = zspval
+         stypvar(ivar)%valid_min         = -50.
+         stypvar(ivar)%valid_max         = 50.
+         stypvar(ivar)%clong_name        = 'product of zonalmean V x zonalmean S for'//TRIM(cbasin(jbasin) )
+         stypvar(ivar)%cshort_name       = 'zovzos'//TRIM(cbasin(jbasin) )
+         stypvar(ivar)%conline_operation = 'N/A'
+         stypvar(ivar)%caxis             = 'TZY'
+      END DO
 
       ! create output fileset
-      ncout = create      (cf_out, cf_tfil, 1, npjglo, npk    )
-      ierr  = createvar   (ncout,  stypvar, 2, ipk, id_varout )
-      ierr  = putheadervar(ncout,  cf_tfil, 1, npjglo, npk    )
+      ncout = create      (cf_out, cf_tfil,          1, npjglo, npk    )
+      ierr  = createvar   (ncout,  stypvar, 2*npbasins, ipk, id_varout )
+      ierr  = putheadervar(ncout,  cf_tfil,          1, npjglo, npk, pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
+
     END SUBROUTINE CreateOutput
 
 END PROGRAM cdfzonalmeanvT
