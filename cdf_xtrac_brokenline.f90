@@ -532,18 +532,19 @@ PROGRAM cdf_xtract_brokenline
          ierr = putvar (ncout, id_varout(2), salinesec(:,jk), jk, nsec-1, 1, ktime=jt )
          ierr = putvar (ncout, id_varout(3), uzonalsec(:,jk), jk, nsec-1, 1, ktime=jt )
          ierr = putvar (ncout, id_varout(4), vmeridsec(:,jk), jk, nsec-1, 1, ktime=jt )
+         ! along-track normal velocity, horiz. and vert. resolution, and mask
+         ierr = putvar (ncout, id_varout(11),uzonalsec(:,jk) + vmeridsec(:,jk), &
+           &                                                  jk, nsec-1, 1, ktime=jt ) 
 
          IF ( jt == 1 ) THEN 
             ! save a mask of the section
             vmasksec(:,:) = 1.
             WHERE( salinesec(:,:) == 0. ) vmasksec(:,:) = 0.
 
-            ierr = putvar (ncout, id_varout(9), e3usec(:,jk),      jk, nsec-1, 1 )
-            ierr = putvar (ncout, id_varout(10),e3vsec(:,jk),      jk, nsec-1, 1 )
-            ! along-track normal velocity, horiz. and vert. resolution, and mask
-            ierr = putvar (ncout, id_varout(11),uzonalsec(:,jk) + vmeridsec(:,jk),     jk, nsec-1, 1 )
-            ierr = putvar (ncout, id_varout(13),e3usec   (:,jk) + e3vsec   (:,jk),     jk, nsec-1, 1 )
-            ierr = putvar (ncout, id_varout(14),vmasksec (:,jk),                       jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(9), e3usec(:,jk),                jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(10),e3vsec(:,jk),                jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(13),e3usec  (:,jk)+e3vsec(:,jk), jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(14),vmasksec(:,jk),              jk, nsec-1, 1 )
          ENDIF
       END DO
       PRINT *, 'BAROTROPIC TRANSPORT at time ',jt,' = ', dbarot/1.d6, ' Sv.'

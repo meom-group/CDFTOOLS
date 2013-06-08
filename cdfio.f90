@@ -1854,7 +1854,7 @@ CONTAINS
     INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: ktime    ! dimension of ptab
     INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: kwght    ! weight of this variable
 
-    INTEGER(KIND=4)               :: istatus, itime, id_dimunlim
+    INTEGER(KIND=4)               :: istatus, itime, id_dimunlim, inbdim
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount, inldim
     !!----------------------------------------------------------------------
     IF (PRESENT(ktime) ) THEN
@@ -1863,19 +1863,16 @@ CONTAINS
        itime=1
     ENDIF
 
-    ! Look for a unlimited dimension
-    istatus=NF90_INQUIRE(kout, unlimitedDimId = id_dimunlim)
-    inldim(:) = 0
-    istart(:) = 1
-    istatus=NF90_INQUIRE_VARIABLE(kout, kid, dimids = inldim(:) )
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE         (kout, unlimitedDimId=id_dimunlim       )
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,ndims=inbdim,dimids=inldim(:) )
 
-    IF ( inldim(3) == id_dimunlim)  THEN  ! this is a x,y,t file
-     istart(3)=itime ; istart(4)=1
-    ELSE
-     istart(3)=klev ; istart(4)=itime     ! this is a x,y,z, t file
-    ENDIF
+    !  if the last dim of id_var is time, then adjust the starting point
+    istart(:) = 1    ; icount(:) = 1    ! default
+    icount(1) = kpi  ; icount(2) = kpj  ! in any case
+    IF ( inldim(inbdim) == id_dimunlim ) istart(inbdim) = itime ! assume than last dim is UNLIM
+    IF ( inbdim == 4                   ) istart(3     ) = klev
 
-    icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
 
     IF (PRESENT(kwght) ) THEN
@@ -1884,7 +1881,6 @@ CONTAINS
     putvarr8=istatus
 
   END FUNCTION putvarr8
-
 
   INTEGER(KIND=4) FUNCTION putvarr4(kout, kid, ptab, klev, kpi, kpj, ktime, kwght)
     !!---------------------------------------------------------------------
@@ -1903,7 +1899,7 @@ CONTAINS
     INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: ktime    ! dimension of ptab
     INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: kwght    ! weight of this variable
 
-    INTEGER(KIND=4)               :: istatus, itime, id_dimunlim
+    INTEGER(KIND=4)               :: istatus, itime, id_dimunlim, inbdim
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount, inldim
     !!----------------------------------------------------------------------
     IF (PRESENT(ktime) ) THEN
@@ -1912,19 +1908,16 @@ CONTAINS
        itime=1
     ENDIF
 
-    ! Look for a unlimited dimension
-    istatus=NF90_INQUIRE(kout, unlimitedDimId = id_dimunlim)
-    inldim(:) = 0
-    istart(:) = 1
-    istatus=NF90_INQUIRE_VARIABLE(kout, kid, dimids = inldim(:) )
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE         (kout, unlimitedDimId=id_dimunlim       )
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,ndims=inbdim,dimids=inldim(:) )
 
-    IF ( inldim(3) == id_dimunlim)  THEN  ! this is a x,y,t file
-     istart(3)=itime ; istart(4)=1
-    ELSE
-     istart(3)=klev ; istart(4)=itime     ! this is a x,y,z, t file
-    ENDIF
+    !  if the last dim of id_var is time, then adjust the starting point
+    istart(:) = 1    ; icount(:) = 1    ! default
+    icount(1) = kpi  ; icount(2) = kpj  ! in any case
+    IF ( inldim(inbdim) == id_dimunlim ) istart(inbdim) = itime ! assume than last dim is UNLIM
+    IF ( inbdim == 4                   ) istart(3     ) = klev
 
-    icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
 
     IF (PRESENT(kwght) ) THEN
@@ -1952,7 +1945,7 @@ CONTAINS
     INTEGER(KIND=4), OPTIONAL,           INTENT(in) :: ktime    ! dimension of ktab
     INTEGER(KIND=4), OPTIONAL,           INTENT(in) :: kwght    ! weight of this variable
 
-    INTEGER(KIND=4)               :: istatus, itime, id_dimunlim
+    INTEGER(KIND=4)               :: istatus, itime, id_dimunlim, inbdim
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount, inldim
     !!----------------------------------------------------------------------
     IF (PRESENT(ktime) ) THEN
@@ -1961,19 +1954,16 @@ CONTAINS
        itime=1
     ENDIF
 
-    ! Look for a unlimited dimension
-    istatus=NF90_INQUIRE(kout, unlimitedDimId = id_dimunlim)
-    inldim(:) = 0
-    istart(:) = 1
-    istatus=NF90_INQUIRE_VARIABLE(kout, kid, dimids = inldim(:) )
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE         (kout, unlimitedDimId=id_dimunlim       )
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,ndims=inbdim,dimids=inldim(:) )
 
-    IF ( inldim(3) == id_dimunlim)  THEN  ! this is a x,y,t file
-     istart(3)=itime ; istart(4)=1
-    ELSE
-     istart(3)=klev ; istart(4)=itime     ! this is a x,y,z, t file
-    ENDIF
+    !  if the last dim of id_var is time, then adjust the starting point
+    istart(:) = 1    ; icount(:) = 1    ! default
+    icount(1) = kpi  ; icount(2) = kpj  ! in any case
+    IF ( inldim(inbdim) == id_dimunlim ) istart(inbdim) = itime ! assume than last dim is UNLIM
+    IF ( inbdim == 4                   ) istart(3     ) = klev
 
-    icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
     istatus=NF90_PUT_VAR(kout,kid, ktab, start=istart,count=icount)
 
     IF (PRESENT(kwght) ) THEN
@@ -2000,9 +1990,9 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptab        ! 2D REAL 4 holding variable field at klev
     INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: kwght        ! weight of this variable
 
-    INTEGER(KIND=4), DIMENSION(4) :: istart, icount, inldim
-    INTEGER(KIND=4) :: incid, id_var, id_dimunlim
+    INTEGER(KIND=4) :: incid, id_var, id_dimunlim, inbdim
     INTEGER(KIND=4) :: istatus, ilev, iimin, ijmin, itime
+    INTEGER(KIND=4), DIMENSION(4) :: istart, icount, inldim
     !!----------------------------------------------------------------------
     ilev  = 1 ; IF (PRESENT(klev ) ) ilev  = klev
     iimin = 1 ; IF (PRESENT(kimin) ) iimin = kimin
@@ -2011,16 +2001,18 @@ CONTAINS
 
     istatus=NF90_OPEN(cdfile,NF90_WRITE,incid)
     istatus=NF90_INQ_VARID(incid,cdvar,id_var)
-    !! look for eventual unlimited dim (time_counter)
-    istatus=NF90_INQUIRE(incid, unlimitedDimId=id_dimunlim)
-    
-    inldim=0
-    istatus=NF90_INQUIRE_VARIABLE(incid, id_var,dimids=inldim(:) )
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE         (incid,    unlimitedDimId=id_dimunlim       )
+    istatus=NF90_INQUIRE_VARIABLE(incid,id_var,ndims=inbdim,dimids=inldim(:) )
 
-    ! if the third dim of id_var is time, then adjust the starting point 
-    ! to take ktime into account (case XYT file)
-    IF ( inldim(3) == id_dimunlim)  THEN ; ilev=itime ; itime=1 ; ENDIF
-    istatus=NF90_PUT_VAR(incid,id_var, ptab,start=(/iimin,ijmin,ilev,itime/), count=(/kpi,kpj,1,1/) )
+    !  if the last dim of id_var is time, then adjust the starting point
+    istart(:) = 1     ; icount(:) = 1    ! default
+    istart(1) = iimin ; istart(2) = ijmin
+    icount(1) = kpi   ; icount(2) = kpj  ! in any case
+    IF ( inldim(inbdim) == id_dimunlim ) istart(inbdim) = itime ! assume than last dim is UNLIM
+    IF ( inbdim == 4                   ) istart(3     ) = ilev
+
+    istatus=NF90_PUT_VAR(incid,id_var, ptab,start=istart, count=icount )
 
     IF (PRESENT(kwght)) THEN
       istatus=NF90_PUT_ATT(incid,id_var,'iweight',kwght)
@@ -2043,13 +2035,13 @@ CONTAINS
     !!----------------------------------------------------------------------
     INTEGER(KIND=4),              INTENT(in) :: kout             ! ncid of output file
     INTEGER(KIND=4),              INTENT(in) :: kid              ! varid of output variable
-    REAL(KIND=4), DIMENSION(kpj), INTENT(in) :: ptab             ! 2D array to write in file
+    REAL(KIND=4), DIMENSION(:),   INTENT(in) :: ptab             ! 1D array to write in file (x-z or y-z )
     INTEGER(KIND=4),              INTENT(in) :: klev             ! level at which ptab will be written
     INTEGER(KIND=4),              INTENT(in) :: kpi, kpj         ! dimension of ptab
     INTEGER(KIND=4), OPTIONAL,    INTENT(in) :: ktime            ! time to write
 
-    INTEGER(KIND=4)               :: istatus, itime, ilev, id_dimunlim
-    INTEGER(KIND=4), DIMENSION(4) :: istart, icount,inldim
+    INTEGER(KIND=4)               :: istatus, itime, ilev, id_dimunlim, inbdim
+    INTEGER(KIND=4), DIMENSION(4) :: istart, icount, inldim
     !!----------------------------------------------------------------------
     ilev=klev
     IF (PRESENT(ktime) ) THEN
@@ -2059,15 +2051,16 @@ CONTAINS
     ENDIF
 
      ! look for unlimited dim (time_counter)
-    istatus=NF90_INQUIRE(kout, unlimitedDimId=id_dimunlim)
-    inldim=0
-    istatus=NF90_INQUIRE_VARIABLE(kout,kid,dimids=inldim(:) )
+    istatus=NF90_INQUIRE         (kout, unlimitedDimId=id_dimunlim       )
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,ndims=inbdim,dimids=inldim(:) )
 
     !  if the third dim of id_var is time, then adjust the starting point 
     !  to take ktime into account (case XYT file)
-    IF ( inldim(3) == id_dimunlim)  THEN ; ilev=itime ; itime=1 ; ENDIF
-    istart(:) = 1 ; istart(3)=ilev ; istart(4)=itime
-    icount(:) = 1 ; icount(1) = kpi ; icount(2) = kpj
+    istart(:) = 1    ; icount(:) = 1    ! default 
+    icount(1) = kpi  ; icount(2) = kpj  ! in any case
+    IF ( inldim(inbdim) == id_dimunlim ) istart(inbdim) = itime ! assume than last dim is UNLIM
+    IF ( inbdim == 4                   ) istart(3) = klev
+
     istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
     putvarzo=istatus
 
@@ -2136,7 +2129,7 @@ CONTAINS
 
   END FUNCTION reputvar1d4
 
-  INTEGER(KIND=4) FUNCTION putvar0dt(kout, kvarid, pvalue, ktime)
+  INTEGER(KIND=4) FUNCTION putvar0dt(kout, kid, pvalue, ktime)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION putvar0dt  ***
     !!
@@ -2146,26 +2139,38 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
     INTEGER(KIND=4),              INTENT(in) :: kout   ! ncid of output file
-    INTEGER(KIND=4),              INTENT(in) :: kvarid ! id of the variable
+    INTEGER(KIND=4),              INTENT(in) :: kid    ! id of the variable
     REAL(KIND=4), DIMENSION(1,1), INTENT(in) :: pvalue ! single value to write in file
     INTEGER(KIND=4), OPTIONAL,    INTENT(in) :: ktime  ! time frame to write
 
     INTEGER(KIND=4) :: istatus
     INTEGER(KIND=4) :: itime
+    INTEGER(KIND=4) :: id_dimunlim, inbdim
+    INTEGER(KIND=4), DIMENSION(4) :: inldim, istart, icount
     !!----------------------------------------------------------------------
     IF (PRESENT(ktime) ) THEN
       itime = ktime
     ELSE
       itime = 1
+    ENDIF 
+    
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE(kout, unlimitedDimId=id_dimunlim)
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,ndims=inbdim,dimids=inldim(:) )
+
+    istart(:) = 1
+    icount(:) = 1
+    IF ( inldim(inbdim) == id_dimunlim ) THEN ! var has an unlimited dim
+       istart(inbdim) = itime ! assume than last dim is UNLIM 
     ENDIF
 
-    istatus=NF90_PUT_VAR(kout, kvarid, pvalue, start=(/1,1,itime/), count=(/1,1,1/) )
+    istatus=NF90_PUT_VAR(kout, kid, pvalue, start=istart, count=icount )
 
     putvar0dt=istatus
 
   END FUNCTION putvar0dt
 
-  INTEGER(KIND=4) FUNCTION putvar0ds(kout, kvarid, pvalue, ktime)
+  INTEGER(KIND=4) FUNCTION putvar0ds(kout, kid, pvalue, ktime)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION putvar0ds  ***
     !!
@@ -2175,12 +2180,15 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
     INTEGER(KIND=4),              INTENT(in) :: kout   ! ncid of output file
-    INTEGER(KIND=4),              INTENT(in) :: kvarid ! id of the variable
+    INTEGER(KIND=4),              INTENT(in) :: kid    ! id of the variable
     REAL(KIND=4),                 INTENT(in) :: pvalue ! single value to write in file
     INTEGER(KIND=4), OPTIONAL,    INTENT(in) :: ktime  ! time frame to write
 
     INTEGER(KIND=4) :: istatus
     INTEGER(KIND=4) :: itime
+    INTEGER(KIND=4) :: id_dimunlim, inbdim
+    INTEGER(KIND=4), DIMENSION(4) :: inldim, istart, icount
+
     REAL(KIND=4), DIMENSION(1,1)             :: ztab   ! dummy array for PUT_VAR
     !!----------------------------------------------------------------------
     IF (PRESENT(ktime) ) THEN
@@ -2188,15 +2196,23 @@ CONTAINS
     ELSE
       itime = 1
     ENDIF
+
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE(kout, unlimitedDimId=id_dimunlim)
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,ndims=inbdim,dimids=inldim(:) )
+
+    istart(:) = 1
+    icount(:) = 1
+    IF ( inldim(inbdim) == id_dimunlim ) THEN ! var has an unlimited dim
+       istart(inbdim) = itime ! assume than last dim is UNLIM 
+    ENDIF
     ztab = pvalue
 
-    istatus=NF90_PUT_VAR(kout, kvarid, ztab, start=(/1,1,itime/), count=(/1,1,1/) )
+    istatus=NF90_PUT_VAR(kout, kid, ztab, start=istart, count=icount )
 
     putvar0ds=istatus
 
   END FUNCTION putvar0ds
-
-
 
   INTEGER(KIND=4) FUNCTION closeout(kout)
     !!---------------------------------------------------------------------
