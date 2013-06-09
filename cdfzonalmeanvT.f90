@@ -240,10 +240,12 @@ PROGRAM cdfzonalmeanvT
 
             ! For all basins 
             DO jbasin = 1, npbasins
+            IF ( ldebug) PRINT *,'    JBASIN ', jbasin
                dzovel(:) = 0.d0
                dzotem(:) = 0.d0
                dzosal(:) = 0.d0
                darea (:) = 0.d0
+            IF ( ldebug) PRINT *,'      reset done.'
 
                ! integrates V 'zonally' (along i-coordinate)
                DO ji=1,npiglo
@@ -253,6 +255,7 @@ PROGRAM cdfzonalmeanvT
                   dzosal(:) = dzosal(:) + dl_tmp(:)*zsal  (ji,:)
                   darea (:) = darea (:) + dl_tmp(:)*zvmask(ji,:)
                END DO
+            IF ( ldebug) PRINT *,'      Zonal integral done.'
 
                ! compute the mean value if the darea is not 0, else assign spval
                WHERE (darea /= 0 )
@@ -270,6 +273,7 @@ PROGRAM cdfzonalmeanvT
                   dzovt(1,:,jk,jbasin) = zspval
                   dzovs(1,:,jk,jbasin) = zspval
                ENDWHERE
+            IF ( ldebug) PRINT *,'      mean and masking done.'
 
             END DO  !next basin
          END DO ! next level
