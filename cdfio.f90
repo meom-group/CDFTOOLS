@@ -524,7 +524,7 @@ CONTAINS
     zspval = getspval      ( cdfile, cdvar, clmissing                       )
     istatus=NF90_PUT_ATT   (incid, ivarid, clmissing, pmissing_value        )
     istatus=NF90_RENAME_ATT(incid, ivarid, 'long_name',     cdlong_name    )
-!   istatus=NF90_RENAME_ATT(incid, ivarid, 'short_name',    cdshort_name   )
+    istatus=NF90_RENAME_ATT(incid, ivarid, 'short_name',    cdshort_name   )
 
     istatus=NF90_ENDDEF(incid)
     cvaratt=istatus
