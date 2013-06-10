@@ -33,6 +33,7 @@
   !!   getnvar       : get the number of variable in a file
   !!   getspval      : get spval of a given variable
   !!   getvar1d      : read 1D variable (eg depth, time_counter) from a file
+  !!   getvar3d      : read 3D variable  at once
   !!   getvaratt     : read variable attributes
   !!   gettimeatt    : get time attributes
   !!   getvar        : read the variable
@@ -121,7 +122,7 @@
   PUBLIC :: copyatt, create, createvar, getvaratt, cvaratt, gettimeatt
   PUBLIC :: putatt, putheadervar, putvar, putvar1d, putvar0d, atted, puttimeatt
   PUBLIC :: getatt, getdim, getvdim, getipk, getnvar, getvarname, getvarid, getspval
-  PUBLIC :: getvar, getvarxz, getvaryz, getvar1d, getvare3
+  PUBLIC :: getvar, getvarxz, getvaryz, getvar1d, getvare3, getvar3d
   PUBLIC :: gettimeseries
   PUBLIC :: closeout, ncopen
   PUBLIC :: ERR_HDL
@@ -523,7 +524,7 @@ CONTAINS
     zspval = getspval      ( cdfile, cdvar, clmissing                       )
     istatus=NF90_PUT_ATT   (incid, ivarid, clmissing, pmissing_value        )
     istatus=NF90_RENAME_ATT(incid, ivarid, 'long_name',     cdlong_name    )
-    istatus=NF90_RENAME_ATT(incid, ivarid, 'short_name',    cdshort_name   )
+!   istatus=NF90_RENAME_ATT(incid, ivarid, 'short_name',    cdshort_name   )
 
     istatus=NF90_ENDDEF(incid)
     cvaratt=istatus
@@ -1429,10 +1430,114 @@ CONTAINS
 
   END FUNCTION getvar
 
+  FUNCTION  getvar3d (cdfile,cdvar,kpi,kpj,kpz, kimin, kjmin, kkmin, ktime )
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION  getvar3d  ***
+    !!
+    !! ** Purpose : Return the 3D REAL variable cvar, from cdfile at level klev.
+    !!              kpi,kpj are the horizontal size of the 2D variable
+    !!
+    !! ** Method  : Use NF90 primitive to read the block of 3D data
+    !!
+    !!---------------------------------------------------------------------
+    CHARACTER(LEN=*),          INTENT(in) :: cdfile
+    CHARACTER(LEN=*),          INTENT(in) :: cdvar
+    INTEGER(KIND=4),           INTENT(in) :: kpi,   kpj,   kpz
+    INTEGER(KIND=4), OPTIONAL, INTENT(in) :: kimin, kjmin, kkmin
+    INTEGER(KIND=4), OPTIONAL, INTENT(in) :: ktime         ! Optional variable. If missing 1 is assumed 
+    REAL(KIND=4), DIMENSION(kpi,kpj,kpz)  :: getvar3d      ! 3D REAL 
+
+    INTEGER(KIND=4), DIMENSION(4) :: istart, icount
+    INTEGER(KIND=4)               :: incid, id_var
+    INTEGER(KIND=4)               :: istatus
+    INTEGER(KIND=4)               :: iimin, ijmin, ikmin
+    INTEGER(KIND=4)               :: itime, ilog
+    INTEGER(KIND=4)               :: idum
+    REAL(KIND=4)                  :: sf=1., ao=0.       !  Scale factor and add_offset
+    REAL(KIND=4)                  :: spval              !  Missing values
+    LOGICAL                       :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
+    !!---------------------------------------------------------------------
+    IF (PRESENT(kimin) ) THEN
+       iimin=kimin
+    ELSE
+       iimin=1
+    ENDIF
+
+    IF (PRESENT(kjmin) ) THEN
+       ijmin=kjmin
+    ELSE
+       ijmin=1
+    ENDIF
+
+    IF (PRESENT(kkmin) ) THEN
+       ikmin=kkmin
+    ELSE
+       ikmin=1
+    ENDIF
+
+    IF (PRESENT(ktime) ) THEN
+       itime=ktime
+    ELSE
+       itime=1
+    ENDIF
+   
+    ! Must reset the flags to false for every call to getvar
+    llog=.FALSE.
+    lsf=.FALSE.
+    lao=.FALSE.
+    PRINT * ' GETVAR3D '
+    PRINT *,'  ', TRIM(cdfile)
+    PRINT *,'  ', TRIM(cdvar )
+    PRINT *,'    KPI KPJ KPZ ',kpi, kpj, kpz
+
+    CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
+    CALL ERR_HDL(NF90_INQ_VARID ( incid, cdvar, id_var) )
+    istart=(/iimin, ijmin, ikmin, itime/)
+    icount=(/kpi,   kpj,   kpz,   1    /)
+
+    spval = getspval ( cdfile, cdvar )
+
+    istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'savelog10')
+    IF (istatus == NF90_NOERR ) THEN
+       ! there is a scale factor for this variable
+       istatus=NF90_GET_ATT(incid,id_var,'savelog10',ilog)
+       IF ( ilog /= 0 ) llog=.TRUE.
+    ENDIF
+
+    istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'scale_factor')
+    IF (istatus == NF90_NOERR ) THEN
+       ! there is a scale factor for this variable
+       istatus=NF90_GET_ATT(incid,id_var,'scale_factor',sf)
+       IF ( sf /= 1. ) lsf=.TRUE.
+    ENDIF
+
+    istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'add_offset')
+    IF (istatus == NF90_NOERR ) THEN
+       ! there is a scale factor for this variable
+       istatus=NF90_GET_ATT(incid,id_var,'add_offset',ao)
+       IF ( ao /= 0.) lao=.TRUE.
+    ENDIF
+
+    istatus=NF90_GET_VAR(incid,id_var,getvar3d, start=istart,count=icount)
+    IF ( istatus /= 0 ) THEN
+       PRINT *,' Problem in getvar3d for ', TRIM(cdvar)
+       CALL ERR_HDL(istatus)
+       STOP
+    ENDIF
+
+    ! Caution : order does matter !
+    IF (lsf )  WHERE (getvar3d /= spval )  getvar3d=getvar3d*sf
+    IF (lao )  WHERE (getvar3d /= spval )  getvar3d=getvar3d + ao
+    IF (llog)  WHERE (getvar3d /= spval )  getvar3d=10**getvar3d
+
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION getvar3d
+
 
   FUNCTION  getvarxz (cdfile, cdvar, kj, kpi, kpz, kimin, kkmin, ktime)
     !!-------------------------------------------------------------------------
-    !!                  ***  FUNCTION  getvar  ***
+    !!                  ***  FUNCTION  getvarxz  ***
     !!
     !! ** Purpose : Return the 2D REAL variable x-z slab cvar, from cdfile at j=kj
     !!              kpi,kpz are the  size of the 2D variable
