@@ -37,7 +37,14 @@ PROGRAM cdf_xtract_brokenline
    INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax     ! ending points of a leg in model I J
    INTEGER(KIND=4) :: ii, ij, ii1, ij1, ipoint       ! working integer
    INTEGER(KIND=4) :: ierr, ncout                    ! Netcdf error and ncid
-   INTEGER(KIND=4) :: nvar = 16                      ! number of output variables
+   INTEGER(KIND=4) :: nvar = 16                      ! number of output variables (modified after if options)
+   INTEGER(KIND=4) :: np_tem, np_sal, np_una, np_vna ! index for output variable
+   INTEGER(KIND=4) :: np_isec, np_jsec, np_e2vn      !  "
+   INTEGER(KIND=4) :: np_e1vn, np_e3un, np_e3vn      !  "
+   INTEGER(KIND=4) :: np_vmod, np_e1v,  np_e3v       !  "
+   INTEGER(KIND=4) :: np_vmsk, np_baro, np_bat       !  "
+   INTEGER(KIND=4) :: np_ssh,  np_mld                !  "
+
    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout  ! netcdf output stuff
 
    ! broken line definition
@@ -63,8 +70,10 @@ PROGRAM cdf_xtract_brokenline
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonf, rlatf        ! model long and lat of F points
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temper, saline      ! model Temperature and salinity
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: uzonal, vmerid      ! model zonal and meridional velocity
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ssh, rmld           ! model SSH and MLD
    ! along section array (dimension x,z or x,1 )
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tempersec, salinesec, uzonalsec, vmeridsec
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: sshsec, rmldsec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonsec, rlatsec, risec, rjsec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1vsec, e2usec
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3usec, e3vsec
@@ -86,6 +95,9 @@ PROGRAM cdf_xtract_brokenline
    LOGICAL  :: lchk                                  ! flag for missing files
    LOGICAL  :: lverbose = .FALSE.                    ! flag for verbosity
    LOGICAL  :: lsecfile = .FALSE.                    ! flag for input section file
+   LOGICAL  :: lssh     = .FALSE.                    ! flag for saving ssh
+   LOGICAL  :: lmld     = .FALSE.                    ! flag for saving mld
+   LOGICAL  :: ll_ssh, ll_mld                        ! working flag for jk =1
 
    TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar  ! variable definition and attributes
    !!----------------------------------------------------------------------
@@ -97,7 +109,7 @@ PROGRAM cdf_xtract_brokenline
    narg = iargc()
    IF ( narg < 3 ) THEN
       PRINT *,' usage :  cdf_xtrac_brokenline T-file U-file V-file [-f section_file ] ...'
-      PRINT *,'                     ... [-verbose]'
+      PRINT *,'                     ... [-verbose] [-ssh ] [-mld]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'        This tool extracts model variables from model files for a geographical' 
@@ -137,6 +149,8 @@ PROGRAM cdf_xtract_brokenline
       PRINT *,'                   for OVIDE section. A comment can be added at the end of'
       PRINT *,'                   of the lines, using a # as separator'
       PRINT *,'      -verbose : increase verbosity  ' 
+      PRINT *,'      -ssh     : also save ssh along the broken line.'
+      PRINT *,'      -mld     : also save mld along the broken line.'
       PRINT *,'     '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'      ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' must be in the current directory ' 
@@ -159,6 +173,8 @@ PROGRAM cdf_xtract_brokenline
       CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
       SELECT CASE  ( cldum   )
       CASE ( '-verbose' ) ; lverbose=.true.  ; cverb='y'
+      CASE ( '-ssh'     ) ; lssh    =.true.  ; nvar = nvar + 1  ! 
+      CASE ( '-mld'     ) ; lmld    =.true.  ; nvar = nvar + 1  !
       CASE ( '-f' )       ;  CALL getarg(ijarg, cf_sec) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
       CASE DEFAULT 
          ifree = ifree + 1
@@ -314,6 +330,8 @@ PROGRAM cdf_xtract_brokenline
    ALLOCATE(e2u(npiglo,npjglo))
    ALLOCATE(e3u(npiglo,npjglo), e3v(npiglo,npjglo))
    ALLOCATE(hdepw(npiglo,npjglo) )
+   IF ( lssh ) ALLOCATE ( ssh (npiglo, npjglo) )
+   IF ( lmld ) ALLOCATE ( rmld(npiglo, npjglo) )
 
    ! output fields
    ALLOCATE(rlonsec(nsec,1), rlatsec(nsec,1) )
@@ -324,6 +342,8 @@ PROGRAM cdf_xtract_brokenline
    ALLOCATE(tempersec(nsec-1,npk), salinesec(nsec-1,npk) )
    ALLOCATE(uzonalsec(nsec-1,npk), vmeridsec(nsec-1,npk) )
    ALLOCATE(vmasksec (nsec-1,npk))
+   IF ( lssh ) ALLOCATE ( sshsec(nsec-1,1) )
+   IF ( lmld ) ALLOCATE ( rmldsec(nsec-1,1) )
 
    e1vsec = -9999.
    e2usec = -9999.
@@ -440,16 +460,18 @@ PROGRAM cdf_xtract_brokenline
    ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
    CALL CreateOutputFile 
 
-   ierr = putvar (ncout, id_varout(5), risec(:,1),                            1,  nsec  , 1 )
-   ierr = putvar (ncout, id_varout(6), rjsec(:,1),                            1,  nsec  , 1 )
-   ierr = putvar (ncout, id_varout(7), e2usec(:,1),                           1,  nsec-1, 1 )
-   ierr = putvar (ncout, id_varout(8), e1vsec(:,1),                           1,  nsec-1, 1 )
-   ierr = putvar (ncout, id_varout(12),e2usec(:,1) + e1vsec(:,1),             1,  nsec-1, 1 )
-   ierr = putvar (ncout, id_varout(16),batsec(:,1),                           1,  nsec-1, 1 )
+   ierr = putvar (ncout, id_varout(np_isec), risec(:,1),                            1,  nsec  , 1 )
+   ierr = putvar (ncout, id_varout(np_jsec), rjsec(:,1),                            1,  nsec  , 1 )
+   ierr = putvar (ncout, id_varout(np_e2vn), e2usec(:,1),                           1,  nsec-1, 1 )
+   ierr = putvar (ncout, id_varout(np_e1vn), e1vsec(:,1),                           1,  nsec-1, 1 )
+   ierr = putvar (ncout, id_varout(np_e1v ), e2usec(:,1) + e1vsec(:,1),             1,  nsec-1, 1 )
+   ierr = putvar (ncout, id_varout(np_bat ), batsec(:,1),                           1,  nsec-1, 1 )
 
    ! Temperature and salinity are interpolated on the respective U or V  point for better flux computation
    DO jt=1, npt
       dbarot = 0.d0    ! reset barotropic transport 
+      IF ( lssh ) ssh (:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime = jt)
+      IF ( lmld ) rmld(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime = jt)
       DO jk=1,npk
          temper(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
          saline(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
@@ -458,6 +480,8 @@ PROGRAM cdf_xtract_brokenline
 
          e3u(:,:)    = getvar(cn_fzgr, 'e3u_ps',    jk, npiglo, npjglo, ldiom=.true.)
          e3v(:,:)    = getvar(cn_fzgr, 'e3v_ps',    jk, npiglo, npjglo, ldiom=.true.)
+         ll_ssh = ( lssh .AND. jk == 1 )
+         ll_mld = ( lmld .AND. jk == 1 )
 
          DO jipt=1,nsec-1
             ii  = iisec(jipt  ) ; ij  = ijsec(jipt  )  ! F point  position
@@ -469,9 +493,13 @@ PROGRAM cdf_xtract_brokenline
 
                   IF ( MIN( saline(ii+1,ij) , saline(ii+1,ij+1))  == 0. ) THEN
                      tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
+                     IF ( ll_ssh ) sshsec(jipt,jk) = 0.
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                   ELSE
                      tempersec(jipt,jk) = 0.5 * ( temper(ii+1,ij) + temper(ii+1,ij+1) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii+1,ij) + saline(ii+1,ij+1) )
+                     IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii+1,ij) + ssh (ii+1,ij+1) )
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii+1,ij) + rmld(ii+1,ij+1) )
                   ENDIF
                   vmeridsec(jipt,jk) = vmerid(ii+1,ij) * normv_sec(jipt)
                   e3vsec   (jipt,jk) = e3v   (ii+1,ij)
@@ -480,9 +508,13 @@ PROGRAM cdf_xtract_brokenline
 
                   IF ( MIN( saline(ii,ij) , saline(ii,ij+1) ) == 0. ) THEN
                      tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
+                     IF ( ll_ssh ) sshsec (jipt,jk) = 0.
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                   ELSE
                      tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii,ij+1) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii,ij+1) )
+                     IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii,ij) + ssh (ii,ij+1) )
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij) + rmld(ii,ij+1) )
                   ENDIF
                   vmeridsec(jipt,jk) = vmerid(ii,ij) * normv_sec(jipt)
                   e3vsec   (jipt,jk) = e3v   (ii,ij)
@@ -495,9 +527,13 @@ PROGRAM cdf_xtract_brokenline
 
                   IF ( MIN( saline(ii,ij) , saline(ii+1,ij) ) == 0. ) THEN
                      tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
+                     IF ( ll_ssh ) sshsec (jipt,jk) = 0.
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                   ELSE
                      tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii+1,ij) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii+1,ij) )
+                     IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii,ij) + ssh (ii+1,ij) )
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij) + rmld(ii+1,ij) )
                   ENDIF
                   uzonalsec(jipt,jk) = uzonal(ii,ij) * normu_sec(jipt)
                   e3usec   (jipt,jk) = e3u   (ii,ij)
@@ -506,9 +542,13 @@ PROGRAM cdf_xtract_brokenline
 
                   IF ( MIN( saline(ii,ij+1) , saline(ii+1,ij+1) ) == 0. ) THEN
                      tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
+                     IF ( ll_ssh ) sshsec (jipt,jk) = 0.
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                   ELSE
                      tempersec(jipt,jk) = 0.5 * ( temper(ii,ij+1) + temper(ii+1,ij+1) )
                      salinesec(jipt,jk) = 0.5 * ( saline(ii,ij+1) + saline(ii+1,ij+1) )
+                     IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii,ij+1) + ssh (ii+1,ij+1) )
+                     IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij+1) + rmld(ii+1,ij+1) )
                   ENDIF
                   uzonalsec(jipt,jk) = uzonal(ii,ij+1) * normu_sec(jipt)
                   e3usec   (jipt,jk) = e3u   (ii,ij+1)
@@ -528,27 +568,29 @@ PROGRAM cdf_xtract_brokenline
             dbarot=dbarot+dtmp
          END DO
 
-         ierr = putvar (ncout, id_varout(1), tempersec(:,jk), jk, nsec-1, 1, ktime=jt )
-         ierr = putvar (ncout, id_varout(2), salinesec(:,jk), jk, nsec-1, 1, ktime=jt )
-         ierr = putvar (ncout, id_varout(3), uzonalsec(:,jk), jk, nsec-1, 1, ktime=jt )
-         ierr = putvar (ncout, id_varout(4), vmeridsec(:,jk), jk, nsec-1, 1, ktime=jt )
+         ierr = putvar (ncout, id_varout(np_tem), tempersec(:,jk), jk, nsec-1, 1, ktime=jt )
+         ierr = putvar (ncout, id_varout(np_sal), salinesec(:,jk), jk, nsec-1, 1, ktime=jt )
+         ierr = putvar (ncout, id_varout(np_una), uzonalsec(:,jk), jk, nsec-1, 1, ktime=jt )
+         ierr = putvar (ncout, id_varout(np_vna), vmeridsec(:,jk), jk, nsec-1, 1, ktime=jt )
          ! along-track normal velocity, horiz. and vert. resolution, and mask
-         ierr = putvar (ncout, id_varout(11),uzonalsec(:,jk) + vmeridsec(:,jk), &
+         ierr = putvar (ncout, id_varout(np_vmod),uzonalsec(:,jk) + vmeridsec(:,jk), &
            &                                                  jk, nsec-1, 1, ktime=jt ) 
+         IF (ll_ssh) ierr = putvar (ncout, id_varout(np_ssh), sshsec (:,jk), 1, nsec-1, 1, ktime=jt )
+         IF (ll_mld) ierr = putvar (ncout, id_varout(np_mld), rmldsec(:,jk), 1, nsec-1, 1, ktime=jt )
 
          IF ( jt == 1 ) THEN 
             ! save a mask of the section
             vmasksec(:,:) = 1.
             WHERE( salinesec(:,:) == 0. ) vmasksec(:,:) = 0.
 
-            ierr = putvar (ncout, id_varout(9), e3usec(:,jk),                jk, nsec-1, 1 )
-            ierr = putvar (ncout, id_varout(10),e3vsec(:,jk),                jk, nsec-1, 1 )
-            ierr = putvar (ncout, id_varout(13),e3usec  (:,jk)+e3vsec(:,jk), jk, nsec-1, 1 )
-            ierr = putvar (ncout, id_varout(14),vmasksec(:,jk),              jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(np_e3un), e3usec(:,jk),                jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(np_e3vn), e3vsec(:,jk),                jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(np_e3v ), e3usec  (:,jk)+e3vsec(:,jk), jk, nsec-1, 1 )
+            ierr = putvar (ncout, id_varout(np_vmsk), vmasksec(:,jk),              jk, nsec-1, 1 )
          ENDIF
       END DO
       PRINT *, 'BAROTROPIC TRANSPORT at time ',jt,' = ', dbarot/1.d6, ' Sv.'
-      ierr  = putvar0d ( ncout, id_varout(15), REAL(dbarot/1.d6), ktime = jt    )
+      ierr  = putvar0d ( ncout, id_varout(np_baro), REAL(dbarot/1.d6), ktime = jt    )
 
    END DO
 
@@ -565,6 +607,9 @@ CONTAINS
       !!               All variables are global.  
       !!
       !!----------------------------------------------------------------------
+      INTEGER(KIND=4) :: ivar  ! variable index
+      !!----------------------------------------------------------------------
+      ivar = 1
 
       stypvar%scale_factor= 1.
       stypvar%add_offset= 0.
@@ -573,134 +618,191 @@ CONTAINS
       stypvar%conline_operation='N/A'
 
       ! define new variables for output 
-      stypvar(1)%cname       = cn_votemper
-      stypvar(1)%cunits      = 'deg C'
-      stypvar(1)%valid_min   = -2.
-      stypvar(1)%valid_max   = 40.
-      stypvar(1)%clong_name  = 'Temperature along '//TRIM(csection)//' section'
-      stypvar(1)%cshort_name = cn_votemper
-      stypvar(1)%caxis       = 'TZX'
-      ipk(1)                 = npk
+      np_tem = ivar
+      stypvar(ivar)%cname       = cn_votemper
+      stypvar(ivar)%cunits      = 'deg C'
+      stypvar(ivar)%valid_min   = -2.
+      stypvar(ivar)%valid_max   = 40.
+      stypvar(ivar)%clong_name  = 'Temperature along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = cn_votemper
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 = npk
+      ivar = ivar + 1
 
-      stypvar(2)%cname       = cn_vosaline
-      stypvar(2)%cunits      = 'PSU'
-      stypvar(2)%valid_min   = 0.
-      stypvar(2)%valid_max   = 50.
-      stypvar(2)%clong_name  = 'Salinity along '//TRIM(csection)//' section'
-      stypvar(2)%cshort_name = cn_vosaline
-      stypvar(2)%caxis       = 'TZX'
-      ipk(2)                 = npk
+      np_sal = ivar
+      stypvar(ivar)%cname       = cn_vosaline
+      stypvar(ivar)%cunits      = 'PSU'
+      stypvar(ivar)%valid_min   = 0.
+      stypvar(ivar)%valid_max   = 50.
+      stypvar(ivar)%clong_name  = 'Salinity along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = cn_vosaline
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 = npk
+      ivar = ivar + 1
 
-      stypvar(3)%cname       = TRIM(cn_vozocrtx)//'_native'
-      stypvar(3)%cunits      = 'm.s-1'
-      stypvar(3)%valid_min   = -20.
-      stypvar(3)%valid_max   = 20.
-      stypvar(3)%clong_name  = 'Zonal velocity along '//TRIM(csection)//' section'
-      stypvar(3)%cshort_name = TRIM(cn_vozocrtx)//'_native'
-      stypvar(3)%caxis       = 'TZX'
-      ipk(3)                 = npk
+      np_una = ivar
+      stypvar(ivar)%cname       = TRIM(cn_vozocrtx)//'_native'
+      stypvar(ivar)%cunits      = 'm.s-1'
+      stypvar(ivar)%valid_min   = -20.
+      stypvar(ivar)%valid_max   = 20.
+      stypvar(ivar)%clong_name  = 'Zonal velocity along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = TRIM(cn_vozocrtx)//'_native'
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 = npk
+      ivar = ivar + 1
 
-      stypvar(4)%cname       = TRIM(cn_vomecrty)//'_native'
-      stypvar(4)%cunits      = 'm.s-1'
-      stypvar(4)%valid_min   = -20.
-      stypvar(4)%valid_max   = 20.
-      stypvar(4)%clong_name  = 'Meridionnal velocity along '//TRIM(csection)//' section'
-      stypvar(4)%cshort_name = TRIM(cn_vomecrty)//'_native'
-      stypvar(4)%caxis       = 'TZX'
-      ipk(4)                 = npk
+      np_vna = ivar
+      stypvar(ivar)%cname       = TRIM(cn_vomecrty)//'_native'
+      stypvar(ivar)%cunits      = 'm.s-1'
+      stypvar(ivar)%valid_min   = -20.
+      stypvar(ivar)%valid_max   = 20.
+      stypvar(ivar)%clong_name  = 'Meridionnal velocity along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = TRIM(cn_vomecrty)//'_native'
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 = npk
+      ivar = ivar + 1
 
-      stypvar(5)%cname       = 'isec'
-      stypvar(5)%valid_min   = 1.
-      stypvar(5)%valid_max   = npiglo 
-      stypvar(5)%caxis       = 'TX'
-      ipk(5)                 = 1
+      np_isec = ivar
+      stypvar(ivar)%cname       = 'isec'
+      stypvar(ivar)%valid_min   = 1.
+      stypvar(ivar)%valid_max   = npiglo 
+      stypvar(ivar)%caxis       = 'TX'
+      ipk(ivar)                 = 1
+      ivar = ivar + 1
 
-      stypvar(6)%cname       = 'jsec'
-      stypvar(6)%valid_min   = 1.
-      stypvar(6)%valid_max   = npjglo 
-      stypvar(6)%caxis       = 'TX'
-      ipk(6)                 = 1
+      np_jsec = ivar
+      stypvar(ivar)%cname       = 'jsec'
+      stypvar(ivar)%valid_min   = 1.
+      stypvar(ivar)%valid_max   = npjglo 
+      stypvar(ivar)%caxis       = 'TX'
+      ipk(ivar)                 = 1
+      ivar = ivar + 1
 
-      stypvar(7)%cname       = TRIM(cn_ve2u)//'_native'
-      stypvar(7)%valid_min   = 1.
-      stypvar(7)%valid_max   = 200000.
-      stypvar(7)%caxis       = 'TX'
-      ipk(7)                 = 1
+      np_e2vn = ivar
+      stypvar(ivar)%cname       = TRIM(cn_ve2u)//'_native'
+      stypvar(ivar)%valid_min   = 1.
+      stypvar(ivar)%valid_max   = 200000.
+      stypvar(ivar)%caxis       = 'TX'
+      ipk(ivar)                 = 1
+      ivar = ivar + 1
 
-      stypvar(8)%cname       = TRIM(cn_ve1v)//'_native'
-      stypvar(8)%valid_min   = 1.
-      stypvar(8)%valid_max   = 200000.
-      stypvar(8)%caxis       = 'TX'
-      ipk(8)                 = 1
+      np_e1vn = ivar
+      stypvar(ivar)%cname       = TRIM(cn_ve1v)//'_native'
+      stypvar(ivar)%valid_min   = 1.
+      stypvar(ivar)%valid_max   = 200000.
+      stypvar(ivar)%caxis       = 'TX'
+      ipk(ivar)                 = 1
+      ivar = ivar + 1
 
-      stypvar(9)%cname       = 'e3u_native'
-      stypvar(9)%valid_min   = 1.
-      stypvar(9)%valid_max   = 200000.
-      stypvar(9)%caxis       = 'TZX'
-      ipk(9)                 =  npk
+      np_e3un = ivar
+      stypvar(ivar)%cname       = 'e3u_native'
+      stypvar(ivar)%valid_min   = 1.
+      stypvar(ivar)%valid_max   = 200000.
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 =  npk
+      ivar = ivar + 1
 
-      stypvar(10)%cname      = 'e3v_native'
-      stypvar(10)%valid_min   = 1.
-      stypvar(10)%valid_max   = 200000.
-      stypvar(10)%caxis      = 'TZX'
-      ipk(10)                =  npk
+      np_e3vn = ivar
+      stypvar(ivar)%cname      = 'e3v_native'
+      stypvar(ivar)%valid_min   = 1.
+      stypvar(ivar)%valid_max   = 200000.
+      stypvar(ivar)%caxis      = 'TZX'
+      ipk(ivar)                =  npk
+      ivar = ivar + 1
 
-      stypvar(11)%cname       = cn_vomecrty
-      stypvar(11)%cunits      = 'm.s-1'
-      stypvar(11)%valid_min   = -20.
-      stypvar(11)%valid_max   = 20.
-      stypvar(11)%clong_name  = 'Normal velocity along '//TRIM(csection)//' section'
-      stypvar(11)%cshort_name = cn_vomecrty
-      stypvar(11)%caxis       = 'TZX'
-      ipk(11)                 =  npk
+      np_vmod = ivar
+      stypvar(ivar)%cname       = cn_vomecrty
+      stypvar(ivar)%cunits      = 'm.s-1'
+      stypvar(ivar)%valid_min   = -20.
+      stypvar(ivar)%valid_max   = 20.
+      stypvar(ivar)%clong_name  = 'Normal velocity along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = cn_vomecrty
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 =  npk
+      ivar = ivar + 1
 
-      stypvar(12)%cname       = cn_ve1v
-      stypvar(12)%cunits      = 'm'
-      stypvar(12)%valid_min   = 0.
-      stypvar(12)%valid_max   = 1000000.
-      stypvar(12)%clong_name  = 'Local horiz. resolution along '//TRIM(csection)//' section'
-      stypvar(12)%cshort_name = cn_ve1v
-      stypvar(12)%caxis       = 'TX'
-      ipk(12)                 = 1
+      np_e1v = ivar
+      stypvar(ivar)%cname       = cn_ve1v
+      stypvar(ivar)%cunits      = 'm'
+      stypvar(ivar)%valid_min   = 0.
+      stypvar(ivar)%valid_max   = 1000000.
+      stypvar(ivar)%clong_name  = 'Local horiz. resolution along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = cn_ve1v
+      stypvar(ivar)%caxis       = 'TX'
+      ipk(ivar)                 = 1
+      ivar = ivar + 1
 
-      stypvar(13)%cname       = 'e3v_ps'
-      stypvar(13)%cunits      = 'm'
-      stypvar(13)%valid_min   = 0.
-      stypvar(13)%valid_max   = 100000000.
-      stypvar(13)%clong_name  = 'Local vert. resolution along '//TRIM(csection)//' section'
-      stypvar(13)%cshort_name = 'e3v_ps'
-      stypvar(13)%caxis       = 'TZX'
-      ipk(13)                 =  npk
+      np_e3v = ivar
+      stypvar(ivar)%cname       = 'e3v_ps'
+      stypvar(ivar)%cunits      = 'm'
+      stypvar(ivar)%valid_min   = 0.
+      stypvar(ivar)%valid_max   = 100000000.
+      stypvar(ivar)%clong_name  = 'Local vert. resolution along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = 'e3v_ps'
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 =  npk
+      ivar = ivar + 1
 
-      stypvar(14)%cname       = 'vmask'
-      stypvar(14)%cunits      ='1/0'
-      stypvar(14)%valid_min   = 0.
-      stypvar(14)%valid_max   = 1.
-      stypvar(14)%rmissing_value = 9999.
-      stypvar(14)%clong_name  ='Mask along '//TRIM(csection)//' section'
-      stypvar(14)%cshort_name = 'vmask'
-      stypvar(14)%caxis       = 'TZX'
-      ipk(14)                 =  npk
+      np_vmsk = ivar
+      stypvar(ivar)%cname       = 'vmask'
+      stypvar(ivar)%cunits      ='1/0'
+      stypvar(ivar)%valid_min   = 0.
+      stypvar(ivar)%valid_max   = 1.
+      stypvar(ivar)%rmissing_value = 9999.
+      stypvar(ivar)%clong_name  ='Mask along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = 'vmask'
+      stypvar(ivar)%caxis       = 'TZX'
+      ipk(ivar)                 =  npk
+      ivar = ivar + 1
 
-      stypvar(15)%cname       = 'barotrop_'//TRIM(csection)
-      stypvar(15)%cunits      ='Sv'
-      stypvar(15)%valid_min   = -500.
-      stypvar(15)%valid_max   = 500.
-      stypvar(15)%rmissing_value = -99999.
-      stypvar(15)%clong_name  = 'Barotropic_transport for '//TRIM(csection)//' section'
-      stypvar(15)%cshort_name = 'barotrop_'//TRIM(csection)
-      stypvar(15)%caxis       = 'T'
-      ipk(15)                 =  -1
+      np_baro = ivar
+      stypvar(ivar)%cname       = 'barotrop_'//TRIM(csection)
+      stypvar(ivar)%cunits      ='Sv'
+      stypvar(ivar)%valid_min   = -500.
+      stypvar(ivar)%valid_max   = 500.
+      stypvar(ivar)%rmissing_value = -99999.
+      stypvar(ivar)%clong_name  = 'Barotropic_transport for '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = 'barotrop_'//TRIM(csection)
+      stypvar(ivar)%caxis       = 'T'
+      ipk(ivar)                 =  -1
+      ivar = ivar + 1
 
-      stypvar(16)%cname       = 'Bathymetry'
-      stypvar(16)%cunits      = 'm'
-      stypvar(16)%valid_min   = 0.
-      stypvar(16)%valid_max   = 1000000.
-      stypvar(16)%clong_name  = 'Bathymetry along '//TRIM(csection)//' section'
-      stypvar(16)%cshort_name = 'Bathymetry'
-      stypvar(16)%caxis       = 'TX'
-      ipk(16)                 = 1
+      np_bat = ivar
+      stypvar(ivar)%cname       = 'Bathymetry'
+      stypvar(ivar)%cunits      = 'm'
+      stypvar(ivar)%valid_min   = 0.
+      stypvar(ivar)%valid_max   = 1000000.
+      stypvar(ivar)%clong_name  = 'Bathymetry along '//TRIM(csection)//' section'
+      stypvar(ivar)%cshort_name = 'Bathymetry'
+      stypvar(ivar)%caxis       = 'TX'
+      ipk(ivar)                 = 1
+      ivar = ivar + 1
 
+      IF ( lssh ) THEN
+         np_ssh = ivar
+         stypvar(ivar)%cname       = cn_sossheig
+         stypvar(ivar)%cunits      = 'm'
+         stypvar(ivar)%valid_min   = 0.
+         stypvar(ivar)%valid_max   = 1000000.
+         stypvar(ivar)%clong_name  = 'SSH  along '//TRIM(csection)//' section'
+         stypvar(ivar)%cshort_name = cn_sossheig
+         stypvar(ivar)%caxis       = 'TX'
+         ipk(ivar)                 = 1
+         ivar = ivar + 1
+      ENDIF
+
+      IF ( lmld ) THEN
+         np_mld = ivar
+         stypvar(ivar)%cname       = cn_somxl010
+         stypvar(ivar)%cunits      = 'm'
+         stypvar(ivar)%valid_min   = 0.
+         stypvar(ivar)%valid_max   = 100000.
+         stypvar(ivar)%clong_name  = 'Mixed Layer Depth 0.01  along '//TRIM(csection)//' section'
+         stypvar(ivar)%cshort_name = cn_somxl010
+         stypvar(ivar)%caxis       = 'TX'
+         ipk(ivar)                 = 1
+         ivar = ivar + 1
+      ENDIF
 
       ! create output fileset
       ncout = create      (cf_out, cf_tfil, nsec,  1, npk, cdep='deptht'                   )
