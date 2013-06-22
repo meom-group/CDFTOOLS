@@ -133,6 +133,7 @@ CONTAINS
     ! deal with xmin, ymin
     ll_again = .TRUE.
     initer = 1
+    iloc=ipiglo/2 ; jloc=ipjglo/2
 
     DO WHILE (ll_again)
        CALL NearestPoint(dl_xmin, dl_ymin, ipiglo, ipjglo, dl_glam, dl_gphi, iloc, jloc, ll_bnd)
@@ -408,9 +409,9 @@ CONTAINS
     !! References : P.A. Darbon and A. de Miranda acknowledged for this 
     !!              clever algorithm developped in CLIPPER.
     !!----------------------------------------------------------------------
-    REAL(KIND=8),                     INTENT(in) :: ddlon, ddlat        !: lon and lat of target point
+    REAL(KIND=8),                     INTENT(in) :: ddlon, ddlat      !: lon and lat of target point
     INTEGER(KIND=4),                 INTENT (in) :: kpi, kpj          !: grid size
-    REAL(KIND=8), DIMENSION(kpi,kpj), INTENT(in) :: ddlam, ddphi        !: model grid layout
+    REAL(KIND=8), DIMENSION(kpi,kpj), INTENT(in) :: ddlam, ddphi      !: model grid layout
     INTEGER(KIND=4),              INTENT (inout) :: kpiloc, kpjloc    !: nearest point location
     LOGICAL                                      :: ld_bnd            !: reach boundary flag
 
