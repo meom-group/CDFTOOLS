@@ -32,6 +32,8 @@ PROGRAM cdfzonalmean
   INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                               :: nvarin, nvar        ! number of input variables: all/valid
+  INTEGER(KIND=4)                               :: nvarmx, nvaro       ! number of output variables: all/valid
+  INTEGER(KIND=4)                               :: ncoef=1             ! 1 or 2 (regarding lmax option) 
   INTEGER(KIND=4)                               :: ncout               ! ncid of output file
   INTEGER(KIND=4)                               :: ierr, ik            ! working integers
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipki, id_varin      ! jpbasin x nvar
@@ -46,6 +48,7 @@ PROGRAM cdfzonalmean
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zdumlat             ! latitude for i = north pole
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zmaskvar            ! variable mask
   REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
+  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: rzomax              ! zonal maximum
 
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzomean , darea     ! jpbasins x npjglo x npk
 
@@ -56,6 +59,7 @@ PROGRAM cdfzonalmean
   CHARACTER(LEN=10 )                            :: cv_phi              ! latitude variable name
   CHARACTER(LEN=10 )                            :: cv_msk              ! mask variable name
   CHARACTER(LEN=10 )                            :: cv_depi, cv_depo    ! depth variable name (input/output)
+  CHARACTER(LEN=80 )                            :: cv_fix              ! name of the single variable to process (-var option)
   CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
   CHARACTER(LEN=256)                            :: ctyp                ! variable type on C-grid
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! input variable names
@@ -67,6 +71,8 @@ PROGRAM cdfzonalmean
 
   LOGICAL                                       :: lpdep    =.FALSE.   ! flag for depth sign (default dep < 0)
   LOGICAL                                       :: lndep_in =.FALSE.   ! flag for depth sign (default dep < 0) in input file
+  LOGICAL                                       :: lmax     =.FALSE.   ! flag for zonal maximum determination
+  LOGICAL                                       :: lvar     =.FALSE.   ! flag for single variable processing
   LOGICAL                                       :: ldebug   =.FALSE.   ! flag for activated debug print 
   LOGICAL                                       :: l2d      =.FALSE.   ! flag for 2D files
   LOGICAL                                       :: lchk     =.FALSE.   ! flag for missing files
@@ -76,7 +82,7 @@ PROGRAM cdfzonalmean
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfzonalmean IN-file point_type [ BASIN-file] ...'
-     PRINT *,'                  ... [-pdep | --positive_depths]'
+     PRINT *,'       ...[-var variable] [-max ] [-pdep | --positive_depths]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the zonal mean of all the variables available in the' 
@@ -97,6 +103,8 @@ PROGRAM cdfzonalmean
      PRINT *,'       [BASIN-file] : netcdf file describing sub basins, similar to '
      PRINT *,'                      ', TRIM(cn_fbasins),'. If this name is not given '
      PRINT *,'                      as option, only the global zonal mean is computed.'
+     PRINT *,'       [-max     ] : output the zonal maximum of the variable '
+     PRINT *,'       [-var variable ] : Only work with this specified variable.'
      PRINT *,'       [-pdep | --positive_depths ] : use positive depths in the output file.'
      PRINT *,'                      Default behaviour is to have negative depths.'
      PRINT *,'       [-ndep_in ] : negative depths are used in the input file.'
@@ -113,6 +121,8 @@ PROGRAM cdfzonalmean
      PRINT *,'                      where zo replace vo/so prefix of the input variable'
      PRINT *,'                      where bas is a suffix for each sub-basins (or glo)'
      PRINT *,'                      if a BASIN-file is used.'
+     PRINT *,'                 If option -max is used, each standard output variable'
+     PRINT *,'                     is associated with a var_max variable.'
      STOP
   ENDIF
 
@@ -123,6 +133,9 @@ PROGRAM cdfzonalmean
     CASE ( '-pdep' , '--positive_depths' ) ; lpdep    =.TRUE.
     CASE ( '-ndep_in'                    ) ; lndep_in =.TRUE.
     CASE ( '-debug'                      ) ; ldebug   =.TRUE.
+    CASE ( '-max'                        ) ; lmax     =.TRUE. ; ncoef=2
+    CASE ( '-var'                        ) ; lvar     =.TRUE.
+                                             CALL getarg( ijarg, cv_fix) ; ijarg=ijarg+1
     CASE DEFAULT
       ireq=ireq+1
       SELECT CASE (ireq)
@@ -136,6 +149,15 @@ PROGRAM cdfzonalmean
       END SELECT
     END SELECT
   END DO
+
+  IF ( ldebug ) THEN  ! additional print for debuging
+     PRINT *,' Option -pdep     ', lpdep
+     PRINT *,' Option -npdep_in ', lndep_in
+     PRINT *,' Option -debug    ', ldebug
+     PRINT *,' Option -max      ', lmax
+     PRINT *,' Option -var      ', lvar
+     PRINT *,' NPBASINS       = ', npbasins
+  ENDIF
 
   ! check  files existence
   lchk = lchk .OR. chkfile (cn_fhgr)
@@ -170,14 +192,35 @@ PROGRAM cdfzonalmean
      PRINT *, ' C grid:', TRIM(ctyp),' point not known!' ; STOP
   END SELECT
 
-  nvarin  = getnvar(cf_in)   ! number of input variables
-  ALLOCATE ( cv_namesi(nvarin),          ipki(nvarin),          id_varin (nvarin)          )
-  ALLOCATE ( cv_nameso(npbasins*nvarin), ipko(npbasins*nvarin), id_varout(npbasins*nvarin) )
-  ALLOCATE ( stypvari(nvarin)                                                              )
-  ALLOCATE ( stypvaro(npbasins*nvarin)                                                     )
+  nvarin  = getnvar(cf_in)   ! number of input variables in file
+  IF ( lvar ) THEN
+    nvaro = 1
+  ELSE
+    nvaro = nvarin
+  ENDIF
+
+  IF ( lmax ) THEN
+     nvarmx = 2 * npbasins * nvaro
+  ELSE
+     nvarmx = npbasins * nvaro
+  ENDIF
+  IF ( ldebug ) PRINT *,' NVARMX (output) :', nvarmx
+
+  ALLOCATE ( cv_namesi(nvarin), ipki(nvarin), id_varin (nvarin) )
+  ALLOCATE ( cv_nameso(nvarmx), ipko(nvarmx), id_varout(nvarmx) )
+  ALLOCATE ( stypvari(nvarin)                                   )
+  ALLOCATE ( stypvaro(nvarmx)                                   )
 
   cv_namesi(1:nvarin) = getvarname(cf_in, nvarin, stypvari )
   ipki     (1:nvarin) = getipk    (cf_in, nvarin           )
+ 
+  IF ( lvar ) THEN
+  ! tricks : in case of specified variables, set ipki to 0 all variables
+  !          not choosen.
+    DO jvar = 1, nvarin 
+      IF ( TRIM(cv_namesi(jvar)) /= TRIM(cv_fix) ) ipki(jvar) = 0
+    END DO
+  ENDIF
 
   ! buildt output filename
   nvar = 0  ! over all number of valid variables for zonal mean ( < nvarin)
@@ -223,6 +266,16 @@ PROGRAM cdfzonalmean
      ENDIF
   END DO
 
+  nvaro = ivar  ! total number of output variables
+  IF ( lmax ) THEN  ! create variable and entry for zonal max
+     DO jvar = 1,nvaro
+       stypvaro(jvar+nvaro) = stypvaro(jvar)  ! copy all var attributes 
+       ipko    (jvar+nvaro) = ipko    (jvar)
+       stypvaro(jvar+nvaro)%cname      = TRIM(stypvaro (jvar)%cname)//'_max'
+       stypvaro(jvar+nvaro)%clong_name = 'Zonal_Max_'//TRIM(stypvaro (jvar)%clong_name(11:))
+     ENDDO
+  ENDIF
+
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
   npk    = getdim (cf_in, cn_z)
@@ -245,6 +298,7 @@ PROGRAM cdfzonalmean
   ALLOCATE ( e1(npiglo,npjglo), e2      (npiglo,npjglo) )
   ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), tim(npt)   )
   ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo)       )
+  IF ( lmax ) ALLOCATE ( rzomax(npjglo,npk)             )
   ALLOCATE ( dzomean(npjglo,npk), darea(npjglo,npk)     )
 
 
@@ -269,9 +323,9 @@ PROGRAM cdfzonalmean
   zdumlon(:,:) = 0.              ! set the dummy longitude to 0
 
   ! create output fileset
-  ncout = create      (cf_out, cf_in,    1,    npjglo, npk,  cdep=cv_depo                                )
-  ierr  = createvar   (ncout,  stypvaro, ivar, ipko,   id_varout                                         )
-  ierr  = putheadervar(ncout,  cf_in,    1,    npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
+  ncout = create      (cf_out, cf_in,    1,           npjglo, npk,  cdep=cv_depo                                )
+  ierr  = createvar   (ncout,  stypvaro, ncoef*nvaro, ipko,   id_varout                                         )
+  ierr  = putheadervar(ncout,  cf_in,    1,           npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
 
   tim   = getvar1d(cf_in, cn_vtimec, npt     )
   ierr  = putvar1d(ncout, tim,       npt, 'T')
@@ -307,10 +361,12 @@ PROGRAM cdfzonalmean
               dzomean(:,:) = 0.d0
               darea(:,:)   = 0.d0
               ! integrates 'zonally' (along i-coordinate)
+          IF ( lmax) rzomax(:,:) = -1.e20
               DO ji=1,npiglo
                  DO jj=1,npjglo
                     dzomean(jj,jk) = dzomean(jj,jk) + 1.d0*e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
                     darea(jj,jk)   = darea(jj,jk)   + 1.d0*e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
+          IF( lmax) rzomax (jj,jk) = MAX(rzomax (jj,jk), zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj))
                  END DO
               END DO
 
@@ -322,6 +378,7 @@ PROGRAM cdfzonalmean
               ENDWHERE
               ivar = (jvar-1)*npbasins + jbasin
               ierr = putvar (ncout, id_varout(ivar), REAL(dzomean(:,jk)), jk, 1, npjglo, ktime=jt)
+   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+nvaro), rzomax(:,jk),  jk, 1, npjglo, ktime=jt)
            END DO  !next basin
         END DO  ! next k 
      END DO ! next time
