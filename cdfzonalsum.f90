@@ -32,6 +32,8 @@ PROGRAM cdfzonalsum
   INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                               :: nvarin, nvar        ! number of input variables: all/valid
+  INTEGER(KIND=4)                               :: nvarmx              ! number of output variables: all/valid
+  INTEGER(KIND=4)                               :: nvaro=1             ! number of output variables: all/valid
   INTEGER(KIND=4)                               :: ncout               ! ncid of output file
   INTEGER(KIND=4)                               :: ierr                ! working integer
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipki, id_varin      ! jpbasin x nvar
@@ -63,6 +65,7 @@ PROGRAM cdfzonalsum
   CHARACTER(LEN=256)                            :: ctyp                ! variable type on C-grid
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! input variable names
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nameso           ! output variable names
+  CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: cv_fix              ! name of the specified variable to process (-var option)
   CHARACTER(LEN=4  ), DIMENSION(5)              :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/) ! sub basin suffixes
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvari            ! structure for input variables
@@ -70,21 +73,25 @@ PROGRAM cdfzonalsum
 
   LOGICAL                                       :: lpdep =.FALSE.      ! flag for depth sign (default dep < 0)
   LOGICAL                                       :: lpdeg =.FALSE.      ! flag for per degree normalization
+  LOGICAL                                       :: lvar  =.FALSE.      ! flag for specified variables processing
+  LOGICAL                                       :: ldebug   =.FALSE.   ! flag for activated debug print 
   LOGICAL                                       :: l2d   =.FALSE.      ! flag for 2D files
   LOGICAL                                       :: lchk  =.FALSE.      ! flag for missing files
+  LOGICAL, DIMENSION(:),            ALLOCATABLE :: lbad                ! flag array for variable selection
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfzonalsum IN-file point_type [ BASIN-file] ...'
-     PRINT *,'                  ... [-pdep | --positive_depths]'
-     PRINT *,'                  ... [-pdeg | --per_degree]'
+     PRINT *,'                  ... [-var var1,var2,..] [-pdep | --positive_depths]'
+     PRINT *,'                  ... [-pdeg | --per_degree] [-debug]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the zonal sum of all the variables available in the' 
      PRINT *,'       input file. This program assume that all the variables are'
      PRINT *,'       located on the same C-grid point, specified on the command line.'
+     PRINT *,'         Using -var option limits the variables to be processed.'
      PRINT *,'      '
      PRINT *,'       Zonal sum is in fact the integral value computed along the I coordinate.'
      PRINT *,'       The result is a vertical slice, in the meridional direction.'
@@ -100,6 +107,7 @@ PROGRAM cdfzonalsum
      PRINT *,'       [BASIN-file] : netcdf file describing sub basins, similar to '
      PRINT *,'                      ', TRIM(cn_fbasins),'. If this name is not given '
      PRINT *,'                      as option, only the global zonal integral is computed.'
+     PRINT *,'       [-var var1,var2,.. ] : Comma separated list of selected variables'
      PRINT *,'       [-pdep | --positive_depths ] : use positive depths in the output file.'
      PRINT *,'                      Default behaviour is to have negative depths.'
      PRINT *,'       [-pdeg | --per_degree ] : When using this option, the zonal integral'
@@ -107,6 +115,7 @@ PROGRAM cdfzonalsum
      PRINT *,'                      done with cdfzonalintdeg program, which is now merged'
      PRINT *,'                      in this one.'
      PRINT *,'                      Default behaviour is not to normalize.'
+     PRINT *,'       [-debug ] : add some print for debug'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cn_fmsk)
@@ -127,8 +136,12 @@ PROGRAM cdfzonalsum
   DO WHILE ( ijarg <= narg ) 
     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
     SELECT CASE (cldum)
-    CASE ( '-pdep' , '--positive_depths' ) ; lpdep =.TRUE.
-    CASE ( '-pdeg' , '--per_degree'      ) ; lpdeg =.TRUE.
+    CASE ( '-pdep' , '--positive_depths' ) ; lpdep  =.TRUE.
+    CASE ( '-pdeg' , '--per_degree'      ) ; lpdeg  =.TRUE.
+    CASE ( '-debug'                      ) ; ldebug =.TRUE.
+    CASE ( '-var'                        ) ; lvar   =.TRUE.
+                                             CALL getarg( ijarg, cldum) ; ijarg=ijarg+1
+                                             CALL ParseVars(cldum)
     CASE DEFAULT
       ireq=ireq+1
       SELECT CASE (ireq)
@@ -142,6 +155,14 @@ PROGRAM cdfzonalsum
       END SELECT
     END SELECT
   END DO
+
+  IF ( ldebug ) THEN  ! additional print for debuging
+     PRINT *,' Option -pdep     ', lpdep
+     PRINT *,' Option -pdeg     ', lpdeg
+     PRINT *,' Option -debug    ', ldebug
+     PRINT *,' Option -var      ', lvar
+     PRINT *,' NPBASINS       = ', npbasins
+  ENDIF
 
   ! check  files existence
   lchk = lchk .OR. chkfile (cn_fhgr)
@@ -177,13 +198,34 @@ PROGRAM cdfzonalsum
   END SELECT
 
   nvarin  = getnvar(cf_in)   ! number of input variables
-  ALLOCATE ( cv_namesi(nvarin),          ipki(nvarin),          id_varin (nvarin)          )
-  ALLOCATE ( cv_nameso(npbasins*nvarin), ipko(npbasins*nvarin), id_varout(npbasins*nvarin) )
-  ALLOCATE ( stypvari(nvarin)                                                              )
-  ALLOCATE ( stypvaro(npbasins*nvarin)                                                     )
+  IF ( .NOT. lvar ) THEN
+    nvaro = nvarin
+  ENDIF
+
+  nvarmx = npbasins * nvaro
+  IF ( ldebug ) PRINT *,' NVARMX (output) :', nvarmx
+
+  ALLOCATE ( cv_namesi(nvarin), ipki(nvarin), id_varin (nvarin) )
+  ALLOCATE ( cv_nameso(nvarmx), ipko(nvarmx), id_varout(nvarmx) )
+  ALLOCATE ( stypvari(nvarin)                                   )
+  ALLOCATE ( stypvaro(nvarmx)                                   )
 
   cv_namesi(1:nvarin) = getvarname(cf_in, nvarin, stypvari )
   ipki     (1:nvarin) = getipk    (cf_in, nvarin           )
+
+  IF ( lvar )  THEN
+     ALLOCATE ( lbad(nvarin) )
+     lbad(:) = .true.  ! 
+     ! tricks : in case of specified variables, set ipki to 0 all variables
+     !          not choosen.
+     DO ji = 1, nvaro
+       DO jvar = 1, nvarin
+         IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .false.
+       END DO
+     END DO
+     WHERE ( lbad ) ipki=0
+     DEALLOCATE (lbad )
+  ENDIF
 
   ! buildt output filename
   nvar = 0  ! over all number of valid variables for zonal sum ( < nvarin)
@@ -238,7 +280,7 @@ PROGRAM cdfzonalsum
         END DO
      ENDIF
   END DO
-
+ 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
   npk    = getdim (cf_in, cn_z)
@@ -340,5 +382,44 @@ PROGRAM cdfzonalsum
   END DO ! next variable
 
   ierr = closeout(ncout)
+CONTAINS
+   SUBROUTINE ParseVars (cdum)
+      !!---------------------------------------------------------------------
+      !!                  ***  ROUTINE ParseVars  ***
+      !!
+      !! ** Purpose :  Decode -var option from command line
+      !!
+      !! ** Method  :  look for , in the argument string and set the number of
+      !!         variable (nvaro), allocate cv_fix array and fill it with the
+      !!         decoded  names.
+      !!
+      !!----------------------------------------------------------------------
+      CHARACTER(LEN=*), INTENT(in) :: cdum
+
+      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      INTEGER  :: ji
+      INTEGER  :: inchar,  i1=1
+      !!----------------------------------------------------------------------
+
+      inchar= LEN(TRIM(cdum))
+      ! scan the input string and look for ',' as separator
+      DO ji=1,inchar
+         IF ( cdum(ji:ji) == ',' ) THEN
+            cl_dum(nvaro) = cdum(i1:ji-1)
+            i1=ji+1
+            nvaro=nvaro+1
+         ENDIF
+      ENDDO
+
+      ! last name of the list does not have a ','
+      cl_dum(nvaro) = cdum(i1:inchar)
+
+      ALLOCATE ( cv_fix(nvaro) )
+      IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
+      DO ji=1, nvaro
+         cv_fix(ji) = cl_dum(ji)
+         IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
+      ENDDO
+   END SUBROUTINE ParseVars
 
 END PROGRAM cdfzonalsum
