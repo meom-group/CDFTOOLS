@@ -253,6 +253,7 @@ PROGRAM cdfrhoproj
         END DO
         ierr = putvar(ncout, id_varout(1), zint , jsig, npiglo, npjglo)
      END DO
+     ierr = putvar1d(ncout, tim, 1, 'T')
      ierr = closeout(ncout    )
      STOP ' -isodep option in use: only compute depth of isopycnal surfaces.'
   ENDIF
