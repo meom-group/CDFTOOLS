@@ -49,7 +49,8 @@ PROGRAM cdfbottomsig
 
   TYPE (variable), DIMENSION(1)              :: stypvar        ! structure for attributes
 
-  LOGICAL                                    :: lsigi=.FALSE.  ! flag for sigma-i computation
+  LOGICAL                                    :: lsigi  =.FALSE.! flag for sigma-i computation
+  LOGICAL                                    :: lsigntr=.FALSE.! flag for sigma-Neutral computation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -69,6 +70,8 @@ PROGRAM cdfbottomsig
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [zref] : depth reference for potential density'
+     PRINT *,'              keyword ''ntr'' can also be specified, which indicates that we'
+     PRINT *,'              will use neutral density'
      PRINT *,'             If not given assume sigma-0'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -77,6 +80,7 @@ PROGRAM cdfbottomsig
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : sobotsig0 or sobotsigi ( kg/m3 - 1000 )' 
+     PRINT *,'                     or sobotsigntr (kg/m3)'
      STOP
   ENDIF
 
@@ -86,10 +90,18 @@ PROGRAM cdfbottomsig
   IF ( chkfile(cf_tfil) ) STOP ! missing file
 
   IF ( narg == 2 ) THEN
-     lsigi = .TRUE.
-     CALL getarg (2, cldum) ; READ(cldum,*) zref
-     cv_sig = 'sobotsigi'
-     WRITE(cref,'("_refered_to_",i4.4,"_m")') NINT(zref)
+     CALL getarg (2, cldum) 
+      SELECT CASE ( cldum )
+      CASE ('NTR', 'ntr', 'Ntr' ) ! Neutral density will be used
+         lsigntr = .TRUE.
+         cv_sig = 'sobotsigntr'
+         WRITE(cref,'("_Neutral")')
+      CASE DEFAULT                ! Argument is a depth for sig-i
+         lsigi = .TRUE.
+         READ(cldum,*) zref
+         cv_sig = 'sobotsigi'
+         WRITE(cref,'("_refered_to_",i4.4,"_m")') NINT(zref)
+      END SELECT
   ENDIF
 
   npiglo = getdim (cf_tfil,cn_x)
@@ -143,9 +155,12 @@ PROGRAM cdfbottomsig
      
      IF (lsigi ) THEN
         zsig(:,:) = sigmai ( ztemp, zsal, zref, npiglo, npjglo ) * zmask(:,:)
+     ELSE IF (lsigntr ) THEN
+        zsig(:,:) = sigmantr (ztemp, zsal,      npiglo, npjglo )* zmask(:,:)
      ELSE
         zsig(:,:) = sigma0 ( ztemp, zsal,       npiglo, npjglo ) * zmask(:,:)
      ENDIF
+
 
 
      zsigmn=minval(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
