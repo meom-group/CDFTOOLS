@@ -32,7 +32,8 @@ PROGRAM cdfzonalmean
   INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                               :: nvarin, nvar        ! number of input variables: all/valid
-  INTEGER(KIND=4)                               :: nvarmx, nvaro       ! number of output variables: all/valid
+  INTEGER(KIND=4)                               :: nvarmx              ! number of output variables: all/valid
+  INTEGER(KIND=4)                               :: nvaro=1             ! number of output variables: all/valid
   INTEGER(KIND=4)                               :: ncoef=1             ! 1 or 2 (regarding lmax option) 
   INTEGER(KIND=4)                               :: ncout               ! ncid of output file
   INTEGER(KIND=4)                               :: ierr, ik            ! working integers
@@ -59,11 +60,11 @@ PROGRAM cdfzonalmean
   CHARACTER(LEN=10 )                            :: cv_phi              ! latitude variable name
   CHARACTER(LEN=10 )                            :: cv_msk              ! mask variable name
   CHARACTER(LEN=10 )                            :: cv_depi, cv_depo    ! depth variable name (input/output)
-  CHARACTER(LEN=80 )                            :: cv_fix              ! name of the single variable to process (-var option)
   CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
   CHARACTER(LEN=256)                            :: ctyp                ! variable type on C-grid
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! input variable names
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nameso           ! output variable names
+  CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: cv_fix              ! name of the specified variable to process (-var option)
   CHARACTER(LEN=4  ), DIMENSION(5)              :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/) ! sub basin suffixes
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvari            ! structure for input variables
@@ -82,12 +83,13 @@ PROGRAM cdfzonalmean
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfzonalmean IN-file point_type [ BASIN-file] ...'
-     PRINT *,'       ...[-var variable] [-max ] [-pdep | --positive_depths]'
+     PRINT *,'       ...[-var var1,var2,..] [-max ] [-pdep | --positive_depths]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the zonal mean of all the variables available in the' 
      PRINT *,'       input file. This program assume that all the variables are'
      PRINT *,'       located on the same C-grid point, specified on the command line.'
+     PRINT *,'         Using -var option limits the variables to be processed.'
      PRINT *,'      '
      PRINT *,'       Zonal mean is in fact the mean value computed along the I coordinate.'
      PRINT *,'       The result is a vertical slice, in the meridional direction.'
@@ -104,7 +106,7 @@ PROGRAM cdfzonalmean
      PRINT *,'                      ', TRIM(cn_fbasins),'. If this name is not given '
      PRINT *,'                      as option, only the global zonal mean is computed.'
      PRINT *,'       [-max     ] : output the zonal maximum of the variable '
-     PRINT *,'       [-var variable ] : Only work with this specified variable.'
+     PRINT *,'       [-var var1,var2,.. ] : Comma separated list of selected variables'
      PRINT *,'       [-pdep | --positive_depths ] : use positive depths in the output file.'
      PRINT *,'                      Default behaviour is to have negative depths.'
      PRINT *,'       [-ndep_in ] : negative depths are used in the input file.'
@@ -135,7 +137,8 @@ PROGRAM cdfzonalmean
     CASE ( '-debug'                      ) ; ldebug   =.TRUE.
     CASE ( '-max'                        ) ; lmax     =.TRUE. ; ncoef=2
     CASE ( '-var'                        ) ; lvar     =.TRUE.
-                                             CALL getarg( ijarg, cv_fix) ; ijarg=ijarg+1
+                                             CALL getarg( ijarg, cldum) ; ijarg=ijarg+1
+                                             CALL ParseVars(cldum) 
     CASE DEFAULT
       ireq=ireq+1
       SELECT CASE (ireq)
@@ -193,9 +196,7 @@ PROGRAM cdfzonalmean
   END SELECT
 
   nvarin  = getnvar(cf_in)   ! number of input variables in file
-  IF ( lvar ) THEN
-    nvaro = 1
-  ELSE
+  IF ( .NOT. lvar ) THEN
     nvaro = nvarin
   ENDIF
 
@@ -218,7 +219,9 @@ PROGRAM cdfzonalmean
   ! tricks : in case of specified variables, set ipki to 0 all variables
   !          not choosen.
     DO jvar = 1, nvarin 
-      IF ( TRIM(cv_namesi(jvar)) /= TRIM(cv_fix) ) ipki(jvar) = 0
+      DO ji = 1, nvaro
+        IF ( TRIM(cv_namesi(jvar)) /= TRIM(cv_fix(ji)) ) ipki(jvar) = 0
+      END DO
     END DO
   ENDIF
 
@@ -385,5 +388,43 @@ PROGRAM cdfzonalmean
   END DO ! next variable
 
   ierr = closeout(ncout)
+CONTAINS 
+   SUBROUTINE ParseVars (cdum)
+      !!---------------------------------------------------------------------
+      !!                  ***  ROUTINE ParseVars  ***
+      !!
+      !! ** Purpose :  Decode -var option from command line
+      !!
+      !! ** Method  :  look for , in the argument string and set the number of
+      !!         variable (nvaro), allocate cv_fix array and fill it with the
+      !!         decoded  names.
+      !!
+      !!----------------------------------------------------------------------
+      CHARACTER(LEN=*), INTENT(in) :: cdum
+
+      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      INTEGER  :: ji
+      INTEGER  :: inchar,  i1=1
+      !!----------------------------------------------------------------------
+
+      inchar= LEN(TRIM(cdum))
+      ! scan the input string and look for ',' as separator
+      DO ji=1,inchar
+         IF ( cdum(ji:ji) == ',' ) THEN
+            cl_dum(nvaro) = cdum(i1:ji-1)
+            i1=ji+1
+            nvaro=nvaro+1
+         ENDIF
+      ENDDO
+
+      ! last name of the list does not have a ','
+      cl_dum(nvaro) = cdum(i1:inchar)
+
+      ALLOCATE ( cv_fix(nvaro) )
+
+      DO ji=1, nvaro
+         cv_fix(ji) = cl_dum(ji)
+      ENDDO
+   END SUBROUTINE ParseVars
 
 END PROGRAM cdfzonalmean
