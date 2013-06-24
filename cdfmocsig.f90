@@ -21,6 +21,7 @@ PROGRAM cdfmocsig
   !!                : 03/2010  : C. Dufour     : Choice of depth reference
   !!                                             improvements 
   !!           3.0  : 04/2011  : J.M. Molines  : Doctor norm + Lic.
+  !!           3.0  : 06/2013  : J.M. Molines  : add neutral density
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
@@ -79,6 +80,7 @@ PROGRAM cdfmocsig
   TYPE(variable), DIMENSION(:), ALLOCATABLE       :: stypvar              ! output var properties
 
   LOGICAL, DIMENSION(3)                           :: lbin                 ! flag for bin specifications
+  LOGICAL                                         :: lntr                 ! flag for neutral density
   LOGICAL                                         :: lbas   = .FALSE.     ! flag for basins file
   LOGICAL                                         :: lprint = .FALSE.     ! flag for extra print
   LOGICAL                                         :: leiv   = .FALSE.     ! flag for Eddy Induced Velocity (GM)
@@ -109,6 +111,8 @@ PROGRAM cdfmocsig
      PRINT *,'               minimum density, number of density bins and width of density'
      PRINT *,'               bins are provided. For other reference depth, you must use'
      PRINT *,'               -sigmin, -sigstp and -nbins options (see below).'
+     PRINT *,'               Keyword ''ntr'' can also be used in place of depth_ref in '
+     PRINT *,'               order to use neutral density (no default bin defined so far).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-eiv ] : takes into account VEIV Meridional eddy induced velocity'
@@ -163,7 +167,11 @@ PROGRAM cdfmocsig
         SELECT CASE (ii)
         CASE ( 1 ) ; cf_vfil = cldum
         CASE ( 2 ) ; cf_tfil = cldum
-        CASE ( 3 ) ; READ(cldum,*) pref
+        CASE ( 3 ) 
+             SELECT CASE ( cldum )
+             CASE ( 'ntr', 'NTR', 'Ntr' ) ; lntr = .TRUE.
+             CASE DEFAULT                 ; READ(cldum,*) pref
+             END SELECT
         CASE DEFAULT
            STOP 'ERROR : Too many arguments ...'
         END SELECT
@@ -207,27 +215,38 @@ PROGRAM cdfmocsig
 
   IF ( lchk )  THEN  ! use default bins definition according to pref 
      ! Define density parameters
-     SELECT CASE ( INT(pref) )
-     CASE ( 0 )
-        nbins  = 52
-        sigmin  = 23.
-        sigstp = 0.1
-     CASE ( 1000 )
-        nbins  = 88
-        sigmin  = 24.
-        sigstp = 0.1
-     CASE ( 2000)
-        nbins  = 158
-        sigmin  = 30.
-        sigstp = 0.05
-     CASE DEFAULT
-        PRINT *,' This value of depth_ref (',pref,') is not implemented as standard'
-        PRINT *,' You must use the -sigmin, -sigstp and -nbins options to precise'
-        PRINT *,' the density bining you want to use.'
-        STOP
-     END SELECT
+     IF ( lntr) THEN   ! to be confirmed ( note that sigmantr returns values > 1000 kg/m3)
+         nbins  = 52
+         sigmin = 1023.
+         sigstp = 0.1
+     ELSE
+       SELECT CASE ( INT(pref) )
+       CASE ( 0 )
+          nbins  = 52
+          sigmin = 23.
+          sigstp = 0.1
+       CASE ( 1000 )
+          nbins  = 88
+          sigmin = 24.
+          sigstp = 0.1
+       CASE ( 2000)
+          nbins  = 158
+          sigmin = 30.
+          sigstp = 0.05
+       CASE DEFAULT
+          PRINT *,' This value of depth_ref (',pref,') is not implemented as standard'
+          PRINT *,' You must use the -sigmin, -sigstp and -nbins options to precise'
+          PRINT *,' the density bining you want to use.'
+          STOP
+       END SELECT
+     ENDIF
   ENDIF
-  PRINT '(a,f6.1,a)',           '  For reference depth ', pref, ' m, '
+
+  IF (lntr ) THEN
+     PRINT '(a,f6.1,a)',           '  For Neutral density MOC'
+  ELSE
+     PRINT '(a,f6.1,a)',           '  For reference depth ', pref, ' m, '
+  ENDIF
   PRINT '(a,f5.2,a,f5.2,a,i3)', '  You are using -sigmin ', sigmin,' -sigstp ', sigstp,' -nbins ', nbins
 
   ALLOCATE ( sigma(nbins) )  
@@ -356,7 +375,11 @@ PROGRAM cdfmocsig
         !  finds density 
         itmask =  1
         WHERE ( zs == 0 ) itmask = 0
-        dens  = sigmai(zt, zs, pref, npiglo, npjglo)
+        IF ( lntr ) THEN
+           dens  = sigmantr(zt, zs,     npiglo, npjglo)
+        ELSE
+           dens  = sigmai(zt, zs, pref, npiglo, npjglo)
+        ENDIF
         zttmp = dens* itmask ! convert to single precision 
         ! find bin numbers
         ibin(:,:) = INT( (zttmp-sigmin)/sigstp )

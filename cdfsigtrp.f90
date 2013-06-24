@@ -118,11 +118,12 @@ PROGRAM cdfsigtrp
    CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clongname            ! output long name (root)
 
    LOGICAL                                       :: l_merid              ! flag for meridional section
-   LOGICAL                                       :: ltemp  =.FALSE.      ! flag for extra print
+   LOGICAL                                       :: ltemp  =.FALSE.      ! flag for use of temperature
    LOGICAL                                       :: lprint =.FALSE.      ! flag for extra print
    LOGICAL                                       :: lbimg  =.FALSE.      ! flag for bimg output
-   LOGICAL                                       :: lncdf  =.FALSE.      ! flag for bimg output
-   LOGICAL                                       :: lfull  =.FALSE.      ! flag for bimg output
+   LOGICAL                                       :: lncdf  =.FALSE.      ! flag for extra netcdf output
+   LOGICAL                                       :: lfull  =.FALSE.      ! flag for full step 
+   LOGICAL                                       :: lneutral  =.FALSE.   ! flag for neutral density
    LOGICAL                                       :: lchk   =.FALSE.      ! flag for missing files
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
@@ -131,7 +132,7 @@ PROGRAM cdfsigtrp
    IF ( narg < 6 ) THEN
       PRINT *,' usage :  cdfsigtrp T-file U-file V-file sigma_min sigma_max nbins ...'
       PRINT *,'              ... [-print ] [-bimg ] [-full ] [ -refdep ref_depth] ...'
-      PRINT *,'              ... [-section file ] [-temp ]'
+      PRINT *,'              ... [-neutral ] [-section file ] [-temp ]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'       Compute density class transports, according to the density class' 
@@ -145,7 +146,7 @@ PROGRAM cdfsigtrp
       PRINT *,'       the section name.'
       PRINT *,'      '
       PRINT *,'       This program can also be used to compute transport by class of '
-      PRINT *,'       temperatures, provided the temperatures decreases monotonically '
+      PRINT *,'       temperatures, provided the temperatures decrease monotonically '
       PRINT *,'       downward. In this case, use -temp option and of course specify'
       PRINT *,'       sigma_min, sigma_max as temperatures.'
       PRINT *,'      '
@@ -171,6 +172,7 @@ PROGRAM cdfsigtrp
       PRINT *,'       [ -refdep ref_depth ]: give a reference depths for the computation of'
       PRINT *,'               potential density. Sigma_min, sigma_max must be adapted '
       PRINT *,'               accordingly.'
+      PRINT *,'       [ -neutral ]: use neutral density instead of potential density '
       PRINT *,'       [ -section file] : give the name of section file.'
       PRINT *,'               Default is ', TRIM(cf_section)
       PRINT *,'       [ -temp ] : use temperature instead of density for binning'
@@ -211,6 +213,7 @@ PROGRAM cdfsigtrp
       CASE ( '-temp')  ; ltemp  = .TRUE. 
       CASE ( '-refdep' ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) refdep
       CASE ( '-section') ; CALL getarg(ijarg, cf_section ) ; ijarg=ijarg+1 
+      CASE ( '-neutral') ; lneutral = .TRUE.
       CASE DEFAULT
          ireq=ireq+1
          SELECT CASE ( ireq)
@@ -420,12 +423,16 @@ PROGRAM cdfsigtrp
       ENDIF
 
       ! compute density only for wet points
-      IF ( refdep == -10. ) THEN
-         dsig(:,1:nk)= -zt(:,:)  ! change sign 
-      ELSEIF ( refdep == 0. ) THEN
-         dsig(:,1:nk)=sigma0( zt, zs,         npts, nk)*zmask(:,:)
+      IF ( lneutral ) THEN 
+         dsig(:,1:nk)=sigmantr( zt, zs,         npts, nk)*zmask(:,:)
       ELSE
-         dsig(:,1:nk)=sigmai( zt, zs, refdep, npts, nk)*zmask(:,:)
+        IF ( refdep == -10. ) THEN
+           dsig(:,1:nk)= -zt(:,:)  ! change sign 
+        ELSEIF ( refdep == 0. ) THEN
+           dsig(:,1:nk)=sigma0( zt, zs,         npts, nk)*zmask(:,:)
+        ELSE
+           dsig(:,1:nk)=sigmai( zt, zs, refdep, npts, nk)*zmask(:,:)
+        ENDIF
       ENDIF
 
       dsig(:,0)=dsig(:,1)-1.e-4   ! dummy layer for easy interpolation
