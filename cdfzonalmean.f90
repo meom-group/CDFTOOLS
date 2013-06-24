@@ -77,6 +77,7 @@ PROGRAM cdfzonalmean
   LOGICAL                                       :: ldebug   =.FALSE.   ! flag for activated debug print 
   LOGICAL                                       :: l2d      =.FALSE.   ! flag for 2D files
   LOGICAL                                       :: lchk     =.FALSE.   ! flag for missing files
+  LOGICAL, DIMENSION(:),            ALLOCATABLE :: lbad                ! flag array for variable selection
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -215,14 +216,18 @@ PROGRAM cdfzonalmean
   cv_namesi(1:nvarin) = getvarname(cf_in, nvarin, stypvari )
   ipki     (1:nvarin) = getipk    (cf_in, nvarin           )
  
-  IF ( lvar ) THEN
-  ! tricks : in case of specified variables, set ipki to 0 all variables
-  !          not choosen.
-    DO jvar = 1, nvarin 
-      DO ji = 1, nvaro
-        IF ( TRIM(cv_namesi(jvar)) /= TRIM(cv_fix(ji)) ) ipki(jvar) = 0
-      END DO
-    END DO
+  IF ( lvar )  THEN 
+     ALLOCATE ( lbad(nvarin) ) 
+     lbad(:) = .true.  ! 
+     ! tricks : in case of specified variables, set ipki to 0 all variables
+     !          not choosen.
+     DO ji = 1, nvaro
+       DO jvar = 1, nvarin
+         IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .false.
+       END DO
+     END DO
+     WHERE ( lbad ) ipki=0
+     DEALLOCATE (lbad )
   ENDIF
 
   ! buildt output filename
@@ -275,7 +280,7 @@ PROGRAM cdfzonalmean
        stypvaro(jvar+nvaro) = stypvaro(jvar)  ! copy all var attributes 
        ipko    (jvar+nvaro) = ipko    (jvar)
        stypvaro(jvar+nvaro)%cname      = TRIM(stypvaro (jvar)%cname)//'_max'
-       stypvaro(jvar+nvaro)%clong_name = 'Zonal_Max_'//TRIM(stypvaro (jvar)%clong_name(11:))
+       stypvaro(jvar+nvaro)%clong_name = 'Zonal_Max_'//TRIM(stypvaro (jvar)%clong_name(12:))
      ENDDO
   ENDIF
 
@@ -421,9 +426,10 @@ CONTAINS
       cl_dum(nvaro) = cdum(i1:inchar)
 
       ALLOCATE ( cv_fix(nvaro) )
-
+      IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
       DO ji=1, nvaro
          cv_fix(ji) = cl_dum(ji)
+         IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
       ENDDO
    END SUBROUTINE ParseVars
 
