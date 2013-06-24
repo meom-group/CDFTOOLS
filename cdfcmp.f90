@@ -16,7 +16,7 @@ PROGRAM cdfcmp
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
-  !! $Id: cdfcmp.f90 XXX YYYY-MM-DD HH:MM:SSZ molines $
+  !! $Id$
   !! Copyright (c) 2010, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
