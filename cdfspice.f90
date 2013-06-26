@@ -135,7 +135,7 @@ PROGRAM cdfspice
   zspval = getatt(cf_tfil, cn_vosaline, 'missing_value')
 
   ! Define coefficients to compute spiciness (R*8)
-  dbet(1,1) = 0           ; dbet(1,2) = 7.7442d-01  ; dbet(1,3) = -5.85d-03   ; dbet(1,4) = -9.84d-04   ; dbet(1,5) = -2.06d-04
+  dbet(1,1) = 0.d0        ; dbet(1,2) = 7.7442d-01  ; dbet(1,3) = -5.85d-03   ; dbet(1,4) = -9.84d-04   ; dbet(1,5) = -2.06d-04
   dbet(2,1) = 5.1655d-02  ; dbet(2,2) = 2.034d-03   ; dbet(2,3) = -2.742d-04  ; dbet(2,4) = -8.5d-06    ; dbet(2,5) = 1.36d-05
   dbet(3,1) = 6.64783d-03 ; dbet(3,2) = -2.4681d-04 ; dbet(3,3) = -1.428d-05  ; dbet(3,4) = 3.337d-05   ; dbet(3,5) = 7.894d-06
   dbet(4,1) = -5.4023d-05 ; dbet(4,2) = 7.326d-06   ; dbet(4,3) = 7.0036d-06  ; dbet(4,4) = -3.0412d-06 ; dbet(4,5) = -1.0853d-06
