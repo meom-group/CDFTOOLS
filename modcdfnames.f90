@@ -83,6 +83,13 @@ MODULE modCdfNames
   CHARACTER(LEN=20) :: cn_zomsfinp='zomsfinp' !: moc in the Indo-Pacific
   CHARACTER(LEN=20) :: cn_zomsfind='zomsfind' !: moc in the Indian ocean
   CHARACTER(LEN=20) :: cn_zomsfinp0='zomsfinp0' !: moc in the Indo-Pacific Net
+  !
+  CHARACTER(LEN=20) :: cn_zoisoatl='zoisoatl' !: moc in the Atlantic
+  CHARACTER(LEN=20) :: cn_zoisoglo='zoisoglo' !: moc in the Global ocean
+  CHARACTER(LEN=20) :: cn_zoisopac='zoisopac' !: moc in the Pacific
+  CHARACTER(LEN=20) :: cn_zoisoinp='zoisoinp' !: moc in the Indo-Pacific
+  CHARACTER(LEN=20) :: cn_zoisoind='zoisoind' !: moc in the Indian ocean
+  CHARACTER(LEN=20) :: cn_zoisoinp0='zoisoinp0' !: moc in the Indo-Pacific Net
   
   ! transport variables
   CHARACTER(LEN=20) :: cn_vozout='vozout'     !: product U x T at U point
@@ -175,6 +182,7 @@ MODULE modCdfNames
     NAMELIST/namvars/ cn_solwfldo, cn_soshfldo
     NAMELIST/namvars/ cn_sowaflup, cn_sowaflcd, cn_sowafldp, cn_iowaflup
     NAMELIST/namvars/ cn_zomsfatl, cn_zomsfglo, cn_zomsfpac, cn_zomsfinp, cn_zomsfind
+    NAMELIST/namvars/ cn_zoisoatl, cn_zoisoglo, cn_zoisopac, cn_zoisoinp, cn_zoisoind
     NAMELIST/namvars/ cn_vozout, cn_vomevt, cn_vozous, cn_vomevs
     NAMELIST/namvars/ cn_sozout, cn_somevt, cn_sozous, cn_somevs
     NAMELIST/namvars/ cn_sozoutrp, cn_somevtrp

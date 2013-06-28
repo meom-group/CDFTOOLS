@@ -22,6 +22,7 @@ PROGRAM cdfmocsig
   !!                                             improvements 
   !!           3.0  : 04/2011  : J.M. Molines  : Doctor norm + Lic.
   !!           3.0  : 06/2013  : J.M. Molines  : add neutral density
+  !!           3.0  : 06/2013  : J.M. Molines  : add bin mean depth calculation and OpenMp directives
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
@@ -46,12 +47,17 @@ PROGRAM cdfmocsig
   INTEGER(KIND=4)                                 :: ierr                 ! working integer
   INTEGER(KIND=4)                                 :: narg, iargc, iarg    ! command line  browsing 
   INTEGER(KIND=4)                                 :: ijarg, ii            !  "             "
+  INTEGER(KIND=4)                                 :: ib                   ! current bin number
+  INTEGER(KIND=4)                                 :: ij1, ij2             ! current J index
   INTEGER(KIND=4)                                 :: npiglo,npjglo        ! size of the domain
   INTEGER(KIND=4)                                 :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                                 :: ncout                ! ncid of output file
+  INTEGER(KIND=4)                                 :: nvaro                ! number of output variables
   INTEGER(KIND=4), DIMENSION(2)                   :: iloc                 ! working array
   INTEGER(KIND=4), DIMENSION(:),      ALLOCATABLE :: ipk, id_varout       ! output variable levels and id
-  INTEGER(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: ibin                 ! remaping density in bin number
+  INTEGER(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ibin                 ! remaping density in bin number
+  INTEGER(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ndep_tmp             ! temporary count array
+  INTEGER(KIND=4), DIMENSION(:,:,:),  ALLOCATABLE :: ndep                 ! count array
 
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: e1v, gphiv           ! horizontal metrics, latitude
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zt, zs               ! temperature, salinity
@@ -62,14 +68,18 @@ PROGRAM cdfmocsig
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zttmp                ! arrays to call sigmai and mask it
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: sigma                ! density coordinate 
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: e31d                 ! vertical level (full step)
+  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: gdep                 ! depth of T layers ( full step)
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: tim                  ! time counter
+  REAL(KIND=4), PARAMETER                         :: rp_spval=99999.      !
   REAL(KIND=4)                                    :: pref=0.              ! depth reference for pot. density 
   REAL(KIND=4)                                    :: sigmin               ! minimum density for bining
   REAL(KIND=4)                                    :: sigstp               ! density step for bining
 
   REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dmoc                 ! nbasins x npjglo x npk
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: depi                 ! Zonal mean of depths of isopycnal
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dens                 ! density
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dmoc_tmp             ! temporary transport array
+  REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: depi_tmp             ! temporary cumulated depth array
 
   CHARACTER(LEN=256)                              :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                              :: cf_tfil              ! temperature/salinity file
@@ -82,6 +92,7 @@ PROGRAM cdfmocsig
   LOGICAL, DIMENSION(3)                           :: lbin                 ! flag for bin specifications
   LOGICAL                                         :: lntr                 ! flag for neutral density
   LOGICAL                                         :: lbas   = .FALSE.     ! flag for basins file
+  LOGICAL                                         :: lisodep= .FALSE.     ! flag for isopycnal zonal mean
   LOGICAL                                         :: lprint = .FALSE.     ! flag for extra print
   LOGICAL                                         :: leiv   = .FALSE.     ! flag for Eddy Induced Velocity (GM)
   LOGICAL                                         :: lfull  = .FALSE.     ! flag for full step
@@ -92,7 +103,7 @@ PROGRAM cdfmocsig
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmocsig  V_file T_file depth_ref [-eiv] [-full]  ... '
-     PRINT *,'         ...  [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-v] '
+     PRINT *,'         ...  [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] [-v]'
      PRINT *,'     PURPOSE : '
      PRINT *,'       Computes the MOC in density-latitude coordinates. The global value'
      PRINT *,'       is always computed. Values for oceanic sub-basins are calculated'
@@ -122,6 +133,7 @@ PROGRAM cdfmocsig
      PRINT *,'       [ -sigmin ] : Specify minimum of density for bining'
      PRINT *,'       [ -sigstp ] : Specify density step for bining'
      PRINT *,'       [ -nbins ]  : Specify the number of density bins you want'
+     PRINT *,'       [ -isodep]  : Compute the zonal mean of isopycnal depths used for mocsig'
      PRINT *,'       [ -v  ]     : Verbose option for more info during execution'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -137,6 +149,8 @@ PROGRAM cdfmocsig
      PRINT *,'       variables ',TRIM( cn_zomsfpac),' : Pacific Ocean alone'
      PRINT *,'       If file ',TRIM(cn_fbasins),' is not present, ',TRIM(cn_fmsk),' file'
      PRINT *,'       is used and only ',TRIM( cn_zomsfglo),' is produced.'
+     PRINT *,'       If option -isodep is used, each MOC variable is complemented by a iso'
+     PRINT *,'       variable, giving the zonal mean of ispycnal depth (e.g.',TRIM(cn_zoisoglo),').'
      STOP
   ENDIF
 
@@ -160,6 +174,8 @@ PROGRAM cdfmocsig
      CASE ('-sigstp')
         CALL getarg (ijarg, cldum) ; ijarg=ijarg+1 ; READ(cldum,*) sigstp
         lbin(3) = .FALSE.
+     CASE ('-isodep')
+        lisodep = .TRUE.
      CASE ('-v')
         lprint = .TRUE.
      CASE DEFAULT
@@ -211,7 +227,13 @@ PROGRAM cdfmocsig
      nbasins = 1
   ENDIF
 
-  ALLOCATE ( stypvar(nbasins), ipk(nbasins), id_varout(nbasins) )
+  IF ( lisodep ) THEN
+     nvaro = 2 * nbasins
+  ELSE
+     nvaro =     nbasins
+  ENDIF
+
+  ALLOCATE ( stypvar(nvaro), ipk(nvaro), id_varout(nvaro) )
 
   IF ( lchk )  THEN  ! use default bins definition according to pref 
      ! Define density parameters
@@ -257,12 +279,200 @@ PROGRAM cdfmocsig
   ENDDO
   IF (lprint) PRINT *, ' min density:',sigma(1), ' max density:', sigma(nbins)
 
+
+  ! Allocate arrays
+  ALLOCATE ( ibmask(nvaro,npiglo,npjglo) )
+  ALLOCATE ( zv (npiglo,npjglo), zt(npiglo,npjglo), zs(npiglo,npjglo))
+  ALLOCATE ( e3v(npiglo,npjglo) )
+  ALLOCATE ( ibin(npiglo, npjglo) )
+  ALLOCATE ( e1v(npiglo,npjglo), gphiv(npiglo,npjglo) )
+  ALLOCATE ( dmoc(nvaro, nbins, npjglo ) )
+  ALLOCATE ( dmoc_tmp(nbins,npiglo) )
+  ALLOCATE ( rdumlon(1,npjglo) , rdumlat(1,npjglo))
+  ALLOCATE ( dens(npiglo,npjglo))
+  ALLOCATE ( itmask(npiglo,npjglo), zttmp(npiglo,npjglo))
+  ALLOCATE ( tim(npt), e31d(npk)  )
+
+  IF ( lisodep) THEN 
+                ALLOCATE ( depi(nvaro, nbins, npjglo), gdep(npk))
+                ALLOCATE ( ndep(nvaro, nbins, npjglo)           )
+  ENDIF
+  IF ( leiv   ) ALLOCATE ( zveiv (npiglo,npjglo))
+
+  e1v(:,:)   = getvar(cn_fhgr,   cn_ve1v,  1, npiglo, npjglo) 
+
+  IF ( lfull  ) e31d(:) = getvare3(cn_fzgr, cn_ve3t,  npk )
+  IF ( lisodep) gdep(:) = getvare3(cn_fzgr, cn_gdept, npk ) 
+
+  IF ( npjglo > 1 ) THEN 
+     gphiv(:,:)   = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
+     iloc         = MAXLOC(gphiv)
+     rdumlat(1,:) = gphiv(iloc(1),:)
+  ELSE
+     rdumlat(1,:) = 0.
+  ENDIF
+  rdumlon(:,:) = 0.               ! set the dummy longitude to 0
+
+  ! create output fileset
   !global   ; Atlantic  ; Indo-Pacif ; Indian  ; Pacif
   npglo= 1  ; npatl=2   ;  npinp=3   ; npind=4 ; nppac=5
 
+  CALL CreateOutputFiles
+
+  ! reading the masks
+  ibmask(npglo,:,:) = getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
+
+  IF ( lbas ) THEN
+     ibmask(npatl,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
+     ibmask(npind,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
+     ibmask(nppac,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+     ibmask(npinp,:,:) = ibmask(nppac,:,:) + ibmask(npind,:,:)
+     ! ensure that there are no overlapping on the masks
+     WHERE(ibmask(npinp,:,:) > 0 ) ibmask(npinp,:,:) = 1
+     ! change global mask for GLOBAL periodic condition
+     ibmask(1,1,     :) = 0.
+     ibmask(1,npiglo,:) = 0.
+  ENDIF
+
+  DO jt=1, npt
+     ! initialize moc to 0
+     dmoc(:,:,:) = 0.d0 ; ndep(:,:,:) = 0
+     IF ( lisodep ) depi(:,:,:) = 0.d0 
+
+     DO jk=1,npk-1
+        !               for testing purposes only loop from 2 to 400
+        IF (lprint) PRINT *,' working at depth ',jk
+        ! Get velocities v at jj
+        zv(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime = jt)
+        IF ( leiv ) THEN
+           zveiv(:,:) = getvar(cf_vfil, cn_vomeeivv, jk, npiglo,npjglo, ktime = jt)
+           zv(:,:)    = zv(:,:) + zveiv(:,:)
+        END IF
+        ! JMM remark : should be more correct to use t and s a V point ?
+        zt(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
+        zs(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
+
+        ! get e3v at latitude jj
+        IF ( lfull ) THEN
+           e3v(:,:) = e31d(jk)
+        ELSE
+           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+        ENDIF
+        !
+        !  finds density 
+        itmask =  1
+        WHERE ( zs == 0 ) itmask = 0
+        IF ( lntr ) THEN
+           dens  = sigmantr(zt, zs,     npiglo, npjglo)
+        ELSE
+           dens  = sigmai(zt, zs, pref, npiglo, npjglo)
+        ENDIF
+        zttmp = dens* itmask ! convert to single precision 
+        ! find bin numbers
+        ibin(:,:) = INT( (zttmp-sigmin)/sigstp )
+        ibin(:,:) = MAX( ibin(:,:), 1    )
+        ibin(:,:) = MIN( ibin(:,:), nbins)
+
+        IF ( npjglo > 1 ) THEN
+           ij1 = 2 ; ij2 = npjglo-1
+        ELSE
+           ij1 = 1 ; ij2 = 1 ! input file has only one j ( case of extracted broken lines) 
+        ENDIF
+!$OMP PARALLEL  PRIVATE(dmoc_tmp,depi_tmp,ndep_tmp)
+                       ALLOCATE ( dmoc_tmp(nbins,npiglo) )
+        IF ( lisodep ) ALLOCATE ( depi_tmp(nbins,npiglo) )
+        IF ( lisodep ) ALLOCATE ( ndep_tmp(nbins,npiglo) )
+        IF ( lprint ) PRINT *, ' Entering main J loop '
+        !$OMP DO SCHEDULE(RUNTIME)
+        DO jj= ij1, ij2
+           dmoc_tmp = 0.d0 
+           !  converts transport in "k" to transport in "sigma"
+           !  indirect adresssing - do it once and not for each basin!
+           DO ji=2,npiglo-1
+              ib = ibin(ji,jj)
+              dmoc_tmp(ib,ji) = dmoc_tmp(ib,ji) - e1v(ji,jj)*e3v(ji,jj)*zv(ji,jj)
+           END DO
+
+           IF ( lisodep ) THEN
+              depi_tmp = 0.d0 ; ndep_tmp = 0 ! ndep(:,:) = 0
+              DO ji=2,npiglo-1
+                 ib = ibin(ji,jj)
+                 depi_tmp(ib,ji) = depi_tmp(ib,ji) + gdep(jk) * itmask(ji, jj)
+                 ndep_tmp(ib,ji) = ndep_tmp(ib,ji) + itmask(ji,jj) ! count the number of valid point/ bin
+              END DO
+           ENDIF
+           ! integrates 'zonally' (along i-coordinate) 
+           ! add to dmoc the contributions from level jk  at all densities jbin
+           
+!          IF ( lprint ) PRINT *, ' Entering main bin loop ', jj,ij2
+           DO jbasin= 1, nbasins
+              DO jbin =1,nbins  
+                 DO ji=2,npiglo-1
+                    ! For all basins 
+                    dmoc(jbasin,jbin,jj)=dmoc(jbasin,jbin,jj) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
+                 ENDDO
+              END DO
+           END DO
+
+           IF ( lisodep) THEN
+           DO jbasin= 1, nbasins
+              DO jbin =1,nbins
+                 DO ji=2,npiglo-1
+                       depi(jbasin,jbin,jj)=depi(jbasin,jbin,jj) + depi_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
+                       ndep(jbasin,jbin,jj)=ndep(jbasin,jbin,jj) + ndep_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
+                 ENDDO
+              END DO
+           END DO
+
+           ENDIF
+        END DO  ! end of loop on latitude for filling dmoc
+        !$OMP END DO
+                       DEALLOCATE (dmoc_tmp)
+        IF ( lisodep ) DEALLOCATE (depi_tmp)
+        IF ( lisodep ) DEALLOCATE (ndep_tmp)
+!$OMP END PARALLEL
+     END DO     ! end of loop on depths for calculating transports     
+
+     IF ( lisodep ) THEN
+        WHERE ( ndep(:,:,:) /= 0 ) 
+         depi(:,:,:) = depi(:,:,:) / ndep (:,:,:)
+        ELSEWHERE
+         depi(:,:,:) = rp_spval
+        END WHERE
+     ENDIF
+
+     ! integrates across bins from highest to lowest density
+     dmoc(:,nbins,:) = dmoc(:,nbins,:)/1.e6
+     DO jbin=nbins-1, 1, -1
+        dmoc(:,jbin,:) = dmoc(:,jbin+1,:) + dmoc(:,jbin,:)/1.e6
+     END DO  ! loop to next bin
+
+     ! netcdf output  
+     DO jbasin = 1, nbasins
+        DO jbin = 1, nbins
+                         ierr = putvar (ncout, id_varout(  jbasin), REAL(dmoc(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
+           IF (lisodep ) ierr = putvar (ncout, id_varout(2*jbasin), REAL(depi(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
+        END DO
+     END DO
+
+  ENDDO  ! time loop
+
+  ierr = closeout(ncout)
+
+  CONTAINS
+  SUBROUTINE CreateOutputFiles
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutputFiles ***
+    !!
+    !! ** Purpose :  Initialize and create output files 
+    !!
+    !! ** Method  :  Check the number of sub_basin, and options 
+    !!
+    !!----------------------------------------------------------------------
+
   ! Common to all variables :
   stypvar%cunits            = 'Sverdrup'
-  stypvar%rmissing_value    = 99999.
+  stypvar%rmissing_value    = rp_spval
   stypvar%valid_min         = -1000.
   stypvar%valid_max         =  1000.
   stypvar%scale_factor      = 1.
@@ -271,7 +481,7 @@ PROGRAM cdfmocsig
   stypvar%conline_operation = 'N/A'
   stypvar%caxis             = 'TZY'
 
-  ipk(:) = npk  
+  ipk(:) = nbins
 
   ! Global basin
   stypvar(npglo)%cname       = cn_zomsfglo
@@ -296,154 +506,43 @@ PROGRAM cdfmocsig
      stypvar(nppac)%cshort_name = cn_zomsfpac
   ENDIF
 
-  ! Allocate arrays
-  ALLOCATE ( ibmask(nbasins,npiglo,npjglo) )
-  ALLOCATE ( zv (npiglo,npjglo), zt(npiglo,npjglo), zs(npiglo,npjglo))
-  ALLOCATE ( e3v(npiglo,npjglo) )
-  ALLOCATE ( ibin(npiglo, npjglo) )
-  ALLOCATE ( e1v(npiglo,npjglo), gphiv(npiglo,npjglo) )
-  ALLOCATE ( dmoc(nbasins, npjglo, nbins) )
-  ALLOCATE ( dmoc_tmp(nbins,npiglo) )
-  ALLOCATE ( rdumlon(1,npjglo) , rdumlat(1,npjglo))
-  ALLOCATE ( dens(npiglo,npjglo))
-  ALLOCATE ( itmask(npiglo,npjglo), zttmp(npiglo,npjglo))
-  ALLOCATE ( tim(npt), e31d(npk)  )
+  IF ( lisodep ) THEN
+     ! Global basin
+     stypvar(npglo+nbasins)%cunits      = 'm'
+     stypvar(npglo+nbasins)%cname       = cn_zoisoglo
+     stypvar(npglo+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Global'
+     stypvar(npglo+nbasins)%cshort_name = cn_zoisoglo
+     IF ( lbas ) THEN
+        stypvar(npatl+nbasins)%cunits      = 'm'
+        stypvar(npatl+nbasins)%cname       = cn_zoisoatl
+        stypvar(npatl+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Atlantic'
+        stypvar(npatl+nbasins)%cshort_name = cn_zoisoatl
 
-  IF ( leiv ) THEN
-     ALLOCATE ( zveiv (npiglo,npjglo))
-  END IF
+        stypvar(npinp+nbasins)%cunits      = 'm'
+        stypvar(npinp+nbasins)%cname       = cn_zoisoinp
+        stypvar(npinp+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_IndoPacif'
+        stypvar(npinp+nbasins)%cshort_name = cn_zoisoinp
 
-  e1v(:,:)   = getvar(cn_fhgr,   cn_ve1v,  1, npiglo, npjglo) 
+        stypvar(npind+nbasins)%cunits      = 'm'
+        stypvar(npind+nbasins)%cname       = cn_zoisoind
+        stypvar(npind+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Indian'
+        stypvar(npind+nbasins)%cshort_name = cn_zoisoind
 
-  IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
-
-  IF ( npjglo > 1 ) THEN 
-     gphiv(:,:) = getvar(cn_fhgr,   cn_gphiv, 1, npiglo, npjglo)
-     iloc         = MAXLOC(gphiv)
-     rdumlat(1,:) = gphiv(iloc(1),:)
-  ELSE
-     rdumlat(1,:) = 0.
+        stypvar(nppac+nbasins)%cunits      = 'm'
+        stypvar(nppac+nbasins)%cname       = cn_zoisopac
+        stypvar(nppac+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_pacif'
+        stypvar(nppac+nbasins)%cshort_name = cn_zoisopac
+     ENDIF
   ENDIF
-  rdumlon(:,:) = 0.               ! set the dummy longitude to 0
 
-  ! create output fileset
-  ncout = create      (cf_moc, 'none', 1,       npjglo, nbins,  cdep='sigma')
-  ierr  = createvar   (ncout,  stypvar, nbasins, ipk ,id_varout, cdglobal=cglobal)
-  ierr  = putheadervar(ncout,  cf_vfil, 1,       npjglo, nbins,  pnavlon=rdumlon, pnavlat=rdumlat, pdep=sigma)
+  ncout = create      (cf_moc, 'none', 1,      npjglo, nbins,  cdep='sigma')
+  ierr  = createvar   (ncout,  stypvar, nvaro, ipk ,id_varout, cdglobal=cglobal)
+  ierr  = putheadervar(ncout,  cf_vfil, 1,     npjglo, nbins,  pnavlon=rdumlon, pnavlat=rdumlat, pdep=sigma)
 
   tim  = getvar1d(cf_vfil, cn_vtimec, npt     )
   ierr = putvar1d(ncout,   tim,       npt, 'T')
 
-  ! reading the masks
-  ibmask(npglo,:,:) = getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
-
-  IF ( lbas ) THEN
-     ibmask(npatl,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
-     ibmask(npind,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
-     ibmask(nppac,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
-     ibmask(npinp,:,:) = ibmask(nppac,:,:) + ibmask(npind,:,:)
-     ! ensure that there are no overlapping on the masks
-     WHERE(ibmask(npinp,:,:) > 0 ) ibmask(npinp,:,:) = 1
-     ! change global mask for GLOBAL periodic condition
-     ibmask(1,1,     :) = 0.
-     ibmask(1,npiglo,:) = 0.
-  ENDIF
-
-  DO jt=1, npt
-     ! initialize moc to 0
-     dmoc(:,:,:) = 0.d0
-
-     DO jk=1,npk-1
-        !               for testing purposes only loop from 2 to 400
-        IF (lprint) PRINT *,' working at depth ',jk
-        ! Get velocities v at jj
-        zv(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo)
-        IF ( leiv ) THEN
-           zveiv(:,:) = getvar(cf_vfil, cn_vomeeivv, jk, npiglo,npjglo)
-           zv(:,:)    = zv(:,:) + zveiv(:,:)
-        END IF
-        zt(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo)
-        zs(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo)
-
-        ! get e3v at latitude jj
-        IF ( lfull ) THEN
-           e3v(:,:) = e31d(jk)
-        ELSE
-           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-        ENDIF
-        !
-        !  finds density 
-        itmask =  1
-        WHERE ( zs == 0 ) itmask = 0
-        IF ( lntr ) THEN
-           dens  = sigmantr(zt, zs,     npiglo, npjglo)
-        ELSE
-           dens  = sigmai(zt, zs, pref, npiglo, npjglo)
-        ENDIF
-        zttmp = dens* itmask ! convert to single precision 
-        ! find bin numbers
-        ibin(:,:) = INT( (zttmp-sigmin)/sigstp )
-        ibin(:,:) = MAX( ibin(:,:), 1    )
-        ibin(:,:) = MIN( ibin(:,:), nbins)
-
-        IF ( npjglo > 1 ) THEN
-
-           DO jj=2,npjglo-1
-              dmoc_tmp = 0.d0
-              !  converts transport in "k" to transport in "sigma"
-              !  indirect adresssing - do it once and not for each basin!
-              DO ji=2,npiglo-1
-                 dmoc_tmp(ibin(ji,jj),ji)=dmoc_tmp(ibin(ji,jj),ji) - e1v(ji,jj)*e3v(ji,jj)*zv(ji,jj)
-              END DO
-              ! integrates 'zonally' (along i-coordinate) 
-              ! add to dmoc the contributions from level jk  at all densities jbin
-              DO jbin =1,nbins  
-                 DO ji=2,npiglo-1
-                    DO jbasin= 1, nbasins
-                       ! For all basins 
-                       dmoc(jbasin,jj,jbin)=dmoc(jbasin,jj,jbin ) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
-                    ENDDO
-                 END DO
-              END DO
-              !               end of loop on latitude for filling dmoc
-           END DO
-           !  end of loop on depths for calculating transports     
-
-        ELSE    ! input file has only one j ( case of extracted broken lines)
-
-           dmoc_tmp = 0.d0
-           DO ji=2,npiglo-1
-              dmoc_tmp(ibin(ji,1),ji)=dmoc_tmp(ibin(ji,1),ji) - e1v(ji,1)*e3v(ji,1)*zv(ji,1)
-           END DO
-
-           DO jbin =1,nbins
-              DO ji=2,npiglo-1
-                 DO jbasin= 1, nbasins
-                    ! For all basins 
-                    dmoc(jbasin,1,jbin)=dmoc(jbasin,1,jbin ) + dmoc_tmp(jbin,ji) * ibmask(jbasin,ji,1)
-                 ENDDO
-              END DO
-           END DO
-        ENDIF
-
-     END DO
-
-     ! integrates across bins from highest to lowest density
-     dmoc(:,:,nbins) = dmoc(:,:,nbins)/1.e6
-     DO jk=nbins-1, 1, -1
-        dmoc(:,:,jk) = dmoc(:,:,jk+1) + dmoc(:,:,jk)/1.e6
-     END DO  ! loop to next bin
-
-     ! netcdf output  
-     DO jbasin = 1, nbasins
-        DO jk = 1, nbins
-           ierr = putvar (ncout, id_varout(jbasin), REAL(dmoc(jbasin,:,jk)), jk, 1, npjglo)
-        END DO
-     END DO
-
-  ENDDO  ! time loop
-
-  ierr = closeout(ncout)
+  END SUBROUTINE CreateOutputFiles
 
 END PROGRAM cdfmocsig
    
