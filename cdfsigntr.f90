@@ -102,6 +102,7 @@ PROGRAM cdfsigntr
   DO jt=1,npt
      PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
      DO jk = 1, npk
+        PRINT *, 'level : ', jk
         zmask(:,:)=1.
 
         ztemp(:,:)= getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)

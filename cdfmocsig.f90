@@ -279,9 +279,8 @@ PROGRAM cdfmocsig
   ENDDO
   IF (lprint) PRINT *, ' min density:',sigma(1), ' max density:', sigma(nbins)
 
-
   ! Allocate arrays
-  ALLOCATE ( ibmask(nvaro,npiglo,npjglo) )
+  ALLOCATE ( ibmask(nbasins,npiglo,npjglo) )
   ALLOCATE ( zv (npiglo,npjglo), zt(npiglo,npjglo), zs(npiglo,npjglo))
   ALLOCATE ( e3v(npiglo,npjglo) )
   ALLOCATE ( ibin(npiglo, npjglo) )
@@ -336,8 +335,10 @@ PROGRAM cdfmocsig
 
   DO jt=1, npt
      ! initialize moc to 0
-     dmoc(:,:,:) = 0.d0 ; ndep(:,:,:) = 0
-     IF ( lisodep ) depi(:,:,:) = 0.d0 
+     dmoc(:,:,:) = 0.d0 
+     IF ( lisodep ) THEN 
+       depi(:,:,:) = 0.d0 ; ndep(:,:,:) = 0
+     ENDIF
 
      DO jk=1,npk-1
         !               for testing purposes only loop from 2 to 400
@@ -450,8 +451,8 @@ PROGRAM cdfmocsig
      ! netcdf output  
      DO jbasin = 1, nbasins
         DO jbin = 1, nbins
-                         ierr = putvar (ncout, id_varout(  jbasin), REAL(dmoc(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
-           IF (lisodep ) ierr = putvar (ncout, id_varout(2*jbasin), REAL(depi(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
+                         ierr = putvar (ncout, id_varout(jbasin        ), REAL(dmoc(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
+           IF (lisodep ) ierr = putvar (ncout, id_varout(jbasin+nbasins), REAL(depi(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
         END DO
      END DO
 

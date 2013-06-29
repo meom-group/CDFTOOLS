@@ -20,8 +20,11 @@ PROGRAM cdfspice
   !!
   !! History : 2.1  : 03/2010  : C.O. Dufour  : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!           3.0  : 06/2013  : J.M. Molines : Transfert spice in eos
+  !!                                            Add OMP directive
   !!----------------------------------------------------------------------
   USE cdfio
+  USE eos
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
@@ -41,15 +44,14 @@ PROGRAM cdfspice
 
   REAL(KIND=4)                              :: zspval             ! missing value
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp              ! temperature
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsal               ! salinity
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
 
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtemp              ! temperature
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtempt             ! temperature
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsal               ! salinity
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsalt              ! salinity
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsalref            ! reference salinity
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dspi               ! spiceness
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dmask              ! 2D mask at current level
-  REAL(KIND=8), DIMENSION(6,5)              :: dbet               ! coefficients of spiciness formula
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
   CHARACTER(LEN=256)                        :: cf_out='spice.nc'  ! output file name
@@ -118,8 +120,8 @@ PROGRAM cdfspice
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
 
-  ALLOCATE (dtemp(npiglo,npjglo), dsal (npiglo,npjglo) )
-  ALLOCATE (dspi( npiglo,npjglo), dmask(npiglo,npjglo) )
+  ALLOCATE (ztemp(npiglo,npjglo), zsal (npiglo,npjglo) )
+  ALLOCATE (dspi( npiglo,npjglo), zmask(npiglo,npjglo) )
   ALLOCATE (dtempt(npiglo,npjglo), dsalt(npiglo,npjglo))
   ALLOCATE (dsalref(npiglo,npjglo))
   ALLOCATE (tim(npt))
@@ -132,41 +134,22 @@ PROGRAM cdfspice
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
   ierr = putvar1d(ncout,   tim,       npt, 'T')
 
-  zspval = getatt(cf_tfil, cn_vosaline, 'missing_value')
-
-  ! Define coefficients to compute spiciness (R*8)
-  dbet(1,1) = 0.d0        ; dbet(1,2) = 7.7442d-01  ; dbet(1,3) = -5.85d-03   ; dbet(1,4) = -9.84d-04   ; dbet(1,5) = -2.06d-04
-  dbet(2,1) = 5.1655d-02  ; dbet(2,2) = 2.034d-03   ; dbet(2,3) = -2.742d-04  ; dbet(2,4) = -8.5d-06    ; dbet(2,5) = 1.36d-05
-  dbet(3,1) = 6.64783d-03 ; dbet(3,2) = -2.4681d-04 ; dbet(3,3) = -1.428d-05  ; dbet(3,4) = 3.337d-05   ; dbet(3,5) = 7.894d-06
-  dbet(4,1) = -5.4023d-05 ; dbet(4,2) = 7.326d-06   ; dbet(4,3) = 7.0036d-06  ; dbet(4,4) = -3.0412d-06 ; dbet(4,5) = -1.0853d-06
-  dbet(5,1) = 3.949d-07   ; dbet(5,2) = -3.029d-08  ; dbet(5,3) = -3.8209d-07 ; dbet(5,4) = 1.0012d-07  ; dbet(5,5) = 4.7133d-08
-  dbet(6,1) = -6.36d-10   ; dbet(6,2) = -1.309d-09  ; dbet(6,3) = 6.048d-09   ; dbet(6,4) = -1.1409d-09 ; dbet(6,5) = -6.676d-10
+  zspval = getspval( cf_tfil, cn_vosaline )
 
   ! Compute spiciness
   DO jt=1,npt
      PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
      DO jk = 1, npk
-        dmask(:,:) = 1.
+        PRINT *, 'Level ', jk
+        zmask(:,:) = 1.e0
 
-        dtemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-        dsal( :,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
+        zsal( :,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
-        WHERE(dsal == zspval ) dmask = 0
-
-        ! spiciness at time jt, at level jk  
-        dspi(:,:)    = 0.d0
-        dsalref(:,:) = dsal(:,:) - 35.d0
-        dtempt(:,:)  = 1.d0
-        DO ji=1,6
-           dsalt(:,:) = 1.d0
-           DO jj=1,5
-              dspi( :,:) = dspi (:,:) + dbet   (ji,jj) * dtempt(:,:) * dsalt(:,:)
-              dsalt(:,:) = dsalt(:,:) * dsalref( :,: )
-           END DO
-           dtempt(:,:) = dtempt(:,:) * dtemp(:,:)     
-        END DO
-
-        ierr = putvar(ncout, id_varout(1), REAL(dspi*dmask), jk, npiglo, npjglo, ktime=jt)
+        WHERE(zsal == zspval ) zmask = 0.e0
+     
+        dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo )
+        ierr      = putvar( ncout, id_varout(1), REAL(dspi*zmask), jk, npiglo, npjglo, ktime=jt)
 
      END DO  ! loop to next level
   END DO  ! next time frame

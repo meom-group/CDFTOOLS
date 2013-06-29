@@ -28,7 +28,7 @@ PROGRAM cdfrhoproj
 
   INTEGER(KIND=4)                               :: ji,jj,jk,jsig,jfich, jvar
   INTEGER(KIND=4)                               :: npiglo, npjglo
-  INTEGER(KIND=4)                               :: npk, npsig, npt
+  INTEGER(KIND=4)                               :: npk, npsig=1, npt
   INTEGER(KIND=4)                               :: nvars, nvout=2
   INTEGER(KIND=4)                               :: narg, iargc
   INTEGER(KIND=4)                               :: ijarg, ireq
@@ -46,6 +46,7 @@ PROGRAM cdfrhoproj
   REAL(KIND=4)                                  :: zalpha
   REAL(KIND=4)                                  :: zspvalo=999999.
   REAL(KIND=4)                                  :: zspvali=0.
+  REAL(KIND=4)                                  :: sigmin, sigstp, nbins
 
   CHARACTER(LEN=256)                            :: cf_rholev='rho_lev'
   CHARACTER(LEN=256)                            :: cf_dta
@@ -63,22 +64,25 @@ PROGRAM cdfrhoproj
   LOGICAL                                       :: lsingle =.FALSE.
   LOGICAL                                       :: lchk    =.FALSE.
   LOGICAL                                       :: lisodep =.FALSE.
+  LOGICAL                                       :: ldebug  =.FALSE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   cv_sig = cn_vosigma0
 
   narg=iargc()
   IF ( narg < 3 ) THEN
-     PRINT *,' usage : cdfrhoproj IN-var RHO-file List_of_IN-files [VAR-type] ... '
-     PRINT *,'                ... [-s0 sig0 ] [-sig sigma_name] [-isodep ]'
+     PRINT *,' usage : cdfrhoproj IN-var RHO-file List_of_IN-files [VAR-type] [-debug ]... '
+     PRINT *,'       ... [-isodep] [-s0 sig0 | -s0 sigmin,sigstp,nbins ] [-sig sigma_name]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Project IN-var on isopycnal surfaces defined either by sig0 given' 
-     PRINT *,'       as argument or on all sigma surfaces defined in ',TRIM(cf_rholev),' ascii file.'
+     PRINT *,'       Project IN-var on isopycnal surfaces. The isosurfaces can be defined in'
+     PRINT *,'       many ways : (1) In a pre-defined ASCII file named ',TRIM(cf_rholev),'see format'
+     PRINT *,'       below.  (2) using -s0 option.'
      PRINT *,'       IN-var will be interpolated on the T point of the C-grid, previous'
      PRINT *,'       to projection on isopycnal.'
-     PRINT *,'       This cdftool is one of the few using 3D arrays. Further development is '
-     PRINT *,'       required to work with vertical slabs instead.'
+     PRINT *,'       '
+     PRINT *,'       WARNING: This cdftool is one of the few using 3D arrays. Further '
+     PRINT *,'       development is required to work with vertical slabs instead.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       IN-var   : name of the input variable to be projected' 
@@ -88,8 +92,12 @@ PROGRAM cdfrhoproj
      PRINT *,'       List_of_IN-file  : netcdf files with IN-var '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-s0 sigma ] : define a single sigma surface on the command line' 
-     PRINT *,'                    instead of reading rho_lev ascii file.'
+     PRINT *,'       [-s0 sigma  | -s0 sigmin,sigstp,nbins ]  : In the first form define a '
+     PRINT *,'                    single sigma surface on the command line, while in the 2nd'
+     PRINT *,'                    form, it uses the same numbers than cdfmocsig to define'
+     PRINT *,'                    equally spaced (sigstp) density surfaces, starting from '
+     PRINT *,'                    sigmin and up to sigmin + (nbins)*sigstp'
+     PRINT *,'                    This option prevails the use of ',TRIM(cf_rholev),' file.'
      PRINT *,'       [VAR-type] : position of IN-var on the C-grid ( either T U V F W S )'
      PRINT *,'                    default is ''T''. '
      PRINT *,'                    S is used in case of section files (cdf_xtract_brokenline).'
@@ -98,6 +106,7 @@ PROGRAM cdfrhoproj
      PRINT *,'       [-isodep ] : only compute the isopycnal depth. then stop. In this case'
      PRINT *,'                    you must still specify a IN-var variable (in fact a dummy'
      PRINT *,'                     name).'
+     PRINT *,'       [-debug]   : produce extra prints. Must be use before other options ..'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       no metrics, information is taken from depth variable in input files.'
@@ -116,7 +125,7 @@ PROGRAM cdfrhoproj
      PRINT *,'         variables : ',TRIM(cn_vodepiso),' (m) '
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'       replace cdfisopycdep when using -isodep option.'
+     PRINT *,'       replace cdfisopycdep when using -isodep option,  cdfmocsig'
      PRINT *,'       '
      STOP
   ENDIF
@@ -127,13 +136,15 @@ PROGRAM cdfrhoproj
     CALL getarg( ijarg, cldum) ; ijarg=ijarg+1
     SELECT CASE ( cldum )
     CASE ('-s0') 
-       npsig = 1 ; lsingle=.TRUE. ; ALLOCATE (zi(npsig) )
-       CALL getarg( ijarg, cldum) ; ijarg=ijarg+1 ; READ(cldum,*) zi(1)
+       CALL getarg( ijarg, cldum) ; ijarg=ijarg+1 
+       CALL ParseS0Opt(cldum) 
+       lsingle=.TRUE.
     CASE ( 'T','t','U','u','V','v','W','w','F','f' )
        ctype=cldum
     CASE ('-sig') 
        CALL getarg( ijarg, cv_sig) ; ijarg=ijarg+1 
     CASE ('-isodep')  ; lisodep = .TRUE. ; nvout=1 ; cf_out='isopycdep.nc'
+    CASE ('-debug' )  ; ldebug  = .TRUE.
     CASE DEFAULT 
        ireq=ireq+1
        SELECT CASE (ireq )
@@ -154,10 +165,12 @@ PROGRAM cdfrhoproj
   IF ( .NOT.  lsingle ) THEN
      OPEN(numlev,FILE=cf_rholev)
      READ(numlev,*) npsig
+     IF (ldebug) PRINT *, TRIM(cf_rholev),' contains :'
+     IF (ldebug) PRINT *, npsig
      ALLOCATE ( zi(npsig) )
      DO jsig=1,npsig
         READ(numlev,*) zi(jsig)
-        PRINT *,zi(jsig)
+        IF (ldebug) PRINT *,zi(jsig)
      END DO
      CLOSE(numlev)
   ENDIF
@@ -187,6 +200,7 @@ PROGRAM cdfrhoproj
 
   !! ** Compute interpolation coefficients as well as the level used
   !!    to interpolate between
+  !$OMP PARALLEL DO SCHEDULE(RUNTIME)
   DO ji=1,npiglo
      DO jj = 1, npjglo
         ijk = 1
@@ -213,6 +227,7 @@ PROGRAM cdfrhoproj
         END DO
      END DO
   END DO
+  !$OMP END PARALLEL DO
 
   IF ( lisodep ) THEN
      ipk(1)                       = npsig
@@ -231,6 +246,7 @@ PROGRAM cdfrhoproj
      ierr  = putheadervar(ncout , cf_rhofil, npiglo, npjglo, npsig, pdep=zi )
 
      DO jsig=1,npsig
+        !$OMP PARALLEL DO SCHEDULE(RUNTIME)
         DO ji=1,npiglo
            DO jj=1,npjglo
              ! ik0 is retrieved from alpha, taking the integer part.
@@ -251,6 +267,7 @@ PROGRAM cdfrhoproj
              ENDIF
            END DO
         END DO
+        !$OMP END PARALLEL DO
         ierr = putvar(ncout, id_varout(1), zint , jsig, npiglo, npjglo)
      END DO
      ierr = putvar1d(ncout, tim, 1, 'T')
@@ -329,12 +346,17 @@ PROGRAM cdfrhoproj
      stypvar(1)%caxis             = 'TRYX'
 
      cf_out=TRIM(cf_dta)//'.interp'
+     PRINT *, npsig, zi, TRIM(cf_out)
  
      ncout = create      (cf_out, cf_rhofil, npiglo, npjglo, npsig          )
+     print *, ncout
      ierr  = createvar   (ncout,  stypvar,   nvout,  ipk,    id_varout      )
+     print *, ierr
      ierr  = putheadervar(ncout , cf_rhofil, npiglo, npjglo, npsig, pdep=zi )
+     print *, ierr
  
      DO jsig=1,npsig
+        !$OMP PARALLEL DO SCHEDULE(RUNTIME)
         DO ji=1,npiglo
            DO jj=1,npjglo
              ! ik0 is retrieved from alpha, taking the integer part.
@@ -359,6 +381,7 @@ PROGRAM cdfrhoproj
              ENDIF
            END DO
         END DO
+        !$OMP END PARALLEL DO
         ierr = putvar(ncout, id_varout(1), zint  , jsig, npiglo, npjglo)
         ierr = putvar(ncout, id_varout(2), v2dint, jsig, npiglo, npjglo)
      END DO
@@ -366,4 +389,65 @@ PROGRAM cdfrhoproj
      ierr = closeout(ncout             )
   END DO  ! loop on scalar files
         PRINT *,'Projection on isopycns completed successfully'
+
+  CONTAINS
+
+  SUBROUTINE ParseS0Opt(cdum )
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE ParseS0Opt  ***
+    !!
+    !! ** Purpose :  Parse -s0 option if used to set up the equally spaced
+    !!               isopycnal surfaces to use for projection 
+    !!
+    !! ** Method  :  Assume cdum is a comma separated list, use global module
+    !!               variables.
+    !!----------------------------------------------------------------------
+      CHARACTER(LEN=*), INTENT(in) :: cdum
+
+      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      INTEGER  :: ji
+      INTEGER  :: inchar,  i1=1
+      !!----------------------------------------------------------------------
+      inchar= LEN(TRIM(cdum))
+      ! scan the input string and look for ',' as separator
+      DO ji=1,inchar
+         IF ( cdum(ji:ji) == ',' ) THEN
+            cl_dum(npsig) = cdum(i1:ji-1)
+            i1=ji+1
+            npsig=npsig+1
+         ENDIF
+      ENDDO
+      ! last name of the list does not have a ','
+      cl_dum(npsig) = cdum(i1:inchar)
+
+      IF ( npsig == 3 ) THEN  ! sigmin,sigstp,nbins
+         READ(cl_dum(1),*) sigmin
+         READ(cl_dum(2),*) sigstp
+         READ(cl_dum(3),*) nbins
+         npsig = nbins + 1
+      ELSE IF (npsig == 1 ) THEN ! single value
+         READ(cl_dum(1),*) sigmin
+         nbins  = 0
+         sigstp = 0.
+      ELSE
+         PRINT *,' Error in -s0 option : either -s0 val  or -s0 sigmin,sigstp,nbins'
+         STOP
+      ENDIF
+
+      ALLOCATE ( zi(npsig) )
+      zi(1) = sigmin
+      DO ji=2, nbins+1
+         zi(ji) = zi(ji-1) + sigstp
+      ENDDO
+      IF ( ldebug ) THEN
+        PRINT *, TRIM(cf_rholev),' like output '
+        PRINT *, '---------------------'
+        PRINT *, npsig
+        DO ji = 1, npsig
+          PRINT *, zi(ji)
+        END DO
+      ENDIF
+
+   END SUBROUTINE ParseS0Opt
+
 END  PROGRAM cdfrhoproj

@@ -20,6 +20,7 @@ MODULE eos
   PRIVATE
   PUBLIC :: sigma0
   PUBLIC :: sigmai
+  PUBLIC :: spice
   PUBLIC :: sigmantr
   PUBLIC :: eosbn2
   PUBLIC :: albet
@@ -82,8 +83,8 @@ CONTAINS
        END DO
     END DO
 
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
     DO jj = 1, kpj
-       !
        DO ji = 1, kpi
 
           zt  = ptem (ji,jj)          ! interpolated T
@@ -103,6 +104,7 @@ CONTAINS
           sigma0(ji,jj) = ( zr4*zs + zr3*zsr + zr2 ) *zs + zr1 - zrau0
        END DO
     END DO
+    !$OMP END PARALLEL DO
 
   END FUNCTION sigma0
 
@@ -132,8 +134,9 @@ CONTAINS
     REAL(KIND=8)                      :: zt, zs, zsr
     REAL(KIND=8)                      :: zr1, zr2, zr3, zr4, zr5
     !! --------------------------------------------------------------------
-    DO ji = 1, kpi
-       DO jj = 1, kpj
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
+    DO jj = 1, kpj
+       DO ji = 1, kpi
           zt = ptem(ji,jj)
           zs = psal(ji,jj)
           zsr= SQRT( ABS(zs) )
@@ -154,9 +157,75 @@ CONTAINS
           sigmantr(ji,jj) = ( zr1 + zr2 ) / ( zr3 + zr4 + zr5 )
        ENDDO
     ENDDO
+    !$OMP END PARALLEL DO
 
 
   END FUNCTION sigmantr
+
+  FUNCTION spice ( ptem, psal, kpi, kpj )
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION spice  ***
+    !!
+    !! ** Purpose :  Compute spiciness from T S fields. 
+    !!
+    !! ** Method  :  spiciness = sum(i=0,5)[sum(j=0,4)[b(i,j)*theta^i*(s-35)^j]]
+    !!                   with:  b     -> coefficients
+    !!                          theta -> potential temperature
+    !!                          s     -> salinity
+    !!
+    !!  **  Example:
+    !!       spice(15,33)=   0.5445863      0.544586321373410  calcul en double
+    !!       spice(15,33)=   0.5445864      (calcul en simple precision) 
+    !!
+    !!  ** References : Flament (2002) "A state variable for characterizing
+    !!              water masses and their diffusive stability: spiciness."
+    !!              Progress in Oceanography Volume 54, 2002, Pages 493-501.
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptem, psal ! temperature salinity
+    INTEGER(KIND=4),                  INTENT(in) :: kpi,kpj    ! dimension of 2D arrays
+    REAL(KIND=8), DIMENSION(kpi,kpj)             :: spice      ! return value
+
+    INTEGER(KIND=4)                        :: ji,jj     ! dummy loop index
+    INTEGER(KIND=4)                        :: jig,jjg     ! dummy loop index
+    REAL(KIND=8), SAVE, DIMENSION(6,5)     :: dl_bet    ! coefficients of spiciness formula
+    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_spi    ! spiciness
+    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_salref ! reference salinity
+    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_tempt  ! working array
+    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_salt   ! working array
+
+    LOGICAL, SAVE                        :: lfrst=.TRUE.!
+    !!----------------------------------------------------------------------
+    IF ( lfrst ) THEN
+       lfrst = .false.
+       ! Define coefficients to compute spiciness (R*8)
+       dl_bet(1,:) = (/       0.d0,   7.7442d-01,    -5.85d-03,    -9.84d-04,    -2.06d-04/)
+       dl_bet(2,:) = (/ 5.1655d-02,    2.034d-03,   -2.742d-04,     -8.5d-06,     1.36d-05/)
+       dl_bet(3,:) = (/6.64783d-03,  -2.4681d-04,   -1.428d-05,    3.337d-05,    7.894d-06/)
+       dl_bet(4,:) = (/-5.4023d-05,    7.326d-06,   7.0036d-06,  -3.0412d-06,  -1.0853d-06/)
+       dl_bet(5,:) = (/  3.949d-07,   -3.029d-08,  -3.8209d-07,   1.0012d-07,   4.7133d-08/)
+       dl_bet(6,:) = (/  -6.36d-10,   -1.309d-09,    6.048d-09,  -1.1409d-09,   -6.676d-10/)
+    ENDIF
+    ! spiciness 
+    dl_spi(:,:)    = 0.d0
+    dl_salref(:,:) = psal(:,:) - 35.d0
+    dl_tempt(:,:)  = 1.d0
+!$OMP PARALLEL DO SCHEDULE(RUNTIME)
+    DO jjg=1, kpj
+    DO ji=1,6
+       dl_salt(:,jjg) = 1.d0
+       DO jj=1,5
+           dl_spi( :,jjg) = dl_spi (:,jjg) +   dl_bet (ji,jj) * dl_tempt(:,jjg) * dl_salt(:,jjg)
+           dl_salt(:,jjg) = dl_salt(:,jjg) * dl_salref( :,jjg )
+       END DO
+       dl_tempt(:,jjg) = dl_tempt(:,jjg) * ptem(:,jjg)
+    END DO
+    END DO
+!$OMP END PARALLEL DO
+
+    spice(:,:) = dl_spi( :,:)
+
+  END FUNCTION spice
 
   FUNCTION sigmai_dep ( ptem, psal, pref, kpi,kpj)
     !! --------------------------------------------------------------------
@@ -202,6 +271,7 @@ CONTAINS
        END DO
     END DO
 
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
     DO jj=1,kpj
        DO ji=1,kpi
 
@@ -266,6 +336,7 @@ CONTAINS
 
        ENDDO
     ENDDO
+    !$OMP END PARALLEL DO
 
   END FUNCTION sigmai_dep
 
@@ -312,6 +383,7 @@ CONTAINS
        END DO
     END DO
 
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
     DO jj=1,kpj
        DO ji=1,kpi
 
@@ -377,6 +449,7 @@ CONTAINS
 
        ENDDO
     ENDDO
+    !$OMP END PARALLEL DO
 
   END FUNCTION sigmai_dep2d
 
@@ -407,6 +480,7 @@ CONTAINS
     !!----------------------------------------------------------------------
 
     zh = pdep
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
     DO jj = 1, kpj
        DO ji = 1, kpi
           zgde3w = zgrav / pe3w(ji,jj)
@@ -443,6 +517,7 @@ CONTAINS
                &                     - ( psal(ji,jj,kup) - psal(ji,jj,kdown) ) )
        END DO
     END DO
+    !$OMP END PARALLEL DO
 
   END FUNCTION eosbn2
 
@@ -466,8 +541,9 @@ CONTAINS
     REAL(KIND=8)    :: zt, zs, zh  ! working local variables
     !!----------------------------------------------------------------------
     zh = pdep
-    DO ji=1,kpi
-       DO jj=1,kpj
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
+     DO jj=1,kpj
+       DO ji=1,kpi
           zt =  ptem(ji,jj)         ! potential temperature
           zs =  psal(ji,jj)- 35.0   ! salinity anomaly (s-35)
 
@@ -485,6 +561,7 @@ CONTAINS
                &                               + 0.380374e-04 ) * zh
        END DO
     END DO
+    !$OMP END PARALLEL DO
 
   END FUNCTION albet
 
@@ -507,8 +584,9 @@ CONTAINS
     REAL(KIND=8)    :: zt, zs, zh  ! working variables
     !!----------------------------------------------------------------------
     zh = pdep
-    DO ji=1,kpi
-       DO jj=1,kpj
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
+    DO jj=1,kpj
+       DO ji=1,kpi
           zt =  ptem(ji,jj)         ! potential temperature
           zs =  psal(ji,jj)- 35.0   ! salinity anomaly (s-35)
 
@@ -525,6 +603,7 @@ CONTAINS
                &                             - 0.121555e-07 ) * zh
        END DO
     END DO
+    !$OMP END PARALLEL DO
 
   END FUNCTION beta
 
