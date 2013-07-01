@@ -41,7 +41,7 @@ PROGRAM cdfzonalmean
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipko, id_varout     ! jpbasin x nvar
   INTEGER(KIND=4), DIMENSION(2)                 :: ijloc               ! working array for maxloc
 
-  REAL(KIND=4)                                  :: zspval=99999.       ! missing value 
+  REAL(KIND=4)                                  :: zspval=0.           ! missing value 
   REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: gdep                ! gdept or gdepw
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: e1, e2, gphi, zv    ! metrics, latitude, data value
@@ -50,8 +50,11 @@ PROGRAM cdfzonalmean
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zmaskvar            ! variable mask
   REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: rzomax              ! zonal maximum
+  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: rzomin              ! zonal minimum
 
-  REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzomean , darea     ! jpbasins x npjglo x npk
+  REAL(KIND=8)                                  :: dtmp                ! temporary variable
+  REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzomean , darea     !  npjglo x npk
+  REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dl_surf             ! surface of cells
 
   CHARACTER(LEN=256)                            :: cf_in               ! input file name
   CHARACTER(LEN=256)                            :: cf_out='zonalmean.nc' ! output file name
@@ -106,7 +109,7 @@ PROGRAM cdfzonalmean
      PRINT *,'       [BASIN-file] : netcdf file describing sub basins, similar to '
      PRINT *,'                      ', TRIM(cn_fbasins),'. If this name is not given '
      PRINT *,'                      as option, only the global zonal mean is computed.'
-     PRINT *,'       [-max     ] : output the zonal maximum of the variable '
+     PRINT *,'       [-max     ] : output the zonal maximum and minimum of the variable '
      PRINT *,'       [-var var1,var2,.. ] : Comma separated list of selected variables'
      PRINT *,'       [-pdep | --positive_depths ] : use positive depths in the output file.'
      PRINT *,'                      Default behaviour is to have negative depths.'
@@ -136,7 +139,7 @@ PROGRAM cdfzonalmean
     CASE ( '-pdep' , '--positive_depths' ) ; lpdep    =.TRUE.
     CASE ( '-ndep_in'                    ) ; lndep_in =.TRUE.
     CASE ( '-debug'                      ) ; ldebug   =.TRUE.
-    CASE ( '-max'                        ) ; lmax     =.TRUE. ; ncoef=2
+    CASE ( '-max'                        ) ; lmax     =.TRUE. ; ncoef=3
     CASE ( '-var'                        ) ; lvar     =.TRUE.
                                              CALL getarg( ijarg, cldum) ; ijarg=ijarg+1
                                              CALL ParseVars(cldum) 
@@ -201,11 +204,8 @@ PROGRAM cdfzonalmean
     nvaro = nvarin
   ENDIF
 
-  IF ( lmax ) THEN
-     nvarmx = 2 * npbasins * nvaro
-  ELSE
-     nvarmx = npbasins * nvaro
-  ENDIF
+  nvarmx = ncoef * npbasins * nvaro
+
   IF ( ldebug ) PRINT *,' NVARMX (output) :', nvarmx
 
   ALLOCATE ( cv_namesi(nvarin), ipki(nvarin), id_varin (nvarin) )
@@ -281,6 +281,11 @@ PROGRAM cdfzonalmean
        ipko    (jvar+nvaro) = ipko    (jvar)
        stypvaro(jvar+nvaro)%cname      = TRIM(stypvaro (jvar)%cname)//'_max'
        stypvaro(jvar+nvaro)%clong_name = 'Zonal_Max_'//TRIM(stypvaro (jvar)%clong_name(12:))
+
+       stypvaro(jvar+2*nvaro) = stypvaro(jvar)  ! copy all var attributes 
+       ipko    (jvar+2*nvaro) = ipko    (jvar)
+       stypvaro(jvar+2*nvaro)%cname      = TRIM(stypvaro (jvar)%cname)//'_min'
+       stypvaro(jvar+2*nvaro)%clong_name = 'Zonal_Min_'//TRIM(stypvaro (jvar)%clong_name(12:))
      ENDDO
   ENDIF
 
@@ -307,13 +312,16 @@ PROGRAM cdfzonalmean
   ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), tim(npt)   )
   ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo)       )
   IF ( lmax ) ALLOCATE ( rzomax(npjglo,npk)             )
+  IF ( lmax ) ALLOCATE ( rzomin(npjglo,npk)             )
   ALLOCATE ( dzomean(npjglo,npk), darea(npjglo,npk)     )
-
+  ALLOCATE ( dl_surf(npiglo,npjglo)                     )
 
   ! get the metrics
   e1(:,:)   = getvar(cn_fhgr, cv_e1,  1, npiglo, npjglo) 
   e2(:,:)   = getvar(cn_fhgr, cv_e2,  1, npiglo, npjglo) 
   gphi(:,:) = getvar(cn_fhgr, cv_phi, 1, npiglo, npjglo)
+  
+  dl_surf(:,:) = 1.d0 * e1(:,:) * e2(:,:)
 
   IF (l2d)  THEN 
      gdep(:) = 0
@@ -369,14 +377,20 @@ PROGRAM cdfzonalmean
               dzomean(:,:) = 0.d0
               darea(:,:)   = 0.d0
               ! integrates 'zonally' (along i-coordinate)
-          IF ( lmax) rzomax(:,:) = -1.e20
-              DO ji=1,npiglo
-                 DO jj=1,npjglo
-                    dzomean(jj,jk) = dzomean(jj,jk) + 1.d0*e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
-                    darea(jj,jk)   = darea(jj,jk)   + 1.d0*e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
-          IF( lmax) rzomax (jj,jk) = MAX(rzomax (jj,jk), zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj))
+              IF ( lmax) rzomax(:,jk) = -1.e20
+              IF ( lmax) rzomin(:,jk) =  1.e20
+
+              !$OMP PARALLEL DO SCHEDULE(RUNTIME) PRIVATE(dtmp)
+              DO jj=1,npjglo
+                  DO ji=1,npiglo
+                    dtmp = 1.d0 * zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
+                    dzomean(jj,jk) = dzomean(jj,jk) + dl_surf(ji,jj)* dtmp
+                    darea  (jj,jk) = darea  (jj,jk) + dl_surf(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
+           IF( lmax )                 rzomax (jj,jk) = MAX(rzomax (jj,jk), dtmp )
+           IF( lmax .AND. dtmp /= 0.) rzomin (jj,jk) = MIN(rzomin (jj,jk), dtmp )
                  END DO
               END DO
+              !$OMP  END  PARALLEL DO
 
               ! compute the mean value if the darea is not 0, else assign spval
               WHERE (darea /= 0 ) 
@@ -384,9 +398,16 @@ PROGRAM cdfzonalmean
               ELSEWHERE
                  dzomean=zspval
               ENDWHERE
+              IF (lmax)  THEN
+                 WHERE (darea == 0 ) 
+                   rzomax=zspval ; rzomin=zspval 
+                 ENDWHERE
+              ENDIF
+
               ivar = (jvar-1)*npbasins + jbasin
-              ierr = putvar (ncout, id_varout(ivar), REAL(dzomean(:,jk)), jk, 1, npjglo, ktime=jt)
-   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+nvaro), rzomax(:,jk),  jk, 1, npjglo, ktime=jt)
+              ierr = putvar (ncout, id_varout(ivar),   REAL(dzomean(:,jk)), jk, 1, npjglo, ktime=jt)
+   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+nvaro),   rzomax(:,jk),  jk, 1, npjglo, ktime=jt)
+   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+2*nvaro), rzomin(:,jk),  jk, 1, npjglo, ktime=jt)
            END DO  !next basin
         END DO  ! next k 
      END DO ! next time
