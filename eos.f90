@@ -120,7 +120,7 @@ CONTAINS
     !!              salinity                      s        psu
     !!              neutral density               rho      kg/m**3
     !!       result is not masked at this stage.
-    !!       Check value: rho(20,35) = 1024.59416751197 kg/m**3 
+    !!       Check value: rho(20,35) = 1024.59416751197 kg/m**3  -1000.
     !!       t = 20 deg celcius, s=35 psu
     !!
     !! ** References : McDougall and Jackett, J. Mar Res., 2005
@@ -130,31 +130,31 @@ CONTAINS
     REAL(KIND=8), DIMENSION(kpi,kpj) :: sigmantr          ! return value
 
     INTEGER(KIND=4)                   :: ji, jj
-    REAL(KIND=8), DIMENSION (kpi,kpj) :: zws
-    REAL(KIND=8)                      :: zt, zs, zsr
-    REAL(KIND=8)                      :: zr1, zr2, zr3, zr4, zr5
+    REAL(KIND=8), DIMENSION (kpi,kpj) :: dl_ws
+    REAL(KIND=8)                      :: dl_t, dl_s, dl_sr
+    REAL(KIND=8)                      :: dl_r1, dl_r2, dl_r3, dl_r4, dl_r5
     !! --------------------------------------------------------------------
     !$OMP PARALLEL DO SCHEDULE(RUNTIME)
     DO jj = 1, kpj
        DO ji = 1, kpi
-          zt = ptem(ji,jj)
-          zs = psal(ji,jj)
-          zsr= SQRT( ABS(zs) )
+          dl_t = ptem(ji,jj)
+          dl_s = psal(ji,jj)
+          dl_sr= SQRT( ABS(dl_s) )
        ! Numerator
           ! T-Polynome
-          zr1= ( ( -4.3159255086706703d-4*zt+8.1157118782170051d-2 )*zt+2.2280832068441331d-1 )*zt+1002.3063688892480d0
+          dl_r1= ( ( -4.3159255086706703d-4*dl_t+8.1157118782170051d-2 )*dl_t+2.2280832068441331d-1 )*dl_t+1002.3063688892480d0
           ! S-T Polynome
-          zr2= ( -1.7052298331414675d-7*zs-3.1710675488863952d-3*zt-1.0304537539692924d-4 )*zs
+          dl_r2= ( -1.7052298331414675d-7*dl_s-3.1710675488863952d-3*dl_t-1.0304537539692924d-4 )*dl_s
        ! Denominator
           ! T-Polynome
-          zr3= ( ( (-2.3850178558212048d-9*zt -1.6212552470310961d-7 )*zt+7.8717799560577725d-5 )*zt+4.3907692647825900d-5 )*zt+     1.0d0
+          dl_r3= ( ( (-2.3850178558212048d-9*dl_t -1.6212552470310961d-7 )*dl_t+7.8717799560577725d-5 )*dl_t+4.3907692647825900d-5 )*dl_t+     1.0d0
           ! S-T Polynome
-          zr4= ( ( -2.2744455733317707d-9*zt*zt+6.0399864718597388d-6)*zt-5.1268124398160734d-4 )*zs
+          dl_r4= ( ( -2.2744455733317707d-9*dl_t*dl_t+6.0399864718597388d-6)*dl_t-5.1268124398160734d-4 )*dl_s
           ! S-T Polynome
-          zr5= ( -1.3409379420216683d-9*zt*zt-3.6138532339703262d-5)*zs*zsr
+          dl_r5= ( -1.3409379420216683d-9*dl_t*dl_t-3.6138532339703262d-5)*dl_s*dl_sr
 
           ! Neutral density
-          sigmantr(ji,jj) = ( zr1 + zr2 ) / ( zr3 + zr4 + zr5 )
+          sigmantr(ji,jj) = ( dl_r1 + dl_r2 ) / ( dl_r3 + dl_r4 + dl_r5 ) -1000.d0
        ENDDO
     ENDDO
     !$OMP END PARALLEL DO
