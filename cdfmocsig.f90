@@ -56,8 +56,6 @@ PROGRAM cdfmocsig
   INTEGER(KIND=4), DIMENSION(2)                   :: iloc                 ! working array
   INTEGER(KIND=4), DIMENSION(:),      ALLOCATABLE :: ipk, id_varout       ! output variable levels and id
   INTEGER(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ibin                 ! remaping density in bin number
-  INTEGER(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ndep_tmp             ! temporary count array
-  INTEGER(KIND=4), DIMENSION(:,:,:),  ALLOCATABLE :: ndep                 ! count array
 
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: e1v, gphiv           ! horizontal metrics, latitude
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zt, zs               ! temperature, salinity
@@ -66,6 +64,7 @@ PROGRAM cdfmocsig
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: rdumlon              ! dummy longitude = 0.
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: rdumlat              ! latitude for i = north pole
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zttmp                ! arrays to call sigmai and mask it
+  REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zarea                ! product e1v * e3v
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: sigma                ! density coordinate 
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: e31d                 ! vertical level (full step)
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: gdep                 ! depth of T layers ( full step)
@@ -77,9 +76,11 @@ PROGRAM cdfmocsig
 
   REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dmoc                 ! nbasins x npjglo x npk
   REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: depi                 ! Zonal mean of depths of isopycnal
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: wdep                 ! count array
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dens                 ! density
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dmoc_tmp             ! temporary transport array
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: depi_tmp             ! temporary cumulated depth array
+  REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: wdep_tmp             ! temporary count array
 
   CHARACTER(LEN=256)                              :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                              :: cf_tfil              ! temperature/salinity file
@@ -281,7 +282,7 @@ PROGRAM cdfmocsig
 
   ! Allocate arrays
   ALLOCATE ( ibmask(nbasins,npiglo,npjglo) )
-  ALLOCATE ( zv (npiglo,npjglo), zt(npiglo,npjglo), zs(npiglo,npjglo))
+  ALLOCATE ( zv (npiglo,npjglo), zt(npiglo,npjglo), zs(npiglo,npjglo), zarea(npiglo, npjglo) )
   ALLOCATE ( e3v(npiglo,npjglo) )
   ALLOCATE ( ibin(npiglo, npjglo) )
   ALLOCATE ( e1v(npiglo,npjglo), gphiv(npiglo,npjglo) )
@@ -294,14 +295,15 @@ PROGRAM cdfmocsig
 
   IF ( lisodep) THEN 
                 ALLOCATE ( depi(nvaro, nbins, npjglo), gdep(npk))
-                ALLOCATE ( ndep(nvaro, nbins, npjglo)           )
+                ALLOCATE ( wdep(nvaro, nbins, npjglo)           )
   ENDIF
   IF ( leiv   ) ALLOCATE ( zveiv (npiglo,npjglo))
 
   e1v(:,:)   = getvar(cn_fhgr,   cn_ve1v,  1, npiglo, npjglo) 
 
   IF ( lfull  ) e31d(:) = getvare3(cn_fzgr, cn_ve3t,  npk )
-  IF ( lisodep) gdep(:) = getvare3(cn_fzgr, cn_gdept, npk ) 
+  IF ( lisodep) gdep(:) = -getvare3(cn_fzgr, cn_gdept, npk )  ! take negative value
+                                                              ! to be compliant with zonal mean
 
   IF ( npjglo > 1 ) THEN 
      gphiv(:,:)   = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
@@ -337,7 +339,7 @@ PROGRAM cdfmocsig
      ! initialize moc to 0
      dmoc(:,:,:) = 0.d0 
      IF ( lisodep ) THEN 
-       depi(:,:,:) = 0.d0 ; ndep(:,:,:) = 0
+       depi(:,:,:) = 0.d0 ; wdep(:,:,:) = 0.d0
      ENDIF
 
      DO jk=1,npk-1
@@ -359,6 +361,7 @@ PROGRAM cdfmocsig
         ELSE
            e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
         ENDIF
+        zarea(:,:) = e1v(:,:) * e3v(:,:)
         !
         !  finds density 
         itmask =  1
@@ -368,6 +371,7 @@ PROGRAM cdfmocsig
         ELSE
            dens  = sigmai(zt, zs, pref, npiglo, npjglo)
         ENDIF
+
         zttmp = dens* itmask ! convert to single precision 
         ! find bin numbers
         ibin(:,:) = INT( (zttmp-sigmin)/sigstp )
@@ -379,10 +383,10 @@ PROGRAM cdfmocsig
         ELSE
            ij1 = 1 ; ij2 = 1 ! input file has only one j ( case of extracted broken lines) 
         ENDIF
-!$OMP PARALLEL  PRIVATE(dmoc_tmp,depi_tmp,ndep_tmp)
+!$OMP PARALLEL  PRIVATE(dmoc_tmp,depi_tmp,wdep_tmp, ib)
                        ALLOCATE ( dmoc_tmp(nbins,npiglo) )
         IF ( lisodep ) ALLOCATE ( depi_tmp(nbins,npiglo) )
-        IF ( lisodep ) ALLOCATE ( ndep_tmp(nbins,npiglo) )
+        IF ( lisodep ) ALLOCATE ( wdep_tmp(nbins,npiglo) )
         IF ( lprint ) PRINT *, ' Entering main J loop '
         !$OMP DO SCHEDULE(RUNTIME)
         DO jj= ij1, ij2
@@ -391,15 +395,15 @@ PROGRAM cdfmocsig
            !  indirect adresssing - do it once and not for each basin!
            DO ji=2,npiglo-1
               ib = ibin(ji,jj)
-              dmoc_tmp(ib,ji) = dmoc_tmp(ib,ji) - e1v(ji,jj)*e3v(ji,jj)*zv(ji,jj)
+              dmoc_tmp(ib,ji) = dmoc_tmp(ib,ji) - zv(ji,jj)*zarea(ji,jj)
            END DO
 
            IF ( lisodep ) THEN
-              depi_tmp = 0.d0 ; ndep_tmp = 0 ! ndep(:,:) = 0
+              depi_tmp = 0.d0 ; wdep_tmp = 0.d0 ! wdep(:,:) = 0
               DO ji=2,npiglo-1
                  ib = ibin(ji,jj)
-                 depi_tmp(ib,ji) = depi_tmp(ib,ji) + gdep(jk) * itmask(ji, jj)
-                 ndep_tmp(ib,ji) = ndep_tmp(ib,ji) + itmask(ji,jj) ! count the number of valid point/ bin
+                 depi_tmp(ib,ji) = depi_tmp(ib,ji) + gdep(jk) * itmask(ji,jj)*zarea(ji,jj)
+                 wdep_tmp(ib,ji) = wdep_tmp(ib,ji) +            itmask(ji,jj)*zarea(ji,jj)  ! total weight
               END DO
            ENDIF
            ! integrates 'zonally' (along i-coordinate) 
@@ -420,7 +424,7 @@ PROGRAM cdfmocsig
               DO jbin =1,nbins
                  DO ji=2,npiglo-1
                        depi(jbasin,jbin,jj)=depi(jbasin,jbin,jj) + depi_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
-                       ndep(jbasin,jbin,jj)=ndep(jbasin,jbin,jj) + ndep_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
+                       wdep(jbasin,jbin,jj)=wdep(jbasin,jbin,jj) + wdep_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
                  ENDDO
               END DO
            END DO
@@ -430,13 +434,13 @@ PROGRAM cdfmocsig
         !$OMP END DO
                        DEALLOCATE (dmoc_tmp)
         IF ( lisodep ) DEALLOCATE (depi_tmp)
-        IF ( lisodep ) DEALLOCATE (ndep_tmp)
+        IF ( lisodep ) DEALLOCATE (wdep_tmp)
 !$OMP END PARALLEL
      END DO     ! end of loop on depths for calculating transports     
 
      IF ( lisodep ) THEN
-        WHERE ( ndep(:,:,:) /= 0 ) 
-         depi(:,:,:) = depi(:,:,:) / ndep (:,:,:)
+        WHERE ( wdep(:,:,:) /= 0.d0 ) 
+         depi(:,:,:) = depi(:,:,:) / wdep (:,:,:)
         ELSEWHERE
          depi(:,:,:) = rp_spval
         END WHERE
@@ -513,26 +517,36 @@ PROGRAM cdfmocsig
      stypvar(npglo+nbasins)%cname       = cn_zoisoglo
      stypvar(npglo+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Global'
      stypvar(npglo+nbasins)%cshort_name = cn_zoisoglo
+     stypvar(npglo+nbasins)%valid_min   = 0.
+     stypvar(npglo+nbasins)%valid_max   = 8000.
      IF ( lbas ) THEN
         stypvar(npatl+nbasins)%cunits      = 'm'
         stypvar(npatl+nbasins)%cname       = cn_zoisoatl
         stypvar(npatl+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Atlantic'
         stypvar(npatl+nbasins)%cshort_name = cn_zoisoatl
+        stypvar(npatl+nbasins)%valid_min   = 0.
+        stypvar(npatl+nbasins)%valid_max   = 8000.
 
         stypvar(npinp+nbasins)%cunits      = 'm'
         stypvar(npinp+nbasins)%cname       = cn_zoisoinp
         stypvar(npinp+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_IndoPacif'
         stypvar(npinp+nbasins)%cshort_name = cn_zoisoinp
+        stypvar(npinp+nbasins)%valid_min   = 0.
+        stypvar(npinp+nbasins)%valid_max   = 8000.
 
         stypvar(npind+nbasins)%cunits      = 'm'
         stypvar(npind+nbasins)%cname       = cn_zoisoind
         stypvar(npind+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Indian'
         stypvar(npind+nbasins)%cshort_name = cn_zoisoind
+        stypvar(npind+nbasins)%valid_min   = 0.
+        stypvar(npind+nbasins)%valid_max   = 8000.
 
         stypvar(nppac+nbasins)%cunits      = 'm'
         stypvar(nppac+nbasins)%cname       = cn_zoisopac
         stypvar(nppac+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_pacif'
         stypvar(nppac+nbasins)%cshort_name = cn_zoisopac
+        stypvar(nppac+nbasins)%valid_min   = 0.
+        stypvar(nppac+nbasins)%valid_max   = 8000.
      ENDIF
   ENDIF
 

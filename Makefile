@@ -276,7 +276,7 @@ cdficediags: cdfio.o  cdficediags.f90
 	$(F90) cdficediags.f90 -o $(BINDIR)/cdficediags cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfzonalmean: cdfio.o  cdfzonalmean.f90
-	$(F90) cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 
+	$(F90) $(OMP) cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 
 
 cdfzonalmeanvT: cdfio.o  modutils.o  cdfzonalmeanvT.f90
 	$(F90) cdfzonalmeanvT.f90 -o $(BINDIR)/cdfzonalmeanvT cdfio.o modcdfnames.o modutils.o $(FFLAGS) 

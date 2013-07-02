@@ -86,7 +86,7 @@ PROGRAM cdfzonalmean
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfzonalmean IN-file point_type [ BASIN-file] ...'
+     PRINT *,' usage : cdfzonalmean IN-file point_type [ BASIN-file] [-debug]...'
      PRINT *,'       ...[-var var1,var2,..] [-max ] [-pdep | --positive_depths]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
