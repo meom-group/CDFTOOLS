@@ -19,30 +19,40 @@ PROGRAM cdfinfo
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                               :: jvar                     ! dummy loop index
+  INTEGER(KIND=4)                               :: jvar, jarg               ! dummy loop index
   INTEGER(KIND=4)                               :: ierr                     ! working integer
-  INTEGER(KIND=4)                               :: narg, iargc              ! 
+  INTEGER(KIND=4)                               :: narg, iargc, ijarg       ! 
   INTEGER(KIND=4)                               :: npiglo, npjglo, npk ,npt ! size of the domain
   INTEGER(KIND=4)                               :: nvars                    ! Number of variables in a file
+  INTEGER(KIND=4), DIMENSION(1)                 :: ikloc                    ! used for MINLOC
+
+  REAL(KIND=4)                                  :: zdep                     ! depth to look for
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zdept                    ! depth array
 
   CHARACTER(LEN=256)                            :: cf_in                    ! file name
   CHARACTER(LEN=256)                            :: cv_dep                   ! depth name
+  CHARACTER(LEN=256)                            :: cl_dum                   ! dummy input variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
   
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar                  ! variable attributes
+  
+  LOGICAL                                       :: ldep                     ! flag for depth control
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfinfo ''model cdf file'' '
+     PRINT *,' usage : cdfinfo ''model cdf file'' [-dep dep] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Gives very basic information about the file given in arguments.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        model output file in netcdf.' 
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'        [-dep depth ] : return the nearest k index corresponding to depth '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'        On standard ouput, gives the size of the domain, the depth '
@@ -52,6 +62,15 @@ PROGRAM cdfinfo
   ENDIF
 
   CALL getarg (1, cf_in)
+  ijarg = 2
+  DO WHILE ( ijarg <= narg )
+     CALL getarg (ijarg, cl_dum) ; ijarg = ijarg+1
+     SELECT CASE ( cl_dum)
+     CASE ('-dep' ) ; CALL getarg( ijarg, cl_dum); ijarg = ijarg+1; ; READ(cl_dum,*) zdep ; ldep =.true.
+     CASE DEFAULT   ; PRINT *, 'Option ',TRIM(cl_dum),' ignored ...'
+     END SELECT
+  ENDDO
+        
   IF ( chkfile(cf_in) ) STOP ! missing file
 
   npiglo = getdim (cf_in,cn_x)
@@ -94,7 +113,14 @@ PROGRAM cdfinfo
   cv_names(:)=getvarname(cf_in, nvars, stypvar)
 
   DO jvar = 1, nvars
-   PRINT *, 'variable# ',jvar,' is : ',TRIM(cv_names(jvar))
+     PRINT *, 'variable# ',jvar,' is : ',TRIM(cv_names(jvar))
   END DO
+
+  IF ( ldep ) THEN
+      ALLOCATE(zdept(npk) )
+      zdept = getdimvar (cf_in,  npk)
+      ikloc= MINLOC( ABS(zdept - zdep) )
+      PRINT * ,' NEAREST_K ',ikloc(1)
+  ENDIF
 
 END PROGRAM cdfinfo

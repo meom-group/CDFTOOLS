@@ -43,6 +43,7 @@
   !!   getvarxz      : get a x-z slice of 3D data
   !!   getvaryz      : get a y-z slice of 3D data
   !!   getvdim       : get the number of dim of a variable
+  !!   getvardim     : get the values of the vertical coordinates variable
   !!   ncopen        : open a netcdf file and return its ncid
   !!   putatt        : write variable attribute
   !!   puttimeatt    : write time variable attribute
@@ -121,8 +122,8 @@
   PUBLIC :: chkfile, chkvar
   PUBLIC :: copyatt, create, createvar, getvaratt, cvaratt, gettimeatt
   PUBLIC :: putatt, putheadervar, putvar, putvar1d, putvar0d, atted, puttimeatt
-  PUBLIC :: getatt, getdim, getvdim, getipk, getnvar, getvarname, getvarid, getspval
-  PUBLIC :: getvar, getvarxz, getvaryz, getvar1d, getvare3, getvar3d
+  PUBLIC :: getatt, getdim, getvdim, getdimvar,getipk, getnvar, getvarname, getvarid
+  PUBLIC :: getvar, getvarxz, getvaryz, getvar1d, getvare3, getvar3d, getspval
   PUBLIC :: gettimeseries
   PUBLIC :: closeout, ncopen
   PUBLIC :: ERR_HDL
@@ -916,6 +917,49 @@ CONTAINS
 
   END FUNCTION getvdim
 
+  FUNCTION getdimvar (cdfile, kpk, cd_depnam)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION getdimvar  ***
+    !!
+    !! ** Purpose :  Try to infer the name of the depth variable associated
+    !!               with z dimension, and return the values as a 1d array 
+    !!
+    !! ** Method  :  Trial and error method ... 
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdfile
+    INTEGER(KIND=4),  INTENT(in) :: kpk
+    REAL(KIND=4), DIMENSION(kpk) :: getdimvar
+    CHARACTER(LEN=*), OPTIONAL, INTENT(out) :: cd_depnam
+
+    INTEGER(KIND=4) :: ji
+    INTEGER(KIND=4) :: incid, idims, iuldid, idimv, ivars, istatus
+    INTEGER(KIND=4), DIMENSION(4) :: idimt
+    CHARACTER(LEN=80) :: clvar ='none'
+    
+    !!----------------------------------------------------------------------
+    istatus = NF90_OPEN   (cdfile,NF90_NOWRITE,incid)
+    istatus = NF90_INQUIRE(incid, ndimensions=idims, unlimiteddimid=iuldid,&
+                  &              nvariables=ivars)
+    ! look for variables with only one dim, not unlimited dim ...
+    DO ji = 1, ivars
+       istatus = NF90_INQUIRE_VARIABLE(incid, ji, name=clvar, ndims=idimv, &
+                  & dimids=idimt )
+       IF ( idimv == 1 ) THEN ! candidate
+          IF ( idimt(1) /= iuldid) THEN ! this is The Variable
+             PRINT *, ' Found vertical variable :', TRIM(clvar)
+             istatus = NF90_GET_VAR(incid, ji, getdimvar(:) )
+             EXIT
+          ENDIF
+       ENDIF
+    ENDDO
+    IF ( present(cd_depnam) ) cd_depnam=TRIM(clvar)
+    IF ( ji == ivars +1 ) THEN
+       PRINT *,'Sorry, no vertical dim variables inferred ...'
+       getdimvar=0.
+    ENDIF
+
+  END FUNCTION
 
   INTEGER(KIND=4) FUNCTION  getnvar (cdfile)
     !!---------------------------------------------------------------------
