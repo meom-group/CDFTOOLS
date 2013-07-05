@@ -37,7 +37,7 @@ PROGRAM cdfrhoproj
   INTEGER(KIND=4)                               :: nfilin
   INTEGER(KIND=4)                               :: numlev=10
   INTEGER(KIND=4)                               :: ncout, ierr
-  INTEGER(KIND=4), DIMENSION(2)                 :: ipk, id_varout ! for output variables
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk, id_varout ! for output variables
   !
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zsig, alpha
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2dint, zint, v2d
@@ -58,12 +58,13 @@ PROGRAM cdfrhoproj
   CHARACTER(LEN=256)                            :: cldum
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names     ! temporary arry for variable name in file
  
-  TYPE(variable), DIMENSION(2)                  :: stypvar      ! structure for attributes
-  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypzvar      ! structure for attributes
+  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar      ! structure for attributes
+  TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypzvar     ! structure for attributes
   !
   LOGICAL                                       :: lsingle =.FALSE.
   LOGICAL                                       :: lchk    =.FALSE.
   LOGICAL                                       :: lisodep =.FALSE.
+  LOGICAL                                       :: liso    =.TRUE.
   LOGICAL                                       :: ldebug  =.FALSE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -72,7 +73,8 @@ PROGRAM cdfrhoproj
   narg=iargc()
   IF ( narg < 3 ) THEN
      PRINT *,' usage : cdfrhoproj IN-var RHO-file List_of_IN-files [VAR-type] [-debug ]... '
-     PRINT *,'       ... [-isodep] [-s0 sig0 | -s0 sigmin,sigstp,nbins ] [-sig sigma_name]'
+     PRINT *,'       ... [-isodep] [-s0 sig0 | -s0 sigmin,sigstp,nbins ] [-sig sigma_name]..'
+     PRINT *,'       ... [-noiso]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Project IN-var on isopycnal surfaces. The isosurfaces can be defined in'
@@ -106,6 +108,7 @@ PROGRAM cdfrhoproj
      PRINT *,'       [-isodep ] : only compute the isopycnal depth. then stop. In this case'
      PRINT *,'                    you must still specify a IN-var variable (in fact a dummy'
      PRINT *,'                     name).'
+     PRINT *,'       [-noiso]   : do not save isopycnal depth (suitable for big files).'
      PRINT *,'       [-debug]   : produce extra prints. Must be use before other options ..'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -144,6 +147,7 @@ PROGRAM cdfrhoproj
     CASE ('-sig') 
        CALL getarg( ijarg, cv_sig) ; ijarg=ijarg+1 
     CASE ('-isodep')  ; lisodep = .TRUE. ; nvout=1 ; cf_out='isopycdep.nc'
+    CASE ('-noiso' )  ; liso    = .FALSE.; nvout=1
     CASE ('-debug' )  ; ldebug  = .TRUE.
     CASE DEFAULT 
        ireq=ireq+1
@@ -184,6 +188,7 @@ PROGRAM cdfrhoproj
   CALL getarg(istartarg, cf_dta)
   nvars=getnvar(cf_dta)
   ALLOCATE(cv_names(nvars), stypzvar(nvars))
+  ALLOCATE(ipk(nvout), id_varout(nvout), stypvar(nvout) )
 
   cv_names(:)=getvarname(cf_dta, nvars, stypzvar)
 
@@ -327,23 +332,25 @@ PROGRAM cdfrhoproj
      ipk(:)=npsig
      DO jvar=1,nvars
        IF ( cv_in == stypzvar(jvar)%cname ) THEN 
-          stypvar(2)=stypzvar(jvar)
+          stypvar(1)=stypzvar(jvar)
           EXIT
        ENDIF
      END DO
-     stypvar(2)%clong_name        = TRIM(stypvar(2)%clong_name)//' on iso sigma'
-     stypvar(2)%rmissing_value    = zspvalo
-     stypvar(2)%caxis             = 'TRYX'
-
-     stypvar(1)%cname             = cn_vodepiso
-     stypvar(1)%cunits            = 'm'
-     stypvar(1)%rmissing_value    = 999999.
-     stypvar(1)%valid_min         = 0.
-     stypvar(1)%valid_max         = 7000.
-     stypvar(1)%clong_name        = 'Depth_of_Isopycnals'
-     stypvar(1)%cshort_name       = cn_vodepiso
-     stypvar(1)%conline_operation = 'N/A'
+     stypvar(1)%clong_name        = TRIM(stypvar(2)%clong_name)//' on iso sigma'
+     stypvar(1)%rmissing_value    = zspvalo
      stypvar(1)%caxis             = 'TRYX'
+
+     IF ( liso ) THEN
+       stypvar(2)%cname             = cn_vodepiso
+       stypvar(2)%cunits            = 'm'
+       stypvar(2)%rmissing_value    = 999999.
+       stypvar(2)%valid_min         = 0.
+       stypvar(2)%valid_max         = 7000.
+       stypvar(2)%clong_name        = 'Depth_of_Isopycnals'
+       stypvar(2)%cshort_name       = cn_vodepiso
+       stypvar(2)%conline_operation = 'N/A'
+       stypvar(2)%caxis             = 'TRYX'
+     ENDIF
 
      cf_out=TRIM(cf_dta)//'.interp'
      PRINT *, npsig, zi, TRIM(cf_out)
@@ -369,21 +376,21 @@ PROGRAM cdfrhoproj
                 IF (P1 /= zspvali .AND. P2 /= zspvali) THEN
                    v2dint(ji,jj) = zalpha *P2  &
                      &         +(1-zalpha)*P1
-                    zint (ji,jj) = zalpha *h1d(ik0+1) &
+                    IF( liso) zint (ji,jj) = zalpha *h1d(ik0+1) &
                      &         +(1-zalpha)*h1d(ik0  )
                 ELSE 
                    v2dint(ji,jj)=zspvalo
-                   zint  (ji,jj)=zspvalo
+                   IF( liso )zint  (ji,jj)=zspvalo
                ENDIF
              ELSE 
                v2dint(ji,jj)=zspvalo
-               zint  (ji,jj)=zspvalo
+               IF ( liso ) zint  (ji,jj)=zspvalo
              ENDIF
            END DO
         END DO
         !$OMP END PARALLEL DO
-        ierr = putvar(ncout, id_varout(1), zint  , jsig, npiglo, npjglo)
-        ierr = putvar(ncout, id_varout(2), v2dint, jsig, npiglo, npjglo)
+                  ierr = putvar(ncout, id_varout(1), v2dint, jsig, npiglo, npjglo)
+        IF (liso) ierr = putvar(ncout, id_varout(2), zint  , jsig, npiglo, npjglo)
      END DO
      ierr = putvar1d(ncout, tim, 1, 'T')
      ierr = closeout(ncout             )
