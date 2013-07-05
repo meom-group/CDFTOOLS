@@ -287,7 +287,6 @@ PROGRAM cdfmocsig
   ALLOCATE ( ibin(npiglo, npjglo) )
   ALLOCATE ( e1v(npiglo,npjglo), gphiv(npiglo,npjglo) )
   ALLOCATE ( dmoc(nvaro, nbins, npjglo ) )
-  ALLOCATE ( dmoc_tmp(nbins,npiglo) )
   ALLOCATE ( rdumlon(1,npjglo) , rdumlat(1,npjglo))
   ALLOCATE ( dens(npiglo,npjglo))
   ALLOCATE ( itmask(npiglo,npjglo), zttmp(npiglo,npjglo))
