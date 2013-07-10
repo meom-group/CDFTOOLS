@@ -37,6 +37,7 @@ PROGRAM cdfrhoproj
   INTEGER(KIND=4)                               :: nfilin
   INTEGER(KIND=4)                               :: numlev=10
   INTEGER(KIND=4)                               :: ncout, ierr
+  INTEGER(KIND=4)                               :: nbins
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk, id_varout ! for output variables
   !
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zsig, alpha
@@ -46,7 +47,7 @@ PROGRAM cdfrhoproj
   REAL(KIND=4)                                  :: zalpha
   REAL(KIND=4)                                  :: zspvalo=999999.
   REAL(KIND=4)                                  :: zspvali=0.
-  REAL(KIND=4)                                  :: sigmin, sigstp, nbins
+  REAL(KIND=4)                                  :: sigmin, sigstp
 
   CHARACTER(LEN=256)                            :: cf_rholev='rho_lev'
   CHARACTER(LEN=256)                            :: cf_dta
