@@ -270,7 +270,7 @@ PROGRAM cdfsum
            PRINT *, ' Sum value at time ',jt,' = ', dsum2d
            PRINT *, '          Surface  = ', dsurf/1.d6,' km^2'
            PRINT *, '       mean value  = ', dsum2d/dsurf
-           WRITE (numout,'(i4," ",1e12.6)') jt, dsum2d
+           WRITE (numout,'(i4," ",1e13.6)') jt, dsum2d
            rdummy(1,1) = REAL(dsum2d)
         END IF
         ierr = putvar( ncout, id_varout(1), rdummy, jk, 1,1, ktime=jt)
