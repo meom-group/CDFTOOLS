@@ -198,7 +198,7 @@ PROGRAM cdfmean
   npjglo_fi = npjglo
   npk_fi    = npk
 
-  IF (npk   == 0 ) THEN ; lnodep = .true.;  npk = 1                  ;  ENDIF ! no depth dimension ==> 1 level
+  IF (npk   == 0 ) THEN ; lnodep = .true.;  npk = 1; npk_fi = 1      ;  ENDIF ! no depth dimension ==> 1 level
   IF (iimin /= 0 ) THEN ; npiglo = iimax -iimin + 1;  ELSE ; iimin=1 ;  ENDIF
   IF (ijmin /= 0 ) THEN ; npjglo = ijmax -ijmin + 1;  ELSE ; ijmin=1 ;  ENDIF
   IF (ikmin /= 0 ) THEN ; npk    = ikmax -ikmin + 1;  ELSE ; ikmin=1 ;  ENDIF
