@@ -35,10 +35,16 @@ PROGRAM cdfsum
   INTEGER(KIND=4)                           :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                           :: nvpk                ! vertical levels in working variable
   INTEGER(KIND=4)                           :: numout=10           ! logical unit
+  INTEGER(KIND=4)                           :: ncout               ! for netcdf output
+  INTEGER(KIND=4), DIMENSION(2)             :: ipk, id_varout
 
+  REAL(KIND=4)                              :: zspval             ! missing value
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1, e2, e3,  zv     ! metrics, velocity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask               ! npiglo x npjglo
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdep                ! depth 
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time
+  REAL(KIND=4), DIMENSION(1,1)              :: rdumlon, rdumlat    ! dummy latitude and longitude
+  REAL(KIND=4), DIMENSION(1,1)              :: rdummy              ! dummy 2d variable for result
 
   REAL(KIND=8)                              :: dvol, dvol2d        ! volume of the ocean/ layer
   REAL(KIND=8)                              :: dsurf               ! surface of the ocean
@@ -47,11 +53,18 @@ PROGRAM cdfsum
 
   CHARACTER(LEN=256)                        :: cldum               ! dummy string
   CHARACTER(LEN=256)                        :: cf_in               ! file name 
+  CHARACTER(LEN=256)                        :: cf_out='cdfsum.nc'  ! output file name 
   CHARACTER(LEN=256)                        :: cv_dep              ! depth name
   CHARACTER(LEN=256)                        :: cv_in               ! variable name
   CHARACTER(LEN=20)                         :: cv_e1, cv_e2, cv_e3 ! name of the horiz/vert metrics
   CHARACTER(LEN=20)                         :: cv_msk              ! name of mask variable
   CHARACTER(LEN=20)                         :: cvartype            ! variable type
+  CHARACTER(LEN=256)                        :: clunits            ! attribute of output file : units
+  CHARACTER(LEN=256)                        :: cllong_name        !     "      long name
+  CHARACTER(LEN=256)                        :: clshort_name       !     "      short name
+  CHARACTER(LEN=256)                        :: cglobal            !     "      global 
+
+  TYPE(variable), DIMENSION(2)              :: stypvar             ! structure of output
 
   LOGICAL                                   :: lforcing            ! forcing flag
   LOGICAL                                   :: lchk                ! flag for missing files
@@ -83,6 +96,8 @@ PROGRAM cdfsum
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Standard output.'
+     PRINT *,'       netcdf file : ',TRIM(cf_out),' with 2 variables : vertical profile of sum'
+     PRINT *,'                     and 3D sum.'
      STOP
   ENDIF
 
@@ -144,7 +159,7 @@ PROGRAM cdfsum
   ALLOCATE ( zmask(npiglo,npjglo) )
   ALLOCATE ( zv   (npiglo,npjglo) )
   ALLOCATE ( e1   (npiglo,npjglo), e2(npiglo,npjglo), e3(npiglo,npjglo) )
-  ALLOCATE ( gdep (npk) )
+  ALLOCATE ( gdep (npk), tim(npt) )
 
   SELECT CASE (TRIM(cvartype))
   CASE ( 'T' )
@@ -186,6 +201,40 @@ PROGRAM cdfsum
   e2(:,:) = getvar  (cn_fhgr, cv_e2, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   gdep(:) = getvare3(cn_fzgr, cv_dep,   npk                                   )
 
+ rdumlon = 0. ; rdumlat = 0.
+ ipk(1) = nvpk  ! vertical profile
+ ipk(2) = 1     ! 3D sum
+  ierr=getvaratt (cf_in, cv_in, clunits, zspval, cllong_name, clshort_name)
+
+  ! define new variables for output 
+  stypvar%rmissing_value    = 99999.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         = 1000.
+  stypvar%scale_factor      = 1.
+  stypvar%add_offset        = 0.
+  stypvar%savelog10         = 0.
+  stypvar%conline_operation = 'N/A'
+
+  stypvar(1)%cname          = 'sum_'//TRIM(cv_in)
+  stypvar(1)%cunits         = TRIM(clunits)//'.m2'
+  stypvar(1)%clong_name     = 'sum'//TRIM(cllong_name)
+  stypvar(1)%cshort_name    = 'sum'//TRIM(clshort_name)
+  stypvar(1)%caxis          = 'ZT'
+
+  stypvar(2)%cname          = 'sum_3D'//TRIM(cv_in)
+  stypvar(2)%cunits         = TRIM(clunits)//'.m3'
+  stypvar(2)%clong_name     = 'sum_3D'//TRIM(cllong_name)
+  stypvar(2)%cshort_name    = 'sum_3D'//TRIM(clshort_name)
+  stypvar(2)%caxis          = 'T'
+
+  ncout = create      (cf_out,     'none',  1,     1  ,   nvpk, cdep=cv_dep)
+  ierr  = createvar   (ncout,      stypvar, 2    , ipk,   id_varout        )
+  ierr  = putheadervar(ncout,      cf_in,   1,     1, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep(1:nvpk), cdep=cv_dep)
+  tim   = getvar1d(cf_in, cn_vtimec, npt)
+  ierr  = putvar1d(ncout,  tim,      npt, 'T')
+
+
+
   dsumt = 0.d0
   DO jt = 1,npt
      dvol = 0.d0
@@ -209,8 +258,10 @@ PROGRAM cdfsum
            dsum   = dsum + dsum2d
            IF (dvol2d /= 0 )THEN
               PRINT *, ' Sum value at level ', ik, '(',gdep(ik),' m) ', dsum2d
+              rdummy(1,1)= REAL(dsum2d)
            ELSE
               PRINT *, ' No points in the water at level ', ik, '(',gdep(ik),' m) '
+              rdummy(1,1)= 99999.
            ENDIF
         ELSE
            dsurf  = SUM(DBLE(     e1 * e2 * zmask))
@@ -220,14 +271,19 @@ PROGRAM cdfsum
            PRINT *, '          Surface  = ', dsurf/1.d6,' km^2'
            PRINT *, '       mean value  = ', dsum2d/dsurf
            WRITE (numout,'(i4," ",1e12.6)') jt, dsum2d
+           rdummy(1,1) = REAL(dsum2d)
         END IF
+        ierr = putvar( ncout, id_varout(1), rdummy, jk, 1,1, ktime=jt)
      END DO
      dsumt = dsumt + dsum
-     IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: ', dsum
+     IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: ', dsumt
+     rdummy(1,1) = REAL(dsumt)
+     ierr = putvar( ncout, id_varout(2), rdummy, 1, 1, 1, ktime=jt)
   END DO  ! time loop
   
   PRINT *, ' mean Sum over time ', dsumt/npt
 
   CLOSE(numout)
+  ierr=closeout(ncout)
 
 END PROGRAM cdfsum
