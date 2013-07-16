@@ -32,7 +32,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
-       cdfgradT \
+       cdfgradT cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d \
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
@@ -153,6 +153,12 @@ cdfdifmask: cdfio.o  cdfdifmask.f90
 
 cdfcurl: cdfio.o  cdfcurl.f90
 	$(F90) cdfcurl.f90 -o $(BINDIR)/cdfcurl cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfeddyscale_pass1: cdfio.o  cdfeddyscale_pass1.f90
+	$(F90) cdfeddyscale_pass1.f90 -o $(BINDIR)/cdfeddyscale_pass1 cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfeddyscale: cdfio.o  cdfeddyscale.f90
+	$(F90) cdfeddyscale.f90 -o $(BINDIR)/cdfeddyscale cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfw: cdfio.o  cdfw.f90
 	$(F90) cdfw.f90 -o $(BINDIR)/cdfw cdfio.o modcdfnames.o $(FFLAGS)
