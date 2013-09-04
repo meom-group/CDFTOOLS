@@ -206,8 +206,8 @@ PROGRAM cdfgeo_uv
 
      DO jj = 2,npjglo - 1
         DO ji = 2,npiglo -1
-           vn(ji,jj) = e1u(ji,jj) * ( zsshn(ji+1,jj  ) - zsshn(ji,jj) ) 
-           un(ji,jj) = e2v(ji,jj) * ( zsshn(ji  ,jj+1) - zsshn(ji,jj) ) 
+           vn(ji,jj) =   e1u(ji,jj) * ( zsshn(ji+1,jj  ) - zsshn(ji,jj) ) 
+           un(ji,jj) = - e2v(ji,jj) * ( zsshn(ji  ,jj+1) - zsshn(ji,jj) ) 
         END DO
      END DO
 
