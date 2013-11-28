@@ -132,9 +132,11 @@ PROGRAM cdfeddyscale_pass1
    PRINT *, 'ilev   = ',ilev
 
    !test if lev exists
-   IF ( (npk==0) .AND. (ilev > 0) ) THEN
+   IF ( (npk==0) .AND. (ilev > 1) ) THEN
       PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
       STOP
+   ELSE
+      npk = 1
    END IF
 
    ! if forcing field 
