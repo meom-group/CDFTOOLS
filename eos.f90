@@ -123,7 +123,8 @@ CONTAINS
     !!       Check value: rho(20,35) = 1024.59416751197 kg/m**3  -1000.
     !!       t = 20 deg celcius, s=35 psu
     !!
-    !! ** References : McDougall and Jackett, J. Mar Res., 2005
+    !! ** References : McDougall and Jackett, The material derivative of neutral density
+    !!        Journal of Marine Research, 63, 159-185, 2005
     !! --------------------------------------------------------------------
     REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptem, psal ! temperature salinity
     INTEGER(KIND=4),                  INTENT(in) :: kpi,kpj    ! dimension of 2D arrays
