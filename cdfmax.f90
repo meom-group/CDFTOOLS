@@ -144,6 +144,7 @@ PROGRAM cdfmax
         nk = getdim(cf_in, 'lev', cldum, istatus)
         IF ( istatus == 1 ) THEN
            PRINT *,' No dep or z or lev  dim found ' 
+           nk = 1
         ENDIF
      ENDIF
   ENDIF

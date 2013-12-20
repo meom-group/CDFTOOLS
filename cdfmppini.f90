@@ -466,7 +466,7 @@ CONTAINS
       IF (lwp) THEN
          OPEN (inum, FILE=cf_out, FORM='FORMATTED', RECL=255)
          WRITE(inum,'(6i8)') jpnij,jpi,jpj,jpiglo,jpjglo
-         WRITE(inum,'(a)') 'RANK   nlci nlcj nldi nldj nlei nlej nimpp njmpp nono noso nowe noea nbondi nbondj '
+         WRITE(inum,'(a)') 'NAREA   nlci nlcj nldi nldj nlei nlej nimpp njmpp nono noso nowe noea nbondi nbondj '
 
         DO  jproc = 1, jpnij
          ii = iin(jproc)
@@ -475,7 +475,7 @@ CONTAINS
          nbondj(jproc) = ibondj(ii,ij)
          
 
-         WRITE(inum,'(15i5)') jproc-1, nlcit(jproc), nlcjt(jproc), &
+         WRITE(inum,'(15i5)') jproc  , nlcit(jproc), nlcjt(jproc), &
                                        nldit(jproc), nldjt(jproc), &
                                        nleit(jproc), nlejt(jproc), &
                                        nimppt(jproc), njmppt(jproc),& 
