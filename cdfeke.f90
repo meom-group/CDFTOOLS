@@ -6,7 +6,8 @@ PROGRAM cdfeke
   !!
   !!  ** Method  : Use gridU gridU2, gridV gridV2 files produced by
   !!               cdfmoy. Velocities are interpolated both on T points
-  !!               and the variance is computed
+  !!               and the variance is computed. If -mke option is used
+  !!               the program also outputs MKE field
   !!
   !! History : pre  : 11/2004  : J.M. Molines : Original code
   !!           2.1  : 04/2005  : J.M. Molines : use modules
@@ -28,6 +29,8 @@ PROGRAM cdfeke
   INTEGER(KIND=4)                            :: npk, npt           ! size of the domain vert and time
   INTEGER(KIND=4)                            :: ncout              ! ncid of output file
   INTEGER(KIND=4)                            :: ierr               ! Error status
+  INTEGER(KIND=4)                            :: ivar               ! variable counter
+  INTEGER(KIND=4)                            :: ip_eke, ip_mke     ! variable index
   INTEGER(KIND=4), DIMENSION(2)              :: ipk, id_varout     ! 
 
   REAL(KIND=4)                               :: ua, va             ! working arrays
@@ -38,31 +41,43 @@ PROGRAM cdfeke
 
   CHARACTER(LEN=256)                         :: cf_out='eke.nc'    ! file name
   CHARACTER(LEN=256)                         :: cf_ufil, cf_u2fil  ! file name
-  CHARACTER(LEN=256)                         :: cf_vfil, cf_v2fil  !
-  CHARACTER(LEN=256)                         :: cf_tfil            !
+  CHARACTER(LEN=256)                         :: cf_vfil, cf_v2fil  !   "
+  CHARACTER(LEN=256)                         :: cf_tfil            !   "
+  CHARACTER(LEN=256)                         :: cdum               ! dummy character variable
 
   TYPE(variable), DIMENSION(2)               :: stypvar            !
 
   LOGICAL                                    :: lchk               ! checking files existence
   LOGICAL                                    :: lperio=.FALSE.     ! checking E-W periodicity
+  LOGICAL                                    :: leke=.TRUE.        ! compute EKE
+  LOGICAL                                    :: lmke=.FALSE.       ! compute MKE
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   !!  Read command line
   narg= iargc()
-  IF ( narg /= 5 ) THEN
-     PRINT *,' usage : cdfeke U-file U2-file V-file V2-file T2-file'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfeke U-file [U2-file]  V-file [V2-file] T-file [-mke ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the Eddy Kinetic Energy from previously computed'
      PRINT *,'        mean values and mean squared values of velocity components.'
      PRINT *,'      '
-     PRINT *,'     ARGUMENTS :'
+     PRINT *,'     ARGUMENTS : both ''General Use'' or ''Reduced Use'' are acceptable'
+     PRINT *,'      * General Use: 5 files are given in argument, and EKE is computed'
      PRINT *,'       U-file  : gridU type file with mean U component.' 
      PRINT *,'       U2-file : gridU2 type file with mean U2 component.' 
      PRINT *,'       V-file  : gridV type file with mean V component.' 
      PRINT *,'       V2-file : gridV2 type file with mean V2 component.' 
-     PRINT *,'       T2-file : any gridT or gridT2 (smaller) file, used for EKE header.'
+     PRINT *,'       T-file  : any gridT or gridT2 (smaller) file, used for EKE header.'
+     PRINT *,'       '
+     PRINT *,'      * Reduced Use: no U2/V2 file, only MKE is computed from U and V file.'
+     PRINT *,'       U-file  : gridU type file with mean U component.' 
+     PRINT *,'       V-file  : gridV type file with mean V component.' 
+     PRINT *,'       T-file  : any gridT or gridT2 (smaller) file, used for MKE header.'
+     PRINT *,'             '
+     PRINT *,'     OPTION :'
+     PRINT *,'       -mke  : output MKE field together with EKE. If used, must be the last option.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -70,63 +85,103 @@ PROGRAM cdfeke
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : voeke (m2/s)'
-     PRINT *,'         variables : vomke (m2/s)'
+     PRINT *,'         variables : vomke (m2/s) if required'
      STOP
   ENDIF
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
-  CALL getarg (1, cf_ufil )
-  CALL getarg (2, cf_u2fil)
-  CALL getarg (3, cf_vfil )
-  CALL getarg (4, cf_v2fil)
-  CALL getarg (5, cf_tfil )
+  cf_u2fil='none'
+  cf_v2fil='none'
+  ip_eke=0
+  ip_mke=0
+  IF ( narg == 3 ) THEN
+    ! suppose only mean U and Mean V files as input, and only compute MKE
+    CALL getarg (1, cf_ufil )
+    CALL getarg (2, cf_vfil )
+    CALL getarg (3, cf_tfil )
+    lmke = .TRUE.
+    leke = .FALSE.
+  ELSE 
+    CALL getarg (1, cf_ufil )
+    CALL getarg (2, cf_u2fil)
+    CALL getarg (3, cf_vfil )
+    CALL getarg (4, cf_v2fil)
+    CALL getarg (5, cf_tfil )
+  ENDIF
+
+  IF ( narg == 6 ) THEN
+    CALL getarg (narg, cdum )
+    IF ( cdum == '-mke'  ) lmke=.TRUE.
+  ELSE
+    PRINT *, ' Option ', TRIM(cdum),' unknown. We stop.'
+    STOP
+  ENDIF
 
   lchk =           chkfile (cf_ufil )
-  lchk = lchk .OR. chkfile (cf_u2fil)
   lchk = lchk .OR. chkfile (cf_vfil )
-  lchk = lchk .OR. chkfile (cf_v2fil)
   lchk = lchk .OR. chkfile (cf_tfil )
+  IF (  leke ) THEN
+    lchk = lchk .OR. chkfile (cf_u2fil)
+    lchk = lchk .OR. chkfile (cf_v2fil)
+  ENDIF
+
   IF ( lchk ) STOP ! missing files
 
   npiglo = getdim (cf_ufil,cn_x)
   npjglo = getdim (cf_ufil,cn_y)
   npk    = getdim (cf_ufil,cn_z)
   npt    = getdim (cf_ufil,cn_t)
+  
+  ivar = 1
+  IF ( leke ) THEN 
+    ip_eke=ivar
+    ipk(ip_eke)                       = npk
+    stypvar(ip_eke)%cname             = 'voeke'
+    stypvar(ip_eke)%cunits            = 'm2/s2'
+    stypvar(ip_eke)%rmissing_value    = 0.
+    stypvar(ip_eke)%valid_min         = 0.
+    stypvar(ip_eke)%valid_max         = 10000.
+    stypvar(ip_eke)%clong_name        = 'Eddy_Kinetic_Energy'
+    stypvar(ip_eke)%cshort_name       = 'voeke'
+    stypvar(ip_eke)%conline_operation = 'N/A'
+    stypvar(ip_eke)%caxis             = 'TZYX'
+    ivar = ivar + 1
+  ENDIF
 
-  ipk(1)                       = npk
-  stypvar(1)%cname             = 'voeke'
-  stypvar(1)%cunits            = 'm2/s2'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 10000.
-  stypvar(1)%clong_name        = 'Eddy_Kinetic_Energy'
-  stypvar(1)%cshort_name       = 'voeke'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
+  IF ( lmke ) THEN
+    ip_mke=ivar
+    ipk(ip_mke)                       = npk
+    stypvar(ip_mke)%cname             = 'vomke'
+    stypvar(ip_mke)%cunits            = 'm2/s2'
+    stypvar(ip_mke)%rmissing_value    = 0.
+    stypvar(ip_mke)%valid_min         = 0.
+    stypvar(ip_mke)%valid_max         = 10000.
+    stypvar(ip_mke)%clong_name        = 'Mean_Kinetic_Energy'
+    stypvar(ip_mke)%cshort_name       = 'vomke'
+    stypvar(ip_mke)%conline_operation = 'N/A'
+    stypvar(ip_mke)%caxis             = 'TZYX'
+  ENDIF
 
-  ipk(2)                       = npk
-  stypvar(2)%cname             = 'vomke'
-  stypvar(2)%cunits            = 'm2/s2'
-  stypvar(2)%rmissing_value    = 0.
-  stypvar(2)%valid_min         = 0.
-  stypvar(2)%valid_max         = 10000.
-  stypvar(2)%clong_name        = 'Mean_Kinetic_Energy'
-  stypvar(2)%cshort_name       = 'vomke'
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TZYX'
-
+  ivar = MAX( ip_mke, ip_eke) ! set ivar to the effective number of variables to be output
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
 
-  ALLOCATE( uc(npiglo,npjglo), u2(npiglo,npjglo), vc(npiglo,npjglo), v2(npiglo,npjglo) )
-  ALLOCATE( eke(npiglo,npjglo) , tim(npt) )
-  ALLOCATE( rmke(npiglo,npjglo)  )
+  ALLOCATE( uc(npiglo,npjglo), vc(npiglo,npjglo) )
+  ALLOCATE( tim(npt) )
+
+  IF ( leke ) THEN
+    ALLOCATE( eke(npiglo,npjglo)  )
+    ALLOCATE( u2(npiglo,npjglo), v2(npiglo,npjglo) )
+  ENDIF
+  IF (lmke ) THEN
+    ALLOCATE( rmke(npiglo,npjglo)  )
+  ENDIF
 
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar, 2,      ipk,    id_varout )
+  ierr  = createvar   (ncout,  stypvar, ivar,   ipk,    id_varout )
   ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
   ! check for E_W periodicity
@@ -140,21 +195,34 @@ PROGRAM cdfeke
     DO jk = 1, npk
       uc(:,:) = getvar(cf_ufil,  cn_vozocrtx,               jk, npiglo, npjglo, ktime=jt )
       vc(:,:) = getvar(cf_vfil,  cn_vomecrty,               jk, npiglo, npjglo, ktime=jt )
-      u2(:,:) = getvar(cf_u2fil, TRIM(cn_vozocrtx)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
-      v2(:,:) = getvar(cf_v2fil, TRIM(cn_vomecrty)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
+      IF ( leke ) THEN
+        u2(:,:) = getvar(cf_u2fil, TRIM(cn_vozocrtx)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
+        v2(:,:) = getvar(cf_v2fil, TRIM(cn_vomecrty)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
+      ENDIF
 
       ua = 0. ; va = 0. ; eke(:,:) = 0.
-      DO ji=2, npiglo
-        DO jj=2,npjglo
-          ua = 0.5* ((u2(ji,jj)-uc(ji,jj)*uc(ji,jj))+ (u2(ji-1,jj)-uc(ji-1,jj)*uc(ji-1,jj)))
-          va = 0.5* ((v2(ji,jj)-vc(ji,jj)*vc(ji,jj))+ (v2(ji,jj-1)-vc(ji,jj-1)*vc(ji,jj-1)))
-          eke(ji,jj) = 0.5 * ( ua + va )
-          rmke(ji,jj)=  0.5* (0.5*( uc(ji,jj)*uc(ji,jj) + uc(ji-1,jj)*uc(ji-1,jj)) + 0.5 *( vc(ji,jj)*vc(ji,jj) + vc(ji,jj-1)*vc(ji,jj-1)) )
+      IF ( leke ) THEN
+        DO ji=2, npiglo
+          DO jj=2,npjglo
+              ua = 0.5* ((u2(ji,jj)-uc(ji,jj)*uc(ji,jj))+ (u2(ji-1,jj)-uc(ji-1,jj)*uc(ji-1,jj)))
+              va = 0.5* ((v2(ji,jj)-vc(ji,jj)*vc(ji,jj))+ (v2(ji,jj-1)-vc(ji,jj-1)*vc(ji,jj-1)))
+              eke(ji,jj) = 0.5 * ( ua + va )
+          END DO
         END DO
-      END DO
+      ENDIF
+
+      IF ( lmke ) THEN
+        DO ji=2, npiglo
+          DO jj=2,npjglo
+              rmke(ji,jj)=  0.5* (0.5*( uc(ji,jj)*uc(ji,jj) + uc(ji-1,jj)*uc(ji-1,jj)) + &
+              &                   0.5*( vc(ji,jj)*vc(ji,jj) + vc(ji,jj-1)*vc(ji,jj-1)) )
+          END DO
+        END DO
+      ENDIF
+
       IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
-      ierr=putvar(ncout,id_varout(1), eke, jk ,npiglo, npjglo, ktime=jt )
-      ierr=putvar(ncout,id_varout(2), rmke, jk ,npiglo, npjglo, ktime=jt )
+      IF ( leke ) ierr=putvar(ncout,id_varout(ip_eke), eke,  jk ,npiglo, npjglo, ktime=jt )
+      IF ( lmke ) ierr=putvar(ncout,id_varout(ip_mke), rmke, jk ,npiglo, npjglo, ktime=jt )
     END DO
   END DO ! time loop
 
