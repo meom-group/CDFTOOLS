@@ -111,10 +111,12 @@ PROGRAM cdfeke
 
   IF ( narg == 6 ) THEN
     CALL getarg (narg, cdum )
-    IF ( cdum == '-mke'  ) lmke=.TRUE.
-  ELSE
-    PRINT *, ' Option ', TRIM(cdum),' unknown. We stop.'
-    STOP
+    IF ( cdum == '-mke'  ) THEN 
+      lmke=.TRUE.
+    ELSE
+      PRINT *, ' Option ', TRIM(cdum),' unknown. We stop.'
+      STOP
+    ENDIF
   ENDIF
 
   lchk =           chkfile (cf_ufil )
@@ -175,9 +177,11 @@ PROGRAM cdfeke
   IF ( leke ) THEN
     ALLOCATE( eke(npiglo,npjglo)  )
     ALLOCATE( u2(npiglo,npjglo), v2(npiglo,npjglo) )
+    eke(:,:) = 0.e0
   ENDIF
   IF (lmke ) THEN
     ALLOCATE( rmke(npiglo,npjglo)  )
+    rmke(:,:) = 0.e0
   ENDIF
 
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
@@ -221,8 +225,14 @@ PROGRAM cdfeke
       ENDIF
 
       IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
-      IF ( leke ) ierr=putvar(ncout,id_varout(ip_eke), eke,  jk ,npiglo, npjglo, ktime=jt )
-      IF ( lmke ) ierr=putvar(ncout,id_varout(ip_mke), rmke, jk ,npiglo, npjglo, ktime=jt )
+      IF ( leke ) THEN 
+         IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
+         ierr=putvar(ncout,id_varout(ip_eke), eke,  jk ,npiglo, npjglo, ktime=jt )
+      ENDIF
+      IF ( lmke ) THEN 
+         IF ( lperio ) rmke(1,:) = rmke(npiglo-1,:)
+         ierr=putvar(ncout,id_varout(ip_mke), rmke, jk ,npiglo, npjglo, ktime=jt )
+      ENDIF
     END DO
   END DO ! time loop
 
