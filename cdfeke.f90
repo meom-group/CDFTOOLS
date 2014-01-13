@@ -28,19 +28,20 @@ PROGRAM cdfeke
   INTEGER(KIND=4)                            :: npk, npt           ! size of the domain vert and time
   INTEGER(KIND=4)                            :: ncout              ! ncid of output file
   INTEGER(KIND=4)                            :: ierr               ! Error status
-  INTEGER(KIND=4), DIMENSION(1)              :: ipk, id_varout     ! 
+  INTEGER(KIND=4), DIMENSION(2)              :: ipk, id_varout     ! 
 
   REAL(KIND=4)                               :: ua, va             ! working arrays
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                ! time variable
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: uc, vc, u2, v2     ! velocities etc...
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: eke                ! velocities etc...
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: rmke               ! Mean Kinetic energy
 
   CHARACTER(LEN=256)                         :: cf_out='eke.nc'    ! file name
   CHARACTER(LEN=256)                         :: cf_ufil, cf_u2fil  ! file name
   CHARACTER(LEN=256)                         :: cf_vfil, cf_v2fil  !
   CHARACTER(LEN=256)                         :: cf_tfil            !
 
-  TYPE(variable), DIMENSION(1)               :: stypvar            !
+  TYPE(variable), DIMENSION(2)               :: stypvar            !
 
   LOGICAL                                    :: lchk               ! checking files existence
   LOGICAL                                    :: lperio=.FALSE.     ! checking E-W periodicity
@@ -69,6 +70,7 @@ PROGRAM cdfeke
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : voeke (m2/s)'
+     PRINT *,'         variables : vomke (m2/s)'
      STOP
   ENDIF
   !!
@@ -102,6 +104,18 @@ PROGRAM cdfeke
   stypvar(1)%conline_operation = 'N/A'
   stypvar(1)%caxis             = 'TZYX'
 
+  ipk(2)                       = npk
+  stypvar(2)%cname             = 'vomke'
+  stypvar(2)%cunits            = 'm2/s2'
+  stypvar(2)%rmissing_value    = 0.
+  stypvar(2)%valid_min         = 0.
+  stypvar(2)%valid_max         = 10000.
+  stypvar(2)%clong_name        = 'Mean_Kinetic_Energy'
+  stypvar(2)%cshort_name       = 'vomke'
+  stypvar(2)%conline_operation = 'N/A'
+  stypvar(2)%caxis             = 'TZYX'
+
+
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
@@ -109,9 +123,10 @@ PROGRAM cdfeke
 
   ALLOCATE( uc(npiglo,npjglo), u2(npiglo,npjglo), vc(npiglo,npjglo), v2(npiglo,npjglo) )
   ALLOCATE( eke(npiglo,npjglo) , tim(npt) )
+  ALLOCATE( rmke(npiglo,npjglo)  )
 
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
+  ierr  = createvar   (ncout,  stypvar, 2,      ipk,    id_varout )
   ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
   ! check for E_W periodicity
@@ -134,10 +149,12 @@ PROGRAM cdfeke
           ua = 0.5* ((u2(ji,jj)-uc(ji,jj)*uc(ji,jj))+ (u2(ji-1,jj)-uc(ji-1,jj)*uc(ji-1,jj)))
           va = 0.5* ((v2(ji,jj)-vc(ji,jj)*vc(ji,jj))+ (v2(ji,jj-1)-vc(ji,jj-1)*vc(ji,jj-1)))
           eke(ji,jj) = 0.5 * ( ua + va )
+          rmke(ji,jj)=  0.5* (0.5*( uc(ji,jj)*uc(ji,jj) + uc(ji-1,jj)*uc(ji-1,jj)) + 0.5 *( vc(ji,jj)*vc(ji,jj) + vc(ji,jj-1)*vc(ji,jj-1)) )
         END DO
       END DO
       IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
       ierr=putvar(ncout,id_varout(1), eke, jk ,npiglo, npjglo, ktime=jt )
+      ierr=putvar(ncout,id_varout(2), rmke, jk ,npiglo, npjglo, ktime=jt )
     END DO
   END DO ! time loop
 
