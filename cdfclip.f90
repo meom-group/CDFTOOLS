@@ -59,7 +59,7 @@ PROGRAM cdfclip
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfclip -f IN-file -zoom imin imax jmin jmax [kmin kmax] '
+     PRINT *,' usage : cdfclip -f IN-file [-o OUT-file] -zoom imin imax jmin jmax [kmin kmax]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Clip the input file according to the indices given in the'
@@ -75,6 +75,8 @@ PROGRAM cdfclip
      PRINT *,'           meridional or zonal.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file ] : use OUT-file instead of ',TRIM(cf_out),' for output file'
+     PRINT *,'               If used, -o option must be used before -zoom argument '
      PRINT *,'       [kmin kmax ] : specify vertical limits for the zoom, in order to reduce'
      PRINT *,'               the extracted area to some levels. Default is to take the whole' 
      PRINT *,'               water column.'
@@ -83,7 +85,7 @@ PROGRAM cdfclip
      PRINT *,'       none' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out),' This can be changed using -o option'
      PRINT *,'         variables : same as input variables.'
      STOP
   ENDIF
@@ -99,10 +101,12 @@ PROGRAM cdfclip
        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-       IF ( narg == 9 ) THEN  ! there are kmin kmax optional arguments
+       IF ( ijarg == narg -2  ) THEN  ! there are kmin kmax optional arguments
          CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
          CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
        ENDIF
+    CASE ('-o')
+       CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; cf_out=cldum
     CASE DEFAULT
        PRINT *,' Unknown option :', TRIM(cldum) ; STOP
     END SELECT
