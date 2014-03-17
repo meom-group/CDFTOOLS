@@ -751,8 +751,13 @@ PROGRAM cdftransport
                dvoltrp(jseg)= dtrpu (ii0,ij0+ijst,jclass)*norm_u
 
                IF ( lpm   ) THEN 
-                  dvoltrpp(jseg)= dtrpup(ii0,ij0+ijst,jclass)*norm_u
-                  dvoltrpm(jseg)= dtrpum(ii0,ij0+ijst,jclass)*norm_u
+                  IF (norm_u > 0 ) THEN
+                    dvoltrpp(jseg)= dtrpup(ii0,ij0+ijst,jclass)*norm_u
+                    dvoltrpm(jseg)= dtrpum(ii0,ij0+ijst,jclass)*norm_u
+                  ELSE
+                    dvoltrpp(jseg)= dtrpum(ii0,ij0+ijst,jclass)*norm_u
+                    dvoltrpm(jseg)= dtrpup(ii0,ij0+ijst,jclass)*norm_u
+                  ENDIF
                ENDIF
 
                IF ( lheat ) THEN
@@ -763,8 +768,13 @@ PROGRAM cdftransport
                dvoltrp(jseg)=dtrpv (ii0+iist,ij0,jclass)*norm_v
 
                IF ( lpm   ) THEN 
-                  dvoltrpp(jseg)=dtrpvp(ii0+iist,ij0,jclass)*norm_v
-                  dvoltrpm(jseg)=dtrpvm(ii0+iist,ij0,jclass)*norm_v
+                 IF (norm_v > 0 ) THEN
+                    dvoltrpp(jseg)=dtrpvp(ii0+iist,ij0,jclass)*norm_v
+                    dvoltrpm(jseg)=dtrpvm(ii0+iist,ij0,jclass)*norm_v
+                 ELSE
+                    dvoltrpp(jseg)=dtrpvm(ii0+iist,ij0,jclass)*norm_v
+                    dvoltrpm(jseg)=dtrpvp(ii0+iist,ij0,jclass)*norm_v
+                 ENDIF
                ENDIF
 
                IF ( lheat ) THEN
@@ -796,14 +806,14 @@ PROGRAM cdftransport
 
          PRINT *, gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1)
          PRINT *, ' Mass transport : ', dvoltrpsum(jclass)/1.e6,' SV'
-         WRITE(numvtrp,'(e12.6)') dvoltrpsum(jclass) 
+         WRITE(numvtrp,'(e14.6)') dvoltrpsum(jclass) 
          IF ( lpm   ) THEN
             PRINT *, ' Positive Mass transport : ', dvoltrpsump(jclass)/1.e6,' SV'
             PRINT *, ' Negative Mass transport : ', dvoltrpsumm(jclass)/1.e6,' SV'
             WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), &
                  &   dvoltrpsum(jclass)/1.e6, dvoltrpsump(jclass)/1.e6, dvoltrpsumm(jclass)/1.e6
-            WRITE(numvtrp,'(e12.6)') dvoltrpsump(jclass) 
-            WRITE(numvtrp,'(e12.6)') dvoltrpsumm(jclass) 
+            WRITE(numvtrp,'(e14.6)') dvoltrpsump(jclass) 
+            WRITE(numvtrp,'(e14.6)') dvoltrpsumm(jclass) 
          ENDIF
 
          IF ( lheat ) THEN
@@ -811,8 +821,8 @@ PROGRAM cdftransport
             PRINT *, ' Salt transport : ', dsaltrpsum(jclass)/1.e6,' kT/s'
             WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), &
                  &   dvoltrpsum(jclass)/1.e6, dheatrpsum(jclass)/1.e15, dsaltrpsum(jclass)/1.e6
-            WRITE(numhtrp,'(e12.6)') dheatrpsum(jclass)
-            WRITE(numstrp,'(e12.6)') dsaltrpsum(jclass)
+            WRITE(numhtrp,'(e14.6)') dheatrpsum(jclass)
+            WRITE(numstrp,'(e14.6)') dsaltrpsum(jclass)
          ELSE
             IF ( .NOT. lpm ) WRITE(numout,9002) gdepw(ilev0(jclass)), gdepw(ilev1(jclass)+1), dvoltrpsum(jclass)/1.e6
          ENDIF
