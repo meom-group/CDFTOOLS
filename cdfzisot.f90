@@ -168,6 +168,7 @@ PROGRAM cdfzisot
 
         ! read temperature on x-z slab
         rtemxz(:,:) = getvarxz(cf_tfil, cn_votemper, jj, npiglo, npk, kimin=1, kkmin=1, ktime=jt )
+        
 
         ! loop on X axis
         DO ji = 1, npiglo
@@ -199,7 +200,7 @@ PROGRAM cdfzisot
                  ! then start from the first level with T >= rtref
                  ! and search first value below rtref
                  jref = 0
-                 DO WHILE ( jk < npk .AND. rtemxz(ji,jk) > rtref .AND. rtemxz(ji,jk) .NE. rmisval )
+                 DO WHILE ( jk < npk .AND. rtemxz(ji,jk) >= rtref .AND. rtemxz(ji,jk) .NE. rmisval )
                     jref = jk
                     jk = jk + 1
                  ENDDO
