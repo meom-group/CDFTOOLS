@@ -13,7 +13,7 @@ PROGRAM cdfdegradw
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
-  !! $Id
+  !! $Id$
   !! Copyright (c) 2011, 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
