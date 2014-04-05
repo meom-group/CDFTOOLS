@@ -659,6 +659,7 @@ PROGRAM cdfmoc
            ENDIF
         END DO
 
+        IF ( lbas ) THEN
         jbasin=nbasinso
            DO jk = 1, npk
               ierr = putvar (ncout, id_varout(ijvar), REAL(dmoc(npglo,:,jk)-dmoc(npatl,:,jk)), jk, 1, npjglo, ktime=jt)
@@ -681,7 +682,7 @@ PROGRAM cdfmoc
               END DO
               ijvar = ijvar + 1 
            ENDIF
-
+        ENDIF
      ENDDO  ! time loop
 
      ierr = closeout(ncout)
