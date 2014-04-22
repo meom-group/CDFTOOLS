@@ -164,11 +164,11 @@ PROGRAM cdfmoc
      PRINT *,'       If decomposition is required , ( option -decomp ) add 3 additional'
      PRINT *,'       variables per basin with suffixes _sh, _bt, _ag.'
      PRINT *,'      '
-     PRINT *,'       If option -rapid is used, the output file (rapid_moc.nc)is degenerated '
+     PRINT *,'       If option -rapid is used the output file (rapid_moc.nc) is degenerated'
      PRINT *,'       into 6 scalar values : tr_gs, tr_THERM, tr_AIW, tr_UNADW, tr_LNADW, '
-     PRINT *,'       tr_BW and a vertical profile of the AMOC at 26.5N, as computedi'
+     PRINT *,'       tr_BW and a vertical profile of the AMOC at 26.5N, as computed'
      PRINT *,'       traditionally.'
-     PRINT *,'         Additional variables are also computed following CLIVAR-GODAE '
+     PRINT *,'       Additional variables are also computed following CLIVAR-GODAE '
      PRINT *,'       reanalysis intercomparison project recommendations. '
      STOP
   ENDIF
@@ -240,171 +240,6 @@ PROGRAM cdfmoc
      nvarout=nbasinso       ! total
   ENDIF
 
-  ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
-
-  ! define new variables for output 
-  !    all variables
-  stypvar%cunits            = 'Sverdrup'
-  stypvar%rmissing_value    = 99999.
-  stypvar%valid_min         = -1000.
-  stypvar%valid_max         =  1000.
-  stypvar%scale_factor      = 1.
-  stypvar%add_offset        = 0.
-  stypvar%savelog10         = 0.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TZY'
-  ipk(:) = npk  ! All variables are vertical slices 1 x npjglo x npk
-
-  ii=1 ; ibasin=1
-  PRINT *, 'Variable ',ii,' is zomsfglo'
-  npglo=ibasin  ; ibasin = ibasin + 1 
-  stypvar(ii)%cname          = TRIM(cn_zomsfglo)
-  stypvar(ii)%clong_name     = 'Meridional_Overt.Cell_Global'
-  stypvar(ii)%cshort_name    = TRIM(cn_zomsfglo)
-  ii=ii+1
-
-  IF ( ldec ) THEN
-     PRINT *, 'Variable ',ii,' is zomsfglo_sh'
-     stypvar(ii)%cname       = TRIM(cn_zomsfglo)//'_sh'
-     stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfglo)//'_sh'
-     ii= ii+1
-     PRINT *, 'Variable ',ii,' is zomsfglo_bt'
-     stypvar(ii)%cname       = TRIM(cn_zomsfglo)//'_bt'
-     stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfglo)//'_bt'
-     ii= ii+1
-     PRINT *, 'Variable ',ii,' is zomsfglo_ag'
-     stypvar(ii)%cname       = TRIM(cn_zomsfglo)//'_ag'
-     stypvar(ii)%clong_name  = 'Ageostoph_Merid_StreamFunction'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfglo)//'_ag'
-     ii= ii+1
-  ENDIF
-
-  IF (lbas) THEN
-     npatl=ibasin  ; ibasin = ibasin + 1
-     PRINT *, 'Variable ',ii,' is zomsfatl'
-     stypvar(ii)%cname       = TRIM(cn_zomsfatl)
-     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_Atlantic'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)
-     ii= ii+1
-     IF ( ldec ) THEN 
-        PRINT *, 'Variable ',ii,' is zomsfatl_sh'
-        stypvar(ii)%cname       = TRIM(cn_zomsfatl)//'_sh'
-        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_Atlantic'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)//'_sh'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfatl_bt'
-        stypvar(ii)%cname       = TRIM(cn_zomsfatl)//'_bt'
-        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_Atlantic'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)//'_bt'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfatl_ag'
-        stypvar(ii)%cname       = TRIM(cn_zomsfatl)//'_ag'
-        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_Atlantic'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)//'_ag'
-        ii= ii+1
-     ENDIF
-
-     npinp=ibasin  ; ibasin = ibasin + 1
-     PRINT *, 'Variable ',ii,' is zomsfinp'
-     stypvar(ii)%cname       = TRIM(cn_zomsfinp)
-     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_IndoPacif'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)
-     ii= ii+1
-
-     IF ( ldec ) THEN
-        PRINT *, 'Variable ',ii,' is zomsfinp_sh'
-        stypvar(ii)%cname       = TRIM(cn_zomsfinp)//'_sh'
-        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_IndoPacif'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)//'_sh'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfinp_bt'
-        stypvar(ii)%cname       = TRIM(cn_zomsfinp)//'_bt'
-        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_IndoPacif'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)//'_bt'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfinp_ag'
-        stypvar(ii)%cname       = TRIM(cn_zomsfinp)//'_ag'
-        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_IndoPacif'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)//'_ag'
-        ii= ii+1
-     ENDIF
-
-     npind=ibasin  ; ibasin = ibasin + 1
-     PRINT *, 'Variable ',ii,' is zomsfind'
-     stypvar(ii)%cname       = TRIM(cn_zomsfind)
-     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_Indian'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfind)
-     ii= ii+1
-
-     IF ( ldec ) THEN
-        PRINT *, 'Variable ',ii,' is zomsfind_sh'
-        stypvar(ii)%cname       = TRIM(cn_zomsfind)//'_sh'
-        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_Indian'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfind)//'_sh'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfind_bt'
-        stypvar(ii)%cname       = TRIM(cn_zomsfind)//'_bt'
-        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_Indian'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfind)//'_bt'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfind_ag'
-        stypvar(ii)%cname       = TRIM(cn_zomsfind)//'_ag'
-        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_Indian'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfind)//'_ag'
-        ii= ii+1
-     ENDIF
-
-     nppac=ibasin  ; ibasin = ibasin + 1
-     PRINT *, 'Variable ',ii,' is zomsfpac'
-     stypvar(ii)%cname       = TRIM(cn_zomsfpac)
-     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_pacif'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)
-     ii= ii+1
-
-     IF ( ldec ) THEN
-        PRINT *, 'Variable ',ii,' is zomsfpac_sh'
-        stypvar(ii)%cname       = TRIM(cn_zomsfpac)//'_sh'
-        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_Pacif'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)//'_sh'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfpac_bt'
-        stypvar(ii)%cname       = TRIM(cn_zomsfpac)//'_bt'
-        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_Pacif'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)//'_bt'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfpac_ag'
-        stypvar(ii)%cname       = TRIM(cn_zomsfpac)//'_ag'
-        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_Pacif'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)//'_ag'
-        ii=ii+1
-     ENDIF
-
-     npinp0=ibasin  ; ibasin = ibasin + 1
-     PRINT *, 'Variable ',ii,' is zomsfinp0'
-     stypvar(ii)%cname       = TRIM(cn_zomsfinp0)
-     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_IndPac0'
-     stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)
-     ii= ii+1
-
-     IF ( ldec ) THEN
-        PRINT *, 'Variable ',ii,' is zomsfinp0_sh'
-        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_sh'
-        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_IndPac0'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_sh'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfinp0_bt'
-        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_bt'
-        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_IndPac0'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_bt'
-        ii= ii+1
-        PRINT *, 'Variable ',ii,' is zomsfinp0_ag'
-        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_ag'
-        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_IndPac0'
-        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_ag'
-     ENDIF
-  ENDIF
 
   ! Allocate arrays
   ALLOCATE ( ibmask(nbasins, npiglo, npjglo) )
@@ -436,6 +271,7 @@ PROGRAM cdfmoc
   gphiv(:,:) = getvar  (cn_fhgr, cn_gphiv, 1, npiglo,npjglo)
   gdepw(:)   = getvare3(cn_fzgr, cn_gdepw, npk             )
   gdepw(:)   = -1.* gdepw(:)
+
   DO jk= 1, npk
      ! save e3v masked with vmask as 3d array
      e3v(:,:,jk) = get_e3v(jk)
@@ -449,12 +285,8 @@ PROGRAM cdfmoc
   rdumlat(1,:) = gphiv(iloc(1),:)
   rdumlon(:,:) = 0.   ! set the dummy longitude to 0
 
-  ! create output fileset
-  ncout = create      ( cf_moc,  'none',    1, npjglo, npk, cdep=cn_vdepthw )
-  ierr  = createvar   ( ncout,   stypvar,   nvarout,   ipk, id_varout, cdglobal=TRIM(cglobal)           )
-  ierr  = putheadervar( ncout,   cf_vfil,   1, npjglo, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepw)
-  tim   = getvar1d    ( cf_vfil, cn_vtimec, npt                    )
-  ierr  = putvar1d    ( ncout,   tim,       npt, 'T')
+  ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
+  CALL CreateOutput
 
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
   ibmask(npglo,:,:) = getvar(cn_fmsk,   'vmask', 1, npiglo, npjglo)
@@ -489,21 +321,27 @@ PROGRAM cdfmoc
            ENDIF
 
            ! integrates 'zonally' (along i-coordinate)
-           DO ji=1,npiglo
+           DO jbasin = 1, nbasins
+              !$OMP PARALLEL DO SCHEDULE(RUNTIME)
+              DO jj=1,npjglo
+                 DO ji=1,npiglo
               ! For all basins 
-              DO jbasin = 1, nbasins
-                 DO jj=1,npjglo
                     dmoc(jbasin,jj,jk)=dmoc(jbasin,jj,jk) -  &
                          &             e1v(ji,jj)*e3v(ji,jj,jk)* ibmask(jbasin,ji,jj)*zv(ji,jj)*1.d0
                  ENDDO
               END DO
+              !$OMP END PARALLEL DO
            END DO
         END DO
 
         ! integrates vertically from bottom to surface
+        !$OMP PARALLEL DO SCHEDULE(RUNTIME)
+        DO jj = 1, npjglo
         DO jk = npk-1, 1, -1
-           dmoc(:,:,jk)    = dmoc(:,:,jk+1)    + dmoc(:,:,jk)/1.d6
+           dmoc(:,jj,jk)    = dmoc(:,jj,jk+1)    + dmoc(:,jj,jk)/1.d6
         END DO
+        ENDDO
+        !$OMP END PARALLEL DO
 
         IF ( ldec ) THEN
            !--------------------------------------------------
@@ -1312,5 +1150,187 @@ PROGRAM cdfmoc
        ierr = closeout( ncout                       )
 
      END SUBROUTINE rapid_amoc
+
+     SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Prepare netcdf files for output 
+    !!
+    !! ** Method  :  use global module variables 
+    !!
+    !!----------------------------------------------------------------------
+  ! define new variables for output 
+  !    all variables
+  stypvar%cunits            = 'Sverdrup'
+  stypvar%rmissing_value    = 99999.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         =  1000.
+  stypvar%scale_factor      = 1.
+  stypvar%add_offset        = 0.
+  stypvar%savelog10         = 0.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TZY'
+  ipk(:) = npk  ! All variables are vertical slices 1 x npjglo x npk
+
+  ii=1 ; ibasin=1
+  PRINT *, 'Variable ',ii,' is zomsfglo'
+  npglo=ibasin  ; ibasin = ibasin + 1 
+  stypvar(ii)%cname          = TRIM(cn_zomsfglo)
+  stypvar(ii)%clong_name     = 'Meridional_Overt.Cell_Global'
+  stypvar(ii)%cshort_name    = TRIM(cn_zomsfglo)
+  ii=ii+1
+
+  IF ( ldec ) THEN
+     PRINT *, 'Variable ',ii,' is zomsfglo_sh'
+     stypvar(ii)%cname       = TRIM(cn_zomsfglo)//'_sh'
+     stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfglo)//'_sh'
+     ii= ii+1
+     PRINT *, 'Variable ',ii,' is zomsfglo_bt'
+     stypvar(ii)%cname       = TRIM(cn_zomsfglo)//'_bt'
+     stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfglo)//'_bt'
+     ii= ii+1
+     PRINT *, 'Variable ',ii,' is zomsfglo_ag'
+     stypvar(ii)%cname       = TRIM(cn_zomsfglo)//'_ag'
+     stypvar(ii)%clong_name  = 'Ageostoph_Merid_StreamFunction'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfglo)//'_ag'
+     ii= ii+1
+  ENDIF
+
+  IF (lbas) THEN
+     npatl=ibasin  ; ibasin = ibasin + 1
+     PRINT *, 'Variable ',ii,' is zomsfatl'
+     stypvar(ii)%cname       = TRIM(cn_zomsfatl)
+     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_Atlantic'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)
+     ii= ii+1
+     IF ( ldec ) THEN 
+        PRINT *, 'Variable ',ii,' is zomsfatl_sh'
+        stypvar(ii)%cname       = TRIM(cn_zomsfatl)//'_sh'
+        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_Atlantic'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)//'_sh'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfatl_bt'
+        stypvar(ii)%cname       = TRIM(cn_zomsfatl)//'_bt'
+        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_Atlantic'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)//'_bt'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfatl_ag'
+        stypvar(ii)%cname       = TRIM(cn_zomsfatl)//'_ag'
+        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_Atlantic'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfatl)//'_ag'
+        ii= ii+1
+     ENDIF
+
+     npinp=ibasin  ; ibasin = ibasin + 1
+     PRINT *, 'Variable ',ii,' is zomsfinp'
+     stypvar(ii)%cname       = TRIM(cn_zomsfinp)
+     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_IndoPacif'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)
+     ii= ii+1
+
+     IF ( ldec ) THEN
+        PRINT *, 'Variable ',ii,' is zomsfinp_sh'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp)//'_sh'
+        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_IndoPacif'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)//'_sh'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfinp_bt'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp)//'_bt'
+        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_IndoPacif'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)//'_bt'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfinp_ag'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp)//'_ag'
+        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_IndoPacif'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp)//'_ag'
+        ii= ii+1
+     ENDIF
+
+     npind=ibasin  ; ibasin = ibasin + 1
+     PRINT *, 'Variable ',ii,' is zomsfind'
+     stypvar(ii)%cname       = TRIM(cn_zomsfind)
+     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_Indian'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfind)
+     ii= ii+1
+
+     IF ( ldec ) THEN
+        PRINT *, 'Variable ',ii,' is zomsfind_sh'
+        stypvar(ii)%cname       = TRIM(cn_zomsfind)//'_sh'
+        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_Indian'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfind)//'_sh'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfind_bt'
+        stypvar(ii)%cname       = TRIM(cn_zomsfind)//'_bt'
+        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_Indian'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfind)//'_bt'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfind_ag'
+        stypvar(ii)%cname       = TRIM(cn_zomsfind)//'_ag'
+        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_Indian'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfind)//'_ag'
+        ii= ii+1
+     ENDIF
+
+     nppac=ibasin  ; ibasin = ibasin + 1
+     PRINT *, 'Variable ',ii,' is zomsfpac'
+     stypvar(ii)%cname       = TRIM(cn_zomsfpac)
+     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_pacif'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)
+     ii= ii+1
+
+     IF ( ldec ) THEN
+        PRINT *, 'Variable ',ii,' is zomsfpac_sh'
+        stypvar(ii)%cname       = TRIM(cn_zomsfpac)//'_sh'
+        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_Pacif'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)//'_sh'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfpac_bt'
+        stypvar(ii)%cname       = TRIM(cn_zomsfpac)//'_bt'
+        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_Pacif'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)//'_bt'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfpac_ag'
+        stypvar(ii)%cname       = TRIM(cn_zomsfpac)//'_ag'
+        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_Pacif'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfpac)//'_ag'
+        ii=ii+1
+     ENDIF
+
+     npinp0=ibasin  ; ibasin = ibasin + 1
+     PRINT *, 'Variable ',ii,' is zomsfinp0'
+     stypvar(ii)%cname       = TRIM(cn_zomsfinp0)
+     stypvar(ii)%clong_name  = 'Meridional_Overt.Cell_IndPac0'
+     stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)
+     ii= ii+1
+
+     IF ( ldec ) THEN
+        PRINT *, 'Variable ',ii,' is zomsfinp0_sh'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_sh'
+        stypvar(ii)%clong_name  = 'GeoShear_Merid_StreamFunction_IndPac0'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_sh'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfinp0_bt'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_bt'
+        stypvar(ii)%clong_name  = 'Barotropic_Merid_StreamFunction_IndPac0'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_bt'
+        ii= ii+1
+        PRINT *, 'Variable ',ii,' is zomsfinp0_ag'
+        stypvar(ii)%cname       = TRIM(cn_zomsfinp0)//'_ag'
+        stypvar(ii)%clong_name  = 'Ageostroph_Merid_StreamFunction_IndPac0'
+        stypvar(ii)%cshort_name = TRIM(cn_zomsfinp0)//'_ag'
+     ENDIF
+  ENDIF
+
+  ! create output fileset
+  ncout = create      ( cf_moc,  'none',    1, npjglo, npk, cdep=cn_vdepthw )
+  ierr  = createvar   ( ncout,   stypvar,   nvarout,   ipk, id_varout, cdglobal=TRIM(cglobal)           )
+  ierr  = putheadervar( ncout,   cf_vfil,   1, npjglo, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepw)
+  tim   = getvar1d    ( cf_vfil, cn_vtimec, npt                    )
+  ierr  = putvar1d    ( ncout,   tim,       npt, 'T')
+
+     END SUBROUTINE CreateOutput
 
    END PROGRAM cdfmoc
