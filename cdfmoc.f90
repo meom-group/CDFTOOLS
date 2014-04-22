@@ -130,7 +130,7 @@ PROGRAM cdfmoc
      PRINT *,'       V_file : file with meridional velocity component (mandatory).'
      PRINT *,'       T_file : file with temperature and salinity'
      PRINT *,'               (required only for -decomp option).'
-     PRINT *,'       S_file  (required only for -rapid option --might be the same as T_file-- ).'
+     PRINT *,'       S_file  (required only for -rapid option, might be the same as T_file).'
      PRINT *,'       U_file  (required only for -rapid option).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
@@ -164,10 +164,11 @@ PROGRAM cdfmoc
      PRINT *,'       If decomposition is required , ( option -decomp ) add 3 additional'
      PRINT *,'       variables per basin with suffixes _sh, _bt, _ag.'
      PRINT *,'      '
-     PRINT *,'       If option -rapid in use the output file (rapid_moc.nc)is degenerated '
+     PRINT *,'       If option -rapid is used, the output file (rapid_moc.nc)is degenerated '
      PRINT *,'       into 6 scalar values : tr_gs, tr_THERM, tr_AIW, tr_UNADW, tr_LNADW, '
-     PRINT *,'       tr_BW and a vertical profile of the AMOC at 26.5N, as computed traditionally.'
-     PRINT *,'       Additional variables are also computed following CLIVAR-GODAE '
+     PRINT *,'       tr_BW and a vertical profile of the AMOC at 26.5N, as computedi'
+     PRINT *,'       traditionally.'
+     PRINT *,'         Additional variables are also computed following CLIVAR-GODAE '
      PRINT *,'       reanalysis intercomparison project recommendations. '
      STOP
   ENDIF
@@ -478,6 +479,7 @@ PROGRAM cdfmoc
         DO jk = 1, npk-1
            ! Get velocities v at jk, time = jt
            zv(:,:)= getvar(cf_vfil, cn_vomecrty,  jk, npiglo, npjglo, ktime=jt)
+!          print *, jk, MAXVAL(zv)
 
            IF ( ldec ) THEN
               ! compute barotropic component when requested
