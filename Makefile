@@ -15,7 +15,7 @@ BINDIR = ./bin
 
 VPATH = $(BINDIR)
 
-EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT \
+EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfvsig cdfspeed cdfsum\
        cdfmoyuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
@@ -86,6 +86,9 @@ cdfstdevts: cdfio.o  cdfstdevts.f90
 
 cdfvT: cdfio.o  modutils.o cdfvT.f90
 	$(F90) cdfvT.f90 -o $(BINDIR)/cdfvT cdfio.o modcdfnames.o modutils.o $(FFLAGS)
+
+cdfuv: cdfio.o  modutils.o cdfuv.f90
+	$(F90) cdfuv.f90 -o $(BINDIR)/cdfuv cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfvsig: cdfio.o eos.o modutils.o  cdfvsig.f90
 	$(F90) $(OMP) cdfvsig.f90 -o $(BINDIR)/cdfvsig cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
@@ -299,6 +302,9 @@ cdfzonalmean: cdfio.o  cdfzonalmean.f90
 cdfzonalmeanvT: cdfio.o  modutils.o  cdfzonalmeanvT.f90
 	$(F90) cdfzonalmeanvT.f90 -o $(BINDIR)/cdfzonalmeanvT cdfio.o modcdfnames.o modutils.o $(FFLAGS) 
 
+cdfzonalmeanvT2: cdfio.o  modutils.o  cdfzonalmeanvT2.f90
+	$(F90) cdfzonalmeanvT2.f90 -o $(BINDIR)/cdfzonalmeanvT2 cdfio.o modcdfnames.o modutils.o $(FFLAGS) 
+
 cdfzonalsum: cdfio.o  cdfzonalsum.f90
 	$(F90) cdfzonalsum.f90 -o $(BINDIR)/cdfzonalsum cdfio.o modcdfnames.o $(FFLAGS) 
 
@@ -446,7 +452,7 @@ cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)
 
 cdf_xtrac_brokenline: cdfio.o  modcdfnames.o cdftools.o  cdf_xtrac_brokenline.f90
-	$(F90) cdf_xtrac_brokenline.f90  -o $(BINDIR)/cdf_xtrac_brokenline cdfio.o cdftools.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdf_xtrac_brokenline.f90  -o $(BINDIR)/cdf_xtrac_brokenline cdfio.o cdftools.o modcdfnames.o $(FFLAGS)
 
 cdfmppini: cdfio.o  cdfmppini.f90
 	$(F90)  cdfmppini.f90  -o $(BINDIR)/cdfmppini cdfio.o modcdfnames.o $(FFLAGS)
