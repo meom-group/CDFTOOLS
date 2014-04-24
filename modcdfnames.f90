@@ -102,6 +102,7 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_somevs='somevs'     !: product V x S at V point
   CHARACTER(LEN=256) :: cn_sozoutrp='sozoutrp' !: vertically integrated trp at U point
   CHARACTER(LEN=256) :: cn_somevtrp='somevtrp' !: vertically integrated trp at V point
+  CHARACTER(LEN=256) :: cn_vouv='vouv'         !: product U x V at T point
 
   ! density, isopycnal diagnostics
   CHARACTER(LEN=256) :: cn_vosigma0='vosigma0' !: potential density refered to surface
