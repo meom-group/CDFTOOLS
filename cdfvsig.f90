@@ -26,39 +26,48 @@ PROGRAM cdfvsig
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: ji, jj, jk, jt, jtt  ! dummy loop index
+  INTEGER(KIND=4)                           :: jsig                 ! dummy loop index
   INTEGER(KIND=4)                           :: ierr                 ! working integer
   INTEGER(KIND=4)                           :: narg, iargc          ! command line
+  INTEGER(KIND=4)                           :: ijarg, iiarg         ! argument counter
+  INTEGER(KIND=4)                           :: ndep                 ! number of reference depth to deal with
   INTEGER(KIND=4)                           :: npiglo,npjglo        ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                           :: ntframe              ! Cumul of time frame
+  INTEGER(KIND=4)                           :: nopt                 ! number of options
   INTEGER(KIND=4)                           :: ncoutu               ! ncid of output file
   INTEGER(KIND=4)                           :: ncoutv               ! ncid of output file
   INTEGER(KIND=4)                           :: ncoutw               ! ncid of output file
-  INTEGER(KIND=4), DIMENSION(3)             :: ipku, id_varoutu     ! level and varid's of output vars
-  INTEGER(KIND=4), DIMENSION(3)             :: ipkv, id_varoutv     ! level and varid's of output vars
-  INTEGER(KIND=4), DIMENSION(3)             :: ipkw, id_varoutw     ! level and varid's of output vars
+  INTEGER(KIND=4)                           :: nfieldu, nfieldv, nfieldw  ! ncid of output file
+  INTEGER(KIND=4)                           :: ivaru, ivarv, ivarw  ! variable counter
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipku, id_varoutu     ! level and varid's of output vars
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipkv, id_varoutv     ! level and varid's of output vars
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipkw, id_varoutw     ! level and varid's of output vars
 
+  REAL(KIND=4)                              :: zdepref              ! reference level for potential density
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp,  zsal         ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv, zw           ! Velocity component
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztempu, zsalu        ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztempv, zsalv        ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztempw, zsalw        ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: umask,  vmask, wmask ! masks
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: refdep               ! Reference depth table
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter of individual files
   REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
 
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulus             ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulvs             ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulws             ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulsu             ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulsv             ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulsw             ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulu              ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulv              ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulw              ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsigu                ! Array for sigma0 at u point
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsigv                ! Array for sigma0 at v point
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsigw                ! Array for sigma0 at w point
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulus             ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulvs             ! Arrays for cumulated values
+
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulws             ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulsu             ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulsv             ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulsw             ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dsigu                ! Array for sigmai at u point
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dsigv                ! Array for sigmai at v point
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dsigw                ! Array for sigmai at w point
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulu              ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulv              ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulw              ! Arrays for cumulated values
   REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
   CHARACTER(LEN=256)                        :: cf_tfil              ! TS file name
@@ -70,19 +79,25 @@ PROGRAM cdfvsig
   CHARACTER(LEN=256)                        :: cf_outw='wsig.nc'    ! output file
   CHARACTER(LEN=256)                        :: config               ! configuration name
   CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
+  CHARACTER(LEN=256)                        :: cldum                ! dummy character var for browsing
 
-  TYPE (variable), DIMENSION(3)             :: stypvaru             ! structure for attributes
-  TYPE (variable), DIMENSION(3)             :: stypvarv             ! structure for attributes
-  TYPE (variable), DIMENSION(3)             :: stypvarw             ! structure for attributes
+  TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvaru             ! structure for attributes
+  TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvarv             ! structure for attributes
+  TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvarw             ! structure for attributes
 
   LOGICAL                                   :: lcaltmean            ! flag for mean time computation
+  LOGICAL                                   :: lwo=.true.         ! flag for -no-w option
+  LOGICAL                                   :: lsigo=.true.       ! flag for -no-sig option
+  LOGICAL                                   :: luvo=.true.        ! flag for -no-uv option
+  LOGICAL                                   :: lpref=.false.        ! flag for -pref option
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvsig CONFIG ''list_of_tags'' '
+     PRINT *,' usage : cdfvsig CONFIG  [-no-w] [-no-sig]  [-no-uv] [-pref pref1,pref2,...]'
+     PRINT *,'        ... ''list_of_tags'' '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order products ' 
      PRINT *,'       U.sig,  V.sig and W.sig.  Also save mean sigma-0 interpolated at'
@@ -93,7 +108,16 @@ PROGRAM cdfvsig
      PRINT *,'            The program will look for gridT, gridU, gridV  and gridW files for' 
      PRINT *,'            this config ( grid_T, grid_U, grid_V and grid_W are also accepted).'
      PRINT *,'       list_of_tags : a list of time tags that will be used for time'
-     PRINT *,'            averaging. e.g. y2000m01d05 y2000m01d10 ...'
+     PRINT *,'            averaging. e.g. y2000m01d05 y2000m01d10.'
+     PRINT *,'            ! IMPORTANT : list_of_tag are at the end of the command line ! '
+     PRINT *,'      '
+     PRINT *,'     OPTIONS ( to be used before the list_of tags ):'
+     PRINT *,'        -no-w : no computation of vertical products'
+     PRINT *,'        -no-sig : no output of density on U V points'
+     PRINT *,'        -no-uv : no output of mean velocity components'
+     PRINT *,'        -pref pref1,pref2,..: give comma separated list of reference depths for'
+     PRINT *,'             density computation. eg : -pref 0,2000,3000  If not specified '
+     PRINT *,'             assumes pref=0.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fmsk)
@@ -108,110 +132,91 @@ PROGRAM cdfvsig
   ENDIF
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
-  CALL getarg (1, config)
-  CALL getarg (2, ctag  )
+  ijarg = 1 ; iiarg=0 ; nopt=0
+  DO WHILE ( ijarg <= narg )
+    CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+    SELECT CASE ( cldum )
+    CASE ( '-no-w'   ) ; lwo=.false.   ; nopt=nopt+1
+    CASE ( '-no-sig' ) ; lsigo=.false. ; nopt=nopt+1
+    CASE ( '-no-uv'  ) ; luvo=.false.  ; nopt=nopt+1
+    CASE ( '-pref'   ) ; lpref=.true.  ; CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
+                       CALL ParseRefDep(cldum)
+                       nopt=nopt+2 ! this option count for 2 args
+    CASE DEFAULT
+      iiarg=iiarg+1
+      SELECT CASE (iiarg)
+      CASE ( 1 )  ; config=cldum ;  nopt=nopt+1
+      CASE ( 2 )  ; ctag=cldum
+      END SELECT
+    END SELECT
+  END DO
+
+  ! initialize refdep if not done on command line
+  IF ( .NOT. lpref ) THEN
+      ndep = 1
+      ALLOCATE(refdep(ndep) )
+      refdep(1) =0.0
+  ENDIF
+
+  nfieldu = ndep + ndep * COUNT ( (/lsigo /)  ) + 1 * COUNT ( (/luvo/) )
+  nfieldv = nfieldu
+  nfieldw = COUNT ( (/lwo /)) * nfieldu
 
   cf_tfil = SetFileName ( config, ctag, 'T')
   cf_ufil = SetFileName ( config, ctag, 'U')
   cf_vfil = SetFileName ( config, ctag, 'V')
-  cf_wfil = SetFileName ( config, ctag, 'W')
+  IF ( lwo ) cf_wfil = SetFileName ( config, ctag, 'W')
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
 
-  ipku(:)= npk  ! all variables (input and output are 3D)
-  ipkv(:)= npk  !   "                     "
-  ipkw(:)= npk  !   "                     "
-
-  ! define output variables  U points
-  stypvaru%rmissing_value    = 0.
-  stypvaru%valid_min         = -100.
-  stypvaru%valid_max         = 100.
-  stypvaru%conline_operation = 'N/A'
-  stypvaru%caxis             = 'TZYX'
-
-  stypvaru(1)%cname          = 'vousig'           ; stypvaru(1)%cunits        = 'kg.m-2.s-1'
-  stypvaru(2)%cname          = 'vosigu'           ; stypvaru(2)%cunits        = 'kg.m-3'
-  stypvaru(3)%cname          =  cn_vozocrtx       ; stypvaru(3)%cunits        = 'm/s'
-
-  stypvaru(1)%clong_name     = 'Mean U x sigma0'  ; stypvaru(1)%cshort_name   = 'vousig'
-  stypvaru(2)%clong_name     = 'Mean sigma0 at U' ; stypvaru(2)%cshort_name   = 'vosigu'
-  stypvaru(3)%clong_name     = 'Mean zonal vel'   ; stypvaru(3)%cshort_name   = cn_vozocrtx
-
-  ! define output variables  V points
-  stypvarv%rmissing_value    = 0.
-  stypvarv%valid_min         = -100.
-  stypvarv%valid_max         = 100.
-  stypvarv%conline_operation = 'N/A'
-  stypvarv%caxis             = 'TZYX'
-
-  stypvarv(1)%cname          = 'vovsig'           ; stypvarv(1)%cunits        = 'kg.m-2.s-1'
-  stypvarv(2)%cname          = 'vosigv'           ; stypvarv(2)%cunits        = 'kg.m-3'
-  stypvarv(3)%cname          =  cn_vomecrty       ; stypvarv(3)%cunits        = 'm/s'
-
-  stypvarv(1)%clong_name     = 'Mean V x sigma0'  ; stypvarv(1)%cshort_name   = 'vovsig'
-  stypvarv(2)%clong_name     = 'Mean sigma0 at V' ; stypvarv(2)%cshort_name   = 'vosigv'
-  stypvarv(3)%clong_name     = 'Mean merid vel'   ; stypvarv(3)%cshort_name   = cn_vomecrty
-
-  ! define output variables  W points
-  stypvarw%rmissing_value    = 0.
-  stypvarw%valid_min         = -100.
-  stypvarw%valid_max         = 100.
-  stypvarw%conline_operation = 'N/A'
-  stypvarw%caxis             = 'TZYX'
-
-  stypvarw(1)%cname          = 'vowsig'           ; stypvarw(1)%cunits        = 'kg.m-2.s-1'
-  stypvarw(2)%cname          = 'vosigw'           ; stypvarw(2)%cunits        = 'kg.m-3'
-  stypvarw(3)%cname          =  cn_vovecrtz       ; stypvarw(3)%cunits        = 'm/s'
-
-  stypvarw(1)%clong_name     = 'Mean W x sigma0'  ; stypvarw(1)%cshort_name   = 'vowsig'
-  stypvarw(2)%clong_name     = 'Mean sigma0 at W' ; stypvarw(2)%cshort_name   = 'vosigw'
-  stypvarw(3)%clong_name     = 'Mean vert. vel'   ; stypvarw(3)%cshort_name   = cn_vovecrtz
-
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
   PRINT *, 'npk    =', npk
 
-  ALLOCATE( dcumulus(npiglo,npjglo), dcumulvs(npiglo,npjglo), dcumulws(npiglo,npjglo) )
-  ALLOCATE( dcumulsu(npiglo,npjglo), dcumulsv(npiglo,npjglo), dcumulsw(npiglo,npjglo) )
-  ALLOCATE( dcumulu(npiglo,npjglo),  dcumulv(npiglo,npjglo),  dcumulw(npiglo,npjglo)  )
-  ALLOCATE( ztemp(npiglo,npjglo),    zsal(npiglo,npjglo)                              )
-  ALLOCATE( zu(npiglo,npjglo),       zv(npiglo,npjglo),       zw(npiglo,npjglo)       )
-  ALLOCATE( dsigu(npiglo,npjglo),    dsigv(npiglo,npjglo),    dsigw(npiglo,npjglo)    )
+  ALLOCATE( dcumulus(npiglo,npjglo,ndep), dcumulvs(npiglo,npjglo,ndep) )
+  ALLOCATE( ztemp(npiglo,npjglo),    zsal(npiglo,npjglo)               )
+  ALLOCATE( ztempu(npiglo,npjglo),  zsalu(npiglo,npjglo)               )
+  ALLOCATE( ztempv(npiglo,npjglo),  zsalv(npiglo,npjglo)               )
+  ALLOCATE( zu(npiglo,npjglo),       zv(npiglo,npjglo)                 )
+  ALLOCATE( dsigu(npiglo,npjglo,ndep),    dsigv(npiglo,npjglo,ndep)    )
   ALLOCATE( umask(npiglo,npjglo),    vmask(npiglo,npjglo),    wmask(npiglo,npjglo)    )
 
-  ! create output fileset
-  ncoutu = create      (cf_outu, cf_ufil,  npiglo, npjglo, npk        )
-  ierr   = createvar   (ncoutu,  stypvaru, 3,      ipku,   id_varoutu )
-  ierr   = putheadervar(ncoutu,  cf_ufil,  npiglo, npjglo, npk        )
+  IF ( lwo   )           ALLOCATE( dcumulws(npiglo,npjglo,ndep) )
+  IF ( lsigo )           ALLOCATE( dcumulsu(npiglo,npjglo,ndep), dcumulsv(npiglo,npjglo,ndep) )
+  IF ( lwo .AND. lsigo ) ALLOCATE( dcumulsw(npiglo,npjglo,ndep) )
+  IF ( luvo  )           ALLOCATE( dcumulu(npiglo,npjglo),  dcumulv(npiglo,npjglo),  dcumulw(npiglo,npjglo)  )
+  IF ( lwo .AND. luvo  ) ALLOCATE( dcumulw(npiglo,npjglo)  )
 
-  ncoutv = create      (cf_outv, cf_vfil,  npiglo, npjglo, npk        )
-  ierr   = createvar   (ncoutv,  stypvarv, 3,      ipkv,   id_varoutv )
-  ierr   = putheadervar(ncoutv,  cf_vfil,  npiglo, npjglo, npk        )
+  IF ( lwo  )  ALLOCATE( zw(npiglo,npjglo)                             )
+  IF ( lwo  )  ALLOCATE( ztempw(npiglo,npjglo),  zsalw(npiglo,npjglo)  )
+  IF ( lwo  )  ALLOCATE( dsigw(npiglo,npjglo,ndep)                     )
 
-  ncoutw = create      (cf_outw, cf_wfil,  npiglo, npjglo, npk        )
-  ierr   = createvar   (ncoutw,  stypvarw, 3,      ipku,   id_varoutw )
-  ierr   = putheadervar(ncoutw,  cf_wfil,  npiglo, npjglo, npk        )
+
+ CALL CreateOutputFile
 
   lcaltmean=.TRUE.
   DO jk = 1, npk
      PRINT *,'level ',jk
-     dcumulus(:,:) = 0.d0 ;  dcumulvs(:,:) = 0.d0 ; dcumulws(:,:) = 0.d0
-     dcumulsu(:,:) = 0.d0 ;  dcumulsv(:,:) = 0.d0 ; dcumulsw(:,:) = 0.d0
-     dcumulu(:,:)  = 0.d0 ;  dcumulv(:,:)  = 0.d0 ; dcumulw(:,:)  = 0.d0
-     dtotal_time   = 0.d0 ;  ntframe       = 0
+     dcumulus(:,:,:) = 0.d0 ;  dcumulvs(:,:,:) = 0.d0 
+     IF ( lwo   ) dcumulws(:,:,:) = 0.d0
+     IF ( lsigo ) THEN  ; dcumulsu(:,:,:) = 0.d0 ;  dcumulsv(:,:,:) = 0.d0  ; ENDIF
+     IF ( lsigo .AND. lwo ) dcumulsw(:,:,:) = 0.d0
+     IF ( luvo  ) THEN   ; dcumulu(:,:)    = 0.d0 ;  dcumulv(:,:)   = 0.d0  ; ENDIF
+     IF (luvo .AND. lwo ) dcumulw(:,:)   = 0.d0
+     dtotal_time   = 0.d0 ;  ntframe     = 0
      
      umask(:,:) = getvar(cn_fmsk, 'umask' , jk, npiglo, npjglo )
      vmask(:,:) = getvar(cn_fmsk, 'vmask' , jk, npiglo, npjglo )
-     wmask(:,:) = getvar(cn_fmsk, 'tmask' , jk, npiglo, npjglo )
+     IF ( lwo ) wmask(:,:) = getvar(cn_fmsk, 'tmask' , jk, npiglo, npjglo )
 
-     DO jt = 2, narg           ! loop on tags
+     DO jt = nopt+1, narg            ! loop on tags
         CALL getarg (jt, ctag)
         cf_tfil = SetFileName ( config, ctag, 'T' )
         cf_ufil = SetFileName ( config, ctag, 'U' )
         cf_vfil = SetFileName ( config, ctag, 'V' )
-        cf_wfil = SetFileName ( config, ctag, 'W' )
+        IF ( lwo ) cf_wfil = SetFileName ( config, ctag, 'W' )
 
         npt = getdim (cf_tfil, cn_t)
         IF ( lcaltmean ) THEN
@@ -223,14 +228,14 @@ PROGRAM cdfvsig
 
         DO jtt = 1, npt  ! loop on time frame in a single file
            ntframe    = ntframe+1
-           zu(:,:)    = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jtt )
-           zv(:,:)    = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jtt )
-           zw(:,:)    = getvar(cf_wfil, cn_vovecrtz, jk, npiglo, npjglo, ktime=jtt )
-           ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jtt )
-           zsal(:,:)  = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
+                      zu(:,:)    = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jtt )
+                      zv(:,:)    = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jtt )
+                      ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jtt )
+                      zsal(:,:)  = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
+           IF ( lwo ) zw(:,:)    = getvar(cf_wfil, cn_vovecrtz, jk, npiglo, npjglo, ktime=jtt )
 
            ! temperature at u point, v points
-           dsigu(:,:) = 0.d0  ; dsigv(:,:) = 0.d0
+           dsigu(:,:,:) = 0.d0  ; dsigv(:,:,:) = 0.d0
            DO ji=1, npiglo-1
               DO jj = 1, npjglo -1
                  ztempu(ji,jj) = 0.5 * ( ztemp(ji,jj) + ztemp(ji+1,jj) )  ! temper at Upoint
@@ -240,45 +245,88 @@ PROGRAM cdfvsig
               END DO
            END DO
            
-           dsigu(:,:) = sigma0(ztempu, zsalu, npiglo, npjglo) * umask(:,:)
-           dsigv(:,:) = sigma0(ztempv, zsalv, npiglo, npjglo) * vmask(:,:)
+           DO jsig=1,ndep
+           zdepref=refdep(jsig)
+           dsigu(:,:,jsig) = sigmai(ztempu, zsalu, zdepref, npiglo, npjglo) * umask(:,:)
+           dsigv(:,:,jsig) = sigmai(ztempv, zsalv, zdepref, npiglo, npjglo) * vmask(:,:)
 
-           dcumulus(:,:) = dcumulus(:,:) + dsigu(:,:) * zu(:,:) * 1.d0
-           dcumulvs(:,:) = dcumulvs(:,:) + dsigv(:,:) * zv(:,:) * 1.d0
-           dcumulsu(:,:) = dcumulsu(:,:) + dsigu(:,:) * 1.d0
-           dcumulsv(:,:) = dcumulsv(:,:) + dsigv(:,:) * 1.d0
-           dcumulu(:,:)  = dcumulu(:,:)  + zu(:,:)    * 1.d0
-           dcumulv(:,:)  = dcumulv(:,:)  + zv(:,:)    * 1.d0
+           dcumulus(:,:,jsig) = dcumulus(:,:,jsig) + dsigu(:,:,jsig) * zu(:,:) * 1.d0
+           dcumulvs(:,:,jsig) = dcumulvs(:,:,jsig) + dsigv(:,:,jsig) * zv(:,:) * 1.d0
+           IF ( lsigo ) THEN
+             dcumulsu(:,:,jsig) = dcumulsu(:,:,jsig) + dsigu(:,:,jsig) * 1.d0
+             dcumulsv(:,:,jsig) = dcumulsv(:,:,jsig) + dsigv(:,:,jsig) * 1.d0
+           ENDIF
+           IF ( luvo ) THEN
+             dcumulu(:,:)  = dcumulu(:,:)  + zu(:,:)    * 1.d0
+             dcumulv(:,:)  = dcumulv(:,:)  + zv(:,:)    * 1.d0
+           ENDIF
           
+           IF ( lwo ) THEN
            IF ( jk > 1 ) THEN ! now wsig
                ztempw(:,:)   = 0.5 * ( ztemp(:,:) + getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jtt ))
                zsalw(:,:)    = 0.5 * ( zsal(:,:)  + getvar(cf_tfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jtt ))
-               dsigw(:,:)    = sigma0(ztempw, zsalw, npiglo, npjglo) * wmask(:,:)
-               dcumulws(:,:) = dcumulws(:,:) + dsigw(:,:) * zw(:,:) * 1.d0
-               dcumulsw(:,:) = dcumulsw(:,:) + dsigw(:,:) * 1.d0
-               dcumulw(:,:)  = dcumulw(:,:)  + zw(:,:)    * 1.d0
+               dsigw(:,:,jsig)    = sigmai(ztempw, zsalw, zdepref, npiglo, npjglo) * wmask(:,:)
+               dcumulws(:,:,jsig) = dcumulws(:,:,jsig) + dsigw(:,:,jsig) * zw(:,:) * 1.d0
+               IF ( lsigo ) dcumulsw(:,:,jsig) = dcumulsw(:,:,jsig) + dsigw(:,:,jsig) * 1.d0
+               IF ( luvo  ) dcumulw(:,:)  = dcumulw(:,:)  + zw(:,:)    * 1.d0
            ENDIF
+           ENDIF
+           ENDDO
 
         END DO  !jtt
      END DO  ! jt
      ! finish with level jk ; compute mean (assume spval is 0 )
-     ierr = putvar(ncoutu, id_varoutu(1), SNGL(dcumulus(:,:)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
-     ierr = putvar(ncoutu, id_varoutu(2), SNGL(dcumulsu(:,:)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
-     ierr = putvar(ncoutu, id_varoutu(3), SNGL(dcumulu(:,:) /ntframe), jk, npiglo, npjglo, kwght=ntframe )
+     ivaru=0 ; ivarv=0 ; ivarw=0
+!    U
+     DO jsig=1,ndep
+       ivaru=ivaru + 1
+       ierr = putvar(ncoutu, id_varoutu(ivaru), SNGL(dcumulus(:,:,jsig)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
+       IF ( lsigo) THEN 
+         ivaru=ivaru + 1
+         ierr = putvar(ncoutu, id_varoutu(ivaru), SNGL(dcumulsu(:,:,jsig)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
+       ENDIF
+     END DO
 
-     ierr = putvar(ncoutv, id_varoutv(1), SNGL(dcumulvs(:,:)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
-     ierr = putvar(ncoutv, id_varoutv(2), SNGL(dcumulsv(:,:)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
-     ierr = putvar(ncoutv, id_varoutv(3), SNGL(dcumulv(:,:) /ntframe), jk, npiglo, npjglo, kwght=ntframe )
+     IF ( luvo ) THEN 
+       ivaru=ivaru + 1
+       ierr = putvar(ncoutu, id_varoutu(ivaru), SNGL(dcumulu(:,:)      /ntframe), jk, npiglo, npjglo, kwght=ntframe )
+     ENDIF
 
-     ierr = putvar(ncoutw, id_varoutw(1), SNGL(dcumulws(:,:)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
-     ierr = putvar(ncoutw, id_varoutw(2), SNGL(dcumulsw(:,:)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
-     ierr = putvar(ncoutw, id_varoutw(3), SNGL(dcumulw(:,:) /ntframe), jk, npiglo, npjglo, kwght=ntframe )
+!    V
+     DO jsig=1,ndep
+       ivarv=ivarv + 1
+       ierr = putvar(ncoutv, id_varoutv(ivarv), SNGL(dcumulvs(:,:,jsig)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
+       IF ( lsigo) THEN 
+         ivarv=ivarv + 1
+         ierr = putvar(ncoutv, id_varoutv(ivarv), SNGL(dcumulsv(:,:,jsig)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
+       ENDIF
+     ENDDO
+     IF ( luvo ) THEN 
+       ivarv=ivarv + 1
+       ierr = putvar(ncoutv, id_varoutv(ivarv), SNGL(dcumulv(:,:)      /ntframe), jk, npiglo, npjglo, kwght=ntframe )
+     ENDIF
+
+!    W
+     IF ( lwo ) THEN
+        DO jsig=1,ndep
+           ivarw=ivarw + 1
+           ierr = putvar(ncoutw, id_varoutw(ivarw), SNGL(dcumulws(:,:,jsig)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
+           IF (lsigo) THEN 
+             ivarw=ivarw + 1
+             ierr = putvar(ncoutw, id_varoutw(ivarw), SNGL(dcumulsw(:,:,jsig)/ntframe), jk, npiglo, npjglo, kwght=ntframe )
+           ENDIF
+        ENDDO
+        IF ( luvo ) THEN 
+          ivarw=ivarw + 1
+          ierr = putvar(ncoutw, id_varoutw(ivarw), SNGL(dcumulw(:,:)      /ntframe), jk, npiglo, npjglo, kwght=ntframe )
+        ENDIF
+     ENDIF
 
      IF ( lcaltmean )  THEN
         timean(1) = dtotal_time/ntframe
         ierr      = putvar1d(ncoutu, timean, 1, 'T')
         ierr      = putvar1d(ncoutv, timean, 1, 'T')
-        ierr      = putvar1d(ncoutw, timean, 1, 'T')
+        IF ( lwo ) ierr      = putvar1d(ncoutw, timean, 1, 'T')
      END IF
 
      lcaltmean = .FALSE. ! tmean already computed
@@ -287,6 +335,169 @@ PROGRAM cdfvsig
 
   ierr = closeout(ncoutu)
   ierr = closeout(ncoutv)
-  ierr = closeout(ncoutw)
+  IF ( lwo ) ierr = closeout(ncoutw)
+
+CONTAINS
+
+ SUBROUTINE CreateOutputFile
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutputFile  ***
+    !!
+    !! ** Purpose :  Create netcdf file according tp flags
+    !!
+    !! ** Method  :   
+    !!
+    !! References :  
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4)  :: jsig, ivaru, ivarv, ivarw
+    CHARACTER(LEN=1) :: cldep
+
+    !!----------------------------------------------------------------------
+    ALLOCATE ( stypvaru(nfieldu), ipku(nfieldu), id_varoutu(nfieldu)    )
+    ALLOCATE ( stypvarv(nfieldv), ipkv(nfieldv), id_varoutv(nfieldv)     )
+    IF ( lwo ) ALLOCATE ( stypvarw(nfieldw), ipkw(nfieldw), id_varoutw(nfieldw)  )
+
+
+  ! define output variables  U points
+  stypvaru%rmissing_value    = 0.
+  stypvaru%valid_min         = -100.
+  stypvaru%valid_max         = 100.
+  stypvaru%conline_operation = 'N/A'
+  stypvaru%caxis             = 'TZYX'
+  ipku(:)= npk  ! all variables (input and output are 3D)
+
+  ivaru=0
+  DO jsig = 1, ndep
+    WRITE(cldep,'(I1)') INT(refdep(jsig)/1000)
+    ivaru = ivaru + 1
+    stypvaru(ivaru)%cname      = 'vousig'//cldep          ; stypvaru(ivaru)%cunits    = 'kg.m-2.s-1'
+    stypvaru(ivaru)%clong_name = 'Mean U x sigma'//cldep  ; stypvaru(ivaru)%cshort_name   = 'vousig'//cldep
+
+    IF ( lsigo ) THEN
+      ivaru = ivaru + 1 
+      stypvaru(ivaru)%cname      = 'vosigu'//cldep              ; stypvaru(ivaru)%cunits  = 'kg.m-3'
+      stypvaru(ivaru)%clong_name = 'Mean sigma'//cldep//' at U' ; stypvaru(ivaru)%cshort_name = 'vosigu'//cldep
+    ENDIF
+  ENDDO
+
+  IF ( luvo ) THEN
+     ivaru = ivaru + 1 
+     stypvaru(ivaru)%cname      = cn_vozocrtx      ; stypvaru(ivaru)%cunits        = 'm/s'
+     stypvaru(ivaru)%clong_name = 'Mean zonal vel' ; stypvaru(ivaru)%cshort_name   = cn_vozocrtx
+  ENDIF
+
+  ! create output fileset
+  ncoutu = create      (cf_outu, cf_ufil,  npiglo, npjglo, npk        )
+  ierr   = createvar   (ncoutu,  stypvaru, nfieldu,      ipku,   id_varoutu )
+  ierr   = putheadervar(ncoutu,  cf_ufil,  npiglo, npjglo, npk        )
+
+
+  ! define output variables  V points
+  stypvarv%rmissing_value    = 0.
+  stypvarv%valid_min         = -100.
+  stypvarv%valid_max         = 100.
+  stypvarv%conline_operation = 'N/A'
+  stypvarv%caxis             = 'TZYX'
+  ipkv(:)= npk  !   "                     "
+
+  ivarv=0
+  DO jsig = 1, ndep 
+    WRITE(cldep,'(I1)') INT(refdep(jsig)/1000)
+    ivarv = ivarv + 1
+    stypvarv(ivarv)%cname      = 'vovsig'//cldep          ; stypvarv(ivarv)%cunits      = 'kg.m-2.s-1'
+    stypvarv(ivarv)%clong_name = 'Mean V x sigma'//cldep  ; stypvarv(ivarv)%cshort_name = 'vovsig'//cldep
+
+    IF ( lsigo ) THEN
+      ivarv = ivarv + 1
+      stypvarv(ivarv)%cname      = 'vosigv'//cldep              ; stypvarv(ivarv)%cunits      = 'kg.m-3'
+      stypvarv(ivarv)%clong_name = 'Mean sigma'//cldep//' at V' ; stypvarv(ivarv)%cshort_name = 'vosigv'//cldep
+    ENDIF
+  ENDDO
+
+  IF ( luvo ) THEN
+     ivarv = ivarv + 1 
+     stypvarv(ivarv)%cname      = cn_vomecrty      ; stypvarv(ivarv)%cunits        = 'm/s'
+     stypvarv(ivarv)%clong_name = 'Mean merid vel' ; stypvarv(ivarv)%cshort_name   = cn_vomecrty
+  ENDIF
+
+  ncoutv = create      (cf_outv, cf_vfil,  npiglo, npjglo, npk        )
+  ierr   = createvar   (ncoutv,  stypvarv, nfieldv,      ipkv,   id_varoutv )
+  ierr   = putheadervar(ncoutv,  cf_vfil,  npiglo, npjglo, npk        )
+
+  IF ( lwo ) THEN
+  ! define output variables  W points
+  stypvarw%rmissing_value    = 0.
+  stypvarw%valid_min         = -100.
+  stypvarw%valid_max         = 100.
+  stypvarw%conline_operation = 'N/A'
+  stypvarw%caxis             = 'TZYX'
+  ipkw(:)= npk  !   "                     "
+
+  ivarw=0
+  DO jsig = 1, ndep
+    WRITE(cldep,'(I1)') INT(refdep(jsig)/1000)
+    ivarw = ivarw + 1
+    stypvarw(ivarw)%cname      = 'vowsig'//cldep          ; stypvarw(ivarw)%cunits      = 'kg.m-2.s-1'
+    stypvarw(ivarw)%clong_name = 'Mean W x sigma'//cldep  ; stypvarw(ivarw)%cshort_name = 'vowsig'//cldep
+
+    IF ( lsigo ) THEN
+      ivarw = ivarw + 1
+      stypvarw(ivarw)%cname      = 'vosigw'//cldep              ; stypvarw(ivarw)%cunits      = 'kg.m-3'
+      stypvarw(ivarw)%clong_name = 'Mean sigma'//cldep//' at W' ; stypvarw(ivarw)%cshort_name = 'vosigw'//cldep
+    ENDIF
+  ENDDO
+
+  IF ( luvo ) THEN
+     ivarw = ivarw + 1
+     stypvarw(ivarw)%cname      = cn_vovecrtz      ; stypvarw(ivarw)%cunits        = 'm/s'
+     stypvarw(ivarw)%clong_name = 'Mean vert. vel' ; stypvarw(ivarw)%cshort_name   = cn_vovecrtz
+  ENDIF
+
+  ncoutw = create      (cf_outw, cf_wfil,  npiglo, npjglo, npk        )
+  ierr   = createvar   (ncoutw,  stypvarw, nfieldw,      ipku,   id_varoutw )
+  ierr   = putheadervar(ncoutw,  cf_wfil,  npiglo, npjglo, npk        )
+  ENDIF
+
+
+ END SUBROUTINE  CreateOutputFile
+
+ SUBROUTINE ParseRefDep (cdum)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE ParseRefDep  ***
+    !!
+    !! ** Purpose :  Decode variable name  option from command line
+    !!
+    !! ** Method  :  look for , in the argument string and set the number of
+    !!         ref_dep (ndep), allocate  array and fill it with the
+    !!         decoded  names.
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdum
+
+    CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+    INTEGER  :: ji
+    INTEGER  :: inchar,  i1=1
+    !!----------------------------------------------------------------------
+    inchar= LEN(TRIM(cdum))
+    ndep = 1
+    ! scan the input string and look for ',' as separator
+    DO ji=1,inchar
+       IF ( cdum(ji:ji) == ',' ) THEN
+          cl_dum(ndep) = cdum(i1:ji-1)
+          i1=ji+1
+          ndep=ndep+1
+       ENDIF
+    ENDDO
+
+    ! last name of the list does not have a ','
+    cl_dum(ndep) = cdum(i1:inchar)
+
+    ALLOCATE ( refdep(ndep) )
+    DO ji=1, ndep
+       READ(cl_dum(ji),*) refdep(ji)
+    ENDDO
+       PRINT *, refdep
+ END SUBROUTINE ParseRefDep
+
 
 END PROGRAM cdfvsig
