@@ -30,6 +30,7 @@ PROGRAM cdfstdevw
 
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zvbar, zvba2      ! mean and mean2 variable
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim               ! time counter
+  REAL(KIND=4)                               :: rmiss             ! missing value attribute
 
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dsdev             ! standard deviation
 
@@ -38,6 +39,7 @@ PROGRAM cdfstdevw
   CHARACTER(LEN=256)                         :: cf_out = 'rmsw.nc'! output file name
   CHARACTER(LEN=256)                         :: cv_in, cv_in2     ! input variable names
   CHARACTER(LEN=256)                         :: cldum             ! dummy character variable
+  CHARACTER(LEN=256)                         :: cl_units, cl_longname, cl_shortname
 
   TYPE(variable), DIMENSION(1)               :: stypvaro          ! output data structure
 
@@ -48,27 +50,31 @@ PROGRAM cdfstdevw
   cv_in = cn_vovecrtz
 
   narg= iargc()
-  IF ( narg /= 2 ) THEN
-     PRINT *,' usage : cdfstdevw W-file W2-file '
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfstdevw W-file W2-file [varname]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the standard deviation of the vertical velocity'
-     PRINT *,'       from its mean value and its mean square value. '
+     PRINT *,'       from its mean value and its mean square value. If a variable name '
+     PRINT *,'       is given, then compute rms of this variable instead of vertical velocity.'
      PRINT *,'      '
      PRINT *,'       Note that what is computed in this program is stictly the'
      PRINT *,'       standard deviation. It is very often called RMS, which is'
      PRINT *,'       an abuse. It is the same only in the case of zero mean value.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       W-file  : netcdf file with mean values for w' 
-     PRINT *,'       W2-file : netcdf file with mean squared values for w' 
+     PRINT *,'       W-file  : netcdf file with mean values for w ( or given variable)' 
+     PRINT *,'       W2-file : netcdf file with mean squared values for w (or given variable)' 
+     PRINT *,'      '
+     PRINT *,'     OPTIONS: '
+     PRINT *,'        varname : give name of variable if not ', TRIM(cn_vovecrtz)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'         variables : ', TRIM(cv_in)//'_rms, same unit than the input.'
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' (if varname specified, output file is rms_var.nc)'
+     PRINT *,'         variables : ', TRIM(cv_in)//'_rms, (or varname_rms)  same unit than the input.'
      PRINT *,'      '
      PRINT *,'     SEA ALSO :'
      PRINT *,'       cdfstd, cdfrmsssh, cdfstdevts.'
@@ -84,6 +90,7 @@ PROGRAM cdfstdevw
         SELECT CASE ( ireq ) 
         CASE ( 1 ) ; cf_in  = cldum
         CASE ( 2 ) ; cf_in2 = cldum
+        CASE ( 3 ) ; cv_in  = cldum ; cf_out='rms_var.nc'
         CASE DEFAULT
            PRINT *, ' Too many variables ' ; STOP
         END SELECT
@@ -100,13 +107,15 @@ PROGRAM cdfstdevw
   npk    = getdim (cf_in, cn_z)
   npt    = getdim (cf_in, cn_t)
 
+  ierr = getvaratt(cf_in, cv_in, cl_units, rmiss, cl_longname, cl_shortname )
+
   ipko(1) = npk
   stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
-  stypvaro(1)%cunits            = 'm/s'
+  stypvaro(1)%cunits            = TRIM(cl_units)
   stypvaro(1)%rmissing_value    = 0.
   stypvaro(1)%valid_min         = 0.
-  stypvaro(1)%valid_max         = 0.01
-  stypvaro(1)%clong_name        = 'RMS_Vertical_Velocity'
+  stypvaro(1)%valid_max         = 10.
+  stypvaro(1)%clong_name        = 'RMS_'//TRIM(cl_longname)
   stypvaro(1)%cshort_name       = TRIM(cv_in)//'_rms'
   stypvaro(1)%conline_operation = 'N/A'
   stypvaro(1)%caxis             = 'TZYX'
