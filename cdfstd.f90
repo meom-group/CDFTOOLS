@@ -62,7 +62,7 @@ PROGRAM cdfstd
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfstd list_of files [-save]' 
+     PRINT *,' usage : cdfstd [-save] list_of files ' 
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the standard deviation of the variables belonging to a set of' 
@@ -74,7 +74,7 @@ PROGRAM cdfstd
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [ -save ] : Save the mean value of the field, in addition to the '
-     PRINT *,'                   std deviation' 
+     PRINT *,'                   std deviation. If used must be appear before list of files.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -159,6 +159,7 @@ PROGRAM cdfstd
   ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep )
 
   IF ( lsave )  THEN
+    WHERE(ipk == 0 ) stypvari(:)%cname='none'
     ! create output fileset for mean values
     ncou2 = create      (cf_moy, cf_in,    npiglo, npjglo, npk, cdep=cv_dep )
     ierr  = createvar   (ncou2,  stypvari, nvars,  ipk,    id_varoutm       )
