@@ -180,7 +180,13 @@ PROGRAM cdfstd
            dtab(:,:) = 0.d0; dtab2(:,:) = 0.d0; dtotal_time = 0.d0 
            ntframe = 0
            DO jfil = 1, narg
-              CALL getarg (jfil, cf_in)
+              CALL getarg (jfil, cldum)
+              SELECT CASE (cldum)
+              CASE ( '-save' ) 
+               CYCLE
+              CASE DEFAULT
+                cf_in=cldum
+              END SELECT
               IF ( chkfile(cf_in) ) STOP ! missing file
 
               IF ( lcaltmean )  THEN
