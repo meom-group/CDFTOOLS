@@ -16,6 +16,8 @@ PROGRAM cdfets
   !!               (6) Output on netcdf file ets.nc :  
   !!                   ets = voets ;  rosby_radius = sorosrad
   !!
+  !!  ** Reference : Chelton et Al.  (1998)  J. Phys.Oceanogr. 28, 433-460
+  !!
   !!  ** Remarks : A special care has been taken with respect to land value 
   !!               which have been set to spval (-1000.) and not 0 as usual.
   !!               This is because a value of 0.00 has a physical meaning for N.
