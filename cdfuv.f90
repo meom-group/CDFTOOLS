@@ -30,7 +30,7 @@ PROGRAM cdfuv
   INTEGER(KIND=4)                           :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                           :: ntframe              ! Cumul of time frame
   INTEGER(KIND=4)                           :: ncout                ! ncid of output file
-  INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout       ! level and varid's of output vars
+  INTEGER(KIND=4), DIMENSION(4)             :: ipk, id_varout       ! level and varid's of output vars
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv               ! Velocity component
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zworku, zworkv       ! working arrays
@@ -40,6 +40,9 @@ PROGRAM cdfuv
   REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
 
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumuluv             ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulu              ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulv              ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dupvp                ! Arrays for U'.V'
   REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
   CHARACTER(LEN=256)                        :: cf_tfil              ! Temperature file for reference only
@@ -48,8 +51,9 @@ PROGRAM cdfuv
   CHARACTER(LEN=256)                        :: cf_out='uv.nc'       ! output file
   CHARACTER(LEN=256)                        :: config               ! configuration name
   CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
+  CHARACTER(LEN=256)                        :: cl_name              ! temporary variable name
 
-  TYPE (variable), DIMENSION(1)             :: stypvar              ! structure for attributes
+  TYPE (variable), DIMENSION(4)             :: stypvar              ! structure for attributes
 
   LOGICAL                                   :: lcaltmean            ! flag for mean time computation
   LOGICAL                                   :: lperio=.false.       ! flag for E-W periodicity
@@ -61,7 +65,9 @@ PROGRAM cdfuv
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfuv CONFIG-CASE ''list_of_tags'' '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the time average values for U.V  product.' 
+     PRINT *,'       Compute the time average values for U.V  product, at T point.' 
+     PRINT *,'       Mean U and V values at T points, and mean U''.V'' product are '
+     PRINT *,'       saved as well.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)'
@@ -75,7 +81,10 @@ PROGRAM cdfuv
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'       variables : ',TRIM(cn_vouv)
+     PRINT *,'       variables : ',TRIM(cn_vouv), '  : Mean U.V at T point'
+     PRINT *,'                   ',TRIM(cn_vozocrtx)//'_t : Mean U at T point'
+     PRINT *,'                   ',TRIM(cn_vomecrty)//'_t : Mean V at T point'
+     PRINT *,'                   ',TRIM(CN_VOUV)//'_prime : Mean U''.V'' at T point'
      STOP
   ENDIF
 
@@ -105,11 +114,26 @@ PROGRAM cdfuv
   stypvar(1)%cname          = cn_vouv                  ; stypvar(1)%cunits        = 'm2/s2'
   stypvar(1)%clong_name     = 'U.V product at T point' ; stypvar(1)%cshort_name   = cn_vouv
 
+  cl_name = TRIM(cn_vozocrtx)//'_t'
+  stypvar(2)%cname          = cl_name                  ; stypvar(2)%cunits        = 'm/s'
+  stypvar(2)%clong_name     = 'Mean U at T point '     ; stypvar(2)%cshort_name   = cl_name
+
+  cl_name = TRIM(cn_vomecrty)//'_t'
+  stypvar(3)%cname          = cl_name                  ; stypvar(3)%cunits        = 'm/s'
+  stypvar(3)%clong_name     = 'Mean V at T point '     ; stypvar(3)%cshort_name   = cl_name
+
+  cl_name = TRIM(cn_vouv)//'_prime'
+  stypvar(4)%cname          = cl_name                     ; stypvar(3)%cunits        = 'm2/s2'
+  stypvar(4)%clong_name     = 'Uprime .Vprime at T point' ; stypvar(3)%cshort_name   = cl_name
+
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
   PRINT *, 'npk    =', npk
 
   ALLOCATE( dcumuluv(npiglo,npjglo) )
+  ALLOCATE( dcumulu(npiglo,npjglo) )
+  ALLOCATE( dcumulv(npiglo,npjglo) )
+  ALLOCATE( dupvp(npiglo,npjglo) )
   ALLOCATE( zu(npiglo,npjglo),     zv(npiglo,npjglo) )
   ALLOCATE( zworku(npiglo,npjglo), zworkv(npiglo,npjglo) )
   ALLOCATE( zmean(npiglo,npjglo))
@@ -125,13 +149,14 @@ PROGRAM cdfuv
 
   ! create output fileset
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
-  ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout            )
+  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            )
   ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
   
   lcaltmean=.TRUE.
   DO jk = 1, npk
      PRINT *,'level ',jk
-     dcumuluv(:,:) = 0.d0 ;  dtotal_time = 0.d0 ; ntframe = 0
+     dcumuluv(:,:) = 0.d0 ;  dtotal_time  = 0.d0 ; ntframe = 0
+     dcumulu(:,:)  = 0.d0 ;  dcumulv(:,:) = 0.d0
 
      DO jt = 2, narg           ! loop on tags
         CALL getarg (jt, ctag)
@@ -169,14 +194,28 @@ PROGRAM cdfuv
            END DO
 
            dcumuluv(:,:) = dcumuluv(:,:) + zworku(:,:) * zworkv(:,:)*1.d0
+           dcumulu(:,:)  = dcumulu(:,:)  + zworku(:,:)*1.d0
+           dcumulv(:,:)  = dcumulv(:,:)  + zworkv(:,:)*1.d0
 
         END DO  !jtt
      END DO  ! jt
      ! finish with level jk ; compute mean (assume spval is 0 )
      zmean(:,:) = dcumuluv(:,:)/ntframe
      IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
-
      ierr = putvar(ncout, id_varout(1), zmean, jk,npiglo, npjglo, kwght=ntframe )
+
+     zmean(:,:) = dcumulu(:,:)/ntframe
+     IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
+     ierr = putvar(ncout, id_varout(2), zmean, jk,npiglo, npjglo, kwght=ntframe )
+
+     zmean(:,:) = dcumulv(:,:)/ntframe
+     IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
+     ierr = putvar(ncout, id_varout(3), zmean, jk,npiglo, npjglo, kwght=ntframe )
+
+     dupvp(:,:) = dcumuluv(:,:)/ntframe - dcumulu(:,:)*dcumulv(:,:)/ntframe/ntframe
+     zmean(:,:) = dupvp(:,:)
+     IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
+     ierr = putvar(ncout, id_varout(4), zmean, jk,npiglo, npjglo, kwght=ntframe )
 
      IF (lcaltmean )  THEN
         timean(1) = dtotal_time/ntframe
