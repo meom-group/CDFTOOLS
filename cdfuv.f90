@@ -164,7 +164,7 @@ PROGRAM cdfuv
 
            DO ji=1, npiglo
               DO jj = 2, npjglo 
-                 zworkv(ji,jj) = 0.5 * ( zv(ji,jj) + zu(ji,jj-1) )  ! V at T point
+                 zworkv(ji,jj) = 0.5 * ( zv(ji,jj) + zv(ji,jj-1) )  ! V at T point
               END DO
            END DO
 
