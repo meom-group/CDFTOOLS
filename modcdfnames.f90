@@ -25,6 +25,8 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_vdepthv = 'depthv'       !: depth
   CHARACTER(LEN=256) :: cn_vdepthw = 'depthw'       !: depth
   CHARACTER(LEN=256) :: cn_vtimec  = 'time_counter' !: time 
+  CHARACTER(LEN=256) :: cn_vlon1d  = 'lon'          !: longitude 1d
+  CHARACTER(LEN=256) :: cn_vlat1d  = 'lat'          !: latitude  1d
 
   ! Attribute of a variable
   CHARACTER(LEN=256) :: cn_missing_value = '_FillValue' !: missing value (to be replaced bby _Fill_Value)

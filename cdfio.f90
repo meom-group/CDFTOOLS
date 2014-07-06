@@ -1932,8 +1932,15 @@ CONTAINS
           z2d = pnavlon
        ELSE
           IF ( chkvar ( cdfile, cn_vlon2d )) THEN
-            PRINT *, '... dummy value used!'
-            z2d = 0.
+              IF (chkvar (cdfile, cn_vlon1d) ) THEN
+                PRINT *, '... dummy value used!'
+                z2d = 0.
+              ELSE
+                z2d(:,1) = getvar1d(cdfile, cn_vlon1d, kpi, istatus ) 
+                DO jj=2,kpj
+                  z2d(:,jj) = z2d(:,1)
+                ENDDO
+              ENDIF
           ELSE
             z2d=getvar(cdfile,cn_vlon2d, 1,kpi,kpj)
           ENDIF
@@ -1944,8 +1951,15 @@ CONTAINS
           z2d = pnavlat
        ELSE
           IF ( chkvar ( cdfile, cn_vlat2d )) THEN
-            PRINT *, '... dummy value used!'
-            z2d = 0.
+              IF (chkvar (cdfile, cn_vlat1d) ) THEN
+                PRINT *, '... dummy value used!'
+                z2d = 0.
+              ELSE
+                z2d(1,:) = getvar1d(cdfile, cn_vlat1d, kpj, istatus ) 
+                DO jj=2,kpi
+                  z2d(jj,:) = z2d(1,:)
+                ENDDO
+              ENDIF
           ELSE
             z2d=getvar(cdfile,cn_vlat2d, 1,kpi,kpj)
           ENDIF

@@ -109,7 +109,7 @@ PROGRAM cdfsig0
         zsal(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
         ! assuming spval is 0
-        WHERE( zsal == 0 ) zmask = 0
+        WHERE( zsal <= 0 ) zmask = 0
 
         zsig0(:,:) = sigma0 (ztemp, zsal, npiglo, npjglo )* zmask(:,:)
 
