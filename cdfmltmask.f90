@@ -187,7 +187,11 @@ PROGRAM cdfmltmask
           zv(:,:) = getvar(cf_in, cv_in(jvar), jk, npiglo, npjglo, ktime=jt)
           ! Multiplication of cv_in by mask at level jk
 !         zvmask = zv * zmask
-          WHERE ( zmask == 0 ) zvmask = zspv0
+          WHERE ( zmask == 0 ) 
+           zvmask = zspv0
+          ELSEWHERE
+           zvmask = zv
+          ENDWHERE
           ! Writing  on the copy of original file                 
           ierr = putvar(cf_in, cv_in(jvar), jk, npiglo, npjglo, 1, 1, ktime=jt, ptab=zvmask)
         END DO
