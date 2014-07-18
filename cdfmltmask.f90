@@ -29,6 +29,7 @@ PROGRAM cdfmltmask
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE  :: nvpk            ! vertical levels in working variable
 
   REAL(KIND=4)                                :: zspval          ! missing value attribute
+  REAL(KIND=4)                                :: zspv0           ! missing value in the output file (default 0)
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zv              ! cv_in at jk level 
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zmask           ! mask at jk level 
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zvmask          ! masked cv_in at jk level
@@ -48,7 +49,8 @@ PROGRAM cdfmltmask
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmltmask IN-file MSK-file IN-var1,var2,...  T| U | V | F | W | P'
+     PRINT *,' usage : cdfmltmask IN-file MSK-file IN-var1,var2,...  T| U | V | F | W | P '
+     PRINT *, '        ... [_Fillvalue]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Multiply IN-var of IN-file by the mask corresponding to the' 
@@ -60,6 +62,8 @@ PROGRAM cdfmltmask
      PRINT *,'       IN-var1,var2,...   : Comma separated list of variable names to mask.'
      PRINT *,'       T| U | V | F | W | P : C-grid position of IN-var'
      PRINT *,'                P indicate a polygon mask created by cdfpoly.'
+     PRINT *,'      OPTIONS : '
+     PRINT *,'        _FillValue can be passed as 5th argument [0 by default ] '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none, all are given as arguments.'
@@ -72,10 +76,15 @@ PROGRAM cdfmltmask
      STOP
   ENDIF
 
+  zspv0 = 0.
   CALL getarg (1, cf_in    )
   CALL getarg (2, cf_msk   )
   CALL getarg (3, ctmp     ) ; CALL ParseVars(ctmp)
   CALL getarg (4, cvartype )
+  IF ( narg == 5 )  THEN
+     CALL getarg (5, ctmp) ; READ(ctmp,*) zspv0
+  ENDIF
+     
 
   IF ( chkfile (cf_in) .OR. chkfile(cf_msk) ) STOP ! missing files
 
@@ -177,7 +186,8 @@ PROGRAM cdfmltmask
           ! Read cv_in
           zv(:,:) = getvar(cf_in, cv_in(jvar), jk, npiglo, npjglo, ktime=jt)
           ! Multiplication of cv_in by mask at level jk
-          zvmask = zv * zmask
+!         zvmask = zv * zmask
+          WHERE ( zmask == 0 ) zvmask = zspv0
           ! Writing  on the copy of original file                 
           ierr = putvar(cf_in, cv_in(jvar), jk, npiglo, npjglo, 1, 1, ktime=jt, ptab=zvmask)
         END DO
@@ -187,7 +197,7 @@ PROGRAM cdfmltmask
   ! set missing value attribute for cv_in as 0.
   DO jvar = 1, nvar 
      ierr = getvaratt (cf_in, cv_in(jvar), cunits, zspval, clname, csname)
-     ierr = cvaratt   (cf_in, cv_in(jvar), cunits, 0.,     clname, csname)
+     ierr = cvaratt   (cf_in, cv_in(jvar), cunits, zspv0,     clname, csname)
   END DO
 
 CONTAINS
