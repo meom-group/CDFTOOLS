@@ -29,7 +29,7 @@ PROGRAM cdficediag
   INTEGER(KIND=4)                            :: npiglo, npjglo, npt  ! size of the domain
   INTEGER(KIND=4)                            :: nvpk                 ! vertical levels in working variable
   INTEGER(KIND=4)                            :: nperio = 4           ! boundary condition ( periodic, north fold)
-  INTEGER(KIND=4)                            :: ikx=1, iky=1, ikz=1  ! dims of netcdf output file
+  INTEGER(KIND=4)                            :: ikx=1, iky=1, ikz=0  ! dims of netcdf output file
   INTEGER(KIND=4)                            :: nboutput=8           ! number of values to write in cdf output
   INTEGER(KIND=4)                            :: ncout                ! for netcdf output
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
