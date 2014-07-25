@@ -109,7 +109,7 @@ PROGRAM cdfmaskdmp
   CALL getarg (1, cf_tfil)
   CALL getarg (2, cf_sfil)
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) ) STOP ! missing files
+  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) .OR. chkfile(cn_fmsk) ) STOP ! missing files
 
   IF ( narg == 9 ) THEN
      CALL getarg (3, cldum) ; READ(cldum,*) ref_dep
