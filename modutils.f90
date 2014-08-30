@@ -25,6 +25,7 @@ MODULE modutils
   PRIVATE
   PUBLIC SetGlobalAtt
   PUBLIC SetFileName
+  PUBLIC GetList
   PUBLIC shapiro_fill_smooth
 
 CONTAINS
@@ -98,6 +99,57 @@ CONTAINS
        ENDIF
     ENDIF
   END FUNCTION SetFileName
+
+  SUBROUTINE GetList ( cd_list, klist, ksiz )
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE getlist  ***
+    !!
+    !! ** Purpose :   Expand list described with input string like
+    !!                k1,k2,k3  or k1-k2,k3 or any valid combination
+    !!
+    !! ** Method  :   Look for ',' and '-' in cd_list and interprets
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*),                           INTENT(in ) :: cd_list ! list to decipher
+    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE, INTENT(out) :: klist   ! deciphered integer list
+    INTEGER(KIND=4),                            INTENT(out) :: ksiz    ! size of the list
+
+    INTEGER(KIND=4),             PARAMETER :: jp_maxlist=500
+    INTEGER(KIND=4)                        :: ji, jk
+    INTEGER(KIND=4)                        :: inlev, ipos, iposm,  ik1, ik2
+    INTEGER(KIND=4), DIMENSION(jp_maxlist) :: itmp
+    CHARACTER(LEN=80)                      :: cldum
+    CHARACTER(LEN=80)                      :: cldum2
+    !----------------------------------------------------------------------------
+    cldum=cd_list
+    ipos=1
+    ksiz=0
+    DO WHILE (ipos /= 0 )
+       ipos=INDEX(cldum,',')
+       IF (ipos == 0 ) THEN
+          cldum2=cldum
+       ELSE
+          cldum2=cldum(1:ipos-1)
+       ENDIF
+
+       iposm=INDEX(cldum2,'-')
+       IF ( iposm == 0 ) THEN
+          ksiz=ksiz+1 ; IF (ksiz > jp_maxlist) STOP 'jp_maxlist too small in getlist '
+          READ(cldum2,* ) itmp(ksiz)
+       ELSE
+          READ(cldum2(1:iposm-1),*) ik1
+          READ(cldum2(iposm+1:),* ) ik2
+          DO jk = ik1,ik2
+             ksiz=ksiz+1 ; IF (ksiz > jp_maxlist) STOP 'jp_maxlist too small in getlist '
+             itmp(ksiz)=jk
+          ENDDO
+       ENDIF
+       cldum=cldum(ipos+1:)
+    ENDDO
+    ALLOCATE (klist(ksiz) )
+    klist(:)=itmp(1:ksiz)
+
+  END SUBROUTINE GetList
 
   SUBROUTINE shapiro_fill_smooth ( psig, kpi, kpj, kpass, cdfs, pbad, klmasktrue, psigf )
     !!---------------------------------------------------------------------

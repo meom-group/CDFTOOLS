@@ -32,6 +32,7 @@ PROGRAM cdfsmooth
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
+  USE modutils
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
   !! $Id$
@@ -48,17 +49,22 @@ PROGRAM cdfsmooth
   INTEGER(KIND=4)                               :: npiglo, npjglo    ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt          ! size of the domain
   INTEGER(KIND=4)                               :: narg, iargc       ! browse arguments
+  INTEGER(KIND=4)                               :: ijarg             ! argument index for browsing line
   INTEGER(KIND=4)                               :: ncut, nband       ! cut period/ length, bandwidth
   INTEGER(KIND=4)                               :: nfilter = jp_lanc ! default value
   INTEGER(KIND=4)                               :: nvars, ierr       ! number of vars
   INTEGER(KIND=4)                               :: ncout             ! ncid of output file
+  INTEGER(KIND=4)                               :: ilev              ! level to process if not 0
+  INTEGER(KIND=4)                               :: ijk               ! indirect level addressing
   INTEGER(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: iw                ! flag for bad values (or land masked )
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var            ! arrays of var id's
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk               ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout         ! id of output variables
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: iklist            ! list of k-level to process
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, w2d          ! raw data,  filtered result
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim               ! time array
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdep, gdeptmp     ! depth array 
   REAL(KIND=4)                                  :: fn, rspval        ! cutoff freq/wavelength, spval
   REAL(KIND=4)                                  :: ranis             ! anistropy
 
@@ -72,12 +78,13 @@ PROGRAM cdfsmooth
   CHARACTER(LEN=256)                            :: cv_dep, cv_tim    ! variable name for depth and time
   CHARACTER(LEN=256)                            :: ctyp              ! filter type
   CHARACTER(LEN=256)                            :: cldum             ! dummy character variable
+  CHARACTER(LEN=256)                            :: clklist           ! ciphered k-list of level
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsmooth IN-file ncut [filter_type]'
+     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Perform a spatial smoothing on the file using a particular'
@@ -86,16 +93,17 @@ PROGRAM cdfsmooth
      PRINT *,'       is Lanczos filter.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        IN-file  : input data file. All variables will be filtered'
-     PRINT *,'        ncut     : number of grid step to be filtered, or number'
-     PRINT *,'                   of iteration of the Shapiro filter.'
+     PRINT *,'       -f  IN-file  : input data file. All variables will be filtered'
+     PRINT *,'       -c  ncut     : number of grid step to be filtered, or number'
+     PRINT *,'                    of iteration of the Shapiro filter.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        [filter_type] : Lanczos      , L, l  (default)'
+     PRINT *,'       -t filter_type : Lanczos      , L, l  (default)'
      PRINT *,'                        Hanning      , H, h'
      PRINT *,'                        Shapiro      , S, s'
      PRINT *,'                        Box          , B, b'
-     PRINT *,'                        Anis. Box    , B, b + anisotropy ratio' 
+     PRINT *,'       -a aniso       : anisotropic ratio for Box car '
+     PRINT *,'       -k level       : level to be filtered (default = all levels)'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Output file name is build from input file name with indication'
@@ -105,8 +113,22 @@ PROGRAM cdfsmooth
      STOP
   ENDIF
   !
-  CALL getarg(1,cf_in)
-  CALL getarg(2,cldum) ;  READ(cldum,*) ncut   
+  ijarg = 1
+  ilev = 0
+  ranis = 1   ! anisotropic ration for Box car filter
+  ctyp='L'
+  DO WHILE (ijarg <= narg )
+     CALL getarg ( ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE (cldum)
+     CASE ( '-f' ) ; CALL getarg ( ijarg, cf_in   ) ; ijarg=ijarg+1
+     CASE ( '-c' ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ncut
+     CASE ( '-t' ) ; CALL getarg ( ijarg, ctyp    ) ; ijarg=ijarg+1 
+     CASE ( '-k' ) ; CALL getarg ( ijarg, clklist ) ; ijarg=ijarg+1 
+          CALL GetList (clklist, iklist, ilev )
+     CASE ( '-a' ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
+     END SELECT
+  ENDDO
+
   IF ( chkfile(cf_in) ) STOP ! missing file
 
   !  remark: for a spatial filter, fn=dx/lambda where dx is spatial step, lamda is cutting wavelength
@@ -117,8 +139,6 @@ PROGRAM cdfsmooth
 
   WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'L',ncut   ! default name
 
-  IF ( narg  >= 3 ) THEN
-     CALL getarg(3,  ctyp)
      SELECT CASE ( ctyp)
      CASE ( 'Lanczos','L','l') 
         nfilter=jp_lanc
@@ -136,18 +156,14 @@ PROGRAM cdfsmooth
      CASE ( 'Box','B','b')
         nfilter=jp_boxc
         WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'B',ncut
-        PRINT *,' Working with Box filter'
+        IF ( ranis /=1. ) THEN
+          PRINT *, 'Anisotropic box car with ratio Lx = ', ranis, 'x Ly'
+        ELSE
+          PRINT *,' Working with Box filter'
+        ENDIF
      CASE DEFAULT
         PRINT *, TRIM(ctyp),' : undefined filter ' ; STOP
      END SELECT
-  ENDIF
-
-  IF ( narg  == 4 ) THEN
-     CALL getarg(4,cldum) ;  READ(cldum,*) ranis
-     PRINT *, 'Anisotropic box car with ratio Lx = ', ranis, 'x Ly'
-  ELSE
-     ranis=1.
-  ENDIF   
 
   CALL filterinit (nfilter, fn, nband)
   ! Look for input file and create outputfile
@@ -178,6 +194,11 @@ PROGRAM cdfsmooth
   ALLOCATE (stypvar(nvars) )
   ALLOCATE (id_var(nvars),ipk(nvars),id_varout(nvars) )
 
+  IF ( npk /= 0 ) THEN ! file with depth dimension
+    ALLOCATE ( gdeptmp(npk)  )
+    gdeptmp(:) = getvar1d(cf_in, cv_dep, npk )  
+  ENDIF
+
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:) = getvarname(cf_in, nvars, stypvar)
 
@@ -186,11 +207,23 @@ PROGRAM cdfsmooth
   WHERE( ipk == 0 ) cv_names='none'
   stypvar(:)%cname=cv_names
 
+  IF ( ilev /= 0 ) THEN   ! selected level on the command line
+     WHERE (ipk(:) == npk ) ipk = ilev 
+     npk = ilev
+  ELSE                    ! all levels
+     ilev = npk
+     ALLOCATE(iklist(ilev) )
+     iklist(:)=(/ (jk,jk=1,npk) /)
+  ENDIF
+  ! JM : what happen with npk = 0 ?
+  ALLOCATE ( gdep(ilev ) )
+  gdep(:) = (/ (gdeptmp(iklist(jk)), jk=1,ilev) /)
+
   ! create output file taking the sizes in cf_in
   PRINT *, 'Output file name : ', TRIM(cf_out)
   ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdep=cv_dep)
   ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout       )
-  ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk, cdep=cv_dep)
+  ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk, pdep=gdep, cdep=cv_dep)
   tim   = getvar1d(cf_in, cv_tim, npt)
   !
   DO jvar = 1,nvars
@@ -202,7 +235,8 @@ PROGRAM cdfsmooth
         DO jt=1,npt
            DO jk=1,ipk(jvar)
               PRINT *, jt,'/',npt,' and ',jk,'/',ipk(jvar)
-              v2d(:,:) = getvar(cf_in,cv_names(jvar),jk,npiglo,npjglo,ktime=jt)
+              ijk = iklist(jk) 
+              v2d(:,:) = getvar(cf_in,cv_names(jvar),ijk,npiglo,npjglo,ktime=jt)
               iw(:,:) = 1
               WHERE ( v2d == rspval ) iw =0
               IF ( ncut /= 0 ) CALL filter( nfilter, v2d, iw, w2d)

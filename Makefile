@@ -384,8 +384,8 @@ cdfinfo: cdfio.o  cdfinfo.f90
 cdfclip: cdfio.o  cdfclip.f90
 	$(F90) cdfclip.f90  -o $(BINDIR)/cdfclip cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfsmooth: cdfio.o  cdfsmooth.f90
-	$(F90) cdfsmooth.f90  -o $(BINDIR)/cdfsmooth cdfio.o modcdfnames.o $(FFLAGS)
+cdfsmooth: cdfio.o  modutils.o cdfsmooth.f90
+	$(F90) cdfsmooth.f90  -o $(BINDIR)/cdfsmooth cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
 cdfpendep: cdfio.o  cdfpendep.f90
 	$(F90) cdfpendep.f90  -o $(BINDIR)/cdfpendep cdfio.o modcdfnames.o $(FFLAGS)
