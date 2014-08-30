@@ -84,7 +84,7 @@ PROGRAM cdfsmooth
 
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level ]'
+     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level_list ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Perform a spatial smoothing on the file using a particular'
@@ -103,7 +103,9 @@ PROGRAM cdfsmooth
      PRINT *,'                        Shapiro      , S, s'
      PRINT *,'                        Box          , B, b'
      PRINT *,'       -a aniso       : anisotropic ratio for Box car '
-     PRINT *,'       -k level       : level to be filtered (default = all levels)'
+     PRINT *,'       -k level_list  : levels to be filtered (default = all levels)'
+     PRINT *,'               level_list is a comma-separated list of levels.'
+     PRINT *,'                  the syntax 1-3,6,9-12 will select 1 2 3 6 9 10 11 12'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Output file name is build from input file name with indication'
