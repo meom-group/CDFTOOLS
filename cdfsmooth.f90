@@ -119,6 +119,7 @@ PROGRAM cdfsmooth
   ilev = 0
   ranis = 1   ! anisotropic ration for Box car filter
   ctyp='L'
+  ncut=0      ! hence program exit if none specified on command line
   DO WHILE (ijarg <= narg )
      CALL getarg ( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE (cldum)
@@ -130,6 +131,8 @@ PROGRAM cdfsmooth
      CASE ( '-a' ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
      END SELECT
   ENDDO
+
+  IF ( ncut == 0 ) STOP ' cdfsmooth : ncut = 0 --> nothing to do !'
 
   IF ( chkfile(cf_in) ) STOP ! missing file
 
