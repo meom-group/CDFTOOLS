@@ -21,7 +21,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
        cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
-       cdfbottom cdfets cdfokubo-w cdfcurl cdfw cdfgeo-uv cdfmxl \
+       cdfbottom cdfets cdfokubo-w cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
        cdfsigtrp cdftempvol-full\
@@ -156,6 +156,12 @@ cdfdifmask: cdfio.o  cdfdifmask.f90
 
 cdfcurl: cdfio.o  cdfcurl.f90
 	$(F90) cdfcurl.f90 -o $(BINDIR)/cdfcurl cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfdiv: cdfio.o  cdfdiv.f90
+	$(F90) cdfdiv.f90 -o $(BINDIR)/cdfdiv cdfio.o modcdfnames.o $(FFLAGS)
+
+cdflap: cdfio.o  cdflap.f90
+	$(F90) cdflap.f90 -o $(BINDIR)/cdflap cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfeddyscale_pass1: cdfio.o  cdfeddyscale_pass1.f90
 	$(F90) cdfeddyscale_pass1.f90 -o $(BINDIR)/cdfeddyscale_pass1 cdfio.o modcdfnames.o $(FFLAGS)

@@ -5,9 +5,8 @@ PROGRAM cdfdiv
   !!  ** Purpose : Compute the divergence for given gridU gridV files 
   !!               and variables
   !!
-  !!  ** Method  : Use the equation on continuity: Integrate the 
-  !!               horizontal divergence from bottom to the top.
-  !!               ( Use the same routines than in the NEMO code )
+  !!  ** Method  : Use the same stencil than in NEMO code for computing
+  !!               vertical velocities
   !!
   !! History :  3.0  : 10/2011  : P. Mathiot : first version, based on cdfw.f90
   !!          
@@ -31,16 +30,13 @@ PROGRAM cdfdiv
   INTEGER(KIND=4)                              :: itmp               ! working integer for level swap
   INTEGER(KIND=4), DIMENSION(1)                :: ipk, id_varout     ! levels and varid's of output vars
 
-  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE  :: wn                 ! vertical velocity on the top
-  !                                                                  ! and bottom of a cell.
-  !                                                                  ! wn(top) is computed
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1t, e2t           ! horizontal T metrics
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1v, e2u           ! horizontal V and U metrics
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e3v, e3u, e3t      ! vertical metrics
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: glamt, gphit       ! T longitude latitude
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: un, vn             ! horizontal velocity component
   REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: hdivn              ! horizontal divergence
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdepw              ! depth of W points
+  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdept              ! depth of T points
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d               ! vertical metrics (full step)
 
@@ -61,8 +57,7 @@ PROGRAM cdfdiv
      PRINT *,' usage : cdfdiv U-file V-file [ U-var V-var ] [ -full ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the vertical velocity from the vertical integration of'
-     PRINT *,'       of the horizontal divergence of the velocity. '
+     PRINT *,'       Compute the divergence of the flow from the U and V velocity components'
      PRINT *,'       Limitation: coded only for C grid (be carefful with forcing field)' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -130,8 +125,7 @@ PROGRAM cdfdiv
   ALLOCATE ( e3u(npiglo,npjglo), e3v(npiglo,npjglo), e3t(npiglo,npjglo) )
   ALLOCATE ( glamt(npiglo,npjglo), gphit(npiglo,npjglo)  )
   ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo), hdivn(npiglo,npjglo) )
-  ALLOCATE ( wn(npiglo,npjglo,2) )
-  ALLOCATE ( gdepw(npk), tim(npt) )
+  ALLOCATE ( gdept(npk), tim(npt) )
   IF ( lfull ) ALLOCATE ( e31d (npk) )
 
   ! Read the metrics from the mesh_hgr file
@@ -145,13 +139,13 @@ PROGRAM cdfdiv
   gphit = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
 
   ! Read the depth of the w points (in the file, it is not a vector but a 1x1xnpk array)
-  gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+  gdept(:) = getvare3(cn_fzgr, cn_gdept, npk)
   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
 
   ! create output fileset
   ncout = create      (cf_out, cf_ufil, npiglo, npjglo, npk, cdep=cn_vdepthw     )
   ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout                )
-  ierr  = putheadervar(ncout,  'dummy', npiglo, npjglo, npk, glamt, gphit, gdepw )
+  ierr  = putheadervar(ncout,  'dummy', npiglo, npjglo, npk, glamt, gphit, gdept )
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
   ierr = putvar1d(ncout  , tim      , npt, 'T')
