@@ -35,14 +35,18 @@ PROGRAM cdflap
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e2_j1, e2_j2       ! along j horizontal metric
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rmski, rmskj       ! relevant mask
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: v2d                ! input variable
-  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: rlap               ! output laplacian
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ff                 ! Coriolis
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4)                                 :: rmissing           ! missing value or_FillValue of input variable
+  REAL(KIND=4)                                 :: grav=9.81          ! Gravity acceleration (m2/s)
+
+  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dlap               ! output laplacian
+  REAL(KIND=8)                                 :: dspval=99999.d0    ! output laplacian
 
   CHARACTER(LEN=256)                           :: cf_in              ! input file name
   CHARACTER(LEN=256)                           :: cv_in              ! input variable name
   CHARACTER(LEN=256)                           :: cv_units           ! units of input variable name
-  CHARACTER(LEN=256)                           :: ct_in              ! input variable type [ T U V F ] on C-grid
+  CHARACTER(LEN=3)                             :: ct_in              ! input variable type [ T U V F ] on C-grid
   CHARACTER(LEN=256)                           :: cf_out='lap.nc'    !output file name
   CHARACTER(LEN=256)                           :: cln_in             ! Long name of input variable
   CHARACTER(LEN=256)                           :: csn_in             ! Short name of input variable
@@ -86,6 +90,7 @@ PROGRAM cdflap
   CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
   CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1
   CALL getarg(ijarg, ct_in) ; ijarg = ijarg + 1
+  PRINT *, ' TYP ', ct_in
 
   ! check if files exists
   lchk = chkfile (cn_fhgr)
@@ -99,13 +104,24 @@ PROGRAM cdflap
   npk    = getdim(cf_in,cn_z)
   npt    = getdim(cf_in,cn_t)
 
+ !IF ( npk == 0 ) THEN 
+ !  PRINT *, 'Input file with no vertical dimension'
+ !  PRINT *, 'Set npk to 1 '
+ !  npk = 1
+ !ENDIF
+
+  PRINT *, 'NPIGLO : ', npiglo
+  PRINT *, 'NPJGLO : ', npjglo
+  PRINT *, 'NPK    : ', npk
+  PRINT *, 'NPT    : ', npT
+
   ierr = getvaratt (cf_in, cv_in, cv_units, rmissing, cln_in, csn_in)
 
   ! define new variables for output
-  ipk(1)                       = npk 
+  ipk(1)                       = MAX(npk, 1 )
   stypvar(1)%cname             = 'lap'
   stypvar(1)%cunits            = TRIM(cv_units)//'/m2'
-  stypvar(1)%rmissing_value    = 0.
+  stypvar(1)%rmissing_value    = dspval
   stypvar(1)%valid_min         = -10.
   stypvar(1)%valid_max         = 10.
   stypvar(1)%clong_name        = 'Laplacian of '//TRIM(cln_in)
@@ -116,34 +132,37 @@ PROGRAM cdflap
   ! fix mesh mask variables according to variable type
   ! HOT ! need to write down stencil to fully understand those settings ...
   SELECT CASE (ct_in )
-  CASE ( ' T ' )
+  CASE ( 'T' )
       ! needs umask, vmask, e1u, e1t, e2v, e2t 
       cmask_i = 'umask'  ; cmask_j = 'vmask'
       ce1_i1  = cn_ve1u  ; ce1_i2  = cn_ve1t
       ce2_j1  = cn_ve2v  ; ce2_j2  = cn_ve2t
       iioff1  = 0        ; iioff2  = 1
       ijoff1  = 0        ; ijoff2  = 1
-  CASE ( ' U ' )
+  CASE ( 'U' )
       ! needs tmask, fmask, e1t, e1u, e2f, e2u 
       cmask_i = 'tmask'  ; cmask_j = 'fmask'
       ce1_i1  = cn_ve1t  ; ce1_i2  = cn_ve1u
       ce2_j1  = cn_ve2f  ; ce2_j2  = cn_ve2u
       iioff1  = 1        ; iioff2  = 0
       ijoff1  = 0        ; ijoff2  = 1
-  CASE ( ' V ' )
+  CASE ( 'V' )
       ! needs fmask, tmask, e1f, e1v, e2t, e2v 
       cmask_i = 'fmask'  ; cmask_j = 'tmask'
       ce1_i1  = cn_ve1f  ; ce1_i2  = cn_ve1v
       ce2_j1  = cn_ve2t  ; ce2_j2  = cn_ve2v
       iioff1  = 0        ; iioff2  = 1
       ijoff1  = 1        ; ijoff2  = 0
-  CASE ( ' F ' )
+  CASE ( 'F' )
       ! needs vmask, umask, e1v, e1f, e2u, e2f 
       cmask_i = 'vmask'  ; cmask_j = 'umask'
       ce1_i1  = cn_ve1v  ; ce1_i2  = cn_ve1f
       ce2_j1  = cn_ve2u  ; ce2_j2  = cn_ve2f
       iioff1  = 1        ; iioff2  = 0
       ijoff1  = 1        ; ijoff2  = 0
+  CASE DEFAULT
+      PRINT *, ' TYPE ', TRIM(ct_in),' unknown on C-grid'
+      STOP
   END SELECT
       
 
@@ -151,8 +170,9 @@ PROGRAM cdflap
   ALLOCATE ( e1_i1(npiglo,npjglo), e2_j1(npiglo,npjglo) )
   ALLOCATE ( e1_i2(npiglo,npjglo), e2_j2(npiglo,npjglo) )
   ALLOCATE ( rmski(npiglo,npjglo), rmskj(npiglo,npjglo) )
+  ALLOCATE (    ff(npiglo,npjglo)                       )
 
-  ALLOCATE ( rlap(npiglo,npjglo), v2d(npiglo, npjglo)  )
+  ALLOCATE ( dlap(npiglo,npjglo), v2d(npiglo, npjglo)  )
   ALLOCATE ( tim(npt) )
 
   ! Read the metrics from the mesh_hgr file
@@ -160,6 +180,11 @@ PROGRAM cdflap
   e1_i2 = getvar(cn_fhgr, ce1_i2, 1, npiglo, npjglo)
   e2_j1 = getvar(cn_fhgr, ce2_j1, 1, npiglo, npjglo)
   e2_j2 = getvar(cn_fhgr, ce2_j2, 1, npiglo, npjglo)
+!
+! to prepare computation of g/f*LAP(SSH) 
+!  ff    = getvar(cn_fhgr, cn_vff, 1, npiglo, npjglo)
+!  ff    = ff / grav
+   ff    = 1.d0
 
   ! create output fileset
   ncout = create      (cf_out, cf_in, npiglo, npjglo, npk         ) 
@@ -172,7 +197,7 @@ PROGRAM cdflap
   ! Main time loop
   DO jt = 1, npt
      ! Main level loop from top to bottom
-     DO jk = 1, npk
+     DO jk = 1, MAX(1,npk)
         PRINT *,'jt = ', jt,' jk = ', jk
 
         ! variable at level jk time jt
@@ -180,22 +205,28 @@ PROGRAM cdflap
         ! relevant mask
         rmski = getvar(cn_fmsk, cmask_i, jk, npiglo, npjglo)
         rmskj = getvar(cn_fmsk, cmask_j, jk, npiglo, npjglo)
+      
 
         ! Compute laplacian
-        rlap(:,:) = 0.
+        dlap(:,:) = 0.d0
         DO jj = 2, npjglo -1
            ij1 = jj + ijoff1
            ij2 = jj - ijoff2
            DO ji = 2, npiglo -1
               ii1 = ji + iioff1
               ii2 = ji - iioff2
-              rlap(ji,jj) =  ( ( v2d(ji+1,jj) - v2d(ji,jj) ) /e1_i1(ii1,jj)* rmski(ii1,jj) - ( v2d(ji,jj) - v2d(ji-1,jj) )/e1_i1(ii2,jj)*  rmski(ii2,jj) ) / e1_i2(ji,jj)  &
-                &          + ( ( v2d(ji,jj+1) - v2d(ji,jj) ) /e2_j1(ij1,jj)* rmskj(ji,ij1) - ( v2d(ji,jj) - v2d(ji,jj-1) )/e2_j1(ji,ij2)*  rmskj(ji,ij2) ) / e2_j2(ji,jj)
+              dlap(ji,jj) =  ( ( v2d(ji+1,jj) - v2d(ji,jj) )*1.d0 /e1_i1(ii1,jj)* rmski(ii1,jj) - ( v2d(ji,jj) - v2d(ji-1,jj) )*1.d0/e1_i1(ii2,jj)*  rmski(ii2,jj) ) / e1_i2(ji,jj)  &
+                &          + ( ( v2d(ji,jj+1) - v2d(ji,jj) )*1.d0 /e2_j1(ij1,jj)* rmskj(ji,ij1) - ( v2d(ji,jj) - v2d(ji,jj-1) )*1.d0/e2_j1(ji,ij2)*  rmskj(ji,ij2) ) / e2_j2(ji,jj)
            END DO
         END DO
 
         ! write level jk 
-        ierr = putvar(ncout, id_varout(1), rlap, jk, npiglo, npjglo, ktime=jt)
+        WHERE (dlap == 0.d0 )
+          dlap = dspval
+        ELSEWHERE
+          dlap = dlap /ff
+        ENDWHERE
+        ierr = putvar(ncout, id_varout(1), REAL(dlap), jk, npiglo, npjglo, ktime=jt)
 
      END DO  ! loop to next level
   END DO ! loop on time
