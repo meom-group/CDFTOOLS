@@ -32,6 +32,7 @@ PROGRAM cdfmeshmask
   INTEGER :: id_dept1d, id_depw1d, id_e3t1d, id_e3w1d, id_dept, id_depw, id_e3t, id_e3w, id_mbat  ! zgr
   INTEGER :: id_e3u, id_e3v, id_hdept, id_hdepw, id_navlat, id_navlon, id_navlev, id_time
   INTEGER :: idx, idy, idz, idt, idvar
+  INTEGER :: id_tmsk, id_umsk, id_vmsk, id_fmsk
 
   INTEGER :: id_lamt, id_lamu, id_lamv, id_lamf    ! hgr  copy of coordinates  !!!
   INTEGER :: id_phit, id_phiu, id_phiv, id_phif 
@@ -46,6 +47,10 @@ PROGRAM cdfmeshmask
   REAL(wp), DIMENSION(:,:), ALLOCATABLE :: gdepw_0  ! npiglo, jpk
   REAL(wp), DIMENSION(:,:), ALLOCATABLE :: e3t_0    ! npiglo, jpk
   REAL(wp), DIMENSION(:,:), ALLOCATABLE :: e3w_0    ! npiglo, jpk
+  REAL(wp), DIMENSION(:,:), ALLOCATABLE :: tmask    ! npiglo, jpk
+  REAL(wp), DIMENSION(:,:), ALLOCATABLE :: umask    ! npiglo, jpk
+  REAL(wp), DIMENSION(:,:), ALLOCATABLE :: vmask    ! npiglo, jpk
+  REAL(wp), DIMENSION(:,:), ALLOCATABLE :: fmask    ! npiglo, jpk
 
   LOGICAL :: lchk=.FALSE.
 
@@ -257,6 +262,7 @@ CONTAINS
     ENDIF
     gdepw_1d(1) = 0._wp                    ! force first w-level to be exactly at zero
     CALL CreateMeshZgrFile
+    CALL CreateMaskFile
 
   END SUBROUTINE zgr_z
 
@@ -286,6 +292,10 @@ CONTAINS
     ALLOCATE ( zdep(npiglo) )
     ALLOCATE ( e3t_0(npiglo, jpk) )
     ALLOCATE ( e3w_0(npiglo, jpk) )
+    ALLOCATE ( tmask(npiglo, npjglo) )
+    ALLOCATE ( umask(npiglo, npjglo) )
+    ALLOCATE ( vmask(npiglo, npjglo) )
+    ALLOCATE ( fmask(npiglo, npjglo) )
 
     zmax = gdepw_1d(jpk) + e3t_1d(jpk)        ! maximum depth (i.e. the last ocean level thickness <= 2*e3t_1d(jpkm1) )
     bathy(:,:) = MIN( zmax ,  bathy(:,:) )    ! bounded value of bathy (min already set at the end of zgr_bat)
@@ -304,6 +314,32 @@ CONTAINS
     END DO
 
     CALL zgr_bat_ctl
+    ! compute mask from mbathy
+
+    DO jk = 1, jpk
+    tmask(:,:) = 0._wp
+    umask(:,:) = 0._wp
+    vmask(:,:) = 0._wp
+    fmask(:,:) = 0._wp
+     DO jj = 1, npjglo
+       DO ji = 1, npiglo
+            IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
+       END DO
+    END DO
+    DO jj = 1, npjglo -1
+      DO ji = 1, npiglo -1
+        umask(ji,jj) = tmask(ji,jj) * tmask(ji+1,jj  )
+        vmask(ji,jj) = tmask(ji,jj) * tmask(ji  ,jj+1)
+        fmask(ji,jj) = tmask(ji,jj  ) * tmask(ji+1,jj  )   &
+                  &  * tmask(ji,jj+1) * tmask(ji+1,jj+1)
+      ENDDO
+    ENDDO
+    ierr = NF90_PUT_VAR( ncmsk, id_tmsk, tmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+    ierr = NF90_PUT_VAR( ncmsk, id_umsk, umask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+    ierr = NF90_PUT_VAR( ncmsk, id_vmsk, vmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+    ierr = NF90_PUT_VAR( ncmsk, id_fmsk, fmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+    ENDDO
+    ierr = NF90_CLOSE(ncmsk)
 
  DO jj=1, npjglo
     PRINT *, ' WORKING for j-slab ', jj
@@ -348,6 +384,7 @@ CONTAINS
           ENDIF
        ENDIF
     END DO
+
     ! write mesh_zgr here with gdept_0, gdepw_0, e3t_0, e3w_0 only
     ! do it quick and dirty at this time ...
     ! write vertical slab (maybe slow but save lot of memory
@@ -505,6 +542,53 @@ SUBROUTINE CreateMeshZgrFile
    ierr = NF90_PUT_VAR(nczgr, id_e3w1d,  e3w_1d,   start=(/1,1/), count=(/jpk,1/) )
 
 END SUBROUTINE CreateMeshZgrFile
+
+SUBROUTINE CreateMaskFile
+!netcdf ORCA025.L75-MJM101.1_byte_mask {
+!dimensions:
+!	x = 1442 ;
+!	y = 1021 ;
+!	z = 75 ;
+!	t = UNLIMITED ; // (1 currently)
+!variables:
+!	float nav_lon(y, x) ;
+!	float nav_lat(y, x) ;
+!	float nav_lev(z) ;
+!	float time_counter(t) ;
+!	byte tmaskutil(t, y, x) ;
+!	byte umaskutil(t, y, x) ;
+!	byte vmaskutil(t, y, x) ;
+!	byte fmaskutil(t, y, x) ;
+!	byte tmask(t, z, y, x) ;
+!	byte umask(t, z, y, x) ;
+!	byte vmask(t, z, y, x) ;
+!	byte fmask(t, z, y, x) ;
+
+   ierr= NF90_CREATE(cf_zgr, or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncmsk) 
+   ierr= NF90_DEF_DIM(ncmsk, 'x', npiglo, idx)
+   ierr= NF90_DEF_DIM(ncmsk, 'y', npjglo, idy)
+   ierr= NF90_DEF_DIM(ncmsk, 'z', jpk,    idz)
+   ierr= NF90_DEF_DIM(ncmsk, 't', NF90_UNLIMITED,  idt)
+
+   ierr=NF90_DEF_VAR(ncmsk, 'nav_lon',       NF90_FLOAT, (/idx,idy/), id_navlon )
+   ierr=NF90_DEF_VAR(ncmsk, 'nav_lat',       NF90_FLOAT, (/idx,idy/), id_navlat )
+   ierr=NF90_DEF_VAR(ncmsk, 'nav_lev',       NF90_FLOAT, (/idz/)    , id_navlev )
+   ierr=NF90_DEF_VAR(ncmsk, 'time_counter',  NF90_FLOAT, (/idt/)    , id_time   )
+
+   ierr=NF90_DEF_VAR(ncmsk, 'tmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_tmsk )
+   ierr=NF90_DEF_VAR(ncmsk, 'umask',         NF90_BYTE, (/idx,idy,idz,idt/), id_umsk )
+   ierr=NF90_DEF_VAR(ncmsk, 'vmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_vmsk )
+   ierr=NF90_DEF_VAR(ncmsk, 'fmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_fmsk )
+
+   ierr = NF90_ENDDEF(ncmsk)
+   ! put dimension related variables
+
+   ierr = NF90_PUT_VAR(ncmsk, id_navlon, rlon)
+   ierr = NF90_PUT_VAR(ncmsk, id_navlat, rlat)
+   ierr = NF90_PUT_VAR(ncmsk, id_navlev, gdept_1d )
+   ierr = NF90_PUT_VAR(ncmsk, id_time  , (/0./) )
+
+END SUBROUTINE CreateMaskFile
 
 
 END PROGRAM
