@@ -148,6 +148,9 @@ cdfmsk: cdfio.o  cdfmsk.f90
 cdfmkmask: cdfio.o  cdfmkmask.f90
 	$(F90) cdfmkmask.f90 -o $(BINDIR)/cdfmkmask cdfio.o modcdfnames.o $(FFLAGS)
 
+cdfmeshmask: cdfio.o  cdfmeshmask.f90
+	$(F90) cdfmeshmask.f90 -o $(BINDIR)/cdfmeshmask cdfio.o modcdfnames.o $(FFLAGS)
+
 cdfmltmask: cdfio.o  cdfmltmask.f90
 	$(F90) cdfmltmask.f90 -o $(BINDIR)/cdfmltmask cdfio.o modcdfnames.o $(FFLAGS)
 
