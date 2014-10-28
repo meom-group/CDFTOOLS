@@ -132,15 +132,16 @@ PROGRAM cdfmeshmask
      PRINT *,'      '
      STOP
   ENDIF
+
   ijarg=1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cdum) ; ijarg=ijarg+1
      SELECT CASE ( cdum )
-     CASE (' -n ')
+     CASE ('-n ')
         CALL getarg(ijarg,cf_nam) ; ijarg=ijarg+1
-     CASE (' -b ')
+     CASE ('-b ')
         CALL getarg(ijarg,cf_bat) ; ijarg=ijarg+1
-     CASE (' -c ')
+     CASE ('-c ')
         CALL getarg(ijarg,cf_coo) ; ijarg=ijarg+1
      END SELECT
   ENDDO
@@ -305,6 +306,7 @@ CONTAINS
     CALL zgr_bat_ctl
 
  DO jj=1, npjglo
+    PRINT *, ' WORKING for j-slab ', jj
     DO jk=1, jpk
        gdept_0(:,jk) = gdept_1d(jk)
        gdepw_0(:,jk) = gdepw_1d(jk)
@@ -353,13 +355,13 @@ CONTAINS
       ik=MAX( mbathy(ji,jj),1)
       zdep(ji)=gdept_0(ji,ik) 
     ENDDO
-    ierr = NF90_PUT_VAR( nczgr, id_dept, zdep,    start=(/1,jj  ,1/), count=(/npiglo,1    ,1/) )
+    ierr = NF90_PUT_VAR( nczgr, id_hdept, zdep,    start=(/1,jj  ,1/), count=(/npiglo,1    ,1/) )
 
     DO ji = 1, npiglo
       ik=MAX( mbathy(ji,jj),1)
       zdep(ji)=gdepw_0(ji,ik+1) 
     ENDDO
-    ierr = NF90_PUT_VAR( nczgr, id_depw, zdep,    start=(/1,jj  ,1/), count=(/npiglo,1    ,1/) )
+    ierr = NF90_PUT_VAR( nczgr, id_hdepw, zdep,    start=(/1,jj  ,1/), count=(/npiglo,1    ,1/) )
 
     ierr = NF90_PUT_VAR( nczgr, id_e3t, e3t_0,    start=(/1,jj,1,1/), count=(/npiglo,1,jpk,1/) )
     ierr = NF90_PUT_VAR( nczgr, id_e3w, e3w_0,    start=(/1,jj,1,1/), count=(/npiglo,1,jpk,1/) )
