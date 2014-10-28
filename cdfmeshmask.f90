@@ -564,7 +564,7 @@ SUBROUTINE CreateMaskFile
 !	byte vmask(t, z, y, x) ;
 !	byte fmask(t, z, y, x) ;
 
-   ierr= NF90_CREATE(cf_zgr, or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncmsk) 
+   ierr= NF90_CREATE(cf_msk, or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncmsk) 
    ierr= NF90_DEF_DIM(ncmsk, 'x', npiglo, idx)
    ierr= NF90_DEF_DIM(ncmsk, 'y', npjglo, idy)
    ierr= NF90_DEF_DIM(ncmsk, 'z', jpk,    idz)
