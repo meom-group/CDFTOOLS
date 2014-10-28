@@ -33,6 +33,7 @@ PROGRAM cdfmeshmask
   INTEGER :: id_e3u, id_e3v, id_hdept, id_hdepw, id_navlat, id_navlon, id_navlev, id_time
   INTEGER :: idx, idy, idz, idt, idvar
   INTEGER :: id_tmsk, id_umsk, id_vmsk, id_fmsk
+  INTEGER :: id_tmsku, id_umsku, id_vmsku, id_fmsku
 
   INTEGER :: id_lamt, id_lamu, id_lamv, id_lamf    ! hgr  copy of coordinates  !!!
   INTEGER :: id_phit, id_phiu, id_phiv, id_phif 
@@ -334,11 +335,18 @@ CONTAINS
                   &  * tmask(ji,jj+1) * tmask(ji+1,jj+1)
       ENDDO
     ENDDO
+    IF ( jk == 1 ) THEN
+      ierr = NF90_PUT_VAR( ncmsk, id_tmsku, tmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+      ierr = NF90_PUT_VAR( ncmsk, id_umsku, umask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+      ierr = NF90_PUT_VAR( ncmsk, id_vmsku, vmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+      ierr = NF90_PUT_VAR( ncmsk, id_fmsku, fmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+    ENDIF
     ierr = NF90_PUT_VAR( ncmsk, id_tmsk, tmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
     ierr = NF90_PUT_VAR( ncmsk, id_umsk, umask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
     ierr = NF90_PUT_VAR( ncmsk, id_vmsk, vmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
     ierr = NF90_PUT_VAR( ncmsk, id_fmsk, fmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
     ENDDO
+
     ierr = NF90_CLOSE(ncmsk)
 
  DO jj=1, npjglo
@@ -574,6 +582,11 @@ SUBROUTINE CreateMaskFile
    ierr=NF90_DEF_VAR(ncmsk, 'nav_lat',       NF90_FLOAT, (/idx,idy/), id_navlat )
    ierr=NF90_DEF_VAR(ncmsk, 'nav_lev',       NF90_FLOAT, (/idz/)    , id_navlev )
    ierr=NF90_DEF_VAR(ncmsk, 'time_counter',  NF90_FLOAT, (/idt/)    , id_time   )
+
+   ierr=NF90_DEF_VAR(ncmsk, 'tmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_tmsku )
+   ierr=NF90_DEF_VAR(ncmsk, 'umaskutil',    NF90_BYTE, (/idx,idy,idt/), id_umsku )
+   ierr=NF90_DEF_VAR(ncmsk, 'vmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_vmsku )
+   ierr=NF90_DEF_VAR(ncmsk, 'fmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_fmsku )
 
    ierr=NF90_DEF_VAR(ncmsk, 'tmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_tmsk )
    ierr=NF90_DEF_VAR(ncmsk, 'umask',         NF90_BYTE, (/idx,idy,idz,idt/), id_umsk )
