@@ -34,7 +34,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
-       cdf_xtrac_brokenline cdf2levitusgrid2d \
+       cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2levitusgrid3d\
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp
 
@@ -362,6 +362,9 @@ cdfcoloc3: cdfio.o  cdfcoloc3.f90
 
 cdf2levitusgrid2d: cdfio.o cdftools.o modutils.o cdf2levitusgrid2d.f90
 	$(F90) cdf2levitusgrid2d.f90  -o $(BINDIR)/cdf2levitusgrid2d  cdfio.o modcdfnames.o cdftools.o modutils.o $(FFLAGS)
+
+cdf2levitusgrid3d: cdfio.o cdftools.o modutils.o cdf2levitusgrid3d.f90
+	$(F90) cdf2levitusgrid3d.f90  -o $(BINDIR)/cdf2levitusgrid3d  cdfio.o modcdfnames.o cdftools.o modutils.o $(FFLAGS)
 
 cdf025to05: cdfio.o  cdf025to05.f90
 	$(F90) cdf025to05.f90  -o $(BINDIR)/cdf025to05 cdfio.o modcdfnames.o $(FFLAGS)
