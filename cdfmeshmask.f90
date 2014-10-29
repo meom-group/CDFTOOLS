@@ -22,8 +22,12 @@ PROGRAM cdfmeshmask
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   INTEGER, PARAMETER :: wp=8
+
   INTEGER :: narg, iargc, ijarg
-  INTEGER :: npiglo, npjglo, nkmax, ijbloc=193  , nbloc=18 , jbloc, ij ! 193
+  INTEGER :: npiglo, npjglo, nkmax
+  INTEGER :: nbloc_sz=193  , nbloc=-1
+  INTEGER, DIMENSION(:), ALLOCATABLE :: nbloc_szt, njbloct
+  INTEGER :: jbloc, ij, i1, i2, ji     !
   INTEGER :: nperio = 0    ! closed boundary only for the time being
   INTEGER, DIMENSION(:,:), ALLOCATABLE :: mbathy
 
@@ -37,7 +41,7 @@ PROGRAM cdfmeshmask
 
   INTEGER :: id_lamt, id_lamu, id_lamv, id_lamf    ! hgr  copy of coordinates  !!!
   INTEGER :: id_phit, id_phiu, id_phiv, id_phif 
-  
+
   INTEGER :: id_tmask, id_umask, id_vmask, id_fmask  ! mask file
 
   REAL(wp) :: rhmin
@@ -114,7 +118,8 @@ PROGRAM cdfmeshmask
   narg=iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfmeshmask -n namelist -b bathymetry_file  -c coordinates [-h] '
+     PRINT *,' usage :  cdfmeshmask -n namelist -b bathymetry_file  -c coordinates ...'
+     PRINT *,'         ... [-njbloc nbloc] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create mesh_mask from bathymetry and namdom information (namelist)' 
@@ -125,7 +130,9 @@ PROGRAM cdfmeshmask
      PRINT *,'       -c coordinates : name of coordinates file'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -h : this help message '
+     PRINT *,'       -njbloc nbloc : number of j-bloc of rows to treat together. Increasing'
+     PRINT *,'             nbloc decreases memory usage but increases writing time.'
+     PRINT *,'            default : nbloc = npjglo (worst condition) '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        namelist, bathymetry and coordinated passed on the command line' 
@@ -149,6 +156,9 @@ PROGRAM cdfmeshmask
         CALL getarg(ijarg,cf_bat) ; ijarg=ijarg+1
      CASE ('-c ')
         CALL getarg(ijarg,cf_coo) ; ijarg=ijarg+1
+     CASE ('-njbloc ')
+        CALL getarg(ijarg,cdum) ; ijarg=ijarg+1
+        READ(cdum,*) nbloc
      END SELECT
   ENDDO
   lchk = lchk .OR. chkfile(cf_nam) 
@@ -158,6 +168,19 @@ PROGRAM cdfmeshmask
 
   npiglo = getdim(cf_coo, cn_x)
   npjglo = getdim(cf_coo, cn_y)
+  IF ( nbloc == -1 ) nbloc = npjglo
+  ! build nbloc_szt and njbloct
+  ALLOCATE(  nbloc_szt(nbloc), njbloct(nbloc) )
+  i1 = npjglo/nbloc
+  i2 = mod(npjglo, nbloc )
+  nbloc_szt(1         :nbloc-i2) = i1
+  nbloc_szt(nbloc-i2+1:nbloc   ) = i1+1
+  njbloct(1) = 1
+  DO ji=2, nbloc
+    njbloct(ji) = njbloct(ji-1) + nbloc_szt(ji-1)
+  ENDDO
+
+
   ALLOCATE (bathy(npiglo, npjglo ), rlon(npiglo, npjglo )  , rlat(npiglo, npjglo )  ) 
   ALLOCATE (mbathy(npiglo, npjglo )) 
 
@@ -165,21 +188,21 @@ PROGRAM cdfmeshmask
   bathy(:,:) = getvar(cf_bat, cn_bathymet, 1, npiglo, npjglo)
   ! set minimum value here :
   IF( rn_hmin < 0._wp ) THEN       
-    nkmax = - INT( rn_hmin )                                       ! from a nb of level
+     nkmax = - INT( rn_hmin )                                       ! from a nb of level
   ELSE 
-    nkmax = MINLOC( gdepw_1d, mask = gdepw_1d > rn_hmin, dim = 1 ) ! from a depth
+     nkmax = MINLOC( gdepw_1d, mask = gdepw_1d > rn_hmin, dim = 1 ) ! from a depth
   ENDIF
   rhmin = gdepw_1d(nkmax+1)                                        ! minimum depth = ik+1 w-levels
 
   WHERE( bathy(:,:) <= 0._wp )   
-    bathy(:,:) = 0._wp                         ! min=0     over the lands
+     bathy(:,:) = 0._wp                         ! min=0     over the lands
   ELSE WHERE                     
-    bathy(:,:) = MAX(  rhmin , bathy(:,:)  )   ! min=rhmin over the oceans
+     bathy(:,:) = MAX(  rhmin , bathy(:,:)  )   ! min=rhmin over the oceans
   END WHERE
   PRINT *,  'Minimum ocean depth: ', rhmin, ' minimum number of ocean levels : ', nkmax
 
   CALL zgr_zps
-! CALL zgr_bat_ctl
+
 
 CONTAINS
   SUBROUTINE zgr_z
@@ -215,7 +238,6 @@ CONTAINS
     jpkm1=jpk-1
 
     ALLOCATE (gdept_1d(jpk), gdepw_1d(jpk), e3t_1d(jpk), e3w_1d(jpk) )
-
 
     ! Set variables from parameters
     ! ------------------------------
@@ -288,230 +310,244 @@ CONTAINS
     REAL(wp) ::   zrefdep          ! temporary scalar
     REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zdep
     !!----------------------------------------------------------------------
-    ALLOCATE ( gdept_0(npiglo,ijbloc, jpk) )
-    ALLOCATE ( gdepw_0(npiglo,ijbloc, jpk) )
-    ALLOCATE ( zdep(npiglo,ijbloc) )
-    ALLOCATE ( e3t_0(npiglo,ijbloc, jpk) )
-    ALLOCATE ( e3w_0(npiglo,ijbloc, jpk) )
     ALLOCATE ( tmask(npiglo, npjglo) )
     ALLOCATE ( umask(npiglo, npjglo) )
     ALLOCATE ( vmask(npiglo, npjglo) )
     ALLOCATE ( fmask(npiglo, npjglo) )
 
+
     zmax = gdepw_1d(jpk) + e3t_1d(jpk)        ! maximum depth (i.e. the last ocean level thickness <= 2*e3t_1d(jpkm1) )
     bathy(:,:) = MIN( zmax ,  bathy(:,:) )    ! bounded value of bathy (min already set at the end of zgr_bat)
 
-    WHERE( bathy(:,:) == 0._wp )   ;   mbathy(:,:) = 0       ! land  : set mbathy to 0
-    ELSE WHERE                     ;   mbathy(:,:) = jpkm1   ! ocean : initialize mbathy to the max ocean level
+    WHERE( bathy(:,:) == 0._wp )   
+       mbathy(:,:) = 0       ! land  : set mbathy to 0
+    ELSE WHERE                     
+       mbathy(:,:) = jpkm1   ! ocean : initialize mbathy to the max ocean level
     END WHERE
 
- ! Compute mbathy for ocean points (i.e. the number of ocean levels)
- ! find the number of ocean levels such that the last level thickness
- ! is larger than the minimum of e3zps_min and e3zps_rat * e3t_1d (where
- ! e3t_1d is the reference level thickness
+    ! Compute mbathy for ocean points (i.e. the number of ocean levels)
+    ! find the number of ocean levels such that the last level thickness
+    ! is larger than the minimum of e3zps_min and e3zps_rat * e3t_1d (where
+    ! e3t_1d is the reference level thickness
     DO jk = jpkm1, 1, -1
        zdepth = gdepw_1d(jk) + MIN( rn_e3zps_min, e3t_1d(jk)*rn_e3zps_rat )
        WHERE( 0._wp < bathy(:,:) .AND. bathy(:,:) <= zdepth )   mbathy(:,:) = jk-1
     END DO
 
     CALL zgr_bat_ctl
-    ! compute mask from mbathy
-     goto 999
 
+    ! compute mask from mbathy : for writing performance and memory management, each mask is computed
+    !  and written on file sequentially. Thus repeating  tmask determination (cheap)
     DO jk = 1, jpk
-     PRINT *, 'T Masks for jk = ', jk
-    tmask(:,:) = 0._wp
-     DO jj = 1, npjglo
-       DO ji = 1, npiglo
-            IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
+       PRINT *, 'T Masks for jk = ', jk
+       tmask(:,:) = 0._wp
+       DO jj = 1, npjglo
+          DO ji = 1, npiglo
+             IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
+          END DO
        END DO
-    END DO
-    IF ( jk == 1 ) THEN
-!     ierr = NF90_PUT_VAR( ncmsk, id_tmsku, tmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-!     IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-    ENDIF
-!   ierr = NF90_PUT_VAR( ncmsk, id_tmsk, tmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
-!  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-    ENDDO
-
-   DO jk = 1, jpk
-     PRINT *, 'U Masks for jk = ', jk
-    tmask(:,:) = 0._wp
-    umask(:,:) = 0._wp
-     DO jj = 1, npjglo
-       DO ji = 1, npiglo
-            IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
-       END DO
-    END DO
-    DO jj = 1, npjglo -1
-      DO ji = 1, npiglo -1
-        umask(ji,jj) = tmask(ji,jj) * tmask(ji+1,jj  )
-      ENDDO
-    ENDDO
-    IF ( jk == 1 ) THEN
-!     ierr = NF90_PUT_VAR( ncmsk, id_umsku, umask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-!  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-    ENDIF
-!   ierr = NF90_PUT_VAR( ncmsk, id_umsk, umask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
-!  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-  ENDDO
-
-   DO jk = 1, jpk
-     PRINT *, 'V Masks for jk = ', jk
-    tmask(:,:) = 0._wp
-    vmask(:,:) = 0._wp
-     DO jj = 1, npjglo
-       DO ji = 1, npiglo
-            IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
-       END DO
-    END DO
-    DO jj = 1, npjglo -1
-      DO ji = 1, npiglo -1
-        vmask(ji,jj) = tmask(ji,jj) * tmask(ji  ,jj+1)
-      ENDDO
-    ENDDO
-    IF ( jk == 1 ) THEN
-!     ierr = NF90_PUT_VAR( ncmsk, id_vmsku, vmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-!  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-    ENDIF
-!   ierr = NF90_PUT_VAR( ncmsk, id_vmsk, vmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
-!  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-  ENDDO
-
-   DO jk = 1, jpk
-     PRINT *, 'F Masks for jk = ', jk
-    tmask(:,:) = 0._wp
-    fmask(:,:) = 0._wp
-     DO jj = 1, npjglo
-       DO ji = 1, npiglo
-            IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
-       END DO
-    END DO
-    DO jj = 1, npjglo -1
-      DO ji = 1, npiglo -1
-        fmask(ji,jj) = tmask(ji,jj  ) * tmask(ji+1,jj  )   &
-                  &  * tmask(ji,jj+1) * tmask(ji+1,jj+1)
-      ENDDO
-    ENDDO
-    IF ( jk == 1 ) THEN
-!     ierr = NF90_PUT_VAR( ncmsk, id_fmsku, fmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-!  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-    ENDIF
-!   ierr = NF90_PUT_VAR( ncmsk, id_fmsk, fmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
-!  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-  ENDDO
-
-999 continue
-    ierr = NF90_CLOSE(ncmsk)
-
-! DO jj=1, npjglo
-  DO jbloc=1,nbloc
-    PRINT *, ' WORKING for jbloc-slab ', jbloc
-    DO jk=1, jpk
-       gdept_0(:,:,jk) = gdept_1d(jk)
-       gdepw_0(:,:,jk) = gdepw_1d(jk)
-       e3t_0  (:,:,jk) = e3t_1d  (jk)
-       e3w_0  (:,:,jk) = e3w_1d  (jk)
-    ENDDO
-   DO jj=1, ijbloc
-    ij=(jbloc -1 )*ijbloc +jj
-    DO ji=1, npiglo
-       ik = mbathy(ji,ij)
-       IF( ik > 0 ) THEN               ! ocean point only
-          ! max ocean level case
-          IF( ik == jpkm1 ) THEN
-             zdepwp = bathy(ji,ij)
-             ze3tp  = bathy(ji,ij) - gdepw_1d(ik)
-             ze3wp = 0.5_wp * e3w_1d(ik) * ( 1._wp + ( ze3tp/e3t_1d(ik) ) )
-             e3t_0(ji,jj,ik  ) = ze3tp
-             e3t_0(ji,jj,ik+1) = ze3tp
-             e3w_0(ji,jj,ik  ) = ze3wp
-             e3w_0(ji,jj,ik+1) = ze3tp
-             gdepw_0(ji,jj,ik+1) = zdepwp
-             gdept_0(ji,jj,ik  ) = gdept_1d(ik-1) + ze3wp
-             gdept_0(ji,jj,ik+1) = gdept_0(ji,jj,ik) + ze3tp
-             !
-          ELSE                         ! standard case
-             IF( bathy(ji,ij) <= gdepw_1d(ik+1) ) THEN  ;   gdepw_0(ji,jj,ik+1) = bathy(ji,ij)
-             ELSE                                       ;   gdepw_0(ji,jj,ik+1) = gdepw_1d(ik+1)
-             ENDIF
-             !       ... on ik
-             gdept_0(ji,jj,ik) = gdepw_1d(ik) + ( gdepw_0   (ji,jj,ik+1) - gdepw_1d(ik) )   &
-                  &                          * ((gdept_1d(     ik  ) - gdepw_1d(ik) )   &
-                  &                           /( gdepw_1d(     ik+1) - gdepw_1d(ik) ))
-             e3t_0(ji,jj,ik) = e3t_1d (ik)    * ( gdepw_0   (ji,jj,ik+1) - gdepw_1d(ik) )   &
-                  &                          / ( gdepw_1d(     ik+1) - gdepw_1d(ik) )
-             e3w_0(ji,jj,ik) = 0.5_wp * ( gdepw_0(ji,jj,ik+1) + gdepw_1d(ik+1) - 2._wp * gdepw_1d(ik) )   &
-                  &                  * ( e3w_1d(ik) / ( gdepw_1d(ik+1) - gdepw_1d(ik) ) )
-             !       ... on ik+1
-             e3w_0  (ji,jj,ik+1) = e3t_0  (ji,jj,ik)
-             e3t_0  (ji,jj,ik+1) = e3t_0  (ji,jj,ik)
-             gdept_0(ji,jj,ik+1) = gdept_0(ji,jj,ik) + e3t_0(ji,jj,ik)
+       IF ( jk == 1 ) THEN
+          ierr = NF90_PUT_VAR( ncmsk, id_tmsku, tmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+          IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
           ENDIF
        ENDIF
+       ierr = NF90_PUT_VAR( ncmsk, id_tmsk, tmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; 
+       ENDIF
+    ENDDO
+
+    DO jk = 1, jpk
+       PRINT *, 'U Masks for jk = ', jk
+       tmask(:,:) = 0._wp
+       umask(:,:) = 0._wp
+       DO jj = 1, npjglo
+          DO ji = 1, npiglo
+             IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
+          END DO
+       END DO
+       DO jj = 1, npjglo -1
+          DO ji = 1, npiglo -1
+             umask(ji,jj) = tmask(ji,jj) * tmask(ji+1,jj  )
+          ENDDO
+       ENDDO
+       IF ( jk == 1 ) THEN
+          ierr = NF90_PUT_VAR( ncmsk, id_umsku, umask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+          IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+          ENDIF
+       ENDIF
+       ierr = NF90_PUT_VAR( ncmsk, id_umsk, umask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+       ENDIF
+    ENDDO
+
+    DO jk = 1, jpk
+       PRINT *, 'V Masks for jk = ', jk
+       tmask(:,:) = 0._wp
+       vmask(:,:) = 0._wp
+       DO jj = 1, npjglo
+          DO ji = 1, npiglo
+             IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
+          END DO
+       END DO
+       DO jj = 1, npjglo -1
+          DO ji = 1, npiglo -1
+             vmask(ji,jj) = tmask(ji,jj) * tmask(ji  ,jj+1)
+          ENDDO
+       ENDDO
+       IF ( jk == 1 ) THEN
+          ierr = NF90_PUT_VAR( ncmsk, id_vmsku, vmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+          IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+          ENDIF
+       ENDIF
+       ierr = NF90_PUT_VAR( ncmsk, id_vmsk, vmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+       ENDIF
+    ENDDO
+
+    DO jk = 1, jpk
+       PRINT *, 'F Masks for jk = ', jk
+       tmask(:,:) = 0._wp
+       fmask(:,:) = 0._wp
+       DO jj = 1, npjglo
+          DO ji = 1, npiglo
+             IF( REAL( mbathy(ji,jj) - jk, wp ) + 0.1_wp >= 0._wp )   tmask(ji,jj) = 1._wp
+          END DO
+       END DO
+       DO jj = 1, npjglo -1
+          DO ji = 1, npiglo -1
+             fmask(ji,jj) = tmask(ji,jj  ) * tmask(ji+1,jj  )   &
+                  &  * tmask(ji,jj+1) * tmask(ji+1,jj+1)
+          ENDDO
+       ENDDO
+       IF ( jk == 1 ) THEN
+          ierr = NF90_PUT_VAR( ncmsk, id_fmsku, fmask,    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+          IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+          ENDIF
+       ENDIF
+       ierr = NF90_PUT_VAR( ncmsk, id_fmsk, fmask,    start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+       ENDIF
+    ENDDO
+
+    ierr = NF90_CLOSE(ncmsk)
+
+    ! Now work for vertical metrics
+    DO jbloc=1,nbloc
+       PRINT *, ' WORKING for jbloc-slab ', jbloc
+       nbloc_sz = nbloc_szt(jbloc)
+       ALLOCATE ( gdept_0(npiglo,nbloc_sz, jpk) )
+       ALLOCATE ( gdepw_0(npiglo,nbloc_sz, jpk) )
+       ALLOCATE ( zdep(npiglo,nbloc_sz) )
+       ALLOCATE ( e3t_0(npiglo,nbloc_sz, jpk) )
+       ALLOCATE ( e3w_0(npiglo,nbloc_sz, jpk) )
+       DO jk=1, jpk
+          gdept_0(:,:,jk) = gdept_1d(jk)
+          gdepw_0(:,:,jk) = gdepw_1d(jk)
+          e3t_0  (:,:,jk) = e3t_1d  (jk)
+          e3w_0  (:,:,jk) = e3w_1d  (jk)
+       ENDDO
+       DO jj=1, nbloc_sz
+          ij=njbloct(jbloc) + jj - 1
+          DO ji=1, npiglo
+             ik = mbathy(ji,ij)
+             IF( ik > 0 ) THEN               ! ocean point only
+                ! max ocean level case
+                IF( ik == jpkm1 ) THEN
+                   zdepwp = bathy(ji,ij)
+                   ze3tp  = bathy(ji,ij) - gdepw_1d(ik)
+                   ze3wp = 0.5_wp * e3w_1d(ik) * ( 1._wp + ( ze3tp/e3t_1d(ik) ) )
+                   e3t_0(ji,jj,ik  ) = ze3tp
+                   e3t_0(ji,jj,ik+1) = ze3tp
+                   e3w_0(ji,jj,ik  ) = ze3wp
+                   e3w_0(ji,jj,ik+1) = ze3tp
+                   gdepw_0(ji,jj,ik+1) = zdepwp
+                   gdept_0(ji,jj,ik  ) = gdept_1d(ik-1) + ze3wp
+                   gdept_0(ji,jj,ik+1) = gdept_0(ji,jj,ik) + ze3tp
+                   !
+                ELSE                         ! standard case
+                   IF( bathy(ji,ij) <= gdepw_1d(ik+1) ) THEN  ;   gdepw_0(ji,jj,ik+1) = bathy(ji,ij)
+                   ELSE                                       ;   gdepw_0(ji,jj,ik+1) = gdepw_1d(ik+1)
+                   ENDIF
+                   !       ... on ik
+                   gdept_0(ji,jj,ik) = gdepw_1d(ik) + ( gdepw_0   (ji,jj,ik+1) - gdepw_1d(ik) )   &
+                        &                          * ((gdept_1d(     ik  ) - gdepw_1d(ik) )   &
+                        &                           /( gdepw_1d(     ik+1) - gdepw_1d(ik) ))
+                   e3t_0(ji,jj,ik) = e3t_1d (ik)    * ( gdepw_0   (ji,jj,ik+1) - gdepw_1d(ik) )   &
+                        &                          / ( gdepw_1d(     ik+1) - gdepw_1d(ik) )
+                   e3w_0(ji,jj,ik) = 0.5_wp * ( gdepw_0(ji,jj,ik+1) + gdepw_1d(ik+1) - 2._wp * gdepw_1d(ik) )   &
+                        &                  * ( e3w_1d(ik) / ( gdepw_1d(ik+1) - gdepw_1d(ik) ) )
+                   !       ... on ik+1
+                   e3w_0  (ji,jj,ik+1) = e3t_0  (ji,jj,ik)
+                   e3t_0  (ji,jj,ik+1) = e3t_0  (ji,jj,ik)
+                   gdept_0(ji,jj,ik+1) = gdept_0(ji,jj,ik) + e3t_0(ji,jj,ik)
+                ENDIF
+             ENDIF
+          END DO
+       ENDDO
+
+       ! write mesh_zgr here with gdept_0, gdepw_0, e3t_0, e3w_0 only
+       ! do it quick and dirty at this time ...
+       ! write vertical slab (maybe slow but save lot of memory
+       DO jj=1, nbloc_sz
+          ij=(jbloc -1 )*nbloc_sz +jj
+          DO ji = 1, npiglo
+             ik=MAX( mbathy(ji,ij),1)
+             zdep(ji,jj)=gdept_0(ji,jj,ik) 
+          ENDDO
+       ENDDO
+       ierr = NF90_PUT_VAR( nczgr, id_hdept, zdep,    start=(/1,(jbloc-1)*nbloc_sz+1  ,1/), count=(/npiglo,nbloc_sz    ,1/) )
+
+       DO jj=1, nbloc_sz
+          ij=(jbloc -1 )*nbloc_sz +jj
+          DO ji = 1, npiglo
+             ik=MAX( mbathy(ji,ij),1)
+             zdep(ji,jj)=gdepw_0(ji,jj,ik+1) 
+          ENDDO
+       ENDDO
+       ierr = NF90_PUT_VAR( nczgr, id_hdepw, zdep,    start=(/1,(jbloc-1)*nbloc_sz+1  ,1/), count=(/npiglo,nbloc_sz    ,1/) )
+
+       ierr = NF90_PUT_VAR( nczgr, id_e3t, e3t_0,    start=(/1,(jbloc-1)*nbloc_sz+1,1,1/), count=(/npiglo,nbloc_sz,jpk,1/) )
+       ierr = NF90_PUT_VAR( nczgr, id_e3w, e3w_0,    start=(/1,(jbloc-1)*nbloc_sz+1,1,1/), count=(/npiglo,nbloc_sz,jpk,1/) )
+
+       DEALLOCATE ( gdept_0,  gdepw_0, zdep, e3t_0,  e3w_0 )
     END DO
-    ENDDO 
+    ierr = NF90_CLOSE(nczgr )
+    
+    ! re open mesh_zgr in order to read e3t, e3w horizontally and compute e3u, e3v level by level
+    !  use rlon, rlat as temporary arrays for e3t, e3w, e3u, e3v ...
+    ierr = NF90_OPEN(cf_zgr,NF90_WRITE,nczgr )
+    ierr = NF90_INQ_VARID(nczgr,'e3t',id_e3t )
+    ierr = NF90_INQ_VARID(nczgr,'e3w',id_e3w ) 
+    ierr = NF90_INQ_VARID(nczgr,'e3u',id_e3u )
+    ierr = NF90_INQ_VARID(nczgr,'e3v',id_e3v )
 
-    ! write mesh_zgr here with gdept_0, gdepw_0, e3t_0, e3w_0 only
-    ! do it quick and dirty at this time ...
-    ! write vertical slab (maybe slow but save lot of memory
-    DO jj=1, ijbloc
-      ij=(jbloc -1 )*ijbloc +jj
-    DO ji = 1, npiglo
-      ik=MAX( mbathy(ji,ij),1)
-      zdep(ji,jj)=gdept_0(ji,jj,ik) 
+    DO jk = 1, jpk
+       PRINT *,' e3u at level ', jk
+       ierr= NF90_GET_VAR( nczgr, id_e3t, rlon, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+       rlat =  e3t_1d(jk)
+       DO jj=1,npjglo - 1
+          DO ji=1,npiglo -1
+             rlat(ji,jj) = MIN( rlon(ji,jj), rlon(ji+1,jj) )
+          ENDDO
+       ENDDO
+       ierr = NF90_PUT_VAR(nczgr, id_e3u, rlat, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
     ENDDO
+
+    DO jk = 1, jpk
+       PRINT *,' e3v at level ', jk
+       ierr= NF90_GET_VAR( nczgr, id_e3t, rlon, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
+       rlat =  e3t_1d(jk)
+       DO jj=1,npjglo - 1
+          DO ji=1,npiglo -1
+             rlat(ji,jj) = MIN( rlon(ji,jj), rlon(ji,jj+1) )
+          ENDDO
+       ENDDO
+       ierr = NF90_PUT_VAR(nczgr, id_e3v, rlat, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
     ENDDO
-    ierr = NF90_PUT_VAR( nczgr, id_hdept, zdep,    start=(/1,(jbloc-1)*ijbloc+1  ,1/), count=(/npiglo,ijbloc    ,1/) )
 
-    DO jj=1, ijbloc
-      ij=(jbloc -1 )*ijbloc +jj
-    DO ji = 1, npiglo
-      ik=MAX( mbathy(ji,ij),1)
-      zdep(ji,jj)=gdepw_0(ji,jj,ik+1) 
-    ENDDO
-    ENDDO
-!   ierr = NF90_PUT_VAR( nczgr, id_hdepw, zdep,    start=(/1,jj  ,1/), count=(/npiglo,1    ,1/) )
-    ierr = NF90_PUT_VAR( nczgr, id_hdepw, zdep,    start=(/1,(jbloc-1)*ijbloc+1  ,1/), count=(/npiglo,ijbloc    ,1/) )
+    ierr = NF90_CLOSE(nczgr )
 
-    ierr = NF90_PUT_VAR( nczgr, id_e3t, e3t_0,    start=(/1,(jbloc-1)*ijbloc+1,1,1/), count=(/npiglo,ijbloc,jpk,1/) )
-    ierr = NF90_PUT_VAR( nczgr, id_e3w, e3w_0,    start=(/1,(jbloc-1)*ijbloc+1,1,1/), count=(/npiglo,ijbloc,jpk,1/) )
- END DO
- ierr = NF90_CLOSE(nczgr )
- ierr = NF90_OPEN(cf_zgr,NF90_WRITE,nczgr )
- ierr = NF90_INQ_VARID(nczgr,'e3t',id_e3t )
- ierr = NF90_INQ_VARID(nczgr,'e3w',id_e3w )
- ierr = NF90_INQ_VARID(nczgr,'e3u',id_e3u )
- ierr = NF90_INQ_VARID(nczgr,'e3v',id_e3v )
-
- DO jk = 1, jpk
-   PRINT *,' e3u at level ', jk
-   ierr= NF90_GET_VAR( nczgr, id_e3t, rlon, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
-   rlat =  e3t_1d(jk)
-   DO jj=1,npjglo - 1
-     DO ji=1,npiglo -1
-        rlat(ji,jj) = MIN( rlon(ji,jj), rlon(ji+1,jj) )
-     ENDDO
-   ENDDO
-   ierr = NF90_PUT_VAR(nczgr, id_e3u, rlat, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
- ENDDO
-
- DO jk = 1, jpk
-   PRINT *,' e3v at level ', jk
-   ierr= NF90_GET_VAR( nczgr, id_e3t, rlon, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
-   rlat =  e3t_1d(jk)
-   DO jj=1,npjglo - 1
-     DO ji=1,npiglo -1
-        rlat(ji,jj) = MIN( rlon(ji,jj), rlon(ji,jj+1) )
-     ENDDO
-   ENDDO
-   ierr = NF90_PUT_VAR(nczgr, id_e3v, rlat, start=(/1,1,jk,1/), count=(/npiglo,npjglo,1,1/) )
- ENDDO
-
- ierr = NF90_CLOSE(nczgr )
-
- 
-END SUBROUTINE zgr_zps
+  END SUBROUTINE zgr_zps
 
 SUBROUTINE zgr_bat_ctl
   !!----------------------------------------------------------------------
@@ -583,146 +619,168 @@ SUBROUTINE zgr_bat_ctl
 END SUBROUTINE zgr_bat_ctl
 
 SUBROUTINE CreateMeshZgrFile
-!netcdf ORCA12.L75-MAL83_mesh_zgr {
-!dimensions:
-!	x = 4322 ;
-!	y = 3059 ;
-!	z = 75 ;
-!	t = UNLIMITED ; // (1 currently)
-!variables:
-!	float nav_lon(y, x) ;
-!	float nav_lat(y, x) ;
-!	float nav_lev(z) ;
-!	float time_counter(t) ;
-!	float gdept_0(t, z) ;
-!	float gdepw_0(t, z) ;
-!	float e3t_0(t, z) ;
-!	float e3w_0(t, z) ;
-!	float mbathy(t, y, x) ;
-!	float hdept(t, y, x) ;
-!	float hdepw(t, y, x) ;
-!	float e3t(t, z, y, x) ;
-!	float e3u(t, z, y, x) ;
-!	float e3v(t, z, y, x) ;
-!	float e3w(t, z, y, x) ;
-!  ierr= NF90_CREATE(cf_zgr, or(NF90_CLOBBER,NF90_64BIT_OFFSET), nczgr) 
-   ierr= NF90_CREATE(cf_zgr, or(NF90_CLOBBER,NF90_NETCDF4), nczgr) 
-   ierr= NF90_DEF_DIM(nczgr, 'x', npiglo, idx)
-   ierr= NF90_DEF_DIM(nczgr, 'y', npjglo, idy)
-   ierr= NF90_DEF_DIM(nczgr, 'z', jpk,    idz)
-   ierr= NF90_DEF_DIM(nczgr, 't', NF90_UNLIMITED,  idt)
+  !netcdf ORCA12.L75-MAL83_mesh_zgr {
+  !dimensions:
+  !	x = 4322 ;
+  !	y = 3059 ;
+  !	z = 75 ;
+  !	t = UNLIMITED ; // (1 currently)
+  !variables:
+  !	float nav_lon(y, x) ;
+  !	float nav_lat(y, x) ;
+  !	float nav_lev(z) ;
+  !	float time_counter(t) ;
+  !	float gdept_0(t, z) ;
+  !	float gdepw_0(t, z) ;
+  !	float e3t_0(t, z) ;
+  !	float e3w_0(t, z) ;
+  !	float mbathy(t, y, x) ;
+  !	float hdept(t, y, x) ;
+  !	float hdepw(t, y, x) ;
+  !	float e3t(t, z, y, x) ;
+  !	float e3u(t, z, y, x) ;
+  !	float e3v(t, z, y, x) ;
+  !	float e3w(t, z, y, x) ;
+  !  ierr= NF90_CREATE(cf_zgr, or(NF90_CLOBBER,NF90_64BIT_OFFSET), nczgr) 
 
-   ierr=NF90_DEF_VAR(nczgr, 'nav_lon',       NF90_FLOAT, (/idx,idy/), id_navlon )
-   ierr=NF90_DEF_VAR(nczgr, 'nav_lat',       NF90_FLOAT, (/idx,idy/), id_navlat )
-   ierr=NF90_DEF_VAR(nczgr, 'nav_lev',       NF90_FLOAT, (/idz/)    , id_navlev )
-   ierr=NF90_DEF_VAR(nczgr, 'time_counter',  NF90_FLOAT, (/idt/)    , id_time   )
+ ierr= NF90_CREATE(cf_zgr, or(NF90_CLOBBER,NF90_NETCDF4), nczgr) 
+ ierr= NF90_DEF_DIM(nczgr, 'x', npiglo, idx)
+ ierr= NF90_DEF_DIM(nczgr, 'y', npjglo, idy)
+ ierr= NF90_DEF_DIM(nczgr, 'z', jpk,    idz)
+ ierr= NF90_DEF_DIM(nczgr, 't', NF90_UNLIMITED,  idt)
 
-   ierr=NF90_DEF_VAR(nczgr, 'gdept_0',       NF90_FLOAT, (/idz,idt/), id_dept1d )
-   ierr=NF90_DEF_VAR(nczgr, 'gdepw_0',       NF90_FLOAT, (/idz,idt/), id_depw1d )
-   ierr=NF90_DEF_VAR(nczgr, 'e3t_0',         NF90_FLOAT, (/idz,idt/), id_e3t1d  )
-   ierr=NF90_DEF_VAR(nczgr, 'e3w_0',         NF90_FLOAT, (/idz,idt/), id_e3w1d  )
+ ierr=NF90_DEF_VAR(nczgr, 'nav_lon',       NF90_FLOAT, (/idx,idy/), id_navlon )
+ ierr=NF90_DEF_VAR(nczgr, 'nav_lat',       NF90_FLOAT, (/idx,idy/), id_navlat )
+ ierr=NF90_DEF_VAR(nczgr, 'nav_lev',       NF90_FLOAT, (/idz/)    , id_navlev )
+ ierr=NF90_DEF_VAR(nczgr, 'time_counter',  NF90_FLOAT, (/idt/)    , id_time   )
 
-   ierr=NF90_DEF_VAR(nczgr, 'mbathy',        NF90_FLOAT, (/idx,idy,idt/), id_mbat )
-   ierr=NF90_DEF_VAR(nczgr, 'hdept',         NF90_FLOAT, (/idx,idy,idt/), id_hdept )
-   ierr=NF90_DEF_VAR(nczgr, 'hdepw',         NF90_FLOAT, (/idx,idy,idt/), id_hdepw )
+ ierr=NF90_DEF_VAR(nczgr, 'gdept_0',       NF90_FLOAT, (/idz,idt/), id_dept1d )
+ ierr=NF90_DEF_VAR(nczgr, 'gdepw_0',       NF90_FLOAT, (/idz,idt/), id_depw1d )
+ ierr=NF90_DEF_VAR(nczgr, 'e3t_0',         NF90_FLOAT, (/idz,idt/), id_e3t1d  )
+ ierr=NF90_DEF_VAR(nczgr, 'e3w_0',         NF90_FLOAT, (/idz,idt/), id_e3w1d  )
 
-   ierr=NF90_DEF_VAR(nczgr, 'e3t',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3t )
-   ierr=NF90_DEF_VAR(nczgr, 'e3w',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3w )
-   ierr=NF90_DEF_VAR(nczgr, 'e3u',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3u )
-   ierr=NF90_DEF_VAR(nczgr, 'e3v',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3v )
+ ierr=NF90_DEF_VAR(nczgr, 'mbathy',        NF90_FLOAT, (/idx,idy,idt/), id_mbat )
+ ierr=NF90_DEF_VAR(nczgr, 'hdept',         NF90_FLOAT, (/idx,idy,idt/), id_hdept )
+ ierr=NF90_DEF_VAR(nczgr, 'hdepw',         NF90_FLOAT, (/idx,idy,idt/), id_hdepw )
 
-   ierr = NF90_ENDDEF(nczgr)
-   ! put dimension related variables
-   ierr = NF90_OPEN(cf_coo, NF90_NOCLOBBER, nccoo )
-   ierr = NF90_INQ_VARID(nccoo, cn_glamt, idvar ) ; ierr=NF90_GET_VAR(nccoo, idvar, rlon )
-   ierr = NF90_INQ_VARID(nccoo, cn_gphit, idvar ) ; ierr=NF90_GET_VAR(nccoo, idvar, rlat )
-   ierr = NF90_CLOSE(nccoo )
+ ierr=NF90_DEF_VAR(nczgr, 'e3t',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3t )
+ ierr=NF90_DEF_VAR(nczgr, 'e3w',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3w )
+ ierr=NF90_DEF_VAR(nczgr, 'e3u',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3u )
+ ierr=NF90_DEF_VAR(nczgr, 'e3v',           NF90_FLOAT, (/idx,idy,idz,idt/), id_e3v )
 
-   ierr = NF90_PUT_VAR(nczgr, id_navlon, rlon)
-   ierr = NF90_PUT_VAR(nczgr, id_navlat, rlat)
-   ierr = NF90_PUT_VAR(nczgr, id_navlev, gdept_1d )
-   ierr = NF90_PUT_VAR(nczgr, id_time  , (/0./) )
+ ierr = NF90_ENDDEF(nczgr)
+ ! put dimension related variables
+ ierr = NF90_OPEN(cf_coo, NF90_NOCLOBBER, nccoo )
+ ierr = NF90_INQ_VARID(nccoo, cn_glamt, idvar ) ; ierr=NF90_GET_VAR(nccoo, idvar, rlon )
+ ierr = NF90_INQ_VARID(nccoo, cn_gphit, idvar ) ; ierr=NF90_GET_VAR(nccoo, idvar, rlat )
+ ierr = NF90_CLOSE(nccoo )
 
-   ! put 1D vertical variables (reference depth)
-   ierr = NF90_PUT_VAR(nczgr, id_dept1d, gdept_1d, start=(/1,1/), count=(/jpk,1/) )
-   ierr = NF90_PUT_VAR(nczgr, id_depw1d, gdepw_1d, start=(/1,1/), count=(/jpk,1/) )
-   ierr = NF90_PUT_VAR(nczgr, id_e3t1d,  e3t_1d,   start=(/1,1/), count=(/jpk,1/) )
-   ierr = NF90_PUT_VAR(nczgr, id_e3w1d,  e3w_1d,   start=(/1,1/), count=(/jpk,1/) )
+ ierr = NF90_PUT_VAR(nczgr, id_navlon, rlon)
+ ierr = NF90_PUT_VAR(nczgr, id_navlat, rlat)
+ ierr = NF90_PUT_VAR(nczgr, id_navlev, gdept_1d )
+ ierr = NF90_PUT_VAR(nczgr, id_time  , (/0./) )
+
+ ! put 1D vertical variables (reference depth)
+ ierr = NF90_PUT_VAR(nczgr, id_dept1d, gdept_1d, start=(/1,1/), count=(/jpk,1/) )
+ ierr = NF90_PUT_VAR(nczgr, id_depw1d, gdepw_1d, start=(/1,1/), count=(/jpk,1/) )
+ ierr = NF90_PUT_VAR(nczgr, id_e3t1d,  e3t_1d,   start=(/1,1/), count=(/jpk,1/) )
+ ierr = NF90_PUT_VAR(nczgr, id_e3w1d,  e3w_1d,   start=(/1,1/), count=(/jpk,1/) )
 
 END SUBROUTINE CreateMeshZgrFile
 
 SUBROUTINE CreateMaskFile
-!netcdf ORCA025.L75-MJM101.1_byte_mask {
-!dimensions:
-!	x = 1442 ;
-!	y = 1021 ;
-!	z = 75 ;
-!	t = UNLIMITED ; // (1 currently)
-!variables:
-!	float nav_lon(y, x) ;
-!	float nav_lat(y, x) ;
-!	float nav_lev(z) ;
-!	float time_counter(t) ;
-!	byte tmaskutil(t, y, x) ;
-!	byte umaskutil(t, y, x) ;
-!	byte vmaskutil(t, y, x) ;
-!	byte fmaskutil(t, y, x) ;
-!	byte tmask(t, z, y, x) ;
-!	byte umask(t, z, y, x) ;
-!	byte vmask(t, z, y, x) ;
-!	byte fmask(t, z, y, x) ;
+  !netcdf ORCA025.L75-MJM101.1_byte_mask {
+  !dimensions:
+  !	x = 1442 ;
+  !	y = 1021 ;
+  !	z = 75 ;
+  !	t = UNLIMITED ; // (1 currently)
+  !variables:
+  !	float nav_lon(y, x) ;
+  !	float nav_lat(y, x) ;
+  !	float nav_lev(z) ;
+  !	float time_counter(t) ;
+  !	byte tmaskutil(t, y, x) ;
+  !	byte umaskutil(t, y, x) ;
+  !	byte vmaskutil(t, y, x) ;
+  !	byte fmaskutil(t, y, x) ;
+  !	byte tmask(t, z, y, x) ;
+  !	byte umask(t, z, y, x) ;
+  !	byte vmask(t, z, y, x) ;
+  !	byte fmask(t, z, y, x) ;
 
-   ierr= NF90_CREATE(cf_msk, or(NF90_CLOBBER,NF90_NETCDF4), ncmsk) 
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr= NF90_DEF_DIM(ncmsk, 'x', npiglo, idx)
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr= NF90_DEF_DIM(ncmsk, 'y', npjglo, idy)
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr= NF90_DEF_DIM(ncmsk, 'z', jpk,    idz)
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr= NF90_DEF_DIM(ncmsk, 't', NF90_UNLIMITED,  idt)
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
+  ierr= NF90_CREATE(cf_msk, or(NF90_CLOBBER,NF90_NETCDF4), ncmsk) 
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr= NF90_DEF_DIM(ncmsk, 'x', npiglo, idx)
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr= NF90_DEF_DIM(ncmsk, 'y', npjglo, idy)
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr= NF90_DEF_DIM(ncmsk, 'z', jpk,    idz)
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr= NF90_DEF_DIM(ncmsk, 't', NF90_UNLIMITED,  idt)
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
 
-   ierr=NF90_DEF_VAR(ncmsk, 'nav_lon',       NF90_FLOAT, (/idx,idy/), id_navlon )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'nav_lat',       NF90_FLOAT, (/idx,idy/), id_navlat )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'nav_lev',       NF90_FLOAT, (/idz/)    , id_navlev )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'time_counter',  NF90_FLOAT, (/idt/)    , id_time   )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'nav_lon',       NF90_FLOAT, (/idx,idy/), id_navlon )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'nav_lat',       NF90_FLOAT, (/idx,idy/), id_navlat )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'nav_lev',       NF90_FLOAT, (/idz/)    , id_navlev )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'time_counter',  NF90_FLOAT, (/idt/)    , id_time   )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
 
-   ierr=NF90_DEF_VAR(ncmsk, 'tmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_tmsku )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'umaskutil',    NF90_BYTE, (/idx,idy,idt/), id_umsku )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'vmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_vmsku )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'fmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_fmsku )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'tmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_tmsku )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'umaskutil',    NF90_BYTE, (/idx,idy,idt/), id_umsku )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'vmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_vmsku )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'fmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_fmsku )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
 
-   ierr=NF90_DEF_VAR(ncmsk, 'tmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_tmsk )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'umask',         NF90_BYTE, (/idx,idy,idz,idt/), id_umsk )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'vmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_vmsk )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr=NF90_DEF_VAR(ncmsk, 'fmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_fmsk )
+  ierr=NF90_DEF_VAR(ncmsk, 'tmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_tmsk )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; 
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'umask',         NF90_BYTE, (/idx,idy,idz,idt/), id_umsk )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'vmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_vmsk )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr=NF90_DEF_VAR(ncmsk, 'fmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_fmsk )
 
-   ierr = NF90_ENDDEF(ncmsk)
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ! put dimension related variables
+  ierr = NF90_ENDDEF(ncmsk)
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; 
+  ENDIF
+  ! put dimension related variables
 
-   ierr = NF90_PUT_VAR(ncmsk, id_navlon, rlon)
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr = NF90_PUT_VAR(ncmsk, id_navlat, rlat)
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr = NF90_PUT_VAR(ncmsk, id_navlev, gdept_1d )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
-   ierr = NF90_PUT_VAR(ncmsk, id_time  , (/0./) )
-   IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; ENDIF
+  ierr = NF90_PUT_VAR(ncmsk, id_navlon, rlon)
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr = NF90_PUT_VAR(ncmsk, id_navlat, rlat)
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr = NF90_PUT_VAR(ncmsk, id_navlev, gdept_1d )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
+  ierr = NF90_PUT_VAR(ncmsk, id_time  , (/0./) )
+  IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+  ENDIF
 
 END SUBROUTINE CreateMaskFile
 
 
-END PROGRAM
+                                                            END PROGRAM
