@@ -47,6 +47,7 @@ PROGRAM cdf2levitusgrid3d
    REAL(KIND=4)                                 :: rlon1, rlon2, rlat1, rlat2, rpos
    REAL(KIND=4)                                 :: gphitmin
    REAL(KIND=4)                                 :: rlev_resol=0.33333333     ! degree
+   REAL(KIND=4)                                 :: rlon0=-180         ! degree
    REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1t, e2t           ! horizontal T metrics
    REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: z_in               ! input field
    REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: z_fill             ! output 
@@ -60,6 +61,7 @@ PROGRAM cdf2levitusgrid3d
 
    REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: d_out, d_n         ! output field and weighting field
 
+   CHARACTER(LEN=256)                           :: cdum               ! dummy char variable
    CHARACTER(LEN=256)                           :: cf_in              ! input file name
    CHARACTER(LEN=256)                           :: cf_out             ! output file name ( output)
    CHARACTER(LEN=256)                           :: cf_levitus_mask='levitus_mask.nc'   ! Levitus mask filename
@@ -80,31 +82,34 @@ PROGRAM cdf2levitusgrid3d
 
    LOGICAL                                      :: lchk               ! missing files flag
    LOGICAL                                      :: ltest
+   LOGICAL                                      :: l360=.FALSE.       ! flag for 0-360 layout
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
    narg = iargc()
-   IF ( narg < 3 ) THEN
-      PRINT *,' usage : cdf2levitusgrid3d IN-file OUT-file  VAR-name3D'
+   IF ( narg == 0 ) THEN
+      PRINT *,' usage : cdf2levitusgrid3d -f IN-file -o OUT-file  -v VAR-name3D [-360]'
+      PRINT *,'        [-r resolution] '
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'       remaps (bin) 3D high resolution (finer than 1x1 deg) '
-      PRINT *,'       fields on Levitus 3D 1x1 deg grid (vertical grid as input grid)  '
+      PRINT *,'       fields on a regular grid. (vertical grid as input grid)  '
       PRINT *,'       (does not work for vector fields)  '
-      PRINT *,'       It assumes that Levitus grid SW grid cell center '
-      PRINT *,'       is (0.5W,89.5S) '
+      PRINT *,'       Resolution can be given as argument, default is ', rlev_resol,' deg.'
       PRINT *,'      '
       PRINT *,'     ARGUMENTS :'
-      PRINT *,'       IN-file  : netcdf input file ' 
-      PRINT *,'       OUT-file : netcdf output file ' 
-      PRINT *,'       VAR-name2D : input variable name for interpolation '
+      PRINT *,'       -f IN-file  : netcdf input file ' 
+      PRINT *,'       -o OUT-file : netcdf output file ' 
+      PRINT *,'       -v VAR-name2D : input variable name for interpolation '
       PRINT *,'      '
       PRINT *,'     OPTIONS :'
-      PRINT *,'      '
+      PRINT *,'       -360 : outfile is defined from 0 to 360 deg'
+      PRINT *,'              Default is from -180 to 180 '
+      PRINT *,'       -r  : resolution.'
+      PRINT *,'     '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'       ',TRIM(cn_fhgr)
       PRINT *,'       ',TRIM(cn_fmsk)
-      PRINT *,'       ',TRIM(cf_levitus_mask)
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
       PRINT *,'       netcdf file : name given as second argument'
@@ -113,13 +118,27 @@ PROGRAM cdf2levitusgrid3d
    ENDIF
 
    ijarg = 1
-   CALL getarg(ijarg, cf_in)  ; ijarg = ijarg + 1
-   CALL getarg(ijarg, cf_out) ; ijarg = ijarg + 1
-   CALL getarg(ijarg, cv_nam) ; ijarg = ijarg + 1
+   DO WHILE ( ijarg <= narg ) 
+     CALL getarg( ijarg, cdum)  ; ijarg = ijarg + 1
+     SELECT CASE (cdum)
+     CASE ( '-f' )
+       CALL getarg(ijarg, cf_in)  ; ijarg = ijarg + 1
+     CASE ( '-o' )
+       CALL getarg(ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-v' )
+       CALL getarg(ijarg, cv_nam) ; ijarg = ijarg + 1
+     CASE ( '-360' )
+       l360=.TRUE.
+       rlon0 = 0.
+     CASE ( '-r' )
+       CALL getarg( ijarg, cdum)  ; ijarg = ijarg + 1
+       READ(cdum,*) rlev_resol
+     END SELECT
+   ENDDO
+
 
    lchk = chkfile (cn_fhgr)
    lchk = chkfile (cn_fmsk)         .OR. lchk
-!  lchk = chkfile (cf_levitus_mask) .OR. lchk
    lchk = chkfile (cf_in)           .OR. lchk
    IF ( lchk ) STOP ! missing files
 
@@ -127,6 +146,7 @@ PROGRAM cdf2levitusgrid3d
    npjglo = getdim(cf_in,cn_y)
    npk    = getdim(cf_in,cn_z)
    npt    = getdim(cf_in,cn_t)
+
    npilev = NINT(360./rlev_resol)
    npjlev = NINT(180./rlev_resol)
 
@@ -172,12 +192,14 @@ PROGRAM cdf2levitusgrid3d
    glamt = getvar(cn_fhgr, cn_glamt, 1, npiglo, npjglo)
    gphit = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
    gphitmin = MINVAL(gphit(:,1))
-   WHERE ( glamt < 0. )
-      glamt = glamt + 360. 
-   END WHERE
+   IF ( l360 ) THEN
+     WHERE ( glamt < 0. )
+       glamt = glamt + 360. 
+     END WHERE
+   ENDIF
 
    ! get the longitude,latitude,mask from the input Levitus mask file
-   rlonlev(:,1) = (/ (rlev_resol*ji , ji=1,npilev ) /)
+   rlonlev(:,1) = (/ (rlon0+rlev_resol*ji , ji=1,npilev ) /)
    DO jj=2, npjlev
       rlonlev(:,jj) = rlonlev(:,1)
    ENDDO
@@ -219,7 +241,7 @@ PROGRAM cdf2levitusgrid3d
       d_n  (:,:) = 0.d0
       DO jj=1,npjglo
          DO ji=1,npiglo
-            iilev = MIN( npilev,  INT( glamt(ji,jj)/rlev_resol ) + 1)
+            iilev = MIN( npilev,  INT( (glamt(ji,jj)-rlon0)/rlev_resol ) + 1)
             ijlev = MIN (npjlev , INT( (gphit(ji,jj)+ 90.)/rlev_resol ) + 1)
             !IF ( iilev < 1 .OR. iilev .GT. 360 ) print*, 'iilev, glamt = ',iilev,glamt(ji,jj)
             !IF ( ijlev < 1 .OR. ijlev .GT. 180 ) print*, 'ijlev, gphit = ',ijlev,gphit(ji,jj)
