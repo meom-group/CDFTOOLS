@@ -203,7 +203,7 @@ PROGRAM cdf2levitusgrid3d
    DO jj=2, npjlev
       rlonlev(:,jj) = rlonlev(:,1)
    ENDDO
-   rlatlev(1,:) = (/ (rlev_resol*jj , jj=1,npjlev ) /)
+   rlatlev(1,:) = (/ (rlev_resol*jj - 90.  , jj=1,npjlev ) /)
    DO ji=2, npilev
       rlatlev(ji,:) = rlatlev(1,:)
    ENDDO
