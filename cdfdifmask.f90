@@ -99,6 +99,7 @@ PROGRAM cdfdifmask
      END DO  ! loop to next level
   END DO
 
+  ALLOCATE ( tim(1) )
   tim(:) = 0.
   ierr   = putvar1d(ncout, tim, 1, 'T')
   ierr   = closeout(ncout)
