@@ -527,7 +527,8 @@ CONTAINS
        ! do it quick and dirty at this time ...
        ! write vertical slab (maybe slow but save lot of memory
        DO jj=1, nbloc_sz
-          ij=(jbloc -1 )*nbloc_sz +jj
+!         ij=(jbloc -1 )*nbloc_sz +jj
+          ij=njbloct(jbloc) + jj - 1
           DO ji = 1, npiglo
              ik=MAX( mbathy(ji,ij),1)
              zdep(ji,jj)=gdept_0(ji,jj,ik) 
@@ -536,7 +537,8 @@ CONTAINS
        ierr = NF90_PUT_VAR( nczgr, id_hdept, zdep,    start=(/1,(jbloc-1)*nbloc_sz+1  ,1/), count=(/npiglo,nbloc_sz    ,1/) )
 
        DO jj=1, nbloc_sz
-          ij=(jbloc -1 )*nbloc_sz +jj
+!         ij=(jbloc -1 )*nbloc_sz +jj
+          ij=njbloct(jbloc) + jj - 1
           DO ji = 1, npiglo
              ik=MAX( mbathy(ji,ij),1)
              zdep(ji,jj)=gdepw_0(ji,jj,ik+1) 
