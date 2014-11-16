@@ -570,12 +570,13 @@ CONTAINS
        DO jk = 1, nbloc_sz
           ik = nkbloct(jbloc) +jk -1
           PRINT *,' e3u at level ', ik
-          e3u_0 =  e3t_1d(jk)
+          e3u_0(:,:,jk) =  e3t_1d(ik)
           DO jj=1,npjglo - 1
              DO ji=1,npiglo -1
                 e3u_0(ji,jj,jk) = MIN( e3t_0(ji,jj,jk), e3t_0(ji+1,jj,jk) )
              ENDDO
           ENDDO
+!         ierr = NF90_PUT_VAR(nczgr, id_e3u, e3u_0, start=(/1,1,ik,1/), count=(/npiglo,npjglo,1,1/) )
        ENDDO
        ierr = NF90_PUT_VAR(nczgr, id_e3u, e3u_0, start=(/1,1,nkbloct(jbloc),1/), count=(/npiglo,npjglo,nbloc_sz,1/) )
        DEALLOCATE (e3t_0, e3u_0 )
@@ -590,12 +591,14 @@ CONTAINS
        DO jk = 1, nbloc_sz
           ik = nkbloct(jbloc) +jk -1
           PRINT *,' e3v at level ', ik
-          e3v_0 =  e3t_1d(jk)
+          e3v_0(:,:,jk) =  e3t_1d(ik)
           DO jj=1,npjglo - 1
              DO ji=1,npiglo -1
                 e3v_0(ji,jj,jk) = MIN( e3t_0(ji,jj,jk), e3t_0(ji,jj+1,jk) )
              ENDDO
           ENDDO
+            print * , 'e3v_0 (81,2)  e3t_0(81,2), (81,3)', e3v_0(81,2,jk), e3t_0(81,2,jk) ,e3t_0(81,3,jk) 
+!          ierr = NF90_PUT_VAR(nczgr, id_e3v, e3v_0, start=(/1,1,ik,1/), count=(/npiglo,npjglo,1,1/) )
        ENDDO
        ierr = NF90_PUT_VAR(nczgr, id_e3v, e3v_0, start=(/1,1,nkbloct(jbloc),1/), count=(/npiglo,npjglo,nbloc_sz,1/) )
        DEALLOCATE (e3t_0, e3v_0 )
