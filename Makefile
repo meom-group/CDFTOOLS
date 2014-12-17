@@ -24,7 +24,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfbottom cdfets cdfokubo-w cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
-       cdfsigtrp cdftempvol-full\
+       cdfsigtrp cdfsigtrp_broken cdftempvol-full\
        cdfpsi cdfmoc  cdfmocsig cdfmean cdfdegradt cdfdegradu cdfdegradv cdfdegradw \
        cdfheatc cdfzonalmean cdfzonalmeanvT cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfvint \
@@ -247,6 +247,9 @@ cdfvFWov: cdfio.o  modutils.o cdfvFWov.f90
 
 cdfsigtrp: cdfio.o eos.o  modutils.o cdfsigtrp.f90 
 	$(F90)  $(OMP) cdfsigtrp.f90 -o $(BINDIR)/cdfsigtrp cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
+
+cdfsigtrp_broken: cdfio.o eos.o  modutils.o cdfsigtrp_broken.f90 
+	$(F90)  $(OMP) cdfsigtrp_broken.f90 -o $(BINDIR)/cdfsigtrp_broken cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
 
 cdftransig_xy3d: cdfio.o eos.o  modutils.o cdftransig_xy3d.f90
 	$(F90)  $(OMP) cdftransig_xy3d.f90 -o $(BINDIR)/cdftransig_xy3d cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
