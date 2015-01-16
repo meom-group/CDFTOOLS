@@ -26,16 +26,21 @@ PROGRAM cdfcurl
   INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
   INTEGER(KIND=4)                           :: narg, iargc        ! browse command line
+  INTEGER(KIND=4)                           :: ijarg              !
   INTEGER(KIND=4)                           :: ncout, ierr        ! browse command line
   INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout     ! output variable properties
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2v, e1u, e1f, e2f ! horizontql metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn             ! velocity field
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zun, zvn           ! working arrays
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rotn, fmask        ! curl and fmask
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zrotn              ! curl at T point 
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: fmask        ! mask
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4)                              :: zmask              ! mask at T point for -T option
+
+  REAL(KIND=8)                              :: dl_pi, dl_omega    ! 3.14159... and earth rotation rad/sec
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: drotn               ! curl 
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_rotn             ! curl at T point 
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_ff               ! Coriolis parameter at F point
 
   CHARACTER(LEN=256)                        :: cf_ufil, cf_vfil   ! file names
   CHARACTER(LEN=256)                        :: cf_out = 'curl.nc' ! output file name
@@ -48,12 +53,16 @@ PROGRAM cdfcurl
   LOGICAL                                   :: lchk     = .FALSE. ! flag for missing files
   LOGICAL                                   :: lperio   = .FALSE. ! flag for E-W periodicity
   LOGICAL                                   :: ltpoint  = .FALSE. ! flag for T-point output
+  LOGICAL                                   :: ldblpr   = .FALSE. ! flag for dble precision output
+  LOGICAL                                   :: lsurf    = .FALSE. ! flag for 1 lev on C grid.
+  LOGICAL                                   :: loverf   = .FALSE. ! flag for 1 lev on C grid.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames() 
 
   narg = iargc()
   IF ( narg < 5 ) THEN
-     PRINT *,' usage : cdfcurl U-file V-file U-var V-var lev [-T]'
+     PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l lev [-T] [-8]...'
+     PRINT *,'           ... [-surf] -[overf]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the curl of a vector field, at a specified level.'  
@@ -63,15 +72,16 @@ PROGRAM cdfcurl
      PRINT *,'       curl is computed on the F-point (unless -T option is used).'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       U-file : zonal component of the vector field.'
-     PRINT *,'       V-file : meridional component of the vector field.'
-     PRINT *,'       U-var  : zonal component variable name'
-     PRINT *,'       V-var  : meridional component variable name.'
-     PRINT *,'       lev    : level to be processed. If set to 0, assume forcing file '
+     PRINT *,'       -u U-file U-var : file and variable name for zonal component'
+     PRINT *,'       -v V-file V-var : file and variable name for meridional component'
+     PRINT *,'       -l lev    : level to be processed. If set to 0, assume forcing file '
      PRINT *,'                in input.'
      PRINT * 
      PRINT *,'     OPTIONS :'
      PRINT *,'       -T : compute curl at T point instead of default F-point'
+     PRINT *,'       -8 : save in double precision instead of standard simple precision.'
+     PRINT *,'       -surf : work with single level C-grid (not forcing)'
+     PRINT *,'       -overf : store the ratio curl/f where f is the coriolis parameter'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ', TRIM(cn_fhgr)
@@ -79,22 +89,34 @@ PROGRAM cdfcurl
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : socurl or socurlt (if -T option), units : s^-1'
+     PRINT *,'            or socurloverf, no units (if -overf option)'
      STOP
   ENDIF
 
-  CALL getarg(1, cf_ufil)
-  CALL getarg(2, cf_vfil)
-  CALL getarg(3, cv_u   )
-  CALL getarg(4, cv_v   )
-  CALL getarg(5, cldum  ) ;  READ(cldum,*) ilev
-  IF ( narg == 6 ) THEN
-  CALL getarg(6, cldum ) 
-    IF ( cldum /= '-T' ) THEN
-      PRINT *, TRIM(cldum),' : unknown option ' ; STOP
-    ELSE
-      ltpoint=.true.
-    ENDIF
-  ENDIF
+  ijarg=1
+  DO WHILE ( ijarg <= narg ) 
+   CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+   SELECT CASE ( cldum )
+   CASE ('-u')
+      CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
+      CALL getarg(ijarg, cv_u   ) ; ijarg=ijarg+1
+   CASE ('-v')
+      CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
+      CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
+   CASE ('-l')
+      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
+   CASE ('-T')
+      ltpoint = .true.
+   CASE ('-8')
+      ldblpr = .true.
+   CASE ('-surf')
+      lsurf = .true.
+   CASE ('-overf')
+      loverf = .true.
+   CASE DEFAULT
+      PRINT *,  TRIM(cldum), ' : unknown option '
+   END SELECT
+  ENDDO
 
   lchk = chkfile(cn_fhgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
@@ -105,6 +127,11 @@ PROGRAM cdfcurl
   stypvar(1)%cname             = 'socurl'
   IF (ltpoint) stypvar(1)%cname             = 'socurlt'
   stypvar(1)%cunits            = 's-1'
+  IF (loverf)  stypvar(1)%cname             = 'socurloverf'
+  IF (loverf)  stypvar(1)%cunits            = '-'
+
+  stypvar(1)%cprecision        ='r4'
+  IF ( ldblpr )  stypvar(1)%cprecision     ='r8'
   stypvar(1)%rmissing_value    = 0.
   stypvar(1)%valid_min         = -1000.
   stypvar(1)%valid_max         =  1000.
@@ -127,10 +154,16 @@ PROGRAM cdfcurl
   PRINT *, 'ilev   = ',ilev
 
   !test if lev exists
-  IF ( (npk==0) .AND. (ilev > 0) ) THEN
+  IF ( (npk==0) .AND. (ilev > 0) .AND. .NOT. lsurf ) THEN
      PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
+     PRINT *, '  Use -surf option is dealing with single level file on C grid '
      STOP
   END IF
+
+  ! case of 1 level on C-grid
+  IF ( lsurf ) THEN
+     npk = 1 ; ilev =1 
+  ENDIF
 
   ! if forcing field 
   IF ( ilev==0 .AND. npk==0 ) THEN
@@ -139,21 +172,21 @@ PROGRAM cdfcurl
      PRINT *, 'npk =0, assume 1'
   END IF
 
+
   IF ( npt==0 ) THEN
      PRINT *, 'npt=0, assume 1'
      npt=1
   END IF
-  ! check files and determines if the curl will be 2D of 3D
-  ! ????????????
 
   ! Allocate the memory
   ALLOCATE ( e1u(npiglo,npjglo) , e1f(npiglo,npjglo) )
   ALLOCATE ( e2v(npiglo,npjglo) , e2f(npiglo,npjglo) )
   ALLOCATE ( un(npiglo,npjglo)  , vn(npiglo,npjglo)  )
   ALLOCATE ( zun(npiglo,npjglo) , zvn(npiglo,npjglo) )
-  ALLOCATE ( rotn(npiglo,npjglo) , fmask(npiglo,npjglo) )
+  ALLOCATE ( drotn(npiglo,npjglo) , fmask(npiglo,npjglo) )
   ALLOCATE ( tim(npt) )
-  IF ( ltpoint) ALLOCATE (zrotn(npiglo,npjglo) )
+
+  IF ( ltpoint) ALLOCATE (dl_rotn(npiglo,npjglo) )
 
   e1u =  getvar(cn_fhgr, cn_ve1u, 1, npiglo, npjglo)
   e1f =  getvar(cn_fhgr, cn_ve1f, 1, npiglo, npjglo)
@@ -163,6 +196,13 @@ PROGRAM cdfcurl
   ! use zun and zvn to store f latitude and longitude for output
   zun = getvar(cn_fhgr, cn_glamf, 1, npiglo, npjglo)
   zvn = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
+
+  IF ( loverf ) THEN
+    ALLOCATE (dl_ff(npiglo,npjglo) )
+    dl_pi = acos(-1.d0)
+    dl_omega = 2* dl_pi/86400.d0
+    dl_ff = 2* dl_omega* sin ( zvn*dl_pi/180.d0 ) 
+  ENDIF
 
   ! look for  E-W periodicity
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
@@ -206,30 +246,34 @@ PROGRAM cdfcurl
         ENDDO
      END IF
 
-     rotn(:,:) = 0.
+     drotn(:,:) = 0.d0
      DO jj = 1, npjglo -1 
         DO ji = 1, npiglo -1   ! vector opt.
-           rotn(ji,jj) = (  e2v(ji+1,jj  ) * vn(ji+1,jj  ) - e2v(ji,jj) * vn(ji,jj)    &
-                &         - e1u(ji  ,jj+1) * un(ji  ,jj+1) + e1u(ji,jj) * un(ji,jj)  ) &
-                &         * fmask(ji,jj) / ( e1f(ji,jj) * e2f(ji,jj) )
+           drotn(ji,jj) = (  e2v(ji+1,jj  ) * vn(ji+1,jj  ) - e2v(ji,jj) * vn(ji,jj)    &
+                &          - e1u(ji  ,jj+1) * un(ji  ,jj+1) + e1u(ji,jj) * un(ji,jj)  ) &
+                &          * fmask(ji,jj) / ( e1f(ji,jj) * e2f(ji,jj) )
         END DO
      END DO
 
-     IF ( lperio ) rotn(npiglo,:) = rotn(2, :)
+     IF ( lperio ) drotn(npiglo,:) = drotn(2, :)
      IF ( ltpoint ) THEN
-       zrotn(:,:) = 0.
+       dl_rotn(:,:) = 0.d0
        DO ji = 2, npiglo
          DO jj = 2, npjglo
           zmask = fmask(ji,jj)*fmask(ji,jj-1)*fmask(ji-1,jj)*fmask(ji-1,jj-1)
-          zrotn(ji,jj) = 0.25*( rotn(ji,jj) + rotn(ji,jj-1) + rotn(ji-1,jj) + rotn(ji-1,jj-1) ) * zmask
+          dl_rotn(ji,jj) = 0.25*( drotn(ji,jj) + drotn(ji,jj-1) + drotn(ji-1,jj) + drotn(ji-1,jj-1) ) * zmask
          ENDDO
        ENDDO
-       IF ( lperio ) zrotn(1,:) = zrotn(npiglo, :)
-       rotn(:,:) = zrotn(:,:)
+       IF ( lperio ) dl_rotn(1,:) = dl_rotn(npiglo, :)
+       drotn(:,:) = dl_rotn(:,:)
        
      ENDIF
-     ! write rotn on file at level k and at time jt
-     ierr = putvar(ncout, id_varout(1), rotn, 1, npiglo, npjglo, ktime=jt)
+     ! write drotn on file at level k and at time jt
+     IF ( loverf ) THEN
+        WHERE (dl_ff /= 0.d0) drotn=drotn/dl_ff
+     ENDIF
+
+     ierr = putvar(ncout, id_varout(1), drotn, 1, npiglo, npjglo, ktime=jt)
   END DO
   ierr = closeout(ncout)
 
