@@ -36,9 +36,12 @@ PROGRAM cdflap
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rmski, rmskj       ! relevant mask
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: v2d                ! input variable
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ff                 ! Coriolis
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: gphi               ! Coriolis
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4)                                 :: rmissing           ! missing value or_FillValue of input variable
   REAL(KIND=4)                                 :: grav=9.81          ! Gravity acceleration (m2/s)
+  REAL(KIND=4)                                 :: omega              ! earth rotation rate
+  REAL(KIND=4)                                 :: rpi                ! 3.14159...
 
   REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dlap               ! output laplacian
   REAL(KIND=8)                                 :: dspval=99999.d0    ! output laplacian
@@ -46,6 +49,7 @@ PROGRAM cdflap
   CHARACTER(LEN=256)                           :: cf_in              ! input file name
   CHARACTER(LEN=256)                           :: cv_in              ! input variable name
   CHARACTER(LEN=256)                           :: cv_units           ! units of input variable name
+  CHARACTER(LEN=256)                           :: cv_lat             ! name of latitude variable in hgr
   CHARACTER(LEN=3)                             :: ct_in              ! input variable type [ T U V F ] on C-grid
   CHARACTER(LEN=256)                           :: cf_out='lap.nc'    !output file name
   CHARACTER(LEN=256)                           :: cln_in             ! Long name of input variable
@@ -58,12 +62,13 @@ PROGRAM cdflap
   TYPE(variable), DIMENSION(1)                 :: stypvar            ! output attributes
 
   LOGICAL                                      :: lchk               ! missing files flag
+  LOGICAL                                      :: l_overf=.FALSE.    ! overf flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdflap IN-file IN-var  IN-type '
+     PRINT *,' usage : cdflap IN-file IN-var  IN-type [-overf]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Laplacian of the variable IN-var in file IN-file'
@@ -75,14 +80,19 @@ PROGRAM cdflap
      PRINT *,'       IN-TYPE : Position of the variable on the C-grid [ T U V F ]'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       none so far.'
+     PRINT *,'       -overf : save laplacien/f/f (where f is the local coriolis parameter)'
+     PRINT *,'            For the SSH field, this is a proxy for geostrophic vorticity'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr)," ",TRIM(cn_fzgr) ,' and ', TRIM(cn_fmsk)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'         variables : lap (unit/m2)'
+     PRINT *,'         variables : lap<var> (unit/m2)'
+     PRINT *,'       if option -overf is used, netcdf file is lapoverf.nc and '
+     PRINT *,'       variable is lap<var>overf'
+    
+
      STOP
   ENDIF
 
@@ -90,6 +100,11 @@ PROGRAM cdflap
   CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
   CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1
   CALL getarg(ijarg, ct_in) ; ijarg = ijarg + 1
+  IF ( narg == 4 ) THEN
+  ! assume -overf option !
+     l_overf=.true.
+     cf_out='lapoverf.nc'
+  ENDIF
   PRINT *, ' TYP ', ct_in
 
   ! check if files exists
@@ -119,7 +134,11 @@ PROGRAM cdflap
 
   ! define new variables for output
   ipk(1)                       = MAX(npk, 1 )
-  stypvar(1)%cname             = 'lap'
+  IF ( l_overf) THEN
+     stypvar(1)%cname             = 'lap'//TRIM(cln_in)//'overf'
+  ELSE
+     stypvar(1)%cname             = 'lap'//TRIM(cln_in)
+  ENDIF
   stypvar(1)%cunits            = TRIM(cv_units)//'/m2'
   stypvar(1)%rmissing_value    = dspval
   stypvar(1)%valid_min         = -10.
@@ -139,6 +158,7 @@ PROGRAM cdflap
       ce2_j1  = cn_ve2v  ; ce2_j2  = cn_ve2t
       iioff1  = 0        ; iioff2  = 1
       ijoff1  = 0        ; ijoff2  = 1
+      cv_lat  =cn_gphit
   CASE ( 'U' )
       ! needs tmask, fmask, e1t, e1u, e2f, e2u 
       cmask_i = 'tmask'  ; cmask_j = 'fmask'
@@ -146,6 +166,7 @@ PROGRAM cdflap
       ce2_j1  = cn_ve2f  ; ce2_j2  = cn_ve2u
       iioff1  = 1        ; iioff2  = 0
       ijoff1  = 0        ; ijoff2  = 1
+      cv_lat  =cn_gphiu
   CASE ( 'V' )
       ! needs fmask, tmask, e1f, e1v, e2t, e2v 
       cmask_i = 'fmask'  ; cmask_j = 'tmask'
@@ -153,6 +174,7 @@ PROGRAM cdflap
       ce2_j1  = cn_ve2t  ; ce2_j2  = cn_ve2v
       iioff1  = 0        ; iioff2  = 1
       ijoff1  = 1        ; ijoff2  = 0
+      cv_lat  =cn_gphiv
   CASE ( 'F' )
       ! needs vmask, umask, e1v, e1f, e2u, e2f 
       cmask_i = 'vmask'  ; cmask_j = 'umask'
@@ -160,6 +182,7 @@ PROGRAM cdflap
       ce2_j1  = cn_ve2u  ; ce2_j2  = cn_ve2f
       iioff1  = 1        ; iioff2  = 0
       ijoff1  = 1        ; ijoff2  = 0
+      cv_lat  =cn_gphif
   CASE DEFAULT
       PRINT *, ' TYPE ', TRIM(ct_in),' unknown on C-grid'
       STOP
@@ -170,7 +193,9 @@ PROGRAM cdflap
   ALLOCATE ( e1_i1(npiglo,npjglo), e2_j1(npiglo,npjglo) )
   ALLOCATE ( e1_i2(npiglo,npjglo), e2_j2(npiglo,npjglo) )
   ALLOCATE ( rmski(npiglo,npjglo), rmskj(npiglo,npjglo) )
-  ALLOCATE (    ff(npiglo,npjglo)                       )
+  IF ( l_overf ) THEN
+     ALLOCATE (  ff(npiglo,npjglo), gphi(npiglo,npjglo) )
+  ENDIF
 
   ALLOCATE ( dlap(npiglo,npjglo), v2d(npiglo, npjglo)  )
   ALLOCATE ( tim(npt) )
@@ -181,10 +206,14 @@ PROGRAM cdflap
   e2_j1 = getvar(cn_fhgr, ce2_j1, 1, npiglo, npjglo)
   e2_j2 = getvar(cn_fhgr, ce2_j2, 1, npiglo, npjglo)
 !
-! to prepare computation of g/f*LAP(SSH) 
-!  ff    = getvar(cn_fhgr, cn_vff, 1, npiglo, npjglo)
-!  ff    = ff / grav
-   ff    = 1.d0
+  IF ( l_overf ) THEN
+    ! to prepare computation of g/f*LAP(SSH) 
+     gphi    = getvar(cn_fhgr, cv_lat, 1, npiglo, npjglo)
+     rpi     = acos(-1.)
+     omega   = 2 * rpi / 86400.
+     ff     = 2.*omega* sin (gphi*rpi/180.)
+     WHERE (ff == 0 ) ff = epsilon(1.0)
+  ENDIF
 
   ! create output fileset
   ncout = create      (cf_out, cf_in, npiglo, npjglo, npk         ) 
@@ -221,12 +250,19 @@ PROGRAM cdflap
         END DO
 
         ! write level jk 
-        WHERE (dlap == 0.d0 )
-          dlap = dspval
-        ELSEWHERE
-          dlap = dlap /ff
-        ENDWHERE
-        ierr = putvar(ncout, id_varout(1), REAL(dlap), jk, npiglo, npjglo, ktime=jt)
+        IF ( l_overf ) THEN
+          WHERE (dlap == 0.d0 )
+            dlap = dspval
+          ELSEWHERE
+            dlap = dlap /ff
+          ENDWHERE
+        ENDIF
+
+        IF ( l_overf) THEN
+          ierr = putvar(ncout, id_varout(1), REAL(dlap)/ff, jk, npiglo, npjglo, ktime=jt)
+        ELSE
+          ierr = putvar(ncout, id_varout(1), REAL(dlap), jk, npiglo, npjglo, ktime=jt)
+        ENDIF
 
      END DO  ! loop to next level
   END DO ! loop on time
