@@ -156,7 +156,6 @@ PROGRAM cdfcurl
   PRINT *, 'npk    = ',npk
   PRINT *, 'npt    = ',npt
   PRINT *, 'nlev   = ',nlev
-  PRINT *, ' levels : ', nilev(:)
 
   !test if lev exists
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
@@ -187,6 +186,14 @@ PROGRAM cdfcurl
      PRINT *, 'npt=0, assume 1'
      npt=1
   END IF
+  ! 
+  DO jk = 1, nlev
+   IF (nilev(jk) >= npk ) THEN
+     nlev=jk
+     EXIT
+   ENDIF
+  ENDDO
+  PRINT *, 'NLEV', nlev
 
   ! Allocate the memory
   ALLOCATE ( e1u(npiglo,npjglo) , e1f(npiglo,npjglo) )
@@ -230,9 +237,9 @@ PROGRAM cdfcurl
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
 
   ! create output fileset
-  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, 0                           )
+  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev                      )
   ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout                   )
-  ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, 0, pnavlon=zun, pnavlat=zvn, pdep=gdep)
+  ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
   ierr = putvar1d(ncout,   tim,       npt,  'T')
@@ -349,7 +356,6 @@ CONTAINS
     cldum=cdum
     ALLOCATE (clblk(icomma+1))
 
-    print *, icomma, idash
     ipos1=1
     DO jc=1,icomma
        ipos=INDEX(cldum ,",")
@@ -362,14 +368,14 @@ CONTAINS
     ! now parse block
     nlev=0
     DO jc=1,icomma+1
-       print *, TRIM(clblk(jc) )
        ipos=INDEX(clblk(jc),"-")
        IF ( ipos == 0 ) THEN
           nlev=nlev+1
           READ(clblk(jc),* ) ilev(nlev) 
        ELSE IF ( ipos == LEN(TRIM((clblk(jc)))) ) THEN
           READ(clblk(jc)(1:ipos-1),*) ik1
-          ik2=npk
+          ik2=300  ! use 300 as a maximum mean while we wait for npk
+          PRINT *,' BINGO !', ik1, ik2
           DO jk=ik1,ik2
              nlev=nlev+1
              ilev(nlev)=jk
