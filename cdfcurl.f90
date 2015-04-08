@@ -22,13 +22,14 @@ PROGRAM cdfcurl
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: ji, jj, jt         ! dummy loop index
-  INTEGER(KIND=4)                           :: ilev               ! level to be processed
   INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
+  INTEGER(KIND=4)                           :: nlev               ! number of output levels
   INTEGER(KIND=4)                           :: narg, iargc        ! browse command line
   INTEGER(KIND=4)                           :: ijarg              !
   INTEGER(KIND=4)                           :: ncout, ierr        ! browse command line
   INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout     ! output variable properties
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: nilev               ! level to be processed
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2v, e1u, e1f, e2f ! horizontql metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn             ! velocity field
@@ -61,8 +62,8 @@ PROGRAM cdfcurl
 
   narg = iargc()
   IF ( narg < 5 ) THEN
-     PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l lev [-T] [-8]...'
-     PRINT *,'           ... [-surf] -[overf]'
+     PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l levlist [-T] [-8]...'
+     PRINT *,'           ... [-surf] [-overf]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the curl of a vector field, at a specified level.'  
@@ -74,8 +75,10 @@ PROGRAM cdfcurl
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -u U-file U-var : file and variable name for zonal component'
      PRINT *,'       -v V-file V-var : file and variable name for meridional component'
-     PRINT *,'       -l lev    : level to be processed. If set to 0, assume forcing file '
-     PRINT *,'                in input.'
+     PRINT *,'       -l levlist    : levels to be processed. If set to 0, assume forcing file '
+     PRINT *,'                in input. Example of recognized syntax :'
+     PRINT *,'                  -l "1,10,30"  or -l "1-20" or even -l "1-3,10-20,30-"'
+     PRINT *,'                  -l  1 . Note that -l "3-" set a levlist from 3 to the bottom'
      PRINT * 
      PRINT *,'     OPTIONS :'
      PRINT *,'       -T : compute curl at T point instead of default F-point'
@@ -104,7 +107,9 @@ PROGRAM cdfcurl
       CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
       CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
    CASE ('-l')
-      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
+      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
+      CALL ParseLevel(cldum)
+!     ; READ(cldum,*) ilev
    CASE ('-T')
       ltpoint = .true.
    CASE ('-8')
@@ -277,5 +282,131 @@ PROGRAM cdfcurl
   END DO
   ierr = closeout(ncout)
 
+CONTAINS
+  SUBROUTINE ParseLevel( cdum )
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE ParsLevel  ***
+    !!
+    !! ** Purpose :  Parse a string representing a level list with no separator
+    !!               or , or - as separator 
+    !!
+    !! ** Method  :   1,3,5 => list = (1,3,5)
+    !!                1-4   => liste = ( 1,2,3,4) 
+    !!                1-4,6-8   => liste = ( 1,2,3,4,6,7,8) 
+    !!                10-      => liste = (10,11,12,...bottom)
+    !!                Allocate and fill nilev array with respective levels
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT (in ) :: cdum
+ 
+    INTEGER(KIND=4)                 :: iklev, ilength
+    INTEGER(KIND=4)                 :: icomma, idash
+    INTEGER(KIND=4), DIMENSION(350) :: ilev
+    !!----------------------------------------------------------------------
+    ilength=LEN(TRIM(cdum) )
+
+    ! look for , and -
+    icomma = 0 ; idash = 0
+    DO jc=1,ilength
+     IF ( cdum[jc:jc] == ',' ) THEN
+       icomma = icomma + 1
+     ELSE IF ( cdum[jc:jc] == '-' ) THEN
+       iidash = idash + 1
+     ENDIF
+    END DO
+
+    ! no dash nor comma
+    IF (icomma == 0 .AND. idash == 0 ) THEN
+      nlev=1
+      ALLOCATE ( nilev(nlev) )
+      READ(cdum,*) nilev(1)
+      RETURN
+    ENDIF
+   
+
+  END SUBROUTINE ParseLevel
+
 END PROGRAM cdfcurl
+
+
+
+!##################
+Program tlen
+  character (255) :: cldum
+  INTEGER(KIND=4) :: nlev, npk=75
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: nilev
+
+  call getarg (1, cldum )
+  Call ParseLevel(cldum)
+  print *, nlev
+  print *, nilev(:)
+CONTAINS
+  SUBROUTINE ParseLevel( cdum )
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE ParsLevel  ***
+    !!
+    !! ** Purpose :  Parse a string representing a level list with no separator
+    !!               or , or - as separator 
+    !!
+    !! ** Method  :   1,3,5 => list = (1,3,5)
+    !!                1-4   => liste = ( 1,2,3,4) 
+    !!                1-4,6-8   => liste = ( 1,2,3,4,6,7,8) 
+    !!                10-      => liste = (10,11,12,...bottom)
+    !!                Allocate and fill nilev array with respective levels
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT (in ) :: cdum
+
+    INTEGER(KIND=4)                 :: iklev, ilength
+    INTEGER(KIND=4)                 :: icomma, idash, ipos
+    INTEGER(KIND=4), DIMENSION(350) :: ilev
+    CHARACTER(LEN=256) :: cldum
+    CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: clblk
+    !!----------------------------------------------------------------------
+    ilength=LEN(TRIM(cdum) )
+
+    ! look for , and -
+    icomma = 0 ; idash = 0
+    DO jc=1,ilength
+     IF ( cdum(jc:jc) == ',' ) THEN
+       icomma = icomma + 1
+     ELSE IF ( cdum(jc:jc) == '-' ) THEN
+       idash = idash + 1
+     ENDIF
+    END DO
+
+    ! no dash nor comma
+    IF (icomma == 0 .AND. idash == 0 ) THEN
+      nlev=1
+      ALLOCATE ( nilev(nlev) )
+      READ(cdum,*) nilev(1)
+      RETURN
+    ENDIF
+    ! look for the number of level in levlist
+    cldum=cdum
+    ALLOCATE (clblk(icomma+1))
+
+    print *, icomma, idash
+    ipos1=1
+    DO jc=1,icomma
+     ipos=INDEX(cldum ,",")
+     clblk(jc)=cldum(1:ipos-1)
+     ipos1=ipos+1
+     cldum=cldum(ipos1:)
+    ENDDO
+    clblk(icomma+1)=cldum
+
+    DO jc=1,icomma+1
+    
+    print *, TRIM(clblk(jc) )
+   ENDDO
+    
+
+    DEALLOCATE( clblk)
+     
+
+  END SUBROUTINE ParseLevel
+END program tlen
+
+
 
