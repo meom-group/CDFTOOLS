@@ -15,6 +15,7 @@ PROGRAM cdfmoy
   !! History : 2.0  : 11/2004  : J.M. Molines : Original code
   !!         : 2.1  : 06/2007  : P. Mathiot   : Modif for forcing fields
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!                  04/2015  : S. Leroux    : add nomissincl option
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -54,6 +55,7 @@ PROGRAM cdfmoy
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout3         ! varid's of cub average vars
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout4         ! varid's of cub average vars
 
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmask2d             ![from SL]
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                ! array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmax               ! array for maximum value
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmin               ! array for minimum value
@@ -92,12 +94,14 @@ PROGRAM cdfmoy
   LOGICAL                                       :: lzermean = .false. ! flag for zero-mean process
   LOGICAL                                       :: lmax    = .false.  ! flag for min/max computation
   LOGICAL                                       :: lchk    = .false.  ! flag for missing files
+  LOGICAL                                       :: lnomissincl =.false.! [from SL] flag for excuding gridpoints where some values are missing
   !!----------------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy list_of_model_files [-spval0] [-cub ] [-zeromean] [-max]'
+     PRINT *,'               [-nomissincl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average of a list of files given as arguments.' 
@@ -111,7 +115,7 @@ PROGRAM cdfmoy
      PRINT *,'       This selection can be adapted with the nam_cdf_namelist process.'
      PRINT *,'       (See cdfnamelist -i for details).'
      PRINT *,'       If you want to compute the average of already averaged files,'
-     PRINT *,'       consider using cdfmoy_weighted instead, in order to take into'
+     PRINT *,'       consoder using cdfmoy_weighted instead, in order to take into'
      PRINT *,'       account a particular weight for each file in the list.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -132,6 +136,10 @@ PROGRAM cdfmoy
      PRINT *,'              averaging, square averaging and eventually cubic averaging'
      PRINT *,'       [-max ] : with this option, a file with the minimum and maximum values'
      PRINT *,'              of the variables is created.'
+     PRINT *,'       [-nomissincl ] : with this option, the output mean is set to missing' 
+     PRINT *,'              value at any gridpoint where the variable contains a  missing'
+     PRINT *,'              value for at least one timestep. You should combine with option'
+     PRINT *,'              -spval0 if missing values are not 0 in all  the input files.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       If -zeromean option is used, need ', TRIM(cn_fhgr),' and ',TRIM(cn_fmsk)
@@ -167,6 +175,9 @@ PROGRAM cdfmoy
         lzermean = .true.
      CASE ( '-max' )   ! option to reset spval to 0 in the output files
         lmax = .true.
+     CASE ( '-nomissincl' )   ! [from SL] option to mask the output at gridpoints where some values are missing
+        lnomissincl = .true.   ! [from SL]
+
      CASE DEFAULT         ! then the argument is a file
         nfil          = nfil + 1
         cf_list(nfil) = TRIM(cldum)
@@ -211,7 +222,7 @@ PROGRAM cdfmoy
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
 
-  ALLOCATE( dtab(npiglo,npjglo), dtab2(npiglo,npjglo), v2d(npiglo,npjglo) )
+  ALLOCATE( dtab(npiglo,npjglo), dtab2(npiglo,npjglo), v2d(npiglo,npjglo),rmask2d(npiglo,npjglo)) ! [from SL]
   ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo) )
   IF ( lcubic ) THEN
      ALLOCATE( dtab3(npiglo,npjglo), rmean3(npiglo,npjglo) )
@@ -364,6 +375,7 @@ PROGRAM cdfmoy
         DO jk = 1, ipk(jvar)
            PRINT *,'level ',jk
            dtab(:,:) = 0.d0 ; dtab2(:,:) = 0.d0 ; dtotal_time = 0.
+           rmask2d(:,:) = 1.
            IF ( lcubic ) THEN  ; dtab3(:,:) = 0.d0                       ; ENDIF
            IF ( lmax   ) THEN  ; rmin (:,:) = 1.e20 ; rmax(:,:) = -1.e20 ; ENDIF
            ntframe = 0
@@ -384,6 +396,7 @@ PROGRAM cdfmoy
                 ntframe = ntframe + 1
                 v2d(:,:)  = getvar(cf_in, cv_nam(jvar), jk ,npiglo, npjglo,ktime=jt )
                 IF ( lspval0  )  WHERE (v2d == zspval_in(jvar))  v2d = 0.  ! change missing values to 0
+                WHERE (v2d == 0.) rmask2d = 0.                              ! [from SL]
                 IF ( lzermean ) CALL zeromean (jk, v2d )
                 dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
                 IF (cv_nam2(jvar) /= 'none' ) dtab2(:,:) = dtab2(:,:) + v2d(:,:)*v2d(:,:)*1.d0
@@ -398,9 +411,16 @@ PROGRAM cdfmoy
            END DO
            ! finish with level jk ; compute mean (assume spval is 0 )
            rmean(:,:) = dtab(:,:)/ntframe
-           IF (cv_nam2(jvar) /= 'none' ) rmean2(:,:) = dtab2(:,:)/ntframe
+           IF ( lnomissincl ) rmean(:,:) = rmean(:,:)*(rmask2d(:,:)*1.d0)    ! [from SL]
+           IF (cv_nam2(jvar) /= 'none' ) THEN
+                rmean2(:,:) = dtab2(:,:)/ntframe
+                IF ( lnomissincl ) rmean2(:,:) = rmean2(:,:)*(rmask2d(:,:)*1.d0)    ! [from SL]
+           ENDIF
            IF ( lcubic ) THEN
-              IF (cv_nam3(jvar) /= 'none' ) rmean3(:,:) = dtab3(:,:)/ntframe
+              IF (cv_nam3(jvar) /= 'none' ) THEN 
+                  rmean3(:,:) = dtab3(:,:)/ntframe
+                  IF ( lnomissincl ) rmean3(:,:) = rmean3(:,:)*(rmask2d(:,:)*1.d0)    ! [from SL]
+              ENDIF
            ENDIF
 
            ! store variable on outputfile
