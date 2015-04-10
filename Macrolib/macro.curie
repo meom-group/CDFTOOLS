@@ -12,6 +12,7 @@ F90=ifort
 MPF90=mpif90
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -fpe0 -traceback -ftrapuv -g -CB 
 FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
 LMPI=-lmpich
 

@@ -11,6 +11,7 @@ PROGRAM cdfstd
   !!
   !! History : 2.1  : 04/2006  : F. Castruccio : Original code (from cdfmoy)
   !!           3.0  : 01/2011  : J.M. Molines  : Doctor norm + Lic.
+  !!                : 04/2015  : S. Leroux  : add  optstd spval0 options
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
@@ -37,10 +38,14 @@ PROGRAM cdfstd
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varoutm          ! varid's of mean var output (optional)
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                 ! 2d data array
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmask2d             ![from SL]  
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                 ! tim counter
   REAL(KIND=4), DIMENSION(1)                    :: timean              ! mean time
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zspval_in           ! [from SL]   
 
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab, dtab2         ! cumulated values and squared values
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabprev, dtab2prev ! [from SL] keep value from the i-1 timestep
+  
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dstd                ! standard deviation
   REAL(KIND=8)                                  :: dtotal_time         ! cumulated time
 
@@ -57,12 +62,15 @@ PROGRAM cdfstd
 
   LOGICAL                                       :: lcaltmean           ! time mean computation flag
   LOGICAL                                       :: lsave=.false.       ! mean value save flag
+  LOGICAL                                       :: lspval0=.false.     ! [from SL] flag  if missing values other than zero 
+  LOGICAL                                       :: lnomissincl=.false.  ! [from SL] flag for excluding gridpoints where some values are missing    
+  LOGICAL                                       :: lstdopt=.false.      ! [from SL] flag for using a more optimal algorithm to compute std (and std is unbiased) 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfstd [-save] list_of files ' 
+     PRINT *,' usage : cdfstd [-save] [-spval0] [-nomissincl] [-stdopt] list_of files ' 
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the standard deviation of the variables belonging to a set of' 
@@ -74,7 +82,20 @@ PROGRAM cdfstd
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [ -save ] : Save the mean value of the field, in addition to the '
-     PRINT *,'                   std deviation. If used must be appear before list of files.'
+     PRINT *,'           std deviation. If used must be appear before list of files.'
+     PRINT *,'       [ -spval0 ] :  set missing_value attribute to 0 for all output'
+     PRINT *,'           variables and take care of the input missing_value.'
+     PRINT *,'           This option is usefull if missing_values differ from files '
+     PRINT *,'           to files.'
+     PRINT *,'           If used it should be called  before the list of input files.'          
+     PRINT *,'       [-nomissincl ] : with this option, the output std and mean are set to'
+     PRINT *,'           missing value at any gridpoint where the variable contains a '
+     PRINT *,'           missing value for at least one timestep. You should combine '
+     PRINT *,'           with -spval0 if missing values are not 0 in all the input files.' 
+     PRINT *,'           If used it should be called  before the list of input files.'              
+     PRINT *,'       [ -stdopt ]:  use a  more optimal algorithm to compute std'
+     PRINT *,'           and std is unbiased.  If used it should be called  before'
+     PRINT*,'            the list of input files.' 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -89,7 +110,6 @@ PROGRAM cdfstd
      PRINT *,'        cdfmoy, cdfrmsssh, cdfstdevw'
      STOP
   ENDIF
-
   ! look for -save option and one of the file name 
   ijarg = 1
   DO WHILE ( ijarg <= narg ) 
@@ -97,9 +117,14 @@ PROGRAM cdfstd
     SELECT CASE ( cldum )
     CASE ( '-save' ) 
       lsave = .true.
-    CASE DEFAULT 
+    CASE ( '-spval0' )                          ! [from SL]
+      lspval0 = .true.                          ! [from SL]
+    CASE ( '-nomissincl' )                      ! [from SL]
+      lnomissincl = .true.                       ! [from SL]
+    CASE ( '-stdopt' )                           ! [from SL]
+      lstdopt = .true.                           ! [from SL]
+    CASE DEFAULT
        cf_in = cldum
-!      CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
        EXIT  ! got the first file
     END SELECT
   END DO
@@ -126,7 +151,9 @@ PROGRAM cdfstd
   PRINT *, 'npk    = ', npk
 
   ALLOCATE( dtab(npiglo,npjglo), dtab2(npiglo,npjglo), v2d(npiglo,npjglo) )
+  ALLOCATE( rmask2d(npiglo,npjglo)                                         ) ! [from SL]                                            )
   ALLOCATE( dstd(npiglo,npjglo)                                           )
+  ALLOCATE( dtabprev(npiglo,npjglo), dtab2prev(npiglo,npjglo)             ) ! [from SL]
 
   nvars = getnvar(cf_in)
   PRINT *,' nvars =', nvars
@@ -137,6 +164,12 @@ PROGRAM cdfstd
   IF ( lsave ) ALLOCATE (id_varoutm(nvars)              )
 
   cv_namesi(:) = getvarname(cf_in, nvars, stypvari)
+                                          
+  IF ( lspval0 ) THEN                              ! [from SL]
+     ALLOCATE ( zspval_in(nvars) )                 ! [from SL]
+     zspval_in(:) = stypvari(:)%rmissing_value     ! [from SL]
+     stypvari(:)%rmissing_value = 0.               ! [from SL]
+  ENDIF                                            ! [from SL]
 
   id_var(:)  = (/(jv, jv=1,nvars)/)
   ipk(:)     = getipk(cf_in, nvars, cdep=cv_dep)
@@ -152,6 +185,7 @@ PROGRAM cdfstd
      stypvaro(jvar)%clong_name  = 'Std Deviation of '//TRIM(cv_namesi(jvar))
      stypvaro(jvar)%cshort_name = cv_nameso(jvar)
   END DO
+    
 
   ! create output fileset
   ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk, cdep=cv_dep )
@@ -179,11 +213,20 @@ PROGRAM cdfstd
            PRINT *,'level ',jk
 
            dtab(:,:) = 0.d0; dtab2(:,:) = 0.d0; dtotal_time = 0.d0 
+           dtabprev(:,:) = 0.d0; dtab2prev(:,:) = 0.d0              ! [from SL]
+           rmask2d(:,:) = 1.0                                        ! [from SL]
+
            ntframe = 0
            DO jfil = 1, narg
               CALL getarg (jfil, cldum)
               SELECT CASE (cldum)
               CASE ( '-save' ) 
+               CYCLE
+              CASE ( '-spval0' )                                    ! [from SL]
+               CYCLE
+              CASE ( '-nomissincl' )                                ! [from SL]
+               CYCLE
+              CASE ( '-stdopt' )                                    ! [from SL]
                CYCLE
               CASE DEFAULT
                 cf_in=cldum
@@ -200,21 +243,49 @@ PROGRAM cdfstd
 
               DO jt=1,npt
                  ntframe = ntframe + 1
-                 v2d(  :,:) = getvar(cf_in, cv_namesi(jvar), jk, npiglo, npjglo, ktime=jt)
-                 dtab( :,:) = dtab( :,:) + v2d(:,:)*1.d0
-                 dtab2(:,:) = dtab2(:,:) + v2d(:,:)*v2d(:,:)*1.d0
-              END DO
+                 v2d(:,:) = getvar(cf_in, cv_namesi(jvar), jk, npiglo, npjglo, ktime=jt)
+                 IF ( lspval0  )  WHERE (v2d == zspval_in(jvar))  v2d = 0.    ! [from SL] change missing values to 0
+                 WHERE (v2d == 0.) rmask2d = 0.                                ! [from SL] keep memory of missing values at gridpoints
+
+
+              IF (lstdopt) THEN    ! [from SL] New algorithm
+                 IF (ntframe == 1) THEN                                        ! [from SL]
+                    dtab(:,:)  = v2d(:,:)*1.d0                                 ! [from SL]
+                    dtab2(:,:) = 0.d0                                          ! [from SL]
+                    dtabprev(:,:)  = dtab(:,:)                                 ! [from SL]
+                    dtab2prev(:,:) = dtab2(:,:)                                ! [from SL]
+                 ELSE                                      
+                    dtab(:,:) = dtabprev(:,:) + (v2d(:,:)-dtabprev(:,:))/jt   ! [from SL]           
+                    dtab2(:,:) = dtab2prev(:,:) + ((v2d(:,:)-dtabprev(:,:))*(v2d(:,:)-dtab(:,:))) ! [from SL]   
+                    dtabprev(:,:) = dtab(:,:)                                  ! [from SL]        
+                    dtab2prev(:,:) = dtab2(:,:)                                ! [from SL]        
+                 ENDIF
+             ELSE                 ! original algo
+                dtab( :,:) = dtab( :,:) + v2d(:,:)*1.d0
+                dtab2(:,:) = dtab2(:,:) + v2d(:,:)*v2d(:,:)*1.d0
+             ENDIF  
+
+             END DO
            END DO
 
            ! finish with level jk ; compute mean (assume spval is 0 )
-           dtab( :,:) = dtab( :,:) / ntframe
-           dtab2(:,:) = dtab2(:,:) / ntframe
 
-           WHERE ( dtab2 - dtab*dtab >= 0 ) 
-             dstd = SQRT(dtab2 - dtab*dtab)
-           ELSEWHERE
-             dstd = 0.d0
-           END WHERE
+           IF (lstdopt) THEN                                                          ! [from SL]  if opt "std optimal and unbiased"
+                dtab(:,:) = dtab(:,:) / ntframe                                      ! [from SL]
+                dstd(:,:) = SQRT(dtab2(:,:) / (ntframe-1))                           ! [from SL] unbiased estimate
+           
+           ELSE                                                                      ! [from SL]
+                dtab(:,:)  = dtab(:,:) / ntframe                                   
+                dtab2(:,:) = dtab2(:,:) / (ntframe)                       
+                WHERE ( dtab2 - dtab*dtab >= 0 ) 
+                    dstd = SQRT(dtab2 - dtab*dtab)
+                ELSEWHERE
+                    dstd = 0.d0
+                END WHERE
+           ENDIF                                                                     ! [from SL]
+
+               IF ( lnomissincl ) dtab(:,:) = dtab(:,:)*(rmask2d(:,:)*1.d0)           ! [from SL] apply mask 
+               IF ( lnomissincl ) dstd(:,:) = dstd(:,:)*(rmask2d(:,:)*1.d0)           ! [from SL] apply mask 
 
            ! store variable on output file
                         ierr = putvar(ncout, id_varout(jvar),  REAL(dstd), jk, npiglo, npjglo, kwght=ntframe)
@@ -235,3 +306,4 @@ PROGRAM cdfstd
   ierr = closeout(ncou2)
 
 END PROGRAM cdfstd
+
