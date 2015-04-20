@@ -136,9 +136,9 @@ PROGRAM cdflap
   ! define new variables for output
   ipk(1)                       = MAX(npk, 1 )
   IF ( l_overf2) THEN
-     stypvar(1)%cname             = 'lap'//TRIM(cln_in)//'overf2'
+     stypvar(1)%cname             = 'lap'//TRIM(cv_in)//'overf2'
   ELSE
-     stypvar(1)%cname             = 'lap'//TRIM(cln_in)
+     stypvar(1)%cname             = 'lap'//TRIM(cv_in)
   ENDIF
   stypvar(1)%cunits            = TRIM(cv_units)//'/m2'
   IF ( l_overf2) stypvar(1)%cunits  = TRIM(cv_units)//'/m'
