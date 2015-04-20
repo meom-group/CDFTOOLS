@@ -62,13 +62,13 @@ PROGRAM cdflap
   TYPE(variable), DIMENSION(1)                 :: stypvar            ! output attributes
 
   LOGICAL                                      :: lchk               ! missing files flag
-  LOGICAL                                      :: l_overf=.FALSE.    ! overf flag
+  LOGICAL                                      :: l_overf2=.FALSE.    ! overf flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdflap IN-file IN-var  IN-type [-overf]'
+     PRINT *,' usage : cdflap IN-file IN-var  IN-type [-overf2]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Laplacian of the variable IN-var in file IN-file'
@@ -80,7 +80,8 @@ PROGRAM cdflap
      PRINT *,'       IN-TYPE : Position of the variable on the C-grid [ T U V F ]'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -overf : save laplacien/f/f (where f is the local coriolis parameter)'
+     PRINT *,'       -overf2 : save laplacien/f/f*g (where f is the local coriolis '
+     PRINT *,'            parameter, and g is the accelaration due to gravity --9.81 m/s2-- )'
      PRINT *,'            For the SSH field, this is a proxy for geostrophic vorticity'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -89,8 +90,8 @@ PROGRAM cdflap
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : lap<var> (unit/m2)'
-     PRINT *,'       if option -overf is used, netcdf file is lapoverf.nc and '
-     PRINT *,'       variable is lap<var>overf'
+     PRINT *,'       if option -overf2 is used, netcdf file is lapoverf2.nc and '
+     PRINT *,'       variable is lap<var>overf2'
     
 
      STOP
@@ -101,9 +102,9 @@ PROGRAM cdflap
   CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1
   CALL getarg(ijarg, ct_in) ; ijarg = ijarg + 1
   IF ( narg == 4 ) THEN
-  ! assume -overf option !
-     l_overf=.true.
-     cf_out='lapoverf.nc'
+  ! assume -overf2 option !
+     l_overf2=.true.
+     cf_out='lapoverf2.nc'
   ENDIF
   PRINT *, ' TYP ', ct_in
 
@@ -134,17 +135,19 @@ PROGRAM cdflap
 
   ! define new variables for output
   ipk(1)                       = MAX(npk, 1 )
-  IF ( l_overf) THEN
-     stypvar(1)%cname             = 'lap'//TRIM(cln_in)//'overf'
+  IF ( l_overf2) THEN
+     stypvar(1)%cname             = 'lap'//TRIM(cln_in)//'overf2'
   ELSE
      stypvar(1)%cname             = 'lap'//TRIM(cln_in)
   ENDIF
   stypvar(1)%cunits            = TRIM(cv_units)//'/m2'
+  IF ( l_overf2) stypvar(1)%cunits  = TRIM(cv_units)//'/m'
   stypvar(1)%rmissing_value    = dspval
   stypvar(1)%valid_min         = -10.
   stypvar(1)%valid_max         = 10.
   stypvar(1)%clong_name        = 'Laplacian of '//TRIM(cln_in)
-  stypvar(1)%cshort_name       = 'lap' 
+  IF ( l_overf2) stypvar(1)%clong_name        = 'g /f/f* Laplacian of '//TRIM(cln_in)
+  stypvar(1)%cshort_name       = stypvar(1)%cname
   stypvar(1)%conline_operation = 'N/A'
   stypvar(1)%caxis             = 'TZYX'
 
@@ -193,7 +196,7 @@ PROGRAM cdflap
   ALLOCATE ( e1_i1(npiglo,npjglo), e2_j1(npiglo,npjglo) )
   ALLOCATE ( e1_i2(npiglo,npjglo), e2_j2(npiglo,npjglo) )
   ALLOCATE ( rmski(npiglo,npjglo), rmskj(npiglo,npjglo) )
-  IF ( l_overf ) THEN
+  IF ( l_overf2 ) THEN
      ALLOCATE (  ff(npiglo,npjglo), gphi(npiglo,npjglo) )
   ENDIF
 
@@ -206,7 +209,7 @@ PROGRAM cdflap
   e2_j1 = getvar(cn_fhgr, ce2_j1, 1, npiglo, npjglo)
   e2_j2 = getvar(cn_fhgr, ce2_j2, 1, npiglo, npjglo)
 !
-  IF ( l_overf ) THEN
+  IF ( l_overf2 ) THEN
     ! to prepare computation of g/f*LAP(SSH) 
      gphi    = getvar(cn_fhgr, cv_lat, 1, npiglo, npjglo)
      rpi     = acos(-1.)
@@ -244,25 +247,23 @@ PROGRAM cdflap
            DO ji = 2, npiglo -1
               ii1 = ji + iioff1
               ii2 = ji - iioff2
-              dlap(ji,jj) =  ( ( v2d(ji+1,jj) - v2d(ji,jj) )*1.d0 /e1_i1(ii1,jj)* rmski(ii1,jj) - ( v2d(ji,jj) - v2d(ji-1,jj) )*1.d0/e1_i1(ii2,jj)*  rmski(ii2,jj) ) / e1_i2(ji,jj)  &
-                &          + ( ( v2d(ji,jj+1) - v2d(ji,jj) )*1.d0 /e2_j1(ij1,jj)* rmskj(ji,ij1) - ( v2d(ji,jj) - v2d(ji,jj-1) )*1.d0/e2_j1(ji,ij2)*  rmskj(ji,ij2) ) / e2_j2(ji,jj)
+              dlap(ji,jj) =  ( ( v2d(ji+1,jj) - v2d(ji,jj) )*1.d0 /e1_i1(ii1,jj)* rmski(ii1,jj)    &
+           &  - ( v2d(ji,jj) - v2d(ji-1,jj) )*1.d0/e1_i1(ii2,jj)*  rmski(ii2,jj) ) / e1_i2(ji,jj)  &
+           &  + ( ( v2d(ji,jj+1) - v2d(ji,jj) )*1.d0 /e2_j1(ij1,jj)* rmskj(ji,ij1)                 &
+           &  - ( v2d(ji,jj) - v2d(ji,jj-1) )*1.d0/e2_j1(ji,ij2)*  rmskj(ji,ij2) ) / e2_j2(ji,jj)
            END DO
         END DO
 
-        ! write level jk 
-        IF ( l_overf ) THEN
+        IF ( l_overf2 ) THEN
           WHERE (dlap == 0.d0 )
             dlap = dspval
           ELSEWHERE
-            dlap = dlap /ff
+            dlap = grav*dlap /ff/ff
           ENDWHERE
         ENDIF
 
-        IF ( l_overf) THEN
-          ierr = putvar(ncout, id_varout(1), REAL(dlap)/ff, jk, npiglo, npjglo, ktime=jt)
-        ELSE
-          ierr = putvar(ncout, id_varout(1), REAL(dlap), jk, npiglo, npjglo, ktime=jt)
-        ENDIF
+        ! write level jk 
+        ierr = putvar(ncout, id_varout(1), REAL(dlap), jk, npiglo, npjglo, ktime=jt)
 
      END DO  ! loop to next level
   END DO ! loop on time
