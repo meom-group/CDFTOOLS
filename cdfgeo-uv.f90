@@ -226,7 +226,7 @@ PROGRAM cdfgeo_uv
      zwrk(:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
      IF ( ioption == 1 ) THEN
        DO jj=1, npjglo -1
-         DO ji=1, npjglo -1
+         DO ji=1, npiglo -1
             zsshn(ji,jj) = 0.25*( zwrk (ji,jj  ) +  zwrk (ji+1,jj  ) + &
                &                  zwrk (ji,jj+1) +  zwrk (ji+1,jj+1) )
          ENDDO
