@@ -29,6 +29,7 @@ PROGRAM cdfgeo_uv
   INTEGER(KIND=4)                           :: npiglo, npjglo ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt       ! size of the domain
   INTEGER(KIND=4)                           :: narg, iargc    ! browse line
+  INTEGER(KIND=4)                           :: ijarg          ! browse line
   INTEGER(KIND=4)                           :: ncoutu         ! ncid for ugeo file
   INTEGER(KIND=4)                           :: ncoutv         ! ncid for vgeo file
   INTEGER(KIND=4)                           :: ierr           ! error status
@@ -61,30 +62,53 @@ PROGRAM cdfgeo_uv
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfgeo-uv T-file'
+     PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [ -C option ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the geostrophic velocity component from the gradient '
-     PRINT *,'       of the SSH read in the input file. Note that in the C-grid '
-     PRINT *,'       output file, the zonal component is located on V point and the'
-     PRINT *,'       meridional component is located on U point.'
+     PRINT *,'         Compute the geostrophic velocity component from the gradient '
+     PRINT *,'       of the SSH read in the input file. '
+     PRINT *,'         Without any -C option, the zonal component is located on a '
+     PRINT *,'       C-grid V point, the meridional one is located on C-Grid U point.'
+     PRINT *,'         See the use of the -C option in order to have (Ugeo, Vgeo) '
+     PRINT *,'       at (U,V) points on the C-grid.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file : netcdf file with SSH.' 
+     PRINT *,'      -f  T-file : netcdf file with SSH (input).' 
      PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'      -o UOUT-file VOUT-file: specify the names of the output files.'
+     PRINT *,'                Default are: ',TRIM(cf_uout),' ',TRIM(cf_vout),'.'
+     PRINT *,'      -C option : Using this option, the output velocity component are'
+     PRINT *,'               at the correct (U,V) points on the C-grid'
+     PRINT *,'               2 options are available :'
+     PRINT *,'              option = 1 : SSH is interpolated on the F point prior derivation'
+     PRINT *,'              option = 2 : Ugeo and Vgeo are interpolated on the C-grid after'
+     PRINT *,'                     derivation'
+     PRINT *,'                 Both option should give very similar results...'
+     PRINT *,'  '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       - netcdf file : ', TRIM(cf_uout) 
+     PRINT *,'       - netcdf file : ', TRIM(cf_uout) ,' (default)'
      PRINT *,'           variables : ', TRIM(cn_vozocrtx)
+     PRINT *,'           Unless -C option is used : '
      PRINT *,'             *** CAUTION:  this variable is located on V-point ***'
-     PRINT *,'       - netcdf file : ', TRIM(cf_vout) 
+     PRINT *,'       - netcdf file : ', TRIM(cf_vout) ,' (default)'
      PRINT *,'           variables : ', TRIM(cn_vomecrty)
+     PRINT *,'           Unless -C option is used : '
      PRINT *,'             *** CAUTION:  this variable is located on U-point ***'
      STOP
   ENDIF
 
+  ijarg = 1
+  DO WHILE ( ijarg <= narg )
+    CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
+    SELECT CASE ( cl_dum )
+    CASE ('-f' ) 
+       CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 ;;
+    END SELECT
+  ENDDO
   CALL getarg(1, cf_tfil)
 
   lchk = chkfile(cn_fhgr)
