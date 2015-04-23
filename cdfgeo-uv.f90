@@ -33,6 +33,7 @@ PROGRAM cdfgeo_uv
   INTEGER(KIND=4)                           :: ncoutu         ! ncid for ugeo file
   INTEGER(KIND=4)                           :: ncoutv         ! ncid for vgeo file
   INTEGER(KIND=4)                           :: ierr           ! error status
+  INTEGER(KIND=4)                           :: ioption=0      ! Option for C-grid interpolation
   INTEGER(KIND=4), DIMENSION(1)             :: ipk            ! levels of output vars
   INTEGER(KIND=4), DIMENSION(1)             :: id_varoutu     ! varid for ugeo
   INTEGER(KIND=4), DIMENSION(1)             :: id_varoutv     ! varid for vgeo
@@ -41,15 +42,20 @@ PROGRAM cdfgeo_uv
   REAL(KIND=4)                              :: ffu, ffv       ! coriolis param f at U and V point
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1u, e2v, ff   ! horiz metrics, coriolis (f-point)
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2u, e1v       ! horiz metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamu, gphiu   ! longitude latitude u-point
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamv, gphiv   ! longitude latitude v-point
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn         ! velocity components
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zun, zvn       ! velocity components
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsshn          ! ssh
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zwrk           ! working array for interpolation
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: umask, vmask   ! mask at u and v points
 
   CHARACTER(LEN=256)                        :: cf_tfil        ! input file name
   CHARACTER(LEN=256)                        :: cf_uout='ugeo.nc' 
   CHARACTER(LEN=256)                        :: cf_vout='vgeo.nc'
+  CHARACTER(LEN=256)                        :: cl_dum         ! dummy character variable
+  CHARACTER(LEN=256)                        :: cl_global      ! global attribute
 
   TYPE(variable), DIMENSION(1)              :: stypvaru       ! attributes for ugeo
   TYPE(variable), DIMENSION(1)              :: stypvarv       ! attributes for vgeo
@@ -101,15 +107,33 @@ PROGRAM cdfgeo_uv
      STOP
   ENDIF
 
+  cl_global=' (Ugeo, Vgeo ) are on ( V, U ) points of the C-grid'
   ijarg = 1
   DO WHILE ( ijarg <= narg )
     CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
     SELECT CASE ( cl_dum )
     CASE ('-f' ) 
-       CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 ;;
+       CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 
+    CASE ('-o' ) 
+       CALL getarg(ijarg, cf_uout ) ; ijarg = ijarg + 1
+       CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
+    CASE ('-C' ) 
+       CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
+       READ(cl_dum, * ) ioption
+       IF ( ioption == 1 ) THEN
+         PRINT *,'  *** Use SSH interpolation ***'
+         cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (SSH interp)'
+       ELSEIF ( ioption == 2 ) THEN
+         PRINT *,'  *** Use Ugeo Vgeo interpolation ***'
+         cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (velocity interp)'
+       ELSE
+         PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++'
+         STOP
+       ENDIF
+    CASE DEFAULT
+       PRINT *, '  +++ ERROR: Argument ',TRIM(cl_dum),' not supported. +++'
     END SELECT
   ENDDO
-  CALL getarg(1, cf_tfil)
 
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fzgr) .OR. lchk
@@ -149,16 +173,21 @@ PROGRAM cdfgeo_uv
 
   ! Allocate the memory
   ALLOCATE ( e1u(npiglo,npjglo), e2v(npiglo,npjglo) )
+  IF( ioption == 1 ) ALLOCATE ( e1v(npiglo,npjglo), e2u(npiglo,npjglo) )
   ALLOCATE ( ff(npiglo,npjglo), tim(npt)  )
   ALLOCATE ( glamu(npiglo,npjglo), gphiu(npiglo,npjglo)  )
   ALLOCATE ( glamv(npiglo,npjglo), gphiv(npiglo,npjglo)  )
   ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo)  )
+  IF ( ioption == 2 ) ALLOCATE ( zun(npiglo,npjglo), zvn(npiglo,npjglo)  )
   ALLOCATE ( zsshn(npiglo,npjglo) )
   ALLOCATE ( umask(npiglo,npjglo), vmask(npiglo,npjglo) )
+  ALLOCATE ( zwrk (npiglo,npjglo) )
 
   ! Read the metrics from the mesh_hgr file
-  e2v   = getvar(cn_fhgr, cn_ve2v,  1, npiglo, npjglo)
   e1u   = getvar(cn_fhgr, cn_ve1u,  1, npiglo, npjglo)
+  e1v   = getvar(cn_fhgr, cn_ve1v,  1, npiglo, npjglo)
+  e2u   = getvar(cn_fhgr, cn_ve2u,  1, npiglo, npjglo)
+  e2v   = getvar(cn_fhgr, cn_ve2v,  1, npiglo, npjglo)
   ff    = getvar(cn_fhgr, cn_vff,   1, npiglo, npjglo) 
 
   glamu = getvar(cn_fhgr, cn_glamu, 1, npiglo, npjglo)
@@ -167,44 +196,64 @@ PROGRAM cdfgeo_uv
   gphiv = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
 
   ! create output filesets
-  ! U geo  ! @ V-point !
   ncoutu = create      (cf_uout, cf_tfil,  npiglo, npjglo, 0                              )
-  ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu                     )
-  ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
+  ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu, cdglobal=cl_global )
+  IF ( ioption == 0 ) THEN
+    ! U geo  ! @ V-point !
+     ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
+  ELSE
+     ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
+  ENDIF
   
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
   ierr = putvar1d(ncoutu,  tim,       npt, 'T')
 
   ! V geo  ! @ U-point !
   ncoutv = create      (cf_vout, cf_tfil,  npiglo, npjglo, 0                              )
-  ierr   = createvar   (ncoutv,  stypvarv, 1,      ipk,    id_varoutv                     )
-  ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
+  ierr   = createvar   (ncoutv,  stypvarv, 1,      ipk,    id_varoutv, cdglobal=cl_global )
+  IF ( ioption == 0 ) THEN
+    ! V geo  ! @ U-point !
+     ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
+  ELSE
+     ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
+  ENDIF
 
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
   ierr = putvar1d(ncoutv,  tim,       npt, 'T')
 
   ! Read ssh
   DO jt=1,npt
-     zsshn = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
+     zwrk(:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
+     IF ( ioption == 1 ) THEN
+       DO jj=1, npjglo -1
+         DO ji=1, npjglo -1
+            zsshn(ji,jj) = 0.25*( zwrk (ji,jj  ) +  zwrk (ji+1,jj  ) + &
+               &                  zwrk (ji,jj+1) +  zwrk (ji+1,jj+1) )
+         ENDDO
+       ENDDO
+     ELSE
+        zsshn(:,:) = zwrk(:,:) 
+     ENDIF
 
      IF ( jt == 1 ) THEN
         ! compute the masks
         umask=0. ; vmask = 0
         DO jj = 1, npjglo 
            DO ji = 1, npiglo - 1
-              umask(ji,jj) = zsshn(ji,jj)*zsshn(ji+1,jj)
+              umask(ji,jj) = zwrk(ji,jj)*zwrk(ji+1,jj)
               IF (umask(ji,jj) /= 0.) umask(ji,jj) = 1.
            END DO
         END DO
 
         DO jj = 1, npjglo - 1
            DO ji = 1, npiglo
-              vmask(ji,jj) = zsshn(ji,jj)*zsshn(ji,jj+1)
+              vmask(ji,jj) = zwrk(ji,jj)*zwrk(ji,jj+1)
               IF (vmask(ji,jj) /= 0.) vmask(ji,jj) = 1.
            END DO
         END DO
         ! e1u and e1v are modified to simplify the computation below
         ! note that geostrophy is not available near the equator ( f=0)
+        IF ( ioption == 0 .OR. ioption == 2 ) THEN  ! SSH at T point
         DO jj=2, npjglo - 1
            DO ji=2, npiglo - 1
               ffu = ff(ji,jj) + ff(ji,  jj-1)
@@ -222,18 +271,59 @@ PROGRAM cdfgeo_uv
               ENDIF
            END DO
         END DO
+        ELSE    ! SSH at F point
+        DO jj=2, npjglo - 1
+           DO ji=2, npiglo - 1
+              ffu = ff(ji,jj) + ff(ji,  jj-1)
+              IF ( ffu /= 0. ) THEN
+                e2u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e2u(ji,jj)
+              ELSE
+                e2u(ji,jj)= 0.  ! spvalue
+              ENDIF
+
+              ffv = ff(ji,jj) + ff(ji-1,jj  )
+              IF ( ffv /= 0. ) THEN
+                e1v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e1v(ji,jj)
+              ELSE
+                e1v(ji,jj)= 0.  ! spvalue
+              ENDIF
+           END DO
+        ENDDO
+
+        ENDIF
+       
      END IF
 
      ! Calculation of geostrophic velocity :
      un(:,:) = 0.
      vn(:,:) = 0.
 
-     DO jj = 2,npjglo - 1
-        DO ji = 2,npiglo -1
+     IF ( ioption == 0 .OR. ioption == 2 ) THEN
+     DO jj = 1,npjglo - 1
+        DO ji = 1,npiglo -1
            vn(ji,jj) =   e1u(ji,jj) * ( zsshn(ji+1,jj  ) - zsshn(ji,jj) ) 
            un(ji,jj) = - e2v(ji,jj) * ( zsshn(ji  ,jj+1) - zsshn(ji,jj) ) 
         END DO
      END DO
+     ELSE    ! SSH at F point
+     DO jj = 2,npjglo 
+        DO ji = 2,npiglo 
+           vn(ji,jj) =   e1v(ji,jj) * ( zsshn(ji,jj) - zsshn(ji-1,jj) ) 
+           un(ji,jj) = - e2u(ji,jj) * ( zsshn(ji,jj) - zsshn(ji,jj-1) ) 
+        END DO
+     END DO
+     ENDIF
+
+     IF ( ioption == 2 ) THEN ! interpolate ugeo, vgeo on (U,V) point
+        DO jj=2,npjglo -1
+         DO ji=2, npiglo -1
+            zun(:,:) = 0.25*( un(ji,jj) + un(ji, jj-1) + un(ji+1,jj) + un (ji+1, jj-1) )
+            zvn(:,:) = 0.25*( vn(ji,jj) + vn(ji-1, jj) + vn(ji,jj+1) + vn (ji-1, jj+1) )
+         ENDDO
+        ENDDO
+        un(:,:) = zun(:,:)
+        vn(:,:) = zvn(:,:)
+     ENDIF
 
      ! write un and vn  ...
      ierr = putvar(ncoutu, id_varoutu(1), un(:,:), 1, npiglo, npjglo, ktime=jt)
