@@ -225,6 +225,7 @@ PROGRAM cdfgeo_uv
   DO jt=1,npt
      zwrk(:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
      IF ( ioption == 1 ) THEN
+        PRINT *, ' *** interpolation of SSH ...'
        DO jj=1, npjglo -1
          DO ji=1, npiglo -1
             zsshn(ji,jj) = 0.25*( zwrk (ji,jj  ) +  zwrk (ji+1,jj  ) + &
@@ -315,10 +316,11 @@ PROGRAM cdfgeo_uv
      ENDIF
 
      IF ( ioption == 2 ) THEN ! interpolate ugeo, vgeo on (U,V) point
+        PRINT *, ' *** interpolation of velocities ...'
         DO jj=2,npjglo -1
          DO ji=2, npiglo -1
-            zun(:,:) = 0.25*( un(ji,jj) + un(ji, jj-1) + un(ji+1,jj) + un (ji+1, jj-1) )
-            zvn(:,:) = 0.25*( vn(ji,jj) + vn(ji-1, jj) + vn(ji,jj+1) + vn (ji-1, jj+1) )
+            zun(ji,jj) = 0.25*( un(ji,jj) + un(ji, jj-1) + un(ji+1,jj) + un (ji+1, jj-1) )
+            zvn(ji,jj) = 0.25*( vn(ji,jj) + vn(ji-1, jj) + vn(ji,jj+1) + vn (ji-1, jj+1) )
          ENDDO
         ENDDO
         un(:,:) = zun(:,:)
