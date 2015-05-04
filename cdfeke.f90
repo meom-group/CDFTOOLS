@@ -133,6 +133,11 @@ PROGRAM cdfeke
   npjglo = getdim (cf_ufil,cn_y)
   npk    = getdim (cf_ufil,cn_z)
   npt    = getdim (cf_ufil,cn_t)
+
+  IF ( npk == 0 ) THEN
+    ! assume one level only
+    npk=1
+  ENDIF
   
   ivar = 1
   IF ( leke ) THEN 
