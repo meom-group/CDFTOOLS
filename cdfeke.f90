@@ -134,10 +134,7 @@ PROGRAM cdfeke
   npk    = getdim (cf_ufil,cn_z)
   npt    = getdim (cf_ufil,cn_t)
 
-  IF ( npk == 0 ) THEN
-    ! assume one level only
-    npk=1
-  ENDIF
+  IF ( npk == 0 ) npk=1 ! assume 1 level at least
   
   ivar = 1
   IF ( leke ) THEN 

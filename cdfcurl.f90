@@ -63,7 +63,7 @@ PROGRAM cdfcurl
   narg = iargc()
   IF ( narg < 5 ) THEN
      PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l levlist [-T] [-8]...'
-     PRINT *,'           ... [-surf] [-overf]'
+     PRINT *,'           ... [-surf] [-overf] [-o OUT-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the curl of a vector field, at a specified level.'  
@@ -85,6 +85,7 @@ PROGRAM cdfcurl
      PRINT *,'       -8 : save in double precision instead of standard simple precision.'
      PRINT *,'       -surf : work with single level C-grid (not forcing)'
      PRINT *,'       -overf : store the ratio curl/f where f is the coriolis parameter'
+     PRINT *,'       -o OUT-file : specify output file name instead of ',TRIM(cf_out) 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ', TRIM(cn_fhgr)
@@ -117,6 +118,8 @@ PROGRAM cdfcurl
         lsurf = .true.
      CASE ('-overf')
         loverf = .true.
+     CASE ('-o')
+        CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE DEFAULT
         PRINT *,  TRIM(cldum), ' : unknown option '
      END SELECT

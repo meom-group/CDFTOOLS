@@ -74,6 +74,7 @@ PROGRAM cdfvertmean
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfvertmean [-debug] IN-file IN-var1,var2,.. v-type dep1 dep2 [-full]'
+     PRINT *,'              ... [-o OUT-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the vertical mean between dep1 and dep2 given in m,'
@@ -89,6 +90,7 @@ PROGRAM cdfvertmean
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full  ] : for full step configurations. Default is partial step.'
      PRINT *,'       [-debug ] : print some extra informations.'
+     PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fzgr),' and ',TRIM(cn_fmsk)
@@ -106,6 +108,7 @@ PROGRAM cdfvertmean
      SELECT CASE ( cldum )
      CASE ( '-full'  ) ; lfull  = .TRUE.
      CASE ( '-debug' ) ; ldebug = .TRUE.
+     CASE ( '-o' )     ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE DEFAULT
         ireq=ireq+1
         SELECT CASE ( ireq )

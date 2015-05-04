@@ -86,7 +86,7 @@ PROGRAM cdfpsi
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfpsi U-file V-file [V] [-full ] [-mask ] [-mean] ...'
-     PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ]'
+     PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the barotropic stream function (a proxy ) as the integral of '
@@ -109,6 +109,7 @@ PROGRAM cdfpsi
      PRINT *,'                   reference point.'
      PRINT *,'       [ -ref iref jref ] : Set the reference point in i,j coordinates.'
      PRINT *,'                   BSF at reference point is arbitrarly set to zero.'
+     PRINT *,'       [ -o  OUT-file ] : specify output file name instead of default ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),' and ', TRIM(cn_fzgr),'.'
@@ -137,6 +138,7 @@ PROGRAM cdfpsi
      CASE ('-ssh' ) ; lssh  = .TRUE.  ; nvout=3
         CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg + 1 
      CASE ('-open') ; lopen = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
+     CASE ('-o'   ) ; CALL getarg( ijarg, cf_out )   ; ijarg=ijarg + 1 
      CASE ('-ref') 
         CALL getarg( ijarg, cldum )   ; ijarg=ijarg + 1 ; READ(cldum,*) iiref
         CALL getarg( ijarg, cldum )   ; ijarg=ijarg + 1 ; READ(cldum,*) ijref
