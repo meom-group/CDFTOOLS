@@ -249,7 +249,7 @@ PROGRAM cdflap
               ii2 = ji - iioff2
               dlap(ji,jj) =  ( ( v2d(ji+1,jj) - v2d(ji,jj) )*1.d0 /e1_i1(ii1,jj)* rmski(ii1,jj)    &
            &  - ( v2d(ji,jj) - v2d(ji-1,jj) )*1.d0/e1_i1(ii2,jj)*  rmski(ii2,jj) ) / e1_i2(ji,jj)  &
-           &  + ( ( v2d(ji,jj+1) - v2d(ji,jj) )*1.d0 /e2_j1(ij1,jj)* rmskj(ji,ij1)                 &
+           &  + ( ( v2d(ji,jj+1) - v2d(ji,jj) )*1.d0 /e2_j1(ji,ij1)* rmskj(ji,ij1)                 &
            &  - ( v2d(ji,jj) - v2d(ji,jj-1) )*1.d0/e2_j1(ji,ij2)*  rmskj(ji,ij2) ) / e2_j2(ji,jj)
            END DO
         END DO
