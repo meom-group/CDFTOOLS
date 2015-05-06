@@ -20,16 +20,19 @@ PROGRAM cdflap
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                              :: ji, jj, jk, jt     ! dummy loop index
+  INTEGER(KIND=4)                              :: ji, jj, jk, jt, jv ! dummy loop index
   INTEGER(KIND=4)                              :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                              :: npk, npt           ! size of the domain
+  INTEGER(KIND=4)                              :: npkv               ! vertical size of the variable
   INTEGER(KIND=4)                              :: narg, iargc, ijarg ! browse line
   INTEGER(KIND=4)                              :: ncout              ! ncid of output file
+  INTEGER(KIND=4)                              :: nvars              ! nmber of variables in input file
   INTEGER(KIND=4)                              :: ierr               ! error status
   INTEGER(KIND=4)                              :: iioff1, iioff2     ! i-offset for mask
   INTEGER(KIND=4)                              :: ijoff1, ijoff2     ! j-offset for mask
   INTEGER(KIND=4)                              :: ii1, ii2, ij1, ij2 ! working index
   INTEGER(KIND=4), DIMENSION(1)                :: ipk, id_varout     ! levels and varid's of output vars
+  INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ipkin              ! ipk of all variables in input files
 
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1_i1, e1_i2       ! along i horizontal metric
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e2_j1, e2_j2       ! along j horizontal metric
@@ -58,8 +61,10 @@ PROGRAM cdflap
   CHARACTER(LEN=10)                            :: ce1_i1, ce1_i2     ! name of relevant horizontal i-metric
   CHARACTER(LEN=10)                            :: ce2_j1, ce2_j2     ! name of relevant horizontal i-metric
   CHARACTER(LEN=10)                            :: cmask_i, cmask_j   ! name of relevant mask variable
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
 
   TYPE(variable), DIMENSION(1)                 :: stypvar            ! output attributes
+  TYPE(variable), DIMENSION(:), ALLOCATABLE    :: sdum               ! input attributes
 
   LOGICAL                                      :: lchk               ! missing files flag
   LOGICAL                                      :: l_overf2=.FALSE.    ! overf flag
@@ -130,11 +135,24 @@ PROGRAM cdflap
   PRINT *, 'NPJGLO : ', npjglo
   PRINT *, 'NPK    : ', npk
   PRINT *, 'NPT    : ', npT
+  ! determine the vertical size of the working variable
+  nvars = getnvar(cf_in)   ! get the number of variables in files
+  ALLOCATE(cv_nam(nvars), ipkin(nvars) ,sdum(nvars) )
+
+  ! get list of variable names and collect attributes in stypvar
+  cv_nam(:) = getvarname(cf_in,nvars, sdum)
+  ipkin(:)  = getipk (cf_in,nvars)
+  DO jv =1, nvars
+   IF ( cv_nam(jv) == cv_in ) THEN
+     npkv=ipkin(jv)
+     EXIT
+   ENDIF
+  ENDDO
 
   ierr = getvaratt (cf_in, cv_in, cv_units, rmissing, cln_in, csn_in)
 
   ! define new variables for output
-  ipk(1)                       = MAX(npk, 1 )
+  ipk(1) = npkv
   IF ( l_overf2) THEN
      stypvar(1)%cname             = 'lap'//TRIM(cv_in)//'overf2'
   ELSE
@@ -229,7 +247,7 @@ PROGRAM cdflap
   ! Main time loop
   DO jt = 1, npt
      ! Main level loop from top to bottom
-     DO jk = 1, MAX(1,npk)
+     DO jk = 1, npkv
         PRINT *,'jt = ', jt,' jk = ', jk
 
         ! variable at level jk time jt
