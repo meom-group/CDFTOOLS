@@ -105,6 +105,10 @@ PROGRAM cdfdiv
   npiglo = getdim(cf_ufil,cn_x)
   npjglo = getdim(cf_ufil,cn_y)
   npk    = getdim(cf_ufil,cn_z)
+  IF ( npk == 0 ) THEN
+     ! assume file with 1 level, and no depth dimension
+     npk=1
+  ENDIF
   npt    = getdim(cf_ufil,cn_t)
 
   ! define new variables for output
