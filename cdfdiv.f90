@@ -243,9 +243,13 @@ PROGRAM cdfdiv
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
 
   ! create output fileset
+  PRINT *,' Create ',TRIM(cf_out)
   ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev, cdep=cn_vdeptht                    )
+  PRINT *,' Create variables in  ',TRIM(cf_out)
   ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout                                )
+  PRINT *,' Fill header variables  in  ',TRIM(cf_out)
   ierr  = putheadervar(ncout,  'dummy', npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
+  PRINT *,' Output file ready for write !'
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
   ierr = putvar1d(ncout,   tim,       npt,  'T')
