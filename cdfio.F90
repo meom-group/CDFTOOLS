@@ -90,8 +90,7 @@
      REAL(KIND=4)       :: add_offset=0.     !# add offset
      REAL(KIND=4)       :: savelog10=0.      !# flag for log10 transform
      INTEGER(KIND=4)    :: iwght=1           !# weight of the variable for cdfmoy_weighted
-     INTEGER(KIND=4)    :: ideflev=0         !# deflate level in case of netcdf4
-     INTEGER(KIND=4), DIMENSION(4) :: ichunk=0 !# chunk definition  along each dimension( 0 means not cdf4)
+     INTEGER(KIND=4), DIMENSION(4) :: ichunk !# chunksize
      CHARACTER(LEN=256) :: clong_name        !# Long Name of the variable
      CHARACTER(LEN=256) :: cshort_name       !# short name of the variable
      CHARACTER(LEN=256) :: conline_operation !# ???
@@ -206,7 +205,7 @@ CONTAINS
 
 
   INTEGER(KIND=4) FUNCTION create( cdfile, cdfilref ,kx,ky,kz ,cdep, cdepvar, &
-       &                           cdlonvar, cdlatvar,  ld_xycoo)
+       &                           cdlonvar, cdlatvar,  ld_xycoo, ld_nc4 )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION create  ***
     !!
@@ -224,14 +223,24 @@ CONTAINS
     CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdlonvar ! name of 1D longitude
     CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdlatvar ! name of 1D latitude
     LOGICAL,          OPTIONAL, INTENT(in) :: ld_xycoo ! if false then DO NOT read nav_lat nav_lat from input file
+    LOGICAL,          OPTIONAL, INTENT(in) :: ld_nc4   ! create NETCDF4 file with chunking and deflation
 
     INTEGER(KIND=4)               :: istatus, icout, incid, idum
     INTEGER(KIND=4) ,DIMENSION(4) :: invdim
     CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar, clonvar, clatvar
-    LOGICAL                       :: ll_xycoo
+    LOGICAL                       :: ll_xycoo, ll_nc4
     !!----------------------------------------------------------------------
+    IF ( PRESENT (ld_nc4 ) ) THEN 
+       ll_nc4 = ld_nc4
+    ELSE
+       ll_nc4 = .false. 
+    ENDIF
 #if defined key_netcdf4
-    istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_NETCDF4     ), ncid=icout)
+    IF ( ll_nc4 ) THEN
+      istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_NETCDF4     ), ncid=icout)
+    ELSE
+      istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncid=icout)
+    ENDIF
 #else
     istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncid=icout)
 #endif
@@ -306,7 +315,7 @@ CONTAINS
   END FUNCTION create
 
 
-  INTEGER(KIND=4) FUNCTION createvar(kout, sdtyvar, kvar, kpk, kidvo, cdglobal)
+  INTEGER(KIND=4) FUNCTION createvar(kout, sdtyvar, kvar, kpk, kidvo, cdglobal, ld_nc4)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION createvar  ***
     !!
@@ -326,12 +335,20 @@ CONTAINS
     INTEGER(KIND=4), DIMENSION(kvar), INTENT(in) :: kpk     ! number of level/var
     INTEGER(KIND=4), DIMENSION(kvar), INTENT(out):: kidvo   ! varid's of output var
     CHARACTER(LEN=*), OPTIONAL,       INTENT(in) :: cdglobal! Global Attribute
+    LOGICAL         , OPTIONAL,       INTENT(in) :: ld_nc4  ! user chunking and deflation
 
     INTEGER(KIND=4)               :: jv             ! dummy loop index
     INTEGER(KIND=4)               :: idims, istatus 
-    INTEGER(KIND=4), DIMENSION(4) :: iidims
+    INTEGER(KIND=4), DIMENSION(4) :: iidims, ichunk
     INTEGER(KIND=4)               :: iprecision
+    LOGICAL                       :: ll_nc4
     !!----------------------------------------------------------------------
+    IF ( PRESENT (ld_nc4 ) ) THEN 
+       ll_nc4 = ld_nc4
+    ELSE
+       ll_nc4 = .false. 
+    ENDIF
+
     DO jv = 1, kvar
        ! Create variables whose name is not 'none'
        IF ( sdtyvar(jv)%cname /= 'none' ) THEN
@@ -364,8 +381,16 @@ CONTAINS
              ENDIF
           END SELECT
 
+#if defined key_netcdf4
+         IF ( ll_nc4 ) THEN
+          istatus = NF90_DEF_VAR(kout, sdtyvar(jv)%cname, iprecision, iidims(1:idims) ,kidvo(jv), & 
+                  &               chunksizes=sdtyvar(jv)%ichunk(1:idims), deflate_level=1 )
+         ELSE
           istatus = NF90_DEF_VAR(kout, sdtyvar(jv)%cname, iprecision, iidims(1:idims) ,kidvo(jv) )
-
+         ENDIF
+#else
+          istatus = NF90_DEF_VAR(kout, sdtyvar(jv)%cname, iprecision, iidims(1:idims) ,kidvo(jv) )
+#endif
           ! add attributes
           istatus = putatt(sdtyvar(jv), kout, kidvo(jv), cdglobal=cdglobal)
           createvar=istatus
@@ -1059,6 +1084,7 @@ CONTAINS
     DO jv = 1, knvars
        istatus=NF90_INQUIRE_VARIABLE(incid, jv, name=getvarname(jv) )
        sdtypvar(jv)%cname=getvarname(jv)
+
 
        ! look for standard attibutes
        IF ( NF90_INQUIRE_ATTRIBUTE(incid, jv, 'units', len=ilen) == NF90_NOERR ) THEN

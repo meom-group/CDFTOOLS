@@ -7,14 +7,17 @@
 #NCDF= -I/usr/local/netcdf-4.1.1/include -L/usr/local/netcdf-4.1.1/lib -lnetcdff -lnetcdf
 NCDF=-I/usr/local/netcdf-4.2_hdf5_parallel/include  -L/usr/local/netcdf-4.2_hdf5_parallel/lib -lnetcdff -lnetcdf -L/usr/local/hdf5-1.8.9_parallel/lib -lhdf5_hl -lhdf5 -lhdf5
 
+#NC4 =
+NC4 = -D key_netcdf4  # define this key in order to compile cdftools with netcdf4 lib allowing for chunking and deflation
+
  
 F90=ifort
 MPF90=mpif90
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian
 #FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -fpe0 -traceback -ftrapuv -g -CB 
-#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -D key_netcdf4
-FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
+FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian $(NC4)
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
 LMPI=-lmpich
 
 INSTALL=$(WORKDIR)/bin

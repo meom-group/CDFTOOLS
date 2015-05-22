@@ -95,6 +95,7 @@ PROGRAM cdfmoy
   LOGICAL                                       :: lzermean = .false. ! flag for zero-mean process
   LOGICAL                                       :: lmax    = .false.  ! flag for min/max computation
   LOGICAL                                       :: lchk    = .false.  ! flag for missing files
+  LOGICAL                                       :: lnc4    = .false.  ! flag for netcdf4 output
   LOGICAL                                       :: lnomissincl =.false.! [from SL] flag for excuding gridpoints where some values are missing
   !!----------------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -102,13 +103,13 @@ PROGRAM cdfmoy
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy list_of_model_files [-spval0] [-cub ] [-zeromean] [-max]'
-     PRINT *,'               [-nomissincl] [-o output_file_root ]'
+     PRINT *,'               [-nomissincl] [-nc4 ] [-o output_file_root ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the time average of a list of files given as arguments.' 
-     PRINT *,'       The program assume that all files in the list are of same'
+     PRINT *,'       Computes the time average of a list of files given as arguments.' 
+     PRINT *,'       The program assumes that all files in the list are of same'
      PRINT *,'       type (shape, variables etc...). '
-     PRINT *,'       For some variables, the program also compute the time average '
+     PRINT *,'       For some variables, the program also computes the time average '
      PRINT *,'       of the squared variables, which is used in other cdftools '
      PRINT *,'       (cdfeke, cdfrmsssh, cdfstdevw, cdfstddevts ... The actual variables'
      PRINT *,'       selected for squared average are :'
@@ -116,7 +117,7 @@ PROGRAM cdfmoy
      PRINT *,'       This selection can be adapted with the nam_cdf_namelist process.'
      PRINT *,'       (See cdfnamelist -i for details).'
      PRINT *,'       If you want to compute the average of already averaged files,'
-     PRINT *,'       consoder using cdfmoy_weighted instead, in order to take into'
+     PRINT *,'       consider using cdfmoy_weighted instead, in order to take into'
      PRINT *,'       account a particular weight for each file in the list.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -127,20 +128,23 @@ PROGRAM cdfmoy
      PRINT *,'               variables and take care of the input missing_value.'
      PRINT *,'               This option is usefull if missing_values differ from files '
      PRINT *,'               to files; it was formely done by cdfmoy_chsp).'
-     PRINT *,'       [ -cub ] :  use this option if you want to compute third order moment'
+     PRINT *,'       [ -cub ] :  use this option if you want to compute third order moments'
      PRINT *,'               for the eligible variables, which are at present :'
      PRINT '(15x,"- ",a)' , (TRIM(cn_cubvar(jv)), jv=1, nn_cubvar)
      PRINT *,'              This selection can be adapted with the nam_cdf_namelist process.'
      PRINT *,'              (See cdfnamelist -i for details).'
      PRINT *,'       [ -zeromean ] : with this option, the spatial mean value for each '
-     PRINT *,'              time frame is substracted from the original field previous '
-     PRINT *,'              averaging, square averaging and eventually cubic averaging'
+     PRINT *,'              time frame is substracted from the original field before '
+     PRINT *,'              averaging, square averaging and eventually cubic averaging.'
      PRINT *,'       [-max ] : with this option, a file with the minimum and maximum values'
      PRINT *,'              of the variables is created.'
      PRINT *,'       [-nomissincl ] : with this option, the output mean is set to missing' 
      PRINT *,'              value at any gridpoint where the variable contains a  missing'
      PRINT *,'              value for at least one timestep. You should combine with option'
      PRINT *,'              -spval0 if missing values are not 0 in all  the input files.'
+     PRINT *,'       [ -nc4 ] Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'               This option is effective only if cdftools are compiled with'
+     PRINT *,'               a netcdf library supporting chunking and deflation.'
      PRINT *,'       [ -o output file root ] Default is ', TRIM(cf_root) 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -179,6 +183,8 @@ PROGRAM cdfmoy
         lmax = .true.
      CASE ( '-nomissincl' )   ! [from SL] option to mask the output at gridpoints where some values are missing
         lnomissincl = .true.   ! [from SL]
+     CASE ( '-nc4' )   !  allow chunking and deflation on output
+        lnc4 = .true.
      CASE ( '-o' )     ! specify root of output files
         CALL getarg (ijarg, cf_root) ; ijarg = ijarg + 1
 
@@ -254,6 +260,12 @@ PROGRAM cdfmoy
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_nam(:) = getvarname(cf_in,nvars,stypvar)
 
+  ! choose chunk size for output ... not easy not used if lnc4=.false. but anyway ..
+  DO jv = 1, nvars
+     stypvar(jv)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+     stypvar2(jv)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+  ENDDO
+
   IF ( lspval0 ) THEN 
      ALLOCATE ( zspval_in(nvars) )
      zspval_in(:) = stypvar(:)%rmissing_value
@@ -285,6 +297,7 @@ PROGRAM cdfmoy
      ELSE
          cv_nam2(jvar) = 'none'
      END IF
+
      ! check for cubic average
      IF ( lcubic ) THEN
        IF ( varchk3 ( cv_nam(jvar) ) ) THEN 
@@ -301,10 +314,13 @@ PROGRAM cdfmoy
           stypvar3(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_cub'    !
           stypvar3(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation) 
           stypvar3(jvar)%caxis             = TRIM(stypvar(jvar)%caxis) 
+
+          stypvar3(jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
        ELSE
           cv_nam3(jvar) = 'none'
        END IF
      ENDIF  
+
      IF ( lmax ) THEN
           cv_nam4(jvar)                    = TRIM(cv_nam(jvar))//'_max'
           stypvar4(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_max'         ! name
@@ -319,6 +335,8 @@ PROGRAM cdfmoy
           stypvar4(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_max'  !
           stypvar4(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
           stypvar4(jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
+
+          stypvar4(jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
       
           cv_nam4(nvars+jvar)                    = TRIM(cv_nam(jvar))//'_min'
           stypvar4(nvars+jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_min'         ! name
@@ -333,6 +351,8 @@ PROGRAM cdfmoy
           stypvar4(nvars+jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_min'  !
           stypvar4(nvars+jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
           stypvar4(nvars+jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
+
+          stypvar4(nvars+jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
      ENDIF
 
 
@@ -353,24 +373,24 @@ PROGRAM cdfmoy
   IF ( lmax   ) stypvar4(:)%cname = cv_nam4
 
   ! create output file taking the sizes in cf_in
-  ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
-  ierr   = createvar   (ncout ,  stypvar,  nvars,  ipk,    id_varout       )
-  ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
+  ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
+  ierr   = createvar   (ncout ,  stypvar,  nvars,  ipk,    id_varout       , ld_nc4=lnc4)
+  ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep      )
 
-  ncout2 = create      (cf_out2, cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
-  ierr   = createvar   (ncout2,  stypvar2, nvars,  ipk,    id_varout2      )
-  ierr   = putheadervar(ncout2,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
+  ncout2 = create      (cf_out2, cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
+  ierr   = createvar   (ncout2,  stypvar2, nvars,  ipk,    id_varout2      , ld_nc4=lnc4)
+  ierr   = putheadervar(ncout2,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep      )
 
   IF ( lcubic) THEN
-     ncout3 = create      (cf_out3, cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
-     ierr   = createvar   (ncout3,  stypvar3, nvars,  ipk,    id_varout3      )
-     ierr   = putheadervar(ncout3,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
+     ncout3 = create      (cf_out3, cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
+     ierr   = createvar   (ncout3,  stypvar3, nvars,  ipk,    id_varout3      , ld_nc4=lnc4)
+     ierr   = putheadervar(ncout3,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep      )
   ENDIF
 
   IF ( lmax ) THEN
-     ncout4 = create      (cf_out4, cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
-     ierr   = createvar   (ncout4,  stypvar4, 2*nvars,  ipk4,    id_varout4   )
-     ierr   = putheadervar(ncout4,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
+     ncout4 = create      (cf_out4, cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
+     ierr   = createvar   (ncout4,  stypvar4, 2*nvars,  ipk4,    id_varout4   , ld_nc4=lnc4)
+     ierr   = putheadervar(ncout4,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep      )
   ENDIF
 
   lcaltmean=.TRUE.
