@@ -489,8 +489,8 @@ cdfsections: eos.o cdfsections.f90
 
 ## Modules
 
-cdfio.o: cdfio.f90 modcdfnames.o
-	$(F90) -c  cdfio.f90 $(FFLAGS)
+cdfio.o: cdfio.F90 modcdfnames.o
+	$(F90) -c  cdfio.F90 $(FFLAGS)
 
 eos.o: eos.f90
 	$(F90) $(OMP) -c eos.f90 $(FFLAGS)

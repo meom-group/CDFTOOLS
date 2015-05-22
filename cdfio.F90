@@ -90,6 +90,8 @@
      REAL(KIND=4)       :: add_offset=0.     !# add offset
      REAL(KIND=4)       :: savelog10=0.      !# flag for log10 transform
      INTEGER(KIND=4)    :: iwght=1           !# weight of the variable for cdfmoy_weighted
+     INTEGER(KIND=4)    :: ideflev=0         !# deflate level in case of netcdf4
+     INTEGER(KIND=4), DIMENSION(4) :: ichunk=0 !# chunk definition  along each dimension( 0 means not cdf4)
      CHARACTER(LEN=256) :: clong_name        !# Long Name of the variable
      CHARACTER(LEN=256) :: cshort_name       !# short name of the variable
      CHARACTER(LEN=256) :: conline_operation !# ???
@@ -228,7 +230,11 @@ CONTAINS
     CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar, clonvar, clatvar
     LOGICAL                       :: ll_xycoo
     !!----------------------------------------------------------------------
+#if defined key_netcdf4
+    istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_NETCDF4     ), ncid=icout)
+#else
     istatus = NF90_CREATE(cdfile,cmode=or(NF90_CLOBBER,NF90_64BIT_OFFSET), ncid=icout)
+#endif
     istatus = NF90_DEF_DIM(icout, cn_x, kx, nid_x)
     istatus = NF90_DEF_DIM(icout, cn_y, ky, nid_y)
 

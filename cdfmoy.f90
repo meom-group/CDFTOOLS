@@ -71,10 +71,11 @@ PROGRAM cdfmoy
   REAL(KIND=8)                                  :: dtotal_time        ! to compute mean time
 
   CHARACTER(LEN=256)                            :: cf_in              ! input file names
+  CHARACTER(LEN=256)                            :: cf_root='cdfmoy'       ! optional root of output files 
   CHARACTER(LEN=256)                            :: cf_out  = 'cdfmoy.nc'  ! output file for average
   CHARACTER(LEN=256)                            :: cf_out2 = 'cdfmoy2.nc' ! output file for squared average
   CHARACTER(LEN=256)                            :: cf_out3 = 'cdfmoy3.nc' ! output file for squared average
-  CHARACTER(LEN=256)                            :: cf_out4 = 'minmax.nc'  ! output file for min/max
+  CHARACTER(LEN=256)                            :: cf_out4 = 'cdfmoy_minmax.nc'  ! output file for min/max
   CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
   CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_list            ! list of input files
@@ -101,7 +102,7 @@ PROGRAM cdfmoy
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy list_of_model_files [-spval0] [-cub ] [-zeromean] [-max]'
-     PRINT *,'               [-nomissincl]'
+     PRINT *,'               [-nomissincl] [-o output_file_root ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average of a list of files given as arguments.' 
@@ -140,6 +141,7 @@ PROGRAM cdfmoy
      PRINT *,'              value at any gridpoint where the variable contains a  missing'
      PRINT *,'              value for at least one timestep. You should combine with option'
      PRINT *,'              -spval0 if missing values are not 0 in all  the input files.'
+     PRINT *,'       [ -o output file root ] Default is ', TRIM(cf_root) 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       If -zeromean option is used, need ', TRIM(cn_fhgr),' and ',TRIM(cn_fmsk)
@@ -177,12 +179,18 @@ PROGRAM cdfmoy
         lmax = .true.
      CASE ( '-nomissincl' )   ! [from SL] option to mask the output at gridpoints where some values are missing
         lnomissincl = .true.   ! [from SL]
+     CASE ( '-o' )     ! specify root of output files
+        CALL getarg (ijarg, cf_root) ; ijarg = ijarg + 1
 
      CASE DEFAULT         ! then the argument is a file
         nfil          = nfil + 1
         cf_list(nfil) = TRIM(cldum)
      END SELECT
   END DO
+  cf_out=TRIM(cf_root)//'.nc'
+  cf_out2=TRIM(cf_root)//'2.nc'
+  cf_out3=TRIM(cf_root)//'3.nc'
+  cf_out4=TRIM(cf_root)//'_minmax.nc'
 
   IF ( lzermean ) THEN
     lchk = lchk .OR. chkfile ( cn_fhgr )

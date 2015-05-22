@@ -26,7 +26,7 @@ PROGRAM cdfvT
 
   INTEGER(KIND=4)                           :: ji, jj, jk, jt, jtt  ! dummy loop index
   INTEGER(KIND=4)                           :: ierr                 ! working integer
-  INTEGER(KIND=4)                           :: narg, iargc          ! command line
+  INTEGER(KIND=4)                           :: narg, iargc, n1      ! command line
   INTEGER(KIND=4)                           :: npiglo,npjglo        ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                           :: ntframe              ! Cumul of time frame
@@ -61,7 +61,7 @@ PROGRAM cdfvT
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvT CONFIG-CASE ''list_of_tags'' '
+     PRINT *,' usage : cdfvT CONFIG-CASE [-o output_file ]''list_of_tags'' '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order products ' 
      PRINT *,'       V.T, V.S, U.T and U.S used in heat and salt transport computation.'
@@ -72,6 +72,7 @@ PROGRAM cdfvT
      PRINT *,'            this config ( grid_T, grid_U and grid_V are also accepted).'
      PRINT *,'            Additionaly, if gridS or grid_S file is found, it will be taken'
      PRINT *,'            in place of gridT for the salinity variable.'
+     PRINT *,'       [-o output file ] default :',TRIM(cf_out),'  must be before tag list'
      PRINT *,'       list_of_tags : a list of time tags that will be used for time'
      PRINT *,'            averaging. e.g. y2000m01d05 y2000m01d10 ...'
      PRINT *,'      '
@@ -87,6 +88,12 @@ PROGRAM cdfvT
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   CALL getarg (1, config)
   CALL getarg (2, ctag  )
+  n1 = 2
+  IF ( ctag == '-o' ) THEN
+    CALL getarg (3, cf_out ) 
+    CALL getarg (4, ctag   )
+    n1=4
+  ENDIF
 
   cf_tfil = SetFileName( config, ctag, 'T')
 
@@ -134,7 +141,7 @@ PROGRAM cdfvT
      dcumulut(:,:) = 0.d0 ;  dcumulvt(:,:) = 0.d0 ; dtotal_time = 0.d0
      dcumulus(:,:) = 0.d0 ;  dcumulvs(:,:) = 0.d0 ; ntframe = 0
 
-     DO jt = 2, narg           ! loop on tags
+     DO jt = n1, narg           ! loop on tags
         CALL getarg (jt, ctag)
 
         cf_tfil = SetFileName( config, ctag, 'T', ld_stop=.TRUE. )
