@@ -21,7 +21,7 @@ PROGRAM cdfrmsssh
 
   INTEGER(KIND=4)                            :: jk, jt            ! dummy loop index
   INTEGER(KIND=4)                            :: narg, iargc       ! command line
-  INTEGER(KIND=4)                            :: ijarg, ireq       ! command line
+  INTEGER(KIND=4)                            :: ijarg, ixtra      ! command line
   INTEGER(KIND=4)                            :: npiglo, npjglo    ! size of the domain
   INTEGER(KIND=4)                            :: npk, npt          ! size of the domain
   INTEGER(KIND=4)                            :: ncout             ! ncid of output variable
@@ -42,6 +42,7 @@ PROGRAM cdfrmsssh
   TYPE(variable), DIMENSION(1)               :: stypvaro          ! output data structure
 
   LOGICAL                                    :: lchk = .FALSE.    ! flag for missing files
+  LOGICAL                                    :: lnc4 = .FALSE.    ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -49,7 +50,7 @@ PROGRAM cdfrmsssh
 
   narg= iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfrmsssh T-file T2-file '
+     PRINT *,' usage : cdfrmsssh T-file T2-file [-nc4] [-o outputfile]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the standard deviation of the SSH from its'
@@ -65,6 +66,11 @@ PROGRAM cdfrmsssh
      PRINT *,'       T-file  : netcdf file with mean values for SSH' 
      PRINT *,'       T2-file : netcdf file with mean squared values for SSH' 
      PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-nc4] : use netcdf4 with chunking and deflation '
+     PRINT *,'       [-o output file ] : specify the name of the output file instead'
+     PRINT *,'                          of default name ', TRIM(cf_out)
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
      PRINT *,'      '
@@ -77,13 +83,15 @@ PROGRAM cdfrmsssh
      STOP
   ENDIF
 
-  ijarg = 1  ; ireq = 0
+  ijarg = 1  ; ixtra = 0
   DO WHILE ( ijarg <= narg) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE DEFAULT
-        ireq = ireq + 1
-        SELECT CASE ( ireq ) 
+        ixtra = ixtra + 1
+        SELECT CASE ( ixtra ) 
         CASE ( 1 ) ; cf_in  = cldum
         CASE ( 2 ) ; cf_in2 = cldum
         CASE DEFAULT
@@ -103,6 +111,7 @@ PROGRAM cdfrmsssh
   npt    = getdim (cf_in, cn_t)
 
   ipko(1) = 1
+  stypvaro(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
   stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
   stypvaro(1)%cunits            = 'm'
   stypvaro(1)%rmissing_value    = 0.
@@ -121,9 +130,9 @@ PROGRAM cdfrmsssh
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
   ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
 
-  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout )
-  ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
+  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk                     )
 
   cv_in2 = TRIM(cv_in)//'_sqd'
   DO jt = 1, npt

@@ -26,11 +26,12 @@ PROGRAM cdfmxl
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4),PARAMETER                    :: pnvarout = 7   ! number of output variables 
+  INTEGER(KIND=4), PARAMETER                   :: jp_varout = 7  ! number of output variables 
   INTEGER(KIND=4)                              :: ji, jj, jk, jt ! dummy loop index
   INTEGER(KIND=4)                              :: ik1, ik2, ikt  ! k vertical index of mixed layers 
   INTEGER(KIND=4), DIMENSION(1)                :: nkref10        ! vertical index for 10m depth T layer  
   INTEGER(KIND=4)                              :: narg, iargc    ! browse line
+  INTEGER(KIND=4)                              :: ijarg, ixtra   ! browse line
   INTEGER(KIND=4)                              :: npiglo, npjglo ! domain size
   INTEGER(KIND=4)                              :: npk, npt       ! domain size
   INTEGER(KIND=4)                              :: ncout, ierr    ! ncid of output file, error status
@@ -42,7 +43,7 @@ PROGRAM cdfmxl
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: nmlnt          ! last level where T - SST > temp_c
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: nmlnt2         ! last level where T-T10 > temp_c  
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: nmlnt3         ! last level where T-T10 > temp_c2 
-  INTEGER(KIND=4), DIMENSION(pnvarout)         :: ipk, id_varout ! levels and varid's of output vars
+  INTEGER(KIND=4), DIMENSION(jp_varout)        :: ipk, id_varout ! levels and varid's of output vars
 
   REAL(KIND=4)                                 :: rmisval=32767. ! Missing value of Mercator fields 
   REAL(KIND=4)                                 :: rr1,rr2        ! Coef for T(z=10m) interp. 
@@ -77,16 +78,18 @@ PROGRAM cdfmxl
   CHARACTER(LEN=256)                           :: cf_tfil        ! input T file
   CHARACTER(LEN=256)                           :: cf_sfil        ! input S file (F.Hernandez)
   CHARACTER(LEN=256)                           :: cf_out='mxl.nc'! output file name
+  CHARACTER(LEN=256)                           :: cldum          ! dummy character variable
 
-  TYPE(variable), DIMENSION(pnvarout)          :: stypvar        ! structure for attributes 
+  TYPE(variable), DIMENSION(jp_varout)         :: stypvar        ! structure for attributes 
 
   LOGICAL                                      :: lexist         ! flag for existence of bathy_level file
+  LOGICAL                                      :: lnc4=.FALSE.   ! flag for netcdf4 output with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmxl T-file [S-file]'
+     PRINT *,' usage : cdfmxl T-file [S-file] [-nc4] [-o output file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute 7 estimates of the mixed layer depth from temperature'
@@ -106,6 +109,11 @@ PROGRAM cdfmxl
      PRINT *,'       T-file   : input netcdf file (gridT)' 
      PRINT *,'       [S-file] : input netcdf file (gridS) Optional if vosaline not in T-file' 
      PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-nc4] : use netcdf4 chunking and deflation on output '
+     PRINT *,'       [-o output file] : specify the name of output file instead of '
+     PRINT *,'                default name ',TRIM(cf_out)
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fzgr)
      PRINT *,'         In case of FULL STEP configuration, ',TRIM(cn_fbathylev),' is also required.'
@@ -122,13 +130,23 @@ PROGRAM cdfmxl
      STOP
   ENDIF
 
-  CALL getarg (1, cf_tfil)
-  cf_sfil = cf_tfil  ! default case
-
-  ! If second argument file --> for salinity 
-  IF ( narg == 2 ) THEN
-     CALL getarg (2, cf_sfil)
-  ENDIF
+  ijarg = 1 ; ixtra = 0
+  DO WHILE ( ijarg <= narg )
+    CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
+    SELECT CASE (cldum )
+    CASE ( '-nc4' ) ; lnc4 = .TRUE.
+    CASE ( '-o'   ) ; CALL getarg (ijarg,cf_out )   ; ijarg = ijarg + 1
+    CASE DEFAULT
+      ixtra = ixtra + 1
+      SELECT CASE (ixtra )
+      CASE ( 1 ) ; cf_tfil = cldum ; cf_sfil = cf_sfil  ! first free name is a gridT file name
+      CASE ( 2 ) ; cf_sfil = cldum                      ! second free name ( if any) is a gridS file name
+      CASE DEFAULT 
+        PRINT *, ' +++ ERROR : Too many files in input !'
+        STOP
+      END SELECT
+    END SELECT
+  ENDDO
 
   IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cf_sfil)  ) STOP ! missing file
 
@@ -139,6 +157,10 @@ PROGRAM cdfmxl
   npt    = getdim (cf_tfil,cn_t)
 
   rdep(1) = 0.
+
+  DO ji = 1, jp_varout
+     stypvar(ji)%ichunk = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
+  ENDDO
 
   ipk(:)                    = 1
   stypvar(1)%cname          = 'somxl010'
@@ -214,8 +236,8 @@ PROGRAM cdfmxl
   ! find W levels for later computation
   nkref10 = MINLOC(gdepw(1:npk),gdepw(1:npk)>=10)-1 ;  IF ( nkref10(1) < 1 ) nkref10(1)=1
 
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1           )
-  ierr  = createvar   (ncout,  stypvar, pnvarout,      ipk,    id_varout   )
+  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1             , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvar, jp_varout,      ipk, id_varout, ld_nc4=lnc4 )
   ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
 
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
