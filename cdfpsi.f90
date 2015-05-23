@@ -80,12 +80,13 @@ PROGRAM cdfpsi
   LOGICAL                                   :: lmean = .FALSE. ! flag for mean U,V calculation
   LOGICAL                                   :: lopen = .FALSE. ! flag for open calculation
   LOGICAL                                   :: lssh  = .FALSE. ! flag for ssh computation
+  LOGICAL                                   :: lnc4  = .FALSE. ! flag for netcdf4 cchunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfpsi U-file V-file [V] [-full ] [-mask ] [-mean] ...'
+     PRINT *,' usage : cdfpsi U-file V-file [V] [-full ] [-mask ] [-mean] [-nc4 ] ...'
      PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -102,6 +103,7 @@ PROGRAM cdfpsi
      PRINT *,'       [ -mask ] : mask output fields. Note that the land value is significant.'
      PRINT *,'                   It correspond to the potential on this continent.'
      PRINT *,'       [ -mean ] : save the average of the computations done with U and V.'
+     PRINT *,'       [ -nc4  ] : use netcdf4 output files with chunking and deflation'
      PRINT *,'       [ -ssh T-file ] : compute the transport in the ''ssh'' layer, using '
      PRINT *,'                  surface velocities. Take the ssh from T-file specified in '
      PRINT *,'                  this option. This is a experimental option, not certified ...'
@@ -136,6 +138,7 @@ PROGRAM cdfpsi
      CASE ('-mask') ; lmask = .TRUE.
      CASE ('-mean') ; lmean = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
      CASE ('-ssh' ) ; lssh  = .TRUE.  ; nvout=3
+     CASE ('-nc4' ) ; lnc4  = .TRUE. 
         CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg + 1 
      CASE ('-open') ; lopen = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
      CASE ('-o'   ) ; CALL getarg( ijarg, cf_out )   ; ijarg=ijarg + 1 
@@ -182,6 +185,9 @@ PROGRAM cdfpsi
   stypvar(:)%valid_max         = 300.e6
   stypvar(:)%conline_operation = 'N/A'
   stypvar(:)%caxis             = 'TYX'
+  DO ji=1,nvout
+    stypvar(ji)%ichunk = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  ENDDO
 
   stypvar(1)%cname             = cv_out
   stypvar(1)%rmissing_value    = 0.
@@ -231,8 +237,8 @@ PROGRAM cdfpsi
   gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
 
   ! create output fileset
-  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, 1              )
-  ierr  = createvar   (ncout,  stypvar, nvout,  ipk,    id_varout, cdglobal=TRIM(cglobal)      )
+  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, 1                                , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvar, nvout,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
   ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, 1, glamf, gphif)
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
