@@ -118,11 +118,11 @@ PROGRAM cdfstd
      CASE ( '-save' ) 
         lsave = .TRUE.
      CASE ( '-spval0' )                          ! [from SL]
-        lspval0 = .TRUE.                          ! [from SL]
+        lspval0 = .TRUE.                         ! [from SL]
      CASE ( '-nomissincl' )                      ! [from SL]
-        lnomissincl = .TRUE.                       ! [from SL]
-     CASE ( '-stdopt' )                           ! [from SL]
-        lstdopt = .TRUE.                           ! [from SL]
+        lnomissincl = .TRUE.                     ! [from SL]
+     CASE ( '-stdopt' )                          ! [from SL]
+        lstdopt = .TRUE.                         ! [from SL]
      CASE DEFAULT
         cf_in = cldum
         EXIT  ! got the first file

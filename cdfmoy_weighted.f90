@@ -5,7 +5,6 @@ PROGRAM cdfmoy_weighted
   !!  ** Purpose : Compute weighted mean values from already processed
   !!               mean files (by cdfmoy)
   !!
-  !!  ** Method  : The weight of each file is the number of elements used
   !!               when computing the time average. 
   !!
   !! History : 2.1  : 11/2009  : J.M. Molines : Original code
@@ -29,7 +28,7 @@ PROGRAM cdfmoy_weighted
   INTEGER(KIND=4)                               :: narg, iargc, ijarg  ! command line
   INTEGER(KIND=4)                               :: npiglo, npjglo, npk ! size of the domain
   INTEGER(KIND=4)                               :: nvars               ! number of variables in a file
-  INTEGER(KIND=4)                               :: ntags               ! number of tags to process
+  INTEGER(KIND=4)                               :: ixtra               ! number of tags to process
   INTEGER(KIND=4)                               :: iweight             ! variable weight
   INTEGER(KIND=4)                               :: ncout               ! ncid of output file
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var              ! array of input var id's
@@ -50,13 +49,17 @@ PROGRAM cdfmoy_weighted
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for output var attributes
 
-  LOGICAL                                       :: lold5d              ! flag for old5d output
+  LOGICAL                                       :: lold5d=.false.      ! flag for old5d output
+  LOGICAL                                       :: lmonth=.false.      ! flag for true month output
+  LOGICAL                                       :: lleap=.false.       ! flag for leap years
+  LOGICAL                                       :: lnc4=.false.        ! flag for netcdf4 output with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoy_weighted list of files [-old5d ]'
+     PRINT *,' usage : cdfmoy_weighted list of files [-old5d ] [-month] [-leap] ...'
+     PRINT *,'                [-o output file]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute weight average of files. The weight for each file is'
      PRINT *,'       read from the iweight attribute. In particular, this attribute'
@@ -75,6 +78,12 @@ PROGRAM cdfmoy_weighted
      PRINT *,'                   files must be given, and it is assumed that the monthly'
      PRINT *,'                   means were computed from 5d output of a simulation using'
      PRINT *,'                   a noleap calendar ( weights are fixed, predetermined)'
+     PRINT *,'       [-month ] : This option is used to build annual mean from true month'
+     PRINT *,'                   output (1mo) in XIOS output for instance.'
+     PRINT *,'       [-leap ] : This option has only effect together with the -month option.'
+     PRINT *,'                  When used set 29 days in february'
+     PRINT *,'       [-o output file ] : Specify the name for output file instead of the'
+     PRINT *,'                 default name ', TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none'
@@ -85,28 +94,28 @@ PROGRAM cdfmoy_weighted
      STOP
   ENDIF
 
-  ! default values
-  lold5d = .FALSE.
   ! scan command line and check if files exist
-  ijarg = 1
-  ntags = narg
+  ijarg = 1 ; ixtra=0
   DO WHILE ( ijarg <= narg ) 
     CALL getarg ( ijarg, cldum ) ; ijarg = ijarg +1
     SELECT CASE ( cldum )
-    CASE ( '-old5d' )
-        lold5d = .TRUE.
-        ntags = ntags - 1
+    CASE ( '-old5d' )  ; lold5d = .TRUE.
+    CASE ( '-month' )  ; lmonth = .TRUE.
+    CASE ( '-leap'  )  ; lleap  = .TRUE.
+    CASE ( '-nc4'   )  ; lnc4   = .TRUE.
+    CASE ( '-o'     )  ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
     CASE DEFAULT
+        ixtra = ixtra + 1
         cf_in = cldum
         IF ( chkfile (cldum ) ) STOP ! missing file
     END SELECT
   ENDDO
 
   ! additional check in case of old_5d averaged files
-  IF ( lold5d ) THEN
-    IF ( ntags /= 12 ) THEN 
-       PRINT *,' ERROR : exactly 12 monthly files are required for -old5d option'
-       STOP
+  IF ( lold5d .OR. lmonth ) THEN
+    IF ( ixtra /= 12 ) THEN 
+      PRINT *,' +++ ERROR : exactly 12 monthly files are required for -old5d/-month options.'
+      STOP
     ENDIF
   ENDIF
 
@@ -154,10 +163,14 @@ PROGRAM cdfmoy_weighted
   WHERE( ipk == 0 ) cv_names='none'
   stypvar(:)%cname = cv_names
 
+  DO jk = 1, nvars
+    stypvar(jk)%ichunk  = (/ npiglo, MAX(1,npjglo/30), 1, 1 /)
+  ENDDO
+
   ! create output file taking the sizes in cf_in
-  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk,      cdep=cv_dep )
-  ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout             )
-  ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk,      cdep=cv_dep )
+  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk,      cdep=cv_dep , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout             , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk,      cdep=cv_dep               )
 
   DO jvar = 1,nvars
      IF ( cv_names(jvar) == cn_vlon2d .OR. &
@@ -169,7 +182,7 @@ PROGRAM cdfmoy_weighted
            PRINT *,'Level ',jk
            dtab(:,:) = 0.d0 ; dtotal_time = 0.d0 ; dsumw=0.d0
 
-           DO jt = 1, ntags
+           DO jt = 1, ixtra
               CALL getarg   (jt, cf_in)
 
               iweight   = setweight(cf_in, jt, cv_names(jvar)) 
@@ -179,7 +192,7 @@ PROGRAM cdfmoy_weighted
 
               IF (jk == 1 .AND. jvar == nvars )  THEN
                  tim         = getvar1d(cf_in, cn_vtimec, 1 )
-                 dtotal_time = dtotal_time + tim(1)
+                 dtotal_time = dtotal_time + iweight * tim(1)
               END IF
            END DO
 
@@ -187,7 +200,7 @@ PROGRAM cdfmoy_weighted
            ! store variable on outputfile
            ierr = putvar(ncout, id_varout(jvar), SNGL(dtab(:,:)/dsumw), jk, npiglo, npjglo, kwght=INT(dsumw) )
            IF (jk == 1 .AND. jvar == nvars )  THEN
-              timean(1) = dtotal_time/ntags
+              timean(1) = dtotal_time/dsumw
               ierr      = putvar1d(ncout, timean, 1, 'T')
            END IF
         END DO  ! loop to next level
@@ -213,9 +226,17 @@ PROGRAM cdfmoy_weighted
     CHARACTER(LEN=*),   INTENT(in) :: cdvar
 
     INTEGER(KIND=4), DIMENSION(12) :: iweight5d=(/6,5,7,6,6,6,6,6,6,6,6,7/)
+    INTEGER(KIND=4), DIMENSION(12) :: iweightmo=(/31,28,31,30,31,30,31,31,30,31,30,31/)
+    INTEGER(KIND=4), DIMENSION(12) :: iweightleap=(/31,29,31,30,31,30,31,31,30,31,30,31/)
     !!----------------------------------------------------------------------
     IF ( lold5d ) THEN 
       setweight = iweight5d(kt)
+    ELSE IF ( lmonth ) THEN
+      IF ( lleap ) THEN
+        setweight = iweightleap(kt)
+      ELSE
+        setweight = iweightmo(kt)
+      ENDIF
     ELSE
       setweight = getatt( cdfile, cdvar, 'iweight') 
       IF ( setweight == 0 ) setweight = 1
