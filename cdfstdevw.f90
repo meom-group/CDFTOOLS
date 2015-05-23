@@ -44,6 +44,7 @@ PROGRAM cdfstdevw
   TYPE(variable), DIMENSION(1)               :: stypvaro          ! output data structure
 
   LOGICAL                                    :: lchk = .FALSE.    ! flag for missing files
+  LOGICAL                                    :: lnc4 = .FALSE.    ! flag for netcdf4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -51,12 +52,13 @@ PROGRAM cdfstdevw
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfstdevw W-file W2-file [varname]'
+     PRINT *,' usage : cdfstdevw W-file W2-file [varname] [-o output_file] [-nc4 ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the standard deviation of the vertical velocity'
+     PRINT *,'       Computes the standard deviation of the vertical velocity'
      PRINT *,'       from its mean value and its mean square value. If a variable name '
-     PRINT *,'       is given, then compute rms of this variable instead of vertical velocity.'
+     PRINT *,'       is given, then computes rms of this variable instead of the vertical '
+     PRINT *,'       velocity.'
      PRINT *,'      '
      PRINT *,'       Note that what is computed in this program is stictly the'
      PRINT *,'       standard deviation. It is very often called RMS, which is'
@@ -85,6 +87,8 @@ PROGRAM cdfstdevw
   DO WHILE ( ijarg <= narg) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-nc4' ) ; lnc4 = .true.
      CASE DEFAULT
         ireq = ireq + 1
         SELECT CASE ( ireq ) 
@@ -109,6 +113,8 @@ PROGRAM cdfstdevw
 
   ierr = getvaratt(cf_in, cv_in, cl_units, rmiss, cl_longname, cl_shortname )
 
+  stypvaro(1)%ichunk = (/ npiglo, MAX(1,npjglo/30), 1,1 /)
+
   ipko(1) = npk
   stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
   stypvaro(1)%cunits            = TRIM(cl_units)
@@ -128,8 +134,8 @@ PROGRAM cdfstdevw
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
   ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
 
-  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout )
+  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
   ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
   cv_in2 = TRIM(cv_in)//'_sqd'
