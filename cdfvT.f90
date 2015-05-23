@@ -24,9 +24,10 @@ PROGRAM cdfvT
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                           :: ji, jj, jk, jt, jtt  ! dummy loop index
+  INTEGER(KIND=4)                           :: ji, jj, jk, jv, jtt  ! dummy loop index
   INTEGER(KIND=4)                           :: ierr                 ! working integer
   INTEGER(KIND=4)                           :: narg, iargc, n1      ! command line
+  INTEGER(KIND=4)                           :: ijarg, ixtra         ! command line
   INTEGER(KIND=4)                           :: npiglo,npjglo        ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                           :: ntframe              ! Cumul of time frame
@@ -51,17 +52,19 @@ PROGRAM cdfvT
   CHARACTER(LEN=256)                        :: cf_out='vt.nc'       ! output file
   CHARACTER(LEN=256)                        :: config               ! configuration name
   CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
+  CHARACTER(LEN=256)                        :: cldum                ! dummy character argument
 
   TYPE (variable), DIMENSION(4)             :: stypvar              ! structure for attributes
 
   LOGICAL                                   :: lcaltmean            ! flag for mean time computation
+  LOGICAL                                   :: lnc4=.false.         ! flag for netcdf4 output with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvT CONFIG-CASE [-o output_file ]''list_of_tags'' '
+     PRINT *,' usage : cdfvT CONFIG-CASE [-o output_file ] [-nc4 ] ''list_of_tags'' '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order products ' 
      PRINT *,'       V.T, V.S, U.T and U.S used in heat and salt transport computation.'
@@ -72,6 +75,7 @@ PROGRAM cdfvT
      PRINT *,'            this config ( grid_T, grid_U and grid_V are also accepted).'
      PRINT *,'            Additionaly, if gridS or grid_S file is found, it will be taken'
      PRINT *,'            in place of gridT for the salinity variable.'
+     PRINT *,'       [-nc4 ] use netcdf4 output with chunking and deflation 1'
      PRINT *,'       [-o output file ] default :',TRIM(cf_out),'  must be before tag list'
      PRINT *,'       list_of_tags : a list of time tags that will be used for time'
      PRINT *,'            averaging. e.g. y2000m01d05 y2000m01d10 ...'
@@ -86,14 +90,24 @@ PROGRAM cdfvT
   ENDIF
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
-  CALL getarg (1, config)
-  CALL getarg (2, ctag  )
-  n1 = 2
-  IF ( ctag == '-o' ) THEN
-    CALL getarg (3, cf_out ) 
-    CALL getarg (4, ctag   )
-    n1=4
-  ENDIF
+  ijarg = 1 ; n1 = 2 ; ixtra=1
+  DO WHILE ( ijarg <= narg ) 
+    CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
+    SELECT CASE ( cldum ) 
+    CASE ( '-o' )
+      CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+      n1 = n1 + 2
+    CASE ( '-nc4' )
+      lnc4 = .true.
+      n1 = n1 + 1
+    CASE DEFAULT
+      IF ( ixtra == 1 ) THEN   ! first argument w/o options is config
+         config=cldum ; ixtra = ixtra + 1
+      ELSE IF ( ixtra == 2 ) THEN ! all other extra arguments are tags. keep the first, now
+         ctag=cldum
+      ENDIF
+     END SELECT
+  ENDDO
 
   cf_tfil = SetFileName( config, ctag, 'T')
 
@@ -108,6 +122,9 @@ PROGRAM cdfvT
   stypvar%valid_max         = 100.
   stypvar%conline_operation = 'N/A'
   stypvar%caxis             = 'TZYX'
+  DO jv = 1, 4
+     stypvar(jv)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
+  ENDDO
 
   stypvar(1)%cname          = cn_vomevt       ; stypvar(1)%cunits        = 'm.DegC.s-1'
   stypvar(2)%cname          = cn_vomevs       ; stypvar(2)%cunits        = 'm.PSU.s-1'
@@ -131,8 +148,8 @@ PROGRAM cdfvT
   ALLOCATE( zmean(npiglo,npjglo))
 
   ! create output fileset
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
-  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            )
+  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            , ld_nc4=lnc4 )
   ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
   
   lcaltmean=.TRUE.
@@ -141,8 +158,24 @@ PROGRAM cdfvT
      dcumulut(:,:) = 0.d0 ;  dcumulvt(:,:) = 0.d0 ; dtotal_time = 0.d0
      dcumulus(:,:) = 0.d0 ;  dcumulvs(:,:) = 0.d0 ; ntframe = 0
 
-     DO jt = n1, narg           ! loop on tags
-        CALL getarg (jt, ctag)
+     ijarg = 1 ; ixtra=1 ; ctag='none'
+     DO WHILE ( ijarg <= narg ) 
+          CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
+
+          SELECT CASE ( cldum ) 
+          CASE ( '-o' )
+            CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
+            CYCLE
+          CASE ( '-nc4' )
+             CYCLE
+          CASE DEFAULT
+             IF ( ixtra == 1 ) THEN   ! first argument w/o options is config
+                ixtra = ixtra + 1 
+                CYCLE
+             ELSE IF ( ixtra > 1 ) THEN ! all other extra arguments are tags. keep the first, now
+                ctag=cldum  ! process this tag !
+             ENDIF
+          END SELECT
 
         cf_tfil = SetFileName( config, ctag, 'T', ld_stop=.TRUE. )
         cf_sfil = SetFileName( config, ctag, 'S', ld_stop=.FALSE.)      ! do not stop if gridS/grid_S not found !
@@ -192,7 +225,7 @@ PROGRAM cdfvT
            dcumulvs(:,:) = dcumulvs(:,:) + zworkv(:,:) * zv(:,:)*1.d0
 
         END DO  !jtt
-     END DO  ! jt
+     END DO  ! arg list
      ! finish with level jk ; compute mean (assume spval is 0 )
      zmean(:,:) = dcumulvt(:,:)/ntframe
      ierr = putvar(ncout, id_varout(1), zmean, jk,npiglo, npjglo, kwght=ntframe )
