@@ -80,12 +80,13 @@ PROGRAM cdfpvor
   LOGICAL                                     :: lfull  = .FALSE.     ! flag for full step
   LOGICAL                                     :: lertel = .TRUE.      ! flag for large scale pv
   LOGICAL                                     :: lchk   = .FALSE.     ! flag for missing files
+  LOGICAL                                     :: lnc4   = .FALSE.     ! flag for netcdf4 chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfpvor T-file  U-file V-file [-full] [-lspv ]'
+     PRINT *,' usage : cdfpvor T-file  U-file V-file [-full] [-lspv ] [-nc4] [-o output file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Ertel potential vorticity and save the relative  ' 
@@ -103,6 +104,8 @@ PROGRAM cdfpvor
      PRINT *,'       [-lspv ] : calculate only the large scale potential vorticity.'
      PRINT *,'                  ( replace the old cdflspv tool).'
      PRINT *,'                  If used only T-file is required, no need for velocities.'
+     PRINT *,'       [-nc4 ] :  use netcdf4 with chunking and deflation '
+     PRINT *,'       [-o output file ] : use output file instead of default ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -132,6 +135,8 @@ PROGRAM cdfpvor
      SELECT CASE ( cldum )
      CASE ( '-full' ) ; lfull  = .TRUE.
      CASE ( '-lspv' ) ; lertel = .FALSE. ; nvar = 1 ; cf_out = 'lspv.nc'
+     CASE ( '-nc4'  ) ; lnc4 = .TRUE.
+     CASE ( '-o'    ) ; CALL getarg( ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE DEFAULT
         ireq=ireq+1
         SELECT CASE ( ireq )
@@ -205,6 +210,10 @@ PROGRAM cdfpvor
   stypvar%valid_max         = 1000.
   stypvar%conline_operation = 'N/A'
   stypvar%caxis             = 'TZYX'
+
+  DO ji = 1, nvar
+   stypvar(ji)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
+  ENDDO
 
   IF (lertel ) THEN
      ! define variable name and attribute
