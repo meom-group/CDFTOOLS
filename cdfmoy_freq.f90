@@ -12,6 +12,7 @@ PROGRAM cdfmoy_freq
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 10/2011  : P. Mathiot   : Add seasonal option and 
   !!                                            allow file with 73 time steps
+  !!                : 05/2015  : J.M. Molines : Rewrite to be compliant with XIOS
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
@@ -26,28 +27,23 @@ PROGRAM cdfmoy_freq
   INTEGER(KIND=4)                               :: jk, jvar    ! dummy loop index
   INTEGER(KIND=4)                               :: jv, jtt     ! dummy loop index
   INTEGER(KIND=4)                               :: jframe      ! dummy loop index
-  INTEGER(KIND=4)                               :: it1, it2
+  INTEGER(KIND=4)                               :: it1, it2    ! box limits
   INTEGER(KIND=4)                               :: ierr        ! working integer
-  INTEGER(KIND=4)                               :: itime       ! dummy loop index
   INTEGER(KIND=4)                               :: narg, iargc     ! 
   INTEGER(KIND=4)                               :: ijarg, ijm
   INTEGER(KIND=4)                               :: npiglo, npjglo  ! size of the domain
   INTEGER(KIND=4)                               :: npk ,npt        ! size of the domain
-  INTEGER(KIND=4)                               :: ip, nf
+  INTEGER(KIND=4)                               :: ip, nf          ! working integer
   INTEGER(KIND=4)                               :: nvars           ! Number of variables in a file
-  INTEGER(KIND=4)                               :: ntframe         ! Cumul of time frame
   INTEGER(KIND=4)                               :: nframes         ! Number of frames in the output file
   INTEGER(KIND=4)                               :: ndyr, nhyr      ! Days and hours per year
   INTEGER(KIND=4)                               :: nhfri           ! input freq in hours
   INTEGER(KIND=4)                               :: ncout, ncout2
-  INTEGER(KIND=4), DIMENSION(365)               :: njd  ! day vector
-  INTEGER(KIND=4), DIMENSION( 12)               :: njm  ! month vector
-  INTEGER(KIND=4), DIMENSION(  4)               :: njs  !season vector
+  INTEGER(KIND=4), DIMENSION( 12)               :: njm             ! month vector
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var, ipk, id_varout, ibox
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, rmean
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: time, time_mean
-  REAL(KIND=4), DIMENSION(365)                  :: tim
 
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab         ! Arrays for cumulated values
   REAL(KIND=8)                                  :: dtotal_time
@@ -55,7 +51,6 @@ PROGRAM cdfmoy_freq
   CHARACTER(LEN=256)                            :: cf_in               !
   CHARACTER(LEN=256)                            :: cf_out='cdfmoy_'    ! file name
   CHARACTER(LEN=256)                            :: cv_dep
-  CHARACTER(LEN=256)                            :: cfreq_i             ! input frequency
   CHARACTER(LEN=256)                            :: cfreq_o             ! output frequency
   CHARACTER(LEN=256)                            :: cldum               ! dummy character arguments
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var nam
@@ -65,7 +60,6 @@ PROGRAM cdfmoy_freq
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar
 
   LOGICAL                                       :: lcaltmean=.TRUE.
-  LOGICAL                                       :: lprint
   LOGICAL                                       :: lleap
   LOGICAL                                       :: lerr
   LOGICAL                                       :: lnc4 = .FALSE.
@@ -111,13 +105,14 @@ PROGRAM cdfmoy_freq
      STOP
   ENDIF
 
+  ! parse command line
   ijarg = 1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum) ; ijarg = ijarg +1
      SELECT CASE ( cldum ) 
-     CASE ( '-i'   ) ; CALL getarg(ijarg, cf_in  ) ; ijarg = ijarg + 1
+     CASE ( '-i'   ) ; CALL getarg(ijarg, cf_in   ) ; ijarg = ijarg + 1
      CASE ( '-f'   ) ; CALL getarg(ijarg, cfreq_o ) ; ijarg = ijarg + 1
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg + 1
      CASE ( '-nc4' ) ; lnc4=.TRUE.
      CASE DEFAULT 
         PRINT *,' +++ ERROR : Option ', TRIM(cldum) ,' not understood !'
@@ -190,7 +185,7 @@ PROGRAM cdfmoy_freq
         lleap=.TRUE.
      ENDIF
   ENDIF
-  nhfri = 24*ndyr/npt
+  nhfri = 24*ndyr/npt  ! input frequency in hours
 
   PRINT *, 'INPUT FILE : ', TRIM(cf_in)
   PRINT *, 'NPIGLO = ', npiglo
@@ -203,14 +198,11 @@ PROGRAM cdfmoy_freq
 
   ! Now determines the number of frames in the output file and detect impossible case
   !  Also determines the number of input frames in boxes. (can be variable)
-  ! number of day by month, season and day
-  njd(:)= 1
+  ! number of day by month
   njm(:)= (/ 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
-  njs(:)= (/ 90, 91, 92, 92 /)
 
   IF ( lleap ) THEN 
      njm(:) = (/ 31, 29, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 /)
-     njs(:) = (/ 91, 91, 92, 92 /)
   ENDIF
 
   lerr = .TRUE.
@@ -224,7 +216,7 @@ PROGRAM cdfmoy_freq
   CASE ( 'd' ) ! note : 365 = 73 *5  ( 366 = 73 *5 + 1 ) 
      IF ( MOD ( nf*24, nhfri ) == 0 ) THEN
         IF ( nf == 1 ) nframes = ndyr
-        IF ( nf == 5 ) nframes = 73
+        IF ( nf == 5 ) nframes = 73  ! in case of leap year frame#12 will have 6day average
         ALLOCATE (ibox( nframes) )
         lerr=.FALSE.
         ibox(:)=nf*24/nhfri 
@@ -296,6 +288,9 @@ PROGRAM cdfmoy_freq
   !
   WHERE( ipk == 0 ) cv_names='none'
   stypvar(:)%cname = cv_names
+  DO jv=1, nvars
+    stypvar(jv)%ichunk=(/npiglo,MAX(1,npjglo/30), 1, 1 /)
+  ENDDO
 
   ! create output file taking the sizes in cf_in
   cf_out = TRIM(cf_out)//'_'//TRIM(cfreq_o)//'.nc'
@@ -313,7 +308,7 @@ PROGRAM cdfmoy_freq
         DO jk=1,ipk(jvar)
 
            ! initialisation
-           dtab(:,:) = 0.d0 ; dtotal_time = 0.d0;  ntframe=0; itime=1; 
+           dtab(:,:) = 0.d0 ; dtotal_time = 0.d0
 
            ! time loop
            it1=1
@@ -332,7 +327,7 @@ PROGRAM cdfmoy_freq
               IF ( lcaltmean ) THEN
                  time_mean(jframe) = dtotal_time/ibox(jframe)
               ENDIF
-              dtab(:,:) = 0.d0 ; dtotal_time = 0.;  ntframe=0; itime=itime+1
+              dtab(:,:) = 0.d0 ; dtotal_time = 0.d0
               it1 = it2 + 1
               !
            ENDDO ! loop to next time
