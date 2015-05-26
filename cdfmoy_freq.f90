@@ -27,8 +27,8 @@ PROGRAM cdfmoy_freq
   INTEGER(KIND=4)                               :: jv, jtt     ! dummy loop index
   INTEGER(KIND=4)                               :: jframe      ! dummy loop index
   INTEGER(KIND=4)                               :: it1, it2
-  INTEGER(KIND=4)                               :: ierr            ! working integer
-  INTEGER(KIND=4)                               :: itime    ! dummy loop index
+  INTEGER(KIND=4)                               :: ierr        ! working integer
+  INTEGER(KIND=4)                               :: itime       ! dummy loop index
   INTEGER(KIND=4)                               :: narg, iargc     ! 
   INTEGER(KIND=4)                               :: ijarg, ijm
   INTEGER(KIND=4)                               :: npiglo, npjglo  ! size of the domain
@@ -64,11 +64,11 @@ PROGRAM cdfmoy_freq
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar
 
-  LOGICAL                                       :: lcaltmean=.true.
+  LOGICAL                                       :: lcaltmean=.TRUE.
   LOGICAL                                       :: lprint
   LOGICAL                                       :: lleap
   LOGICAL                                       :: lerr
-  LOGICAL                                       :: lnc4 = .false.
+  LOGICAL                                       :: lnc4 = .FALSE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -113,16 +113,16 @@ PROGRAM cdfmoy_freq
 
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-    CALL getarg(ijarg, cldum) ; ijarg = ijarg +1
-    SELECT CASE ( cldum ) 
-    CASE ( '-i'   ) ; CALL getarg(ijarg, cf_in  ) ; ijarg = ijarg + 1
-    CASE ( '-f'   ) ; CALL getarg(ijarg, cfreq_o ) ; ijarg = ijarg + 1
-    CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
-    CASE ( '-nc4' ) ; lnc4=.true.
-    CASE DEFAULT 
-      PRINT *,' +++ ERROR : Option ', TRIM(cldum) ,' not understood !'
-      STOP 1
-    END SELECT
+     CALL getarg(ijarg, cldum) ; ijarg = ijarg +1
+     SELECT CASE ( cldum ) 
+     CASE ( '-i'   ) ; CALL getarg(ijarg, cf_in  ) ; ijarg = ijarg + 1
+     CASE ( '-f'   ) ; CALL getarg(ijarg, cfreq_o ) ; ijarg = ijarg + 1
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
+     CASE ( '-nc4' ) ; lnc4=.TRUE.
+     CASE DEFAULT 
+        PRINT *,' +++ ERROR : Option ', TRIM(cldum) ,' not understood !'
+        STOP 1
+     END SELECT
   END DO
 
   IF ( chkfile ( cf_in ) ) STOP ! missing file
@@ -131,28 +131,28 @@ PROGRAM cdfmoy_freq
   ! Allowed syntax is nf<cfr_id> where nf is an integer >0, <cfr_id> is h, d, mo or y
   cfr_id='--'
   DO jk =1, 4
-     ip=index(cfreq_o, cfreq_a(jk) )
+     ip=INDEX(cfreq_o, cfreq_a(jk) )
      IF ( ip /= 0 ) THEN
-       cfr_id=cfreq_o(ip:)
-       READ(cfreq_o(1:ip-1), *) nf
-       EXIT
+        cfr_id=cfreq_o(ip:)
+        READ(cfreq_o(1:ip-1), *) nf
+        EXIT
      ENDIF
   ENDDO
 
   SELECT CASE ( cfr_id )
   CASE ( '--' ) 
-    PRINT *, ' +++ ERROR : Cannot determine the output frequency'
-    PRINT *, '            You should use a character string such as 6h, 5d, 1mo, 1y '
+     PRINT *, ' +++ ERROR : Cannot determine the output frequency'
+     PRINT *, '            You should use a character string such as 6h, 5d, 1mo, 1y '
   CASE ( 'd' ) 
-    IF ( nf /= 1 .AND. nf/=5 ) THEN
-      PRINT *, ' +++ ERROR : only 1d or 5d are acceptable !'
-      STOP
-    ENDIF
+     IF ( nf /= 1 .AND. nf/=5 ) THEN
+        PRINT *, ' +++ ERROR : only 1d or 5d are acceptable !'
+        STOP
+     ENDIF
   CASE ( 'y' )
-    IF ( nf > 1 ) THEN
-      PRINT *, ' +++ ERROR : Cannot have output freq > 1 y !'
-      STOP
-    ENDIF
+     IF ( nf > 1 ) THEN
+        PRINT *, ' +++ ERROR : Cannot have output freq > 1 y !'
+        STOP
+     ENDIF
   END SELECT
 
   ! get domain size from the input file
@@ -170,13 +170,13 @@ PROGRAM cdfmoy_freq
         ENDIF
      ENDIF
   ENDIF
-  
+
   npt   = getdim (cf_in, cn_t)
 
   ! Now look at input file and try to look for input frequency
   ! Note that we know that the file contains either 365d or 366 days of data
   ! We suppose that input file freq is a multiple of 1 hour.
-  lleap = .false.
+  lleap = .FALSE.
   ndyr  = 365     ! number of days per year
   nhyr  = ndyr*24 ! number of hours per year
 
@@ -184,10 +184,10 @@ PROGRAM cdfmoy_freq
      ndyr = 366     ! try leap year
      nhyr = ndyr*24 ! number of hours per leap year
      IF ( MOD( nhyr, npt ) /= 0 ) THEN
-       PRINT *," +++ ERROR : npt do not fit in 365 nor 366 days "
-       STOP
+        PRINT *," +++ ERROR : npt do not fit in 365 nor 366 days "
+        STOP
      ELSE
-       lleap=.true.
+        lleap=.TRUE.
      ENDIF
   ENDIF
   nhfri = 24*ndyr/npt
@@ -200,7 +200,7 @@ PROGRAM cdfmoy_freq
   PRINT *, ' '
   PRINT *, ' LEAP YEAR  : ', lleap
   PRINT *, ' INPUT FREQ : ', nhfri,' hours '
-  
+
   ! Now determines the number of frames in the output file and detect impossible case
   !  Also determines the number of input frames in boxes. (can be variable)
   ! number of day by month, season and day
@@ -213,67 +213,67 @@ PROGRAM cdfmoy_freq
      njs(:) = (/ 91, 91, 92, 92 /)
   ENDIF
 
-  lerr = .true.
+  lerr = .TRUE.
   SELECT CASE ( cfr_id )
   CASE ( 'h' ) 
      IF ( MOD( nf, nhfri ) == 0 ) THEN
-       nframes = ndyr*24/nf 
-       ALLOCATE (ibox( nframes) )
-       ibox(:)=nf/nhfri ; lerr=.false.
+        nframes = ndyr*24/nf 
+        ALLOCATE (ibox( nframes) )
+        ibox(:)=nf/nhfri ; lerr=.FALSE.
      ENDIF
   CASE ( 'd' ) ! note : 365 = 73 *5  ( 366 = 73 *5 + 1 ) 
      IF ( MOD ( nf*24, nhfri ) == 0 ) THEN
-       IF ( nf == 1 ) nframes = ndyr
-       IF ( nf == 5 ) nframes = 73
-       ALLOCATE (ibox( nframes) )
-       lerr=.false.
-       ibox(:)=nf*24/nhfri 
-       IF ( lleap .AND. nf == 5 ) ibox(12)=6*24/nhfri
+        IF ( nf == 1 ) nframes = ndyr
+        IF ( nf == 5 ) nframes = 73
+        ALLOCATE (ibox( nframes) )
+        lerr=.FALSE.
+        ibox(:)=nf*24/nhfri 
+        IF ( lleap .AND. nf == 5 ) ibox(12)=6*24/nhfri
      ENDIF
   CASE ( 'mo' )
-  !##################################
-  !JM : do not work if nhfri > 24 !!! 
-  !##################################
+     !##################################
+     !JM : do not work if nhfri > 24 !!! 
+     !##################################
      IF ( MOD( 12, nf ) == 0 ) THEN
-        nframes=12/nf ; lerr=.false.
-       ALLOCATE (ibox( nframes) )  ! 12 6 4 3 2 
-       SELECT CASE ( nframes )
-       CASE ( 12 )
-          ibox(:) = njm(:)*24/nhfri 
-       CASE ( 6 )
-          DO jframe= 1, nframes
-            ijm=jframe*2-1
-            ibox(jframe) = (njm(ijm)+njm(ijm+1)) *24/nhfri 
-          ENDDO
-       CASE ( 4 )
-          DO jframe= 1, nframes
-            ijm=jframe*3-2
-            ibox(jframe) = (njm(ijm)+njm(ijm+1)+njm(ijm+2)) *24/nhfri 
-          ENDDO
-       CASE ( 3 )
-          DO jframe= 1, nframes
-            ijm=jframe*4-3
-            ibox(jframe) = (njm(ijm)+njm(ijm+1)+njm(ijm+2)+njm(ijm+3)) *24/nhfri 
-          ENDDO
-       CASE ( 2 )
-          DO jframe= 1, nframes
-            ijm=jframe*6-5
-            ibox(jframe) = (njm(ijm)+njm(ijm+1)+njm(ijm+2)+njm(ijm+3)+njm(ijm+4)+njm(ijm+5)) *24/nhfri 
-          ENDDO
-       END SELECT
+        nframes=12/nf ; lerr=.FALSE.
+        ALLOCATE (ibox( nframes) )  ! 12 6 4 3 2 
+        SELECT CASE ( nframes )
+        CASE ( 12 )
+           ibox(:) = njm(:)*24/nhfri 
+        CASE ( 6 )
+           DO jframe= 1, nframes
+              ijm=jframe*2-1
+              ibox(jframe) = (njm(ijm)+njm(ijm+1)) *24/nhfri 
+           ENDDO
+        CASE ( 4 )
+           DO jframe= 1, nframes
+              ijm=jframe*3-2
+              ibox(jframe) = (njm(ijm)+njm(ijm+1)+njm(ijm+2)) *24/nhfri 
+           ENDDO
+        CASE ( 3 )
+           DO jframe= 1, nframes
+              ijm=jframe*4-3
+              ibox(jframe) = (njm(ijm)+njm(ijm+1)+njm(ijm+2)+njm(ijm+3)) *24/nhfri 
+           ENDDO
+        CASE ( 2 )
+           DO jframe= 1, nframes
+              ijm=jframe*6-5
+              ibox(jframe) = (njm(ijm)+njm(ijm+1)+njm(ijm+2)+njm(ijm+3)+njm(ijm+4)+njm(ijm+5)) *24/nhfri 
+           ENDDO
+        END SELECT
      ENDIF
   CASE ( 'y' )  ! 1y average  all is to be taken !
      nframes = 1
      ALLOCATE (ibox( nframes) )
      ibox(:) = npt
-     lerr = .false.
+     lerr = .FALSE.
   END SELECT
 
   IF ( lerr ) THEN
-       PRINT *, ' +++ ERROR : Input and output frequency incompatible.'
-       PRINT *, '         Input  : ',  nhfri,' hours '
-       PRINT *, '         Output : ',  nf,' hours '
-       STOP
+     PRINT *, ' +++ ERROR : Input and output frequency incompatible.'
+     PRINT *, '         Input  : ',  nhfri,' hours '
+     PRINT *, '         Output : ',  nf,' hours '
+     STOP
   ENDIF
 
   ALLOCATE( dtab(npiglo,npjglo), v2d(npiglo,npjglo) )
@@ -310,40 +310,40 @@ PROGRAM cdfmoy_freq
         ! skip these variable
      ELSE
         PRINT *,' Working with ', TRIM(cv_names(jvar))
-    DO jk=1,ipk(jvar)
+        DO jk=1,ipk(jvar)
 
-    ! initialisation
+           ! initialisation
            dtab(:,:) = 0.d0 ; dtotal_time = 0.d0;  ntframe=0; itime=1; 
 
-   ! time loop
-      it1=1
-      DO jframe = 1, nframes
-         it2=it1+ibox(jframe)-1
-           DO jtt=it1, it2
-              ! load data
-              v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jtt )
-              dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
+           ! time loop
+           it1=1
+           DO jframe = 1, nframes
+              it2=it1+ibox(jframe)-1
+              DO jtt=it1, it2
+                 ! load data
+                 v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jtt )
+                 dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
+                 IF ( lcaltmean ) THEN
+                    dtotal_time = dtotal_time + time(jtt) 
+                 ENDIF
+              ENDDO
+              rmean(:,:) = dtab(:,:)/ibox(jframe)
+              ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo, ktime=jframe)
               IF ( lcaltmean ) THEN
-                 dtotal_time = dtotal_time + time(jtt) 
+                 time_mean(jframe) = dtotal_time/ibox(jframe)
               ENDIF
-           ENDDO
-           rmean(:,:) = dtab(:,:)/ibox(jframe)
-           ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo, ktime=jframe)
-           IF ( lcaltmean ) THEN
-              time_mean(jframe) = dtotal_time/ibox(jframe)
-           ENDIF
-           dtab(:,:) = 0.d0 ; dtotal_time = 0.;  ntframe=0; itime=itime+1
-           it1 = it2 + 1
-      !
-      ENDDO ! loop to next time
-      lcaltmean=.false.
-      ierr = putvar1d(ncout,   time_mean,  nframes  , 'T')
+              dtab(:,:) = 0.d0 ; dtotal_time = 0.;  ntframe=0; itime=itime+1
+              it1 = it2 + 1
+              !
+           ENDDO ! loop to next time
+           lcaltmean=.FALSE.
 
-     ENDDO ! loop to next level
+        ENDDO ! loop to next level
 
-   END IF
- END DO ! loop to next var in file
+     END IF
+  END DO ! loop to next var in file
 
+  ierr = putvar1d(ncout,   time_mean,  nframes  , 'T')
   ierr = closeout(ncout)
 
 

@@ -1,4 +1,4 @@
-PROGRAM cdfmoy_weighted
+ PROGRAM cdfmoy_weighted
   !!======================================================================
   !!                     ***  PROGRAM  cdfmoy_weighted  ***
   !!=====================================================================
@@ -46,13 +46,13 @@ PROGRAM cdfmoy_weighted
   CHARACTER(LEN=256)                            :: cv_dep              ! name of depth variable
   CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var name
-  
+
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for output var attributes
 
-  LOGICAL                                       :: lold5d=.false.      ! flag for old5d output
-  LOGICAL                                       :: lmonth=.false.      ! flag for true month output
-  LOGICAL                                       :: lleap=.false.       ! flag for leap years
-  LOGICAL                                       :: lnc4=.false.        ! flag for netcdf4 output with chunking and deflation
+  LOGICAL                                       :: lold5d=.FALSE.      ! flag for old5d output
+  LOGICAL                                       :: lmonth=.FALSE.      ! flag for true month output
+  LOGICAL                                       :: lleap=.FALSE.       ! flag for leap years
+  LOGICAL                                       :: lnc4=.FALSE.        ! flag for netcdf4 output with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -98,26 +98,26 @@ PROGRAM cdfmoy_weighted
   ! scan command line and check if files exist
   ijarg = 1 ; ixtra=0
   DO WHILE ( ijarg <= narg ) 
-    CALL getarg ( ijarg, cldum ) ; ijarg = ijarg +1
-    SELECT CASE ( cldum )
-    CASE ( '-old5d' )  ; lold5d = .TRUE.
-    CASE ( '-month' )  ; lmonth = .TRUE.
-    CASE ( '-leap'  )  ; lleap  = .TRUE.
-    CASE ( '-nc4'   )  ; lnc4   = .TRUE.
-    CASE ( '-o'     )  ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
-    CASE DEFAULT
+     CALL getarg ( ijarg, cldum ) ; ijarg = ijarg +1
+     SELECT CASE ( cldum )
+     CASE ( '-old5d' )  ; lold5d = .TRUE.
+     CASE ( '-month' )  ; lmonth = .TRUE.
+     CASE ( '-leap'  )  ; lleap  = .TRUE.
+     CASE ( '-nc4'   )  ; lnc4   = .TRUE.
+     CASE ( '-o'     )  ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
+     CASE DEFAULT
         ixtra = ixtra + 1
         cf_in = cldum
         IF ( chkfile (cldum ) ) STOP ! missing file
-    END SELECT
+     END SELECT
   ENDDO
 
   ! additional check in case of old_5d averaged files
   IF ( lold5d .OR. lmonth ) THEN
-    IF ( ixtra /= 12 ) THEN 
-      PRINT *,' +++ ERROR : exactly 12 monthly files are required for -old5d/-month options.'
-      STOP
-    ENDIF
+     IF ( ixtra /= 12 ) THEN 
+        PRINT *,' +++ ERROR : exactly 12 monthly files are required for -old5d/-month options.'
+        STOP
+     ENDIF
   ENDIF
 
   npiglo = getdim (cf_in, cn_x                              )
@@ -127,16 +127,16 @@ PROGRAM cdfmoy_weighted
   IF (ierr /= 0 ) THEN
      npk   = getdim (cf_in,'z',cdtrue=cv_dep, kstatus=ierr   )
      IF (ierr /= 0 ) THEN
-       npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
+        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
         IF ( ierr /= 0 ) THEN
-          npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-            IF ( ierr /= 0 ) THEN
+           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
+           IF ( ierr /= 0 ) THEN
               npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
               IF ( ierr /= 0 ) THEN
-                PRINT *,' assume file with no depth'
-                npk=0
+                 PRINT *,' assume file with no depth'
+                 npk=0
               ENDIF
-            ENDIF
+           ENDIF
         ENDIF
      ENDIF
   ENDIF
@@ -165,7 +165,7 @@ PROGRAM cdfmoy_weighted
   stypvar(:)%cname = cv_names
 
   DO jk = 1, nvars
-    stypvar(jk)%ichunk  = (/ npiglo, MAX(1,npjglo/30), 1, 1 /)
+     stypvar(jk)%ichunk  = (/ npiglo, MAX(1,npjglo/30), 1, 1 /)
   ENDDO
 
   ! create output file taking the sizes in cf_in
@@ -210,7 +210,7 @@ PROGRAM cdfmoy_weighted
 
   ierr = closeout(ncout)
 
-  CONTAINS
+CONTAINS
 
   INTEGER(KIND=4) FUNCTION setweight( cdfile, kt, cdvar )
     !!---------------------------------------------------------------------
@@ -231,18 +231,18 @@ PROGRAM cdfmoy_weighted
     INTEGER(KIND=4), DIMENSION(12) :: iweightleap=(/31,29,31,30,31,30,31,31,30,31,30,31/)
     !!----------------------------------------------------------------------
     IF ( lold5d ) THEN 
-      setweight = iweight5d(kt)
+       setweight = iweight5d(kt)
     ELSE IF ( lmonth ) THEN
-      IF ( lleap ) THEN
-        setweight = iweightleap(kt)
-      ELSE
-        setweight = iweightmo(kt)
-      ENDIF
+       IF ( lleap ) THEN
+          setweight = iweightleap(kt)
+       ELSE
+          setweight = iweightmo(kt)
+       ENDIF
     ELSE
-      setweight = getatt( cdfile, cdvar, 'iweight') 
-      IF ( setweight == 0 ) setweight = 1
+       setweight = getatt( cdfile, cdvar, 'iweight') 
+       IF ( setweight == 0 ) setweight = 1
     ENDIF
 
-    END FUNCTION setweight
+  END FUNCTION setweight
 
 END PROGRAM cdfmoy_weighted
