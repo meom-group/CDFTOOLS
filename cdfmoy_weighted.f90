@@ -82,6 +82,7 @@ PROGRAM cdfmoy_weighted
      PRINT *,'                   output (1mo) in XIOS output for instance.'
      PRINT *,'       [-leap ] : This option has only effect together with the -month option.'
      PRINT *,'                  When used set 29 days in february'
+     PRINT *,'       [ -nc4 ] : Use netcdf4 chunking and deflation in output file.'
      PRINT *,'       [-o output file ] : Specify the name for output file instead of the'
      PRINT *,'                 default name ', TRIM(cf_out)
      PRINT *,'      '
