@@ -59,7 +59,7 @@ PROGRAM cdfmoy_weighted
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy_weighted list of files [-old5d ] [-month] [-leap] ...'
-     PRINT *,'                [-o output file]'
+     PRINT *,'            [-nc4] [-o output file]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute weight average of files. The weight for each file is'
      PRINT *,'       read from the iweight attribute. In particular, this attribute'
