@@ -105,7 +105,7 @@
   CHARACTER(LEN=256 ) :: cl_dum              !# dummy char argument
 
   INTERFACE putvar
-     MODULE PROCEDURE putvarr8, putvarr4, putvari2, putvarzo, reputvarr4
+     MODULE PROCEDURE putvarr8, putvarr4, putvari2, putvarzo, reputvarr4, putvare3
   END INTERFACE
 
   INTERFACE putvar1d   
@@ -2122,6 +2122,49 @@ CONTAINS
 
   END FUNCTION putvarr4
 
+
+  INTEGER(KIND=4) FUNCTION putvare3(kout, kid, ptab, kmax, ktime, kwght)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION putvarr4  ***
+    !!            
+    !! ** Purpose : copy a 2D level of ptab in already open file kout, 
+    !!              using variable kid
+    !!
+    !! ** Method  : this corresponds to the generic function putvar with r4 arg.
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4),                  INTENT(in) :: kout     ! ncid of output file
+    INTEGER(KIND=4),                  INTENT(in) :: kid      ! varid of output variable
+    REAL(KIND=4), DIMENSION(kmax),    INTENT(in) :: ptab     ! 1D array to write in file 
+    INTEGER(KIND=4),                  INTENT(in) :: kmax     ! number of level in file
+    INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: ktime    ! 
+    INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: kwght    ! weight of this variable
+
+    INTEGER(KIND=4)               :: istatus, itime, id_dimunlim, inbdim
+    INTEGER(KIND=4), DIMENSION(4) :: istart, icount, inldim
+    !!----------------------------------------------------------------------
+    IF (PRESENT(ktime) ) THEN
+       itime=ktime
+    ELSE
+       itime=1
+    ENDIF
+
+     ! look for unlimited dim (time_counter)
+    istatus=NF90_INQUIRE         (kout, unlimitedDimId=id_dimunlim       )
+    istatus=NF90_INQUIRE_VARIABLE(kout,kid,ndims=inbdim,dimids=inldim(:) )
+
+    !  if the last dim of id_var is time, then adjust the starting point
+    istart(:) = 1    ; icount(:) = 1    ! default
+    icount(1) = 1  ; icount(2) = 1  ; icount(3) = kmax ! in any case
+    IF ( inldim(inbdim) == id_dimunlim ) istart(inbdim) = itime ! assume than last dim is UNLIM
+
+    istatus=NF90_PUT_VAR(kout,kid, ptab, start=istart,count=icount)
+
+    IF (PRESENT(kwght) ) THEN
+      istatus=NF90_PUT_ATT(kout, kid, 'iweight', kwght)
+    ENDIF
+    putvare3=istatus
+
+  END FUNCTION putvare3
 
   INTEGER(KIND=4) FUNCTION putvari2(kout, kid, ktab, klev, kpi, kpj, ktime, kwght)
     !!---------------------------------------------------------------------

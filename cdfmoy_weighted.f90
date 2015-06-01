@@ -36,14 +36,17 @@
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout           ! array of output var id's
 
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: v2d                 ! array to read a layer of data
+  REAL(KIND=4), DIMENSION (:)  ,    ALLOCATABLE :: v1d                 ! array to read column of data
   REAL(KIND=4), DIMENSION(1)                    :: timean, tim         ! time counter
 
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dtab                ! array for cumulated values
+  REAL(KIND=8), DIMENSION (:)  ,    ALLOCATABLE :: dtab1d              ! array for cumulated values
   REAL(KIND=8)                                  :: dtotal_time, dsumw  ! cumulated times and weights
 
   CHARACTER(LEN=256)                            :: cf_in               ! current input file name
   CHARACTER(LEN=256)                            :: cf_out='cdfmoy_weighted.nc' ! output file name
   CHARACTER(LEN=256)                            :: cv_dep              ! name of depth variable
+  CHARACTER(LEN=256)                            :: cv_skip             ! name of  variable to skip
   CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var name
 
@@ -59,7 +62,7 @@
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy_weighted list of files [-old5d ] [-month] [-leap] ...'
-     PRINT *,'            [-nc4] [-o output file]'
+     PRINT *,'      [-skip variable] [-nc4] [-o output file]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute weight average of files. The weight for each file is'
      PRINT *,'       read from the iweight attribute. In particular, this attribute'
@@ -82,6 +85,7 @@
      PRINT *,'                   output (1mo) in XIOS output for instance.'
      PRINT *,'       [-leap ] : This option has only effect together with the -month option.'
      PRINT *,'                  When used set 29 days in february'
+     PRINT *,'       [-skip variable ] : name of variable to skip '
      PRINT *,'       [ -nc4 ] : Use netcdf4 chunking and deflation in output file.'
      PRINT *,'       [-o output file ] : Specify the name for output file instead of the'
      PRINT *,'                 default name ', TRIM(cf_out)
@@ -105,6 +109,7 @@
      CASE ( '-leap'  )  ; lleap  = .TRUE.
      CASE ( '-nc4'   )  ; lnc4   = .TRUE.
      CASE ( '-o'     )  ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
+     CASE ( '-skip'  )  ; CALL getarg ( ijarg, cv_skip) ; ijarg = ijarg +1
      CASE DEFAULT
         ixtra = ixtra + 1
         cf_in = cldum
@@ -175,10 +180,30 @@
 
   DO jvar = 1,nvars
      IF ( cv_names(jvar) == cn_vlon2d .OR. &
-          cv_names(jvar) == cn_vlat2d        ) THEN
+          cv_names(jvar) == cn_vlat2d .OR. &
+          cv_names(jvar) == 'none'    .OR. &
+          cv_names(jvar) == cv_skip        ) THEN
         ! skip these variable
      ELSE
         PRINT *,' Working with ', TRIM(cv_names(jvar)), ipk(jvar)
+        IF ( npiglo == 1 .AND. npjglo == 1 ) THEN 
+         !
+           ALLOCATE (v1d( ipk(jvar)), dtab1d(ipk(jvar)) )
+           dtab1d(:) = 0.d0 ; dtotal_time=0.d0 ; dsumw=0.d0
+           DO jt=1, ixtra
+              CALL getarg   (jt, cf_in)
+              iweight   = setweight(cf_in, jt, cv_names(jvar)) 
+              dsumw     = dsumw + iweight
+              tim = getvar1d(cf_in, cn_vtimec, 1 )
+              dtotal_time = dtotal_time + iweight * tim(1)
+              v1d=getvare3(cf_in, cv_names(jvar), ipk(jvar) )
+              dtab1d(:)=dtab1d(:) + iweight * v1d(:)
+           ENDDO
+           timean(1) = dtotal_time/dsumw
+           ierr      = putvar1d(ncout, timean, 1, 'T')
+           ierr      = putvar(ncout, id_varout(jvar), SNGL(dtab1d(:)/dsumw), ipk(jvar), ktime=1 , kwght=INT(dsumw) )  ! module interface to putvare3
+           DEALLOCATE (v1d, dtab1d)
+        ELSE
         DO jk = 1, ipk(jvar)
            PRINT *,'Level ',jk
            dtab(:,:) = 0.d0 ; dtotal_time = 0.d0 ; dsumw=0.d0
@@ -205,6 +230,7 @@
               ierr      = putvar1d(ncout, timean, 1, 'T')
            END IF
         END DO  ! loop to next level
+        END IF ! 1D variable
      END IF
   END DO ! loop to next var in file
 

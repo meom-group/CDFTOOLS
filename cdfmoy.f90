@@ -46,7 +46,8 @@ PROGRAM cdfmoy
   INTEGER(KIND=4)                               :: ncout2             ! ncid of output files
   INTEGER(KIND=4)                               :: ncout3             ! ncid of output files
   INTEGER(KIND=4)                               :: ncout4             ! ncid of output files
-  INTEGER(KIND=4)                               :: nperio=4           ! ncid of output files
+  INTEGER(KIND=4)                               :: nperio=4           ! periodic flag
+  INTEGER(KIND=4)                               :: iwght              ! weight of variable
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var             ! arrays of var id's
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk4               ! arrays of vertical level for min/max
@@ -395,6 +396,7 @@ PROGRAM cdfmoy
 
   lcaltmean=.TRUE.
   DO jvar = 1,nvars
+     iwght=0
      IF ( cv_nam(jvar) == cn_vlon2d .OR. &     ! nav_lon
           cv_nam(jvar) == cn_vlat2d ) THEN     ! nav_lat
         ! skip these variable
@@ -411,6 +413,7 @@ PROGRAM cdfmoy
               cf_in = cf_list(jfil)
               IF ( jk == 1 ) THEN
                   IF ( chkfile (cf_in) ) STOP ! missing file
+                  iwght=iwght+MAX(1,INT(getatt( cf_in, cv_nam(jvar), 'iweight')))
               ENDIF
 
               npt = getdim (cf_in, cn_t)
@@ -452,19 +455,19 @@ PROGRAM cdfmoy
            ENDIF
 
            ! store variable on outputfile
-           ierr = putvar(ncout, id_varout(jvar), rmean, jk, npiglo, npjglo, kwght=ntframe)
+           ierr = putvar(ncout, id_varout(jvar), rmean, jk, npiglo, npjglo, kwght=iwght)
            IF (cv_nam2(jvar) /= 'none' ) THEN 
-               ierr = putvar(ncout2, id_varout2(jvar), rmean2, jk, npiglo, npjglo, kwght=ntframe)
+               ierr = putvar(ncout2, id_varout2(jvar), rmean2, jk, npiglo, npjglo, kwght=iwght)
            ENDIF
 
            IF ( lcubic) THEN
               IF (cv_nam3(jvar) /= 'none' ) THEN 
-                 ierr = putvar(ncout3, id_varout3(jvar), rmean3, jk, npiglo, npjglo, kwght=ntframe)
+                 ierr = putvar(ncout3, id_varout3(jvar), rmean3, jk, npiglo, npjglo, kwght=iwght)
               ENDIF
            ENDIF
            IF ( lmax  ) THEN
-                 ierr = putvar(ncout4, id_varout4(      jvar), rmax, jk, npiglo, npjglo, kwght=ntframe)
-                 ierr = putvar(ncout4, id_varout4(nvars+jvar), rmin, jk, npiglo, npjglo, kwght=ntframe)
+                 ierr = putvar(ncout4, id_varout4(      jvar), rmax, jk, npiglo, npjglo, kwght=iwght)
+                 ierr = putvar(ncout4, id_varout4(nvars+jvar), rmin, jk, npiglo, npjglo, kwght=iwght)
            ENDIF
 
            IF (lcaltmean )  THEN
