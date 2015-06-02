@@ -201,7 +201,7 @@
            ENDDO
            timean(1) = dtotal_time/dsumw
            ierr      = putvar1d(ncout, timean, 1, 'T')
-           ierr      = putvar(ncout, id_varout(jvar), SNGL(dtab1d(:)/dsumw), ipk(jvar), ktime=1 , kwght=INT(dsumw) )  ! module interface to putvare3
+           ierr      = putvar(ncout, id_varout(jvar), SNGL(dtab1d(:)/dsumw), ipk(jvar), 'vert', ktime=1 , kwght=INT(dsumw) )  ! module interface to putvare3
            DEALLOCATE (v1d, dtab1d)
         ELSE
         DO jk = 1, ipk(jvar)
