@@ -74,11 +74,11 @@ PROGRAM cdfsigtrp
    REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: eu                   ! either e1v or e2u
    REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e3t1d, e3w1d         ! vertical metrics in case of full step
    REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rlonlat              ! longitudes/latitudes if the section
-   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zs, zt               ! salinity and temperature from file 
+   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zs, zt, zz           ! salinity and temperature from file 
    REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rdumlon, rdumlat     ! dummy longitude and latitude for output
    REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zu                   ! velocity
    REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zmask                ! mask
-   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: tmpm, tmpz           ! temporary arrays
+   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tmpm, tmpz           ! temporary arrays
 
    ! double precision for cumulative variables and densities
    REAL(KIND=8)                                  :: dsigma_min           ! minimum density for bining
@@ -310,115 +310,117 @@ PROGRAM cdfsigtrp
          CYCLE
       ENDIF
 
-      ALLOCATE ( zu(npts,npk), zt(npts,npk), zs(npts,npk), dsig(npts,0:npk)  )
+      ALLOCATE ( zu(npts,npk), zt(npts,npk), zs(npts,npk), zz(npts,npk), dsig(npts,0:npk)  )
       ALLOCATE ( eu(npts), de3(npts,npk), ddepu(npts, 0:npk), zmask(npts,npk) )
-      ALLOCATE ( tmpm(1,npts,2), tmpz(npts,1,2)                              )
+      ALLOCATE ( tmpm(1,npts), tmpz(npts,1)                                   )
       ALLOCATE ( dwtrp(npts, nbins+1), dhiso(npts,nbins+1), dwtrpbin(npts,nbins) )
       ALLOCATE ( rlonlat(npts,1) )
 
-      zt = 0. ; zs = 0. ; zu = 0. ; ddepu= 0. ; zmask = 0.  ; dsig=0.d0
+      zt = 0. ; zs = 0. ; zu = 0. ; ddepu= 0.d0 ; zmask = 0.  ; dsig=0.d0
 
-      IF (l_merid ) THEN   ! meridional section at i=iimin=iimax
-         tmpm(:,:,1)   = getvar(cn_fhgr, cn_ve2u,   1, 1, npts, kimin=iimin, kjmin=ijmin+1)
-         eu(:)         = tmpm(1,:,1)  ! metrics varies only horizontally
-         tmpm(:,:,1)   = getvar(cn_fhgr, cn_vlat2d, 1, 1, npts, kimin=iimin, kjmin=ijmin+1)
-         rlonlat(:,1)  = tmpm(1,:,1)  ! latitude in this case
-         DO jk = 1,npk
-            ! initiliaze ddepu to gdept()
-            ddepu(:,jk) = gdept(jk)
+      IF (l_merid ) THEN   ! meridional section at i=iimin=iimax  ! use getvaryz
+         tmpm(:,:)    = getvar(cn_fhgr, cn_ve2u,   1, 1, npts, kimin=iimin, kjmin=ijmin+1)
+         eu(:)        = tmpm(1,:)  ! metrics varies only horizontally
+         tmpm(:,:)    = getvar(cn_fhgr, cn_vlat2d, 1, 1, npts, kimin=iimin, kjmin=ijmin+1)
+         rlonlat(:,1) = tmpm(1,:)  ! latitude in this case
 
-            IF ( lfull ) THEN
-               de3(:,jk)   = e3t1d(jk)
-               tmpm(1,:,1) = e3w1d(jk)
-               tmpm(1,:,2) = e3w1d(jk)
-            ELSE
-               ! vertical metrics (PS case)
-               tmpm(:,:,1) = getvar(cn_fzgr, 'e3u_ps', jk, 1, npts, kimin=iimin,   kjmin=ijmin+1, ldiom=.TRUE.)
-               de3(:,jk)   = tmpm(1,:,1)
-               tmpm(:,:,1) = getvar(cn_fzgr, 'e3w_ps', jk, 1, npts, kimin=iimin,   kjmin=ijmin+1, ldiom=.TRUE.)
-               tmpm(:,:,2) = getvar(cn_fzgr, 'e3w_ps', jk, 1, npts, kimin=iimin+1, kjmin=ijmin+1, ldiom=.TRUE.)
+         ! use zt and zs as temporaty variable for e3w
+         IF ( lfull ) THEN
+           DO ji=1, npts
+             de3(ji,:) = e3t1d(:)
+             zt( ji,:) = e3w1d(:)
+             zs( ji,:) = e3w1d(:)
+           ENDDO
+         ELSE
+           de3(:,:) = getvaryz(cn_fzgr,'e3u', iimin,   npts, npk, kjmin=ijmin+1 )
+           zt( :,:) = getvaryz(cn_fzgr,'e3w', iimin,   npts, npk, kjmin=ijmin+1 )
+           zs( :,:) = getvaryz(cn_fzgr,'e3w', iimin+1, npts, npk, kjmin=ijmin+1 )
+         ENDIF
+         
+         DO ji=1, npts
+            ddepu(ji,1:npk) = gdept(:)
+         ENDDO
+
+         DO jk=2, npk
+            DO ji=1,npts
+               ddepu(ji,jk) = ddepu(ji,jk-1) +MIN (zt(ji,jk), zs(ji,jk) )
+            ENDDO
+         ENDDO
+         ! normal velocity
+         zu( :,:) = getvaryz(cf_ufil, cn_vozocrtx, iimin,   npts, npk, kjmin=ijmin+1 )
+
+         ! salinity and deduce umask for the section
+         zs( :,:) = getvaryz(cf_tfil, cn_vosaline, iimin,   npts, npk, kjmin=ijmin+1 )
+         zt( :,:) = getvaryz(cf_tfil, cn_vosaline, iimin+1, npts, npk, kjmin=ijmin+1 )
+         zmask(:,:) = zs(:,:) * zt(:,:)
+         WHERE ( zmask(:,:) /= 0 ) zmask(:,:)=1
+         zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
+
+         ! limitation to 'wet' points
+         DO jk = 1, npk
+            IF ( SUM(zs(:,jk)) == 0 ) THEN
+               nk=jk
+               EXIT
             ENDIF
-
-            IF (jk >= 2 ) THEN
-               DO ji=1,npts
-                  ddepu(ji,jk)= ddepu(ji,jk-1) + MIN(tmpm(1,ji,1), tmpm(1,ji,2))
-               END DO
-            ENDIF
-
-            ! Normal velocity
-            tmpm(:,:,1) = getvar(cf_ufil,cn_vozocrtx,jk,1,npts, kimin=iimin, kjmin=ijmin+1)
-            zu(:,jk)    = tmpm(1,:,1)
-
-            ! salinity and deduce umask for the section
-            tmpm(:,:,1) = getvar(cf_tfil,cn_vosaline,jk,1,npts, kimin=iimin  , kjmin=ijmin+1)
-            tmpm(:,:,2) = getvar(cf_tfil,cn_vosaline,jk,1,npts, kimin=iimin+1, kjmin=ijmin+1)
-            zmask(:,jk) = tmpm(1,:,1)*tmpm(1,:,2)
-            WHERE ( zmask(:,jk) /= 0 ) zmask(:,jk)=1
-            ! do not take special care for land value, as the corresponding velocity point is masked
-            zs(:,jk) = 0.5 * ( tmpm(1,:,1) + tmpm(1,:,2) )
-
-            ! limitation to 'wet' points
-            IF ( SUM(zs(:,jk))  == 0 ) THEN
-               nk=jk ! first vertical point of the section full on land
-               EXIT  ! as soon as all the points are on land
-            ENDIF
-
-            ! temperature
-            tmpm(:,:,1) = getvar(cf_tfil, cn_votemper, jk, 1, npts, kimin=iimin,   kjmin=ijmin+1)
-            tmpm(:,:,2) = getvar(cf_tfil, cn_votemper, jk, 1, npts, kimin=iimin+1, kjmin=ijmin+1)
-            zt(:,jk) = 0.5 * ( tmpm(1,:,1) + tmpm(1,:,2) )
-         END DO
+         ENDDO
+        
+         ! temperature
+         zt(:,:) = getvaryz(cf_tfil, cn_votemper, iimin  , npts, npk, kjmin=ijmin+1 )
+         zz(:,:) = getvaryz(cf_tfil, cn_votemper, iimin+1, npts, npk, kjmin=ijmin+1 )
+         zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
+ 
 
       ELSE                   ! zonal section at j=ijmin=ijmax
-         tmpz(:,:,1)  = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
-         eu(:)        = tmpz(:,1,1)
-         tmpz(:,:,1)  = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin, kjmin=ijmin)
-         rlonlat(:,1) = tmpz(:,1,1)  ! longitude in this case
-         DO jk=1,npk
-            ! initiliaze ddepu to gdept()
-            ddepu(:,jk) = gdept(jk)
+         tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
+         eu(:)        = tmpz(:,1)
+         tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin, kjmin=ijmin)
+         rlonlat(:,1) = tmpz(:,1)  ! longitude in this case
 
-            IF ( lfull ) THEN
-               de3(:,jk)   = e3t1d(jk)
-               tmpm(:,1,1) = e3w1d(jk)
-               tmpm(:,1,2) = e3w1d(jk)
-            ELSE
-               ! vertical metrics (PS case)
-               tmpz(:,:,1)=getvar(cn_fzgr,'e3v_ps',jk, npts, 1, kimin=iimin+1, kjmin=ijmin, ldiom=.TRUE.)
-               de3(:,jk) = tmpz(:,1,1)
-               tmpz(:,:,1)=getvar(cn_fzgr,'e3w_ps',jk,npts,1, kimin=iimin+1, kjmin=ijmin,   ldiom=.TRUE.)
-               tmpz(:,:,2)=getvar(cn_fzgr,'e3w_ps',jk,npts,1, kimin=iimin+1, kjmin=ijmin+1, ldiom=.TRUE.)
+         ! use zt and zs as temporaty variable for e3w
+         IF ( lfull ) THEN
+           DO ji=1, npts
+             de3(ji,:) = e3t1d(:)
+             zt( ji,:) = e3w1d(:)
+             zs( ji,:) = e3w1d(:)
+           ENDDO
+         ELSE
+           de3(:,:) = getvarxz(cn_fzgr,'e3v', ijmin,   npts, npk, kimin=iimin+1 )
+           zt( :,:) = getvarxz(cn_fzgr,'e3w', ijmin,   npts, npk, kimin=iimin+1 )
+           zs( :,:) = getvarxz(cn_fzgr,'e3w', ijmin+1, npts, npk, kimin=iimin+1 )
+         ENDIF
+         
+         DO ji=1, npts
+            ddepu(ji,1:npk) = gdept(:)
+         ENDDO
+
+         DO jk=2, npk
+            DO ji=1,npts
+               ddepu(ji,jk) = ddepu(ji,jk-1) +MIN (zt(ji,jk), zs(ji,jk) )
+            ENDDO
+         ENDDO
+
+         ! normal velocity
+         zu( :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
+
+         ! salinity and deduce umask for the section
+         zs( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
+         zt( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin+1, npts, npk, kimin=iimin+1 )
+         zmask(:,:) = zs(:,:) * zt(:,:)
+         WHERE ( zmask(:,:) /= 0 ) zmask(:,:)=1
+         zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
+
+         ! limitation to 'wet' points
+         DO jk = 1, npk
+            IF ( SUM(zs(:,jk)) == 0 ) THEN
+               nk=jk
+               EXIT
             ENDIF
-
-            IF (jk >= 2 ) THEN
-               DO ji=1,npts
-                  ddepu(ji,jk)= ddepu(ji,jk-1) + MIN(tmpz(ji,1,1), tmpz(ji,1,2))
-               END DO
-            ENDIF
-
-            ! Normal velocity
-            tmpz(:,:,1)=getvar(cf_vfil,cn_vomecrty,jk,npts,1, kimin=iimin+1, kjmin=ijmin)
-            zu(:,jk)=tmpz(:,1,1)
-
-            ! salinity and mask
-            tmpz(:,:,1)=getvar(cf_tfil,cn_vosaline,jk, npts, 1, kimin=iimin+1, kjmin=ijmin)
-            tmpz(:,:,2)=getvar(cf_tfil,cn_vosaline,jk, npts, 1, kimin=iimin+1, kjmin=ijmin+1)
-            zmask(:,jk)=tmpz(:,1,1)*tmpz(:,1,2)
-            WHERE ( zmask(:,jk) /= 0 ) zmask(:,jk)=1
-            ! do not take special care for land value, as the corresponding velocity point is masked
-            zs(:,jk) = 0.5 * ( tmpz(:,1,1) + tmpz(:,1,2) )
-
-            ! limitation to 'wet' points
-            IF ( SUM(zs(:,jk))  == 0 ) THEN
-               nk=jk ! first vertical point of the section full on land
-               EXIT  ! as soon as all the points are on land
-            ENDIF
-
-            ! temperature
-            tmpz(:,:,1)=getvar(cf_tfil,cn_votemper,jk, npts, 1, kimin=iimin+1, kjmin=ijmin)
-            tmpz(:,:,2)=getvar(cf_tfil,cn_votemper,jk, npts, 1, kimin=iimin+1, kjmin=ijmin+1)
-            zt(:,jk) = 0.5 * ( tmpz(:,1,1) + tmpz(:,1,2) )
-         END DO
+         ENDDO
+        
+         ! temperature
+         zt(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin  , npts, npk, kimin=iimin+1 )
+         zz(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin+1, npts, npk, kimin=iimin+1 )
+         zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
 
       ENDIF
 
@@ -491,7 +493,7 @@ PROGRAM cdfsigtrp
       PRINT *,' Total transport in all bins :',TRIM(csection(jsec)),' ',SUM(dtrpbin(jsec,:) )/1.d6
 
       ! free memory for the next section
-      DEALLOCATE ( zu, zt, zs, dsig, ddepu, dhiso, dwtrp, dwtrpbin )
+      DEALLOCATE ( zu, zt, zs, zz, dsig, ddepu, dhiso, dwtrp, dwtrpbin )
       DEALLOCATE ( eu, de3, tmpm, tmpz, zmask, rlonlat             )
 
    END DO   ! next section
