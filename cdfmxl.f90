@@ -139,7 +139,7 @@ PROGRAM cdfmxl
     CASE DEFAULT
       ixtra = ixtra + 1
       SELECT CASE (ixtra )
-      CASE ( 1 ) ; cf_tfil = cldum ; cf_sfil = cf_sfil  ! first free name is a gridT file name
+      CASE ( 1 ) ; cf_tfil = cldum ; cf_sfil = cf_tfil  ! first free name is a gridT file name
       CASE ( 2 ) ; cf_sfil = cldum                      ! second free name ( if any) is a gridS file name
       CASE DEFAULT 
         PRINT *, ' +++ ERROR : Too many files in input !'
