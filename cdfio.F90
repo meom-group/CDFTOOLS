@@ -2123,7 +2123,7 @@ CONTAINS
   END FUNCTION putvarr4
 
 
-  INTEGER(KIND=4) FUNCTION putvare3(kout, kid, ptab, kmax, ktime, kwght)
+  INTEGER(KIND=4) FUNCTION putvare3(kout, kid, ptab, kmax, cd_vert, ktime, kwght)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION putvarr4  ***
     !!            
@@ -2136,6 +2136,7 @@ CONTAINS
     INTEGER(KIND=4),                  INTENT(in) :: kid      ! varid of output variable
     REAL(KIND=4), DIMENSION(kmax),    INTENT(in) :: ptab     ! 1D array to write in file 
     INTEGER(KIND=4),                  INTENT(in) :: kmax     ! number of level in file
+    CHARACTER(LEN=*),                 INTENT(in) :: cd_vert  ! dummy var to indicate vertical profile
     INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: ktime    ! 
     INTEGER(KIND=4), OPTIONAL,        INTENT(in) :: kwght    ! weight of this variable
 
