@@ -135,6 +135,7 @@ PROGRAM cdfcurl
   lchk = chkfile(cf_vfil ) .OR. lchk
   IF ( lchk ) STOP ! missing files
 
+
   ! define new variables for output
   stypvar(1)%cname             = 'socurl'
   IF (ltpoint) stypvar(1)%cname             = 'socurlt'
@@ -164,6 +165,10 @@ PROGRAM cdfcurl
   PRINT *, 'npk    = ',npk
   PRINT *, 'npt    = ',npt
   PRINT *, 'nlev   = ',nlev
+
+  ! choose chunk size for output ... not easy not used if lnc4=.false. but anyway ..
+  stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+  print *, stypvar(1)%ichunk
 
   !test if lev exists
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
