@@ -57,13 +57,15 @@ PROGRAM cdfcurl
   LOGICAL                                   :: ldblpr   = .FALSE. ! flag for dble precision output
   LOGICAL                                   :: lsurf    = .FALSE. ! flag for 1 lev on C grid.
   LOGICAL                                   :: loverf   = .FALSE. ! flag for 1 lev on C grid.
+  LOGICAL                                   :: lnc4=.false.       ! flag for netcdf4 output with chunking and deflation
+
   !!----------------------------------------------------------------------
   CALL ReadCdfNames() 
 
   narg = iargc()
   IF ( narg < 5 ) THEN
      PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l levlist [-T] [-8]...'
-     PRINT *,'           ... [-surf] [-overf] [-o OUT-file ]'
+     PRINT *,'           ... [-surf] [-overf] [-nc4] [-o OUT-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the curl of a vector field, at a specified level.'  
@@ -85,6 +87,7 @@ PROGRAM cdfcurl
      PRINT *,'       -8 : save in double precision instead of standard simple precision.'
      PRINT *,'       -surf : work with single level C-grid (not forcing)'
      PRINT *,'       -overf : store the ratio curl/f where f is the coriolis parameter'
+     PRINT *,'       -nc4 : use netcdf4 output with chunking and deflation 1'
      PRINT *,'       -o OUT-file : specify output file name instead of ',TRIM(cf_out) 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -110,6 +113,8 @@ PROGRAM cdfcurl
      CASE ('-l')
         CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
         CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
+     CASE ( '-nc4' )
+        lnc4 = .true.
      CASE ('-T')
         ltpoint = .true.
      CASE ('-8')
@@ -240,8 +245,8 @@ PROGRAM cdfcurl
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
 
   ! create output fileset
-  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev                      )
-  ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout                   )
+  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev           , ld_nc4=lnc4)
+  ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout      , ld_nc4=lnc4)
   ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
