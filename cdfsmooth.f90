@@ -88,7 +88,7 @@ PROGRAM cdfsmooth
   narg=iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level_list ] ...'
-     PRINT *,'       [-nc4 ] '
+     PRINT *,'       [-a anisotripoc ratio ] [-nc4 ] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Perform a spatial smoothing on the file using a particular'
@@ -121,10 +121,10 @@ PROGRAM cdfsmooth
   ENDIF
   !
   ijarg = 1
-  ilev = 0
-  ranis = 1   ! anisotropic ration for Box car filter
-  ctyp='L'
-  ncut=0      ! hence program exit if none specified on command line
+  ilev  = 0
+  ranis = 1   ! anisotropic ratio for Box car filter
+  ctyp  = 'L'
+  ncut  = 0   ! hence program exit if none specified on command line
   DO WHILE (ijarg <= narg )
      CALL getarg ( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE (cldum)

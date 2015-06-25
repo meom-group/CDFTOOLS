@@ -98,6 +98,45 @@
      CHARACTER(LEN=256) :: cprecision='r4'   !# possible values are i2, r4, r8
   END TYPE variable
 
+  TYPE, PUBLIC  :: ncfile                         ! logical structure reflecting file structure
+     INTEGER(KIND=4)                              :: ncid    ! file ncid
+     INTEGER(KIND=4)                              :: ndims   ! number of dims
+     INTEGER(KIND=4)                              :: nvars   ! number of vars
+     INTEGER(KIND=4)                              :: natts   ! number of global attributes
+     INTEGER(KIND=4)                              :: iunlim  ! ID of unlimited dimension
+     INTEGER(KIND=4)                              :: npi     ! i-size of file
+     INTEGER(KIND=4)                              :: npj     ! j-size of file
+     INTEGER(KIND=4)                              :: npk     ! k-size of file
+     INTEGER(KIND=4)                              :: npt     ! t-size of file
+     INTEGER(KIND=4)                              :: npb     ! time_bound size
+     INTEGER(KIND=4)                              :: idx     ! x dimid
+     INTEGER(KIND=4)                              :: idy     ! y dimid
+     INTEGER(KIND=4)                              :: idz     ! z dimid
+     INTEGER(KIND=4)                              :: idt     ! t dimid
+     INTEGER(KIND=4)                              :: idb     ! time-bound  dimid
+     INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nvatt   ! number of att of each variable (var)
+     INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nvid    ! varid of each variable (var)
+     INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nvdim   ! dimension of each variable (var)
+     INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: itype   ! type of each variable (var)
+     INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nlen    ! len of each dimension ( ndims)
+     INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: idimids ! dimids of each variable (nvar, ndims) 
+     CHARACTER(LEN=255)                            :: c_fnam ! name of working file
+     CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_vnam ! name of each variable (var)
+     CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_dnam ! name of each dimension (ndims)
+     !   extra information for global attribute 
+     INTEGER(KIND=4)                :: number_total          ! DOMAIN_number_total
+     INTEGER(KIND=4)                :: number                ! DOMAIN_number
+     INTEGER(KIND=4), DIMENSION(2)  :: idimensions_ids       ! DOMAIN_dimensions_ids
+     INTEGER(KIND=4), DIMENSION(2)  :: isize_global          ! DOMAIN_size_global
+     INTEGER(KIND=4), DIMENSION(2)  :: isize_local           ! DOMAIN_size_local
+     INTEGER(KIND=4), DIMENSION(2)  :: iposition_first       ! DOMAIN_position_first
+     INTEGER(KIND=4), DIMENSION(2)  :: iposition_last        ! DOMAIN_position_last 
+     INTEGER(KIND=4), DIMENSION(2)  :: ihalo_size_start      ! DOMAIN_halo_size_start
+     INTEGER(KIND=4), DIMENSION(2)  :: ihalo_size_end        ! DOMAIN_halo_size_end
+     CHARACTER(LEN=80)              :: c_type                ! DOMAIN_type
+  END TYPE ncfile
+
+
   INTEGER(KIND=4), PARAMETER :: jp_missing_nm = 3
   
   CHARACTER(LEN=256), DIMENSION(jp_missing_nm) :: & ! take care of same length for each element
@@ -2689,7 +2728,149 @@ CONTAINS
 
   END FUNCTION Get_Env
 
+  FUNCTION GetNcFile (cd_file)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION GetNcFile  ***
+    !!
+    !! ** Purpose :  fills in the ncfile  structure corresponding to the file
+    !!               given in argument 
+    !!
+    !! ** Method  :  Use NF90 function to get the ad-hoc information 
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cd_file
+    TYPE(ncfile)                 :: GetNcFile
 
+    INTEGER(KIND=4) :: jvar, jdim                      ! loop index
+    INTEGER(KIND=4) :: ierr, idx, idy, idz, idt, idb   ! error status and dimids
+    !!----------------------------------------------------------------------
+    GetNcFile%c_fnam = cd_file
+    ierr = NF90_OPEN(cd_file, NF90_NOWRITE, GetNcFile%ncid )
+    ierr = NF90_INQUIRE(GetNcFile%ncid, nDimensions    = GetNcFile%ndims,  &
+         &                              nVariables     = GetNcFile%nvars,  &
+         &                              nAttributes    = GetNcFile%natts,  &
+         &                              unlimitedDimId = GetNcFile%iunlim  )
+    ALLOCATE (GetNcFile%nvdim   (GetNcFile%nvars) )
+    ALLOCATE (GetNcFile%nvid    (GetNcFile%nvars) )
+    ALLOCATE (GetNcFile%c_vnam  (GetNcFile%nvars) )
+    ALLOCATE (GetNcFile%nvatt   (GetNcFile%nvars) )
+    ALLOCATE (GetNcFile%itype   (GetNcFile%nvars) )
+    ALLOCATE (GetNcFile%c_dnam(GetNcFile%ndims) )
+    ALLOCATE (GetNcFile%nlen    (GetNcFile%ndims) )
+    ALLOCATE (GetNcFile%idimids (GetNcFile%nvars,GetNcFile%ndims) )
+
+    DO jvar = 1, GetNcFile%nvars
+       ierr = NF90_INQUIRE_VARIABLE (GetNcFile%ncid, jvar,                &
+            &                         name   = GetNcFile%c_vnam(jvar),    &
+            &                         xtype  = GetNcFile%itype(jvar),     &
+            &                         ndims  = GetNcFile%nvdim(jvar),     &
+            &                         dimids = GetNcFile%idimids(jvar,:), &
+            &                         nAtts  = GetNcFile%nvatt(jvar)      )
+    END DO
+    ! try to infer size of the domain assuming some basis:
+    ! (1) 2D var are (x,y)
+    ! (2) time dim is unlimited
+    ! (3) allowed shape of var : x,y ; x,y,t ; x,y,z,t  ; x,y,z   ; t   ; z 
+
+    ! Look for x y z t tbound dim id
+    idx=-1 ; idy=-1 ; idz=-1 ; idt=-1 ; idb=-1
+
+    DO jvar = 1, GetNcFile%nvars
+       GetNcFile%nvid(jvar) = jvar
+       IF ( GetNcFile%nvdim(jvar) == 2 ) THEN  
+          IF ( GetNcFile%idimids(jvar,2) == GetNcFile%iunlim ) THEN  ! catch a time_bounds, time_counter var
+            idb = GetNcFile%idimids(jvar,1)
+          ELSE
+          idx = GetNcFile%idimids(jvar,1) 
+          idy = GetNcFile%idimids(jvar,2) 
+          ENDIF
+       ELSE IF ( GetNcFile%nvdim(jvar) == 3 ) THEN 
+          idx = GetNcFile%idimids(jvar,1) 
+          idy = GetNcFile%idimids(jvar,2) 
+          IF ( GetNcFile%idimids(jvar,3) == GetNcFile%iunlim ) THEN
+             idt = GetNcFile%idimids(jvar,3) 
+          ELSE
+             idz = GetNcFile%idimids(jvar,3) 
+          ENDIF
+       ELSE IF ( GetNcFile%nvdim(jvar) == 4 ) THEN
+          idx = GetNcFile%idimids(jvar,1)  
+          idy = GetNcFile%idimids(jvar,2)  
+          idz = GetNcFile%idimids(jvar,3)  
+          IF ( GetNcFile%idimids(jvar,4) /= GetNcFile%iunlim ) THEN
+             PRINT *, ' 4D variables must have an unlimited time dimension ...'
+             PRINT *, ' Cannot process this file :', TRIM(cd_file)
+             STOP
+          ENDIF
+          idt = GetNcFile%idimids(jvar,4) 
+       ENDIF
+    END DO
+
+    GetNcFile%idx=idx
+    GetNcFile%idy=idy
+    GetNcFile%idz=idz
+    GetNcFile%idt=idt
+    GetNcFile%idb=idb
+
+    IF ( idx == -1 .OR. idy == -1 ) THEN 
+       PRINT *, ' ERROR : no x, y dimensions found'
+       STOP
+    ENDIF
+
+    ! get dimensions
+    GetNcFile%npi=0 ; GetNcFile%npj=0 ; GetNcFile%npk=0 ; GetNcFile%npt=0 ; GetNcFile%npb=0
+
+    ierr = NF90_INQUIRE_DIMENSION( GetNcFile%ncid, idx,         &
+         &                        name = GetNcFile%c_dnam(idx), &
+         &                        len  = GetNcFile%npi          )
+    GetNcFile%nlen(idx) = GetNcFile%npi
+    ierr = NF90_INQUIRE_DIMENSION( GetNcFile%ncid, idy,         &
+         &                        name = GetNcFile%c_dnam(idy), &
+         &                        len  = GetNcFile%npj          )
+    GetNcFile%nlen(idy) = GetNcFile%npj
+
+    IF ( idz /= -1 ) THEN
+       ierr = NF90_INQUIRE_DIMENSION( GetNcFile%ncid, idz,         &
+            &                        name = GetNcFile%c_dnam(idz), &
+            &                        len  = GetNcFile%npk          )
+       GetNcFile%nlen(idz) = GetNcFile%npk
+    ENDIF
+
+    IF ( idt /= -1 ) THEN
+       ierr = NF90_INQUIRE_DIMENSION( GetNcFile%ncid, idt,         &
+            &                        name = GetNcFile%c_dnam(idt), &
+            &                        len  = GetNcFile%npt          )
+       GetNcFile%nlen(idt) = GetNcFile%npt
+    ENDIF
+
+    IF ( idb /= -1 ) THEN
+       ierr = NF90_INQUIRE_DIMENSION( GetNcFile%ncid, idb,         &
+            &                        name = GetNcFile%c_dnam(idb), &
+            &                        len  = GetNcFile%npb          )
+       GetNcFile%nlen(idb) = GetNcFile%npb
+    ENDIF
+    ! fill in DOMAIN attributes 
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_number_total'   , GetNcFile%number_total       )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_number      '   , GetNcFile%number             )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_dimensions_ids' , GetNcFile%idimensions_ids(:) )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_size_global'    , GetNcFile%isize_global(:)    )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_size_local'     , GetNcFile%isize_local(:)     )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_position_first' , GetNcFile%iposition_first(:) )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_position_last'  , GetNcFile%iposition_last(:)  )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_halo_size_start', GetNcFile%ihalo_size_start(:))
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_halo_size_end'  , GetNcFile%ihalo_size_end(:)  )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_type'           , GetNcFile%c_type             )
+
+    ! CORRECT for Halo :
+    GetNcfile%isize_local(:)     = GetNcfile%isize_local(:)     - GetNcFile%ihalo_size_start(:) - GetNcFile%ihalo_size_end(:)
+    GetNcFile%iposition_first(:) = GetNcFile%iposition_first(:) + GetNcFile%ihalo_size_start(:)
+    GetNcFile%iposition_last(:)  = GetNcFile%iposition_last(:)  - GetNcFile%ihalo_size_end(:)
+
+    GetNcFile%npi       = GetNcfile%isize_local(1)
+    GetNcFile%npj       = GetNcfile%isize_local(2)
+    GetNcFile%nlen(idx) = GetNcFile%npi
+    GetNcFile%nlen(idy) = GetNcFile%npj
+
+  END FUNCTION GetNcFile
 
 END MODULE cdfio
 
