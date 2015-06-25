@@ -12,13 +12,15 @@ NCDF = -I/opt/netcdf/4.2-intel/include -L /opt/netcdf/4.2-intel/lib/ -lnetcdf -l
 #       -lnetcdf
 #HDF5 = 
 #ZLIB =
+#NC4 =
+NC4 = -Dkey_netcdf4
  
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O   -fp-model precise $(NCDF) $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
-#FFLAGS= -O   -fpe0 -CB -traceback -g -ftrapuv -fp-model precise $(NCDF) $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
-#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(HDF5) $(ZLIB)
-#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) -assume byterecl -convert big_endian 
+FFLAGS= -O   -fp-model precise $(NCDF) $(NC4)  $(HDF5) $(ZLIB)  -fp-model precise
+#FFLAGS= -O   -fpe0 -CB -traceback -g -ftrapuv -fp-model precise $(NCDF) $(NC4) $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
+#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) $(HDF5) $(ZLIB)
+#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) -assume byterecl -convert big_endian 
 LMPI=-lmpich
 
 INSTALL=/usr/local/cdftools_3.0/bin
