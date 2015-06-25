@@ -47,7 +47,7 @@ PROGRAM cdfsmooth
   INTEGER(KIND=4), PARAMETER                    :: jp_boxc=4         ! box car id
   INTEGER(KIND=4)                               :: jk, jt, jvar      ! dummy loop index
   INTEGER(KIND=4)                               :: npiglo, npjglo    ! size of the domain
-  INTEGER(KIND=4)                               :: npk, npt          ! size of the domain
+  INTEGER(KIND=4)                               :: npk, npkf, npt    ! size of the domain
   INTEGER(KIND=4)                               :: narg, iargc       ! browse arguments
   INTEGER(KIND=4)                               :: ijarg             ! argument index for browsing line
   INTEGER(KIND=4)                               :: ncut, nband       ! cut period/ length, bandwidth
@@ -79,12 +79,16 @@ PROGRAM cdfsmooth
   CHARACTER(LEN=256)                            :: ctyp              ! filter type
   CHARACTER(LEN=256)                            :: cldum             ! dummy character variable
   CHARACTER(LEN=256)                            :: clklist           ! ciphered k-list of level
+ 
+  LOGICAL                                       :: lnc4 = .false.    ! flag for netcdf4 output with chinking and deflation
+
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level_list ]'
+     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level_list ] ...'
+     PRINT *,'       [-nc4 ] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Perform a spatial smoothing on the file using a particular'
@@ -106,6 +110,7 @@ PROGRAM cdfsmooth
      PRINT *,'       -k level_list  : levels to be filtered (default = all levels)'
      PRINT *,'               level_list is a comma-separated list of levels.'
      PRINT *,'                  the syntax 1-3,6,9-12 will select 1 2 3 6 9 10 11 12'
+     PRINT *,'       -nc4 : produce netcdf4 output file with chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Output file name is build from input file name with indication'
@@ -128,7 +133,8 @@ PROGRAM cdfsmooth
      CASE ( '-t' ) ; CALL getarg ( ijarg, ctyp    ) ; ijarg=ijarg+1 
      CASE ( '-k' ) ; CALL getarg ( ijarg, clklist ) ; ijarg=ijarg+1 
           CALL GetList (clklist, iklist, ilev )
-     CASE ( '-a' ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
+     CASE ( '-a'  ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
+     CASE ( '-nc4') ;  lnc4=.true.
      END SELECT
   ENDDO
 
@@ -175,13 +181,17 @@ PROGRAM cdfsmooth
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)
   npk    = getdim (cf_in,cn_z, cdtrue=cv_dep, kstatus=ierr)
+  npkf   = npk
   IF ( ierr /= 0 ) THEN
      npk   = getdim (cf_in,'z', cdtrue=cv_dep, kstatus=ierr)
+     npkf  = npk
      IF ( ierr /= 0 ) THEN
         npk   = getdim (cf_in, 'sigma', cdtrue=cv_dep, kstatus=ierr)
+        npkf  = npk
         IF ( ierr /= 0 ) THEN 
            PRINT *,' assume file with no depth'
-           npk=0
+           npk  = 1  ! Data have 1 level...
+           npkf = 0  ! file have no deptht
         ENDIF
      ENDIF
   ENDIF
@@ -199,13 +209,20 @@ PROGRAM cdfsmooth
   ALLOCATE (stypvar(nvars) )
   ALLOCATE (id_var(nvars),ipk(nvars),id_varout(nvars) )
 
-  IF ( npk /= 0 ) THEN ! file with depth dimension
     ALLOCATE ( gdeptmp(npk)  )
-    gdeptmp(:) = getvar1d(cf_in, cv_dep, npk )  
-  ENDIF
+    IF (npkf /= 0 ) THEN 
+       gdeptmp(:) = getvar1d(cf_in, cv_dep, npk )  
+    ELSE
+       gdeptmp(:)=0.  ! dummy value
+    ENDIF
 
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:) = getvarname(cf_in, nvars, stypvar)
+
+  DO jvar=1,nvars
+     ! choose chunk size for output ... not easy not used if lnc4=.false. but anyway ..
+     stypvar(jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+  ENDDO
 
   ! ipk gives the number of level or 0 if not a T[Z]YX  variable
   ipk(:)     = getipk (cf_in, nvars, cdep=cv_dep)
@@ -220,15 +237,15 @@ PROGRAM cdfsmooth
      ALLOCATE(iklist(ilev) )
      iklist(:)=(/ (jk,jk=1,npk) /)
   ENDIF
-  ! JM : what happen with npk = 0 ?
+
   ALLOCATE ( gdep(ilev ) )
   gdep(:) = (/ (gdeptmp(iklist(jk)), jk=1,ilev) /)
 
   ! create output file taking the sizes in cf_in
   PRINT *, 'Output file name : ', TRIM(cf_out)
-  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdep=cv_dep)
-  ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout       )
-  ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk, pdep=gdep, cdep=cv_dep)
+  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npkf, cdep=cv_dep, ld_nc4=lnc4)
+  ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout        , ld_nc4=lnc4)
+  ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npkf, pdep=gdep, cdep=cv_dep)
   tim   = getvar1d(cf_in, cv_tim, npt)
   !
   DO jvar = 1,nvars
