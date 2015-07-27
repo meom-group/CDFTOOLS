@@ -43,6 +43,8 @@ PROGRAM cdfmoy_freq
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var, ipk, id_varout, ibox
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, rmean
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d
+  REAL(KIND=4), DIMENSION(:,:,:,:), ALLOCATABLE :: v4d
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: time, time_mean
 
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab         ! Arrays for cumulated values
@@ -63,12 +65,15 @@ PROGRAM cdfmoy_freq
   LOGICAL                                       :: lleap
   LOGICAL                                       :: lerr
   LOGICAL                                       :: lnc4 = .FALSE.
+  LOGICAL                                       :: lv3d = .FALSE.
+  LOGICAL                                       :: lv4d = .FALSE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoy_freq -i IN-file -f averaging-length [-nc4] [-o output root] '
+     PRINT *,' usage : cdfmoy_freq -i IN-file -f averaging-length [ -v3d] [-v4d] '
+     PRINT *,'              [-nc4] [-o output root] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       This program takes a file covering 1 year of data (evenly spaced)'
@@ -87,6 +92,8 @@ PROGRAM cdfmoy_freq
      PRINT *,'                 5d, 1mo, 1y ; 4mo stands for seasonal means )'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-v3d] : use 3d variable (x,y,t) : save execution time, increase memory'
+     PRINT *,'       [-v4d] : use 4d variable (x,y,z,t): save execution time, increase memory'
      PRINT *,'       [-nc4] : use netcdf4 with chunking and deflation for the output file'
      PRINT *,'       [-o output_root] : specify the root of the output file name instead '
      PRINT *,'                   of ',TRIM(cf_out),'. Final name will have <freq> appened'
@@ -114,6 +121,8 @@ PROGRAM cdfmoy_freq
      CASE ( '-f'   ) ; CALL getarg(ijarg, cfreq_o ) ; ijarg = ijarg + 1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg + 1
      CASE ( '-nc4' ) ; lnc4=.TRUE.
+     CASE ( '-v3d' ) ; lv3d=.TRUE.
+     CASE ( '-v4d' ) ; lv4d=.TRUE.
      CASE DEFAULT 
         PRINT *,' +++ ERROR : Option ', TRIM(cldum) ,' not understood !'
         STOP 1
@@ -270,6 +279,7 @@ PROGRAM cdfmoy_freq
 
   ALLOCATE( dtab(npiglo,npjglo), v2d(npiglo,npjglo) )
   ALLOCATE( rmean(npiglo,npjglo)                    )
+  IF (lv3d)   ALLOCATE( v3d(npiglo,npjglo,npt)      )
 
   nvars = getnvar(cf_in)
   PRINT *,' nvars =', nvars
@@ -305,6 +315,9 @@ PROGRAM cdfmoy_freq
         ! skip these variable
      ELSE
         PRINT *,' Working with ', TRIM(cv_names(jvar))
+        IF (lv4d)   ALLOCATE( v4d(npiglo, npjglo,ipk(jvar),npt)  )
+
+        IF (lv4d)  v4d(:,:,:,:) = getvar4d(cf_in, cv_names(jvar),npiglo, npjglo,ipk(jvar),npt)
         DO jk=1,ipk(jvar)
 
            ! initialisation
@@ -312,11 +325,20 @@ PROGRAM cdfmoy_freq
 
            ! time loop
            it1=1
+           IF ( lv3d )  v3d(:,:,:)=getvar3dt(cf_in, cv_names(jvar),jk,npiglo, npjglo, npt)
            DO jframe = 1, nframes
               it2=it1+ibox(jframe)-1
               DO jtt=it1, it2
                  ! load data
-                 v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jtt )
+                  IF ( lv4d) THEN 
+                       v2d(:,:) = v4d(:,:,jk,jtt)
+                  ELSE
+                    IF ( lv3d ) THEN
+                       v2d(:,:)  = v3d(:,:,jtt)
+                    ELSE
+                       v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jtt )
+                    ENDIF
+                  ENDIF
                  dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
                  IF ( lcaltmean ) THEN
                     dtotal_time = dtotal_time + time(jtt) 
@@ -334,7 +356,7 @@ PROGRAM cdfmoy_freq
            lcaltmean=.FALSE.
 
         ENDDO ! loop to next level
-
+        IF (lv4d)   DEALLOCATE( v4d )
      END IF
   END DO ! loop to next var in file
 
