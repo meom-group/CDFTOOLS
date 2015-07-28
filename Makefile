@@ -63,6 +63,9 @@ cdfmoyt: cdfio.o   cdfmoyt.f90
 cdfenstat: cdfio.o   cdfenstat.f90
 	$(F90) cdfenstat.f90 -o $(BINDIR)/cdfenstat cdfio.o modcdfnames.o  $(FFLAGS)
 
+cdfenstat2: cdfio.o   cdfenstat2.f90
+	$(F90) cdfenstat2.f90 -o $(BINDIR)/cdfenstat2 cdfio.o modcdfnames.o  $(FFLAGS)
+
 cdfmoy_freq: cdfio.o   cdfmoy_freq.f90
 	$(F90) cdfmoy_freq.f90 -o $(BINDIR)/cdfmoy_freq cdfio.o  modcdfnames.o $(FFLAGS)
 

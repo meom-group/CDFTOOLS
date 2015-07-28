@@ -1666,7 +1666,8 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpi,kpj,kpt)  :: getvar3dt      ! 3D REAL 
 
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount
-    INTEGER(KIND=4)               :: incid, id_var
+    INTEGER(KIND=4)               :: jt
+    INTEGER(KIND=4)               :: incid, id_var, iid
     INTEGER(KIND=4)               :: istatus
     INTEGER(KIND=4)               :: iimin, ijmin, itmin
     INTEGER(KIND=4)               :: itime, ilog
@@ -1704,8 +1705,14 @@ CONTAINS
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
     CALL ERR_HDL(NF90_INQ_VARID ( incid, cdvar, id_var) )
-    istart=(/iimin, ijmin, kk, itmin/)
-    icount=(/kpi,   kpj,   1,   kpt /)
+    istatus= NF90_INQUIRE_VARIABLE(incid, id_var, ndims=iid)
+    IF ( iid == 4 ) THEN
+      istart=(/iimin, ijmin, kk, itmin/)
+      icount=(/kpi,   kpj,    1, kpt  /)
+    ELSEIF  ( iid == 3 ) THEN ! assume X Y T ( cannot be X, Z, T nor Y Z T )
+      istart=(/iimin, ijmin, itmin, 1/)
+      icount=(/kpi,   kpj,   kpt  , 1/)
+    ENDIF
 
     spval = getspval ( cdfile, cdvar )
 
@@ -1730,7 +1737,7 @@ CONTAINS
        IF ( ao /= 0.) lao=.TRUE.
     ENDIF
 
-    istatus=NF90_GET_VAR(incid,id_var,getvar3dt, start=istart,count=icount)
+    istatus=NF90_GET_VAR(incid,id_var, getvar3dt(:,:,:), start=istart,count=icount)
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar3dt for ', TRIM(cdvar)
        CALL ERR_HDL(istatus)
@@ -1763,7 +1770,7 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpi,kpj,kpz,kpt) :: getvar4d      ! 3D REAL 
 
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount
-    INTEGER(KIND=4)               :: incid, id_var
+    INTEGER(KIND=4)               :: incid, id_var, iid
     INTEGER(KIND=4)               :: istatus
     INTEGER(KIND=4)               :: iimin, ijmin, ikmin, itmin
     INTEGER(KIND=4)               :: ilog
@@ -1807,8 +1814,14 @@ CONTAINS
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
     CALL ERR_HDL(NF90_INQ_VARID ( incid, cdvar, id_var) )
-    istart=(/iimin, ijmin, ikmin, itmin/)
-    icount=(/kpi,   kpj,   kpz,   kpt  /)
+    istatus= NF90_INQUIRE_VARIABLE(incid, id_var, ndims=iid)
+    IF ( iid == 4 ) THEN
+      istart=(/iimin, ijmin, ikmin, itmin/)
+      icount=(/kpi,   kpj,   kpz,   kpt  /)
+    ELSEIF  ( iid == 3 ) THEN ! assume X Y T ( cannot be X, Z, T nor Y Z T )
+      istart=(/iimin, ijmin, itmin, 1/)
+      icount=(/kpi,   kpj,   kpt,   1/)
+    ENDIF
 
     spval = getspval ( cdfile, cdvar )
 
