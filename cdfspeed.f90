@@ -42,13 +42,14 @@ PROGRAM cdfspeed
   TYPE (variable), DIMENSION(1)              :: stypvar              ! structure for attibutes
 
   LOGICAL                                    :: lforcing             ! forcing flag
+  LOGICAL                                    :: lnc4 = .false.       ! flag for netcdf4 chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfspeed  U-file V-file U-var V-var [-t T-file] ...'
-     PRINT *,'                  ... [-lev level_list]' 
+     PRINT *,'            ... [-nc4] [-o output_file ] [-lev level_list]' 
      PRINT *,'    PURPOSE :'
      PRINT *,'       Computes the speed of ocean currents or wind speed'
      PRINT *,'       '
@@ -70,6 +71,8 @@ PROGRAM cdfspeed
      PRINT *,'       [-lev level_list ] : indicate a list of levels to be processed'
      PRINT *,'                 If not used, all levels are processed.'
      PRINT *,'                 This option should be the last on the command line'
+     PRINT *,'       [-nc4 ] use netcdf4 output with chunking and deflation'
+     PRINT *,'       [-o output file ] use specified output file instead of ',TRIM(cf_out)
      PRINT *,'    '
      PRINT *,'    OUTPUT :'
      PRINT *,'       Output on ',TRIM(cf_out),'  variable U '
@@ -90,6 +93,10 @@ PROGRAM cdfspeed
      CASE ( '-t' ) 
        CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1
        IF ( chkfile (cf_tfil) ) STOP ! missing file
+     CASE ( '-nc4' ) 
+       lnc4=.true.
+     CASE ( '-o' ) 
+       CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE DEFAULT
        cf_ufil = cldum
        CALL getarg(ijarg, cf_vfil ) ; ijarg = ijarg + 1
@@ -141,6 +148,10 @@ PROGRAM cdfspeed
      nlev = nvpk
   END IF
 
+  ! choose chunk size for output ... not easy not used if lnc4=.false. but
+  ! anyway ..
+  stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+
   ! define new variables for output
   stypvar(1)%cname             = 'U'
   stypvar(1)%cunits            = 'm.s-1'
@@ -155,9 +166,9 @@ PROGRAM cdfspeed
   ! create output fileset
   IF (lforcing ) THEN
      ipk(1) = 1 !  2D  no dep variable
-     ncout  = create      (cf_out, cf_vfil, npiglo, npjglo, 0         )
-     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
-     ierr   = putheadervar(ncout,  cf_vfil, npiglo, npjglo, 0         )
+     ncout  = create      (cf_out, cf_vfil, npiglo, npjglo, 0         , ld_nc4=lnc4 )
+     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
+     ierr   = putheadervar(ncout,  cf_vfil, npiglo, npjglo, 0                       )
      nlev=1 ; nklevel(nlev) = 1
   ELSE
      ALLOCATE ( gdept(nlev), gdeptall(npk) )
@@ -166,9 +177,9 @@ PROGRAM cdfspeed
        gdept(jlev) = gdeptall( nklevel(jlev) )
      END DO
      ipk(1) = nlev
-     ncout  = create      (cf_out, cf_tfil, npiglo, npjglo, nlev              )
-     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout         )
-     ierr   = putheadervar(ncout,  cf_tfil, npiglo, npjglo, nlev,  pdep=gdept )
+     ncout  = create      (cf_out, cf_tfil, npiglo, npjglo, nlev      , ld_nc4=lnc4   )
+     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4   )
+     ierr   = putheadervar(ncout,  cf_tfil, npiglo, npjglo, nlev,  pdep=gdept         )
   END IF
 
   ! Allocate arrays
