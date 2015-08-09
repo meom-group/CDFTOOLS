@@ -102,6 +102,9 @@ cdfvsig: cdfio.o eos.o modutils.o  cdfvsig.f90
 cdfspeed: cdfio.o  cdfspeed.f90
 	$(F90) cdfspeed.f90 -o $(BINDIR)/cdfspeed cdfio.o modcdfnames.o $(FFLAGS)
 
+cdfspeedlog: cdfio.o  cdfspeedlog.f90
+	$(F90) cdfspeedlog.f90 -o $(BINDIR)/cdfspeedlog cdfio.o modcdfnames.o $(FFLAGS)
+
 cdfimprovechk: cdfio.o  cdfimprovechk.f90
 	$(F90) cdfimprovechk.f90 -o $(BINDIR)/cdfimprovechk cdfio.o modcdfnames.o $(FFLAGS)
 

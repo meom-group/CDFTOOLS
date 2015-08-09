@@ -4,7 +4,16 @@
 #  $Id: macro.jade 539 2011-07-11 10:33:35Z molines $
 # -------------------------------------------------------------
 
-NCDF=-I $(NETCDF_INC_DIR) -L $(NETCDF_LIB_DIR) -I $(NETCDFFHOME)/include -L $(NETCDFFHOME)/lib -lnetcdff -lnetcdf -L $(HDF5HOME)/lib -lhdf5_hl -lhdf5 -ldl -lm -lz
+#NCDF=-I $(NETCDF_INC_DIR) -L $(NETCDF_LIB_DIR) -I $(NETCDFFHOME)/include -L $(NETCDFFHOME)/lib -lnetcdff -lnetcdf -L $(HDF5HOME)/lib -lhdf5_hl -lhdf5 -ldl -lm -lz
+#NCDF=-I $(NETCDF_INC_DIR) -L $(NETCDF_LIB_DIR) -I $(NETCDFFHOME)/include -L $(NETCDFFHOME)/lib -lnetcdff -lnetcdf #-L $(HDF5HOME)/lib -lhdf5_hl -lhdf5 -ldl -lm -lz
+#NCDF =  -I  /opt/software/libraries/netcdf/bullxmpi/netcdf-fortran-4.4.1-4.3.3-rc2/include -I  /opt/software/libraries/netcdf/bullxmpi/netcdf-4.3.3-rc2/include -L  /opt/software/libraries/netcdf/bullxmpi/netcdf-4.3.3-rc2/lib -L /opt/software/libraries/netcdf/bullxmpi/netcdf-fortran-4.4.1-4.3.3-rc2/lib -lnetcdf -lnetcdff
+
+#NCDF = -I /opt/software/libraries/netcdf/netcdf-4.2.1.1/include -I /opt/software/libraries/netcdf/netcdf-4.2_hdf5_1.8.14/include -L /opt/software/libraries/netcdf/netcdf-4.2.1.1/lib -L /opt/software/libraries/netcdf/netcdf-4.2_hdf5_1.8.14/lib  -lnetcdf -lnetcdff
+
+NCDF= -I/scratch/cnt0024/hmg2840/molines/include -L/scratch/cnt0024/hmg2840/molines/lib -lnetcdf -lnetcdff
+
+#NC4=
+NC4=-Dkey_netcdf4
 
  
 F90=ifort
@@ -12,7 +21,9 @@ MPF90=mpif90
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian
 
-FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian
+FFLAGS= -O  $(NCDF) $(NC4) 
+#-fpe0 -ftrapuv -traceback -CB -g 
+#-fp-model precise
 #FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g
 
 LMPI=-lmpich
