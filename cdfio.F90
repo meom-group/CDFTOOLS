@@ -1809,7 +1809,7 @@ CONTAINS
     llog=.FALSE.
     lsf=.FALSE.
     lao=.FALSE.
-    PRINT *,' GETVAR3D '
+    PRINT *,' GETVAR4D '
     PRINT *,'  ', TRIM(cdfile)
     PRINT *,'  ', TRIM(cdvar )
     PRINT *,'    KPI KPJ KPZ, KPT ',kpi, kpj, kpz, kpt
