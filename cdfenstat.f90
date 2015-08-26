@@ -41,13 +41,17 @@ PROGRAM cdfenstat
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
 
-  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                ! array to read a layer of data
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d                ! array to read a layer of data for all files
+  REAL(KIND=4), DIMENSION(:,:,:,:), ALLOCATABLE :: v4d                ! array to read a layer of data for all files
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zspval_in          ! input missing value
 
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabn, dtab2n      ! arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabb, dtab2b      ! arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtmp               ! temporary array
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dtabn, dtab2n      ! arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dtabb, dtab2b      ! arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dtmp               ! temporary array
+  REAL(KIND=8), DIMENSION(:,:,:,:),   ALLOCATABLE :: d4tabn, d4tab2n    ! arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:,:),   ALLOCATABLE :: d4tabb, d4tab2b    ! arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:,:,:),   ALLOCATABLE :: d4tmp               ! temporary array
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtotal_time        ! to compute mean time
 
   CHARACTER(LEN=256)                            :: cf_in              ! input file names
@@ -61,12 +65,13 @@ PROGRAM cdfenstat
 
   LOGICAL                                       :: lspval0 = .FALSE.  ! cdfmoy_chsp flag
   LOGICAL                                       :: lnc4    = .FALSE.  ! flag for netcdf4 chinking and deflation
+  LOGICAL                                       :: lv4d    = .FALSE.  ! flag for netcdf4 chinking and deflation
   !!----------------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfenstat list_of_model_files [-spval0] [-nc4] [-o OUT-file] '
+     PRINT *,' usage : cdfenstat list_of_model_files [-spval0] [-nc4] [-v4d] -o OUT-file]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average of a list of files given as arguments.' 
      PRINT *,'       This program handle multi time-frame files is such a way that'
@@ -95,6 +100,7 @@ PROGRAM cdfenstat
      PRINT *,'               This option is usefull if missing_values differ from files '
      PRINT *,'               to files; it was formely done by cdfmoy_chsp).'
      PRINT *,'       [ -nc4 ] : output file will be in netcdf4, with chunking and deflation'
+     PRINT *,'       [ -v4d ] : uses 4D arrays for improved performance (use more memory !)'
      PRINT *,'       [ -o OUT-file ] : specify a name for output file instead of '//TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -118,6 +124,8 @@ PROGRAM cdfenstat
         lspval0 = .TRUE.
      CASE ( '-nc4   ' )   ! option to reset spval to 0 in the output files
         lnc4 = .TRUE.
+     CASE ( '-v4d  '  )   ! option to reset spval to 0 in the output files
+        lv4d = .TRUE.
      CASE ( '-o   ' )   ! option to reset spval to 0 in the output files
         CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE DEFAULT         ! then the argument is a file
@@ -170,8 +178,12 @@ PROGRAM cdfenstat
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
 
-  ALLOCATE( dtabn(npiglo,npjglo), dtab2n(npiglo,npjglo), v2d(npiglo,npjglo) )
-  ALLOCATE( dtabb(npiglo,npjglo), dtab2b(npiglo,npjglo), dtmp(npiglo,npjglo))
+  IF ( .NOT. lv4d ) THEN 
+  ALLOCATE( v3d(npiglo,npjglo,npt) )
+  ALLOCATE( dtabn(npiglo,npjglo,npt), dtab2n(npiglo,npjglo,npt)) 
+  ALLOCATE( dtabb(npiglo,npjglo,npt), dtab2b(npiglo,npjglo,npt), dtmp(npiglo,npjglo,npt))
+  ENDIF
+
   ALLOCATE( dtotal_time(npt), tim(npt) )
 
   nvars = getnvar(cf_in)
@@ -236,40 +248,74 @@ PROGRAM cdfenstat
   tim(:) = dtotal_time(:)/ nfil
   ierr   = putvar1d(ncout,  tim, npt, 'T')
 
-  DO jrec = 1, npt
 
      DO jv = 1,nvars
         IF ( cv_nam(jv) == cn_vlon2d .OR. &     ! nav_lon
-             cv_nam(jv) == cn_vlat2d ) THEN     ! nav_lat
+           & cv_nam(jv) == cn_vlat2d .OR. &
+           & cv_nam(jv) == 'none'    ) THEN     ! nav_lat
            ! skip these variable
         ELSE
-           PRINT *,' Working with ', TRIM(cv_nam(jv)), ipk(jv), jrec
+           PRINT *,' Working with ', TRIM(cv_nam(jv)), ipk(jv)
+           IF ( lv4d) THEN
+             ALLOCATE( v4d(npiglo,npjglo,ipk(jv),npt) )
+             ALLOCATE( d4tabn(npiglo,npjglo,ipk(jv),npt), d4tab2n(npiglo,npjglo,ipk(jv),npt) ) 
+             ALLOCATE( d4tabb(npiglo,npjglo,ipk(jv),npt), d4tab2b(npiglo,npjglo,ipk(jv),npt), d4tmp(npiglo,npjglo,ipk(jv),npt))
+
+              DO jfil = 1, nfil
+                 cf_in     = cf_list(jfil)
+                 v4d(:,:,:,:)  = getvar4d(cf_in, cv_nam(jv), npiglo, npjglo, ipk(jv), npt )
+                 IF ( jfil == 1 ) THEN
+                    d4tabb(:,:,:,:)=v4d(:,:,:,:) ; d4tab2b(:,:,:,:)=0.d0
+                    CYCLE
+                 ENDIF
+                 IF ( lspval0 )  WHERE ( v4d == zspval_in(jv) )  v4d = 0.  ! change missing values to 0
+                 d4tmp(:,:,:,:)   = v4d(:,:,:,:) - d4tabb(:,:,:,:)
+                 d4tabn(:,:,:,:)  = d4tabb(:,:,:,:)  + d4tmp(:,:,:,:) / jfil
+                 d4tab2n(:,:,:,:) = d4tab2b(:,:,:,:) + d4tmp(:,:,:,:) * ( v4d(:,:,:,:) - d4tabn(:,:,:,:) )
+                 ! swap tabs
+                 d4tabb(:,:,:,:)  = d4tabn(:,:,:,:)
+                 d4tab2b(:,:,:,:) = d4tab2n(:,:,:,:)
+              END DO
+
+              ! store variable on outputfile
+              DO jrec = 1, npt
+                DO jk=1, ipk(jv)
+                ierr = putvar(ncout, id_varout(jv),       SNGL(d4tabn(:,:,jk,jrec)),                 jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
+                ierr = putvar(ncout, id_varout(jv+nvars), SQRT(SNGL(d4tab2n(:,:,jk,jrec))/(nfil-1)), jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
+                ENDDO
+              ENDDO
+
+             ! Deqllocate array for this variable
+             DEALLOCATE( v4d, d4tabn, d4tab2n, d4tabb, d4tab2b, d4tmp )
+           ELSE
            DO jk = 1, ipk(jv)
               PRINT *,'level ',jk
               DO jfil = 1, nfil
                  cf_in     = cf_list(jfil)
-                 v2d(:,:)  = getvar(cf_in, cv_nam(jv), jk, npiglo, npjglo, ktime=jrec )
+                 v3d(:,:,:)  = getvar3dt(cf_in, cv_nam(jv), jk, npiglo, npjglo, npt )
                  IF ( jfil == 1 ) THEN
-                    dtabb(:,:)=v2d(:,:) ; dtab2b(:,:)=0.d0
+                    dtabb(:,:,:)=v3d(:,:,:) ; dtab2b(:,:,:)=0.d0
                     CYCLE
                  ENDIF
-                 IF ( lspval0 )  WHERE (v2d == zspval_in(jv))  v2d = 0.  ! change missing values to 0
-                 dtmp(:,:)   = v2d(:,:) - dtabb(:,:)
-                 dtabn(:,:)  = dtabb(:,:)  + dtmp(:,:) / jfil
-                 dtab2n(:,:) = dtab2b(:,:) + dtmp(:,:) * ( v2d(:,:) - dtabn(:,:) )
+                 IF ( lspval0 )  WHERE ( v3d == zspval_in(jv) )  v3d = 0.  ! change missing values to 0
+                 dtmp(:,:,:)   = v3d(:,:,:) - dtabb(:,:,:)
+                 dtabn(:,:,:)  = dtabb(:,:,:)  + dtmp(:,:,:) / jfil
+                 dtab2n(:,:,:) = dtab2b(:,:,:) + dtmp(:,:,:) * ( v3d(:,:,:) - dtabn(:,:,:) )
                  ! swap tabs
-                 dtabb(:,:)  = dtabn(:,:)
-                 dtab2b(:,:) = dtab2n(:,:)
+                 dtabb(:,:,:)  = dtabn(:,:,:)
+                 dtab2b(:,:,:) = dtab2n(:,:,:)
               END DO
 
               ! store variable on outputfile
-              ierr = putvar(ncout, id_varout(jv),       SNGL(dtabn(:,:)),                 jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
-              ierr = putvar(ncout, id_varout(jv+nvars), SQRT(SNGL(dtab2n(:,:))/(nfil-1)), jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
-
+              DO jrec = 1, npt
+                ierr = putvar(ncout, id_varout(jv),       SNGL(dtabn(:,:,jrec)),                 jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
+                ierr = putvar(ncout, id_varout(jv+nvars), SQRT(SNGL(dtab2n(:,:,jrec))/(nfil-1)), jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
+              ENDDO
            END DO  ! loop to next level
+           ENDIF 
+
         END IF
      END DO ! loop to next var in file
-  END DO ! loop to next record in input file
 
   ierr = closeout(ncout)
 
