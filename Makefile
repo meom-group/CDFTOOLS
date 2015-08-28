@@ -32,7 +32,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
-       cdfgradT cdfeddyscale_pass1 cdfeddyscale \
+       cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2levitusgrid3d\
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
@@ -210,6 +210,9 @@ cdfpvor: eos.o cdfio.o  cdfpvor.f90
 
 cdfgradT: cdfio.o  cdfgradT.f90
 	$(F90) cdfgradT.f90 -o $(BINDIR)/cdfgradT cdfio.o  modcdfnames.o  $(FFLAGS) 
+
+cdfhgradb: cdfio.o  eos.o cdfhgradb.f90
+	$(F90) cdfhgradb.f90 -o $(BINDIR)/cdfhgradb cdfio.o  eos.o modcdfnames.o  $(FFLAGS) 
 
 cdfkempemekeepe: cdfio.o  cdfkempemekeepe.f90
 	$(F90) cdfkempemekeepe.f90 -o $(BINDIR)/cdfkempemekeepe cdfio.o  modcdfnames.o $(FFLAGS) 
