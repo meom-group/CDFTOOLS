@@ -164,14 +164,19 @@ PROGRAM cdfbuoyflx
 
   CALL CreateOutput
 
+  ! always allocated
   ALLOCATE ( zmask(npiglo,npjglo), wnet(npiglo,npjglo), zalbet(npiglo,npjglo), zbeta(npiglo, npjglo) )
-  ALLOCATE ( zcoefq(npiglo,npjglo), zcoefw(npiglo,npjglo) )
+  ALLOCATE ( zcoefq(npiglo,npjglo), zcoefw(npiglo,npjglo), qnet(npiglo,npjglo) )
+  ALLOCATE ( bw_net(npiglo,npjglo) ,bh_net(npiglo,npjglo)) 
+  ALLOCATE ( buoyancy_fl(npiglo,npjglo), zsst(npiglo,npjglo), zsss(npiglo,npjglo) )
+  ! allocated only for full output
+  IF ( .NOT. lsho ) THEN
   ALLOCATE ( evap(npiglo,npjglo), precip(npiglo,npjglo), runoff(npiglo,npjglo), wdmp(npiglo,npjglo) )
   ALLOCATE ( wice(npiglo,npjglo), precip_runoff(npiglo,npjglo) )
-  ALLOCATE ( qlat(npiglo,npjglo), qsb(npiglo,npjglo), qlw(npiglo,npjglo), qsw(npiglo,npjglo), qnet(npiglo,npjglo) )
-  ALLOCATE ( b_evap(npiglo,npjglo), b_precip(npiglo,npjglo), b_runoff(npiglo,npjglo), b_wdmp(npiglo,npjglo),bw_net(npiglo,npjglo) ) 
-  ALLOCATE ( b_qlat(npiglo,npjglo), b_qsb(npiglo,npjglo),    b_qlw(npiglo,npjglo),    b_qsw(npiglo,npjglo), bh_net(npiglo,npjglo))
-  ALLOCATE ( buoyancy_fl(npiglo,npjglo), zsst(npiglo,npjglo), zsss(npiglo,npjglo) )
+  ALLOCATE ( qlat(npiglo,npjglo), qsb(npiglo,npjglo), qlw(npiglo,npjglo), qsw(npiglo,npjglo) )
+  ALLOCATE ( b_evap(npiglo,npjglo), b_precip(npiglo,npjglo), b_runoff(npiglo,npjglo), b_wdmp(npiglo,npjglo) ) 
+  ALLOCATE ( b_qlat(npiglo,npjglo), b_qsb(npiglo,npjglo),    b_qlw(npiglo,npjglo),    b_qsw(npiglo,npjglo)  )
+  ENDIF
 
   DO jt = 1, npt
      ! read sss for masking purpose and sst
@@ -179,6 +184,24 @@ PROGRAM cdfbuoyflx
      zmask=1. ; WHERE ( zsss == 0 ) zmask=0.
      zsst(:,:) = getvar(cf_tfil, cn_votemper, 1, npiglo, npjglo, ktime=jt)
 
+     ! total water flux (emps)
+     wnet(:,:) = getvar(cf_flxfil, cn_sowaflcd, 1, npiglo, npjglo, ktime=jt )*86400.*zmask(:,:)          ! mm/days
+     qnet(:,:)=getvar(cf_flxfil, cn_sohefldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
+
+     ! buoyancy flux
+     zalbet(:,:)= albet ( zsst, zsss, 0., npiglo, npjglo)
+     zbeta (:,:)= beta  ( zsst, zsss, 0., npiglo, npjglo)
+     zcoefq(:,:)= -zbeta * zalbet /Cp * 1.e6
+     zcoefw(:,:)=  zbeta * zsss/(1-zsss/1000.)/86400. *1.e6   ! division by 86400 to get back water fluxes in kg/m2/s
+
+     buoyancy_fl=0. ; bh_net=0. ; bw_net=0.
+     WHERE ( zmask == 1 ) 
+        bh_net(:,:)= zcoefq * qnet
+        bw_net(:,:)= zcoefw * wnet
+        buoyancy_fl(:,:) = bh_net + bw_net
+     END WHERE
+
+     IF ( .NOT. lsho ) THEN
      ! Evap : 
      qlat(:,:)= getvar(cf_flxfil, cn_solhflup, 1, npiglo, npjglo, ktime=jt) *zmask(:,:)    ! W/m2 
      evap(:,:)= -1.* qlat(:,:) /Lv*86400. *zmask(:,:)                                    ! mm/days
@@ -188,9 +211,6 @@ PROGRAM cdfbuoyflx
 
      ! Runoff  ! take care : not a model output (time_counter may disagree ... jmm
      runoff(:,:)= getvar(cf_rnfil, 'sorunoff', 1, npiglo, npjglo)*86400.*zmask(:,:)         ! mm/days
-
-     ! total water flux (emps)
-     wnet(:,:) = getvar(cf_flxfil, cn_sowaflcd, 1, npiglo, npjglo, ktime=jt )*86400.*zmask(:,:)          ! mm/days
 
      ! fsalt = contribution of ice freezing and melting to salinity ( + = freezing, - = melting )Q
      wice(:,:) = getvar(cf_flxfil, cn_iowaflup, 1, npiglo, npjglo, ktime=jt )*86400.*zmask(:,:)          ! mm/days
@@ -205,32 +225,23 @@ PROGRAM cdfbuoyflx
      qsb(:,:)= getvar(cf_flxfil, cn_sosbhfup,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
      qlw(:,:)= getvar(cf_flxfil, cn_solwfldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
      qsw(:,:)= getvar(cf_flxfil, cn_soshfldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
-     qnet(:,:)=getvar(cf_flxfil, cn_sohefldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
 
-     ! buoyancy flux
-     zalbet(:,:)= albet ( zsst, zsss, 0., npiglo, npjglo)
-     zbeta (:,:)= beta  ( zsst, zsss, 0., npiglo, npjglo)
-     zcoefq(:,:)= -zbeta * zalbet /Cp * 1.e6
-     zcoefw(:,:)=  zbeta * zsss/(1-zsss/1000.)/86400. *1.e6   ! division by 86400 to get back water fluxes in kg/m2/s
 
      buoyancy_fl=0. ; bh_net=0. ; b_qlat=0.  ; b_qlw=0.  ; b_qsw=0.   ; b_qsb=0.
      bw_net=0.      ; b_evap=0. ; b_precip=0.; b_wdmp=0. ; b_runoff=0.
 
      WHERE (zsss /= 0 ) 
-        bh_net(:,:)= zcoefq * qnet
         b_qlat(:,:)= zcoefq * qlat
         b_qlw (:,:)= zcoefq * qlw
         b_qsw (:,:)= zcoefq * qsw
         b_qsb (:,:)= zcoefq * qsb
 
-        bw_net(:,:)= zcoefw * wnet
         b_evap(:,:)= zcoefw * evap
         b_precip(:,:)= -zcoefw * precip
         b_runoff(:,:)= -zcoefw * runoff
         b_wdmp(:,:)= zcoefw * wdmp
 
         !    buoyancy_fl(:,:) = zcoefq * qnet +zcoefw * wnet
-        buoyancy_fl(:,:) = bh_net + bw_net
      END WHERE
 
      ! Write output file
