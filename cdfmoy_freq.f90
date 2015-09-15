@@ -56,7 +56,7 @@ PROGRAM cdfmoy_freq
   CHARACTER(LEN=256)                            :: cfreq_o             ! output frequency
   CHARACTER(LEN=256)                            :: cldum               ! dummy character arguments
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var nam
-  CHARACTER(LEN=2  ), DIMENSION(4)              :: cfreq_a=(/'h ','d ','mo','y'/) ! authorized keys for frequency specif
+  CHARACTER(LEN=2  ), DIMENSION(4)              :: cfreq_a=(/'h ','d ','mo','y '/) ! authorized keys for frequency specif
   CHARACTER(LEN=2  )                            :: cfr_id              ! current output freq id
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar
