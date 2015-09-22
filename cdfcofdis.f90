@@ -65,7 +65,7 @@ PROGRAM cdfcofdis
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the distance to the coast and create a file with the ',TRIM(cv_out)
-     PRINT *,'        variable, indicating the distance to the coast.his computation is done'
+     PRINT *,'        variable, indicating the distance to the coast. This computation is done'
      PRINT *,'        for every model level, unless -surf option is used.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
