@@ -169,6 +169,7 @@ PROGRAM cdfbuoyflx
   ALLOCATE ( zcoefq(npiglo,npjglo), zcoefw(npiglo,npjglo), qnet(npiglo,npjglo) )
   ALLOCATE ( bw_net(npiglo,npjglo) ,bh_net(npiglo,npjglo)) 
   ALLOCATE ( buoyancy_fl(npiglo,npjglo), zsst(npiglo,npjglo), zsss(npiglo,npjglo) )
+
   ! allocated only for full output
   IF ( .NOT. lsho ) THEN
   ALLOCATE ( evap(npiglo,npjglo), precip(npiglo,npjglo), runoff(npiglo,npjglo), wdmp(npiglo,npjglo) )
@@ -243,6 +244,7 @@ PROGRAM cdfbuoyflx
 
         !    buoyancy_fl(:,:) = zcoefq * qnet +zcoefw * wnet
      END WHERE
+     ENDIF
 
      ! Write output file
      IF ( lsho ) THEN
