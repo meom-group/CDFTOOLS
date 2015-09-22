@@ -94,7 +94,7 @@ PROGRAM cdfbuoyflx
      PRINT *,'       Compute (or read) the net heat and water fluxes.'
      PRINT *,'       Compute the buoyancy heat and water fluxes components.'
      PRINT *,'       Compute the net buoyancy fluxes.'
-     PRINT *,'       Save sss and sst.'
+     PRINT *,'       Save sss and sst. '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       T-file   : netcdf file with ' 
