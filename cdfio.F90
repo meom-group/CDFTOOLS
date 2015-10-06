@@ -810,10 +810,10 @@ CONTAINS
     !!-----------------------------------------------------------
     clnam = '-------------'
 
-    IF ( PRESENT(kstatus) ) kstatus=0
-    IF ( PRESENT(ldexact) ) lexact=ldexact
-    IF ( cdim_name == 'x' ) lexact=.true.  ! fix for XIOS files having now a new dimension xaxis_bound which match getdim ('x') ....
-                                           ! more clever fix must be found for identification of the dimensions in the input files
+    IF ( PRESENT(kstatus)  ) kstatus=0
+    IF ( PRESENT(ldexact)  ) lexact=ldexact
+    IF ( cdim_name == cn_x ) lexact=.true.  ! fix for XIOS files having now a new dimension xaxis_bound which match getdim ('x') ....
+                                            ! more clever fix must be found for identification of the dimensions in the input files
     istatus=NF90_OPEN(cdfile, NF90_NOWRITE, incid)
     IF ( istatus == NF90_NOERR ) THEN
        istatus=NF90_INQUIRE(incid, ndimensions=idims)
