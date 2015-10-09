@@ -26,10 +26,13 @@ PROGRAM cdfbuoyflx
   !!               We also add sst and SSS for convenience.
   !!
   !!               Buoyancy fluxes are also computed as :
-  !!                  BF = -1/rho (alpha x TF  - beta SF )
+  !!                  BF = g/rho ( alpha x TF  - beta x SF ) 
   !!                       (TF = thermal part, SF = haline part )
-  !!                  TF = 1/(rho x Cp)* Q
-  !!                  SF = 1/(1-SSS) x (E-P) x SSS
+  !!                  TF = Qnet/cp
+  !!                  SF = rho x (E-P) x SSS
+  !!  ** Reference :
+  !!              Atmosphere, Ocean and Climate Dynamics: An Introductory Text. By John Marshall,
+  !!              R. Alan Plumb ( Academic Press, 2008 ) Eq. 11.4 p 225. 
   !!
   !! History : 2.1  : 01/2008  : J.M. Molines : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
@@ -51,13 +54,15 @@ PROGRAM cdfbuoyflx
   INTEGER(KIND=4)                           :: np_varout=25
   INTEGER(KIND=4)                           :: ncout, ierr
   INTEGER(KIND=4)                           :: jt                                ! dummy loop index
-  INTEGER(KIND=4)                           :: narg, iargc, ijarg, idefarg       ! command line 
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg                ! command line 
   INTEGER(KIND=4)                           :: npiglo, npjglo, npt               ! size of the domain
   INTEGER(KIND=4), ALLOCATABLE, DIMENSION(:):: ipk, id_varout  
 
   ! Physical constants
   REAL(KIND=4)                              :: Lv = 2.5e6                        ! latent HF <--> evap conversion
   REAL(KIND=4)                              :: Cp = 4000.                        ! specific heat of water 
+  REAL(KIND=4)                              :: Rho = 1026.                       ! reference density
+  REAL(KIND=4)                              :: Grav = 9.81                       ! Gravity
 
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim, zdep                         ! time counter, deptht
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask, zcoefq, zcoefw             ! work array
@@ -74,6 +79,8 @@ PROGRAM cdfbuoyflx
   CHARACTER(LEN=256)                        :: cf_tfil ,cf_flxfil, cf_rnfil      ! input file gridT, flx and runoff
   CHARACTER(LEN=256)                        :: cf_out='buoyflx.nc'               ! output file
   CHARACTER(LEN=256)                        :: cldum                             ! dummy character variable
+  CHARACTER(LEN=256)                        :: cv_sss                            ! Actual name for SSS
+  CHARACTER(LEN=256)                        :: cv_sst                            ! Actual name for SST
 
   TYPE(variable), ALLOCATABLE, DIMENSION(:) :: stypvar                           ! structure for attributes
 
@@ -86,8 +93,8 @@ PROGRAM cdfbuoyflx
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbuoyflx  T-file RNF-file [-f FLX-file ] [-nc4] [-o output_file] ...'
-     PRINT *,'                    ... [-short ]'
+     PRINT *,' usage : cdfbuoyflx  -t T-file [-r RNF-file] [-f FLX-file ] [-sss SSS-name]'
+     PRINT *,'     ... [-sst SST-name] [-nc4] [-o output_file]  [-short ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute (or read) the heat and water fluxes components.'
@@ -97,11 +104,17 @@ PROGRAM cdfbuoyflx
      PRINT *,'       Save sss and sst. '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file   : netcdf file with ' 
-     PRINT *,'       RNF-file : netcdf file with runoff ' 
+     PRINT *,'       -t T-file   : netcdf file with temperature and salinity '
+     PRINT *,'      '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -f FLX-file ] : Use this option if fluxes are not saved in gridT files.'
+     PRINT *,'       [ -r RNF-file ] : Specify a run-off file if runoff not in T-file '
+     PRINT *,'                         nor in FLX-file'
+     PRINT *,'       [ -f FLX-file ] : Use this option if fluxes are not saved in gridT files'
+     PRINT *,'       [ -sss SSS-name ] : Use this option if SSS variable name in T-file '
+     PRINT *,'                          differ from ',TRIM(cn_vosaline)
+     PRINT *,'       [ -sst SST-name ] : Use this option if SST variable name in T-file '
+     PRINT *,'                          differ from ',TRIM(cn_votemper)
      PRINT *,'       [ -nc4 ] Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'               This option is effective only if cdftools are compiled with'
      PRINT *,'               a netcdf library supporting chunking and deflation.'
@@ -122,13 +135,27 @@ PROGRAM cdfbuoyflx
      STOP
   ENDIF
   ijarg   = 1
-  idefarg = 1
   cf_flxfil='none'
+  cf_rnfil='none'
+  cv_sss=cn_vosaline
+  cv_sst=cn_votemper
+
   DO   WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
      CASE ( '-f' )     ! specify  flx files
         CALL getarg (ijarg, cf_flxfil) ; ijarg = ijarg + 1
+        lchk = lchk .OR. chkfile (cf_flxfil)
+     CASE ( '-t' )     ! specify  T files
+        CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+        lchk = lchk .OR. chkfile (cf_tfil  )
+     CASE ( '-r' )     ! specify  runoff files
+        CALL getarg (ijarg, cf_rnfil) ; ijarg = ijarg + 1
+        lchk = lchk .OR. chkfile (cf_rnfil )
+     CASE ( '-sss' )     ! specify  runoff files
+        CALL getarg (ijarg, cv_sss) ; ijarg = ijarg + 1
+     CASE ( '-sst' )     ! specify  runoff files
+        CALL getarg (ijarg, cv_sst) ; ijarg = ijarg + 1
      CASE ( '-nc4' )   !  allow chunking and deflation on output
         lnc4 = .true.
      CASE ( '-o' )     ! specify  output files
@@ -136,23 +163,19 @@ PROGRAM cdfbuoyflx
      CASE ( '-short' ) ! use short output ( only buoyancy fluxes )
         lsho = .true. ; np_varout = 1
      CASE DEFAULT
-        SELECT CASE ( idefarg )
-        CASE ( 1 ) ; cf_tfil  = cldum ; idefarg=idefarg + 1 
-        CASE ( 2 ) ; cf_rnfil = cldum ; idefarg=idefarg + 1
-        CASE DEFAULT 
-           PRINT *, ' Too many arguments in the command line '
-           STOP
-        END SELECT
+        PRINT *, " Option ", TRIM(cldum)," not supported "
+        STOP
      END SELECT
   ENDDO
+  IF (lchk ) STOP ! missing files
+
   IF ( cf_flxfil == 'none' ) THEN
     cf_flxfil = cf_tfil
   ENDIF
-
-  lchk =           chkfile (cf_tfil  )
-  lchk = lchk .OR. chkfile (cf_flxfil)
-  lchk = lchk .OR. chkfile (cf_rnfil )
-  IF (lchk ) STOP ! missing files
+  ! If no runoff file specified, assume that run off are in flx file [ which must be read by the way ... ]
+  IF ( cf_rnfil == 'none' ) THEN
+    cf_rnfil = cf_flxfil
+  ENDIF
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -181,25 +204,25 @@ PROGRAM cdfbuoyflx
 
   DO jt = 1, npt
      ! read sss for masking purpose and sst
-     zsss(:,:) = getvar(cf_tfil, cn_vosaline, 1, npiglo, npjglo, ktime=jt)
+     zsss(:,:) = getvar(cf_tfil, cv_sss, 1, npiglo, npjglo, ktime=jt)
      zmask=1. ; WHERE ( zsss == 0 ) zmask=0.
-     zsst(:,:) = getvar(cf_tfil, cn_votemper, 1, npiglo, npjglo, ktime=jt)
+     zsst(:,:) = getvar(cf_tfil, cv_sst, 1, npiglo, npjglo, ktime=jt)
 
      ! total water flux (emps)
-     wnet(:,:) = getvar(cf_flxfil, cn_sowaflcd, 1, npiglo, npjglo, ktime=jt )*86400.*zmask(:,:)          ! mm/days
-     qnet(:,:)=getvar(cf_flxfil, cn_sohefldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
+     wnet(:,:) = getvar(cf_flxfil, cn_sowaflup, 1, npiglo, npjglo, ktime=jt )*86400.*zmask(:,:)          ! mm/days
+     qnet(:,:)=  getvar(cf_flxfil, cn_sohefldo, 1, npiglo, npjglo, ktime=jt )*zmask(:,:)    ! W/m2 
 
      ! buoyancy flux
      zalbet(:,:)= albet ( zsst, zsss, 0., npiglo, npjglo)
      zbeta (:,:)= beta  ( zsst, zsss, 0., npiglo, npjglo)
-     zcoefq(:,:)= -zbeta * zalbet /Cp * 1.e6
-     zcoefw(:,:)=  zbeta * zsss/(1-zsss/1000.)/86400. *1.e6   ! division by 86400 to get back water fluxes in kg/m2/s
+     zcoefq(:,:)= Grav/Rho *( zbeta * zalbet /Cp ) * 1.e6
+     zcoefw(:,:)= Grav* zbeta * zsss / 86400. /1000 * 1.e6   ! division by 86400 and 1000 to get back water fluxes in m/s
 
      buoyancy_fl=0. ; bh_net=0. ; bw_net=0.
      WHERE ( zmask == 1 ) 
         bh_net(:,:)= zcoefq * qnet
         bw_net(:,:)= zcoefw * wnet
-        buoyancy_fl(:,:) = bh_net + bw_net
+        buoyancy_fl(:,:) = ( bh_net - bw_net ) 
      END WHERE
 
      IF ( .NOT. lsho ) THEN
@@ -228,8 +251,8 @@ PROGRAM cdfbuoyflx
      qsw(:,:)= getvar(cf_flxfil, cn_soshfldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
 
 
-     buoyancy_fl=0. ; bh_net=0. ; b_qlat=0.  ; b_qlw=0.  ; b_qsw=0.   ; b_qsb=0.
-     bw_net=0.      ; b_evap=0. ; b_precip=0.; b_wdmp=0. ; b_runoff=0.
+     b_qlat=0.  ; b_qlw=0.    ; b_qsw=0.   ; b_qsb=0.
+     b_evap=0.  ; b_precip=0. ; b_wdmp=0.  ; b_runoff=0.
 
      WHERE (zsss /= 0 ) 
         b_qlat(:,:)= zcoefq * qlat
@@ -315,7 +338,7 @@ CONTAINS
     IF ( lsho ) THEN
        ! total buoyancy flux
        stypvar(1)%cname= 'buoyancy_fl'
-       stypvar(1)%cunits='1e-6 kg/m2/s'
+       stypvar(1)%cunits='1e-6 m2/s3'
        stypvar(1)%rmissing_value=0.
        stypvar(1)%valid_min= -100.
        stypvar(1)%valid_max= 100.
@@ -358,7 +381,7 @@ CONTAINS
        stypvar(16)%cname= 'sssdmp_b'             ;  stypvar(21)%cname= 'solar_b'
        stypvar(17)%cname= 'watnet_b'             ;  stypvar(22)%cname= 'heatnet_b'
 
-       stypvar(13:17)%cunits='1e-6 kg/m2/s'      ;  stypvar(18:22)%cunits='1e-6 kg/m2/s'
+       stypvar(13:17)%cunits='1e-6 m2/s3'      ;  stypvar(18:22)%cunits='1e-6 m2/s3'
        stypvar(13:17)%rmissing_value=0.          ;  stypvar(18:22)%rmissing_value=0.
        stypvar(13:17)%valid_min= -100.           ;  stypvar(18:22)%valid_min= -500.
        stypvar(13:17)%valid_max= 100.            ;  stypvar(18:22)%valid_max= 500.
@@ -377,7 +400,7 @@ CONTAINS
 
        ! total buoyancy flux
        stypvar(23)%cname= 'buoyancy_fl'
-       stypvar(23)%cunits='1e-6 kg/m2/s'
+       stypvar(23)%cunits='1e-6 m2/s3'
        stypvar(23)%rmissing_value=0.
        stypvar(23)%valid_min= -100.
        stypvar(23)%valid_max= 100.
