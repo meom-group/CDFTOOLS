@@ -390,6 +390,9 @@ cdfrnf025to05: cdfio.o  cdfrnf025to05.f90
 cdfstatcoord: cdfio.o  cdfstatcoord.f90
 	$(F90) cdfstatcoord.f90  -o $(BINDIR)/cdfstatcoord cdfio.o modcdfnames.o $(FFLAGS)
 
+cdfpdf: cdfio.o  cdfpdf.f90
+	$(F90) cdfpdf.f90  -o $(BINDIR)/cdfpdf cdfio.o modcdfnames.o $(FFLAGS)
+
 cdfmaxmoc: cdfio.o cdfmaxmoc.f90 
 	$(F90) cdfmaxmoc.f90  -o $(BINDIR)/cdfmaxmoc cdfio.o modcdfnames.o $(FFLAGS)
 
