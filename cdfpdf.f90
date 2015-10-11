@@ -73,6 +73,7 @@ PROGRAM cdfpdf
      PRINT *,'       [-zoom imin imax jmin jmax] : define a sub-area, in model '
      PRINT *,'                                     coordinates' 
      PRINT *,'       [ -lev level ] : choose a level for pdf computation '
+     PRINT *,'              If not specified, takes level 1 '
      PRINT *,'       [-range vmin vmax nbin  ] : define the limit for binning '
      PRINT *,'                               and number of bins.'
      PRINT *,'       [-o OUT-file] : specify name for netcdf output file'
@@ -94,7 +95,7 @@ PROGRAM cdfpdf
   ENDIF
 
   ijarg = 1
-  ilev  = 0
+  ilev  = 1
   l_nozoom = .true.
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
@@ -132,6 +133,7 @@ PROGRAM cdfpdf
   PRINT *, 'npk    =', npk
   PRINT *, 'npt    =', npt
   
+  ! if no zoom specified, take the full domain
   IF ( l_nozoom ) THEN
     imin=1 ; imax=npiglo
     jmin=1 ; jmax=npjglo
@@ -139,13 +141,18 @@ PROGRAM cdfpdf
 
   npi=imax - imin + 1
   npj=jmax - jmin + 1
+  ALLOCATE ( zvar(npi,npj) )
 
+  ! takle the case when no range specified for binning
   IF ( l_norange ) THEN
     nbin =100
     spval = getspval( cf_ifil, cv_nam) 
     ! scan the file for min and max
+     vmin=1.e10
+     vmax=-1.e10
     DO jt=1,npt
-      zvar(:,:) = getvar( cf_ifil, cv_nam, npi, npj, ilev, ktime=jt, kimin=imin, kjmin=jmin )
+      zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj, ktime=jt, kimin=imin, kjmin=jmin )
+      zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj,  ktime=jt, kimin=imin, kjmin=jmin )
       vmin=MIN(vmin, MINVAL(zvar, (zvar /= spval) ) )
       vmax=MAX(vmax, MAXVAL(zvar, (zvar /= spval) ) )
     ENDDO
@@ -169,7 +176,7 @@ PROGRAM cdfpdf
 
 
   ! Allocate memory
-  ALLOCATE ( zvar(npi,npj), zcount(nbin,npt), vlim(nlim) )
+  ALLOCATE ( zcount(nbin,npt), vlim(nlim) )
   ALLOCATE ( ztimes(npt), ztimed(nbin,npt) , zlon(nbin,npt))
 
   DO ji=1, nlim 
@@ -210,8 +217,6 @@ PROGRAM cdfpdf
         ENDDO
       ENDDO
 
-      PRINT *, ' JT = ', jt
-
       WRITE(numout,*) 
       WRITE(numout,*) vlim(1),  below
       DO ji=1, nbin
@@ -246,7 +251,6 @@ CONTAINS
       stypvar(1)%conline_operation = 'N/A'
 
       CALL SetGlobalAtt (cglobal)
-
 
       ! create output fileset
       ncout = create      (cf_out, 'none', nbin, npt, 0      )
