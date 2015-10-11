@@ -5,9 +5,8 @@ PROGRAM cdfpdf
   !!  ** Purpose : Build the pdf for a given variable on a given area.
   !!
   !!  ** Method  : Establish a data binning and count the number of element
-  !!               in each bin.  Binning can be defined either using a
-  !!               minimum value + the size of a bin and the number of bin
-  !!               or using a minimum value, maximum value, and bin size
+  !!               in each bin.  Binning is defined from given  minimum 
+  !!               value, maximum value, and number of bins
   !!
   !! History : 3.0  : 10/2015  : J.M. Molines : Original code
   !!----------------------------------------------------------------------
@@ -15,9 +14,9 @@ PROGRAM cdfpdf
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_3.0 , MEOM 2015
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2015, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
   IMPLICIT NONE
@@ -38,7 +37,7 @@ PROGRAM cdfpdf
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvar, zcount, ztimed, zlon
   REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: vlim, ztimes
   REAL(KIND=4)                              :: vmin, vmax, bin_siz
-  REAL(KIND=4)                              :: below, above
+  REAL(KIND=4)                              :: below, above, spval
 
   CHARACTER(LEN=256)                        :: cf_ifil
   CHARACTER(LEN=256)                        :: cf_asc='pdf.txt'
@@ -51,6 +50,7 @@ PROGRAM cdfpdf
 
   LOGICAL                                   :: lchk
   LOGICAL                                   :: l_nozoom=.true.
+  LOGICAL                                   :: l_norange=.true.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -60,6 +60,10 @@ PROGRAM cdfpdf
      PRINT *,'       [-lev level ] [-range vmin vmax nbin ] [-o OUT-ncfile] [-a OUT-ascfile]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
+     PRINT *,'       Build the pdf of a given variable, on a given area, according'
+     PRINT *,'       to bin specifications passed as argument of the program. If no' 
+     PRINT *,'       particular specification is passed to the program, build 100 '
+     PRINT *,'       bins between minimum and maximum value of the variable.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file : input file '
@@ -77,6 +81,15 @@ PROGRAM cdfpdf
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
+     PRINT *,'          (1) ascii file with bin number, value and mean field in bin'
+     PRINT *,'          (2) netcdf file for 2d array where x dimension corresponds to bins'
+     PRINT *,'              y dimension corresponds to time, thus the field value being '
+     PRINT *,'              an array count(bin,time). The output file follows the nemo '
+     PRINT *,'              standards, even, if nav_lon, nav_lat are no more longitude or'
+     PRINT *,'              latitude.'
+     PRINT *,'              netdf variable is <IN-var>_pdf'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO : '
      STOP
   ENDIF
 
@@ -97,7 +110,7 @@ PROGRAM cdfpdf
              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmax
      CASE ( '-lev') 
              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
-     CASE ( '-range') 
+     CASE ( '-range') ; l_norange = .false.
              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmin
              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmax
              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbin
@@ -126,6 +139,17 @@ PROGRAM cdfpdf
 
   npi=imax - imin + 1
   npj=jmax - jmin + 1
+
+  IF ( l_norange ) THEN
+    nbin =100
+    spval = getspval( cf_ifil, cv_nam) 
+    ! scan the file for min and max
+    DO jt=1,npt
+      zvar(:,:) = getvar( cf_ifil, cv_nam, npi, npj, ilev, ktime=jt, kimin=imin, kjmin=jmin )
+      vmin=MIN(vmin, MINVAL(zvar, (zvar /= spval) ) )
+      vmax=MAX(vmax, MAXVAL(zvar, (zvar /= spval) ) )
+    ENDDO
+  ENDIF
 
   bin_siz=(vmax - vmin ) / nbin
   nlim = nbin+1
