@@ -1231,6 +1231,10 @@ CONTAINS
     CHARACTER(LEN=256)                          :: clvar
     LOGICAL                                     :: lliom=.false., llperio=.false.
     LOGICAL                                     :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
+    !!
+    INTEGER(KIND=4)                :: ityp
+    !INTEGER(KIND=4), DIMENSION(:)  :: dimids
+    !INTEGER(KIND=4)                :: nAtts
     !!---------------------------------------------------------------------
     llperio=.false.
     IF (PRESENT(klev) ) THEN
@@ -1280,10 +1284,13 @@ CONTAINS
 
     IF ( lliom) THEN  ! try to detect if input file is a zgr IOM file, looking for e3t_0
       istatus=NF90_INQ_VARID( incid,'e3t_0', id_var)
+      istatus=NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim) !, dimids, nAtts)
       IF ( istatus == NF90_NOERR ) THEN
         ! iom file , change names
         ! now try to detect if it is v2 or v3, in v3, e3t_ps exist and is a 2d variable
          istatus=NF90_INQ_VARID( incid,'e3t_ps', id_var)
+         !istatus2=NF90_INQUIRE_VAR( incid, id_var, 'e3t_0', xtype, ndims, dimids, nAtts)
+         PRINT *, 'e3t_0 has' , inbdim, 'dimensions'
          IF ( istatus == NF90_NOERR ) THEN  
            ! case of NEMO_v3 zfr files
            ! look for mbathy and out it in memory, once for all
@@ -1335,10 +1342,20 @@ CONTAINS
            ENDIF
           ! zgr v3
           SELECT CASE ( clvar )
-           CASE ('e3u_ps')  ; clvar='e3t_ps'
-           CASE ('e3v_ps')  ; clvar='e3t_ps'
+           CASE ('e3u_ps')  ; clvar='e3u_ps'
+           CASE ('e3v_ps')  ; clvar='e3v_ps'
            CASE ('e3w_ps')  ; clvar='e3w_ps'
           END SELECT
+
+         ELSEIF ( inbdim>2 ) THEN
+          !  case of NEMO_V3.6 STABLE zgr file
+          SELECT CASE ( clvar )
+           CASE ('e3t_ps')  ; clvar='e3t_0'
+           CASE ('e3u_ps')  ; clvar='e3u_0'
+           CASE ('e3v_ps')  ; clvar='e3v_0'
+           CASE ('e3w_ps')  ; clvar='e3w_0'
+          END SELECT
+          
          ELSE
           ! zgr v2
           SELECT CASE ( clvar )
@@ -2139,7 +2156,7 @@ CONTAINS
     ! gdepw(time,z,y_a,x_a)            gdepw_0(t,z)
     !   e3t(time,z,y_a,x_a)            e3t_0(t,z)
     !   e3w(time,z,y_a,x_a)            e3w_0(t,z)
-    istatus=NF90_INQ_VARID ( incid,'e3t_0',id_var)
+    istatus=NF90_INQ_VARID ( incid,'gdept_0',id_var)
     IF ( istatus == NF90_NOERR) THEN
      icount(1)=kk ; icount(3)=1
      SELECT CASE (clvar)
@@ -2151,6 +2168,20 @@ CONTAINS
            clvar='e3t_0'
         CASE ('e3w')
            clvar='e3w_0'
+      END SELECT
+    ENDIF
+    istatus=NF90_INQ_VARID ( incid,'gdept_1d',id_var)
+    IF ( istatus == NF90_NOERR) THEN
+     icount(1)=kk ; icount(3)=1
+     SELECT CASE (clvar)
+        CASE ('gdepw') 
+           clvar='gdepw_1d'
+        CASE ('gdept')
+           clvar='gdept_1d'
+        CASE ('e3t')
+           clvar='e3t_1d'
+        CASE ('e3w')
+           clvar='e3w_1d'
       END SELECT
     ENDIF
 
