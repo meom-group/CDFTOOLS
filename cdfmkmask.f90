@@ -205,7 +205,11 @@ PROGRAM cdfmkmask
    END IF
 
 
-   ipk(1:4)                       = npk
+   IF ( npk == 0 ) THEN
+    ipk(1:4)                      = 1
+   ELSE
+    ipk(1:4)                       = npk
+   ENDIF
    stypvar(1)%cname               = 'tmask'
    stypvar(2)%cname               = 'umask'
    stypvar(3)%cname               = 'vmask'
