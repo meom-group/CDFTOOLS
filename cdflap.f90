@@ -130,10 +130,11 @@ PROGRAM cdflap
   PRINT *, ' TYP ', ct_in
 
   ! check if files exists
+  lchk=.false.
   IF ( l_metric ) THEN
-  lchk = chkfile (cn_fhgr)
-  lchk = chkfile (cn_fzgr) .OR. lchk
-  lchk = chkfile (cn_fmsk) .OR. lchk
+    lchk = chkfile (cn_fhgr)
+    lchk = chkfile (cn_fzgr) .OR. lchk
+    lchk = chkfile (cn_fmsk) .OR. lchk
   ENDIF
   lchk = chkfile (cf_in  ) .OR. lchk
   IF ( lchk ) STOP ! missing files
