@@ -25,6 +25,7 @@ PROGRAM cdflap
   INTEGER(KIND=4)                              :: npk, npt           ! size of the domain
   INTEGER(KIND=4)                              :: npkv               ! vertical size of the variable
   INTEGER(KIND=4)                              :: narg, iargc, ijarg ! browse line
+  INTEGER(KIND=4)                              :: ii                 ! browse line
   INTEGER(KIND=4)                              :: ncout              ! ncid of output file
   INTEGER(KIND=4)                              :: nvars              ! nmber of variables in input file
   INTEGER(KIND=4)                              :: ierr               ! error status
@@ -67,13 +68,14 @@ PROGRAM cdflap
   TYPE(variable), DIMENSION(:), ALLOCATABLE    :: sdum               ! input attributes
 
   LOGICAL                                      :: lchk               ! missing files flag
-  LOGICAL                                      :: l_overf2=.FALSE.    ! overf flag
+  LOGICAL                                      :: l_overf2=.FALSE.   ! overf flag
+  LOGICAL                                      :: l_metric=.TRUE.    ! overf flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdflap IN-file IN-var  IN-type [-overf2]'
+     PRINT *,' usage : cdflap IN-file IN-var  IN-type [-overf2] [-nometric]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Laplacian of the variable IN-var in file IN-file'
@@ -88,6 +90,7 @@ PROGRAM cdflap
      PRINT *,'       -overf2 : save laplacien/f/f*g (where f is the local coriolis '
      PRINT *,'            parameter, and g is the accelaration due to gravity --9.81 m/s2-- )'
      PRINT *,'            For the SSH field, this is a proxy for geostrophic vorticity'
+     PRINT *,'       -nometric : compute laplacian without considering metrics '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr)," ",TRIM(cn_fzgr) ,' and ', TRIM(cn_fmsk)
@@ -102,21 +105,36 @@ PROGRAM cdflap
      STOP
   ENDIF
 
-  ijarg = 1
-  CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
-  CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1
-  CALL getarg(ijarg, ct_in) ; ijarg = ijarg + 1
-  IF ( narg == 4 ) THEN
-  ! assume -overf2 option !
-     l_overf2=.true.
-     cf_out='lapoverf2.nc'
-  ENDIF
+  ijarg = 1 ; ii=0
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
+     SELECT CASE (cldum )
+     CASE ( '-overf2' ) 
+          l_overf2=.true.
+          cf_out='lapoverf2.nc'
+     CASE ( '-nometric' )
+          l_metric=.false.
+          cf_out='lapgrid.nc'
+     CASE DEFAULT
+        ii=ii+1
+        SELECT CASE (ii)
+        CASE ( 1 ) ; cf_in = cldum
+        CASE ( 2 ) ; cv_in = cldum
+        CASE ( 3 ) ; ct_in = cldum
+        CASE DEFAULT
+          PRINT *,' Too many free arguments ...'
+          STOP
+        END SELECT
+     END SELECT
+  ENDDO
   PRINT *, ' TYP ', ct_in
 
   ! check if files exists
+  IF ( l_metric ) THEN
   lchk = chkfile (cn_fhgr)
   lchk = chkfile (cn_fzgr) .OR. lchk
   lchk = chkfile (cn_fmsk) .OR. lchk
+  ENDIF
   lchk = chkfile (cf_in  ) .OR. lchk
   IF ( lchk ) STOP ! missing files
 
@@ -222,10 +240,17 @@ PROGRAM cdflap
   ALLOCATE ( tim(npt) )
 
   ! Read the metrics from the mesh_hgr file
-  e1_i1 = getvar(cn_fhgr, ce1_i1, 1, npiglo, npjglo)
-  e1_i2 = getvar(cn_fhgr, ce1_i2, 1, npiglo, npjglo)
-  e2_j1 = getvar(cn_fhgr, ce2_j1, 1, npiglo, npjglo)
-  e2_j2 = getvar(cn_fhgr, ce2_j2, 1, npiglo, npjglo)
+  IF ( l_metric ) THEN
+    e1_i1 = getvar(cn_fhgr, ce1_i1, 1, npiglo, npjglo)
+    e1_i2 = getvar(cn_fhgr, ce1_i2, 1, npiglo, npjglo)
+    e2_j1 = getvar(cn_fhgr, ce2_j1, 1, npiglo, npjglo)
+    e2_j2 = getvar(cn_fhgr, ce2_j2, 1, npiglo, npjglo)
+  ELSE
+    e1_i1 = 1.
+    e1_i2 = 1.
+    e2_j1 = 1.
+    e2_j2 = 1.
+  ENDIF
 !
   IF ( l_overf2 ) THEN
     ! to prepare computation of g/f*LAP(SSH) 
@@ -253,10 +278,14 @@ PROGRAM cdflap
         ! variable at level jk time jt
         v2d(:,:) =  getvar(cf_in, cv_in, jk, npiglo, npjglo, ktime=jt)
         ! relevant mask
+        IF ( l_metric ) THEN
         rmski = getvar(cn_fmsk, cmask_i, jk, npiglo, npjglo)
         rmskj = getvar(cn_fmsk, cmask_j, jk, npiglo, npjglo)
-      
-
+        ELSE
+        ! something can be done with regard to field's  missing value
+        rmski = 1.
+        rmskj = 1.
+        ENDIF
         ! Compute laplacian
         dlap(:,:) = 0.d0
         DO jj = 2, npjglo -1
