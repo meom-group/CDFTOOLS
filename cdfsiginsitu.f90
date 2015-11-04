@@ -64,11 +64,11 @@ PROGRAM cdfsiginsitu
      PRINT *,'         argument.)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-sal SAL-name]  : name of salinity variable'
-     PRINT *,'       [-tem TEM-name]  : name of temperature variable'
-     PRINT *,'       [-dep depth ]    : depth to be ue in case of 2D input file (only)'
-     PRINT *,'       [-nc4]  : enable chunking and compression'
-     PRINT *,'       [-o OUT-file]    : specify output filename instead of ',TRIM(cf_out)
+     PRINT *,'       [-sal SAL-name] : name of salinity variable'
+     PRINT *,'       [-tem TEM-name] : name of temperature variable'
+     PRINT *,'       [-dep depth ]   : depth to be used in case of 2D input file (only)'
+     PRINT *,'       [-nc4]          : enable chunking and compression'
+     PRINT *,'       [-o OUT-file]   : specify output filename instead of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
