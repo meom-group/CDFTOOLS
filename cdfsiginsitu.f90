@@ -76,8 +76,13 @@ PROGRAM cdfsiginsitu
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
+  
 
-  ipk(:)= npk  ! all variables (input and output are 3D)
+  IF ( npk == 0 ) THEN
+   ipk(:) = 1
+  ELSE
+   ipk(:)= npk  ! all variables (input and output are 3D)
+  ENDIF
   stypvar(1)%cname             = 'vosigmainsitu'
   stypvar(1)%cunits            = 'kg/m3'
   stypvar(1)%rmissing_value    = 0.
