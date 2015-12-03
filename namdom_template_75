@@ -1,0 +1,45 @@
+!-----------------------------------------------------------------------
+&namdom        !   space and time domain (bathymetry, mesh, timestep)
+!-----------------------------------------------------------------------
+   jpk         =    75
+   nn_bathy    =    1      !  compute (=0) or read (=1) the bathymetry file
+   rn_bathy    =    0.     !  value of the bathymetry. if (=0) bottom flat at jpkm1
+   nn_closea   =    0      !  remove (=0) or keep (=1) closed seas and lakes (ORCA)
+   nn_msh      =    0      !  create (=1) a mesh file or not (=0)
+   rn_hmin     =   -3.     !  min depth of the ocean (>0) or min number of ocean level (<0)
+   rn_e3zps_min=   20.     !  partial step thickness is set larger than the minimum of
+   rn_e3zps_rat=    0.1    !  rn_e3zps_min and rn_e3zps_rat*e3t, with 0<rn_e3zps_rat<1
+                           !
+   rn_rdt      = 5760.     !  time step for the dynamics (and tracer if nn_acc=0)
+   rn_atfp     =    0.1    !  asselin time filter parameter
+   nn_acc      =    0      !  acceleration of convergence : =1      used, rdt < rdttra(k)
+                                 !                          =0, not used, rdt = rdttra
+   rn_rdtmin   = 28800.          !  minimum time step on tracers (used if nn_acc=1)
+   rn_rdtmax   = 28800.          !  maximum time step on tracers (used if nn_acc=1)
+   rn_rdth     =  800.           !  depth variation of tracer time step  (used if nn_acc=1)
+   ln_crs      = .false.      !  Logical switch for coarsening module
+   jphgr_msh   =       0               !  type of horizontal mesh
+                                       !  = 0 curvilinear coordinate on the sphere read in coordinate.nc
+                                       !  = 1 geographical mesh on the sphere with regular grid-spacing
+                                       !  = 2 f-plane with regular grid-spacing
+                                       !  = 3 beta-plane with regular grid-spacing
+                                       !  = 4 Mercator grid with T/U point at the equator
+   ppglam0     =       0.0             !  longitude of first raw and column T-point (jphgr_msh = 1)
+   ppgphi0     =     -35.0             ! latitude  of first raw and column T-point (jphgr_msh = 1)
+   ppe1_deg    =       1.0             !  zonal      grid-spacing (degrees)
+   ppe2_deg    =       0.5             !  meridional grid-spacing (degrees)
+   ppe1_m      =    5000.0             !  zonal      grid-spacing (degrees)
+   ppe2_m      =    5000.0             !  meridional grid-spacing (degrees)
+   ppsur       =    -4762.96143546300  !  ORCA r4, r2 and r05 coefficients
+   ppa0        =      255.58049070440  ! (default coefficients)
+   ppa1        =      245.58132232490  !
+   ppkth       =       21.43336197938  !
+   ppacr       =        3.0            !
+   ppdzmin     =       10.             !  Minimum vertical spacing
+   pphmax      =     5000.             !  Maximum depth
+   ldbletanh   =    .TRUE.             !  Use/do not use double tanf function for vertical coordinates
+   ppa2        =      100.760928500000 !  Double tanh function parameters
+   ppkth2      =       48.029893720000 !
+   ppacr2      =       13.000000000000 !
+/
+
