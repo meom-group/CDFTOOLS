@@ -21,7 +21,7 @@ PROGRAM cdfmoc
   !!                : 09/2007  : G. Smith      : MOC decomposition
   !!                : 01/2008  : A. Lecointre  : MOC decomposition adaptation 
   !!           3.0  : 03/2011  : J.M. Molines  : Merge all MOC prog, Doctor norm + Lic.
-  !!                : 10/2012  : M.A. Balmaseda: it adds basin INP0=GLOBAL-ATL, different from INP.            : Avoid 3d variables in e3v
+  !!                : 10/2012  : M.A. Balmaseda: it adds basin INP0=GLOBAL-ATL, different from INP.
   !!         
   !!
   !! References :  For MOC decomposition : Lee & Marotzke (1998), 
@@ -121,7 +121,8 @@ PROGRAM cdfmoc
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoc  V_file [-full] [-decomp ] [T_file] [S_file] [U_file] [-rapid] '
+     PRINT *,' usage : cdfmoc  V_file [-full] [-decomp ] [T_file] [S_file] [U_file] ...'
+     PRINT *,'                [-o OUT-file] [-rapid] '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the MOC for oceanic sub basins as described '
      PRINT *,'       in ',TRIM(cn_fbasins)
@@ -146,6 +147,7 @@ PROGRAM cdfmoc
      PRINT *,'                   - 1100-3000m  : upper-NADW recirculation'
      PRINT *,'                   - 3000-5000m  : lower-NADW recirculation'
      PRINT *,'                   - 5000-bottom : AABW recirculation'
+     PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_moc)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ',TRIM(cn_fhgr),' ', TRIM(cn_fhgr),' and ', TRIM(cn_fmsk)
@@ -185,6 +187,8 @@ PROGRAM cdfmoc
         ldec    = .TRUE.
      CASE ('-rapid') 
         lrap    = .TRUE.
+     CASE ('-o') 
+        CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1
      CASE DEFAULT
         ii=ii+1
         SELECT CASE (ii)
@@ -664,7 +668,7 @@ PROGRAM cdfmoc
 
        ! prepare output dataset: 7 variables
        ! add 12 new variables for CLIVAR GSOP-GODAE intercomparison
-       cf_moc = 'rapid_moc.nc'
+       cf_moc = 'rapid_'//TRIM(cf_moc)
        nvarout =  33
        ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
        stypvar%cunits            = 'Sverdrup'
