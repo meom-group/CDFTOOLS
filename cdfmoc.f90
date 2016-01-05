@@ -276,14 +276,15 @@ PROGRAM cdfmoc
   gdepw(:)   = getvare3(cn_fzgr, cn_gdepw, npk             )
   gdepw(:)   = -1.* gdepw(:)
 
-  DO jk= 1, npk
-     ! save e3v masked with vmask as 3d array
-     e3v(:,:,jk) = get_e3v(jk)
-  END DO
 
   IF ( ldec  ) gdept(:) = getvare3(cn_fzgr, cn_gdept, npk             )
   IF ( ldec  ) e1u(:,:) = getvar  (cn_fhgr, cn_ve1u,  1, npiglo,npjglo)
   IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
+
+  DO jk= 1, npk
+     ! save e3v masked with vmask as 3d array
+     e3v(:,:,jk) = get_e3v(jk)
+  END DO
 
   iloc=MAXLOC(gphiv)
   rdumlat(1,:) = gphiv(iloc(1),:)
