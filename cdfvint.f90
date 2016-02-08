@@ -11,6 +11,7 @@ PROGRAM cdfvint
    !!
    !! History : 2.1  : 10/2012  : M.A. Balmaseda : Original code from cdfmxlhc
    !!           3.0  : 11/2012  : J.M. Molines   : Doctor norm + Lic + ...
+   !!                  02/2016  : S. Leroux      : Add -OCCI option
    !!----------------------------------------------------------------------
    USE cdfio
    USE modcdfnames
@@ -53,6 +54,7 @@ PROGRAM cdfvint
 
    LOGICAL                                   :: lfull =.FALSE.      ! flag for full step computation
    LOGICAL                                   :: lgsop =.FALSE.      ! selected depths gsop intercomparison
+   LOGICAL                                   :: locci =.FALSE.      ! selected 3 depths for occiput 
    LOGICAL                                   :: lchk  =.FALSE.      ! flag for missing files
    LOGICAL                                   :: lout                ! check for output
 
@@ -62,7 +64,7 @@ PROGRAM cdfvint
 
    narg= iargc()
    IF ( narg == 0 ) THEN
-      PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-full] '
+      PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI]  [-full] '
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'          Compute the vertical integral of the variable from top '
@@ -78,6 +80,8 @@ PROGRAM cdfvint
       PRINT *,'      '
       PRINT *,'     OPTIONS :'
       PRINT *,'        -GSOP : Use 7 GSOP standard level for the output '
+      PRINT *,'                Default is to take the model levels for the output'
+      PRINT *,'        -OCCI : Use 3 levels for the output: 700m, 2000m and bottom'
       PRINT *,'                Default is to take the model levels for the output'
       PRINT *,'        -full : for full step computation ' 
       PRINT *,'      '
@@ -102,7 +106,8 @@ PROGRAM cdfvint
    DO WHILE ( ijarg <= narg ) 
       CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
       SELECT CASE ( cldum)
-      CASE ( '-GSOP' ) ; lgsop = .TRUE. 
+      CASE ( '-GSOP' ) ; lgsop = .TRUE.
+      CASE ( '-OCCI' ) ; locci = .TRUE.
       CASE ( '-full' ) ; lfull = .TRUE. 
       CASE DEFAULT     
          ij = ij + 1
@@ -125,12 +130,12 @@ PROGRAM cdfvint
    IF ( cv_in == cn_votemper ) THEN
       cv_out    = 'voheatc'
       clongname = 'Heat Content per unit area'
-      cunits    = 'J Km^-2'
+      cunits    = '10^6 J/m2'
       sclf      = pprho0*ppcp/1.e6
    ELSEIF ( cv_in == cn_vosaline ) THEN
       cv_out    = 'vohsalt'
       clongname = 'Vertically Integrated Salinity'
-      cunits    = 'psu*m'
+      cunits    = 'psu.m'
       sclf      =1.
    ELSE
       PRINT *,'  ERROR: Variable ', TRIM(cv_in), ' not pre-defined ...'
@@ -149,8 +154,13 @@ PROGRAM cdfvint
    npk    = getdim (cf_in, cn_z )
    npt    = getdim (cf_in, cn_t )
 
-   IF ( lgsop ) THEN ; PRINT *,' using GSOP depths' ; npko = 7
-                ELSE ; PRINT *,' using model depths'; npko = npk
+   IF ( lgsop ) THEN ; PRINT *,' using GSOP depths' ; npko = 7 ! SL: commented out
+   ENDIF
+
+   IF ( locci ) THEN ; PRINT *,' using OCCIPUT depths' ; npko = 3
+   ENDIF
+   
+   IF ((.not.lgsop).and.(.not.locci)) THEN ; PRINT *,' using model depths'; npko = npk
    ENDIF
 
    PRINT *, ' NPIGLO = ', npiglo
@@ -186,11 +196,19 @@ PROGRAM cdfvint
    e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk )
 
    IF ( lgsop ) THEN
-      gdepo(:) = (/100.,300.,700.,1500.,3000.,4000.,6000./)
-   ELSE  
+   gdepo(:) = (/100.,300.,500.,700.,800.,2000.,6000./) ! GEOP standard levs
+   ENDIF
+
+   IF ( locci ) THEN 
+   gdepo(:) = (/700.,2000.,6000./) ! SL: occiput levels
+   ENDIF
+
+   IF ((.not.lgsop).and.(.not.locci)) THEN 
       gdepo(1:npk-1) = gdepw(2:npk)
       gdepo(npk)     = 6000.
    ENDIF
+
+
 
    PRINT*,'OUTPUT DEPTHS ARE : ',gdepo
    ncout = create      (cf_out, 'none', npiglo, npjglo, npko, cdep=cn_vdepthw, ld_xycoo=.FALSE.)
@@ -208,7 +226,7 @@ PROGRAM cdfvint
       rdep1 = 0.0 ; rdep2 = 0.0
       lout = .TRUE.
       DO jk = 1, npk
-         IF ( lgsop ) lout = .FALSE.
+         IF ( lgsop .or. locci ) lout = .FALSE.
          rdep1          = rdep2
          dl_vint2(:,:) = dl_vint1 (:,:)
 
