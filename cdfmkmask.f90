@@ -30,6 +30,7 @@ PROGRAM cdfmkmask
    INTEGER(KIND=4)                           :: ierr                     ! working integer
    INTEGER(KIND=4)                           :: narg, iargc, ijarg       ! 
    INTEGER(KIND=4)                           :: npiglo, npjglo, npk, nt  ! size of the domain
+   INTEGER(KIND=4)                           :: npkk                     ! handle case without vertical dim
    INTEGER(KIND=4)                           :: iimin, iimax             ! limit in i
    INTEGER(KIND=4)                           :: ijmin, ijmax             ! limit in j
    INTEGER(KIND=4)                           :: ncout                    ! ncid of output file
@@ -206,10 +207,12 @@ PROGRAM cdfmkmask
 
 
    IF ( npk == 0 ) THEN
-    ipk(1:4)                      = 1
+     npkk = 1
    ELSE
-    ipk(1:4)                       = npk
+     npkk = npk
    ENDIF
+    ipk(1:4)                      = npkk
+
    stypvar(1)%cname               = 'tmask'
    stypvar(2)%cname               = 'umask'
    stypvar(3)%cname               = 'vmask'
@@ -270,7 +273,7 @@ PROGRAM cdfmkmask
    !! Now compute the mask 
    DO jt=1, nt
       IF (MOD(jt,10)==0) PRINT *,jt,'/',nt,' ...'
-      DO jk=1, npk
+      DO jk=1, npkk
          ! tmask
          IF ( lmbathy ) THEN
             tmask(:,:) = 1.
