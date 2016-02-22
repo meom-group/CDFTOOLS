@@ -76,7 +76,7 @@ PROGRAM cdfvint
       PRINT *,'       represents PSU.m '
       PRINT *,'      '
       PRINT *,'     ARGUMENTS :'
-      PRINT *,'         T-file : gridT file holding either Temperature or salinity '
+      PRINT *,'         T-file : gridT file holding either temperature or salinity '
       PRINT *,'        [IN-var ] : name of input variable to process. Default is '
       PRINT *,'               ', TRIM(cn_votemper),'. Can also be ',TRIM(cn_vosaline)
       PRINT *,'      '
@@ -93,7 +93,7 @@ PROGRAM cdfvint
       PRINT *,'       ', TRIM(cn_fmsk),', ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr) 
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
-      PRINT *,'       netcdf file :  VAR-name.nc'
+      PRINT *,'       netcdf file :  VAR-name.nc (or specified with -o option)'
       PRINT *,'         variables :  either voheatc or vohsalt'
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
