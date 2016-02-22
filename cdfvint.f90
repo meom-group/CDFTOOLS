@@ -57,6 +57,8 @@ PROGRAM cdfvint
    LOGICAL                                   :: locci =.FALSE.      ! selected 3 depths for occiput 
    LOGICAL                                   :: lchk  =.FALSE.      ! flag for missing files
    LOGICAL                                   :: lout                ! check for output
+   LOGICAL                                   :: lnc4  =.FALSE.      ! flag for netcdf4 chunking and deflation
+   LOGICAL                                   :: lfout =.FALSE.      ! flag for output filename
 
    TYPE(variable), DIMENSION(1)              :: stypvar             ! extension for attributes
    !!----------------------------------------------------------------------
@@ -64,13 +66,13 @@ PROGRAM cdfvint
 
    narg= iargc()
    IF ( narg == 0 ) THEN
-      PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI]  [-full] '
+      PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'          Compute the vertical integral of the variable from top '
       PRINT *,'       to bottom, and save the cumulated valued, level by level.'
       PRINT *,'       For temperature (default var), the integral is transformed'
-      PRINT *,'       to Heat Content ( J.K. m^-2) hence for salinity, the integral'
+      PRINT *,'       to Heat Content ( 10^6 J/m2) hence for salinity, the integral'
       PRINT *,'       represents PSU.m '
       PRINT *,'      '
       PRINT *,'     ARGUMENTS :'
@@ -84,6 +86,8 @@ PROGRAM cdfvint
       PRINT *,'        -OCCI : Use 3 levels for the output: 700m, 2000m and bottom'
       PRINT *,'                Default is to take the model levels for the output'
       PRINT *,'        -full : for full step computation ' 
+      PRINT *,'        -nc4  : use netcdf4 output with chunking and deflation'
+      PRINT *,'        -o OUT-file : use specified output file instead of <IN-var>.nc'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'       ', TRIM(cn_fmsk),', ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr) 
@@ -109,6 +113,8 @@ PROGRAM cdfvint
       CASE ( '-GSOP' ) ; lgsop = .TRUE.
       CASE ( '-OCCI' ) ; locci = .TRUE.
       CASE ( '-full' ) ; lfull = .TRUE. 
+      CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
+      CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
       CASE DEFAULT     
          ij = ij + 1
          SELECT CASE ( ij)
@@ -144,7 +150,7 @@ PROGRAM cdfvint
    ENDIF
 
    ! log information so far
-   cf_out = TRIM(cv_out)//'.nc'
+   IF ( .NOT. lfout ) cf_out = TRIM(cv_out)//'.nc'
    PRINT *,' INPUT VARIABLE  : ' , TRIM(cv_in)
    PRINT *,' OUTPUT VARIABLE : ' , TRIM(cv_out)
    PRINT *,' OUTPUT FILE     : ' , TRIM(cf_out)
@@ -181,6 +187,10 @@ PROGRAM cdfvint
 
    ! prepare output variable
    ipk(:)                       = npko
+  ! choose chunk size for output ... not easy not used if lnc4=.false. but
+  ! anyway ..
+   stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+
    stypvar(1)%cname             = TRIM(cv_out)
    stypvar(1)%cunits            = TRIM(cunits)
    stypvar(1)%rmissing_value    = 0.
@@ -211,8 +221,9 @@ PROGRAM cdfvint
 
 
    PRINT*,'OUTPUT DEPTHS ARE : ',gdepo
-   ncout = create      (cf_out, 'none', npiglo, npjglo, npko, cdep=cn_vdepthw, ld_xycoo=.FALSE.)
-   ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout )
+   ncout = create      (cf_out, 'none', npiglo, npjglo, npko, cdep=cn_vdepthw, ld_xycoo=.FALSE. &
+                            , ld_nc4=lnc4)
+   ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout , ld_nc4=lnc4)
    ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, npko, pdep=gdepo,     ld_xycoo=.FALSE.)
 
    tim   = getvar1d    (cf_in, cn_vtimec, npt     )
@@ -226,7 +237,7 @@ PROGRAM cdfvint
       rdep1 = 0.0 ; rdep2 = 0.0
       lout = .TRUE.
       DO jk = 1, npk
-         IF ( lgsop .or. locci ) lout = .FALSE.
+         IF ( lgsop .OR. locci ) lout = .FALSE.
          rdep1          = rdep2
          dl_vint2(:,:) = dl_vint1 (:,:)
 
