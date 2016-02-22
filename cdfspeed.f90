@@ -49,7 +49,7 @@ PROGRAM cdfspeed
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfspeed  U-file V-file U-var V-var [-t T-file] ...'
-     PRINT *,'            ... [-nc4] [-o output_file ] [-lev level_list]' 
+     PRINT *,'            ... [-nc4] [-o OUT-file ] [-lev level_list]' 
      PRINT *,'    PURPOSE :'
      PRINT *,'       Computes the speed of ocean currents or wind speed'
      PRINT *,'       '
@@ -66,13 +66,13 @@ PROGRAM cdfspeed
      PRINT *,'       V-var  : netcdf variable name for V component'
      PRINT *,'    '
      PRINT *,'    OPTIONS :'
-     PRINT *,'       [-t T-file ] : indicate any file on gridT for correct header'
+     PRINT *,'       -t T-file  : indicate any file on gridT for correct header'
      PRINT *,'                 of the output file (usefull for 3D files)'
-     PRINT *,'       [-lev level_list ] : indicate a list of levels to be processed'
+     PRINT *,'       -lev level_list  : indicate a list of levels to be processed'
      PRINT *,'                 If not used, all levels are processed.'
      PRINT *,'                 This option should be the last on the command line'
-     PRINT *,'       [-nc4 ] use netcdf4 output with chunking and deflation'
-     PRINT *,'       [-o output file ] use specified output file instead of ',TRIM(cf_out)
+     PRINT *,'       -nc4 : use netcdf4 output with chunking and deflation'
+     PRINT *,'       -o OUT-file : use specified output file instead of ',TRIM(cf_out)
      PRINT *,'    '
      PRINT *,'    OUTPUT :'
      PRINT *,'       Output on ',TRIM(cf_out),'  variable U '
