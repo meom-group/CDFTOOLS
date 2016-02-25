@@ -36,6 +36,7 @@ PROGRAM cdffindij
   INTEGER(KIND=4)    :: ipx, ipy                   ! field number for X and Y in file_list
 
   REAL(KIND=4)       :: xmin, xmax, ymin, ymax     ! geographical window
+  REAL(KIND=4)       :: zlon, zlat                 ! position of model point
 
   CHARACTER(LEN=256) :: cltype='F'                 ! point type to search for
   CHARACTER(LEN=256) :: cldum                      ! dummy character variable
@@ -49,6 +50,7 @@ PROGRAM cdffindij
   LOGICAL            :: l_file_in=.false.          ! flag for input file
   LOGICAL            :: l_file_ou=.false.          ! flag for output file
   LOGICAL            :: l_append =.false.          ! flag for appending x,y to existing data on line
+  LOGICAL            :: l_lonlat =.false.          ! flag for adding lon lat to the output
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   clcoo = cn_fcoo
@@ -57,7 +59,7 @@ PROGRAM cdffindij
   narg= iargc()
   IF ( narg < 4 ) THEN
      PRINT *,' usage :   cdffindij  xmin xmax ymin ymax  [-c COOR-file] [-p point_type]...'
-     PRINT *,'                    [-f list_file ] [-d decriptor] [-o output_file] [-a]'
+     PRINT *,'                    [-f list_file ] [-d decriptor] [-o output_file] [-a] [-l]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Return the model limit (i,j space) of the geographical window ' 
@@ -85,6 +87,8 @@ PROGRAM cdffindij
      PRINT *,'                descriptor : ''oXYooo'' or ''ooYabcdfXooo'' '
      PRINT *,'       [-a  ] : With this option, output is similar to input with I,J appended'
      PRINT *,'                to the corresponding line.'
+     PRINT *,'       [-l  ] : With this option, also output the exact model longitude and '
+     PRINT *,'                latitude of the I,J point.'
      PRINT *,'       [-o output_file] : write output in ascii output_file instead of standard'
      PRINT *,'                output.'
      PRINT *,'      '
@@ -106,6 +110,7 @@ PROGRAM cdffindij
     CASE ( '-d' ) ; CALL getarg(ijarg, cldes  ) ; ijarg=ijarg+1
     CASE ( '-o' ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1 ;  l_file_ou=.true.
     CASE ( '-a' ) ;                                                l_append =.true.
+    CASE ( '-l' ) ;                                                l_lonlat =.true.
     CASE DEFAULT
        ireq=ireq+1
        SELECT CASE (ireq)
@@ -131,11 +136,16 @@ PROGRAM cdffindij
        READ(inum,*,END=999) cfields
        READ(cfields(ipx),*) xmin
        READ(cfields(ipy),*) ymin
-       CALL cdf_findij ( xmin, xmin, ymin, ymin, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, cd_point=cltype, cd_verbose='n')
+       CALL cdf_findij ( xmin, xmin, ymin, ymin, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, & 
+           &cd_point=cltype, cd_verbose='n', plonmin=zlon, platmin=zlat)
        IF ( l_append ) THEN
          DO ji = 1, nfields
            WRITE(iout,'(a,x)',advance="no") TRIM(cfields(ji))
          ENDDO
+       ENDIF
+       IF ( l_lonlat ) THEN
+           WRITE(iout,'(g,x)',advance="no")  zlon
+           WRITE(iout,'(g,x)',advance="no")  zlat
        ENDIF
          WRITE(iout,'(i,x)',advance="no") iimin
          WRITE(iout,'(i,x)'             ) ijmin

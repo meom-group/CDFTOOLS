@@ -36,8 +36,9 @@ MODULE cdftools
 
 CONTAINS
 
-  SUBROUTINE cdf_findij ( pxmin, pxmax, pymin, pymax,           &
-       &         kimin, kimax, kjmin, kjmax, cd_coord, cd_point, cd_verbose)
+  SUBROUTINE cdf_findij ( pxmin, pxmax, pymin, pymax,                        &
+       &         kimin, kimax, kjmin, kjmax, cd_coord, cd_point, cd_verbose ,&
+       &         plonmin, plonmax, platmin, platmax )
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE cdf_findij  ***
     !!
@@ -49,6 +50,8 @@ CONTAINS
     CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_coord                   !: coordinate file name (D: cn_fcoo)
     CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_point                   !: point type           (D: F )
     CHARACTER(*), OPTIONAL,        INTENT(in) :: cd_verbose                 !: verbose flag         (D: N ) Y
+    REAL(KIND=4), OPTIONAL,       INTENT(out) :: plonmin, plonmax           !: model lonmn, lonmax
+    REAL(KIND=4), OPTIONAL,       INTENT(out) :: platmin, platmax           !: model  latmin, latmax
 
     INTEGER(KIND=4)                           :: initer
     INTEGER(KIND=4)                           :: imin, imax, jmin, jmax
@@ -234,7 +237,7 @@ CONTAINS
     IF (ll_verbose) PRINT 9001, imin, imax, jmin, jmax
 
     kimin   = imin ; kimax = imax ; kjmin   = jmin ; kjmax = jmax
-   IF ( ll_bnd ) THEN
+   IF ( ll_bnd .OR. imin < 0 ) THEN
      zglamin= -9999. ; zglamax = -9999
      zgphmin= -9999. ; zgphmax = -9999
    ELSE
@@ -246,6 +249,11 @@ CONTAINS
     IF ( zglamax > 180 ) zglamax=zglamax-360.
 
     IF ( ll_verbose) PRINT 9002, zglamin, zglamax, zgphmin, zgphmax
+
+    IF ( PRESENT (plonmin) ) plonmin=zglamin
+    IF ( PRESENT (plonmax) ) plonmax=zglamax
+    IF ( PRESENT (platmin) ) platmin=zgphmin
+    IF ( PRESENT (platmax) ) platmax=zgphmax
 
 9000 FORMAT(a,f8.2,a,f8.2,2i5)
 9001 FORMAT(4i10)
