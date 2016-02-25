@@ -53,15 +53,15 @@ CONTAINS
     INTEGER(KIND=4)                           :: initer
     INTEGER(KIND=4)                           :: imin, imax, jmin, jmax
     INTEGER(KIND=4), SAVE                     :: iloc, jloc
-    INTEGER(KIND=4)                           :: ipiglo, ipjglo
+    INTEGER(KIND=4), SAVE                     :: ipiglo, ipjglo
     INTEGER(KIND=4), PARAMETER                :: jp_itermax=15
 
     REAL(KIND=8)                              :: dl_xmin, dl_xmax, dl_ymin, dl_ymax
     REAL(KIND=8)                              :: dl_dis
     REAL(KIND=8)                              :: dl_glam0, dl_emax
-    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_glam, dl_gphi, dl_e1, dl_e2
+    REAL(KIND=8), SAVE, DIMENSION(:,:), ALLOCATABLE :: dl_glam, dl_gphi, dl_e1, dl_e2
 
-    REAL(KIND=4)                              :: zglamfound, zglamin, zglamax
+    REAL(KIND=4)                              :: zglamfound, zglamin, zglamax, zgphmin, zgphmax
 
     CHARACTER(LEN=256)                        :: cl_type='F'
     CHARACTER(LEN=256)                        :: clcoo
@@ -69,6 +69,7 @@ CONTAINS
     LOGICAL                                   :: ll_again, ll_bnd, ll_verbose=.false.
     !!--------------------------------------------------------------------------
     CALL ReadCdfNames()
+    imin = 0 ; jmin = 0
 
     dl_xmin = pxmin
     dl_xmax = pxmax
@@ -82,6 +83,8 @@ CONTAINS
     IF ( PRESENT( cd_verbose))   THEN
        IF ( cd_verbose(1:1) == 'Y' .OR. cd_verbose(1:1) == 'y' ) ll_verbose=.true.
     ENDIF
+
+    IF ( .NOT. ALLOCATED (dl_glam) ) THEN 
 
     IF (chkfile (clcoo) ) STOP ! missing file
 
@@ -128,6 +131,7 @@ CONTAINS
 
     IF (dl_xmin < dl_glam0) dl_xmin = dl_xmin + 360.d0
     IF (dl_xmax < dl_glam0) dl_xmax = dl_xmax + 360.d0
+    ENDIF  ! 
 
 
     ! deal with xmin, ymin
@@ -147,11 +151,11 @@ CONTAINS
        IF (dl_dis  > dl_emax ) THEN
           zglamfound = dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound - 360.
 
-          PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc) , iloc, jloc 
-          PRINT *,' Algorithm does''nt converge ', dl_dis
+!         PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc) , iloc, jloc 
+!         PRINT *,' Algorithm does''nt converge ', dl_dis
 
           IF ( initer >= jp_itermax ) THEN
-             PRINT *, ' no convergence after ', jp_itermax,' iterations'
+!            PRINT *, ' no convergence after ', jp_itermax,' iterations'
              iloc     = -1000
              jloc     = -1000
              ll_again = .FALSE.
@@ -169,8 +173,8 @@ CONTAINS
        END IF
     END DO
 
-    IF (ll_bnd .AND. ll_verbose ) THEN
-       WRITE (*,*)'Point  Out of domain or on boundary'
+    IF (ll_bnd ) THEN
+       IF (ll_verbose) WRITE (*,*)'Point  Out of domain or on boundary'
     ELSE
        imin=iloc
        jmin=jloc
@@ -198,11 +202,11 @@ CONTAINS
           IF (dl_dis >  dl_emax ) THEN
              zglamfound=dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound -360.
 
-             PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc), iloc, jloc
-             PRINT *,' Algorithm does''nt converge ', dl_dis
+!            PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc), iloc, jloc
+!            PRINT *,' Algorithm does''nt converge ', dl_dis
 
              IF ( initer >= jp_itermax ) THEN
-                PRINT *, ' no convergence after ', jp_itermax,' iterations'
+!               PRINT *, ' no convergence after ', jp_itermax,' iterations'
                 iloc     = -1000
                 jloc     = -1000
                 ll_again = .FALSE.
@@ -219,8 +223,8 @@ CONTAINS
              ll_again = .FALSE.
           END IF
        END DO
-       IF (ll_bnd .AND. ll_verbose ) THEN
-          WRITE (*,*) 'Point  Out of domain or on boundary'
+       IF (ll_bnd ) THEN
+          IF (ll_verbose) WRITE (*,*) 'Point  Out of domain or on boundary'
        ELSE
           imax=iloc
           jmax=jloc
@@ -230,12 +234,18 @@ CONTAINS
     IF (ll_verbose) PRINT 9001, imin, imax, jmin, jmax
 
     kimin   = imin ; kimax = imax ; kjmin   = jmin ; kjmax = jmax
+   IF ( ll_bnd ) THEN
+     zglamin= -9999. ; zglamax = -9999
+     zgphmin= -9999. ; zgphmax = -9999
+   ELSE
     zglamin = dl_glam(imin,jmin)  ; zglamax = dl_glam(imax,jmax)
+    zgphmin = dl_gphi(imin,jmin)  ; zgphmax = dl_gphi(imax,jmax)
+   ENDIF
 
     IF ( zglamin > 180 ) zglamin=zglamin-360.
     IF ( zglamax > 180 ) zglamax=zglamax-360.
 
-    IF ( ll_verbose) PRINT 9002, zglamin, zglamax, dl_gphi(imin,jmin),dl_gphi(imax,jmax)
+    IF ( ll_verbose) PRINT 9002, zglamin, zglamax, zgphmin, zgphmax
 
 9000 FORMAT(a,f8.2,a,f8.2,2i5)
 9001 FORMAT(4i10)
