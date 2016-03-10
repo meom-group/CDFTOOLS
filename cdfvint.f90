@@ -58,6 +58,7 @@ PROGRAM cdfvint
    LOGICAL                                   :: lchk  =.FALSE.      ! flag for missing files
    LOGICAL                                   :: lout                ! check for output
    LOGICAL                                   :: lnc4  =.FALSE.      ! flag for netcdf4 chunking and deflation
+   LOGICAL                                   :: ltmean=.FALSE.      ! flag for mean temperature output
    LOGICAL                                   :: lfout =.FALSE.      ! flag for output filename
 
    TYPE(variable), DIMENSION(1)              :: stypvar             ! extension for attributes
@@ -67,6 +68,7 @@ PROGRAM cdfvint
    narg= iargc()
    IF ( narg == 0 ) THEN
       PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]'
+      PRINT *,'                 [-tmean]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'          Compute the vertical integral of the variable from top '
@@ -87,6 +89,7 @@ PROGRAM cdfvint
       PRINT *,'                Default is to take the model levels for the output'
       PRINT *,'        -full : for full step computation ' 
       PRINT *,'        -nc4  : use netcdf4 output with chunking and deflation'
+      PRINT *,'        -tmean : output mean temperature instead of heat content'
       PRINT *,'        -o OUT-file : use specified output file instead of <IN-var>.nc'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
@@ -114,6 +117,7 @@ PROGRAM cdfvint
       CASE ( '-OCCI' ) ; locci = .TRUE.
       CASE ( '-full' ) ; lfull = .TRUE. 
       CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
+      CASE ( '-tmean') ; ltmean= .TRUE. 
       CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
       CASE DEFAULT     
          ij = ij + 1
@@ -134,10 +138,17 @@ PROGRAM cdfvint
 
    ! Set output information according to variable name
    IF ( cv_in == cn_votemper ) THEN
-      cv_out    = 'voheatc'
-      clongname = 'Heat Content per unit area'
-      cunits    = '10^6 J/m2'
-      sclf      = pprho0*ppcp/1.e6
+      IF ( ltmean ) THEN
+        cv_out    = 'votemper'
+        clongname = 'Mean temperature '
+        cunits    = 'Deg Celsius'
+        sclf      = 1
+      ELSE
+        cv_out    = 'voheatc'
+        clongname = 'Heat Content per unit area'
+        cunits    = '10^6 J/m2'
+        sclf      = pprho0*ppcp/1.e6
+      ENDIF
    ELSEIF ( cv_in == cn_vosaline ) THEN
       cv_out    = 'vohsalt'
       clongname = 'Vertically Integrated Salinity'
@@ -263,7 +274,11 @@ PROGRAM cdfvint
                PRINT *,'Output for level ',iko
                PRINT *,'rdep1, rdep2, depo ',rdep1,rdep2,gdepo(iko) 
             ENDIF
-            ierr = putvar(ncout, id_varout(1) ,REAL(dl_vint2), iko, npiglo, npjglo, ktime=jt)
+            IF ( ltmean ) THEN
+               ierr = putvar(ncout, id_varout(1) ,REAL(dl_vint2)/rdep2, iko, npiglo, npjglo, ktime=jt)
+            ELSE
+               ierr = putvar(ncout, id_varout(1) ,REAL(dl_vint2), iko, npiglo, npjglo, ktime=jt)
+            ENDIF
             iko = iko + 1
          ENDIF
       END DO  ! loop to next level
