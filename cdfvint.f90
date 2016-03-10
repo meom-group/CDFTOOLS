@@ -99,7 +99,9 @@ PROGRAM cdfvint
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
       PRINT *,'       netcdf file :  VAR-name.nc (or specified with -o option)'
-      PRINT *,'         variables :  either voheatc or vohsalt'
+      PRINT *,'         variables :  either voheatc or vohsalt, unless -tmean or -smean used'
+      PRINT *,'               In this latter case, variables are ',TRIM(cn_votemper),' and '
+      PRINT *,'              ',TRIM(cn_vosaline)
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
       PRINT *,'        cdfvertmean, cdfheatc, cdfmxlhcsc and  cdfmxlheatc'
