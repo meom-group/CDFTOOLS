@@ -59,6 +59,7 @@ PROGRAM cdfvint
    LOGICAL                                   :: lout                ! check for output
    LOGICAL                                   :: lnc4  =.FALSE.      ! flag for netcdf4 chunking and deflation
    LOGICAL                                   :: ltmean=.FALSE.      ! flag for mean temperature output
+   LOGICAL                                   :: lsmean=.FALSE.      ! flag for mean salinity output
    LOGICAL                                   :: lfout =.FALSE.      ! flag for output filename
 
    TYPE(variable), DIMENSION(1)              :: stypvar             ! extension for attributes
@@ -68,7 +69,7 @@ PROGRAM cdfvint
    narg= iargc()
    IF ( narg == 0 ) THEN
       PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]'
-      PRINT *,'                 [-tmean]'
+      PRINT *,'                 [-tmean] [-smean]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'          Compute the vertical integral of the variable from top '
@@ -90,6 +91,7 @@ PROGRAM cdfvint
       PRINT *,'        -full : for full step computation ' 
       PRINT *,'        -nc4  : use netcdf4 output with chunking and deflation'
       PRINT *,'        -tmean : output mean temperature instead of heat content'
+      PRINT *,'        -smean : output mean salinity instead of PSU.m'
       PRINT *,'        -o OUT-file : use specified output file instead of <IN-var>.nc'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
@@ -118,6 +120,7 @@ PROGRAM cdfvint
       CASE ( '-full' ) ; lfull = .TRUE. 
       CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
       CASE ( '-tmean') ; ltmean= .TRUE. 
+      CASE ( '-smean') ; lsmean= .TRUE. 
       CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
       CASE DEFAULT     
          ij = ij + 1
@@ -135,14 +138,24 @@ PROGRAM cdfvint
    lchk = chkfile ( cn_fhgr ) .OR. lchk
    lchk = chkfile ( cn_fzgr ) .OR. lchk
    IF ( lchk ) STOP ! missing files
+  
+   IF ( ltmean .AND. cv_in == cn_vosaline ) THEN
+       PRINT *,' WARNING : flag -tmean is useless with variable', TRIM(cv_in)
+       ltmean = .FALSE.
+   ENDIF
+   IF ( lsmean .AND. cv_in == cn_votemper ) THEN
+       PRINT *,' WARNING : flag -smean is useless with variable', TRIM(cv_in)
+       lsmean = .FALSE.
+   ENDIF
+
 
    ! Set output information according to variable name
    IF ( cv_in == cn_votemper ) THEN
       IF ( ltmean ) THEN
-        cv_out    = 'votemper'
+        cv_out    = cn_votemper
         clongname = 'Mean temperature '
         cunits    = 'Deg Celsius'
-        sclf      = 1
+        sclf      = 1.
       ELSE
         cv_out    = 'voheatc'
         clongname = 'Heat Content per unit area'
@@ -150,10 +163,16 @@ PROGRAM cdfvint
         sclf      = pprho0*ppcp/1.e6
       ENDIF
    ELSEIF ( cv_in == cn_vosaline ) THEN
-      cv_out    = 'vohsalt'
-      clongname = 'Vertically Integrated Salinity'
-      cunits    = 'psu.m'
-      sclf      =1.
+      IF ( lsmean ) THEN
+         cv_out    = cn_vosaline
+         clongname = 'Mean salinity'
+         cunits    = 'psu'
+      ELSE
+         cv_out    = 'vohsalt'
+         clongname = 'Vertically Integrated Salinity'
+         cunits    = 'psu.m'
+      ENDIF
+      sclf      = 1.
    ELSE
       PRINT *,'  ERROR: Variable ', TRIM(cv_in), ' not pre-defined ...'
       PRINT *,'     Accepted variables are ', TRIM(cn_votemper),' and ',TRIM(cn_vosaline)
@@ -274,7 +293,7 @@ PROGRAM cdfvint
                PRINT *,'Output for level ',iko
                PRINT *,'rdep1, rdep2, depo ',rdep1,rdep2,gdepo(iko) 
             ENDIF
-            IF ( ltmean ) THEN
+            IF ( ltmean .OR. lsmean ) THEN
                ierr = putvar(ncout, id_varout(1) ,REAL(dl_vint2)/rdep2, iko, npiglo, npjglo, ktime=jt)
             ELSE
                ierr = putvar(ncout, id_varout(1) ,REAL(dl_vint2), iko, npiglo, npjglo, ktime=jt)
