@@ -254,7 +254,7 @@ PROGRAM cdfsum
            dsurf  = SUM(DBLE(e1 * e2      * zmask))
            dvol2d = SUM(DBLE(e1 * e2 * e3 * zmask))
            dvol   = dvol + dvol2d
-           dsum2d = SUM(DBLE(zv))
+           dsum2d = SUM(DBLE(zv * e1 * e2 * zmask))
            dsum   = dsum + dsum2d
            IF (dvol2d /= 0 )THEN
               PRINT *, ' Sum value at level ', ik, '(',gdep(ik),' m) ', dsum2d
