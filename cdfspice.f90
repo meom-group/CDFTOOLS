@@ -67,7 +67,8 @@ PROGRAM cdfspice
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfspice -t T-file [-sal SAL-name] [-tem TEM-name] [-nc4] [-o OUT-file]'
+     PRINT *,' usage : cdfspice -t T-file [-sal SAL-name] [-tem TEM-name] ...'
+     PRINT *,'        ... [-nc4] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the spiceness corresponding to temperatures and salinities'
