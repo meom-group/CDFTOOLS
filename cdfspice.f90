@@ -56,6 +56,8 @@ PROGRAM cdfspice
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
   CHARACTER(LEN=256)                        :: cf_out='spice.nc'  ! output file name
   CHARACTER(LEN=256)                        :: cldum              ! dummy characte variable variable
+  CHARACTER(LEN=256)                        :: cv_sal             ! salinity name in netcdf
+  CHARACTER(LEN=256)                        :: cv_tem             ! temperature name in netcdf
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
   LOGICAL                                   :: lnc4 = .FALSE.     ! flag for missing files
@@ -65,7 +67,7 @@ PROGRAM cdfspice
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfspice [-t] T-file   [-nc4] [-o OUT-file]'
+     PRINT *,' usage : cdfspice -t T-file [-sal SAL-name] [-tem TEM-name] [-nc4] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the spiceness corresponding to temperatures and salinities'
@@ -81,6 +83,8 @@ PROGRAM cdfspice
      PRINT *,'           Single argument T-file can also be used, for backward compatibility'
      PRINT *,'     '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-sal SAL-name]  : name of salinity variable'
+     PRINT *,'       [-tem TEM-name]  : name of temperature variable'
      PRINT *,'       [-nc4]  : enable chunking and compression'
      PRINT *,'       [-o OUT-file]    : specify output filename instead of ',TRIM(cf_out)
      PRINT *,'      '
@@ -99,11 +103,15 @@ PROGRAM cdfspice
   ENDIF
 
   ijarg=1
+  cv_sal=cn_vosaline
+  cv_tem=cn_votemper
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
+     CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT
       IF ( narg == 1 ) THEN
@@ -165,8 +173,8 @@ PROGRAM cdfspice
         PRINT *, 'Level ', jk
         zmask(:,:) = 1.e0
 
-        ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-        zsal( :,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        ztemp(:,:) = getvar(cf_tfil, cv_tem, jk, npiglo, npjglo, ktime=jt)
+        zsal( :,:) = getvar(cf_tfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
 
         WHERE(zsal == zspval ) zmask = 0.e0
      
