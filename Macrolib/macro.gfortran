@@ -3,7 +3,7 @@
 #    $Date: 2011-06-17 12:50:13 +0200 (Fri, 17 Jun 2011) $
 # --------------------------------------------------------------
 #
-NETCDF_ROOT=netcdf-4.1.1-gfortran
+NETCDF_ROOT=/opt/netcdf-4.1.1-gfortran
 NCDF = -I$(NETCDF_ROOT)/include -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf
 
 #F90=gfortran -v
