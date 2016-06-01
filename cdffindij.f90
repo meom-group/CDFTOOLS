@@ -144,11 +144,11 @@ PROGRAM cdffindij
          ENDDO
        ENDIF
        IF ( l_lonlat ) THEN
-           WRITE(iout,'(g,x)',advance="no")  zlon
-           WRITE(iout,'(g,x)',advance="no")  zlat
+           WRITE(iout,'(g20.9,x)',advance="no")  zlon
+           WRITE(iout,'(g20.9,x)',advance="no")  zlat
        ENDIF
-         WRITE(iout,'(i,x)',advance="no") iimin
-         WRITE(iout,'(i,x)'             ) ijmin
+         WRITE(iout,'(i10,x)',advance="no") iimin
+         WRITE(iout,'(i10,x)'             ) ijmin
      ENDDO
  999 CONTINUE
 
