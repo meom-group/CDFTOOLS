@@ -13,16 +13,13 @@ There is a Makefile for compiling the sources. The compiler/machines related def
 
 ```>  ln -sf Macrolib/macro.MACHINE  make.macro```
 
-In the `make.macro` file, the PATH for the netcdf library is specified, as well as compiler name and used flags.  In order to activate netcdf4/HDF5 chunking and deflation ( available in some cdftools), you need to set 
+In the `make.macro` file, the PATH for the netcdf library is specified, as well as compiler name and used flags.  In order to activate netcdf4/HDF5 chunking and deflation ( available in some cdftools), you need to set: 
 
-
-```NC4=-Dkey_netcdf4```
-
+```NC4=-Dkey_netcdf4 ```
 
 in the make.macro file, otherwise set
 
-
-```NC4=```
+```NC4= ```
 
 
 #### Running CDFTOOLS
