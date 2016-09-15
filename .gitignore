@@ -1,3 +1,5 @@
 *~
 make.macro
 !bin/
+*.mod
+*.o
