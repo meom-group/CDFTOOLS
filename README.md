@@ -21,6 +21,8 @@ in the make.macro file, otherwise set
 
 ```NC4= ```
 
+Then using `make` (or even `make -j n` if you can compile on n cores), you will have the cdftools programs executable available in the bin/ sub directory. The executable files are ignore by git.
+
 
 #### Running CDFTOOLS
 CDFTOOLS is a collection of programs. Every single program performs one or many computation(s) using a set of input files and output the results as a netcdf file, and eventually also gives some results on the standard output. 
@@ -32,7 +34,9 @@ CDFTOOLS coding rules imply that there is a build-in documentation foreach cdfto
 ##### Syntax
 The coding rules are the NEMO coding rules, strictly followed. The idea is that people familiar with NEMO are familiar with CDFTOOLS.
 ##### Run time behaviour
-Any `cdftool`, run without argument or with option -h, should display a short documentation, similar to a unix man page, describing the purpose of the tool, the syntax (arguments,  options, etc...) and giving details on the output files. Example:
+Any `cdftool`, run without argument or with option -h, should display a short documentation, similar to a unix man page, describing the purpose of the tool, the syntax (arguments,  options, etc...) and giving details on the output files. For some tools, mesh or/and mask files are required to be present in the working directory, with respective name `mesh_hgr.nc`, `mesh_zgr.nc` or `mask.nc` (links are OK). The usage message should indicate the required files.
+
+Example:
 
 
 ```>    cdfcurl```
@@ -54,7 +58,7 @@ Any `cdftool`, run without argument or with option -h, should display a short do
                  in input. Example of recognized syntax :
                    -l "1,10,30"  or -l "1-20" or even -l "1-3,10-20,30-"
                    -l  1 . Note that -l "3-" set a levlist from 3 to the bottom
- 
+                   
       OPTIONS :
         -T : compute curl at T point instead of default F-point
         -8 : save in double precision instead of standard simple precision.
