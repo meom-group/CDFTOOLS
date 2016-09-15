@@ -4,7 +4,7 @@
 ## Using CDFTOOLS
 
 #### Cloning the git repository
-To retrieve a copy of the SynthPro source code and create a working directory, run the following on the command line: 
+To retrieve a copy of the CDFTOOLS source code and create a working directory, run the following on the command line: 
 
 ```> git clone https://github.com/meom-group/CDFTOOLS```
 
