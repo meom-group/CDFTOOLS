@@ -12,35 +12,35 @@ MODULE modCdfNames
   PUBLIC
 
   ! Dimension name : cn_. [ 1 letter only ]
-  CHARACTER(LEN=256) :: cn_x='x'               !: longitude, I dimension
-  CHARACTER(LEN=256) :: cn_y='y'               !: latitude,  J dimension
-  CHARACTER(LEN=256) :: cn_z='depth'           !: depth, z dimension
-  CHARACTER(LEN=256) :: cn_t='time_counter'    !: time dimension
+  CHARACTER(LEN=256) :: cn_x='i'               !: longitude, I dimension
+  CHARACTER(LEN=256) :: cn_y='j'               !: latitude,  J dimension
+  CHARACTER(LEN=256) :: cn_z='lev'             !: depth, z dimension
+  CHARACTER(LEN=256) :: cn_t='time'            !: time dimension
 
   ! Dimension variable
-  CHARACTER(LEN=256) :: cn_vlon2d  = 'nav_lon'      !: longitude
-  CHARACTER(LEN=256) :: cn_vlat2d  = 'nav_lat'      !: latitude
-  CHARACTER(LEN=256) :: cn_vdeptht = 'deptht'       !: depth
-  CHARACTER(LEN=256) :: cn_vdepthu = 'depthu'       !: depth
-  CHARACTER(LEN=256) :: cn_vdepthv = 'depthv'       !: depth
-  CHARACTER(LEN=256) :: cn_vdepthw = 'depthw'       !: depth
-  CHARACTER(LEN=256) :: cn_vtimec  = 'time_counter' !: time 
-  CHARACTER(LEN=256) :: cn_vlon1d  = 'lon'          !: longitude 1d
-  CHARACTER(LEN=256) :: cn_vlat1d  = 'lat'          !: latitude  1d
+  CHARACTER(LEN=256) :: cn_vlon2d  = 'lon'
+  CHARACTER(LEN=256) :: cn_vlat2d  = 'lat'
+  CHARACTER(LEN=256) :: cn_vdeptht = 'lev'
+  CHARACTER(LEN=256) :: cn_vdepthu = 'lev'
+  CHARACTER(LEN=256) :: cn_vdepthv = 'lev'
+  CHARACTER(LEN=256) :: cn_vdepthw = 'lev'
+  CHARACTER(LEN=256) :: cn_vtimec  = 'time'
+  CHARACTER(LEN=256) :: cn_vlon1d  = 'lon'
+  CHARACTER(LEN=256) :: cn_vlat1d  = 'lat'
 
   ! Attribute of a variable
   CHARACTER(LEN=256) :: cn_missing_value = '_FillValue' !: missing value (to be replaced bby _Fill_Value)
 
   ! Metrics
-  CHARACTER(LEN=256) :: cn_ve1t='e1t', cn_ve2t='e2t'   !: e.t
-  CHARACTER(LEN=256) :: cn_ve1u='e1u', cn_ve2u='e2u'   !: e.u
-  CHARACTER(LEN=256) :: cn_ve1v='e1v', cn_ve2v='e2v'   !: e.v
-  CHARACTER(LEN=256) :: cn_ve1f='e1f', cn_ve2f='e2f'   !: e.v
-  CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3.
+  CHARACTER(LEN=256) :: cn_ve1t='e1t', cn_ve2t='e2t'
+  CHARACTER(LEN=256) :: cn_ve1u='e1u', cn_ve2u='e2u'
+  CHARACTER(LEN=256) :: cn_ve1v='e1v', cn_ve2v='e2v'
+  CHARACTER(LEN=256) :: cn_ve1f='e1f', cn_ve2f='e2f'
+  CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'
   CHARACTER(LEN=256) :: cn_vff='ff'
 
-  CHARACTER(LEN=256) :: cn_gdept='gdept', cn_gdepw='gdepw'   !: 1d dep variable
-  CHARACTER(LEN=256) :: cn_hdept='hdept', cn_hdepw='hdepw'   !: 2d dep variable
+  CHARACTER(LEN=256) :: cn_gdept='gdept', cn_gdepw='gdepw'
+  CHARACTER(LEN=256) :: cn_hdept='hdept', cn_hdepw='hdepw'
 
   CHARACTER(LEN=256) :: cn_glamt='glamt', cn_gphit='gphit'   !:  glam gphi
   CHARACTER(LEN=256) :: cn_glamu='glamu', cn_gphiu='gphiu'   !:  glam gphi
@@ -55,14 +55,14 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_fbasins='new_maskglo.nc'
 
   ! Variable name  : cn_v... [ starts with cn_v ]
-  CHARACTER(LEN=256) :: cn_votemper='votemper' !: temperature
-  CHARACTER(LEN=256) :: cn_vosaline='vosaline' !: salinity
-  CHARACTER(LEN=256) :: cn_vozocrtx='vozocrtx' !: zonal velocity
-  CHARACTER(LEN=256) :: cn_vomecrty='vomecrty' !: meridional velocity
+  CHARACTER(LEN=256) :: cn_votemper='thetao'   !: temperature
+  CHARACTER(LEN=256) :: cn_vosaline='so'       !: salinity
+  CHARACTER(LEN=256) :: cn_vozocrtx='uo'       !: zonal velocity
+  CHARACTER(LEN=256) :: cn_vomecrty='vo'       !: meridional velocity
   CHARACTER(LEN=256) :: cn_vomeeivv='vomeeivv' !: meridional Eddy Induced Velocity
   CHARACTER(LEN=256) :: cn_vovecrtz='vovecrtz' !: vertical velocity
   CHARACTER(LEN=256) :: cn_sossheig='sossheig' !: Sea Surface Height
-  CHARACTER(LEN=256) :: cn_somxl010='somxl010' !: Mixed layer depth (density criterium)
+  CHARACTER(LEN=256) :: cn_somxl010='mlotst'   !: Mixed layer depth (density criterium)
   CHARACTER(LEN=256) :: cn_somxlt02='somxlt02' !: Mixed layer depth (temperature criterium)
   CHARACTER(LEN=256) :: cn_sozotaux='sozotaux' !: Zonal wind stress
 
@@ -119,10 +119,10 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_pendep='pendep'     !: CFC penetration depth (from cdfpendep)
   
   ! ice variable names
-  CHARACTER(LEN=256) :: cn_iicethic='iicethic' !: ice thickness
-  CHARACTER(LEN=256) :: cn_ileadfra='ileadfra' !: ice concentration
-  CHARACTER(LEN=256) :: cn_iicethic3='iicethic'!: ice thickness (LIM3)
-  CHARACTER(LEN=256) :: cn_ileadfra3='iiceconc'!: ice concentration (LIM3)
+  CHARACTER(LEN=256) :: cn_iicethic='sit' !: ice thickness
+  CHARACTER(LEN=256) :: cn_ileadfra='sic' !: ice concentration
+  CHARACTER(LEN=256) :: cn_iicethic3='sit'!: ice thickness (LIM3)
+  CHARACTER(LEN=256) :: cn_ileadfra3='sic'!: ice concentration (LIM3)
   
   ! Bathymetry
   CHARACTER(LEN=256) :: cn_fbathymet='bathy_meter.nc' !: file Bathymetry in meters
