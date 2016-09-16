@@ -25,6 +25,7 @@ PROGRAM cdfheatc
   INTEGER(KIND=4)                           :: iimin=0, iimax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ijmin=0, ijmax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ikmin=0, ikmax=0    ! domain limitation for computation
+  INTEGER(KIND=4)                           :: mxloption=0         ! mixed layer option    
   INTEGER(KIND=4)                           :: narg, iargc, ijarg  ! command line 
   INTEGER(KIND=4)                           :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt            ! size of the domain
@@ -37,7 +38,8 @@ PROGRAM cdfheatc
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp                ! temperature
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! tmask
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdept               ! depth
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mxldep              ! mixed layer depth
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
 
@@ -75,6 +77,8 @@ PROGRAM cdfheatc
      PRINT *,'                   - if kmin = 0 then ALL k are taken'
      PRINT *,'       [-full ] : assume full step model output instead of default'
      PRINT *,'                  partial steps.'
+     PRINT *,'       [-mxloption ] : pass 1 to compute only in the mixed layer, -1 to exclude'
+     PRINT *,'                       it from the calculations '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
@@ -98,8 +102,10 @@ PROGRAM cdfheatc
      CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
      CASE ( '-full' ) ; lfull = .true.
+     CASE ( '-mxloption' ) ;
+        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) mxloption
      CASE DEFAULT
-        PRINT *,' Reading 6 values : imin imax jmin jmax kmin kmax '
+        PRINT *,' Reading 6 values : imin imax jmin jmax kmin kmax'
                                                           READ(cldum,*) iimin
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
@@ -129,28 +135,40 @@ PROGRAM cdfheatc
   PRINT *, 'nvpk   = ', nvpk
 
   ! Allocate arrays
-  ALLOCATE ( tmask(npiglo,npjglo) )
-  ALLOCATE ( temp (npiglo,npjglo) )
-  ALLOCATE ( e1t  (npiglo,npjglo), e2t(npiglo,npjglo), e3t(npiglo,npjglo) )
-  ALLOCATE ( gdept(npk), tim(npt) )
-  IF ( lfull ) ALLOCATE ( e31d(npk) )
+  PRINT *, 'Allocate TMASK'
+  ALLOCATE ( tmask(npiglo,npjglo))
+  PRINT *, 'Allocate temp'
+  ALLOCATE ( temp (npiglo,npjglo))
+  PRINT *, 'Allocate e1t'
+  ALLOCATE ( e1t  (npiglo,npjglo), e2t(npiglo,npjglo), e3t(npiglo,npjglo))
+
+  IF (mxloption /= 0) THEN
+      PRINT *, 'Allocate mxldep'
+      ALLOCATE ( mxldep(npiglo,npjglo))
+  ENDIF
+
+  PRINT *, 'Allocate gdepw'
+  ALLOCATE ( gdepw(npk), tim(npt))
+  IF ( lfull ) ALLOCATE ( e31d(npk))
 
   e1t(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   e2t(:,:) = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
-  gdept(:) = getvare3(cn_fzgr, cn_gdept,  npk)
+  gdepw(:) = getvare3(cn_fzgr, cn_gdepw,  npk)
   tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
+  
   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
 
   DO jt=1,npt
      dvol = 0.d0
      dsum = 0.d0
-     PRINT * ,'TIME : ', tim(jt)/86400.,' days'
+     PRINT * ,'TIME : ', tim(jt)
+     IF (mxloption /= 0) mxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
 
      DO jk = 1,nvpk
         ik = jk + ikmin -1
         ! Get velocities v at ik
         temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
-        tmask(:,:)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
+        tmask(:,:)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )           
 
         ! get e3t at level ik ( ps...)
         IF ( lfull ) THEN
@@ -158,18 +176,25 @@ PROGRAM cdfheatc
         ELSE
            e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
         ENDIF
+        
+        SELECT CASE ( mxloption ) 
+         CASE ( 1 ) 
+            e3t(:,:) = MAX ( 0., MIN( e3t,mxldep-gdepw(ik) ) )
+         CASE ( -1 )
+            e3t(:,:) = MIN ( e3t, MAX( 0.,gdepw(ik)+e3t(:,:)-mxldep ) )
+         END SELECT
 
-        dsurf  = SUM(e1t * e2t       * tmask)
-        dvol2d = SUM(e1t * e2t * e3t * tmask)
+        dsurf  = sum(e1t * e2t       * tmask)
+        dvol2d = sum(e1t * e2t * e3t * tmask)
         dvol   = dvol + dvol2d
 
-        dsum2d = SUM(e1t * e2t * e3t * temp * tmask)
+        dsum2d = sum(e1t * e2t * e3t * temp * tmask)
         dsum   = dsum + dsum2d
 
         IF (dvol2d /= 0 )THEN
-           PRINT *, ' Heat Content  at level ',ik,'(',gdept(ik),' m) ',pprho0*ppcp*dsum2d, 'surface = ',dsurf/1.e6,' km^2'
+           PRINT *, ' Heat Content  at level ',ik,'(',gdepw(ik),' m) ',pprho0*ppcp*dsum2d, 'surface = ',dsurf/1.e6,' km^2'
         ELSE
-           PRINT *, ' No points in the water at level ',ik,'(',gdept(ik),' m) '
+           PRINT *, ' No points in the water at level ',ik,'(',gdepw(ik),' m) '
         ENDIF
 
      END DO
