@@ -24,7 +24,7 @@ PROGRAM cdfpvor
   !!        units : U, V in m.s-1
   !!           e1u, e2v, e1f, e2f in m
   !!           f, xsi in s-1
-  !!           Qpot, Qrel, Qstr in kg.m-4.s-1
+  !!           Qpot, Qrel, Qstr in 1.e-7 kg.m-4.s-1
   !!
   !! History : 2.1  : 12/2005  : A.M. Treguier : Original code
   !!           3.0  : 05/2011  : J.M. Molines  : Doctor norm + Lic., merge with cdfpv
@@ -112,14 +112,14 @@ PROGRAM cdfpvor
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'         variables : vorelvor (kg.m-4.s-1 ) relative vorticity'
-     PRINT *,'                     vostrvor (kg.m-4.s-1 ) stretching vorticity'
-     PRINT *,'                     vototvor (kg.m-4.s-1 ) total potential vorticity'
+     PRINT *,'         variables : vorelvor (1.e-7 kg.m-4.s-1 ) relative vorticity'
+     PRINT *,'                     vostrvor (1.e-7 kg.m-4.s-1 ) stretching vorticity'
+     PRINT *,'                     vototvor (1.e-7 kg.m-4.s-1 ) total potential vorticity'
      PRINT *,'                  Ertel PV are located at T points.'
      PRINT *,'           '
      PRINT *,'       With option -lspv :'
      PRINT *,'       netcdf file : lspv.nc'
-     PRINT *,'         variables :  volspv  (kg.m-4.s-1 ) large scale potential vorticity'
+     PRINT *,'         variables :  volspv  (1.e-7 kg.m-4.s-1 ) large scale potential vorticity'
      PRINT *,'                  LSPV is  located at W points.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
@@ -204,10 +204,10 @@ PROGRAM cdfpvor
   ! create output fileset
 
   ipk(:)= npk                   ! Those three variables are  3D
-  stypvar%cunits            = 'kg.m-4.s-1'
+  stypvar%cunits            = '1.e-7 kg.m-4.s-1'
   stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -1000.
-  stypvar%valid_max         = 1000.
+  stypvar%valid_min         = -10000.
+  stypvar%valid_max         = 10000.
   stypvar%conline_operation = 'N/A'
   stypvar%caxis             = 'TZYX'
 
