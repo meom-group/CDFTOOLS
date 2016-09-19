@@ -192,7 +192,10 @@ PROGRAM cdfpvor
   zpi         = ACOS(-1.)
   zomega      = 2.0  * zpi /(3600*24)
   d2fcor(:,:) = 2.d0 * zomega * SIN(gphit(:,:)*zpi/180.0)
-  dareat(:,:) = 4.d0 * e1t(:,:) * e2t(:,:)  ! factor of 4 to normalize relative vorticity
+
+  IF ( lertel ) THEN
+    dareat(:,:) = 4.d0 * e1t(:,:) * e2t(:,:)  ! factor of 4 to normalize relative vorticity
+  ENDIF
 
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
 
