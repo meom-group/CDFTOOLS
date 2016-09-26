@@ -127,6 +127,7 @@ PROGRAM cdfheatc
   nvpk   = getvdim(cf_tfil,cn_votemper)
   IF (nvpk == 2 ) nvpk = 1
   IF (nvpk == 3 ) nvpk = npk
+  IF (ikmax == 0) ikmax = nvpk
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -164,7 +165,7 @@ PROGRAM cdfheatc
      PRINT * ,'TIME : ', tim(jt)
      IF (mxloption /= 0) mxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
 
-     DO jk = 1,nvpk
+     DO jk = ikmin,ikmax
         ik = jk + ikmin -1
         ! Get velocities v at ik
         temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
@@ -174,7 +175,7 @@ PROGRAM cdfheatc
         IF ( lfull ) THEN
            e3t(:,:) = e31d(jk)
         ELSE
-           e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
+           e3t(:,:) = getvar(cn_fzgr, 'e3t', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
         ENDIF
         
         SELECT CASE ( mxloption ) 
