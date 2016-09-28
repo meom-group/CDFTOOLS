@@ -1,12 +1,10 @@
 # Modules
 
-link_libraries(-lnetcdf -lnetcdff)
-
 add_library(modcdfnames modcdfnames.f90)
 add_library(modpoly modpoly.f90)
 
 add_library(cdfio cdfio.F90)
-target_link_libraries (cdfio modcdfnames )
+target_link_libraries (cdfio modcdfnames -lnetcdf -lnetcdff)
 
 add_library(cdftools cdftools.f90)
 target_link_libraries (cdftools cdfio)
@@ -19,7 +17,7 @@ target_link_libraries (modutils cdfio)
 
 # Executables
 
-link_libraries(cdfio modcdfnames)
+link_libraries(cdfio)
 
 add_executable(cdfmsk cdfmsk.f90)
 add_executable(cdfmkmask cdfmkmask.f90)
@@ -132,6 +130,11 @@ add_executable(cdfflxconv cdfflxconv.f90)
 add_executable(cdfsstconv cdfsstconv.f90)
 add_executable(cdfstrconv cdfstrconv.f90)
 add_executable(cdfbathy cdfbathy.f90)
+add_custom_command(TARGET cdfbathy 
+                    POST_BUILD 
+                    COMMAND ln -sf  cdfbathy cdfvar
+                    WORKING_DIRECTORY ${EXECUTABLE_OUTPUT_PATH}
+                    COMMENT "cdfvar is just an alias of cdfbathy")
 add_executable(cdfcofdis cdfcofdis.f90)
 add_executable(cdfcoastline cdfcoastline.f90)
 add_executable(cdfcsp cdfcsp.f90)

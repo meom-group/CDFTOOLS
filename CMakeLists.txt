@@ -1,7 +1,7 @@
+
 cmake_minimum_required(VERSION 3.2)
-project(CDFTOOLS)
-add_subdirectory(src)
-enable_language (Fortran)
+project(CDFTOOLS Fortran)
+
 
 set(EXECUTABLE_OUTPUT_PATH ${CMAKE_BINARY_DIR}/bin/)
 set(LIBRARY_OUTPUT_PATH ${CMAKE_BINARY_DIR}/lib/)
@@ -21,4 +21,6 @@ include_directories(${INCLUDE_DIRS})
 link_directories(${LIB_DIRS})
 
 SET( CMAKE_Fortran_FLAGS  "${CMAKE_Fortran_FLAGS} ${COMMON_COMPILER_FLAGS}" )
+
+add_subdirectory(src)
 
