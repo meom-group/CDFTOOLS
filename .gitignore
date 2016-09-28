@@ -2,3 +2,9 @@
 make.macro
 *.mod
 *.o
+CMakeCache.txt
+CMakeFiles
+.metadata/
+cmake_install.cmake
+lib
+bin
