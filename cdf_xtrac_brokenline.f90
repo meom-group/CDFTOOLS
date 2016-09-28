@@ -82,11 +82,11 @@ PROGRAM cdf_xtract_brokenline
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temper, saline      ! model Temperature and salinity
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: uzonal, vmerid      ! model zonal and meridional velocity
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ssh, rmld           ! model SSH and MLD
-   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: icethick, icefra    ! ice thickness and fraction
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ricethick, ricefra    ! ice thickness and fraction
    ! along section array (dimension x,z or x,1 )
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: tempersec, salinesec, uzonalsec, vmeridsec
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: sshsec, rmldsec
-   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: icethicksec, icefrasec
+   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: ricethicksec, ricefrasec
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rlonsec, rlatsec, risec, rjsec
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e3usec, e3vsec
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: batsec
@@ -290,7 +290,7 @@ PROGRAM cdf_xtract_brokenline
    ALLOCATE(hdepw(npiglo,npjglo), rmbat(npiglo, npjglo))
    IF ( lssh ) ALLOCATE (ssh (npiglo, npjglo))
    IF ( lmld ) ALLOCATE (rmld(npiglo, npjglo))
-   IF ( lice ) ALLOCATE(icethick(npiglo,npjglo),icefra(npiglo,npjglo))
+   IF ( lice ) ALLOCATE(ricethick(npiglo,npjglo),ricefra(npiglo,npjglo))
 
    ! allocate section working arrays
    ALLOCATE ( iilegs(nstamax-1, npiglo+npjglo, nsec), ijlegs(nstamax-1, npiglo+npjglo, nsec) )
@@ -372,7 +372,7 @@ PROGRAM cdf_xtract_brokenline
    ALLOCATE( uzonalsec(npsecmax-1,npk), vmeridsec(npsecmax-1,npk) )
    IF ( lssh ) ALLOCATE ( sshsec (npsecmax-1,1) )
    IF ( lmld ) ALLOCATE ( rmldsec(npsecmax-1,1) )
-   IF ( lice ) ALLOCATE(icethicksec(npsecmax-1,1),icefrasec(npsecmax-1,1))
+   IF ( lice ) ALLOCATE(ricethicksec(npsecmax-1,1),ricefrasec(npsecmax-1,1))
 
    ! Next arrays are initialized outside the vertical loop and thus require a section index
    ALLOCATE ( iisec    (npsecmax,nsec),     ijsec(npsecmax,nsec) ) 
@@ -487,8 +487,8 @@ PROGRAM cdf_xtract_brokenline
       dbarot(:) = 0.d0    ! reset barotropic transport  for all sections
       IF ( lssh ) ssh (:,:)     = getvar(cf_tfil  , cn_sossheig, 1, npiglo, npjglo, ktime = jt)
       IF ( lmld ) rmld(:,:)     = getvar(cf_tfil  , cn_somxl010, 1, npiglo, npjglo, ktime = jt)
-      IF ( lice ) icethick(:,:) = getvar(cf_icefil, cn_iicethic , 1, npiglo, npjglo, ktime = jt)
-      IF ( lice ) icefra(:,:)   = getvar(cf_icefil, cn_ileadfra , 1, npiglo, npjglo, ktime = jt)
+      IF ( lice ) ricethick(:,:) = getvar(cf_icefil, cn_iicethic , 1, npiglo, npjglo, ktime = jt)
+      IF ( lice ) ricefra(:,:)   = getvar(cf_icefil, cn_ileadfra , 1, npiglo, npjglo, ktime = jt)
 
       DO jk=1,npk   ! level loop , read only once the horizontal slab
          temper(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
@@ -519,15 +519,15 @@ PROGRAM cdf_xtract_brokenline
                         tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
                         IF ( ll_ssh ) sshsec(jipt,jk) = 0.
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.
-                        IF ( ll_ice ) icefrasec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
                      ELSE
                         tempersec(jipt,jk) = 0.5 * ( temper(ii+1,ij) + temper(ii+1,ij+1) )
                         salinesec(jipt,jk) = 0.5 * ( saline(ii+1,ij) + saline(ii+1,ij+1) )
                         IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii+1,ij) + ssh (ii+1,ij+1) )
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii+1,ij) + rmld(ii+1,ij+1) )
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.5 * ( icethick(ii+1,ij) + icethick(ii+1,ij+1) )
-                        IF ( ll_ice ) icefrasec(jipt,jk)   = 0.5 * ( icefra(ii+1,ij) + icefra(ii+1,ij+1) )
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii+1,ij) + ricethick(ii+1,ij+1) )
+                        IF ( ll_ice ) ricefrasec(jipt,jk)   = 0.5 * ( ricefra(ii+1,ij) + ricefra(ii+1,ij+1) )
                      ENDIF
                      vmeridsec(jipt,jk) = vmerid(ii+1,ij) * normv_sec(jipt,jsec)
                      e3vsec   (jipt,jk) = e3v   (ii+1,ij)
@@ -538,15 +538,15 @@ PROGRAM cdf_xtract_brokenline
                         tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
                         IF ( ll_ssh ) sshsec (jipt,jk) = 0.
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.
-                        IF ( ll_ice ) icefrasec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
                      ELSE
                         tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii,ij+1) )
                         salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii,ij+1) )
                         IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii,ij) + ssh (ii,ij+1) )
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij) + rmld(ii,ij+1) )
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.5 * ( icethick(ii,ij) + icethick(ii,ij+1) )
-                        IF ( ll_ice ) icefrasec(jipt,jk) = 0.5 * ( icefra(ii,ij) + icefra(ii,ij+1) )
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii,ij) + ricethick(ii,ij+1) )
+                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.5 * ( ricefra(ii,ij) + ricefra(ii,ij+1) )
                      ENDIF
                      vmeridsec(jipt,jk) = vmerid(ii,ij) * normv_sec(jipt,jsec)
                      e3vsec   (jipt,jk) = e3v   (ii,ij)
@@ -561,15 +561,15 @@ PROGRAM cdf_xtract_brokenline
                         tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
                         IF ( ll_ssh ) sshsec (jipt,jk) = 0.
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.
-                        IF ( ll_ice ) icefrasec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
                      ELSE
                         tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii+1,ij) )
                         salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii+1,ij) )
                         IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii,ij) + ssh (ii+1,ij) )
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij) + rmld(ii+1,ij) )
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.5 * ( icethick(ii,ij) + icethick(ii+1,ij) )
-                        IF ( ll_ice ) icefrasec(jipt,jk) = 0.5 * ( icefra(ii,ij) + icefra(ii+1,ij) )
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii,ij) + ricethick(ii+1,ij) )
+                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.5 * ( ricefra(ii,ij) + ricefra(ii+1,ij) )
                      ENDIF
                      uzonalsec(jipt,jk) = uzonal(ii,ij) * normu_sec(jipt,jsec)
                      e3usec   (jipt,jk) = e3u   (ii,ij)
@@ -580,15 +580,15 @@ PROGRAM cdf_xtract_brokenline
                         tempersec(jipt,jk) = 0. ; salinesec(jipt,jk) = 0.
                         IF ( ll_ssh ) sshsec (jipt,jk) = 0.
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.
-                        IF ( ll_ice ) icefrasec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
+                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
                      ELSE
                         tempersec(jipt,jk) = 0.5 * ( temper(ii,ij+1) + temper(ii+1,ij+1) )
                         salinesec(jipt,jk) = 0.5 * ( saline(ii,ij+1) + saline(ii+1,ij+1) )
                         IF ( ll_ssh ) sshsec (jipt,jk) = 0.5 * ( ssh (ii,ij+1) + ssh (ii+1,ij+1) )
                         IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij+1) + rmld(ii+1,ij+1) )
-                        IF ( ll_ice ) icethicksec(jipt,jk) = 0.5 * ( icethick(ii,ij+1) + icethick(ii+1,ij+1) )
-                        IF ( ll_ice ) icefrasec(jipt,jk) = 0.5 * ( icefra(ii,ij+1) + icefra(ii+1,ij+1) )
+                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii,ij+1) + ricethick(ii+1,ij+1) )
+                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.5 * ( ricefra(ii,ij+1) + ricefra(ii+1,ij+1) )
                      ENDIF
                      uzonalsec(jipt,jk) = uzonal(ii,ij+1) * normu_sec(jipt,jsec)
                      e3usec   (jipt,jk) = e3u   (ii,ij+1)
@@ -619,8 +619,8 @@ PROGRAM cdf_xtract_brokenline
                  &                                                  jk, npsec(jsec)-1, 1, ktime=jt ) 
             IF (ll_ssh) ierr = putvar (ncout(jsec), id_varout(np_ssh), sshsec (:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
             IF (ll_mld) ierr = putvar (ncout(jsec), id_varout(np_mld), rmldsec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icethick), icethicksec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icefra), icefrasec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icethick), ricethicksec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icefra), ricefrasec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
 
             IF ( jt == 1 ) THEN   ! output of time independent variables at first time step only
                ! save a mask of the section
