@@ -8,3 +8,9 @@
 *.aux
 *.idx
 *.toc
+CMakeCache.txt
+CMakeFiles
+.metadata/
+cmake_install.cmake
+lib
+bin

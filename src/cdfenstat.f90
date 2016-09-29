@@ -280,7 +280,7 @@ PROGRAM cdfenstat
               ! store variable on outputfile
               DO jrec = 1, npt
                 DO jk=1, ipk(jv)
-                ierr = putvar(ncout, id_varout(jv),       SNGL(d4tabn(:,:,jk,jrec)),                 jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
+                ierr = putvar(ncout, id_varout(jv),SNGL(d4tabn(:,:,jk,jrec)),jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
                 ierr = putvar(ncout, id_varout(jv+nvars), SQRT(SNGL(d4tab2n(:,:,jk,jrec))/(nfil-1)), jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
                 ENDDO
               ENDDO
@@ -308,7 +308,7 @@ PROGRAM cdfenstat
 
               ! store variable on outputfile
               DO jrec = 1, npt
-                ierr = putvar(ncout, id_varout(jv),       SNGL(dtabn(:,:,jrec)),                 jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
+                ierr = putvar(ncout, id_varout(jv),SNGL(dtabn(:,:,jrec)),jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
                 ierr = putvar(ncout, id_varout(jv+nvars), SQRT(SNGL(dtab2n(:,:,jrec))/(nfil-1)), jk, npiglo, npjglo, kwght=nfil, ktime = jrec )
               ENDDO
            END DO  ! loop to next level

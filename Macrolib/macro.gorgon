@@ -1,7 +1,0 @@
-# Makefile for CDFTOOLS (Linux with pgi)
-#
-NCDF = -I/usr/local/Cluster-Apps/netcdf/pgi/3.6.1/include -L/usr/local/Cluster-Apps/netcdf/pgi/3.6.1/lib -lnetcdf
-INCDIR = -I/usr/local/Cluster-Apps/netcdf/pgi/3.6.1/include
- 
-F90=pgf90
-FFLAGS = -fast $(NCDF) -byteswapio
