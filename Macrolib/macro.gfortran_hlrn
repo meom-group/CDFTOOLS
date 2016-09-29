@@ -1,0 +1,10 @@
+# module load gcc/4.9.1.hlrn netcdf/4.3.3.1 hdf5/1.8.14 
+
+INCS = $(NETCDF_INC) $(HDF5_INC)
+LIBS = $(NETCDF_F90_LIB) $(HDF5_F90_LIB)
+ 
+F90=gfortran
+
+FFLAGS= -O $(INCS) $(LIBS) -fno-second-underscore -ffree-line-length-256
+
+INSTALL=$(HOME)/local/bin

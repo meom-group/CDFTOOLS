@@ -594,7 +594,7 @@ PROGRAM cdftransport
       ierr     = createvar   (ncout,    stypvar,   nvarout,  ipk, id_varout, cdglobal=TRIM(cglobal) )
       ierr     = putheadervar(ncout,    cf_ufil,   ikx, iky, nclass, pnavlon=rdum, pnavlat=rdum, pdep=rclass )
       tim      = getvar1d    (cf_ufil,  cn_vtimec, npt     )
-      ierr     = putvar1d    (ncout,    tim,       npt, 'T')
+      ierr     = putvar1d    (ncout,    tim(itime:itime),       1, 'T')
 
       PRINT *, ' Give iimin, iimax, ijmin, ijmax '
       READ(*,*) iimin, iimax, ijmin, ijmax
@@ -830,24 +830,24 @@ PROGRAM cdftransport
          ! netcdf output 
          IF ( nclass > 1 ) THEN
             rdum(1,1) = REAL(dvoltrpsum(jclass)/1.e6)
-            ierr = putvar(ncout,id_varout(ivtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+            ierr = putvar(ncout,id_varout(ivtrpcl), rdum, jclass, 1, 1, 1 ) 
             IF ( lpm   ) THEN
                rdum(1,1) =  REAL(dvoltrpsump(jclass)/1.e6)
-               ierr = putvar(ncout,id_varout(iptrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+               ierr = putvar(ncout,id_varout(iptrpcl), rdum, jclass, 1, 1, 1 ) 
                rdum(1,1) =  REAL(dvoltrpsumm(jclass)/1.e6)
-               ierr = putvar(ncout,id_varout(imtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+               ierr = putvar(ncout,id_varout(imtrpcl), rdum, jclass, 1, 1, 1 ) 
             ENDIF
             IF ( lheat ) THEN
                rdum(1,1) =  REAL(dheatrpsum(jclass)/1.e15)
-               ierr = putvar(ncout,id_varout(ihtrpcl), rdum, jclass, 1, 1, ktime=itime ) 
+               ierr = putvar(ncout,id_varout(ihtrpcl), rdum, jclass, 1, 1, 1 ) 
                rdum(1,1) =  REAL(dsaltrpsum(jclass)/1.e6)
-               ierr = putvar(ncout,id_varout(istrpcl), rdum, jclass, 1, 1, ktime=itime )
+               ierr = putvar(ncout,id_varout(istrpcl), rdum, jclass, 1, 1, 1 )
             ENDIF
          ENDIF
          rdum(1,1) = REAL(gdepw(ilev0(jclass)))
-         ierr = putvar(ncout,id_varout(itop), rdum, jclass, 1, 1, ktime=itime )
+         ierr = putvar(ncout,id_varout(itop), rdum, jclass, 1, 1, 1 )
          rdum(1,1) = REAL(gdepw(ilev1(jclass)+1))
-         ierr = putvar(ncout,id_varout(ibot), rdum, jclass, 1, 1, ktime=itime )
+         ierr = putvar(ncout,id_varout(ibot), rdum, jclass, 1, 1, 1 )
 
          dvoltrpbrtp = dvoltrpbrtp +  dvoltrpsum(jclass)
          IF ( lpm  ) THEN

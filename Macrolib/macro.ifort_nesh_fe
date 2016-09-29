@@ -1,0 +1,16 @@
+# Makefile for CDFTOOLS : nesh-fe.rz.uni-kiel.de
+#
+# $ module load intel netcdf_intel hfd5_intel
+#
+# (Linked dynamically!)
+
+INSTALL = $(HOME)/bin
+
+# libs
+LIBS = \
+  -L$(HDF5_DIR)/lib -L$(NETCDF_DIR)/lib -I$(NETCDF_DIR)/include \
+  -lhdf5 -lnetcdf -lnetcdff -lhdf5_hl \
+  -L/lib64 -limf -lm -lz 
+
+F90 = ifort
+FFLAGS = -O -assume byterecl -convert big_endian $(LIBS) 
