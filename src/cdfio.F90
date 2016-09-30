@@ -266,7 +266,7 @@ CONTAINS
 
     INTEGER(KIND=4)               :: istatus, icout, incid, idum
     INTEGER(KIND=4) ,DIMENSION(4) :: invdim
-    CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar, clonvar, clatvar
+    CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar
     LOGICAL                       :: ll_xycoo, ll_nc4
     !!----------------------------------------------------------------------
     IF ( PRESENT (ld_nc4 ) ) THEN 
@@ -378,7 +378,7 @@ CONTAINS
 
     INTEGER(KIND=4)               :: jv             ! dummy loop index
     INTEGER(KIND=4)               :: idims, istatus 
-    INTEGER(KIND=4), DIMENSION(4) :: iidims, ichunk
+    INTEGER(KIND=4), DIMENSION(4) :: iidims
     INTEGER(KIND=4)               :: iprecision
     LOGICAL                       :: ll_nc4
     !!----------------------------------------------------------------------
@@ -672,7 +672,7 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(in) :: cdvar   ! var name
     CHARACTER(LEN=*), INTENT(in) :: cdatt   ! attribute name to look for
 
-    INTEGER(KIND=4) :: istatus, jv, incid, idum
+    INTEGER(KIND=4) :: istatus, incid, idum
     !!----------------------------------------------------------------------
     istatus = NF90_OPEN  (cdfile, NF90_NOWRITE, incid)
     istatus = NF90_INQ_VARID(incid, cdvar, idum)
@@ -1224,7 +1224,7 @@ CONTAINS
     INTEGER(KIND=4)                             :: incid, id_var, id_dimunlim, inbdim
     INTEGER(KIND=4)                             :: istatus, ilev, imin, jmin
     INTEGER(KIND=4)                             :: itime, ilog, ipiglo, imax
-    INTEGER(KIND=4), SAVE                       :: ii, ij, ik0, ji, jj, ik1, ik
+    INTEGER(KIND=4), SAVE                       :: ii, ij, ik0, ji, jj, ik
     REAL(KIND=4)                                :: sf=1., ao=0.        !: Scale factor and add_offset
     REAL(KIND=4)                                :: spval  !: missing value
     REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: zend, zstart
@@ -1297,11 +1297,25 @@ CONTAINS
            IF ( .NOT. l_mbathy ) THEN
              PRINT *,'MESH_ZGR V3 detected'
              l_mbathy=.true.
-             istatus=NF90_INQ_DIMID(incid,'x',id_var) ; istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ii )
-             istatus=NF90_INQ_DIMID(incid,'y',id_var) ; istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ij )
-             istatus=NF90_INQ_DIMID(incid,'z',id_var) ; istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ik0)
 
-             ALLOCATE( mbathy(ii,ij))               ! mbathy is allocated on the whole domain
+             istatus=NF90_INQ_DIMID(incid,cn_x,id_var) ;
+             IF (istatus /= NF90_NOERR) THEN
+                istatus=NF90_INQ_DIMID(incid,cn_x,id_var) ;
+             ENDIF
+             istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ii )
+
+             istatus=NF90_INQ_DIMID(incid,cn_y,id_var) ;
+             IF (istatus /= NF90_NOERR) THEN
+                istatus=NF90_INQ_DIMID(incid,'y',id_var) ;
+             ENDIF
+             istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ij )
+
+             istatus=NF90_INQ_DIMID(incid,cn_z,id_var) ;
+             IF (istatus /= NF90_NOERR) THEN
+                istatus=NF90_INQ_DIMID(incid,'z',id_var) ;
+             ENDIF
+             istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ik0)
+             ALLOCATE( mbathy(ii,ij))
              ALLOCATE( e3t_ps(ii,ij),e3w_ps(ii,ij)) ! e3._ps  are  allocated on the whole domain
              ALLOCATE( e3t_0(ik0), e3w_0(ik0) )     ! whole depth
 
@@ -1586,7 +1600,6 @@ CONTAINS
     INTEGER(KIND=4)               :: istatus
     INTEGER(KIND=4)               :: iimin, ijmin, ikmin
     INTEGER(KIND=4)               :: itime, ilog
-    INTEGER(KIND=4)               :: idum
     REAL(KIND=4)                  :: sf=1., ao=0.       !  Scale factor and add_offset
     REAL(KIND=4)                  :: spval              !  Missing values
     LOGICAL                       :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
@@ -1685,12 +1698,10 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpi,kpj,kpt)  :: getvar3dt      ! 3D REAL 
 
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount
-    INTEGER(KIND=4)               :: jt
     INTEGER(KIND=4)               :: incid, id_var, iid
     INTEGER(KIND=4)               :: istatus
     INTEGER(KIND=4)               :: iimin, ijmin, itmin
-    INTEGER(KIND=4)               :: itime, ilog
-    INTEGER(KIND=4)               :: idum
+    INTEGER(KIND=4)               :: ilog
     REAL(KIND=4)                  :: sf=1., ao=0.       !  Scale factor and add_offset
     REAL(KIND=4)                  :: spval              !  Missing values
     LOGICAL                       :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
@@ -1793,7 +1804,6 @@ CONTAINS
     INTEGER(KIND=4)               :: istatus
     INTEGER(KIND=4)               :: iimin, ijmin, ikmin, itmin
     INTEGER(KIND=4)               :: ilog
-    INTEGER(KIND=4)               :: idum
     REAL(KIND=4)                  :: sf=1., ao=0.       !  Scale factor and add_offset
     REAL(KIND=4)                  :: spval              !  Missing values
     LOGICAL                       :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
@@ -1900,7 +1910,7 @@ CONTAINS
 
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount
     INTEGER(KIND=4)               :: incid, id_var
-    INTEGER(KIND=4)               :: istatus, ilev, imin, kmin
+    INTEGER(KIND=4)               :: istatus, imin, kmin
     INTEGER(KIND=4)               :: itime, ilog
     INTEGER(KIND=4)               :: idum
     REAL(KIND=4)                  :: sf=1., ao=0.       !  Scale factor and add_offset
@@ -2004,7 +2014,7 @@ CONTAINS
 
     INTEGER(KIND=4), DIMENSION(4)       :: istart, icount
     INTEGER(KIND=4)                     :: incid, id_var
-    INTEGER(KIND=4)                     :: istatus, ilev, jmin, kmin
+    INTEGER(KIND=4)                     :: istatus, jmin, kmin
     INTEGER(KIND=4)                     :: itime, ilog
     INTEGER(KIND=4)                     :: idum
 
@@ -2930,7 +2940,7 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(in) :: cd_var
 
     INTEGER(KIND=4)              :: istatus
-    INTEGER(KIND=4)              :: incid, id_t, id_var
+    INTEGER(KIND=4)              :: incid, id_var
 
     !!----------------------------------------------------------------------
     IF ( TRIM(cd_var) /= 'none')  THEN
@@ -2987,7 +2997,7 @@ CONTAINS
     CHARACTER(LEN=*), INTENT(in) :: cd_file
     TYPE(ncfile)                 :: GetNcFile
 
-    INTEGER(KIND=4) :: jvar, jdim                      ! loop index
+    INTEGER(KIND=4) :: jvar                      ! loop index
     INTEGER(KIND=4) :: ierr, idx, idy, idz, idt, idb   ! error status and dimids
     !!----------------------------------------------------------------------
     GetNcFile%c_fnam = cd_file

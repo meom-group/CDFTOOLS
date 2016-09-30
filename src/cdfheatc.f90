@@ -21,7 +21,6 @@ PROGRAM cdfheatc
 
   INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
   INTEGER(KIND=4)                           :: ik                  ! working integer
-  INTEGER(KIND=4)                           :: ierr                ! working integer
   INTEGER(KIND=4)                           :: iimin=0, iimax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ijmin=0, ijmax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ikmin=0, ikmax=0    ! domain limitation for computation
@@ -34,10 +33,11 @@ PROGRAM cdfheatc
   REAL(KIND=4), PARAMETER                   :: pprho0=1020.        ! water density (kg/m3)
   REAL(KIND=4), PARAMETER                   :: ppcp=4000.          ! calorific capacity (J/kg/m3)
 
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1t, e2t            ! horizontal metrics
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2t            ! horizontal metrics
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: weight            ! horizontal metrics
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: e3t                 ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp                ! temperature
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! tmask
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: tmask               ! tmask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mxldep              ! mixed layer depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
@@ -135,24 +135,19 @@ PROGRAM cdfheatc
   PRINT *, 'nvpk   = ', nvpk
 
   ! Allocate arrays
-  PRINT *, 'Allocate TMASK'
-  ALLOCATE ( tmask(npiglo,npjglo))
-  PRINT *, 'Allocate temp'
+  ALLOCATE ( tmask(npiglo,npjglo,nvpk))
   ALLOCATE ( temp (npiglo,npjglo))
-  PRINT *, 'Allocate e1t'
-  ALLOCATE ( e1t  (npiglo,npjglo), e2t(npiglo,npjglo), e3t(npiglo,npjglo))
+  ALLOCATE (e2t(npiglo,npjglo), e3t(npiglo,npjglo, nvpk))
+  ALLOCATE (weight(npiglo,npjglo))
 
   IF (mxloption /= 0) THEN
-      PRINT *, 'Allocate mxldep'
       ALLOCATE ( mxldep(npiglo,npjglo))
   ENDIF
 
-  PRINT *, 'Allocate gdepw'
   ALLOCATE ( gdepw(npk), tim(npt))
   IF ( lfull ) ALLOCATE ( e31d(npk))
 
-  e1t(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
-  e2t(:,:) = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+  e2t(:,:) = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin) * getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw,  npk)
   tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
   
@@ -162,33 +157,44 @@ PROGRAM cdfheatc
      dvol = 0.d0
      dsum = 0.d0
      PRINT * ,'TIME : ', tim(jt)
-     IF (mxloption /= 0) mxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
+     IF (mxloption /= 0) THEN
+         mxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
+     ENDIF
 
      DO jk = 1,nvpk
         ik = jk + ikmin -1
         ! Get velocities v at ik
         temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
-        tmask(:,:)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )           
+        IF ( jt == 1 ) THEN
+            PRINT *, 'Reading mask'
+            tmask(:,:, jk)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
 
-        ! get e3t at level ik ( ps...)
-        IF ( lfull ) THEN
-           e3t(:,:) = e31d(jk)
-        ELSE
-           e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
+            ! get e3t at level ik ( ps...)
+            PRINT *, 'Preparing e3t'
+            IF ( lfull ) THEN
+               e3t(:,:, jk) = e31d(jk)
+            ELSE
+               e3t(:,:, jk) = getvar(cn_fzgr, cn_ve3t, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
+            ENDIF
         ENDIF
+        weight = e2t * tmask(:,:,jk)
+
+        dsurf  = sum(weight)
         
         SELECT CASE ( mxloption ) 
          CASE ( 1 ) 
-            e3t(:,:) = MAX ( 0., MIN( e3t,mxldep-gdepw(ik) ) )
+            weight(:,:) = MAX ( 0., MIN( e3t(:,:, jk),mxldep-gdepw(ik) ) ) * weight
          CASE ( -1 )
-            e3t(:,:) = MIN ( e3t, MAX( 0.,gdepw(ik)+e3t(:,:)-mxldep ) )
+            weight(:,:) = MIN ( e3t(:,:, jk), MAX( 0.,gdepw(ik)+e3t(:,:,jk)-mxldep ) ) * weight
+         CASE ( 0 )
+            weight(:,:)= e3t(:,:, jk) * weight
          END SELECT
 
-        dsurf  = sum(e1t * e2t       * tmask)
-        dvol2d = sum(e1t * e2t * e3t * tmask)
+
+        dvol2d = sum(weight)
         dvol   = dvol + dvol2d
 
-        dsum2d = sum(e1t * e2t * e3t * temp * tmask)
+        dsum2d = sum(weight * temp)
         dsum   = dsum + dsum2d
 
         IF (dvol2d /= 0 )THEN
