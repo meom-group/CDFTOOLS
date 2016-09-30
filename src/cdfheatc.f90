@@ -127,6 +127,7 @@ PROGRAM cdfheatc
   nvpk   = getvdim(cf_tfil,cn_votemper)
   IF (nvpk == 2 ) nvpk = 1
   IF (nvpk == 3 ) nvpk = npk
+  IF (ikmax == 0) ikmax = nvpk
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -161,16 +162,14 @@ PROGRAM cdfheatc
          mxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
      ENDIF
 
-     DO jk = 1,nvpk
+     DO jk = ikmin,ikmax
         ik = jk + ikmin -1
         ! Get velocities v at ik
         temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
         IF ( jt == 1 ) THEN
-            PRINT *, 'Reading mask'
             tmask(:,:, jk)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
 
             ! get e3t at level ik ( ps...)
-            PRINT *, 'Preparing e3t'
             IF ( lfull ) THEN
                e3t(:,:, jk) = e31d(jk)
             ELSE

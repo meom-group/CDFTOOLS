@@ -1301,18 +1301,27 @@ CONTAINS
              istatus=NF90_INQ_DIMID(incid,cn_x,id_var) ;
              IF (istatus /= NF90_NOERR) THEN
                 istatus=NF90_INQ_DIMID(incid,cn_x,id_var) ;
+                IF ( istatus /=  NF90_NOERR ) THEN
+                   PRINT *, 'Problem reading x dimension : no x or ', cn_x, ' dimension found !' ; STOP
+                ENDIF
              ENDIF
              istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ii )
 
              istatus=NF90_INQ_DIMID(incid,cn_y,id_var) ;
              IF (istatus /= NF90_NOERR) THEN
                 istatus=NF90_INQ_DIMID(incid,'y',id_var) ;
+                IF ( istatus /=  NF90_NOERR ) THEN
+                   PRINT *, 'Problem reading y dimension : no y or ', cn_y, ' dimension found !' ; STOP
+                ENDIF
              ENDIF
              istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ij )
 
              istatus=NF90_INQ_DIMID(incid,cn_z,id_var) ;
              IF (istatus /= NF90_NOERR) THEN
                 istatus=NF90_INQ_DIMID(incid,'z',id_var) ;
+                IF ( istatus /=  NF90_NOERR ) THEN
+                   PRINT *, 'Problem reading y dimension : no z or ', cn_z, ' dimension found !' ; STOP
+                ENDIF
              ENDIF
              istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ik0)
              ALLOCATE( mbathy(ii,ij))
