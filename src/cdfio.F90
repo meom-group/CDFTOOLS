@@ -1221,7 +1221,7 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpi,kpj) :: getvar            ! 2D REAL 4 holding variable field at klev
 
     INTEGER(KIND=4), DIMENSION(4)               :: istart, icount, inldim
-    INTEGER(KIND=4)                             :: incid, id_var, id_dimunlim, inbdim
+    INTEGER(KIND=4)                             :: incid, id_var, id_dimunlim, inbdim, inbdim2
     INTEGER(KIND=4)                             :: istatus, ilev, imin, jmin
     INTEGER(KIND=4)                             :: itime, ilog, ipiglo, imax
     INTEGER(KIND=4), SAVE                       :: ii, ij, ik0, ji, jj, ik1, ik
@@ -1286,12 +1286,13 @@ CONTAINS
       istatus=NF90_INQ_VARID( incid,'e3t_0', id_var)
       istatus=NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim) !, dimids, nAtts)
       IF ( istatus == NF90_NOERR ) THEN
+         PRINT *, 'e3t_0 has' , inbdim, 'dimensions'
         ! iom file , change names
         ! now try to detect if it is v2 or v3, in v3, e3t_ps exist and is a 2d variable
          istatus=NF90_INQ_VARID( incid,'e3t_ps', id_var)
+         istatus=NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim2) !, dimids, nAtts)
          !istatus2=NF90_INQUIRE_VAR( incid, id_var, 'e3t_0', xtype, ndims, dimids, nAtts)
-         PRINT *, 'e3t_0 has' , inbdim, 'dimensions'
-         IF ( istatus == NF90_NOERR ) THEN  
+         IF (( istatus == NF90_NOERR ) .and. (inbdim2 == 2)) THEN  
            ! case of NEMO_v3 zfr files
            ! look for mbathy and out it in memory, once for all
            IF ( .NOT. l_mbathy ) THEN

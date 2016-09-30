@@ -138,8 +138,8 @@ PROGRAM cdfpsi
      CASE ('-mask') ; lmask = .TRUE.
      CASE ('-mean') ; lmean = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
      CASE ('-ssh' ) ; lssh  = .TRUE.  ; nvout=3
-     CASE ('-nc4' ) ; lnc4  = .TRUE. 
         CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg + 1 
+     CASE ('-nc4' ) ; lnc4  = .TRUE. 
      CASE ('-open') ; lopen = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
      CASE ('-o'   ) ; CALL getarg( ijarg, cf_out )   ; ijarg=ijarg + 1 
      CASE ('-ref') 
