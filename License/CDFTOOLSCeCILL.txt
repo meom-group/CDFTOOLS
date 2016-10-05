@@ -6,7 +6,8 @@ Contributors (alphabetic order ) :
 C.Q. Akuetevi, M. Balmaseda, E. Behrens, F. Castruccio, P. Colombo, 
 J. Deshayes, N. Djath, N. Ducousso, C. Dufour, R. Dussin, N. Ferry, 
 F. Hernandez, M. Juza, A. Lecointre, S. Leroux, G. Mainsant, P. Mathiot, 
-A. Melet, X. Meunier, G. Moreau, W. Rath, J. Regidor, A.M. Treguier
+A. Melet, X. Meunier, G. Moreau, W. Rath, J. Regidor, M. Scheinert,
+A.M. Treguier
 
 This software is a computer program for analysis of NEMO model output 
 produced in the frame of the DRAKKAR project. It is designed  for the
