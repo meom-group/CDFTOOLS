@@ -27,7 +27,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfsigtrp cdfsigtrp_broken cdftempvol-full\
        cdfpsi cdfmoc  cdfmocsig cdfmean cdfdegradt cdfdegradu cdfdegradv cdfdegradw \
        cdfheatc cdfzonalmean cdfzonalmeanvT cdfhflx cdfwflx cdfbuoyflx\
-       cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfvint \
+       cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfvint cdffwc\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
@@ -36,7 +36,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2levitusgrid3d\
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
-       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp
+       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp 
 
 .PHONY: all help clean cleanexe install man installman
 
@@ -304,6 +304,9 @@ cdfvertmean: cdfio.o  modutils.o cdfvertmean.f90
 
 cdfvint: cdfio.o  modutils.o cdfvint.f90
 	$(F90) cdfvint.f90 -o $(BINDIR)/cdfvint cdfio.o modcdfnames.o modutils.o $(FFLAGS)
+
+cdffwc: cdfio.o  modutils.o cdffwc.f90
+	$(F90) cdffwc.f90 -o $(BINDIR)/cdffwc cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfheatc: cdfio.o modutils.o cdfheatc.f90
 	$(F90) cdfheatc.f90 -o $(BINDIR)/cdfheatc cdfio.o modcdfnames.o modutils.o $(FFLAGS)
