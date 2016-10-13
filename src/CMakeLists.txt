@@ -151,7 +151,8 @@ add_executable(cdffixtime cdffixtime.f90)
 add_executable(cdfnamelist cdfnamelist.f90)
 add_executable(cdfchgrid cdfchgrid.f90)
 add_executable(cdfcmp cdfcmp.f90)
-
+add_executable(cdffwc cdffwc.f90)
+target_link_libraries (cdffwc modutils)
 
 link_libraries(eos)
 

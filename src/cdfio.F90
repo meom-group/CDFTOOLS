@@ -1301,7 +1301,7 @@ CONTAINS
 
              istatus=NF90_INQ_DIMID(incid,cn_x,id_var) ;
              IF (istatus /= NF90_NOERR) THEN
-                istatus=NF90_INQ_DIMID(incid,cn_x,id_var) ;
+                istatus=NF90_INQ_DIMID(incid,'x',id_var) ;
                 IF ( istatus /=  NF90_NOERR ) THEN
                    PRINT *, 'Problem reading x dimension : no x or ', cn_x, ' dimension found !' ; STOP
                 ENDIF
