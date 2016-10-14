@@ -552,3 +552,6 @@ installman:
 	@mkdir -p $(INSTALL_MAN)/man1;
 	\cp -f cdftools.1 $(INSTALL_MAN)/man1/;
 	for s in $$( cd $(BINDIR); ls -1 ); do ( cd $(INSTALL_MAN)/man1/; ln -sf cdftools.1 $$s.1 ); done;
+f2py:
+	f2py -c --fcompiler=gnu95 -m cdftoolspython cdficediags.f90 cdfio.o modcdfnames.o  -I$(EBROOTNETCDFMINFORTRAN)/include -L$(EBROOTNETCDFMINFORTRAN)/lib64 -lnetcdf -lnetcdff
+

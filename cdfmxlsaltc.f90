@@ -68,7 +68,8 @@ PROGRAM cdfmxlsaltc
      PRINT *,'       T-file : netcdf file with salinity and mixed layer deptht.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-full ] : indicate a full step configuration.' 
+     PRINT *,'       [-full ] : indicate a full step configuration.'
+     PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out) 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fzgr),' and ', TRIM(cn_fmsk) 
@@ -90,6 +91,8 @@ PROGRAM cdfmxlsaltc
     SELECT CASE ( cldum )
     CASE ( '-full'    ) ; lfull = .true.
     CASE ( '-partial' ) ; lfull = .false.
+    CASE ('-o') 
+        CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
     CASE DEFAULT 
       ireq=ireq+1
       SELECT CASE ( ireq )
@@ -148,11 +151,12 @@ PROGRAM cdfmxlsaltc
   IF ( lfull ) e31d( :) = getvare3(cn_fzgr, cn_ve3t,  npk)
 
 
-  dvol           = 0.d0
-  dmxlsaltc(:,:) = 0.d0
 
   DO jt=1,npt
-        zmxl( :,:) = getvar(cf_tfil, cn_somxl010, 1,  npiglo, npjglo, ktime=jt)
+     dvol= 0.d0
+     dmxlsaltc(:,:) = 0.d0
+     zmxl( :,:) = getvar(cf_tfil, cn_somxl010, 1,  npiglo, npjglo, ktime=jt)
+
      DO jk = 1, npk
         zs(   :,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
         zmask(:,:) = getvar(cn_fmsk, 'tmask',     jk, npiglo, npjglo          )
@@ -174,16 +178,18 @@ PROGRAM cdfmxlsaltc
         IF (dvol /= 0 )THEN
            !   go on !
         ELSE
-           !   no more layer below !    
+           !   no more layer below !
            EXIT   ! get out of the jk loop
         ENDIF
 
      END DO
 
+
      ! Output to netcdf file : Kg/m2
      dmxlsaltc = rprho0*dmxlsaltc
      ierr = putvar(ncout, id_varout(1), REAL(dmxlsaltc), 1, npiglo, npjglo, ktime=jt)
   END DO
+
 
   ierr = closeout(ncout)
 

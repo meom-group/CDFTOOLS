@@ -68,6 +68,8 @@ PROGRAM cdfmxlheatc
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [ -full ] : for full step configurations, default is partial step.' 
+     PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out)
+     PRINT *,'      '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
@@ -89,6 +91,7 @@ PROGRAM cdfmxlheatc
     CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 
     SELECT CASE ( cldum )
     CASE ( '-full'    ) ; lfull = .true.
+    CASE ( '-o' )     ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
     CASE DEFAULT  ; PRINT *, TRIM(cldum),' : unknown option' ; STOP
     END SELECT
   END DO
@@ -143,10 +146,10 @@ PROGRAM cdfmxlheatc
   IF ( lfull ) e31d( :) = getvare3(cn_fzgr, cn_ve3t,  npk)
 
 
-  dvol           = 0.d0
-  dmxlheatc(:,:) = 0.d0
 
   DO jt=1,npt
+     dmxlheatc(:,:) = 0.d0
+     dvol           = 0.d0
      zmxl( :,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
      DO jk = 1, npk
         ! Get temperatures at jk
