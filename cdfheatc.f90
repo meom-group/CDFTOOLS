@@ -38,7 +38,7 @@ PROGRAM cdfheatc
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp                ! temperature
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! tmask
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mxldep              ! mixed layer depth
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rmxldep             ! mixed layer depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
@@ -143,8 +143,8 @@ PROGRAM cdfheatc
   ALLOCATE ( e1t  (npiglo,npjglo), e2t(npiglo,npjglo), e3t(npiglo,npjglo))
 
   IF (mxloption /= 0) THEN
-      PRINT *, 'Allocate mxldep'
-      ALLOCATE ( mxldep(npiglo,npjglo))
+      PRINT *, 'Allocate rmxldep'
+      ALLOCATE ( rmxldep(npiglo,npjglo))
   ENDIF
 
   PRINT *, 'Allocate gdepw'
@@ -162,7 +162,7 @@ PROGRAM cdfheatc
      dvol = 0.d0
      dsum = 0.d0
      PRINT * ,'TIME : ', tim(jt)
-     IF (mxloption /= 0) mxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
+     IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
 
      DO jk = 1,nvpk
         ik = jk + ikmin -1
@@ -179,9 +179,9 @@ PROGRAM cdfheatc
         
         SELECT CASE ( mxloption ) 
          CASE ( 1 ) 
-            e3t(:,:) = MAX ( 0., MIN( e3t,mxldep-gdepw(ik) ) )
+            e3t(:,:) = MAX ( 0., MIN( e3t,rmxldep-gdepw(ik) ) )
          CASE ( -1 )
-            e3t(:,:) = MIN ( e3t, MAX( 0.,gdepw(ik)+e3t(:,:)-mxldep ) )
+            e3t(:,:) = MIN ( e3t, MAX( 0.,gdepw(ik)+e3t(:,:)-rmxldep ) )
          END SELECT
 
         dsurf  = sum(e1t * e2t       * tmask)
