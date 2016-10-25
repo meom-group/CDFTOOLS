@@ -11,7 +11,7 @@
 
 include make.macro
 
-BINDIR = ./bin
+BINDIR = ../bin
 
 VPATH = $(BINDIR)
 
