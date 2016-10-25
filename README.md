@@ -11,9 +11,10 @@ To retrieve a copy of the CDFTOOLS source code and create a working directory, r
 ```> git clone https://github.com/meom-group/CDFTOOLS ```
 
 #### Compiling CDFTOOLS
-There is a Makefile for compiling the sources. The compiler/machines related definitions are supposed to be collected in a `make.macro` file. Some examples of `make.macro` are given in the Macrolib directory and can be used as template for a new compiler or new machine. Then the good practice is to make a link 
+All the fortran source are in src/ subdirectory. In src/ there is a Makefile for compiling the sources. The compiler/machines related definitions are supposed to be collected in a `make.macro` file. Some examples of `make.macro` are given in the Macrolib directory and can be used as template for a new compiler or new machine. Then the good practice is to make a link 
 
-```>  ln -sf Macrolib/macro.MACHINE  make.macro ```
+```> cd src/
+   > ln -sf ../Macrolib/macro.MACHINE  make.macro ```
 
 In the `make.macro` file, the PATH for the netcdf library is specified, as well as compiler name and used flags.  In order to activate netcdf4/HDF5 chunking and deflation ( available in some cdftools), you need to set: 
 
