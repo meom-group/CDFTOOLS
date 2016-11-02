@@ -16,7 +16,7 @@ PROGRAM cdfchgrid
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
-  !!   chgrid        : Convert 1442x1021 ORCA025 2D var into 4322x3059 ORCA12 var
+  !!   chgrid        : Convert coarser grid into refined grid
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -33,8 +33,8 @@ PROGRAM cdfchgrid
   INTEGER(KIND=4)                               :: ierr                   ! working integer
   INTEGER(KIND=4)                               :: narg, iargc, ijarg     ! argument on line
   INTEGER(KIND=4)                               :: npiglo, npjglo         ! size of the input domain
-  INTEGER(KIND=4)                               :: npigloout=4322         ! I-size of the output domain
-  INTEGER(KIND=4)                               :: npjgloout=3059         ! J-size of the output domain
+  INTEGER(KIND=4)                               :: npigloout              ! I-size of the output domain
+  INTEGER(KIND=4)                               :: npjgloout              ! J-size of the output domain
   INTEGER(KIND=4)                               :: npk, npt               ! size of the domain
   INTEGER(KIND=4)                               :: nvars                  ! number of variables in the input file
   INTEGER(KIND=4)                               :: ncout                  ! ncid of output ncdf file
@@ -66,18 +66,23 @@ PROGRAM cdfchgrid
      PRINT *,' usage : cdfchgrid -f IN-file -r REF-file -var IN-var [-nc4] [-o OUT-file] [-d]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Convert ORCA025-grid variable into ORCA12-grid variable'
-     PRINT *,'       No interpolation, only copying one grid cell into nine grid cells'
+     PRINT *,'       Build a new file on a refined grid, from a coarser grid, assuming that'
+     PRINT *,'       the two grids are embedded, with common points (hence an odd scaling '
+     PRINT *,'       factor). Grid characteristics are hard wired in the code. Support for'
+     PRINT *,'       ORCA025 --> ORCA12, eORCA025 --> eORCA12 is actually provided. Hooks '
+     PRINT *,'       are ready in the code for adding new conversion.'
+     PRINT *,'       No interpolation, only copying value of a coarse grid cell, onto '
+     PRINT *,'       scale x scale cells of the output grid (scale is the refinement factor)'
      PRINT *,'      '
      PRINT *,'     RESTRICTION :'
      PRINT *,'       Caution for mask coherence !'
      PRINT *,'       This tool is only adapted for drowned field'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f IN-file  : input ORCA025-grid file'
+     PRINT *,'       -f IN-file  : input Coarser-grid file'
      PRINT *,'       -r REF-file : Reference file used for identification of the output grid'
      PRINT *,'               should be of same geometry than the output file.'
-     PRINT *,'       -var IN-var : input ORCA025-grid variable to be converted'
+     PRINT *,'       -var IN-var : input coarser-grid variable to be converted'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       -nc4        : use netcdf4 chunking and deflation for the output file'
@@ -169,7 +174,7 @@ PROGRAM cdfchgrid
 
   ! find the number of variable we are interested in
   ivar=0
-  DO  WHILE (ivar <=  nvars)
+  DO  WHILE (ivar <   nvars)
      ivar=ivar+1
      IF ( cv_names(ivar) == cv_in ) iivar=ivar
   END DO
@@ -190,8 +195,9 @@ PROGRAM cdfchgrid
   DO jt = 1, npt
      DO jk = 1, npk
         v2d(1:npiglo,1:npjglo) = getvar(cf_in, cv_in,  jk, npiglo, npjglo, ktime=jt)
+        ! duplicate last  row and column 
         v2d(npiglo+1, :) = v2d(npiglo,:)
-        v2d(:,npjglo+1 ) = v2d(:,npiglo)
+        v2d(:,npjglo+1 ) = v2d(:,npjglo)
         PRINT *,'level ',jk, 'time ',jt
         CALL chgrid(v2d, u2d, cl_trf)
         ierr = putvar ( ncout , id_varout(1), REAL(u2d), jk, npigloout, npjgloout, ktime=jt)
@@ -232,8 +238,8 @@ CONTAINS
        ijcomf = 1495
        CALL filltab( pinvar, poutvar, iscal, iicomc, ijcomc, iicomf,ijcomf)
        ! force E-W periodicity
-       poutvar(npiglo-1,:)= poutvar(1,:)
-       poutvar(npiglo,:  )= poutvar(2,:)
+       poutvar(npigloout-1,:)= poutvar(1,:)
+       poutvar(npigloout,  :)= poutvar(2,:)
 
     CASE ('05to025')
        ! to do ...
@@ -249,8 +255,8 @@ CONTAINS
        ijcomf = 2042
        CALL filltab( pinvar, poutvar, iscal, iicomc, ijcomc, iicomf,ijcomf)
        ! force E-W periodicity
-!      poutvar(npigloout-1,:)= poutvar(1,:)
-!      poutvar(npigloout,:  )= poutvar(2,:)
+       poutvar(npigloout-1,:)= poutvar(1,:)
+       poutvar(npigloout,  :)= poutvar(2,:)
        ! 
     CASE DEFAULT
        PRINT *, TRIM(cd_trf),'  is not recognized !'
@@ -333,8 +339,10 @@ CONTAINS
     iiff = kscal * kicomc - kscal/2 
     ijff = kscal * kjcomc - kscal/2 
 
-    ii0=iiff-kicomf +1 ; ii1=MIN(npigloout , ii0+npigloout-1) ; ipi=ii1-ii0+1
-    ij0=ijff-kjcomf +1 ; ij1=MIN(npjgloout , ij0+npjgloout-1) ; ipj=ij1-ij0+1
+!   ii0=iiff-kicomf +1 ; ii1=MIN(npigloout , ii0+npigloout-1) ; ipi=ii1-ii0+1
+!   ij0=ijff-kjcomf +1 ; ij1=MIN(npjgloout , ij0+npjgloout-1) ; ipj=ij1-ij0+1
+    ii0=iiff-kicomf +1 ; ii1=MIN(iiglof , ii0+npigloout-1) ; ipi=ii1-ii0+1
+    ij0=ijff-kjcomf +1 ; ij1=MIN(ijglof , ij0+npjgloout-1) ; ipj=ij1-ij0+1
     IF ( ldbg) THEN
       PRINT *,'  Index limit to crop the array'
       PRINT *,'     ', ii0,ii1,ij0,ij1
