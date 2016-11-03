@@ -1289,8 +1289,8 @@ CONTAINS
          PRINT *, 'e3t_0 has' , inbdim, 'dimensions'
         ! iom file , change names
         ! now try to detect if it is v2 or v3, in v3, e3t_ps exist and is a 2d variable
-         istatus=NF90_INQ_VARID( incid,'e3t_ps', id_var)
-         istatus=NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim2) !, dimids, nAtts)
+         istatus=          NF90_INQ_VARID( incid,'e3t_ps', id_var)
+         istatus=istatus + NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim2) !, dimids, nAtts)
          !istatus2=NF90_INQUIRE_VAR( incid, id_var, 'e3t_0', xtype, ndims, dimids, nAtts)
          IF (( istatus == NF90_NOERR ) .and. (inbdim2 == 2)) THEN  
            ! case of NEMO_v3 zfr files
