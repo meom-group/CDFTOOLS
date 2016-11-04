@@ -190,7 +190,7 @@ PROGRAM cdfchgrid
      IF ( cv_names(ivar) == cv_in ) iivar=ivar
   END DO
   cglobal="File produced with cdfchgrid "
-  CALL SetGlobalAtt( cglobal, A )
+  CALL SetGlobalAtt( cglobal, "A" )
   rdep=getvar1d(cf_in,cv_dep,npkk) 
 
   ipk(1)=npkk

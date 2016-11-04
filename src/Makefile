@@ -496,8 +496,8 @@ cdffixtime: cdfio.o  cdffixtime.f90
 cdfnamelist: modcdfnames.o  cdfnamelist.f90
 	$(F90)  cdfnamelist.f90  -o $(BINDIR)/cdfnamelist  modcdfnames.o $(FFLAGS) $(FDATE_FLAG)
 
-cdfchgrid: cdfio.o cdfchgrid.f90
-	$(F90) cdfchgrid.f90  -o $(BINDIR)/cdfchgrid cdfio.o modcdfnames.o $(FFLAGS)
+cdfchgrid: cdfio.o modutils.o cdfchgrid.f90
+	$(F90) cdfchgrid.f90  -o $(BINDIR)/cdfchgrid cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfcmp: cdfio.o cdfcmp.f90
 	$(F90) cdfcmp.f90  -o $(BINDIR)/cdfcmp cdfio.o modcdfnames.o $(FFLAGS)
