@@ -19,6 +19,7 @@ PROGRAM cdfchgrid
   !!   chgrid        : Convert coarser grid into refined grid
   !!----------------------------------------------------------------------
   USE cdfio
+  USE modutils
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
@@ -35,7 +36,7 @@ PROGRAM cdfchgrid
   INTEGER(KIND=4)                               :: npiglo, npjglo         ! size of the input domain
   INTEGER(KIND=4)                               :: npigloout              ! I-size of the output domain
   INTEGER(KIND=4)                               :: npjgloout              ! J-size of the output domain
-  INTEGER(KIND=4)                               :: npk, npt               ! size of the domain
+  INTEGER(KIND=4)                               :: npk, npkk, npt          ! size of the domain
   INTEGER(KIND=4)                               :: nvars                  ! number of variables in the input file
   INTEGER(KIND=4)                               :: ncout                  ! ncid of output ncdf file
   INTEGER(KIND=4), DIMENSION(1)                 :: ipk                    ! output variable : number of levels
@@ -53,6 +54,7 @@ PROGRAM cdfchgrid
   CHARACTER(LEN=256)                            :: cldum                  ! working string
   CHARACTER(LEN=256)                            :: cv_dep                 ! true name of dep dimension
   CHARACTER(LEN=256)                            :: cl_trf                 ! conversion key
+  CHARACTER(LEN=256)                            :: cglobal                ! Global attribute with command line
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names               ! array of var name
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar                ! structure for variable attribute
@@ -129,6 +131,18 @@ PROGRAM cdfchgrid
   npk    = getdim (cf_in, cn_z, cdtrue=cv_dep, kstatus=ierr)  ! defautl cn_z is depth
   npt    = getdim (cf_in, cn_t)
 
+  IF ( npt == 0 ) THEN
+     PRINT *, 'npt is forced to 1'
+     npt = 1
+  ENDIF
+
+  IF ( npk == 0 ) THEN
+    npkk = 1
+  ELSE
+    npkk = npk
+  ENDIF
+
+
   ! get output domain dimension from reference file
   npigloout = getdim (cf_ref, cn_x)
   npjgloout = getdim (cf_ref, cn_y)
@@ -149,9 +163,6 @@ PROGRAM cdfchgrid
   IF ( npigloout == 4322 .AND. npjgloout == 3606 ) cl_trf=TRIM(cl_trf)//'e12'
 
 
-  IF ( npk == 0 )  npk = 1  ! assume a 2D variable
-  IF ( npt == 0 )  npt = 1  ! assume a 1 time frame file
-
   PRINT *,' INPUT GRID '
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -165,7 +176,7 @@ PROGRAM cdfchgrid
   ALLOCATE ( v2d(npiglo+1,npjglo+1) )
   ALLOCATE ( u2d(npigloout,npjgloout) )
   ALLOCATE ( tim(npt) )
-  ALLOCATE ( rdep(npk) )
+  ALLOCATE ( rdep(npkk) )
 
   ! look for the number of variables in the input file
   nvars = getnvar(cf_in)
@@ -178,14 +189,16 @@ PROGRAM cdfchgrid
      ivar=ivar+1
      IF ( cv_names(ivar) == cv_in ) iivar=ivar
   END DO
-  rdep=getvar1d(cf_in,cv_dep,npk) 
+  cglobal="File produced with cdfchgrid "
+  CALL SetGlobalAtt( cglobal, A )
+  rdep=getvar1d(cf_in,cv_dep,npkk) 
 
-  ipk(1)=npk
+  ipk(1)=npkk
   stypvar(iivar)%ichunk = (/npigloout,MAX(1,npjgloout/30),1,1 /)
 
   ncout = create      (cf_out,   cf_in  , npigloout, npjgloout, npk,   ld_nc4=lnc4  )
-  ierr  = createvar   (ncout   , stypvar(iivar), 1 , ipk  , id_varout, ld_nc4=lnc4  )
-  ierr  = putheadervar(ncout,    cf_ref,  npigloout, npjgloout, npk , pdep=rdep     )
+  ierr  = createvar   (ncout   , stypvar(iivar), 1 , ipk  , id_varout, ld_nc4=lnc4, cdglobal=cglobal  )
+  ierr  = putheadervar(ncout,    cf_ref,  npigloout, npjgloout, npk , cdep='deptht', pdep=rdep     )
 
   ! get time and write time and get deptht and write deptht
   tim=getvar1d(cf_in,cn_t,npt)    ; ierr=putvar1d(ncout,tim,npt,'T')
