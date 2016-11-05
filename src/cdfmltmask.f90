@@ -8,6 +8,7 @@ PROGRAM cdfmltmask
   !!         : 2.1  : 06/2007  : P. Mathiot   : add forcing capabilities
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 06/2013  : J.M. Molines : add multi variable capability
+  !!           3.0  : 11/2016  : J.M. Molines : use keys for arguments
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -19,51 +20,57 @@ PROGRAM cdfmltmask
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                             :: jk, jt, jvar    ! dummy loop index
-  INTEGER(KIND=4)                             :: ierr            ! error status
-  INTEGER(KIND=4)                             :: narg, iargc     ! command line 
-  INTEGER(KIND=4)                             :: npiglo, npjglo  ! size of the domain
-  INTEGER(KIND=4)                             :: npk, npt        ! size of the domain
-  INTEGER(KIND=4)                             :: npkmask         ! vertical levels in mask file
-  INTEGER(KIND=4)                             :: nvar=1          ! number of variable to process(default 1)
-  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE  :: nvpk            ! vertical levels in working variable
+  INTEGER(KIND=4)                             :: jk, jt, jvar       ! dummy loop index
+  INTEGER(KIND=4)                             :: ierr               ! error status
+  INTEGER(KIND=4)                             :: narg, iargc, ijarg ! command line 
+  INTEGER(KIND=4)                             :: npiglo, npjglo     ! size of the domain
+  INTEGER(KIND=4)                             :: npk, npt           ! size of the domain
+  INTEGER(KIND=4)                             :: npkmask            ! vertical levels in mask file
+  INTEGER(KIND=4)                             :: nvar=1             ! number of variable to process(default 1)
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE  :: nvpk               ! vertical levels in working variable
 
-  REAL(KIND=4)                                :: zspval          ! missing value attribute
-  REAL(KIND=4)                                :: zspv0           ! missing value in the output file (default 0)
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zv              ! cv_in at jk level 
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zmask           ! mask at jk level 
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zvmask          ! masked cv_in at jk level
+  REAL(KIND=4)                                :: zspval             ! missing value attribute
+  REAL(KIND=4)                                :: zspv0              ! missing value in the output file (default 0)
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zv                 ! cv_in at jk level 
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zmask              ! mask at jk level 
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zvmask             ! masked cv_in at jk level
 
-  CHARACTER(LEN=256)                          :: cunits          ! units attribute
-  CHARACTER(LEN=256)                          :: clname          ! long_name attribute
-  CHARACTER(LEN=256)                          :: csname          ! short_name attribute
-  CHARACTER(LEN=256)                          :: cf_in           ! input file name
-  CHARACTER(LEN=256)                          :: cf_msk          ! input mask file name
-  CHARACTER(LEN=256)                          :: cvartype        ! variable position on Cgrid
-  CHARACTER(LEN=256)                          :: cv_dep          ! depth dim name
-  CHARACTER(LEN=256)                          :: ctmp            ! dummy string
-  CHARACTER(LEN=20)                           :: cv_msk          ! mask variable name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in         ! cdf variable names to process
+  CHARACTER(LEN=256)                          :: cunits             ! units attribute
+  CHARACTER(LEN=256)                          :: clname             ! long_name attribute
+  CHARACTER(LEN=256)                          :: csname             ! short_name attribute
+  CHARACTER(LEN=256)                          :: cf_in              ! input file name
+  CHARACTER(LEN=256)                          :: cf_out             ! output file name
+  CHARACTER(LEN=256)                          :: cf_msk             ! input mask file name
+  CHARACTER(LEN=256)                          :: cvartype           ! variable position on Cgrid
+  CHARACTER(LEN=256)                          :: cv_dep             ! depth dim name
+  CHARACTER(LEN=256)                          :: cldum              ! dummy string
+  CHARACTER(LEN=20)                           :: cv_msk             ! mask variable name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in            ! cdf variable names to process
+
+  LOGICAL                                     :: lnc4=.false.       ! use Netcdf4 chunking and deflation
+  LOGICAL                                     :: lout=.false.       ! specified output file name
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmltmask IN-file MSK-file IN-var1,var2,...  T| U | V | F | W | P '
-     PRINT *, '        ... [_Fillvalue]'
+     PRINT *,' usage : cdfmltmask -f IN-file -m MSK-file -v IN-var1,var2,...  '
+     PRINT *,'              -p  T| U | V | F | W | P  [-s _Fillvalue] [-nc4] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Multiply IN-var of IN-file by the mask corresponding to the' 
-     PRINT *,'       C-grid point position given as last argument.'
+     PRINT *,'       Multiply IN-var(s) of IN-file by the mask corresponding to the' 
+     PRINT *,'       C-grid point position given by the -p argument.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file  : input netcdf file.' 
-     PRINT *,'       MSK-file : input netcdf mask file.' 
-     PRINT *,'       IN-var1,var2,...   : Comma separated list of variable names to mask.'
-     PRINT *,'       T| U | V | F | W | P : C-grid position of IN-var'
+     PRINT *,'       -f IN-file  : input netcdf file.' 
+     PRINT *,'       -m MSK-file : input netcdf mask file.' 
+     PRINT *,'       -v IN-var1,var2,...   : Comma separated list of variable names to mask.'
+     PRINT *,'       -p T| U | V | F | W | P : C-grid position of IN-var'
      PRINT *,'                P indicate a polygon mask created by cdfpoly.'
      PRINT *,'      OPTIONS : '
-     PRINT *,'        _FillValue can be passed as 5th argument [0 by default ] '
+     PRINT *,'        -s _FillValue : specify values for masked areas [0 by default ]'
+     PRINT *,'        -nc4 : output file will be chunked and deflated'
+     PRINT *,'        -o OUT-file : name of output file, instead of <IN-file>_masked'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none, all are given as arguments.'
@@ -71,30 +78,49 @@ PROGRAM cdfmltmask
      PRINT *,'     OUTPUT : (jvar)'
      PRINT *,'       The output file is a copy of the input file with only'
      PRINT *,'       the requested variable masked.'
-     PRINT *,'       netcdf file : IN-file_masked'
+     PRINT *,'       netcdf file : IN-file_masked unless specified with -o '
      PRINT *,'         variables : IN-var (same as input).'
      STOP
   ENDIF
 
   zspv0 = 0.
-  CALL getarg (1, cf_in    )
-  CALL getarg (2, cf_msk   )
-  CALL getarg (3, ctmp     ) ; CALL ParseVars(ctmp)
-  CALL getarg (4, cvartype )
-  IF ( narg == 5 )  THEN
-     CALL getarg (5, ctmp) ; READ(ctmp,*) zspv0
-  ENDIF
-     
+  ijarg = 1
+  DO WHILE (ijarg <= narg)
+    CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
+    SELECT CASE ( cldum)
+    CASE ( '-f' )
+        CALL getarg(ijarg, cf_in )   ; ijarg = ijarg + 1
+    CASE ( '-m' )
+        CALL getarg(ijarg, cf_msk)   ; ijarg = ijarg + 1
+    CASE ( '-v' )
+        CALL getarg(ijarg, cldum)    ; ijarg = ijarg + 1
+        CALL ParseVars ( cldum )
+    CASE ( '-p' )
+        CALL getarg(ijarg, cvartype) ; ijarg = ijarg + 1
+    CASE ( '-s' )
+        CALL getarg(ijarg, cldum)    ; ijarg = ijarg + 1 
+        READ(cldum,*) zspv0
+    CASE ( '-nc4' )
+         lnc4 = .false.
+         PRINT *,' Option -nc4 actually ignored, sorry !, proceed ...'
+    CASE ( '-o' )
+        CALL getarg(ijarg, cf_out )  ; ijarg = ijarg + 1 ; lout=.TRUE.
+    CASE DEFAULT
+        PRINT *, TRIM(cldum), ' : unknown option'
+    END SELECT
+  ENDDO
 
   IF ( chkfile (cf_in) .OR. chkfile(cf_msk) ) STOP ! missing files
 
   ! append _masked to input file name and copy initial file to new file, which will be modified
   !  using dd more efficient than cp for big files
-  ctmp   = TRIM(cf_in)//'_masked'
-  CALL system(' dd bs=10000000 if='//TRIM(cf_in)//' of='//TRIM(ctmp) )
-  cf_in = ctmp
+  IF ( .NOT. lout ) THEN
+     cf_out   = TRIM(cf_in)//'_masked'
+  ENDIF
+  CALL system(' dd bs=10000000 if='//TRIM(cf_in)//' of='//TRIM(cf_out) )
+  cf_in = cf_out
 
-  PRINT *,' Working on copy : ', TRIM(cf_in)
+  PRINT *,' Working on copy : ', TRIM(cf_out)
 
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)
@@ -193,7 +219,7 @@ PROGRAM cdfmltmask
            zvmask = zv
           ENDWHERE
           ! Writing  on the copy of original file                 
-          ierr = putvar(cf_in, cv_in(jvar), jk, npiglo, npjglo, 1, 1, ktime=jt, ptab=zvmask)
+          ierr = putvar(cf_out, cv_in(jvar), jk, npiglo, npjglo, 1, 1, ktime=jt, ptab=zvmask)
         END DO
      END DO
   END DO
@@ -202,7 +228,7 @@ PROGRAM cdfmltmask
   DO jvar = 1, nvar 
      ierr = getvaratt (cf_in, cv_in(jvar), cunits, zspval, clname, csname)
      IF ( csname == "" ) csname=TRIM( cv_in(jvar) )
-     ierr = cvaratt   (cf_in, cv_in(jvar), cunits, zspv0,  clname, csname)
+     ierr = cvaratt   (cf_out, cv_in(jvar), cunits, zspv0,  clname, csname)
   END DO
 
 CONTAINS
