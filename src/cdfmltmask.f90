@@ -56,6 +56,7 @@ PROGRAM cdfmltmask
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmltmask -f IN-file -m MSK-file -v IN-var1,var2,...  '
      PRINT *,'              -p  T| U | V | F | W | P  [-s _Fillvalue] [-nc4] [-o OUT-file]'
+     PRINT *,'              [ -M MSK-var ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Multiply IN-var(s) of IN-file by the mask corresponding to the' 
@@ -71,6 +72,8 @@ PROGRAM cdfmltmask
      PRINT *,'        -s _FillValue : specify values for masked areas [0 by default ]'
      PRINT *,'        -nc4 : output file will be chunked and deflated'
      PRINT *,'        -o OUT-file : name of output file, instead of <IN-file>_masked'
+     PRINT *,'        -M MSK-var : use MSK-var in the MSK-file, instead of the one defined'
+     PRINT *,'               by default according to the -p option. Overrid -p option.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none, all are given as arguments.'
@@ -85,6 +88,7 @@ PROGRAM cdfmltmask
 
   zspv0 = 0.
   ijarg = 1
+  cv_msk ='none'
   DO WHILE (ijarg <= narg)
     CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
     SELECT CASE ( cldum)
@@ -92,6 +96,8 @@ PROGRAM cdfmltmask
         CALL getarg(ijarg, cf_in )   ; ijarg = ijarg + 1
     CASE ( '-m' )
         CALL getarg(ijarg, cf_msk)   ; ijarg = ijarg + 1
+    CASE ( '-M' )
+        CALL getarg(ijarg, cv_msk)   ; ijarg = ijarg + 1
     CASE ( '-v' )
         CALL getarg(ijarg, cldum)    ; ijarg = ijarg + 1
         CALL ParseVars ( cldum )
@@ -178,6 +184,7 @@ PROGRAM cdfmltmask
   ALLOCATE( zv   (npiglo,npjglo) )
   ALLOCATE(zvmask(npiglo,npjglo) )
 
+  IF ( cv_msk == 'none' ) THEN  ! means cv_msk was not defined by -M option
   SELECT CASE (TRIM(cvartype))
   CASE ( 'T' )
      cv_msk='tmask'
@@ -195,6 +202,7 @@ PROGRAM cdfmltmask
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
      STOP
   END SELECT
+  ENDIF
 
   IF ( npkmask <= 1 ) THEN 
         zmask(:,:) = getvar(cf_msk, cv_msk, 1, npiglo, npjglo)
