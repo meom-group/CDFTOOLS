@@ -206,7 +206,7 @@ PROGRAM cdfchgrid
 
   PRINT *,' Working with ', TRIM(cv_in), npk
   DO jt = 1, npt
-     DO jk = 1, npk
+     DO jk = 1, npkk
         v2d(1:npiglo,1:npjglo) = getvar(cf_in, cv_in,  jk, npiglo, npjglo, ktime=jt)
         ! duplicate last  row and column 
         v2d(npiglo+1, :) = v2d(npiglo,:)
