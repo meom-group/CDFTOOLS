@@ -133,6 +133,7 @@ PROGRAM cdffill
   ! define new variables for output
   stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
   stypvar(1)%cname             = 'sofillvar'
+  stypvar(1)%cunits            = 'N/A'
   stypvar(1)%rmissing_value    = 0.
   stypvar(1)%valid_min         = -1000.
   stypvar(1)%valid_max         =  1000.
@@ -175,10 +176,18 @@ PROGRAM cdffill
      ! get iseed, jseed, ice shelf number ifill
      READ(nid,*) ifill(jisf), cdum, iseed(jisf), jseed(jisf)
 !    READ(nid,'(i3,a4,2i5)') ifill(jisf), cdum, iseed(jisf), jseed(jisf)
-     PRINT *, 'filling isf ',TRIM(cdum), ' in progress ... (',ifill(jisf), TRIM(cdum), iseed(jisf), jseed(jisf),')'
+!    PRINT *, 'filling isf ',TRIM(cdum), ' in progress ... (',ifill(jisf), TRIM(cdum), iseed(jisf), jseed(jisf),')'
+     IF (dtab(iseed(jisf), jseed(jisf)) < 0 ) THEN
+       PRINT *,'  ==> WARNING: Likely a problem with ',TRIM(cdum)
+       PRINT *,'               check separation with neighbours'
+     ENDIF
      CALL fillpool(iseed(jisf), jseed(jisf), dtab, -ifill(jisf), isddraftmax, isddraftmin)
-     PRINT *,TRIM(cdum), ' depmax = ', isddraftmax
-     PRINT *,TRIM(cdum), ' depmin = ', isddraftmin
+     PRINT *,'Iceshelf : ', TRIM(cdum)
+     PRINT *,'  index  : ', ifill(jisf) 
+     PRINT *,'  code   : ', INT(dtab(iseed(jisf), jseed(jisf) ) )
+     PRINT *,'  depmax : ', isddraftmax
+     PRINT *,'  depmin : ', isddraftmin
+     PRINT *,'   '
   END DO
 
   ! set to 0 all unwanted point (why not .GE. 0.0, I don't know)
@@ -215,8 +224,10 @@ CONTAINS
     INTEGER, DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
 
     REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_data   ! new bathymetry
+    LOGICAL, SAVE                        :: ll_frst=.true.
     !!----------------------------------------------------------------------
-    PRINT *, 'WARNING North fold case not coded'
+    IF (ll_frst ) PRINT *, 'WARNING North fold case not coded'
+    ll_frst = .false.
     ! allocate variable
     ! Why 240004, I don't remember. Will it be enough for eORCA12, I don't know ?
     ! to be sure, replace 240004 by npiglo*npjglo but it sould be much lower.
@@ -242,7 +253,7 @@ CONTAINS
       dl_data(ii,ij) =kifill
       ipile(ip,:)  =[0,0]; ip=ip-1
 
-      ! check neighbour cells and update pile
+      ! check neighbour cells and update pile ( assume E-W periodicity )
       iip1=ii+1; IF ( iip1 == npiglo+1 ) iip1=2
       iim1=ii-1; IF ( iim1 == 0        ) iim1=npiglo-1
       IF (dl_data(ii, ij+1) > 1.0) THEN
