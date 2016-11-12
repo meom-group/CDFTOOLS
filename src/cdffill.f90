@@ -25,23 +25,26 @@ PROGRAM cdffill
   INTEGER(KIND=4)                               :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt, nisf     ! size of the domain
   INTEGER(KIND=4)                               :: jisf               ! loop integer 
-  INTEGER(KIND=4)                               :: nid=10             ! id file
+  INTEGER(KIND=4)                               :: iunit=10           ! id file
+  INTEGER(KIND=4)                               :: iunitu=11           ! id file
   INTEGER(KIND=4)                               :: ncout              ! ncid of output files
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: iseed, jseed 
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ifill
 
-  REAL(KIND=4)                                  :: isddraftmin, isddraftmax
+  REAL(KIND=4)                                  :: rlon, rlat         ! longitude and latitude of one point in ISF
+  REAL(KIND=4)                                  :: rdraftmin, rdraftmax
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab
 
-  CHARACTER(LEN=256)                            :: cf_in              ! input file names
-  CHARACTER(LEN=256)                            :: cf_isflist         ! input file names
+  CHARACTER(LEN=256)                            :: cf_in              ! input file name
+  CHARACTER(LEN=256)                            :: cf_isflist         ! input file name (txt)
+  CHARACTER(LEN=256)                            :: cf_isflistup       ! output file name (update of input, with draftmin/max
   CHARACTER(LEN=256)                            :: cf_out='fill.nc'   ! output file for average
   CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
   CHARACTER(LEN=256)                            :: cv_in              ! depth dimension name
   CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
-  
+
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
   LOGICAL                                       :: lnc4 = .FALSE.     ! flag for netcdf4 chunk and deflation
 
@@ -85,20 +88,21 @@ PROGRAM cdffill
 
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-    CALL getarg(ijarg, cdum ) ; ijarg = ijarg + 1 
-    SELECT CASE ( cdum)
-    CASE ( '-f' ) ; CALL getarg(ijarg, cf_in      ) ; ijarg = ijarg + 1
-    CASE ( '-v' ) ; CALL getarg(ijarg, cv_in      ) ; ijarg = ijarg + 1
-    CASE ( '-l' ) ; CALL getarg(ijarg, cf_isflist ) ; ijarg = ijarg + 1
-    CASE ( '-o' ) ; CALL getarg(ijarg, cf_out     ) ; ijarg = ijarg + 1
-    CASE ('-nc4') ; lnc4=.true.
-    CASE DEFAULT
-       PRINT *, ' Option ', TRIM(cdum),' not understood'
-       STOP
-    END SELECT
+     CALL getarg(ijarg, cdum ) ; ijarg = ijarg + 1 
+     SELECT CASE ( cdum)
+     CASE ( '-f' ) ; CALL getarg(ijarg, cf_in      ) ; ijarg = ijarg + 1
+     CASE ( '-v' ) ; CALL getarg(ijarg, cv_in      ) ; ijarg = ijarg + 1
+     CASE ( '-l' ) ; CALL getarg(ijarg, cf_isflist ) ; ijarg = ijarg + 1
+     CASE ( '-o' ) ; CALL getarg(ijarg, cf_out     ) ; ijarg = ijarg + 1
+     CASE ('-nc4') ; lnc4=.TRUE.
+     CASE DEFAULT
+        PRINT *, ' Option ', TRIM(cdum),' not understood'
+        STOP
+     END SELECT
   ENDDO
 
   IF ( chkfile (cf_in) .OR. chkfile (cf_isflist)  ) STOP ! missing file
+  cf_isflistup=TRIM(cf_isflist)//'.update'
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -107,16 +111,16 @@ PROGRAM cdffill
   IF (ierr /= 0 ) THEN
      npk   = getdim (cf_in, 'z',cdtrue=cv_dep,kstatus=ierr)
      IF (ierr /= 0 ) THEN
-       npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
+        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
         IF ( ierr /= 0 ) THEN 
-          npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-            IF ( ierr /= 0 ) THEN 
+           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
+           IF ( ierr /= 0 ) THEN 
               npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
               IF ( ierr /= 0 ) THEN 
-                PRINT *,' assume file with no depth'
-                npk=0
+                 PRINT *,' assume file with no depth'
+                 npk=0
               ENDIF
-            ENDIF
+           ENDIF
         ENDIF
      ENDIF
   ENDIF
@@ -156,15 +160,16 @@ PROGRAM cdffill
   PRINT *, 'Maximum of ISF-draft : ', MAXVAL(dtab),' m'
 
   ! open isf-list file
-  OPEN(unit=nid, file=cf_isflist, form='formatted', status='old')
+  OPEN(unit=iunit,  file=cf_isflist, form='formatted', status='old')
+  OPEN(unit=iunitu, file=cf_isflistup, form='formatted'            )
   ! get total number of isf
   nisf = 0
   cdum='XXX'
   DO WHILE ( TRIM(cdum) /= 'EOF')
-     READ(nid,*) cdum
+     READ(iunit,*) cdum
      nisf=nisf+1
   END DO
-  REWIND(nid)
+  REWIND(iunit)
 
   nisf = nisf - 1
   PRINT *, '   Number of ISF found in file list : ', nisf
@@ -174,21 +179,24 @@ PROGRAM cdffill
   ! loop over each ice shelf
   DO jisf=1,nisf
      ! get iseed, jseed, ice shelf number ifill
-     READ(nid,*) ifill(jisf), cdum, iseed(jisf), jseed(jisf)
-!    READ(nid,'(i3,a4,2i5)') ifill(jisf), cdum, iseed(jisf), jseed(jisf)
-!    PRINT *, 'filling isf ',TRIM(cdum), ' in progress ... (',ifill(jisf), TRIM(cdum), iseed(jisf), jseed(jisf),')'
+     READ(iunit,*) ifill(jisf), cdum, rlon, rlat, iseed(jisf), jseed(jisf)
      IF (dtab(iseed(jisf), jseed(jisf)) < 0 ) THEN
-       PRINT *,'  ==> WARNING: Likely a problem with ',TRIM(cdum)
-       PRINT *,'               check separation with neighbours'
+        PRINT *,'  ==> WARNING: Likely a problem with ',TRIM(cdum)
+        PRINT *,'               check separation with neighbours'
      ENDIF
-     CALL fillpool(iseed(jisf), jseed(jisf), dtab, -ifill(jisf), isddraftmax, isddraftmin)
+     CALL fillpool(iseed(jisf), jseed(jisf), dtab, -ifill(jisf), rdraftmax, rdraftmin)
      PRINT *,'Iceshelf : ', TRIM(cdum)
      PRINT *,'  index  : ', ifill(jisf) 
      PRINT *,'  code   : ', INT(dtab(iseed(jisf), jseed(jisf) ) )
-     PRINT *,'  depmax : ', isddraftmax
-     PRINT *,'  depmin : ', isddraftmin
+     PRINT *,'  depmax : ', rdraftmax
+     PRINT *,'  depmin : ', rdraftmin
      PRINT *,'   '
+     WRITE(iunitu,'(i4,1x,a25,2f9.4,2i5,2f8.1)') jisf,ADJUSTL(cdum),rlon, rlat, iseed(jisf), jseed(jisf),rdraftmin,rdraftmin
   END DO
+  WRITE(iunitu,'(a)') 'EOF  '
+  WRITE(iunitu,'(a5,a25,2a5,2a8,a)' ) 'No ','NAME                           ',' X',' Y',' Zmin',' Zmax',' FWF'
+  CLOSE (iunitu)
+
 
   ! set to 0 all unwanted point (why not .GE. 0.0, I don't know)
   WHERE (dtab >= 1.d0)
@@ -224,54 +232,54 @@ CONTAINS
     INTEGER, DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
 
     REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_data   ! new bathymetry
-    LOGICAL, SAVE                        :: ll_frst=.true.
+    LOGICAL, SAVE                        :: ll_frst=.TRUE.
     !!----------------------------------------------------------------------
     IF (ll_frst ) PRINT *, 'WARNING North fold case not coded'
-    ll_frst = .false.
+    ll_frst = .FALSE.
     ! allocate variable
     ! Why 240004, I don't remember. Will it be enough for eORCA12, I don't know ?
     ! to be sure, replace 240004 by npiglo*npjglo but it sould be much lower.
     ALLOCATE(ipile(240004,2))
     ALLOCATE(dl_data(npiglo,npjglo))
 
-   ! initialise variables
-   dl_data=ddta
-   ipile(:,:)=0
-   ipile(1,:)=[kiseed,kjseed]
-   ip=1; ik=0
-   pdepmax=0.0
-   pdepmin=99999.9
+    ! initialise variables
+    dl_data=ddta
+    ipile(:,:)=0
+    ipile(1,:)=[kiseed,kjseed]
+    ip=1; ik=0
+    pdepmax=0.0
+    pdepmin=99999.9
 
-   ! loop until the pile size is 0 or if the pool is larger than the critical size
-   DO WHILE ( ip /= 0 .AND. ik < 600000);
-      ik=ik+1
-      ii=ipile(ip,1); ij=ipile(ip,2)
+    ! loop until the pile size is 0 or if the pool is larger than the critical size
+    DO WHILE ( ip /= 0 .AND. ik < 600000);
+       ik=ik+1
+       ii=ipile(ip,1); ij=ipile(ip,2)
 
-      ! update bathy and update pile size
-      IF (ddta(ii,ij) <= pdepmin) pdepmin=ddta(ii,ij)
-      IF (ddta(ii,ij) >= pdepmax) pdepmax=ddta(ii,ij)
-      dl_data(ii,ij) =kifill
-      ipile(ip,:)  =[0,0]; ip=ip-1
+       ! update bathy and update pile size
+       IF (ddta(ii,ij) <= pdepmin) pdepmin=ddta(ii,ij)
+       IF (ddta(ii,ij) >= pdepmax) pdepmax=ddta(ii,ij)
+       dl_data(ii,ij) =kifill
+       ipile(ip,:)  =[0,0]; ip=ip-1
 
-      ! check neighbour cells and update pile ( assume E-W periodicity )
-      iip1=ii+1; IF ( iip1 == npiglo+1 ) iip1=2
-      iim1=ii-1; IF ( iim1 == 0        ) iim1=npiglo-1
-      IF (dl_data(ii, ij+1) > 1.0) THEN
+       ! check neighbour cells and update pile ( assume E-W periodicity )
+       iip1=ii+1; IF ( iip1 == npiglo+1 ) iip1=2
+       iim1=ii-1; IF ( iim1 == 0        ) iim1=npiglo-1
+       IF (dl_data(ii, ij+1) > 1.0) THEN
           ip=ip+1; ipile(ip,:)=[ii  ,ij+1]
-      END IF
-      IF (dl_data(ii, ij-1) > 1.0) THEN
+       END IF
+       IF (dl_data(ii, ij-1) > 1.0) THEN
           ip=ip+1; ipile(ip,:)=[ii  ,ij-1]
-      END IF
-      IF (dl_data(iip1, ij) > 1.0) THEN
+       END IF
+       IF (dl_data(iip1, ij) > 1.0) THEN
           ip=ip+1; ipile(ip,:)=[iip1,ij  ]
-      END IF
-      IF (dl_data(iim1, ij) > 1.0) THEN
+       END IF
+       IF (dl_data(iim1, ij) > 1.0) THEN
           ip=ip+1; ipile(ip,:)=[iim1,ij  ]
-      END IF
-   END DO
-   IF (ik < 600000) ddta=dl_data;
+       END IF
+    END DO
+    IF (ik < 600000) ddta=dl_data;
 
-   DEALLOCATE(ipile); DEALLOCATE(dl_data)
+    DEALLOCATE(ipile); DEALLOCATE(dl_data)
 
   END SUBROUTINE fillpool
 
