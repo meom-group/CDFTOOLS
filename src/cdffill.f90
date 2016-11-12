@@ -20,18 +20,18 @@ PROGRAM cdffill
   !!-----------------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                               :: ierr               ! working integer
+  INTEGER(KIND=4)                               :: jisf               ! dummy loop integer 
+  INTEGER(KIND=4)                               :: ierr, ipos         ! working integer
   INTEGER(KIND=4)                               :: narg, iargc, ijarg ! browsing command line
   INTEGER(KIND=4)                               :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt, nisf     ! size of the domain
-  INTEGER(KIND=4)                               :: jisf               ! loop integer 
-  INTEGER(KIND=4)                               :: iunit=10           ! id file
-  INTEGER(KIND=4)                               :: iunitu=11           ! id file
+  INTEGER(KIND=4)                               :: iunit=10           ! file unit for txt input file
+  INTEGER(KIND=4)                               :: iunitu=11          ! file unit for txt output file
   INTEGER(KIND=4)                               :: ncout              ! ncid of output files
-  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: iseed, jseed 
+  INTEGER(KIND=4)                               :: iiseed, ijseed
+  INTEGER(KIND=4)                               :: ifill
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
-  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ifill
 
   REAL(KIND=4)                                  :: rlon, rlat         ! longitude and latitude of one point in ISF
   REAL(KIND=4)                                  :: rdraftmin, rdraftmax
@@ -55,21 +55,23 @@ PROGRAM cdffill
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdffill  -f ISF-file -v ISF-var -l ISF-list [-nc4 ] [-o OUT-file]'
      PRINT *,'      '
-     PRINT *,'     PURPOSE : build a nc file with a single value for each pool'
-     PRINT *,'               around a list of given point'
+     PRINT *,'     PURPOSE : Build a nc file with a single value for each pool around a list'
+     PRINT *,'               of given point. A warning is given when neighbouring ice-shelves'
+     PRINT *,'               cannot be discriminated (no gap in between). In this case, hand'
+     PRINT *,'               edit on the ISF-file is required.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS : '
      PRINT *,'         -f ISF-file : netcdf file  which contains the ice shelf draft variable'
-     PRINT *,'                     (mesh_zgr is OK)'
+     PRINT *,'                     (mesh_zgr is OK). It is used as a mask, only.'
      PRINT *,'         -v ISF-var  : variable name corresponding to the ice shelf draft or '
      PRINT *,'                      ice shelf level'
      PRINT *,'         -l ISF-list : text file containing at least the following information: '
-     PRINT *,'                 1  NAME    I  J '
+     PRINT *,'                 1  NAME    LON  LAT I  J '
      PRINT *,'                 ...             '
-     PRINT *,'                 i  NAMEi   I  J '
+     PRINT *,'                 i  NAMEi   LON  LAT I  J '
      PRINT *,'                 ...             '
      PRINT *,'                 EOF             '
-     PRINT *,'                 No NAME  X    Y '
+     PRINT *,'                 No NAME  X    Y   I  J '
      PRINT *,'      '
      PRINT *,'     OPTIONS : '
      PRINT *,'          -nc4 : use NetCDF4 chunking and deflation for the output'
@@ -79,6 +81,10 @@ PROGRAM cdffill
      PRINT *,'              netcdf file : fill.nc '
      PRINT *,'              variable : sofillvar contains for all points in ice shelf NAMEi '
      PRINT *,'                         the value -i (negative value)'
+     PRINT *,'              text file : <ISF-list>_zmin_zmax.txt '
+     PRINT *,'                        this output file is similar to <ISF-list> but updated'
+     PRINT *,'                        with the minimum and maximul value of ice-draft for '
+     PRINT *,'                        each shelf.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
      PRINT *,'           cdfmkforcingisf.f90 cdfmkrnfisf.f90 '
@@ -102,7 +108,10 @@ PROGRAM cdffill
   ENDDO
 
   IF ( chkfile (cf_in) .OR. chkfile (cf_isflist)  ) STOP ! missing file
-  cf_isflistup=TRIM(cf_isflist)//'.update'
+
+  ipos = INDEX(cf_isflist,'.')
+  cdum=cf_isflist(ipos+1:)
+  cf_isflistup=cf_isflist(1:ipos-1)//'_zmin_zmax.'//TRIM(cdum)
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -174,29 +183,28 @@ PROGRAM cdffill
   nisf = nisf - 1
   PRINT *, '   Number of ISF found in file list : ', nisf
 
-  ! allocate variable
-  ALLOCATE(iseed(nisf), jseed(nisf), ifill(nisf))
   ! loop over each ice shelf
   DO jisf=1,nisf
-     ! get iseed, jseed, ice shelf number ifill
-     READ(iunit,*) ifill(jisf), cdum, rlon, rlat, iseed(jisf), jseed(jisf)
-     IF (dtab(iseed(jisf), jseed(jisf)) < 0 ) THEN
+     ! get iiseed, ijseed, ice shelf number ifill
+     READ(iunit,*) ifill, cdum, rlon, rlat, iiseed, ijseed
+     IF (dtab(iiseed, ijseed) < 0 ) THEN
         PRINT *,'  ==> WARNING: Likely a problem with ',TRIM(cdum)
         PRINT *,'               check separation with neighbours'
      ENDIF
-     CALL fillpool(iseed(jisf), jseed(jisf), dtab, -ifill(jisf), rdraftmax, rdraftmin)
+     CALL fillpool(iiseed, ijseed, dtab, -ifill, rdraftmax, rdraftmin)
      PRINT *,'Iceshelf : ', TRIM(cdum)
-     PRINT *,'  index  : ', ifill(jisf) 
-     PRINT *,'  code   : ', INT(dtab(iseed(jisf), jseed(jisf) ) )
-     PRINT *,'  depmax : ', rdraftmax
+     PRINT *,'  index  : ', ifill
+     PRINT *,'  code   : ', INT(dtab(iiseed, ijseed ) )
      PRINT *,'  depmin : ', rdraftmin
+     PRINT *,'  depmax : ', rdraftmax
      PRINT *,'   '
-     WRITE(iunitu,'(i4,1x,a25,2f9.4,2i5,2f8.1)') jisf,ADJUSTL(cdum),rlon, rlat, iseed(jisf), jseed(jisf),rdraftmin,rdraftmin
+     WRITE(iunitu,'(i4,1x,a20,2f9.4,2i5,2f8.1)') jisf,ADJUSTL(cdum),rlon, rlat, iiseed, ijseed,rdraftmin,rdraftmax
   END DO
   WRITE(iunitu,'(a)') 'EOF  '
-  WRITE(iunitu,'(a5,a25,2a5,2a8,a)' ) 'No ','NAME                           ',' X',' Y',' Zmin',' Zmax',' FWF'
-  CLOSE (iunitu)
+  WRITE(iunitu,'(a5,a20,2a9,2a5,2a8,a)' ) 'No ','NAME                           ',' X',' Y',' I ',' J ',' Zmin',' Zmax',' FWF'
 
+  CLOSE(iunitu)
+  CLOSE(iunit)
 
   ! set to 0 all unwanted point (why not .GE. 0.0, I don't know)
   WHERE (dtab >= 1.d0)
