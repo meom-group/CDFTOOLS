@@ -87,7 +87,7 @@ PROGRAM cdffill
      PRINT *,'                        each shelf.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
-     PRINT *,'           cdfmkforcingisf.f90 cdfmkrnfisf.f90 '
+     PRINT *,'           cdfmkforcingisf,  cdfmkrnfisf '
      PRINT *,'      '
      STOP
   ENDIF
@@ -169,8 +169,8 @@ PROGRAM cdffill
   PRINT *, 'Maximum of ISF-draft : ', MAXVAL(dtab),' m'
 
   ! open isf-list file
-  OPEN(unit=iunit,  file=cf_isflist, form='formatted', status='old')
-  OPEN(unit=iunitu, file=cf_isflistup, form='formatted'            )
+  OPEN(unit=iunit,  file=cf_isflist  , form='formatted', status='old')
+  OPEN(unit=iunitu, file=cf_isflistup, form='formatted'              )
   ! get total number of isf
   nisf = 0
   cdum='XXX'
