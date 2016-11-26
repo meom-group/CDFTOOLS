@@ -546,7 +546,7 @@ cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod
 
 install:
 	@mkdir -p $(INSTALL)
-	cd bin ; \cp $(EXEC)  $(INSTALL)
+	cd ../bin ; \cp $(EXEC)  $(INSTALL)
 
 installman:
 	@mkdir -p $(INSTALL_MAN)/man1;
