@@ -33,23 +33,28 @@ PROGRAM cdfmkforcingisf
   INTEGER(KIND=4)                               :: ifill
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
+  INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: ipoolmsk           ! mask for closed pool
+  INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: isfindex           ! index of each ISF ( negative integer)
+  INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: isfindex_wk        ! index of each ISF 'working variable)
 
   REAL(KIND=4)                                  :: rdraftmax, rdraftmin ! dummy information in input file
   REAL(KIND=4)                                  :: rlon, rlat         ! dummy information in input file
 
   REAL(KIND=8)                                  :: dl_fwf, dsumcoef
   REAL(KIND=8)                                  :: dfwf
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dicedep, de1t, de2t, dmask2d, dfwfisf2d, disfmask
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de12t, dwisfmask
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dfwfisf2d
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de12t
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dl_fwfisf2d, dl_fwfispat
 
-  CHARACTER(LEN=256)                            :: cf_in              ! input file names
+  CHARACTER(LEN=256)                            :: cf_fill            ! input file names
   CHARACTER(LEN=256)                            :: cf_isflist         ! input file names
   CHARACTER(LEN=256)                            :: cf_out='isfforcing.nc' ! output file for average
   CHARACTER(LEN=256)                            :: cf_pat='isfpattern.nc' ! pattern file
+  CHARACTER(LEN=256)                            :: cf_pool='isfpool.nc'   ! pools mask file
   CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
   CHARACTER(LEN=256)                            :: cv_pat='sowflisf'  ! pattern variable name
-  CHARACTER(LEN=256)                            :: cv_in              ! isf index variable in cf_in
+  CHARACTER(LEN=256)                            :: cv_pool='isfpoolmask'! pattern variable name
+  CHARACTER(LEN=256)                            :: cv_fill            ! isf index variable in cf_fill
   CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
@@ -62,24 +67,27 @@ PROGRAM cdfmkforcingisf
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmkforcingisf -f ISF-maskfile  -v ISF-maskvariable -l ISF-listfile '
-     PRINT *,'             ...[-p PATTERN-file] [ -vp PATTERN-variable] [-nc4] [-o OUT-file ]'
+     PRINT *,' usage : cdfmkforcingisf -f ISF-fill_file  -v ISF-fill_var -l ISF-listfile '
+     PRINT *,'             -m ISF-poolmask [-vm ISF-poolmask_variable] [-p PATTERN-file] '
+     PRINT *,'            [-vp PATTERN-variable] [-nc4] [-o OUT-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE : '
      PRINT *,'         Build basal melting rate file used in NEMO ISF when nn_isf=4 '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS : '
-     PRINT *,'          -f ISF-maskfile  : mask build by cdffill (all the ice shelves are'
+     PRINT *,'          -f ISF-fill_file : file built by cdffill (all the ice shelves are'
      PRINT *,'                             tagged with an id)'
-     PRINT *,'          -v ISF-maskvariable : name of mask variable to use in ISF-maskfile'
-     PRINT *,'          -l ISF-listfile : test file used to build isfmask.nc. Use last '
-     PRINT *,'                            variable only (GT/y)'
+     PRINT *,'          -v ISF-fill_var  : name of fill variable to use in ISF-fill_file'
+     PRINT *,'          -l ISF-listfile : text file used to build the ISF-fill_file. '
+     PRINT *,'                            Only the last variable on each line is used (GT/y)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'          -p PATTERN-file : specify the file use for pattern, instead '
      PRINT *,'                            of ',TRIM(cf_pat )
      PRINT *,'          -vp PATTERN-variable : specify the name of the variable used for '
      PRINT *,'                            pattern, instead of ', TRIM(cv_pat) 
+     PRINT *,'          -vm ISF-poolmask_variable : specify the name of the variable used '
+     PRINT *,'                 for masking the pools, instead of ', TRIM(cv_pool) 
      PRINT *,'          -nc4 : use netcdf4 chunking and deflation'
      PRINT *,'          -o OUT-file : specify output filename instead of ', TRIM(cf_out)
      PRINT *,'              '
@@ -92,7 +100,7 @@ PROGRAM cdfmkforcingisf
      PRINT *,'         netcdf file : ', TRIM(cf_out),' unless specified with -o option'
      PRINT *,'         variable : sofwfisf '
      PRINT *,'      '
-     PRINT *,'     SEE ALSO : cdffill and cdfmkrnfisf'
+     PRINT *,'     SEE ALSO : cdffill, cdfmkrnfisf and cdfchk_closed_isfpool'
      PRINT *,'      '
      STOP
   ENDIF
@@ -101,12 +109,14 @@ PROGRAM cdfmkforcingisf
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cdum ) ; ijarg = ijarg + 1
      SELECT CASE ( cdum)
-     CASE ( '-f' ) ; CALL getarg(ijarg, cf_in      ) ; ijarg = ijarg + 1
-     CASE ( '-v' ) ; CALL getarg(ijarg, cv_in      ) ; ijarg = ijarg + 1
+     CASE ( '-f' ) ; CALL getarg(ijarg, cf_fill    ) ; ijarg = ijarg + 1
+     CASE ( '-v' ) ; CALL getarg(ijarg, cv_fill    ) ; ijarg = ijarg + 1
      CASE ( '-l' ) ; CALL getarg(ijarg, cf_isflist ) ; ijarg = ijarg + 1
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out     ) ; ijarg = ijarg + 1
      CASE ( '-p' ) ; CALL getarg(ijarg, cf_pat     ) ; ijarg = ijarg + 1
      CASE ( '-vp') ; CALL getarg(ijarg, cv_pat     ) ; ijarg = ijarg + 1
+     CASE ( '-m' ) ; CALL getarg(ijarg, cf_pool    ) ; ijarg = ijarg + 1
+     CASE ( '-vm') ; CALL getarg(ijarg, cv_pool    ) ; ijarg = ijarg + 1
      CASE ('-nc4') ; lnc4=.TRUE.
      CASE DEFAULT
         PRINT *, ' Option ', TRIM(cdum),' not understood'
@@ -114,25 +124,26 @@ PROGRAM cdfmkforcingisf
      END SELECT
   ENDDO
 
-  lchk = lchk .OR. chkfile (cf_in     )
+  lchk = lchk .OR. chkfile (cf_fill   )
   lchk = lchk .OR. chkfile (cf_isflist)
   lchk = lchk .OR. chkfile (cf_pat    )
+  lchk = lchk .OR. chkfile (cf_pool   )
   lchk = lchk .OR. chkfile (cn_fzgr   )
   lchk = lchk .OR. chkfile (cn_fhgr   )
   IF ( lchk  ) STOP ! missing file
 
-  npiglo = getdim (cf_in, cn_x)
-  npjglo = getdim (cf_in, cn_y)
-  npk    = getdim (cf_in, cn_z, cdtrue=cv_dep, kstatus=ierr)
+  npiglo = getdim (cf_fill, cn_x)
+  npjglo = getdim (cf_fill, cn_y)
+  npk    = getdim (cf_fill, cn_z, cdtrue=cv_dep, kstatus=ierr)
 
   IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_in, 'z',cdtrue=cv_dep,kstatus=ierr)
+     npk   = getdim (cf_fill, 'z',cdtrue=cv_dep,kstatus=ierr)
      IF (ierr /= 0 ) THEN
-        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
+        npk   = getdim (cf_fill,'sigma',cdtrue=cv_dep,kstatus=ierr)
         IF ( ierr /= 0 ) THEN 
-           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
+           npk = getdim (cf_fill,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
            IF ( ierr /= 0 ) THEN 
-              npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
+              npk = getdim (cf_fill,'levels',cdtrue=cv_dep,kstatus=ierr)
               IF ( ierr /= 0 ) THEN 
                  PRINT *,' assume file with no depth'
                  npk=0
@@ -146,10 +157,10 @@ PROGRAM cdfmkforcingisf
   PRINT *, 'NPJGLO = ', npjglo
   PRINT *, 'NPK    = ', npk
 
-  ALLOCATE(de1t(npiglo, npjglo), de2t(npiglo, npjglo),de12t(npiglo,npjglo))
-  ALLOCATE(dmask2d(npiglo, npjglo), dfwfisf2d(npiglo, npjglo)    )
+  ALLOCATE(de12t(npiglo,npjglo))
+  ALLOCATE(ipoolmsk(npiglo, npjglo), dfwfisf2d(npiglo, npjglo)    )
   ALLOCATE(dl_fwfisf2d(npiglo,npjglo), dl_fwfispat(npiglo,npjglo))
-  ALLOCATE(dicedep(npiglo, npjglo), disfmask(npiglo, npjglo), dwisfmask(npiglo, npjglo) )
+  ALLOCATE(isfindex(npiglo, npjglo), isfindex_wk(npiglo, npjglo) )
 
   ALLOCATE (stypvar(1))
   ALLOCATE (ipk(1),id_varout(1))
@@ -170,17 +181,13 @@ PROGRAM cdfmkforcingisf
   stypvar(1)%cprecision        = 'r8'
   ipk(1) = 1  !  2D
 
-  ! create output file taking the sizes in cf_in
-  ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4 )
-  ierr   = createvar   (ncout ,  stypvar,  1,  ipk,    id_varout,            ld_nc4=lnc4 )
-  ierr   = putheadervar(ncout,   cn_fzgr,  npiglo, npjglo, npk, cdep=cv_dep)
+  ! create output file taking the sizes in cf_fill
+  ncout  = create      (cf_out, cf_fill, npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4 )
+  ierr   = createvar   (ncout , stypvar, 1,  ipk,    id_varout,            ld_nc4=lnc4 )
+  ierr   = putheadervar(ncout,  cn_fzgr, npiglo, npjglo, npk, cdep=cv_dep              )
 
   ! define variable
   ! read ice shelf draft data
-  dicedep(:,:)  = getvar(cn_fzgr, 'misf',   1, npiglo, npjglo )
-! de1t(:,:)     = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo )
-! de2t(:,:)     = getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo )
-! de12t(:,:)    = e1t(:,:) * e2t(:,:)
   de12t(:,:)    = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo ) *  getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo )
 
   ! open isf file
@@ -199,38 +206,32 @@ PROGRAM cdfmkforcingisf
 
   ! Read the Basal melting pattern, once for all
      dl_fwfispat(:,:) = getvar(cf_pat , cv_pat, 1 ,npiglo, npjglo )
-     disfmask(:,:)    = getvar(cf_in  , cv_in,  1 ,npiglo, npjglo )  
-!!! JM : to be changed using tmaskutil 
-     ! read the sossheig use to mask all the close pool in the model (ssh > 0.0
-     ! WARNING it is not an universal test, have to find something better.
-     dmask2d   = getvar(cf_pat   , cn_sossheig, 1 ,npiglo, npjglo )
-     WHERE (dmask2d >=  0.0d0) 
-        dmask2d = 0.0d0
-     END WHERE
-     WHERE (dmask2d <  0.0d0) 
-        dmask2d = 1.0d0
-     END WHERE
+     isfindex(:,:)    = getvar(cf_fill, cv_fill,1 ,npiglo, npjglo )  
+     ipoolmsk(:,:)    = getvar(cf_pool, cv_pool,1 ,npiglo, npjglo )
 
   ! loop over all the ice shelf
   DO jisf=1,nisf
      ! initialize working pattern with the fixed one
      dl_fwfisf2d = dl_fwfispat
-     ! get ice shelf mask
-     ! reset working isf mask to its initial value
-     dwisfmask(:,:) = disfmask(:,:)
-     ! update isf mask with your input pattern mask (WARNING: issue if your
-     ! pattern mask is smaller than your isf mask, you should drown your pattern
-     ! or take care during the build of the pattern file)
-     dwisfmask = dwisfmask * dmask2d
+
+     ! reset working isf index to its initial value
+     isfindex_wk(:,:) = isfindex(:,:)
+
+     ! eliminate closed pools from isfindex, using ISF-pool file
+     isfindex_wk = isfindex_wk * ipoolmsk
+
      ! read ice shelf data
      READ(iunit,*) ifill,cdum,rlon, rlat, iiseed, ijseed ,rdraftmin, rdraftmax, dfwf
+
      ! convertion of total ice shelf melting from Gt/y -> kg/s
      dl_fwf = dfwf * 1.d9 * 1.d3 / 86400.d0 / 365.d0
-     ! initialisation of variable
+
+     ! initialisation of cumulative variable
      dsumcoef = 0.0d0
+
      ! isolate the ice shelf data we want
-     WHERE (dwisfmask /= -ifill)
-        dwisfmask(:,:) = 0.d0
+     WHERE (isfindex_wk /= -ifill)
+        isfindex_wk(:,:) = 0      ! eliminate all ISF not current (-ifill)
         dl_fwfisf2d(:,:) = 0.0d0
      END WHERE
 
@@ -238,7 +239,6 @@ PROGRAM cdfmkforcingisf
      dl_fwfisf2d(1,:)=0.0d0 ; dl_fwfisf2d(npiglo,:)=0.0d0 ;
 
      dsumcoef = SUM(dl_fwfisf2d * de12t)
-     ! similar that zoldfwf * e12t / sum(zoldfwf*e12t) * newfwf / e12t
      dl_fwfisf2d(:,:) = dl_fwfisf2d(:,:) / dsumcoef * dl_fwf
 
      ! Value read from the text file has the wrong sign for melting.

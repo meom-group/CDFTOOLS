@@ -76,10 +76,12 @@ PROGRAM cdffill
      PRINT *,'     OPTIONS : '
      PRINT *,'          -nc4 : use NetCDF4 chunking and deflation for the output'
      PRINT *,'          -o OUT-file : specify the name of the output file instead of ',TRIM(cf_out)
+     PRINT *,'                 This file will be one of the input file for cdfmkforcingisf '
+     PRINT *,'                 as the ISF-fill_file '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'              netcdf file : fill.nc '
-     PRINT *,'              variable : sofillvar contains for all points in ice shelf NAMEi '
+     PRINT *,'              variable : sofillvar contains for all points in ice shelf NAME '
      PRINT *,'                         the value -i (negative value)'
      PRINT *,'              text file : <ISF-list>_zmin_zmax.txt '
      PRINT *,'                        this output file is similar to <ISF-list> but updated'
