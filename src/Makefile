@@ -31,7 +31,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
-       cdffill cdfmkforcingisf \
+       cdfisf_fill cdfisf_forcing \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
@@ -482,11 +482,11 @@ cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
 cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 	$(F90)   cdfpolymask.f90  -o $(BINDIR)/cdfpolymask cdfio.o modpoly.o modcdfnames.o $(FFLAGS)
 
-cdffill: cdfio.o  cdffill.f90
-	$(F90)   cdffill.f90  -o $(BINDIR)/cdffill cdfio.o modcdfnames.o $(FFLAGS)
+cdfisf_fill: cdfio.o  cdfisf_fill.f90
+	$(F90)   cdfisf_fill.f90  -o $(BINDIR)/cdfisf_fill cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfmkforcingisf: cdfio.o  cdfmkforcingisf.f90
-	$(F90)   cdfmkforcingisf.f90  -o $(BINDIR)/cdfmkforcingisf cdfio.o modcdfnames.o $(FFLAGS)
+cdfisf_forcing: cdfio.o  cdfisf_forcing.f90
+	$(F90)   cdfisf_forcing.f90  -o $(BINDIR)/cdfisf_forcing cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)

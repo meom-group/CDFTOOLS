@@ -1,6 +1,6 @@
-PROGRAM cdfmkforcingisf
+PROGRAM cdfisf_forcing
   !!======================================================================
-  !!                     ***  PROGRAM  cdfmkforcingisf  ***
+  !!                     ***  PROGRAM  cdfisf_forcing  ***
   !!=====================================================================
   !!  ** Purpose : spread a specified total ice shelf melting over a specific
   !!               ice shelf melting pattern
@@ -67,7 +67,7 @@ PROGRAM cdfmkforcingisf
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmkforcingisf -f ISF-fill_file  -v ISF-fill_var -l ISF-listfile '
+     PRINT *,' usage : cdfisf_forcing -f ISF-fill_file  -v ISF-fill_var -l ISF-listfile '
      PRINT *,'             -m ISF-poolmask [-vm ISF-poolmask_variable] [-p PATTERN-file] '
      PRINT *,'            [-vp PATTERN-variable] [-nc4] [-o OUT-file ]'
      PRINT *,'      '
@@ -100,7 +100,7 @@ PROGRAM cdfmkforcingisf
      PRINT *,'         netcdf file : ', TRIM(cf_out),' unless specified with -o option'
      PRINT *,'         variable : sofwfisf '
      PRINT *,'      '
-     PRINT *,'     SEE ALSO : cdffill, cdfmkrnfisf and cdfchk_closed_isfpool'
+     PRINT *,'     SEE ALSO : cdfisf_fill, cdfisf_rnf, cdfisf_poolchk'
      PRINT *,'      '
      STOP
   ENDIF
@@ -252,4 +252,4 @@ PROGRAM cdfmkforcingisf
   ! close file
   ierr = closeout(ncout)
 
-END PROGRAM cdfmkforcingisf
+END PROGRAM cdfisf_forcing

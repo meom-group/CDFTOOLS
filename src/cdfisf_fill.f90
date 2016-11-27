@@ -1,6 +1,6 @@
-PROGRAM cdffill
+PROGRAM cdfisf_fill
   !!======================================================================
-  !!                     ***  PROGRAM  cdffill  ***
+  !!                     ***  PROGRAM  cdfisf_fill  ***
   !!=====================================================================
   !!  ** Purpose : Build a file containing one value for each closed pools
   !!               seeded by a list of points.
@@ -53,7 +53,7 @@ PROGRAM cdffill
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdffill  -f ISF-file -v ISF-var -l ISF-list [-nc4 ] [-o OUT-file]'
+     PRINT *,' usage : cdfisf_fill  -f ISF-file -v ISF-var -l ISF-list [-nc4 ] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE : Build a nc file with a single value for each pool around a list'
      PRINT *,'               of given point. A warning is given when neighbouring ice-shelves'
@@ -89,7 +89,7 @@ PROGRAM cdffill
      PRINT *,'                        each shelf.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
-     PRINT *,'           cdfmkforcingisf,  cdfmkrnfisf '
+     PRINT *,'           cdfisf_forcing,  cdfisf_rnf '
      PRINT *,'      '
      STOP
   ENDIF
@@ -293,4 +293,4 @@ CONTAINS
 
   END SUBROUTINE fillpool
 
-END PROGRAM cdffill
+END PROGRAM cdfisf_fill
