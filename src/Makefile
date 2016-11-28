@@ -31,7 +31,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
-       cdfisf_fill cdfisf_forcing \
+       cdfisf_fill cdfisf_forcing cdfisf_rnf\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
@@ -487,6 +487,9 @@ cdfisf_fill: cdfio.o  cdfisf_fill.f90
 
 cdfisf_forcing: cdfio.o  cdfisf_forcing.f90
 	$(F90)   cdfisf_forcing.f90  -o $(BINDIR)/cdfisf_forcing cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfisf_rnf: cdfio.o  cdfisf_rnf.f90
+	$(F90)   cdfisf_rnf.f90  -o $(BINDIR)/cdfisf_rnf cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)

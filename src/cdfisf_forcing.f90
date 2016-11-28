@@ -33,6 +33,7 @@ PROGRAM cdfisf_forcing
   INTEGER(KIND=4)                               :: ifill
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
+
   INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: ipoolmsk           ! mask for closed pool
   INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: isfindex           ! index of each ISF ( negative integer)
   INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: isfindex_wk        ! index of each ISF 'working variable)
