@@ -29,8 +29,11 @@ PROGRAM cdfisf_rnf
   INTEGER(KIND=4)                               :: ncout              ! ncid of output files
   INTEGER(KIND=4)                               :: ifill
   INTEGER(KIND=4)                               :: iiseed, ijseed     ! position of a point within ice shelf
+  INTEGER(KIND=4)                               :: ijmin, ijmax       ! j-limits of a particular ice shelf
+  INTEGER(KIND=4)                               :: iwscale=75         ! horizontal scale of the fading function (points)
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: isum               ! zonal sum of isf index for optim
   INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: isfindex, isfmask  ! 
   INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: isfindex_wk        !
 
@@ -146,7 +149,7 @@ PROGRAM cdfisf_rnf
   PRINT *, 'NPK    = ', npk
 
   ALLOCATE(isfindex (npiglo, npjglo), isfmask    (npiglo, npjglo))
-  ALLOCATE(isfindex_wk(npiglo, npjglo) )
+  ALLOCATE(isfindex_wk(npiglo, npjglo), isum(npjglo))
 
   ALLOCATE(bathy    (npiglo, npjglo), zdrft      (npiglo, npjglo))
   ALLOCATE(zmax2d   (npiglo, npjglo), zmin2d     (npiglo, npjglo))
@@ -197,16 +200,33 @@ PROGRAM cdfisf_rnf
      ! only deal with current ice shelf
      WHERE (isfindex_wk /=  -ifill ) isfindex_wk = 0
 
+     ! find the j-limits for the current ice shelf 
+     isum(:)=SUM(isfindex_wk,dim=1)
+     ijmin = npjglo ; ijmax=2
+     DO jj=ijseed, 2, -1
+        IF ( isum(jj) /= 0 ) THEN
+          ijmin=jj
+        ENDIF
+     ENDDO
+     DO jj=ijseed, npjglo-1
+        IF ( isum(jj) /= 0 ) THEN
+          ijmax=jj
+        ENDIF
+     ENDDO
+
      DO jw = 1,nwidth
         DO ji=2,npiglo-1
-           DO jj = MAX(2,ijseed-500), MIN(npjglo-1,ijseed+500)   ! JMM why 500 ???
+           DO jj = ijmin, ijmax
               IF ( zdrft(ji,jj) == 0 .AND.  &    ! not under ice_shelf
               &    bathy(ji,jj) /= 0 .AND.  &    ! but in the ocean
               &    MINVAL(isfindex_wk(ji-1:ji+1 , jj-1:jj+1)) == -ifill  .AND. &  ! 
               &    isfindex_wk(ji,jj) == 0 ) THEN
                  ! compute dfwf in mm/s  ???
                  isfmask(ji,jj)  = isfmask(ji,jj) + jw 
-                 dl_fwfisf2d(ji,jj) = exp(-(isfmask(ji,jj)-1.)**2/75.**2)  ! JMM: explain ...
+                 ! use an empirical ocean ward fading function, in order to distribute the
+                 ! runoff on nwidth points along the coast. iwscale can be adapted for
+                 ! sharper (decrease) or flatter (increase) fading function. Default = 75
+                 dl_fwfisf2d(ji,jj) = exp(-((isfmask(ji,jj)-1.)/iwscale)**2)  
               END IF
            END DO
         END DO
