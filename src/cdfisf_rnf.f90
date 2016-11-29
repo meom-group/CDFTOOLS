@@ -54,13 +54,13 @@ PROGRAM cdfisf_rnf
   !                                                VARIABLES
   CHARACTER(LEN=256)                            :: cv_fill            ! fill var name
   CHARACTER(LEN=256)                            :: cv_bathy='Bathymetry' ! bathymetry name
-  CHARACTER(LEN=256)                            :: cv_isfdr='isf_draft' ! ice shelf draft name
+  CHARACTER(LEN=256)                            :: cv_isfdr='isf_draft'  ! ice shelf draft name
   CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 
   LOGICAL                                       :: lchk    = .false.  ! flag for missing files
-  LOGICAL                                       :: lnc4    = .false.  ! flag for missing files
+  LOGICAL                                       :: lnc4    = .false.  ! flag for netcdf4 chunking and deflation
   !!----------------------------------------------------------------------------
   CALL ReadCdfNames()
 
