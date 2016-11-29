@@ -1570,8 +1570,10 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar3d  ***
     !!
-    !! ** Purpose : Return the 3D REAL variable cvar, from cdfile at level klev.
-    !!              kpi,kpj are the horizontal size of the 2D variable
+    !! ** Purpose : Return the 3D REAL variable cdvar(x,y,z), from cdfile 
+    !!              kpi,kpj,kpz are the horizontal size of the 3D variable
+    !!              Sub domain can be optionaly specified with its starting
+    !!              point, kimin, kjmin, kkmin
     !!
     !! ** Method  : Use NF90 primitive to read the block of 3D data
     !!
@@ -1674,8 +1676,9 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar3d  ***
     !!
-    !! ** Purpose : Return the 3D REAL variable cvar, from cdfile at level klev.
-    !!              kpi,kpj are the horizontal size of the 2D variable
+    !! ** Purpose : Return the 3D REAL variable cdvar(x,y,t), at level kk
+    !!              from cdfile.  kpi,kpj,kpt are the size of the variable
+    !!              subdomain starting point can be specified by kimin, kjmin, ktmin
     !!
     !! ** Method  : Use NF90 primitive to read the block of 3D data
     !!
@@ -1778,8 +1781,9 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar4d  ***
     !!
-    !! ** Purpose : Return the 3D REAL variable cvar, from cdfile at level klev.
-    !!              kpi,kpj are the horizontal size of the 2D variable
+    !! ** Purpose : Return the 4D REAL variable cdvar(x,y,z,t).
+    !!              kpi,kpj,kpz,kpt are the dimensions of the 4D variable.
+    !!              A subdomain can be specified using kimin, kjmin, kkmin, ktmin
     !!
     !! ** Method  : Use NF90 primitive to read the block of 3D data
     !!
