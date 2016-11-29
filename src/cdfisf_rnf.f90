@@ -71,12 +71,13 @@ PROGRAM cdfisf_rnf
 
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfisf_rnf -f ISF-fill-file -v ISF-fill_var -l ISF-listfile -w width '
-     PRINT *,'      [-b BATHY-file] [-vb BATHY-var] [-i ISFDRAFT-file] [-vi ISFDRAFT-variable]'
-     PRINT *,'      [-nc4] [-o OUT-file ]'
+     PRINT *,'     [-b BATHY-file] [-vb BATHY-var] [-i ISFDRAFT-file] [-vi ISFDRAFT-variable]'
+     PRINT *,'     [-nc4] [-o OUT-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Build a netcdf file with basal melting of the ice-shelves parmetrized'
-     PRINT *,'        as runoff spreaded over the vertical.'
+     PRINT *,'        Build a netcdf file runoff file using the basal melting of the '
+     PRINT *,'        ice-shelves. This netcdf file is intented to be used with NEMO when'
+     PRINT *,'        nn_isf namelist parameter is set to 3.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'          -f ISF-fill_file : file built by cdffill (all the ice shelves are'
@@ -88,10 +89,14 @@ PROGRAM cdfisf_rnf
      PRINT *,'               will be applied.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'          -b BATHY-file : give name of bathy file instead of ',TRIM(cf_bathy)
-     PRINT *,'          -vp BATHY-var : give name of bathy variable instead of ',TRIM(cv_bathy)
-     PRINT *,'          -i ISFDRAFT-file : give name of isf_draft file instead of ',TRIM(cf_isfdr)
-     PRINT *,'          -vi ISFDRAFT-var : give name of isf_draft variable instead of ',TRIM(cv_isfdr)
+     PRINT *,'          -b BATHY-file : give name of bathy file.'
+     PRINT *,'                      [ default : ',TRIM(cf_bathy),' ]'
+     PRINT *,'          -vp BATHY-var : give name of bathy variable.'
+     PRINT *,'                      [ default : ',TRIM(cv_bathy),' ]'
+     PRINT *,'          -i ISFDRAFT-file : give name of isf_draft file.'
+     PRINT *,'                      [ default : ',TRIM(cf_isfdr),' ]'
+     PRINT *,'          -vi ISFDRAFT-var : give name of isf_draft variable.'
+     PRINT *,'                      [ default : ',TRIM(cv_isfdr),' ]'
      PRINT *,'          -nc4 : Use this option to have netcdf4 output file, with chunking'
      PRINT *,'               and deflation.'
      PRINT *,'          -o OUT-file : Specify the name of the output file instead of '
