@@ -7,42 +7,88 @@ PROGRAM cdfisf_poolchk
   !!              do not communicate with the open ocean. This case is
   !!              frequent for the ocean cavity below the ice shelves.
   !!
-  !!  ** Method  : Use a fillpool3D algorithm
+  !!  ** Method  : Use a fillpool3D algorithm. This program use 3D arrays
+  !!               and may be very memory consuming for big domains.
   !!
   !! History :   3.0  : 11/2016  : J.M. Molines. P. Mathiot (original code)
   !!----------------------------------------------------------------------
+  !!   routines                                         : description
   !!----------------------------------------------------------------------
-  !!   routines      : description
+  !!  fillpool2d(kiseed, kjseed,         kdta, kifill)  : 2D fill algo
+  !!  fillpool3d(kiseed, kjseed, kkseed, kdta, kifill)  : 3D fill algo
   !!----------------------------------------------------------------------
-
-
+  USE netcdf
+  USE cdfio
+  USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2012
   !! $Id$
   !! Copyright (c) 2012, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
-  USE netcdf
   IMPLICIT NONE
 
   INTEGER(KIND=4) :: ji, jj, jk
   INTEGER(KIND=4) :: npiglo, npjglo, npk
   INTEGER(KIND=4) :: iiseed, ijseed, ikseed
   INTEGER(KIND=4) :: ifill = 2
-  INTEGER(KIND=4) :: narg
+  INTEGER(KIND=4) :: narg, ijarg
   INTEGER(KIND=4) :: ncid, id, ierr
   INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: itab
   INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: itab3d
 
   CHARACTER(LEN=255) :: cf_in
+  CHARACTER(LEN=255) :: cf_out='poolmask.nc'
+  CHARACTER(LEN=255) :: cdum
+  LOGICAL            :: lnc4=.FALSE.
+  !!----------------------------------------------------------------------
+  CALL ReadCdfNames()
 
-  !============================
   narg = iargc()
+
   IF ( narg == 0 ) THEN
-     PRINT *, 'Usage : cdfisf_poolchk mask_file '
+     PRINT *,' usage : cdfisf_poolchk -m MASK-file [-nc4] [-o OUT-file]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Produce a netcdf mask file with 1 everywhere, except for points '
+     PRINT *,'       not connected to the open ocean (Frequent for cavities below '
+     PRINT *,'       ice-shelves), which have 0 value. Both 3D and 2D variables are'
+     PRINT *,'       created, the 2D variables beiing used for cdfisf_forcing.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       -m MASK-file : name of the input mask file, holding the tmask variable.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       -nc4 : use netcdf4 with chunking and deflation for the output.'
+     PRINT *,'       -o OUT-file : name of the output file. [Default : ',TRIM(cf_out),' ]' 
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       Only the mask file given as argument' 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.'
+     PRINT *,'         variables : tmask_pool3d, tmask_pool2d'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'      cdfisf_fill, cdfisf_forcing, cdfisf_rnf' 
+     PRINT *,'      '
      STOP
   ENDIF
-  CALL getarg(1, cf_in )
+  
+  ijarg=1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(1, cdum) ; ijarg = ijarg+1
+     SELECT CASE ( cdum )
+     CASE ( '-m'  ) ; CALL getarg(1, cf_in ) ; ijarg = ijarg+1
+     CASE ( '-o'  ) ; CALL getarg(1, cf_out) ; ijarg = ijarg+1
+     CASE ( '-nc4') ; lnc4=.TRUE.
+     CASE DEFAULT 
+        PRINT *,' Unknown option : ', TRIM(cdum)
+        STOP
+     END SELECT
+  ENDDO
+
+  CALL CreateOutput
 
   CALL system ( 'cp '//TRIM(cf_in)//' copymask.nc' )
   cf_in='copymask.nc'
