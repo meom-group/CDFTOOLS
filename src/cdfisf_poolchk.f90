@@ -35,7 +35,6 @@ PROGRAM cdfisf_poolchk
   INTEGER(KIND=4) :: narg, ijarg
   INTEGER(KIND=4) :: ncid, id
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
-  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: isum               ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
 
   INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: itab
@@ -75,9 +74,10 @@ PROGRAM cdfisf_poolchk
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -m MASK-file : name of the input NEMO mask file, with tmask variable.'
-     PRINT *,'       -d ISFDRAFT-file : name of the input NEMO mask file, with tmask variable.'
+     PRINT *,'       -d ISFDRAFT-file : name of the file with ice shelf draft.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       -v ISFDRAFT-variable: name of the variable for ice shelf draft.'
      PRINT *,'       -nc4 : use netcdf4 with chunking and deflation for the output.'
      PRINT *,'       -o OUT-file : name of the output file. [Default : ',TRIM(cf_out),' ]' 
      PRINT *,'      '
@@ -96,12 +96,12 @@ PROGRAM cdfisf_poolchk
   
   ijarg=1
   DO WHILE ( ijarg <= narg )
-     CALL getarg(1, cdum) ; ijarg = ijarg+1
+     CALL getarg(ijarg, cdum) ; ijarg = ijarg+1
      SELECT CASE ( cdum )
-     CASE ( '-m'  ) ; CALL getarg(1, cf_in   ) ; ijarg = ijarg+1
-     CASE ( '-o'  ) ; CALL getarg(1, cf_out  ) ; ijarg = ijarg+1
-     CASE ( '-d'  ) ; CALL getarg(1, cf_isfdr) ; ijarg = ijarg+1
-     CASE ( '-v'  ) ; CALL getarg(1, cv_isfdr) ; ijarg = ijarg+1
+     CASE ( '-m'  ) ; CALL getarg(ijarg, cf_in   ) ; ijarg = ijarg+1
+     CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg+1
+     CASE ( '-d'  ) ; CALL getarg(ijarg, cf_isfdr) ; ijarg = ijarg+1
+     CASE ( '-v'  ) ; CALL getarg(ijarg, cv_isfdr) ; ijarg = ijarg+1
      CASE ( '-nc4') ; lnc4=.TRUE.
      CASE DEFAULT 
         PRINT *,' Unknown option : ', TRIM(cdum)
@@ -122,7 +122,6 @@ PROGRAM cdfisf_poolchk
   PRINT *, ' NPK    = ', npk
 
   ALLOCATE ( itab(npiglo, npjglo), itab3d( npiglo, npjglo, npk), itmask(npiglo, npjglo,npk) )
-  ALLOCATE ( isum(npjglo) )
   ALLOCATE ( rdraft(npiglo, npjglo), rsum(npjglo) )
   ALLOCATE ( ipk(2), id_varout(2), stypvar(2))
 
@@ -133,7 +132,7 @@ PROGRAM cdfisf_poolchk
   rsum(:)     = SUM(rdraft, DIM=1 )
   ijmax=2
   DO jj=1, npjglo-1
-     IF ( isum(jj) /= 0 ) THEN
+     IF ( rsum(jj) /= 0. ) THEN
        ijmax=jj
      ENDIF
   ENDDO
@@ -144,27 +143,30 @@ PROGRAM cdfisf_poolchk
   itab3d(:,:,:) = itmask(:,:,:)
 
   ! set limits  for fillpool algo
-  itab3d(:,ijmax  ,:) = 0
+  itab3d(:,ijmax  ,1:npk-1) = 0
   itab3d(:,ijmax-1,:) = 1  ! open a connection for sure at ijmax -1 (out of iceshelf cavities)
   itab3d(:,:,    1)   = 0  ! to set an upper limit !, assuming to cavities at this level
   iiseed= npiglo/2  ; ijseed = ijmax -1 ; ikseed = 2
+  PRINT *,' SEED position',iiseed, ijseed, ikseed, itab3d(iiseed, ijseed, ikseed)
 
   CALL fillpool3d( iiseed, ijseed,ikseed, itab3d, -ifill )
-  PRINT *, '  Number of disconected points : ', COUNT(  (itab3d == 1) )
+  PRINT *, '  Number of disconected points : ', COUNT(  (itab3d(:,1:ijmax-2,:) == 1) )
   ! at this point itab3d (:,1:ijmax,:) can have 3 different values :
   !              0 where there where already 0
   !              -ifill where the ocean points are connected
   !              1 where ocean points in tmask are not connected
   itab(:,:) = itmask(:,:,1)  ! restore original tmask at surface
-  itab(:,1:ijmax-1) = SUM(itab3d(:,1:ijmax-1,:), dim=3) 
-  WHERE (itab(:,1:ijmax-1) > 0 ) itab(:,1:ijmax-1)=0
-  WHERE (itab(:,1:ijmax-1) < 0 ) itab(:,1:ijmax-1)=1
+  itab(:,1:ijmax-2) = SUM(itab3d(:,1:ijmax-2,:), dim=3) 
+  WHERE (itab(:,1:ijmax-2) > 0 ) itab(:,1:ijmax-2)=0
+  WHERE (itab(:,1:ijmax-2) < 0 ) itab(:,1:ijmax-2)=1
   
   ierr = putvar( ncout, id_varout(1), itab(:,:), 1, npiglo, npjglo)
 
   DO jk = 1, npk 
     ierr = putvar( ncout, id_varout(2), itab3d(:,:,jk), jk, npiglo, npjglo)
   ENDDO
+
+  ierr = closeout(ncout)
 
 CONTAINS
   SUBROUTINE CreateOutput
@@ -224,8 +226,8 @@ CONTAINS
   ipk(2) = npk  !  3D
 
   ! create output file taking the sizes in cf_fill
-  ncout  = create      (cf_out, cf_in,   npiglo, npjglo, npk,  ld_nc4=lnc4)
-  ierr   = createvar   (ncout,  stypvar, 2,   ipk, id_varout,  ld_nc4=lnc4)
+  ncout  = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdepvar=cn_vdeptht, ld_nc4=lnc4)
+  ierr   = createvar   (ncout,  stypvar, 2,   ipk, id_varout,                     ld_nc4=lnc4)
   ierr   = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk              )
 
 
@@ -352,7 +354,8 @@ CONTAINS
        iip1=ii+1; IF ( iip1 == ipiglo+1 ) iip1=2
        iim1=ii-1; IF ( iim1 == 0        ) iim1=ipiglo-1
        ijp1=ij+1 ; ijm1 =ij-1 
-       ikp1=ik+1 ; ikm1 =ik-1 ; IF (ikm1 == 0 ) ikm1=ik
+       ikp1=ik+1 ; IF (ikp1 == ipk+1 ) ikp1=ik
+       ikm1=ik-1 ; IF (ikm1 == 0     ) ikm1=ik
 
 
        IF (idata(ii, ijp1,ik) > 0 ) THEN
