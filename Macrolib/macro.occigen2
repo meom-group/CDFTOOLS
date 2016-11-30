@@ -15,7 +15,7 @@ MPF90=mpif90
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian
 
 FFLAGS= -O  $(NCDF) $(NC4) -fp-model precise
-#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g
+#FFLAGS= -O  $(NCDF) $(NC4) -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g
 
 LMPI=-lmpich
 
