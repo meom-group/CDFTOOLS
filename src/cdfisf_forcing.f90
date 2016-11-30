@@ -76,21 +76,21 @@ PROGRAM cdfisf_forcing
      PRINT *,'         Build basal melting rate file used in NEMO ISF when nn_isf=4 '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS : '
-     PRINT *,'          -f ISF-fill_file : file built by cdffill (all the ice shelves are'
-     PRINT *,'                             tagged with an id)'
+     PRINT *,'          -f ISF-fill_file : file built by cdfisf_fill (all the ice shelves '
+     PRINT *,'                             are tagged with an id)'
      PRINT *,'          -v ISF-fill_var  : name of fill variable to use in ISF-fill_file'
      PRINT *,'          -l ISF-listfile : text file used to build the ISF-fill_file. '
      PRINT *,'                            Only the last variable on each line is used (GT/y)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'          -p PATTERN-file : specify the file use for pattern, instead '
-     PRINT *,'                            of ',TRIM(cf_pat )
-     PRINT *,'          -vp PATTERN-variable : specify the name of the variable used for '
-     PRINT *,'                            pattern, instead of ', TRIM(cv_pat) 
+     PRINT *,'          -p PATTERN-file : specify the file use for patterns. '
+     PRINT *,'                            [ default : ',TRIM(cf_pat),' ]'
+     PRINT *,'          -vp PATTERN-variable : specify the name of the pattern variable. '
+     PRINT *,'                            [ default : ',TRIM(cv_pat),' ]'
      PRINT *,'          -vm ISF-poolmask_variable : specify the name of the variable used '
-     PRINT *,'                 for masking the pools, instead of ', TRIM(cv_pool) 
+     PRINT *,'                 for masking the pools. [ default : ',TRIM(cv_pool),' ]'
      PRINT *,'          -nc4 : use netcdf4 chunking and deflation'
-     PRINT *,'          -o OUT-file : specify output filename instead of ', TRIM(cf_out)
+     PRINT *,'          -o OUT-file : specify output filename. [ default : ',TRIM(cf_out),' ]'
      PRINT *,'              '
      PRINT *,'     REQUIRED FILES : '
      PRINT *,'           mesh_zgr.nc mesh_hgr.nc,'
@@ -135,24 +135,7 @@ PROGRAM cdfisf_forcing
 
   npiglo = getdim (cf_fill, cn_x)
   npjglo = getdim (cf_fill, cn_y)
-  npk    = getdim (cf_fill, cn_z, cdtrue=cv_dep, kstatus=ierr)
-
-  IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_fill, 'z',cdtrue=cv_dep,kstatus=ierr)
-     IF (ierr /= 0 ) THEN
-        npk   = getdim (cf_fill,'sigma',cdtrue=cv_dep,kstatus=ierr)
-        IF ( ierr /= 0 ) THEN 
-           npk = getdim (cf_fill,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-           IF ( ierr /= 0 ) THEN 
-              npk = getdim (cf_fill,'levels',cdtrue=cv_dep,kstatus=ierr)
-              IF ( ierr /= 0 ) THEN 
-                 PRINT *,' assume file with no depth'
-                 npk=0
-              ENDIF
-           ENDIF
-        ENDIF
-     ENDIF
-  ENDIF
+  npk    = 0  ! working with 2D files only
 
   PRINT *, 'NPIGLO = ', npiglo
   PRINT *, 'NPJGLO = ', npjglo
@@ -168,24 +151,7 @@ PROGRAM cdfisf_forcing
   ! initialisation of final fwf
   dfwfisf2d(:,:) = 0.0d0
 
-  ! define new variables for output
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = 'sofwfisf'
-  stypvar(1)%cunits            = 'kg/s'
-  stypvar(1)%rmissing_value    =  -99.d0
-  stypvar(1)%valid_min         =  0.d0
-  stypvar(1)%valid_max         =  2000.d0
-  stypvar(1)%clong_name        = 'Ice Shelf Fresh Water Flux '
-  stypvar(1)%cshort_name       = 'sofwfisf'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-  stypvar(1)%cprecision        = 'r8'
-  ipk(1) = 1  !  2D
-
-  ! create output file taking the sizes in cf_fill
-  ncout  = create      (cf_out, cf_fill, npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4 )
-  ierr   = createvar   (ncout , stypvar, 1,  ipk,    id_varout,            ld_nc4=lnc4 )
-  ierr   = putheadervar(ncout,  cn_fzgr, npiglo, npjglo, npk, cdep=cv_dep              )
+  CALL CreateOutput
 
   ! define variable
   ! read ice shelf draft data
@@ -206,9 +172,9 @@ PROGRAM cdfisf_forcing
   PRINT *, '   Number of ISF found in file list : ', nisf
 
   ! Read the Basal melting pattern, once for all
-     dl_fwfispat(:,:) = getvar(cf_pat , cv_pat, 1 ,npiglo, npjglo )
-     isfindex(:,:)    = getvar(cf_fill, cv_fill,1 ,npiglo, npjglo )  
-     ipoolmsk(:,:)    = getvar(cf_pool, cv_pool,1 ,npiglo, npjglo )
+  dl_fwfispat(:,:) = getvar(cf_pat , cv_pat, 1 ,npiglo, npjglo )
+  isfindex(:,:)    = getvar(cf_fill, cv_fill,1 ,npiglo, npjglo )  
+  ipoolmsk(:,:)    = getvar(cf_pool, cv_pool,1 ,npiglo, npjglo )
 
   ! loop over all the ice shelf
   DO jisf=1,nisf
@@ -252,5 +218,36 @@ PROGRAM cdfisf_forcing
 
   ! close file
   ierr = closeout(ncout)
+
+CONTAINS
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create the output file. This is done outside the main
+    !!               in order to increase readability of the code. 
+    !!
+    !! ** Method  :  Use global variables, defined in mail 
+    !!----------------------------------------------------------------------
+    ! define new variables for output
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'sofwfisf'
+    stypvar(1)%cunits            = 'kg/s'
+    stypvar(1)%rmissing_value    =  -99.d0
+    stypvar(1)%valid_min         =  0.d0
+    stypvar(1)%valid_max         =  2000.d0
+    stypvar(1)%clong_name        = 'Ice Shelf Fresh Water Flux '
+    stypvar(1)%cshort_name       = 'sofwfisf'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+    stypvar(1)%cprecision        = 'r8'
+    ipk(1) = 1  !  2D
+
+    ! create output file taking the sizes in cf_fill
+    ncout  = create      (cf_out, cf_fill, npiglo, npjglo, npk,   ld_nc4=lnc4 )
+    ierr   = createvar   (ncout , stypvar, 1,  ipk,  id_varout,   ld_nc4=lnc4 )
+    ierr   = putheadervar(ncout,  cn_fzgr, npiglo, npjglo, npk                )
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfisf_forcing
