@@ -17,7 +17,6 @@ PROGRAM cdfisf_poolchk
   !!  fillpool2d(kiseed, kjseed,         kdta, kifill)  : 2D fill algo
   !!  fillpool3d(kiseed, kjseed, kkseed, kdta, kifill)  : 3D fill algo
   !!----------------------------------------------------------------------
-  USE netcdf
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
@@ -31,30 +30,42 @@ PROGRAM cdfisf_poolchk
   INTEGER(KIND=4) :: ji, jj, jk
   INTEGER(KIND=4) :: ierr, ncout
   INTEGER(KIND=4) :: npiglo, npjglo, npk
-  INTEGER(KIND=4) :: iiseed, ijseed, ikseed
+  INTEGER(KIND=4) :: iiseed, ijseed, ikseed, ijmax
   INTEGER(KIND=4) :: ifill = 2
   INTEGER(KIND=4) :: narg, ijarg
-  INTEGER(KIND=4) :: ncid, id, ierr
+  INTEGER(KIND=4) :: ncid, id
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: isum               ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
 
   INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: itab
-  INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: itab3d
+  INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: itab3d, itmask
+
+  REAL(KIND=4), DIMENSION(:),        ALLOCATABLE :: rsum              ! iceshelf draft
+  REAL(KIND=4), DIMENSION(:,:),      ALLOCATABLE :: rdraft            ! iceshelf draft
 
   CHARACTER(LEN=255) :: cf_in
   CHARACTER(LEN=255) :: cf_out='poolmask.nc'
+  CHARACTER(LEN=255) :: cf_isfdr='isf_draft.nc'
+  CHARACTER(LEN=255) :: cv_isfdr='isf_draft'
   CHARACTER(LEN=255) :: cdum
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 
+  LOGICAL            :: lchk=.FALSE.
   LOGICAL            :: lnc4=.FALSE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  ! input file is a mask file, then :
+  cn_t='t'
+  cn_z='z'
+  cn_vdeptht='nav_lev'
 
   narg = iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfisf_poolchk -m MASK-file [-nc4] [-o OUT-file]'
+     PRINT *,' usage : cdfisf_poolchk -m MASK-file -d ISFDRAFT-file [-v ISFDRAFT-variable]'
+     PRINT *,'            [-nc4] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Produce a netcdf mask file with 1 everywhere, except for points '
@@ -63,7 +74,8 @@ PROGRAM cdfisf_poolchk
      PRINT *,'       created, the 2D variables beiing used for cdfisf_forcing.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -m MASK-file : name of the input mask file, holding the tmask variable.'
+     PRINT *,'       -m MASK-file : name of the input NEMO mask file, with tmask variable.'
+     PRINT *,'       -d ISFDRAFT-file : name of the input NEMO mask file, with tmask variable.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       -nc4 : use netcdf4 with chunking and deflation for the output.'
@@ -86,14 +98,20 @@ PROGRAM cdfisf_poolchk
   DO WHILE ( ijarg <= narg )
      CALL getarg(1, cdum) ; ijarg = ijarg+1
      SELECT CASE ( cdum )
-     CASE ( '-m'  ) ; CALL getarg(1, cf_in ) ; ijarg = ijarg+1
-     CASE ( '-o'  ) ; CALL getarg(1, cf_out) ; ijarg = ijarg+1
+     CASE ( '-m'  ) ; CALL getarg(1, cf_in   ) ; ijarg = ijarg+1
+     CASE ( '-o'  ) ; CALL getarg(1, cf_out  ) ; ijarg = ijarg+1
+     CASE ( '-d'  ) ; CALL getarg(1, cf_isfdr) ; ijarg = ijarg+1
+     CASE ( '-v'  ) ; CALL getarg(1, cv_isfdr) ; ijarg = ijarg+1
      CASE ( '-nc4') ; lnc4=.TRUE.
      CASE DEFAULT 
         PRINT *,' Unknown option : ', TRIM(cdum)
         STOP
      END SELECT
   ENDDO
+
+  lchk = lchk .OR. chkfile(cf_in    )
+  lchk = lchk .OR. chkfile(cf_isfdr)
+  IF ( lchk ) STOP ! missing files
 
   npiglo = getdim (cf_in,cn_x )
   npjglo = getdim (cf_in,cn_y )
@@ -103,23 +121,50 @@ PROGRAM cdfisf_poolchk
   PRINT *, ' NPJGLO = ', npjglo
   PRINT *, ' NPK    = ', npk
 
-  ALLOCATE ( itab(npiglo, npjglo), itab3d( npiglo, npjglo, npk ) )
+  ALLOCATE ( itab(npiglo, npjglo), itab3d( npiglo, npjglo, npk), itmask(npiglo, npjglo,npk) )
+  ALLOCATE ( isum(npjglo) )
+  ALLOCATE ( rdraft(npiglo, npjglo), rsum(npjglo) )
   ALLOCATE ( ipk(2), id_varout(2), stypvar(2))
 
   CALL CreateOutput
 
-  PRINT *, 'NOW WORK WITH tmask'
-  itab3d(:,:,:) = getvar3d (cf_in, cn_tmask, npiglo, npjglo, npk)
+  ! Read ice shelf draft in order to find the northern limit of the cavities
+  rdraft(:,:) = getvar(cf_isfdr, cv_isfdr, 1, npiglo, npjglo )
+  rsum(:)     = SUM(rdraft, DIM=1 )
+  ijmax=2
+  DO jj=1, npjglo-1
+     IF ( isum(jj) /= 0 ) THEN
+       ijmax=jj
+     ENDIF
+  ENDDO
+  ijmax = MIN ( npjglo, ijmax+10 )
+
+  ! JMM :note the use of 3D array ( very unusual in CDFTOOLS )
+  itmask(:,:,:) = getvar3d (cf_in, cn_tmask, npiglo, npjglo, npk)
+  itab3d(:,:,:) = itmask(:,:,:)
+
   ! set limits  for fillpool algo
-  itab3d(:,npjglo,:) = 0
-  itab3d(:,:,     1) = 0
+  itab3d(:,ijmax  ,:) = 0
+  itab3d(:,ijmax-1,:) = 1  ! open a connection for sure at ijmax -1 (out of iceshelf cavities)
+  itab3d(:,:,    1)   = 0  ! to set an upper limit !, assuming to cavities at this level
+  iiseed= npiglo/2  ; ijseed = ijmax -1 ; ikseed = 2
 
   CALL fillpool3d( iiseed, ijseed,ikseed, itab3d, -ifill )
+  PRINT *, '  Number of disconected points : ', COUNT(  (itab3d == 1) )
+  ! at this point itab3d (:,1:ijmax,:) can have 3 different values :
+  !              0 where there where already 0
+  !              -ifill where the ocean points are connected
+  !              1 where ocean points in tmask are not connected
+  itab(:,:) = itmask(:,:,1)  ! restore original tmask at surface
+  itab(:,1:ijmax-1) = SUM(itab3d(:,1:ijmax-1,:), dim=3) 
+  WHERE (itab(:,1:ijmax-1) > 0 ) itab(:,1:ijmax-1)=0
+  WHERE (itab(:,1:ijmax-1) < 0 ) itab(:,1:ijmax-1)=1
   
+  ierr = putvar( ncout, id_varout(1), itab(:,:), 1, npiglo, npjglo)
+
   DO jk = 1, npk 
     ierr = putvar( ncout, id_varout(2), itab3d(:,:,jk), jk, npiglo, npjglo)
   ENDDO
-  PRINT *, '  Number of disconected points : ', COUNT(  (itab3d == 1) )
 
 CONTAINS
   SUBROUTINE CreateOutput
@@ -131,6 +176,28 @@ CONTAINS
     !!
     !! ** Method  :  Use global variables, defined in mail 
     !!----------------------------------------------------------------------
+!  how a mask file look like : 
+!  netcdf mask {
+!  dimensions:
+!  	x = 4322 ;
+!  	y = 3606 ;
+!  	z = 75 ;
+!  	t = UNLIMITED ; // (1 currently)
+!  variables:
+!  	float nav_lon(y, x) ;
+!  	float nav_lat(y, x) ;
+!  	float nav_lev(z) ;
+!  	double time_counter(t) ;
+!  	byte tmask(t, z, y, x) ;
+!  	byte umask(t, z, y, x) ;
+!  	byte vmask(t, z, y, x) ;
+!  	byte fmask(t, z, y, x) ;
+!  	byte tmaskutil(t, y, x) ;
+!  	byte umaskutil(t, y, x) ;
+!  	byte vmaskutil(t, y, x) ;
+!  	byte fmaskutil(t, y, x) ;
+
+!
   ! define new variables for output
   stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
   stypvar(1)%cname             = 'tmask_pool2d'
@@ -141,6 +208,7 @@ CONTAINS
   stypvar(1)%cshort_name       = 'tmask_pool2d'
   stypvar(1)%conline_operation = 'N/A'
   stypvar(1)%caxis             = 'TYX'
+  stypvar(1)%cprecision        = 'by'
   ipk(1) = 1  !  2D
   ! define new variables for output
   stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
@@ -151,8 +219,14 @@ CONTAINS
   stypvar(2)%clong_name        = '3d isf pool mask'
   stypvar(2)%cshort_name       = 'tmask_pool3d'
   stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TYX'
+  stypvar(2)%caxis             = 'TZYX'
+  stypvar(2)%cprecision        = 'by'
   ipk(2) = npk  !  3D
+
+  ! create output file taking the sizes in cf_fill
+  ncout  = create      (cf_out, cf_in,   npiglo, npjglo, npk,  ld_nc4=lnc4)
+  ierr   = createvar   (ncout,  stypvar, 2,   ipk, id_varout,  ld_nc4=lnc4)
+  ierr   = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk              )
 
 
   END SUBROUTINE CreateOutput
