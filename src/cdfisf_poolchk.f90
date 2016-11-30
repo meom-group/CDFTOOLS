@@ -14,11 +14,10 @@ PROGRAM cdfisf_poolchk
   !!----------------------------------------------------------------------
   !!   routines                                         : description
   !!----------------------------------------------------------------------
-  !!  fillpool2d(kiseed, kjseed,         kdta, kifill)  : 2D fill algo
-  !!  fillpool3d(kiseed, kjseed, kkseed, kdta, kifill)  : 3D fill algo
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
+  USE modutils
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2012
   !! $Id$
@@ -149,7 +148,7 @@ PROGRAM cdfisf_poolchk
   iiseed= npiglo/2  ; ijseed = ijmax -1 ; ikseed = 2
   PRINT *,' SEED position',iiseed, ijseed, ikseed, itab3d(iiseed, ijseed, ikseed)
 
-  CALL fillpool3d( iiseed, ijseed,ikseed, itab3d, -ifill )
+  CALL FillPool3D( iiseed, ijseed,ikseed, itab3d, -ifill )
   PRINT *, '  Number of disconected points : ', COUNT(  (itab3d(:,1:ijmax-2,:) == 1) )
   ! at this point itab3d (:,1:ijmax,:) can have 3 different values :
   !              0 where there where already 0
@@ -178,28 +177,6 @@ CONTAINS
     !!
     !! ** Method  :  Use global variables, defined in mail 
     !!----------------------------------------------------------------------
-!  how a mask file look like : 
-!  netcdf mask {
-!  dimensions:
-!  	x = 4322 ;
-!  	y = 3606 ;
-!  	z = 75 ;
-!  	t = UNLIMITED ; // (1 currently)
-!  variables:
-!  	float nav_lon(y, x) ;
-!  	float nav_lat(y, x) ;
-!  	float nav_lev(z) ;
-!  	double time_counter(t) ;
-!  	byte tmask(t, z, y, x) ;
-!  	byte umask(t, z, y, x) ;
-!  	byte vmask(t, z, y, x) ;
-!  	byte fmask(t, z, y, x) ;
-!  	byte tmaskutil(t, y, x) ;
-!  	byte umaskutil(t, y, x) ;
-!  	byte vmaskutil(t, y, x) ;
-!  	byte fmaskutil(t, y, x) ;
-
-!
   ! define new variables for output
   stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
   stypvar(1)%cname             = 'tmask_pool2d'
@@ -232,159 +209,5 @@ CONTAINS
 
 
   END SUBROUTINE CreateOutput
-
-  SUBROUTINE fillpool2d(kiseed, kjseed, kdta, kifill)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE fillpool  ***
-    !!
-    !! ** Purpose :  Replace all area surrounding by mask value by mask value
-    !!
-    !! ** Method  :  flood fill algorithm
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4),                 INTENT(in)    :: kiseed, kjseed
-    INTEGER(KIND=4),                 INTENT(in)    :: kifill         ! pool value
-    INTEGER(KIND=2), DIMENSION(:,:), INTENT(inout) :: kdta           ! mask
-
-    INTEGER :: ik                       ! number of point change
-    INTEGER :: ip                       ! size of the pile
-    INTEGER :: ji, jj                   ! loop index
-    INTEGER :: iip1, iim1, ii, ij       ! working integer
-    INTEGER :: ipiglo, ipjglo           ! size of the domain, infered from kdta size
-
-    INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
-    INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: idata   ! new bathymetry
-    !!----------------------------------------------------------------------
-    ! infer domain size from input array
-    ipiglo = SIZE(kdta,1)
-    ipjglo = SIZE(kdta,2)
-
-    ! allocate variable
-    ALLOCATE(ipile(2*ipiglo*ipjglo,2))
-    ALLOCATE(idata(ipiglo,ipjglo))
-
-    ! initialise variables
-    idata=kdta
-    ipile(:,:)=0
-    ipile(1,:)=[kiseed,kjseed]
-    ip=1; ik=0
-
-    ! loop until the pile size is 0 or if the pool is larger than the critical size
-    DO WHILE ( ip /= 0 ) ! .AND. ik < 600000);
-       ik=ik+1
-       ii=ipile(ip,1); ij=ipile(ip,2)
-       IF ( MOD(ik, 10000) == 0 ) PRINT *, 'IP =', ip, ik, ii,ij
-
-       ! update bathy and update pile size
-       idata(ii,ij) =kifill
-       ipile(ip,:)  =[0,0]; ip=ip-1
-
-       ! check neighbour cells and update pile ( assume E-W periodicity )
-       iip1=ii+1; IF ( iip1 == ipiglo+1 ) iip1=2
-       iim1=ii-1; IF ( iim1 == 0        ) iim1=ipiglo-1
-
-       IF (idata(ii, ij+1) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ij+1]
-       END IF
-       IF (idata(ii, ij-1) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ij-1]
-       END IF
-       IF (idata(iip1, ij) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[iip1,ij  ]
-       END IF
-       IF (idata(iim1, ij) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[iim1,ij  ]
-       END IF
-
-    END DO
-    kdta=idata;
-
-    DEALLOCATE(ipile); DEALLOCATE(idata)
-
-  END SUBROUTINE fillpool2d
-
-  SUBROUTINE fillpool3d(kiseed, kjseed, kkseed, kdta, kifill)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE fillpool  ***
-    !!
-    !! ** Purpose :  Replace all area surrounding by mask value by mask value
-    !!
-    !! ** Method  :  flood fill algorithm
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4),                   INTENT(in)    :: kiseed, kjseed, kkseed
-    INTEGER(KIND=4),                   INTENT(in)    :: kifill   ! new bathymetry
-    INTEGER(KIND=2), DIMENSION(:,:,:), INTENT(inout) :: kdta     ! new bathymetry
-
-    INTEGER :: ik,iik                   ! number of point change
-    INTEGER :: ip                       ! size of the pile
-    INTEGER :: ji, jj                   ! loop index
-    INTEGER :: ipiglo, ipjglo, ipk      ! size of the domain inferred from kdta
-    INTEGER :: iip1, iim1, ii, ij       ! working integer
-    INTEGER :: ijp1, ijm1, ikp1, ikm1
-    INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: ipile    ! pile variable
-    INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: idata   ! new bathymetry
-    !!----------------------------------------------------------------------
-    ! infer domain size from input array
-    ipiglo = SIZE(kdta,1)
-    ipjglo = SIZE(kdta,2)
-    ipk    = SIZE(kdta,3)
-
-    ! allocate variable
-    ALLOCATE(ipile(2*ipiglo*ipjglo*ipk,3))
-    ALLOCATE(idata(ipiglo,ipjglo,ipk))
-
-    ! initialise variables
-    idata=kdta
-    ipile(:,:)=0
-    ipile(1,:)=[kiseed,kjseed,kkseed]
-    ip=1; iik=0
-
-    ! loop until the pile size is 0 or if the pool is larger than the critical size
-    DO WHILE ( ip /= 0 ) !.AND. iik < 600000);
-       iik=iik+1
-       ii=ipile(ip,1); ij=ipile(ip,2) ; ik=ipile(ip,3)
-       IF ( MOD( ip, 1000000) == 0 ) PRINT *, 'IP =', ip, iik, ii,ij, ik
-
-       ! update bathy and update pile size
-       idata(ii,ij,ik) = kifill
-       ipile(ip,:)  =[0,0,0]; ip=ip-1
-
-       ! check neighbour cells and update pile ( assume E-W periodicity )
-       iip1=ii+1; IF ( iip1 == ipiglo+1 ) iip1=2
-       iim1=ii-1; IF ( iim1 == 0        ) iim1=ipiglo-1
-       ijp1=ij+1 ; ijm1 =ij-1 
-       ikp1=ik+1 ; IF (ikp1 == ipk+1 ) ikp1=ik
-       ikm1=ik-1 ; IF (ikm1 == 0     ) ikm1=ik
-
-
-       IF (idata(ii, ijp1,ik) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ijp1,ik]
-       END IF
-       IF (idata(ii, ijm1,ik) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ijm1,ik]
-       END IF
-
-       IF (idata(iip1, ij,ik) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[iip1,ij  ,ik]
-       END IF
-       IF (idata(iim1, ij,ik) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[iim1,ij  ,ik]
-       END IF
-       IF (idata(ii, ij,ikp1) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ij,ikp1]
-       END IF
-
-       IF (idata(ii, ij,ikm1) > 0 ) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ij,ikm1]
-       END IF
-
-    END DO
-
-    kdta=idata;
-
-    DEALLOCATE(ipile); DEALLOCATE(idata)
-
-  END SUBROUTINE fillpool3d
 
 END PROGRAM cdfisf_poolchk

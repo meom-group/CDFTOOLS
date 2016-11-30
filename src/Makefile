@@ -482,8 +482,8 @@ cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
 cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 	$(F90)   cdfpolymask.f90  -o $(BINDIR)/cdfpolymask cdfio.o modpoly.o modcdfnames.o $(FFLAGS)
 
-cdfisf_fill: cdfio.o  cdfisf_fill.f90
-	$(F90)   cdfisf_fill.f90  -o $(BINDIR)/cdfisf_fill cdfio.o modcdfnames.o $(FFLAGS)
+cdfisf_fill: cdfio.o  modutils.o cdfisf_fill.f90
+	$(F90)   cdfisf_fill.f90  -o $(BINDIR)/cdfisf_fill cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
 cdfisf_forcing: cdfio.o  cdfisf_forcing.f90
 	$(F90)   cdfisf_forcing.f90  -o $(BINDIR)/cdfisf_forcing cdfio.o modcdfnames.o $(FFLAGS)
@@ -491,8 +491,8 @@ cdfisf_forcing: cdfio.o  cdfisf_forcing.f90
 cdfisf_rnf: cdfio.o  cdfisf_rnf.f90
 	$(F90)   cdfisf_rnf.f90  -o $(BINDIR)/cdfisf_rnf cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfisf_poolchk: cdfio.o  cdfisf_poolchk.f90
-	$(F90)   cdfisf_poolchk.f90  -o $(BINDIR)/cdfisf_poolchk cdfio.o modcdfnames.o $(FFLAGS)
+cdfisf_poolchk: cdfio.o  modutils.o cdfisf_poolchk.f90
+	$(F90)   cdfisf_poolchk.f90  -o $(BINDIR)/cdfisf_poolchk cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
 cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)

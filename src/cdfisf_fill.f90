@@ -12,6 +12,7 @@ PROGRAM cdfisf_fill
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
+  USE modutils
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2014
   !! $Id$
@@ -32,6 +33,7 @@ PROGRAM cdfisf_fill
   INTEGER(KIND=4)                               :: ifill
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
+  INTEGER(KIND=2), DIMENSION(:,:),  ALLOCATABLE :: itab
 
   REAL(KIND=4)                                  :: rlon, rlat         ! longitude and latitude of one point in ISF
   REAL(KIND=4)                                  :: rdraftmin, rdraftmax
@@ -141,33 +143,19 @@ PROGRAM cdfisf_fill
   PRINT *, 'NPK    = ', npk
 
   ALLOCATE(dtab(npiglo, npjglo))
+  ALLOCATE(itab(npiglo, npjglo))
 
   ALLOCATE (stypvar(1))
   ALLOCATE (ipk(1),id_varout(1))
 
-  ! define new variables for output
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = 'sofillvar'
-  stypvar(1)%cunits            = 'N/A'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = -1000.
-  stypvar(1)%valid_max         =  1000.
-  stypvar(1)%clong_name        = 'Fill var'
-  stypvar(1)%cshort_name       = 'sofillvar'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-
-  ipk(1) = 1  !  2D
-
-  ! create output file taking the sizes in cf_in
-  ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
-  ierr   = createvar   (ncout ,  stypvar,  1,  ipk,    id_varout           , ld_nc4=lnc4)
-  ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep             )
+  CALL CreateOutput 
 
   ! initialize variable
   dtab(:,:) = 0.d0 
   ! read ice shelf draft data
   dtab = getvar(cf_in, cv_in, 1 ,npiglo, npjglo )
+  itab=1
+  WHERE ( dtab <=0 ) itab=0
   PRINT *, 'Maximum of ISF-draft : ', MAXVAL(dtab),' m'
 
   ! open isf-list file
@@ -193,7 +181,11 @@ PROGRAM cdfisf_fill
         PRINT *,'  ==> WARNING: Likely a problem with ',TRIM(cdum)
         PRINT *,'               check separation with neighbours'
      ENDIF
-     CALL fillpool(iiseed, ijseed, dtab, -ifill, rdraftmax, rdraftmin)
+     CALL FillPool2D(iiseed, ijseed,itab, -ifill)
+
+     rdraftmax=MAXVAL(dtab, (itab == -ifill) )
+     rdraftmin=MINVAL(dtab, (itab == -ifill) )
+
      PRINT *,'Iceshelf : ', TRIM(cdum)
      PRINT *,'  index  : ', ifill
      PRINT *,'  code   : ', INT(dtab(iiseed, ijseed ) )
@@ -213,84 +205,40 @@ PROGRAM cdfisf_fill
      dtab = 0.0d0
   END WHERE
 
-  ! print sofillvar
-  ierr = putvar(ncout, id_varout(1), REAL(dtab), 1, npiglo, npjglo)
+  ierr = putvar(ncout, id_varout(1), itab, 1, npiglo, npjglo)
 
   ! close file
   ierr = closeout(ncout)
 
 CONTAINS
-
-  SUBROUTINE fillpool(kiseed, kjseed, ddta, kifill, pdepmax, pdepmin)
+  SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE fillpool  ***
+    !!                  ***  ROUTINE CreateOutput  ***
     !!
-    !! ** Purpose :  Replace all area surrounding by mask value by mask value
+    !! ** Purpose :  Create the output file. This is done outside the main
+    !!               in order to increase readability of the code. 
     !!
-    !! ** Method  :  flood fill algorithm
-    !!
+    !! ** Method  :  Use global variables, defined in mail 
     !!----------------------------------------------------------------------
-    INTEGER(KIND=4),                 INTENT(in)    :: kiseed, kjseed 
-    INTEGER(KIND=4),                 INTENT(in)    :: kifill   ! new bathymetry
-    REAL(KIND=8), DIMENSION(:,:),    INTENT(inout) :: ddta     ! new bathymetry
-    REAL(KIND=4),                    INTENT(out)   :: pdepmin, pdepmax
+  ! define new variables for output
+  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(1)%cname             = 'sofillvar'
+  stypvar(1)%cunits            = 'N/A'
+  stypvar(1)%rmissing_value    = 0.
+  stypvar(1)%valid_min         = -1000.
+  stypvar(1)%valid_max         =  1000.
+  stypvar(1)%clong_name        = 'Fill var'
+  stypvar(1)%cshort_name       = 'sofillvar'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TYX'
+  stypvar(1)%cprecision        = 'i2'
+  ipk(1) = 1  !  2D
 
-    INTEGER :: ik                       ! number of point change
-    INTEGER :: ip                       ! size of the pile
-    INTEGER :: ji, jj                   ! loop index
-    INTEGER :: iip1, iim1, ii, ij       ! working integer
-    INTEGER, DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
+  ! create output file taking the sizes in cf_in
+  ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
+  ierr   = createvar   (ncout ,  stypvar,  1,  ipk,    id_varout           , ld_nc4=lnc4)
+  ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep             )
 
-    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_data   ! new bathymetry
-    LOGICAL, SAVE                        :: ll_frst=.TRUE.
-    !!----------------------------------------------------------------------
-    IF (ll_frst ) PRINT *, 'WARNING North fold case not coded'
-    ll_frst = .FALSE.
-    ! allocate variable
-    ! Why 240004, I don't remember. Will it be enough for eORCA12, I don't know ?
-    ! to be sure, replace 240004 by npiglo*npjglo but it sould be much lower.
-    ALLOCATE(ipile(240004,2))
-    ALLOCATE(dl_data(npiglo,npjglo))
-
-    ! initialise variables
-    dl_data=ddta
-    ipile(:,:)=0
-    ipile(1,:)=[kiseed,kjseed]
-    ip=1; ik=0
-    pdepmax=0.0
-    pdepmin=99999.9
-
-    ! loop until the pile size is 0 or if the pool is larger than the critical size
-    DO WHILE ( ip /= 0 .AND. ik < 600000);
-       ik=ik+1
-       ii=ipile(ip,1); ij=ipile(ip,2)
-
-       ! update bathy and update pile size
-       IF (ddta(ii,ij) <= pdepmin) pdepmin=ddta(ii,ij)
-       IF (ddta(ii,ij) >= pdepmax) pdepmax=ddta(ii,ij)
-       dl_data(ii,ij) =kifill
-       ipile(ip,:)  =[0,0]; ip=ip-1
-
-       ! check neighbour cells and update pile ( assume E-W periodicity )
-       iip1=ii+1; IF ( iip1 == npiglo+1 ) iip1=2
-       iim1=ii-1; IF ( iim1 == 0        ) iim1=npiglo-1
-       IF (dl_data(ii, ij+1) > 1.0) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ij+1]
-       END IF
-       IF (dl_data(ii, ij-1) > 1.0) THEN
-          ip=ip+1; ipile(ip,:)=[ii  ,ij-1]
-       END IF
-       IF (dl_data(iip1, ij) > 1.0) THEN
-          ip=ip+1; ipile(ip,:)=[iip1,ij  ]
-       END IF
-       IF (dl_data(iim1, ij) > 1.0) THEN
-          ip=ip+1; ipile(ip,:)=[iim1,ij  ]
-       END IF
-    END DO
-    IF (ik < 600000) ddta=dl_data;
-
-    DEALLOCATE(ipile); DEALLOCATE(dl_data)
-
-  END SUBROUTINE fillpool
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfisf_fill
