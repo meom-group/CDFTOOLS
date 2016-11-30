@@ -29,17 +29,24 @@ PROGRAM cdfisf_poolchk
   IMPLICIT NONE
 
   INTEGER(KIND=4) :: ji, jj, jk
+  INTEGER(KIND=4) :: ierr, ncout
   INTEGER(KIND=4) :: npiglo, npjglo, npk
   INTEGER(KIND=4) :: iiseed, ijseed, ikseed
   INTEGER(KIND=4) :: ifill = 2
   INTEGER(KIND=4) :: narg, ijarg
   INTEGER(KIND=4) :: ncid, id, ierr
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
+
   INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: itab
   INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: itab3d
 
   CHARACTER(LEN=255) :: cf_in
   CHARACTER(LEN=255) :: cf_out='poolmask.nc'
   CHARACTER(LEN=255) :: cdum
+
+  TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
+
   LOGICAL            :: lnc4=.FALSE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -88,48 +95,67 @@ PROGRAM cdfisf_poolchk
      END SELECT
   ENDDO
 
-  CALL CreateOutput
-
-  CALL system ( 'cp '//TRIM(cf_in)//' copymask.nc' )
-  cf_in='copymask.nc'
-  ierr = NF90_OPEN(cf_in, NF90_WRITE, ncid)
-  ierr = NF90_INQ_DIMID(ncid, 'x',id ) ; ierr= NF90_INQUIRE_DIMENSION( ncid, id, len=npiglo)
-  ierr = NF90_INQ_DIMID(ncid, 'y',id ) ; ierr= NF90_INQUIRE_DIMENSION( ncid, id, len=npjglo)
-  ierr = NF90_INQ_DIMID(ncid, 'z',id ) ; ierr= NF90_INQUIRE_DIMENSION( ncid, id, len=npk   )
+  npiglo = getdim (cf_in,cn_x )
+  npjglo = getdim (cf_in,cn_y )
+  npk    = getdim (cf_in,cn_z )
 
   PRINT *, ' NPIGLO = ', npiglo
   PRINT *, ' NPJGLO = ', npjglo
+  PRINT *, ' NPK    = ', npk
 
   ALLOCATE ( itab(npiglo, npjglo), itab3d( npiglo, npjglo, npk ) )
-  PRINT *, 'WORK WITH tmaskutil'
-  ierr = NF90_INQ_VARID(ncid,'tmaskutil', id)
-  ierr = NF90_GET_VAR( ncid, id, itab, start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
+  ALLOCATE ( ipk(2), id_varout(2), stypvar(2))
 
-  ! put a wall at Northern boundary, and on upper level 
-  itab(:,npjglo) = 0
-
-  ! iiseed=npiglo/2 ; ijseed = npjglo-2 ; ikseed = 3
-  ! iiseed=npiglo/2 ; ijseed = npjglo/2 ; ikseed = 3
-  iiseed=400 ; ijseed =490 ; ikseed = 3
-  PRINT *, itab( iiseed,ijseed )
-  CALL fillpool2d( iiseed, ijseed,        itab,   -ifill )
-  PRINT *, '  number of disconected points : ', COUNT(  (itab == 1) )
-  ierr = NF90_PUT_VAR(ncid, id, itab, start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-  PRINT *, NF90_STRERROR(ierr)
+  CALL CreateOutput
 
   PRINT *, 'NOW WORK WITH tmask'
-  ierr = NF90_INQ_VARID(ncid,'tmask', id)
-  ierr = NF90_GET_VAR( ncid, id, itab3d, start=(/1,1,1,1/), count=(/npiglo,npjglo,npk,1/) )
+  itab3d(:,:,:) = getvar3d (cf_in, cn_tmask, npiglo, npjglo, npk)
+  ! set limits  for fillpool algo
   itab3d(:,npjglo,:) = 0
-  itab3d(:,:,1) = 0
-  PRINT *, itab3d( iiseed,ijseed,ikseed)
+  itab3d(:,:,     1) = 0
+
   CALL fillpool3d( iiseed, ijseed,ikseed, itab3d, -ifill )
-  ierr = NF90_PUT_VAR(ncid, id, itab3d, start=(/1,1,1,1/), count=(/npiglo,npjglo,npk,1/) )
-  PRINT *, NF90_STRERROR(ierr)
-  ierr = NF90_CLOSE( ncid )
-  PRINT *, '  number of disconected points : ', COUNT(  (itab3d == 1) )
+  
+  DO jk = 1, npk 
+    ierr = putvar( ncout, id_varout(2), itab3d(:,:,jk), jk, npiglo, npjglo)
+  ENDDO
+  PRINT *, '  Number of disconected points : ', COUNT(  (itab3d == 1) )
 
 CONTAINS
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create the output file. This is done outside the main
+    !!               in order to increase readability of the code. 
+    !!
+    !! ** Method  :  Use global variables, defined in mail 
+    !!----------------------------------------------------------------------
+  ! define new variables for output
+  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(1)%cname             = 'tmask_pool2d'
+  stypvar(1)%rmissing_value    =  -99.
+  stypvar(1)%valid_min         =  0.
+  stypvar(1)%valid_max         =  1.
+  stypvar(1)%clong_name        = '2d isf pool mask'
+  stypvar(1)%cshort_name       = 'tmask_pool2d'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TYX'
+  ipk(1) = 1  !  2D
+  ! define new variables for output
+  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(2)%cname             = 'tmask_pool3d'
+  stypvar(2)%rmissing_value    =  -99.
+  stypvar(2)%valid_min         =  0.
+  stypvar(2)%valid_max         =  1
+  stypvar(2)%clong_name        = '3d isf pool mask'
+  stypvar(2)%cshort_name       = 'tmask_pool3d'
+  stypvar(2)%conline_operation = 'N/A'
+  stypvar(2)%caxis             = 'TYX'
+  ipk(2) = npk  !  3D
+
+
+  END SUBROUTINE CreateOutput
 
   SUBROUTINE fillpool2d(kiseed, kjseed, kdta, kifill)
     !!---------------------------------------------------------------------
