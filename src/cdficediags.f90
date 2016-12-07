@@ -1,3 +1,45 @@
+MODULE icediag
+
+CONTAINS
+
+    SUBROUTINE icediags(e1, e2, tmask, ff, ricethick, riceldfra, dvoln, darean, dextendn, &
+                        dextendn2, dvols, dareas, dextends, dextends2)
+        REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: e1, e2               ! metrics
+        REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: tmask, ff            ! npiglo x npjglo
+        REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: ricethick, riceldfra ! thickness, leadfrac (concentration)
+        REAL(KIND=8), INTENT(OUT)        :: dvols, dareas        ! volume, area extend South hemisphere
+        REAL(KIND=8), INTENT(OUT)        :: dextends, dextends2  ! volume, area extend South hemisphere
+        REAL(KIND=8), INTENT(OUT)        :: dvoln, darean        ! volume, area extend North hemisphere
+        REAL(KIND=8), INTENT(OUT)        :: dextendn, dextendn2
+
+
+        ! North : ff > 0
+        dvoln     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
+        darean    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
+        dextendn  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
+        ! JMM added 22/01/2007 : to compute same extent than the NSIDC
+        dextendn2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
+
+        ! South : ff < 0
+        dvols     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
+        dareas    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
+        dextends  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
+        dextends2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
+
+        dvoln = dvoln / 1d9
+        darean = darean / 1d9
+        dextendn = dextendn / 1d9
+        dextendn2 = dextendn2 / 1d9
+
+        dvols = dvols / 1d9
+        dareas = dareas / 1d9
+        dextends = dextends / 1d9
+        dextends2 = dextends2 / 1d9
+    END SUBROUTINE icediags
+
+END MODULE icediag
+
+
 PROGRAM cdficediag
   !!======================================================================
   !!                     ***  PROGRAM  cdficediag  ***
@@ -15,6 +57,7 @@ PROGRAM cdficediag
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
+  USE icediag
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
   !! $Id$
@@ -23,11 +66,11 @@ PROGRAM cdficediag
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                            :: jk, jj, jt           ! dummy loop index
+  INTEGER(KIND=4)                            :: jt           ! dummy loop index
   INTEGER(KIND=4)                            :: ierr                 ! working integer
-  INTEGER(KIND=4)                            :: narg, iargc          ! command line 
+  INTEGER(KIND=4)                            :: narg, iargc          ! command line
+  INTEGER(KIND=4)                            :: ijarg, ireq         ! command line
   INTEGER(KIND=4)                            :: npiglo, npjglo, npt  ! size of the domain
-  INTEGER(KIND=4)                            :: nvpk                 ! vertical levels in working variable
   INTEGER(KIND=4)                            :: nperio = 4           ! boundary condition ( periodic, north fold)
   INTEGER(KIND=4)                            :: ikx=1, iky=1, ikz=0  ! dims of netcdf output file
   INTEGER(KIND=4)                            :: nboutput=8           ! number of values to write in cdf output
@@ -50,6 +93,7 @@ PROGRAM cdficediag
   CHARACTER(LEN=256)                         :: cf_ifil              ! input ice file
   CHARACTER(LEN=256)                         :: cf_out='icediags.nc' ! output file
   CHARACTER(LEN=256)                         :: cldum                ! dummy string
+  CHARACTER(LEN=256)                         :: cn_mask='tmask'      ! mask variable name
   !
   LOGICAL                                    :: lchk  = .false.      ! missing file flag
   LOGICAL                                    :: llim3 = .false.      ! LIM3 flag
@@ -75,6 +119,7 @@ PROGRAM cdficediag
      PRINT *,'      '
      PRINT *,'     OPTION :'
      PRINT *,'       [-lim3 ] : LIM3 variable name convention is used'
+     PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fmsk)
@@ -92,22 +137,34 @@ PROGRAM cdficediag
   ENDIF
 
   CALL getarg (1, cf_ifil)
+  
+  ijarg = 1 ; ireq = 0
+  
+  DO WHILE ( ijarg <= narg )
+    CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 
+    SELECT CASE ( cldum )
+    CASE ( '-lim3'    ) ; llim3 = .true.
+    CASE ( '-lim2' ) ; llim3 = .false.
+    CASE ( '-mask' ) ;
+        CALL getarg (ijarg, cn_mask) ; ijarg=ijarg+1
+    CASE ( '-maskfile' ) ;
+        CALL getarg (ijarg, cn_fmsk) ; ijarg=ijarg+1
+    CASE ('-o') 
+        CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
+    CASE DEFAULT 
+      ireq=ireq+1
+      SELECT CASE ( ireq )
+      CASE ( 1 )    ; cf_ifil=cldum
+      CASE DEFAULT  ; PRINT *,' Too many arguments'
+      END SELECT
+    END SELECT
+  END DO
 
-  lchk = lchk .OR. chkfile(cn_fhgr) 
-  lchk = lchk .OR. chkfile(cn_fmsk) 
+  lchk = lchk .OR. chkfile(cn_fhgr)
+  lchk = lchk .OR. chkfile(cn_fmsk)
   lchk = lchk .OR. chkfile(cf_ifil)
 
   IF ( lchk ) STOP ! missing file
-
-  IF ( narg == 2 ) THEN
-     CALL getarg (2, cldum)
-     IF (TRIM(cldum) == '-lim3') THEN
-        llim3 = .true.
-     ELSE IF (TRIM(cldum) == '-lim2') THEN
-     ELSE
-        PRINT *,' For this sea-ice data format use a namelist '
-     END IF
-  END IF
 
   npiglo = getdim (cf_ifil,cn_x)
   npjglo = getdim (cf_ifil,cn_y)
@@ -180,7 +237,7 @@ PROGRAM cdficediag
 
   ! modify the mask for periodic and north fold condition (T pivot, F Pivot ...)
   ! in fact should be nice to use jperio as in the code ...
-  tmask(:,:)=getvar(cn_fmsk,'tmask',1,npiglo,npjglo)
+  tmask(:,:)=getvar(cn_fmsk,cn_mask,1,npiglo,npjglo)
   SELECT CASE (nperio)
   CASE (0) ! closed boundaries
      ! nothing to do
@@ -218,31 +275,20 @@ PROGRAM cdficediag
      IF (TRIM(cn_iicethic) .NE. 'missing') ricethick(:,:) = getvar(cf_ifil, cn_iicethic, 1, npiglo, npjglo, ktime=jt)
      riceldfra(:,:) = getvar(cf_ifil, cn_ileadfra, 1, npiglo, npjglo, ktime=jt)
 
-     ! North : ff > 0 
-     dvoln     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
-     darean    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
-     dextendn  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
-     ! JMM added 22/01/2007 : to compute same extent than the NSIDC
-     dextendn2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
-
-     ! South : ff < 0
-     dvols     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
-     dareas    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
-     dextends  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
-     dextends2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
+     CALL icediags(e1, e2, tmask, ff, ricethick, riceldfra, dvoln, darean, dextendn, dextendn2, dvols, dareas, dextends, dextends2)
 
      PRINT *,' TIME = ', jt,' ( ',tim(jt),' )'
      PRINT *,' Northern Hemisphere ' 
-     PRINT *,'          NVolume (10^9 m3)  ', dvoln     /1.d9
-     PRINT *,'          NArea (10^9 m2)    ', darean    /1.d9
-     PRINT *,'          NExtend (10^9 m2)  ', dextendn  /1.d9
-     PRINT *,'          NExnsidc (10^9 m2) ', dextendn2 /1.d9
+     PRINT *,'          NVolume (10^9 m3)  ', dvoln
+     PRINT *,'          NArea (10^9 m2)    ', darean
+     PRINT *,'          NExtend (10^9 m2)  ', dextendn
+     PRINT *,'          NExnsidc (10^9 m2) ', dextendn2
      PRINT *
      PRINT *,' Southern Hemisphere ' 
-     PRINT *,'          SVolume (10^9 m3)  ', dvols     /1.d9
-     PRINT *,'          SArea (10^9 m2)    ', dareas    /1.d9
-     PRINT *,'          SExtend (10^9 m2)  ', dextends  /1.d9
-     PRINT *,'          SExnsidc (10^9 m2) ', dextends2 /1.d9
+     PRINT *,'          SVolume (10^9 m3)  ', dvols
+     PRINT *,'          SArea (10^9 m2)    ', dareas
+     PRINT *,'          SExtend (10^9 m2)  ', dextends
+     PRINT *,'          SExnsidc (10^9 m2) ', dextends2
 
      IF ( jt == 1 ) THEN
         ! create output fileset
@@ -255,16 +301,17 @@ PROGRAM cdficediag
      ENDIF
 
      ! netcdf output 
-     ierr = putvar0d(ncout,id_varout(1), REAL(dvoln     /1.d9), ktime=jt)
-     ierr = putvar0d(ncout,id_varout(2), REAL(darean    /1.d9), ktime=jt)
-     ierr = putvar0d(ncout,id_varout(3), REAL(dextendn  /1.d9), ktime=jt)
-     ierr = putvar0d(ncout,id_varout(4), REAL(dextendn2 /1.d9), ktime=jt)
-     ierr = putvar0d(ncout,id_varout(5), REAL(dvols     /1.d9), ktime=jt)
-     ierr = putvar0d(ncout,id_varout(6), REAL(dareas    /1.d9), ktime=jt)
-     ierr = putvar0d(ncout,id_varout(7), REAL(dextends  /1.d9), ktime=jt)
-     ierr = putvar0d(ncout,id_varout(8), REAL(dextends2 /1.d9), ktime=jt)
-
+     ierr = putvar0d(ncout,id_varout(1), REAL(dvoln     ), ktime=jt)
+     ierr = putvar0d(ncout,id_varout(2), REAL(darean    ), ktime=jt)
+     ierr = putvar0d(ncout,id_varout(3), REAL(dextendn  ), ktime=jt)
+     ierr = putvar0d(ncout,id_varout(4), REAL(dextendn2 ), ktime=jt)
+     ierr = putvar0d(ncout,id_varout(5), REAL(dvols     ), ktime=jt)
+     ierr = putvar0d(ncout,id_varout(6), REAL(dareas    ), ktime=jt)
+     ierr = putvar0d(ncout,id_varout(7), REAL(dextends  ), ktime=jt)
+     ierr = putvar0d(ncout,id_varout(8), REAL(dextends2 ), ktime=jt)
   END DO ! time loop
   ierr = closeout(ncout)
 
 END PROGRAM cdficediag
+
+

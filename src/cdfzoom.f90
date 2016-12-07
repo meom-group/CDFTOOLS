@@ -152,7 +152,13 @@ PROGRAM cdfzoom
   IF ( ierr == 1 ) THEN 
      nt = getdim(cf_in, 'step', cldum, ierr)
      IF ( ierr == 1 ) THEN
-        PRINT *,' No time or step dim found ' 
+        nt = getdim(cf_in, 'time', cldum, ierr)
+        IF ( ierr == 1 ) THEN
+           nt = getdim(cf_in, 't', cldum, ierr)
+           IF ( ierr == 1 ) THEN
+             PRINT *,' No time or step dim found ' 
+           ENDIF
+        ENDIF
      ENDIF
   ENDIF
 

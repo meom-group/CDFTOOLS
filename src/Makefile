@@ -11,7 +11,7 @@
 
 include make.macro
 
-BINDIR = ./bin
+BINDIR = ../bin
 
 VPATH = $(BINDIR)
 
@@ -31,6 +31,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
+       cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
@@ -481,6 +482,18 @@ cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
 cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 	$(F90)   cdfpolymask.f90  -o $(BINDIR)/cdfpolymask cdfio.o modpoly.o modcdfnames.o $(FFLAGS)
 
+cdfisf_fill: cdfio.o  modutils.o cdfisf_fill.f90
+	$(F90)   cdfisf_fill.f90  -o $(BINDIR)/cdfisf_fill cdfio.o modutils.o modcdfnames.o $(FFLAGS)
+
+cdfisf_forcing: cdfio.o  cdfisf_forcing.f90
+	$(F90)   cdfisf_forcing.f90  -o $(BINDIR)/cdfisf_forcing cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfisf_rnf: cdfio.o  cdfisf_rnf.f90
+	$(F90)   cdfisf_rnf.f90  -o $(BINDIR)/cdfisf_rnf cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfisf_poolchk: cdfio.o  modutils.o cdfisf_poolchk.f90
+	$(F90)   cdfisf_poolchk.f90  -o $(BINDIR)/cdfisf_poolchk cdfio.o modutils.o modcdfnames.o $(FFLAGS)
+
 cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)
 
@@ -496,8 +509,8 @@ cdffixtime: cdfio.o  cdffixtime.f90
 cdfnamelist: modcdfnames.o  cdfnamelist.f90
 	$(F90)  cdfnamelist.f90  -o $(BINDIR)/cdfnamelist  modcdfnames.o $(FFLAGS) $(FDATE_FLAG)
 
-cdfchgrid: cdfio.o cdfchgrid.f90
-	$(F90) cdfchgrid.f90  -o $(BINDIR)/cdfchgrid cdfio.o modcdfnames.o $(FFLAGS)
+cdfchgrid: cdfio.o modutils.o cdfchgrid.f90
+	$(F90) cdfchgrid.f90  -o $(BINDIR)/cdfchgrid cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfcmp: cdfio.o cdfcmp.f90
 	$(F90) cdfcmp.f90  -o $(BINDIR)/cdfcmp cdfio.o modcdfnames.o $(FFLAGS)
@@ -546,9 +559,12 @@ cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod
 
 install:
 	@mkdir -p $(INSTALL)
-	cd bin ; \cp $(EXEC)  $(INSTALL)
+	cd ../bin ; \cp $(EXEC)  $(INSTALL)
 
 installman:
 	@mkdir -p $(INSTALL_MAN)/man1;
 	\cp -f cdftools.1 $(INSTALL_MAN)/man1/;
 	for s in $$( cd $(BINDIR); ls -1 ); do ( cd $(INSTALL_MAN)/man1/; ln -sf cdftools.1 $$s.1 ); done;
+f2py:
+	f2py -c --fcompiler=gnu95 -m cdftoolspython cdficediags.f90 cdfio.o modcdfnames.o  -I$(EBROOTNETCDFMINFORTRAN)/include -L$(EBROOTNETCDFMINFORTRAN)/lib64 -lnetcdf -lnetcdff
+
