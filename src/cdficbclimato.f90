@@ -1,6 +1,6 @@
 PROGRAM cdficbclimato
   !!======================================================================
-  !!                     ***  PROGRAM  cdficediag  ***
+  !!                     ***  PROGRAM  cdficbclimato  ***
   !!=====================================================================
   !!  ** Purpose : Compute the iceberg mass and melt
   !!
@@ -13,28 +13,28 @@ PROGRAM cdficbclimato
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                            :: jk, jj, jt, i           ! dummy loop index
-  INTEGER(KIND=4)                            :: ierr,stat                 ! working integer
+  INTEGER(KIND=4)                            :: jk, jj, jt, ji       ! dummy loop index
+  INTEGER(KIND=4)                            :: ierr                 ! working integer
   INTEGER(KIND=4)                            :: narg, iargc          ! command line 
   INTEGER(KIND=4)                            :: npiglo, npjglo, npt, numFiles  ! size of the domain
   INTEGER(KIND=4)                            :: nvpk                 ! vertical levels in working variable
   INTEGER(KIND=4)                            :: nperio = 4           ! boundary condition ( periodic, north fold)
-  INTEGER(KIND=4)                            :: ikx, iky, ikz=0  ! dims of netcdf output file
+  INTEGER(KIND=4)                            :: ikx, iky, ikz=0      ! dims of netcdf output file
   INTEGER(KIND=4)                            :: nboutput=2           ! number of values to write in cdf output
   INTEGER(KIND=4)                            :: ncout                ! for netcdf output
-  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout, timeVar
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout, itimeVar
 
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: e1, e2               ! metrics
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: tmask, ff            ! npiglo x npjglo
-  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ricbmass, ricbmelt ! icbmass icbmelt
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ricbmass, ricbmelt   ! icbmass icbmelt
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: rdumlon, rdumlat     ! dummy lon lat for output
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                  ! time counter
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar              ! structure of output
   !
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_ifil              ! input icb file
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_icb            ! input icb file
   CHARACTER(LEN=256)                         :: cf_out='icbdiags.nc' ! output file
-  CHARACTER(LEN=256)                         :: cldum, nfiles                ! dummy string
+  CHARACTER(LEN=256)                         :: cldum                ! dummy string
   !
   LOGICAL                                    :: lchk  = .false.      ! missing file flag
   !!----------------------------------------------------------------------
@@ -42,10 +42,11 @@ PROGRAM cdficbclimato
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdficbclimato 12-ICB-mothly-means-files'
+     PRINT *,' usage : cdficbclimato 12-ICB-monthly-means-files'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the 2D field of icb mass and icb melt.'
+     PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       ICE-file : netcdf icb file' 
      PRINT *,'      '
@@ -59,16 +60,16 @@ PROGRAM cdficbclimato
      STOP
   ENDIF
 
-  CALL getarg(1,nfiles)
-  READ(nfiles,'(i2)',iostat=stat) numFiles
+  CALL getarg(1,cldum)
+  READ(cldum,*) numFiles
   
-  IF (numFiles.lt.12) STOP
+  IF (numFiles < 12) STOP
 
-  ALLOCATE(cf_ifil(numFiles))
+  ALLOCATE(cf_icb(numFiles))
 
-  DO i= 1, numFiles
-        CALL getarg(i+1,cf_ifil(i))
-        lchk = lchk .OR. chkfile(cf_ifil(i))
+  DO ji= 1, numFiles
+        CALL getarg(i+1,cf_icb(i))
+        lchk = lchk .OR. chkfile(cf_icb(i))
   END DO
 
 
@@ -77,8 +78,8 @@ PROGRAM cdficbclimato
 
   IF ( lchk ) STOP ! missing file
 
-  npiglo = getdim (cf_ifil(1),cn_x)
-  npjglo = getdim (cf_ifil(1),cn_y)
+  npiglo = getdim (cf_icb(1),cn_x)
+  npjglo = getdim (cf_icb(1),cn_y)
   npt    = 12
   ikx = npiglo
   iky = npjglo
@@ -87,9 +88,9 @@ PROGRAM cdficbclimato
   ALLOCATE ( ricbmass(npiglo,npjglo) )
   ALLOCATE ( ricbmelt(npiglo,npjglo) )
   ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo) )
-  ALLOCATE ( tim(npt),timeVar(npt) )
+  ALLOCATE ( tim(npt),itimeVar(npt) )
  
-  timeVar = (/(i,i=1,12)/)  
+  itimeVar = (/(i,i=1,12)/)  
 
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
   ALLOCATE ( rdumlon(1,1), rdumlat(1,1) )
@@ -137,28 +138,27 @@ PROGRAM cdficbclimato
      STOP
   END SELECT
 
-  timeVar = (/(i,i=1,12)/)
+  itimeVar = (/(i,i=1,12)/)
   ! Check variable
-  IF (chkvar(cf_ifil(1), cn_iicbmass)) THEN
+  IF (chkvar(cf_icb(1), cn_iicbmass)) THEN
      cn_iicbmass='missing'
      PRINT *,'' 
      PRINT *,' WARNING, ICEBERG MASS IS SET TO 0. '
      PRINT *,' '
   END IF
 
-Print*, 'Entro en lazo'
   !
   DO jt = 1, npt
-     IF (TRIM(cn_iicbmass) .NE. 'missing') ricbmass(:,:) = getvar(cf_ifil(jt), cn_iicbmass, 1, npiglo, npjglo, ktime=1)
-     ricbmelt(:,:) = getvar(cf_ifil(jt), cn_iicbmelt, 1, npiglo, npjglo, ktime=1)
+     IF (TRIM(cn_iicbmass) /= 'missing') ricbmass(:,:) = getvar(cf_icb(jt), cn_iicbmass, 1, npiglo, npjglo, ktime=1)
+     ricbmelt(:,:) = getvar(cf_icb(jt), cn_iicbmelt, 1, npiglo, npjglo, ktime=1)
 
     IF ( jt == 1 ) THEN
          ! create output fileset
         ncout = create      (cf_out, 'none',  ikx,      iky, ikz,     cdep='depthw'                   )
         ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout                                )
-        ierr  = putheadervar(ncout,  cf_ifil(1), ikx,      iky, ikz)
+        ierr  = putheadervar(ncout,  cf_icb(1), ikx,      iky, ikz)
 
-        tim   = getvar1d(cf_ifil(1), cn_vtimec, npt     )
+        tim   = getvar1d(cf_icb(1), cn_vtimec, npt     )
         tim = (/(i,i=1,12)/)
         ierr  = putvar1d(ncout,   tim,       npt, 'T')
      ENDIF
@@ -166,7 +166,7 @@ Print*, 'Entro en lazo'
      ! netcdf output
      !ierr = putvar0d(ncout,cn_vtimec,jt,ktime=jt) 
      ierr = putvar(ncout,id_varout(1),REAL(ricbmass(:,:)),1,npiglo,npjglo, ktime=jt)
-     ierr = putvar(ncout,id_varout(2),REAL(ricbmelt(:,:)),1,npiglo,npjglo,ktime=jt)
+     ierr = putvar(ncout,id_varout(2),REAL(ricbmelt(:,:)),1,npiglo,npjglo, ktime=jt)
 
   END DO ! time loop
   ierr = closeout(ncout)
