@@ -1,0 +1,831 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[latin1]{inputenc}
+\usepackage{makeidx}
+\makeindex
+% to use index, after a first compilation, run makeindex *.idx file
+% then command \printindex will incorporate the index in the latex file.
+%Check if we are compiling under latex or pdflatex
+   \ifx\pdftexversion\undefined
+     \usepackage[dvips]{graphicx}
+   \else
+     \usepackage[pdftex]{graphicx}
+   \fi
+\setlength{\textwidth}{16.5 cm}
+\setlength{\textheight}{23.5 cm}
+\topmargin 0 pt
+\oddsidemargin 0 pt
+\evensidemargin 0 pt
+%
+\begin{document}
+\newcommand{\etal}{{\it et al.}}
+\newcommand{\DegN}{$^{\circ}$N}
+\newcommand{\DegW}{$^{\circ}$W}
+\newcommand{\DegE}{$^{\circ}$E}
+\newcommand{\DegS}{$^{\circ}$S}
+\newcommand{\Deg}{$^{\circ}$}
+\newcommand{\DegC}{$^{\circ}$C}
+\newcommand{\DS}{ \renewcommand{\baselinestretch}{1.8} \tiny \normalsize}
+\newcommand{\ST}{ \renewcommand{\baselinestretch}{1.2} \tiny \normalsize}
+\newcommand{\ao}{add\_offset}
+\newcommand{\SF}{scale\_factor}
+
+\title{CDFTOOLS: a fortran 90 package of programs and libraries for diagnostic 
+of the DRAKKAR OPA9 output.\\
+Part II : Programmer guide}
+
+\author{J.M. Molines  \thanks{Laboratoire des Ecoulements G\'eophysiques et Industriels, CNRS UMR 5519, Grenoble, France}\ }
+
+
+\date{Last update: $ $Rev$ $  $ $Date$ $ }
+
+\maketitle
+\section*{Introduction}
+This document is a technical description of the different functions and subroutines which belong to cdfio.f90 and eos.f90 fortran 90 modules.
+They are used basically in the core of the cdftools program either to perform the Netcdf I/O or to compute the equation of state for sea water.
+
+\section{ cdfio module}
+\subsection*{\underline{ TYPE variable}}
+\addcontentsline{toc}{subsection}{TYPE variable}
+\index{TYPE variable}
+\begin{description}
+\item[Structure:]  We defined a derived type for managing the variables attribute. It is defined as follow:
+\begin{small}
+\begin{verbatim}
+  TYPE, PUBLIC ::   variable
+      character(LEN=80)::  name
+      character(LEN=80):: units
+      real(kind=4)    :: missing_value
+      real(kind=4)    :: valid_min
+      real(kind=4)    :: valid_max
+      real(kind=4)    :: scale_factor=1.
+      real(kind=4)    :: add_offset=0.
+      real(kind=4)    :: savelog10=0.
+      character(LEN=80):: long_name
+      character(LEN=80):: short_name
+      character(LEN=80):: online_operation
+      character(LEN=80):: axis
+      character(LEN=80):: precision='r4'  ! possible values are i2, r4, r8
+  END TYPE variable
+\end{verbatim}
+\end{small}
+\item[Purpose:] This is used in the cdftools to avoid the former 'att.txt' file which held the variable attributes. Now, each
+   program needing variables output in a netcdf file, must use a structure (or an array of structure) defining the name and attributes
+   of the variable. This structure or array of structure is passed as argument to the following functions: {\tt createvar, putatt, getvarname}
+\item[Example:] Self explaining example from cdfpvor.f90:
+\begin{small}
+\begin{verbatim}
+....
+  TYPE(variable), DIMENSION(3) :: typvar          !: structure for attribute
+....
+  ! define variable name and attribute
+  typvar(1)%name= 'vorelvor' ; typvar(2)%name= 'vostrvor';  typvar(3)%name= 'vototvor'
+  typvar%units='kg.m-4.s-1'   ; typvar%missing_value=0.  
+  typvar%valid_min= -1000. ;  typvar%valid_max= 1000.
+  typvar(1)%long_name='Relative_component_of_Ertel_PV'  
+  typvar(2)%long_name='Stretching_component_of_Ertel_PV' 
+  typvar(3)%long_name='Ertel_potential_vorticity'  
+  typvar(1)%short_name='vorelvor';  typvar(2)%short_name='vostrvor'
+  typvar(3)%short_name='vototvor'
+  typvar%online_operation='N/A';  typvar%axis='TZYX'
+  ncout =create(cfileout, cfilet, npiglo,npjglo,npk)
+  ierr= createvar   (ncout ,typvar,3, ipk,id_varout )
+  ierr= putheadervar(ncout, cfilet,npiglo,npjglo,npk)
+ ....
+\end{verbatim}
+\end{small}
+\end{description}
+
+\newpage
+\subsection*{\underline{ INTERFACE putvar}}
+\addcontentsline{toc}{subsection}{INTERFACE putvar}
+\index{INTERFACE putvar}
+\begin{description}
+\item[Generic interface]  
+\begin{small} \begin{verbatim}
+  INTERFACE putvar
+     MODULE PROCEDURE putvarr4, putvari2, putvarzo
+  END INTERFACE
+\end{verbatim} \end{small}
+\item[Purpose:] This generic interface re-direct putvar call to either putvarr4 for real*4 input array, putvari2 for integer*2 input array, or
+to putvarzo for degenerated 3D-2D arrays corresponding to zonal integration. It also redirect putvar to the reputvarr4 function, which allows to 
+rewrite a variable in an already existing file.
+\item[Example:] 
+ierr = putvar(ncout, id\_varout(jvar) ,i2d, jk, npiglo, npjglo)   \\
+... \\
+ierr = putvar(ncout, id\_varout(jvar) ,sal, jk, npiglo, npjglo)  \\
+Example for reputvarr4  \\
+istatus=putvar(cfile,'Bathymetry',jk,npiglo,npjglo, kimin=imin, kjmin=jmin, ptab)
+
+
+\end{description}
+
+
+\subsection*{\underline{ FUNCTION closeout(kout )}}
+\addcontentsline{toc}{subsection}{closeout}
+\index{closeout}
+\begin{description}
+\item[Arguments:]  
+INTEGER, INTENT(in) :: kout. Netcdf ID of the file to be closed.
+\item[Purpose:] Close an open netcdf file, specified by its ID
+\item[Example:]  istatus = closeout(ncout)
+\end{description}
+
+\subsection*{\underline{ FUNCTION ncopen(cdfile) }}
+\addcontentsline{toc}{subsection}{ncopen}
+\index{ncopen}
+\begin{description}
+\item[Arguments:]  
+      CHARACTER(LEN=*), INTENT(in) :: cdfile ! file name \\
+      INTEGER :: ncopen                      ! return status
+\item[Purpose:] open file cdfile and return file ID
+\item[Example:]  ncid=ncopen('ORCA025-G70\_y1956m05d16\_gridU.nc')
+\item[Remark:] This function is usefull for editing an existing file. The return ncid can be used as the first argument of
+      put var, for instance.
+\end{description}
+
+\subsection*{\underline{ FUNCTION copyatt(cdvar, kidvar, kcin, kcout )}}
+\addcontentsline{toc}{subsection}{copyatt}
+\index{copyatt}
+\begin{description}
+\item[Arguments:] \ \\
+CHARACTER(LEN=*), INTENT(in) :: cdvar !: Name of the variable \\
+INTEGER,INTENT(in) :: kidvar   !: var id of variable cdvar \\
+INTEGER,INTENT(in) :: kcin     !: ncid of the file where to read the attributes \\
+INTEGER,INTENT(in) :: kcout     !: ncid of the output file.
+INTEGER            :: copyout   !: function return value: return an error status.
+\item[Purpose:] Copy all the attributes for one variable, taking the example from another file, specified by its
+ncid. Return the status of the function. If $\neq$ 0, indicates an error.
+\item[Example:] \ \\
+\begin{verbatim}
+    istatus = NF90\_DEF\_VAR(icout,'nav\_lon',NF90\_FLOAT,nvdim(1:2),id\_lon) 
+    istatus = copyatt('nav\_lon',id\_lon,ncid,icout)
+\end{verbatim}
+\item[Remark:] This function is used internally to cdfio, in the function create.
+\end{description}
+\newpage
+
+\subsection*{\underline{ FUNCTION create(cdfile, cdfilref ,kx,ky,kz, cdep) }}
+\addcontentsline{toc}{subsection}{create}
+\index{create}
+\begin{description}
+\item[Arguments:]\ \\
+CHARACTER(LEN=*), INTENT(in) :: cdfile    !: name of file to create \\
+CHARACTER(LEN=*), INTENT(in) :: cdfilef   !: name of file used as reference for attributes \\
+INTEGER,INTENT(in) :: kx, ky, kz  !: value of the dimensions x, y and z (depth) \\
+CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep !: name of depth variable if differs from cdfile\\
+INTEGER            :: create      !: function return value : the ncid of created variable.
+\item[Purpose:] Create a netcdf file (IOIPSL type) and copy attributes for nav\_lon, nav\_lat, depth and time\_counter
+from the reference file given in argument. It is supposed that the reference file is also IOIPSL compliant. For historical
+reason, there many different names for the depth dimension and variable. If we want to create the new data set with a depth
+name that differs from the reference file, the cdep optional argument can be used.
+The return value of the fuction is the ncid of the file just created.
+\item[Example:] \ \\
+\begin{verbatim}
+ ! create output fileset 
+  cfileout='cdfmoy.nc' 
+  cfileout2='cdfmoy2.nc' 
+  ! create output file taking the sizes in cfile  
+  
+  ncout =create(cfileout, cfile,npiglo,npjglo,npk) 
+  ncout2=create(cfileout2,cfile,npiglo,npjglo,npk) 
+\end{verbatim}
+or
+\begin{verbatim}
+ ! create output fileset 
+  cfileout='w.nc' 
+  ! create output file taking the sizes in cfile  
+  
+  ncout =create(cfileout, cdfile,npiglo,npjglo,npk,'depthw') 
+\end{verbatim}
+
+\end{description}
+\newpage
+
+\subsection*{\underline{ FUNCTION createvar (kout,ptyvar,kvar,kpk, kidvo) }}
+\addcontentsline{toc}{subsection}{createvar}
+\index{createvar}
+\begin{description}
+\item[Arguments:] \ \\
+\begin{small} \begin{verbatim}
+    ! * Arguments
+    INTEGER, INTENT(in) :: kout, kvar
+    INTEGER, DIMENSION(kvar), INTENT(in) :: kpk
+    INTEGER, DIMENSION(kvar), INTENT(out) :: kidvo
+    INTEGER :: createvar
+    TYPE (variable), DIMENSION(kvar) ,INTENT(in) :: ptyvar
+\end{verbatim} \end{small}
+\item[Purpose:] Creates the kvar variables defined by the ptyvar and kpk arrays. Save the varid's in kidvo. 
+\item[Example:] \ \\
+\begin{verbatim}
+  ncout =create(cfileout, cfile,npiglo,npjglo,npk)
+  ncout2=create(cfileout2,cfile,npiglo,npjglo,npk)
+
+  ierr= createvar(ncout ,typvar,  nvars, ipk, id_varout )
+  ierr= createvar(ncout2, typvar2, nvars, ipk, id_varout2)
+\end{verbatim}
+
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getatt(cdfile,cdvar,cdatt)  }}
+\addcontentsline{toc}{subsection}{getatt}
+\index{getatt}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdatt,   \&   ! attribute name to look for\\
+         \&                         cdfile,  \&   ! file to look at\\
+         \&                         cdvar\\
+    REAL(KIND=4) :: getatt
+\item[Purpose:] Return a REAL value with the values of the attribute cdatt for all the variable cdvar  in cdfile
+\item[Example:] \ \\
+\begin{verbatim}
+  ! get missing_value attribute
+  spval = getatt( cfile,'votemper','missing_value')
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getvaratt(cdfile,cdvar,cdunits, pmissing\_value, cdlong\_name, cdshort\_name)  }}
+\addcontentsline{toc}{subsection}{getvaratt}
+\index{getvaratt}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=80), INTENT(in) :: cdfile, cdvar \\
+    CHARACTER(LEN=80), INTENT(out) :: cdunits, cdlong\_name, cdshort\_name \\
+    REAL(KIND=4), INTENT(out) :: pmissing\_value
+\item[Purpose:] Read standard units, longname. missing\_value and short name atribute for a given variable of a cdf file.
+\item[Example:] \ \\
+\begin{verbatim}
+  ! get variable standard attribute
+  ierr = getvaratt( cfile,'votemper',cunit, spval, clongname, cshortname)
+\end{verbatim}
+\end{description}
+
+\subsection*{\underline{FUNCTION getspval (cdfile,cdvar) }}
+\addcontentsline{toc}{subsection}{getspval}
+\index{getspval}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile , \&  ! File name to look at
+         \&                           cdvar      ! variable name
+    REAL(KIND=4) :: getspval                               ! the missing value for cdvar
+\item[Purpose:] Return the SPVAL value of the variable  cdvar  in cdfile
+\item[Example:] \ \\
+\begin{verbatim}
+  ! get variable standard attribute
+  spval = getspval( cfile,'votemper')
+\end{verbatim}
+\end{description}
+
+\subsection*{\underline{FUNCTION cvaratt(cdfile,cdvar,cdunits, pmissing\_value, cdlong\_name, cdshort\_name)  }}
+\addcontentsline{toc}{subsection}{cvaratt}
+\index{cvaratt}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=80), INTENT(in) :: cdfile, cdvar \\
+    CHARACTER(LEN=80), INTENT(in) :: cdunits, cdlong\_name, cdshort\_name \\
+    INTEGER :: cvaratt \\
+    REAL(KIND=4) :: pmissing\_value
+\item[Purpose:] Change standard units, longname. missing\_value and short name atribute for a given variable of a cdf file.
+\item[Example:] \ \\
+\begin{verbatim}
+  ! get variable standard attribute
+  ierr = cvaratt( cfile,'votemper',cunit, spval, clongname, cshortname)
+\end{verbatim}
+\end{description}
+  
+  
+\newpage
+\subsection*{\underline{FUNCTION getdim (cdfile,cdim\_name,cdtrue,kstatus)  }}
+\addcontentsline{toc}{subsection}{getdim}
+\index{getdim}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile , \&  ! File name to look at \\
+         \&                           cdim\_name   ! dimension name to look at \\
+    CHARACTER(LEN=80),OPTIONAL, INTENT(out) ::  cdtrue ! full name of the read dimension \\
+    INTEGER, OPTIONAL, INTENT(out) :: kstatus   ! status of the nf inquire \\
+    INTEGER :: getdim                           ! the value for dim cdim\_name, in file cdfile 
+\item[Purpose:]  Return the INTEGER value of the dimension identified with cdim\_name in cdfile
+\item[Example:]\ \\
+\begin{verbatim}
+  npiglo= getdim (cfile,'x')
+  npjglo= getdim (cfile,'y')
+  npk   = getdim (cfile,'depth',kstatus=istatus)
+ ....
+ idum=getdim(cdfilref,'depth',cldep)  ! return in cldep the name of the dim 
+                                      ! whose 'depth' is used as proxy
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getvdim (cdfile,cdvar)  }}
+\addcontentsline{toc}{subsection}{getvdim}
+\index{getvdim}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in)    :: cdfile   ! File name to look at \\
+    CHARACTER(LEN=*), INTENT(inout) :: cdvar    ! variable name to look at. \\
+    INTEGER :: getvdim                          ! number of dim for cdvar \\
+\item[Purpose:]   Return the number of dimension for variable cdvar in cdfile.
+
+If $cdvar$ is not found in $cdfile$, then a list a available variables is displayed and the
+user is asked to choose the required one. In this case, $cdvar$ is updated to the choosen
+variable name, and is made available to the calling program.
+
+This function is intended to be used with prognostic variables of the model, which are
+defined in the file either as [TZXY] (3D variable) or as [TXY] (2D variable). The time
+dimension is not considered. Erroneous results are produced if the variables is [ZXY] or [XY].
+
+\item[Example:]\ 
+\begin{verbatim}
+  ...
+  cvar='variablex'
+  nvdim  = getvdim(cfilev,cvar)
+  IF (nvdim == 2 ) nvpk = 1   ! 2D variable ==> 1 level
+  IF (nvdim == 3 ) nvpk = npk ! 3D variable ==> npk levels
+  PRINT *, TRIM(cvar),' has ', nvdim,'  dimensions
+  ...
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getipk (cdfile,knvars,cdep)  }}
+\addcontentsline{toc}{subsection}{getipk}
+\index{getipk}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile   ! File to look at\\
+    INTEGER, INTENT(in)  ::  knvars          ! Number of variables in cdfile\\
+    CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep ! optional depth dim name\\
+    INTEGER, DIMENSION(knvars) :: getipk     ! array (variables ) of levels
+\item[Purpose:]return the number of levels for all the variables in cdfile. Return 0 if the variable in a vector. \\
+                    returns npk when 4D variables ( x,y,z,t ) \\
+                    returns  1  when 3D variables ( x,y,  t ) \\
+                    returns  0  when other ( vectors ) \\
+   If cdep argument is present, use it as the depth dimension name (instead of default 'dep')
+\item[Example:]\ \\
+\begin{verbatim}
+  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+  ipk(:)     = getipk (cfile,nvars)
+...
+  ipk(:)     = getipk (cisofile, nvars, cdep=sigmalevel)
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getnvar (cdfile)  }}
+\addcontentsline{toc}{subsection}{getnvar}
+\index{getnvar}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) ::  cdfile   ! file to look at \\
+    INTEGER :: getnvar                        ! return the number of variables \\
+\item[Purpose:] Return the number of variables in cdfile
+\item[Example:]\ \\
+\begin{verbatim}
+  nvars = getnvar(cfile)
+  PRINT *,' nvars =', nvars
+\end{verbatim}
+\end{description}
+
+\subsection*{\underline{ FUNCTION getvarid( cdfile, knvars ) }}
+\addcontentsline{toc}{subsection}{getvarid}
+\index{getvarid}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile \\
+    INTEGER, INTENT(in)  ::  knvars                  ! Number of variables in cdfile\\
+    INTEGER, DIMENSION(knvars) :: getvarid 
+\item[Purpose:] return a real array with the nvar variable id
+\item[Example:]\ \\
+\begin{verbatim}
+ ...
+  nvars = getnvar(cfile)
+  varid(1:nvars)=getvarid(cfile,nvars)
+  ...
+\end{verbatim}
+\end{description}
+
+
+\newpage
+\subsection*{\underline{FUNCTION getvar (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin,ktime)  }}
+\addcontentsline{toc}{subsection}{getvar}
+\index{getvar}
+\begin{description}
+\item[Arguments:]\ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile,     \&   ! file name to work with \\
+         \&                          cdvar           ! variable name to work with \\
+    INTEGER, INTENT(in) :: kpi,kpj                  ! horizontal size of the 2D variable \\
+    INTEGER, OPTIONAL, INTENT(in) :: klev           ! Optional variable. If missing 1 is assumed \\
+    INTEGER, OPTIONAL, INTENT(in) :: kimin,kjmin    ! Optional : set initial point to get \\
+    INTEGER, OPTIONAL, INTENT(in) :: ktime          ! Optional variable. If missing 1 is assumed \\
+    REAL(KIND=4), DIMENSION(kpi,kpj) :: getvar      ! 2D REAL 4 holding variable field at klev 
+\item[Purpose:]  Return the 2D REAL variable cdvar, from cdfile at level klev. \\
+  kpi,kpj are the horizontal size of the 2D variable
+\item[Example:]\ \\
+\begin{verbatim}
+       v2d(:,:)= getvar(cfile, cvarname(jvar), jk ,npiglo, npjglo )
+...
+       jt=25
+       v2d(:,:)= getvar(cfile, cvarname(jvar), jk ,npiglo, npjglo ,ktime=jt)
+\end{verbatim} 
+\item[Remark:] The optional keyword ktime is {\bf NOT YET} to be used. ( working on it).
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getvarxz (cdfile,cdvar,kj,kpi,kpz,kimin,kkmin,ktime)  }}
+\addcontentsline{toc}{subsection}{getvarxz}
+\index{getvarxz}
+\begin{description}
+\item[Arguments:]\ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile,     \&   ! file name to work with  \\
+         \&                          cdvar           ! variable name to work with  \\
+    INTEGER, INTENT(in) :: kpi,kpz                  ! size of the 2D variable  \\
+    INTEGER, INTENT(in) :: kj                       ! Optional variable. If missing 1 is assumed  \\
+    INTEGER, OPTIONAL, INTENT(in) :: kimin,kkmin    ! Optional  set initial point to get \\
+    INTEGER, OPTIONAL, INTENT(in) :: ktime          ! Optional variable. If missing 1 is assumed \\
+    REAL(KIND=4), DIMENSION(kpi,kpz) :: getvarxz    ! 2D REAL 4 holding variable x-z slab at kj  \\
+\item[Purpose:]  Return the 2D REAL variable x-z slab cvar, from cdfile at j=kj \\
+  kpi,kpz are the  size of the 2D variable. The time frame  can be specified using the optional argument ktime.
+\item[Example:]\ \\
+\begin{verbatim}
+       v2d(:,:)= getvarxz(cfile, cvarname(jvar), jj ,npiglo,npk, imin, kmin )
+  ...
+       v2d(:,:)= getvarxz(cfile, cvarname(jvar), jj ,npiglo,npk, imin, kmin, ktime=jt)
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getvaryz (cdfile,cdvar,ki,kpj,kpz,kjmin,kkmin,ktime)  }}
+\addcontentsline{toc}{subsection}{getvaryz}
+\index{getvaryz}
+\begin{description}
+\item[Arguments:]\ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile,     \&   ! file name to work with  \\
+         \&                          cdvar           ! variable name to work with  \\
+    INTEGER, INTENT(in) :: kpj,kpz                  ! size of the 2D variable  \\
+    INTEGER, INTENT(in) :: ki                       ! Optional variable. If missing 1 is assumed  \\
+    INTEGER, OPTIONAL, INTENT(in) :: kjmin,kkmin    ! Optional  set initial point to get \\
+    INTEGER, OPTIONAL, INTENT(in) :: ktime          ! Optional variable. If missing 1 is assumed
+    REAL(KIND=4), DIMENSION(kpj,kpz) :: getvaryz    ! 2D REAL 4 holding variable x-z slab at kj  \\
+\item[Purpose:]  Return the 2D REAL variable y-z slab cvar, from cdfile at i=ki \\
+  kpj,kpz are the  size of the 2D variable. The time frame  can be specified using the optional argument ktime.
+\item[Example:]\ \\
+\begin{verbatim}
+       v2d(:,:)= getvaryz(cfile, cvarname(jvar), ji ,npjglo,npk,jmin,kmin )
+ ...
+       v2d(:,:)= getvaryz(cfile, cvarname(jvar), ji ,npjglo,npk,jmin,kmin, ktime=jt )
+\end{verbatim}
+\end{description}
+\newpage
+
+
+\subsection*{\underline{SUBROUTINE gettimeseries (cdfile, cdvar, kilook, kjlook,klev) }}
+\addcontentsline{toc}{subsection}{gettimeseries}
+\index{gettimeseries}
+\begin{description}
+\item[Arguments:]\ \\
+    IMPLICIT NONE \\
+    CHARACTER(LEN=*),INTENT(in) :: cdfile, cdvar \\
+    INTEGER,INTENT(in) :: kilook,kjlook \\
+    INTEGER, OPTIONAL, INTENT(in) :: klev 
+\item[Purpose:]   Display a 2 column output ( time, variable) for
+               a given variable of a given file at a given point. 
+\item[Example:]\ \\
+\begin{verbatim}
+   CALL gettimeseries(cfile,cvar,ilook,jlook,klev=ilevel)
+...
+   CALL gettimeseries(cfile,cvar,ilook,jlook)
+\end{verbatim}
+\end{description}
+\newpage
+
+
+\subsection*{\underline{FUNCTION getvar1d (cdfile,cdvar,kk,kstatus) }}
+\addcontentsline{toc}{subsection}{getvar1d}
+\index{getvar1d}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile,     \&   ! file name to work with \\
+         \&                          cdvar           ! variable name to work with \\
+    INTEGER, INTENT(in) :: kk                       ! size of 1D vector to be returned \\
+    INTEGER, OPTIONAL, INTENT(out) :: kstatus       ! return status concerning the variable existence \\
+    REAL(KIND=4), DIMENSION(kk) :: getvar1d         ! real returned vector \\
+\item[Purpose:]  Return 1D variable cdvar from cdfile, of size kk
+\item[Example:]\ \\
+\begin{verbatim}
+   tim=getvar1d(cfile,'time_counter',1)
+....
+       z1d=getvar1d(cdfile,'deptht',kpk,idept)
+       IF ( idept /= NF90_NOERR ) THEN
+         z1d=getvar1d(cdfile,'depthu',kpk,idepu)
+         IF ( idepu /= NF90_NOERR ) THEN
+           z1d=getvar1d(cdfile,'depthv',kpk,idepv)
+           IF ( idepv /= NF90_NOERR ) THEN
+             z1d=getvar1d(cdfile,'depthw',kpk,idepv)
+             IF ( idepw /= NF90_NOERR ) THEN
+               PRINT *,' No depth variable found in ', TRIM(cdfile)
+               STOP
+             ENDIF
+           ENDIF
+         ENDIF
+       ENDIF
+\end{verbatim}
+This last example shows how to use the optional argument kstatus in order to figure out which is the real name
+of the depth variable.
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getvare3 (cdfile,cdvar,kk) }}
+\addcontentsline{toc}{subsection}{getvare3}
+\index{getvare3}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile,     \&   ! file name to work with \\
+         \&                          cdvar           ! variable name to work with \\
+    INTEGER, INTENT(in) :: kk                       ! size of 1D vector to be returned \\
+    REAL(KIND=4), DIMENSION(kk) :: getvare3         ! return e3 variable form the coordinate file
+\item[Purpose:]  Special routine for e3, which in fact is a 1D variable
+    but defined as e3 (1,1,npk,1) in coordinates.nc (!!)
+\item[Example:]\ \\
+\begin{verbatim}
+  gdepw(:) = getvare3(coordzgr, 'gdepw',npk)
+  e3t(:)   = getvare3(coordzgr, 'e3t', npk )
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION getvarname (cdfile, knvars,ptypvar) }}
+\addcontentsline{toc}{subsection}{getvarname}
+\index{getvarname}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile           ! name of file to work with \\
+    INTEGER, INTENT(in)  ::  knvars                  ! Number of variables in cdfile \\
+    TYPE (variable), DIMENSION (knvars) :: ptypvar   ! Retrieve variables attributes
+    CHARACTER(LEN=80), DIMENSION(knvars) :: getvarname ! return an array with the names of the variables
+\item[Purpose:]  Return a character array with the knvars variable names, and the ptypvar structure array filled with the attribute
+               read in cdfile
+\item[Example:]\ \\
+\begin{verbatim}
+ cvarname(:)=getvarname(cfile,nvars,typvar)
+ ! typvar is output from getvarname
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION  putatt (tyvar,kout,kid)  }}
+\addcontentsline{toc}{subsection}{putatt}
+\index{putatt}
+\begin{description}
+\item[Arguments:] \ \\
+    TYPE (variable) ,INTENT(in) :: tyvar
+    INTEGER, INTENT(in) :: kout              ! ncid of the output file \\
+    INTEGER, INTENT(in) :: kid               ! variable id \\
+    INTEGER :: putatt                        ! return variable : error code.
+\item[Purpose:]  Uses the structure tyvar for setting the variable attributes for kid and  write them in file id kout.
+\item[Example:]\ \\
+\begin{verbatim}
+          ! add attributes
+          istatus = putatt(ptyvar(jv), kout,kidvo(jv))
+\end{verbatim}
+\item[Remark:] This is almost an internal routine called by createvar.
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION putheadervar(kout, cdfile, kpi,kpj,kpk,pnavlon, pnavlat,pdep,cdep )  }}
+\addcontentsline{toc}{subsection}{putheadervar}
+\index{putheadervar}
+\begin{description}
+\item[Arguments:] \ \\
+       INTEGER, INTENT(in) :: kout             ! ncid of the outputfile (already open ) \\
+       CHARACTER(LEN=*), INTENT(in) :: cdfile  ! file from where the headers will be copied \\
+       INTEGER, INTENT(in) :: kpi,kpj,kpk      ! dimension of nav\_lon,nav\_lat (kpi,kpj), and depht(kpk) \\
+       REAL(KIND=4), OPTIONAL, DIMENSION(kpi,kpj) :: pnavlon, pnavlat  ! to get rid of nav\_lon , nav\_lat of cdfile \\
+       REAL(KIND=4), OPTIONAL,DIMENSION(kpk), INTENT(in) :: pdep   ! dep array if not on cdfile \\
+       CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdep     ! optional name of vertical variable \\
+       INTEGER :: putheadervar                 ! return status
+\item[Purpose:] Copy header variables from cdfile to the already open ncfile (ncid=kout)\\
+If the 2 first optional arguments are given, they are taken for nav\_lon and nav\_lat, instead of those read in file cdfile.
+This is usefull for f-points results whne no basic ''gridF'' files exist. If the third optional argument is given, it is
+taken as the depht(:) array in place of the the depth read in cdfile.  If all 3 optional arguments are used, cdfile will
+not be used and a dummy argument can be passed to the function instead.  If optional argument cdep is used, it is then used as the name 
+for the variable associated with the vertical dimension.
+\item[Example:]\ \\
+\begin{verbatim}
+  ierr= putheadervar(ncout , cfile, npiglo, npjglo, npk)
+  ierr= putheadervar(ncout2, cfile, npiglo, npjglo, npk)
+\end{verbatim}
+or 
+\begin{verbatim}
+  ierr= putheadervar(ncout , cfile, npiglo, npjglo, npk, glamf, gphif )
+\end{verbatim}
+or 
+\begin{verbatim}
+  ierr= putheadervar(ncout , 'dummy', npiglo, npjglo, npk, glamt, gphit, gdepw )
+\end{verbatim}
+
+\end{description}
+\newpage
+
+\subsection*{\underline{FUNCTION  putvar(kout, kid,ptab, klev, kpi, kpj)   }}
+\addcontentsline{toc}{subsection}{putvar}
+\index{putvar}
+\begin{description}
+\item[Arguments:] \ \\
+       INTEGER, INTENT(in) :: kout  ,  \&       ! ncid of output file  \\
+           \&                  kid              ! varid of output variable \\
+       REAL(KIND=4), DIMENSION(kpi,kpj),INTENT(in) :: ptab ! 2D array to write in file \\
+       INTEGER, INTENT(in) :: klev             ! level at which ptab will be written \\
+       INTEGER, INTENT(in) :: kpi,kpj          ! dimension of ptab \\
+       INTEGER :: putvar                       ! return status
+\item[Purpose:]  copy a 2D level of ptab in already open file kout, using variable kid
+\item[Example:]\ \\
+\begin{verbatim}
+ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo)
+\end{verbatim}
+\item[Remark:] Putvar is a generic interface, as explained above. For the interface with reputvar, the syntax is shown below.
+\end{description}
+
+\subsection*{\underline{FUNCTION  reputvarr4 (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime,ptab) }}
+\addcontentsline{toc}{subsection}{reputvarr4}
+\index{reputvarr4}
+\begin{description}
+\item[Arguments:] \ \\
+    CHARACTER(LEN=*), INTENT(in) :: cdfile,     \&   ! file name to work with \\
+         \&                          cdvar           ! variable name to work with \\
+    INTEGER, INTENT(in) :: kpi,kpj                  ! horizontal size of the 2D variable \\
+    INTEGER, OPTIONAL, INTENT(in) :: klev           ! Optional variable. If missing 1 is assumed \\
+    INTEGER, OPTIONAL, INTENT(in) :: kimin,kjmin    ! Optional variable. If missing 1 is assumed \\
+    INTEGER, OPTIONAL, INTENT(in) :: ktime          ! Optional variable. If missing 1 is assumed \\
+    REAL(KIND=4), DIMENSION(kpi,kpj) ::  ptab     ! 2D REAL 4 holding variable field at klev 
+
+\item[Purpose:]  Change an existing variable in inputfile
+\item[Example:]\ \\
+\begin{verbatim}
+ierr = putvar(cfile, 'votemper', 4, npiglo,npjglo, kimin=10, kjmin=200, temperature)
+\end{verbatim}
+\item[Remark:] With this function, the input file is modified !
+\end{description}
+
+\newpage
+
+\subsection*{\underline{FUNCTION putvar1d(kout,ptab,kk,cdtype)  }}
+\addcontentsline{toc}{subsection}{putvar1d}
+\index{putvar1d}
+\begin{description}
+\item[Arguments:] \ \\
+       INTEGER, INTENT(in) :: kout             ! ncid of output file \\
+       REAL(KIND=4), DIMENSION(kk),INTENT(in) :: ptab ! 1D array to write in file \\
+       INTEGER, INTENT(in) :: kk               ! number of elements in ptab \\
+       CHARACTER(LEN=1), INTENT(in)  :: cdtype ! either T or D (for time or depth) \\
+       INTEGER :: putvar1d                     ! return status
+\item[Purpose:]  Copy 1D variable (size kk) hold in ptab,  with id kid, into file id kout
+\item[Example:]\ \\
+\begin{verbatim}
+              ierr=putvar1d(ncout,timean,1,'T') 
+              ierr=putvar1d(ncout2,timean,1,'T')
+...
+              istatus = putvar1d(kout,depw(:),kpk,'D')
+\end{verbatim}
+\end{description}
+\newpage
+
+\subsection*{\underline{SUBROUTINE ERR\_HDL(kstatus) }}
+\addcontentsline{toc}{subsection}{ERR\_HDL}
+\index{ERR\_HDL}
+\begin{description}
+\item[Arguments:] \ \\
+INTEGER, INTENT(in) ::  kstatus
+\item[Purpose:] Error handler for NetCDF routine.  Stop if kstatus indicates error conditions.
+Else indicate the error message.
+\item[Example:]\ \\
+\begin{verbatim}
+   CALL ERR_HDL(istatus)
+\end{verbatim}
+\end{description}
+\newpage
+
+\section{ eos module}
+% FUNCTION eos
+% FUNCTION eosbn2
+\subsection*{\underline{FUNCTION sigma0 ( ptem, psal, kpi,kpj) }}
+\addcontentsline{toc}{subsection}{sigma0}
+\index{sigma0}
+\begin{description}
+\item[Arguments:] \ \\
+       REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptem, psal  ! Temperature and Salinity arrays \\
+       INTEGER,INTENT(in) :: kpi,kpj  !: dimension of 2D arrays \\
+       REAL(KIND=8), DIMENSION(kpi,kpj) :: sigma0    ! Potential density 
+\item[Purpose:]   Compute the  potential volumic mass (Kg/m3) from potential temperature and
+            salinity fields
+\item[Example:]\ \\
+\begin{verbatim}
+\end{verbatim}
+\end{description}
+
+\subsection*{\underline{FUNCTION sigmai( ptem, psal, pref, kpi,kpj) }}
+\addcontentsline{toc}{subsection}{sigmai}
+\index{sigmai}
+\begin{description}
+\item[Arguments:] \ \\
+       REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptem, psal  ! Temperature and Salinity arrays \\
+       REAL(KIND=4),                     INTENT(in) :: pref  !: reference pressure (dbar) \\
+       INTEGER,INTENT(in) :: kpi,kpj  !: dimension of 2D arrays \\
+       REAL(KIND=8), DIMENSION(kpi,kpj) :: sigmai    ! Potential density  a level pref
+\item[Purpose:]   Compute the  potential volumic mass (Kg/m3) from potential temperature and
+            salinity fields at reference level specified by $pref$.
+\item[Example:]\ \\
+\begin{verbatim}
+\end{verbatim}
+\end{description}
+
+\newpage
+
+\subsection*{\underline{FUNCTION eosbn2 ( ptem, psal, pdep,pe3w, kpi,kpj,kup,kdown )}}
+\addcontentsline{toc}{subsection}{eosbn2}
+\index{eosbn2}
+\begin{description}
+\item[Arguments:] \ \\
+       REAL(KIND=4), DIMENSION(kpi,kpj,2), INTENT(in) :: ptem, psal ! temperature and salinity arrays \\
+                                                                    ! (2 levels, only ) \\
+       REAL(KIND=4)                                   :: pdep       ! depthw (W points) \\
+       REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) ::  pe3w        ! vertical scale factor at W points \\
+       INTEGER, INTENT(in)    :: kpi,kpj                            ! horizontal size of the grid \\
+       INTEGER, INTENT(in)    :: kup,kdown                          ! index cdfmeannd lower layer \\
+                                                                    ! for the actual level \\
+       REAL(KIND=4), DIMENSION(kpi,kpj) :: eosbn2                   ! result  interpolated at T levels
+
+\item[Purpose:]  Compute the local Brunt-Vaisala frequency 
+\item[Example:]\ \\
+\begin{verbatim}
+  DO jk = npk-1, 2, -1
+     PRINT *,'level ',jk
+     zmask(:,:)=1.
+     ztemp(:,:,iup)= getvar(cfilet, 'votemper',  jk-1 ,npiglo, npjglo)
+     WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
+     zsal(:,:,iup) = getvar(cfilet, 'vosaline',  jk-1 ,npiglo,npjglo)
+
+     gdepw(:,:) = getvar(coordzgr, 'gdepw', jk, 1, 1)
+     e3w(:,:)   = getvar(coordzgr, 'e3w_ps', jk,1, 1 )
+
+     zwk(:,:,iup) = eosbn2 ( ztemp,zsal,gdepw(1,1),e3w, npiglo,npjglo , &
+         iup,idown)* zmask(:,:)
+     ! now put zn2 at T level (k )
+     WHERE ( zwk(:,:,idown) == 0 )
+        zn2(:,:) =  zwk(:,:,iup)
+     ELSEWHERE
+        zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
+     END WHERE
+
+     ierr = putvar(ncout, id_varout(1) ,zn2, jk, npiglo, npjglo )
+     itmp = idown ; idown = iup ; iup = itmp
+
+  END DO  ! loop to next level
+
+\end{verbatim}
+\end{description}
+
+\newpage
+
+\subsection*{\underline{FUNCTION albet ( ptem, psal, pdep, kpi,kpj )}}
+\addcontentsline{toc}{subsection}{albet}
+\index{albet}
+\begin{description}
+\item[Arguments:] \ \\
+       REAL(KIND=4), DIMENSION(kpi,kpj,2), INTENT(in) :: ptem, psal ! temperature and salinity arrays \\
+                                                                    ! (2 levels, only ) \\
+       REAL(KIND=4)                                   :: pdep       ! depthw (W points) \\
+       INTEGER, INTENT(in)    :: kpi,kpj                            ! horizontal size of the grid \\
+                                                                    ! for the actual level \\
+       REAL(KIND=4), DIMENSION(kpi,kpj) :: albet                   ! result  interpolated at T levels
+
+\item[Purpose:]  Compute the ratio alpha/beta
+\item[Method:] Use the equation of the OPA code (Mc Dougall, 1987)
+\item[Remark:] This is a function that may be used together with beta for computing the buoyancy flux, from forcing fields.
+\end{description}
+
+\subsection*{\underline{FUNCTION beta ( ptem, psal, pdep, kpi,kpj )}}
+\addcontentsline{toc}{subsection}{beta}
+\index{beta}
+\begin{description}
+\item[Arguments:] \ \\
+       REAL(KIND=4), DIMENSION(kpi,kpj,2), INTENT(in) :: ptem, psal ! temperature and salinity arrays \\
+                                                                    ! (2 levels, only ) \\
+       REAL(KIND=4)                                   :: pdep       ! depthw (W points) \\
+       INTEGER, INTENT(in)    :: kpi,kpj                            ! horizontal size of the grid \\
+                                                                    ! for the actual level \\
+       REAL(KIND=4), DIMENSION(kpi,kpj) :: beta                     ! result  interpolated at T levels
+
+\item[Purpose:]  Compute the beta coefficient
+\item[Method:] Use the equation of the OPA code (Mc Dougall, 1987)
+\item[Remark:] This is a function that may be used together with albet for computing the buoyancy flux, from forcing fields.
+\end{description}
+
+\newpage
+
+
+\tableofcontents
+\printindex
+\end{document}

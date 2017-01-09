@@ -1,0 +1,11 @@
+*~
+make.macro
+*.mod
+*.o
+*.so
+*.pyf
+*.pdf
+*.log
+*.aux
+*.idx
+*.toc

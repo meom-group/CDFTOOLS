@@ -1,0 +1,15 @@
+# Makefile for CDFTOOLS
+#    $Rev: 608 $
+#    $Date: 2012-07-03 23:29:11 +1000 (Tue, 03 Jul 2012) $
+# --------------------------------------------------------------
+#
+#NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
+NCDF = -I$(NETCDF_BASE)/include/Intel -L$(NETCDF_BASE)/lib/Intel -lnetcdf -lnetcdff
+ 
+F90=ifort
+MPF90=mpif90
+FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian 
+LMPI=-lmpich
+
+INSTALL=$(HOME)/bin
+INSTALL_MAN=$(HOME)/man

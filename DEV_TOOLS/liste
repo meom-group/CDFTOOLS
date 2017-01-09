@@ -1,0 +1,194 @@
+Programs
+cdf16bit.f90:           !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfbathy.f90:           !! CDFTOOLS_3.0 , MEOM 2011      chk  ** add cdfvar capability. keep link cdfvar -> cdfbathy in Makefile *
+cdfbci.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfbn2.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfbottom.f90:          !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfbottomsig.f90:       !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfbti.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfbuoyflx.f90:         !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfcensus.f90:          !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfclip.f90:            !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfcofdis.f90:          !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfcsp.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfdifmask.f90:         !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfeke.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfets.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdffindij.f90:          !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfmoy.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk  ** merge with cdfmoy_chsp (-spval0 option ) **
+                                                              ** merge with cdfmoy3 (-cub -zeromean options) **
+cdfhdy.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfhdy3d.f90:           !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfzoom.f90:            !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdficediags.f90:        !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfcurl.f90:            !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfinfo.f90:            !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdflinreg.f90:          !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfnan.f90:             !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfspeed.f90:           !! CDFTOOLS_3.0 , MEOM 2011  ** bug fixed in 3.0 **    chk
+cdfvita.f90:            !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfsmooth.f90:          !! CDFTOOLS_3.0 , MEOM 2011      chk
+cdfsum.f90:             !! CDFTOOLS_3.0 , MEOM 2011  ** need clarifications for forcing vs model file **  chk
+cdfmean.f90:            !! CDFTOOLS_3.0 , MEOM 2011  ** now also deal with full step, using -full option,
+                                                            and variance with -var option 
+                                                            and zeromean with -zeromean option **    chk
+cdfstatcoord.f90:       !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfmax.f90:             !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfprobe.f90:           !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfprofile.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfwhereij.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfmsk.f90:             !! CDFTOOLS_3.0 , MEOM 2011     chk  ** not that important ! **
+cdfmkmask.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk ** merged with cdfmkmask-zone by adding -zoom option **
+cdfpolymask.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfmltmask.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfnorth_unfold.f90:    !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfimprovechk.f90:      !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfsig0.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfsigi.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfsiginsitu.f90:       !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfspice.f90:           !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfmaskdmp.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfnrjcomp.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfkempemekeepe.f90:    !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfpendep.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdffracinv.f90          !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfvertmean.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk ** add -full option **
+cdfmxlheatc.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk ** add -full option **
+cdfmxl.f90:             !! CDFTOOLS_3.0 , MEOM 2011     chk 
+cdfgeo-uv.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk ** bug fix for fmask and ff **
+cdfmxlsaltc.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk ** add -full option **
+cdfmxlhcsc.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk ** improved and optimized **
+cdfheatc.f90:           !! CDFTOOLS_3.0 , MEOM 2011     chk ** add -full option **
+cdfhflx.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfmppini.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfw.f90:               !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfstd.f90:             !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfnamelist.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk  ** NEW tool !
+cdf2matlab.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfisopsi.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk  ** check effect of double precision **
+cdfweight.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with cdfweight2D **
+cdfcoloc.f90:           !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with cdfcoloc2, cdfcoloc3, cdfcoloc2D **
+cdfmaxmoc.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk 
+cdfmoc.f90:             !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with cdfmoc_full, and with cdfmoc_gsop ! **
+cdfmocsig.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with cdfmocsig_full. Improve interface **
+cdftransport.f90:       !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with full, Magdalena version
+                                                                , add new options -noheat -time -plus_minus (-pm) 
+                                                                  and -obc for obc input files. **
+                                                                 
+cdffixtime.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk  ** NEW tool !
+cdfvhst.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with -full version **
+cdfvT.f90:              !! CDFTOOLS_3.0 , MEOM 2011     chk  **
+cdfvsig.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk  ** 
+cdfmoy_weighted.f90:    !! CDFTOOLS_3.0 , MEOM 2011     chk  **  merge with cdfmoy_annual with -old5d option **
+cdfmoyt.f90             !! CDFTOOLS_3.0 , MEOM 2011     chk  ** to be tested **
+cdfwflx.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfrichardson.f90:      !! CDFTOOLS_3.0 , MEOM 2011     chk  ** NEW tool !
+cdfvtrp.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with cdftrp_bathy **
+cdfmhst.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk  ** merge with cdfmhst-full **
+cdfzonalmean.f90:       !! CDFTOOLS_3.0 , MEOM 2011     chk  ** improvement to be done for partial steps ... **
+cdfzonalout.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfzonalsum.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk  ** very similar to cdfzonalmean. 
+                                                                   Merge cdfzonalintdeg as an option (-pdeg) **
+cdfstdevw.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfrmsssh.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfstdevts.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfconvert.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk
+cdfpsi.f90:             !! CDFTOOLS_3.0 , MEOM 2011     chk ** merged with variant of cdfspi-open **
+cdfpvor.f90:            !! CDFTOOLS_3.0 , MEOM 2011     chk ** merged with -full and cdfpv, cdflspv **
+cdfrhoproj.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk 
+cdfmoyuvwt.f90:         !! CDFTOOLS_3.0 , MEOM 2011     chk ** merged/replace cdfmoyuv **
+cdfsigtrp.f90:          !! CDFTOOLS_3.0 , MEOM 2011     chk ** merged with cdfsigitrp, cdfsigtrp-full **
+cdfsigintegr.f90:       !! CDFTOOLS_3.0 , MEOM 2011     chk ** add -full **
+cdfmoy_freq.f90:        !! CDFTOOLS_3.0 , MEOM 2011     chk ** in work ... **
+cdftransig_xy3d.f90     !! CDFTOOLS_3.0 , MEOM 2011     chk ** same algo than original but options instead of editing program **
+
+Modules
+cdfio.f90:              !! CDFTOOLS_3.0 , MEOM 2011
+cdftools.f90:           !! CDFTOOLS_3.0 , MEOM 2011
+eos.f90:                !! CDFTOOLS_3.0 , MEOM 2011
+modcdfnames.f90:        !! CDFTOOLS_3.0 , MEOM 2011
+modpoly.f90:            !! CDFTOOLS_3.0 , MEOM 2011
+modutils.f90            !! CDFTOOLS_3.0 , MEOM 2011      ** new module for general utilities **
+
+TO DO ...
+#--------
+cdfmht_gsop.f90:        !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $
+
+cdfpsi_level.f90:       !!  $Date: 2009-07-21 17:49:27 +0200 (mar. 21 juil. 2009) $
+
+cdfsections.f90:        !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ! Nicolas Jourdain work
+
+cdftempvol-full.f90:    !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** to be generalized for volume of 
+
+cdfflxconv.f90:         !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $
+cdfsstconv.f90:         !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $
+cdfstrconv.f90:         !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $
+
+# new since rev 355
+
+# sans Id
+cdfcoastline.f90
+cdfovide           : working on it for simplification 
+
+# REMOVED 
+cdfmean-full.f90:       !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** obsolete (see cdfmean) **
+cdfmeanvar.f90:         !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** obsolete (see cdfmean) **
+cdfzeromean.f90:        !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $  ** obsolete (see cdfmean) **
+cdfmax_sp.f90:          !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** obsolete (see cdfmax)  **
+cdfmax-test.f90:        !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** obsolete (removed)     **
+cdfbn2-full.f90:        !! CDFTOOLS_3.0 , MEOM 2011  ** obsolete option -full coded in cdfbn2 **
+cdfmsksal.f90:          !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** removed see cdfmkmask **
+cdfmkmask-zone.f90:     !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** removed see cdfmkmask **
+cdfmxlheatc-full.f90:   !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $  ** see cdfmxlheatc -full **
+cdfmxl-full.f90:        !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $  ** see cdfmxl **
+cdfheatc-full.f90:      !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** cdf cdfheatc **
+cdfvar.f90:             !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** merged with cdfbathy **
+cdfmoy_chsp.f90:        !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $  ** merged with cdfmoy -spval0 **
+cdfmoy_sp.f90:          !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $  ** merged with cdfmoy -spval0 (with some diff) **
+cdfweight2D.f90:        !!  $Date: 2007-12-14 09:21:24 +0100 (Fri, 14 Dec 2007) $  ** merged with cdfweight -2d **
+cdfcoloc2.f90:          !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** merged with cdfcoloc.f90 **
+cdfcoloc2D.f90:         !!  $Date: 2007-05-18 16:31:17 +0200 (Fri, 18 May 2007) $  ** merged with cdfcoloc.f90 **
+cdfcoloc3.f90:          !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** merged with cdfcoloc.f90 **
+cdfmoc-full.f90:        !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** merged with cdfmoc.f90 [-full] option **
+cdfmocatl.f90:          !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** use cdfmoc w/o basin mask file **
+cdfmoc_gsop.f90:        !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** use cdfmoc with -decomp
+cdfmoc_gsop_x.f90:      !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** obsolete **
+cdfmocsig-full.f90:     !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $  ** use cdfmocdig -full **
+cdftransportiz.f90:     !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $   ! Magdalena Alonso Balmaseda version
+cdftransportiz-old.f90: !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $  ** merged with cdftransport **
+cdftransportiz-full.f90:!!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $  ** merged with cdftransport **
+cdftransportiz_noheat.f90: !!  $Date: 2010-06-08 17:51:34 +0200 (Tue, 08 Jun 2010) $ ** merged with cdftransport **
+cdfmasstrp.f90:         !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** merged with cdftransport **
+cdfmasstrp-full.f90:    !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** merged with cdftransport **
+cdfvhst-full.f90:       !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfvhst **
+cdfbottomsigi.f90:      !! CDFTOOLS_3.0 , MEOM 2011      chk   ** merge with cdfbottomsig cdfbottomsig0 **
+cdfmoy_annual.f90:      !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfmoy_weighted -old5d **
+cdfmoy_sal2_temp2.f90:  !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** use cdfmoy and modify cdf namelist
+cdftrp_bathy.f90:       !!  $Date: 2010-12-15 00:26:11 +0100 (Wed, 15 Dec 2010) $ ** merged with cdfvtrp **
+cdftrp_gaelle.f90:      !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** a variant of cdfsigtrp with many bugs ... remove ! 
+cdfmhst-full.f90:       !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfmhst **
+cdfzonalintdeg.f90:     !!  $Date: 2009-07-21 17:49:27 +0200 (mar 21 jui 2009) $  ** merged with cdfzonalsum, option -pdeg **
+cdfpsi-full.f90:        !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfpsi **
+cdfpsi-open.f90:        !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfpsi **
+cdfpsi-open_AM.f90   NO ID  angelique ** merged with cdfpsi **
+cdfpsi-open-zap.f90  NO ID  zapiola ** merged with cdfpsi **
+cdfpv.f90:              !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfpvor **
+cdfpvor-full.f90:       !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** merged with cdfpvor **
+cdflspv.f90:            !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfpvor **
+cdfisopycdep.f90:       !!  $Date: 2010-12-14 23:45:48 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfrhoproj, -isodep option **
+cdfmoyuv.f90:           !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** obsolete, cdfmoyuvwt does the same **
+cdfsigtrp2.f90:         !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** obsolete **
+cdfsigtrp-full.f90:     !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** merged with cdfsigtrp **
+cdfsigitrp.f90:         !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** merged with cdfsigitrp **
+cdfmoy3.f90:            !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** merged with cdfmoy **
+cdfmoy_mpp.f90:         !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $ ** never used .. !**
+cdftransportizpm.f90:   !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** merge with cdftransport -pm option **
+cdftemptrp-full.f90:    !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** merges with cdfsigtrp with -temp option **
+cdftransportiz_noheat_obc.f90:!!  $Date: 2009-09-08 17:49:35 +0200 (Tue, 08 Sep 2009) $ ** included with -obc option in cdftransport **
+bimgcaltrans.f90:       !!  $Date: 2009-08-06 10:45:06 +0200 (Thu, 06 Aug 2009) $ ** obsolete, netcdf file are now used in cdfsigtrp
+bimgmoy4.f90:           !!  $Date: 2009-04-28 19:33:08 +0200 (Tue, 28 Apr 2009) $ ** obsolete, netcdf file are now used in cdfsigtrp
+coordinates2hgr.f90:    !!  $Date: 2010-11-23 13:57:24 +0100 (Tue, 23 Nov 2010) $ ** kept in 2.1,erased from 3.0
+coordinates2hgr_karine.f90:  !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** kept in 2.1,erased from 3.0  
+coordinates2zgr.f90:    !!  $Date: 2010-11-23 13:57:24 +0100 (Tue, 23 Nov 2010) $ ** kept in 2.1,erased from 3.0
+coordinates2zgr_karine.f90:  !!  $Date: 2009-07-21 17:49:27 +0200 (Tue, 21 Jul 2009) $ ** kept in 2.1,erased from 3.0
+cdfpsi-austral-ssh.f90: !!  $Date: 2010-12-14 22:18:44 +0100 (Tue, 14 Dec 2010) $  ** merge with cdfpsi option -ssh Tfile **

@@ -1,0 +1,19 @@
+# Makefile for CDFTOOLS
+#    $Rev: 522 $
+#    $Date: 2011-06-17 12:50:13 +0200 (Fri, 17 Jun 2011) $
+# --------------------------------------------------------------
+#
+#NETCDF_ROOT=/opt/netcdf-4.1.1-gfortran
+NETCDF_ROOT=/usr
+NCDF = -I$(NETCDF_ROOT)/include -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf
+
+NC4= -D key_netcdf4
+
+
+#F90=gfortran -v
+F90=gfortran 
+MPF90=
+FFLAGS= -O  $(NCDF)  -fno-second-underscore -ffree-line-length-256
+LMPI=-lmpich
+
+INSTALL=$(HOME)/bin

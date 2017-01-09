@@ -1,0 +1,2926 @@
+\documentclass[a4paper,11pt]{article}
+\usepackage[latin1]{inputenc}
+%\usepackage[a4paper=true,ps2pdf=true,pagebackref=true,breaklinks=true]{hyperref}
+\usepackage{makeidx}
+\makeindex
+% to use index, after a first compilation, run makeindex *.idx file
+% then command \printindex will incorporate the index in the latex file.
+%Check if we are compiling under latex or pdflatex
+   \ifx\pdftexversion\undefined
+     \usepackage[dvips]{graphicx}
+   \else
+     \usepackage[pdftex]{graphicx}
+   \fi
+\setlength{\textwidth}{16.5 cm}
+\setlength{\textheight}{23.5 cm}
+\topmargin 0 pt
+\oddsidemargin 0 pt
+\evensidemargin 0 pt
+%
+\begin{document}
+\newcommand{\etal}{{\it et al.}}
+\newcommand{\DegN}{$^{\circ}$N}
+\newcommand{\DegW}{$^{\circ}$W}
+\newcommand{\DegE}{$^{\circ}$E}
+\newcommand{\DegS}{$^{\circ}$S}
+\newcommand{\Deg}{$^{\circ}$}
+\newcommand{\DegC}{$^{\circ}$C}
+\newcommand{\DS}{ \renewcommand{\baselinestretch}{1.8} \tiny \normalsize}
+\newcommand{\ST}{ \renewcommand{\baselinestretch}{1.2} \tiny \normalsize}
+\newcommand{\ao}{add\_offset}
+\newcommand{\SF}{scale\_factor}
+
+\title{CDFTOOLS: a fortran 90 package of programs and libraries for diagnostic 
+of the DRAKKAR OPA9 output.\\
+Part I : User Guide }
+
+\author{J.M. Molines  \thanks{Laboratoire des Ecoulements G\'eophysiques et Industriels, CNRS UMR 5519, Grenoble, France}\ }
+
+
+\date{Last update: $ $Rev$ $ $ $Date$ $ }
+
+
+\maketitle
+\section*{Introduction}
+This document describes a set of programs written in Fortran 90, used as diagnostic tools for 
+NEMO-OPA9 model output. This work has been initialized in the frame of the DRAKKAR project, where 
+large model configuration are run. For this reason, a special care has been taken to minimize the
+required amount of memory. Also, most of the programs assume that the data base is DRAKKAR-like,
+which means with one file per snap-shot, cdf variable names etc...  Shell scripts are also indicated
+as demo for how to use the programs. The user must carefully check all the variables in the scripts in
+order to ensure the compatibility with its own settings.
+
+The programs are sorted by category: Statistical (means, variance, RMS, EKE, etc ...), transport (mass,
+heat, salt), derived quantities (densities, Brunt Vaisala frequency, potential vorticity) and extracting/information tools
+(vertical profiles, position on the horizontal grid etc ...).
+
+This package is open, and in order to help for new developments, all the netcdf IO (at the IOIPSL standard) 
+are collected in a unique  module (cdfio.f90) which is used by the programs. In the same way the routines or
+functions concerning the equation of state of sea water are also collected into the module eos.f90.
+Developpers may read part II of this manual which is the programmer guide, where
+functions and subroutines included in these modules are described.
+
+\subsection*{Recently added tools}
+\begin{description}
+\item[cdflspv] : compute large scale potential vorticity (ie without relative vorticity)
+\item[cdfgeo-uv] : compute geostrophic velocities from SSH
+\item[cdfzeromean] : compute a zero-mean field.
+\item[cdfmoyuv cdfmoyuvwt cdfnrjcomp cdfkempemekeepe cdfbti cdfbci] : ask Ang\'elique !
+\item[cdfisopycdep] : compute isoypcnal depths.
+\item[cdfsiginsitu] : compute in situ density.
+\item[cdfsigintegr] : compute integral of a quantity between isopycnal surfaces.
+\item[cdfvertmean] : compute vertical mean of a quantity between 2 horizontal levels.
+\item[cdfpendep] : compute penetration depth (ratio of surface concentration to inventory) for passive tracers.
+\item[cdfmoyt] : Just as cdfmoy  but for instance, takes files with monthly fields (12) in it and return a monthly climatology.
+\item[cdflinreg] : Evaluates the linear trend on a time series of intput files, for each variables in the file.
+\item[cdfbuoyflx] : Evaluates the components of the fresh water flux, heat fluxes, and their respective buoyancy flux contribution.
+\item[cdfwflx] : Evaluates the components of the fresh water flux.
+\item[cdfmkmask] : Make a mask file from a standard gridT file using vosaline 0 values.
+\item[cdfspeed] : Compute the modulus of a velocity field (checked for forcing field only).
+\item[cdfmltmask] : Multiply a field by a mask: usefull for masking Levitus or forcing field.
+\item[cdfweight] : A tool to compute a weight file for further colocalisation.
+\item[cdfcoloc] : A tool to colocate model data on observed data, using a weight file fromCompute the modulus of a velocity field (checked for forcing field only).
+\item[cdfbathy] : A tool to modify and tune nemo bathymetry.
+\item[cdfstd] : Compute the standard deviation of variables from a series of files given as input.
+\item[cdfmoy\_annual] : Compute an annual mean from monthly means, applying weights to take into account that monthly mean were not computed 
+                          with the same amount of data
+\item[cdfclip] : Save functionality than nckss but does not change the order of the variables.
+\item[cdfconvert] : Convert a set of dimg CLIPPER output file to DRAKKAR like netcdf file.
+\item[cdfflxconv] : Convert a set of fluxes dimgfile (Clipper like) to a set of CDF files (Drakkar like )
+\item[cdf16bit] : Convert a standard 32bits model output file into a 16 bit file, using scale\_factor and add\_offset
+\item[cdfvita] : Compute surface ocean velocities components and module on the A-Grid (at T-points) from a opa C-grid input.
+\item[cdfmeanvar] : Compute spatial 3D mean as well as corresponding variance.
+\item[cdfstddevts] : Compute RMS for Temperature and Salinity. (goes together with cdfmoy\_sal2\_temp2).
+\item[cdfmax] : Display min/max for a variable in a file with location.
+\item[cdfmxlheatc] : Compute the Heat Content of the mixed layer ( J/m2).
+\item[cdfmxlsaltc] : Compute the Salt Content of the mixed layer (kg/m2)
+\item[cdfsigtrp] : Compute density class transport across a section.
+\item[cdfzoom] : Show an ASCII representation of a 2D (x-y, x-z or y-z) slab from any variable of an output file.
+\item[cdfmocsig] : Compute the MOC as a function of potential density ($\sigma_1$)
+\item[cdficediags]: Compute sea ice area, extent and volume from an icemod output
+\item[cdfzonalsum] : Compute the zonal sum of the variables in a file, may uses sub basins.
+                      (useful for tracer inventory, for instance).
+\end{description}
+
+\newpage
+\section{Statistics}
+\subsection*{\underline{cdfmoy:}}
+\addcontentsline{toc}{subsection}{cdfmoy}
+\index{cdfmoy}
+\begin{description}
+\item[Purpose:] Compute the mean fields for the file list given in argument.
+\item[Usage:] {\em cdfmoy nc\_files }
+\item[Input:] A list of homogeneous model output files ({\em e.g.: } xxx\_gridT.nc or xxx\_gridU.nc). \
+
+For instance: cdfmoy ORCA025-G32\_y0010m10d??\_gridT.nc will compute the mean 'gridT' file for month 10 of year 10.
+\item[Required mesh\_mask files or other files:]  none.
+\item[Output:] 2 files are produced : {\em cdfmoy.nc} and {\em cdfmoy2.nc}. {\em cdfmoy.nc} holds the mean fields
+for all the variables in the input files. {\em cdfmoy2.nc} holds the quadratic mean of some input variables (not all). 
+In the current version, the quadratic mean for sossheig, vozocrtx, vomecrty, vovecrtz are saved.
+\item[Remark:] Assumes that land value are set to 0.
+\item[Associated script:] {\em cdfmoy.ll}: This script is used in the DRAKKAR project to calculate monthly means, quarterly
+means and annual means. This is a good example of how to use cdfmoy.\\
+{\em cdfmoy-inter.ll}: This is a variant of the first script to compute inter-annual means.
+\end{description}
+
+\subsection*{\underline{cdfmoyt:}}
+\addcontentsline{toc}{subsection}{cdfmoyt}
+\index{cdfmoyt}
+\begin{description}
+\item[Purpose:] Compute the mean fields for the file list given in argument, not scanning individual files.
+\item[Usage:] {\em cdfmoyt nc\_files }
+\item[Input:] A list of homogeneous model output files ({\em e.g.: } xxx\_1m\_xxx.nc. \
+
+For instance: cdfmoyt REYNOLDS\_SST\_1m\_1982.nc REYNOLDS\_SST\_1m\_1983.nc  will compute a file with the average of the monthly field that are in the input files.
+\item[Required mesh\_mask files or other files:]  none.
+\item[Output:] 2 files are produced : {\em cdfmoy.nc} and {\em cdfmoy2.nc}. {\em cdfmoy.nc} holds the mean fields
+for all the variables in the input files. {\em cdfmoy2.nc} holds the quadratic mean of some input variables (not all). 
+In the current version, the quadratic mean for sossheig, vozocrtx, vomecrty, vovecrtz,  sst are saved.
+\item[Remark:] Assumes that land value are set to 0.
+\end{description}
+
+
+\subsection*{\underline{cdfmoy\_mpp:}}
+\addcontentsline{toc}{subsection}{cdfmoy\_mpp}
+\index{cdfmoy\_mpp}
+\begin{description}
+\item[Purpose:] Compute the mean fields for the file list given in argument. This is a parallel version of cdfmoy (experimental). 
+  Paralelization  is done across the tags. For the future, it may be probably more interesting do parallelize for the levels...
+\item[Usage:] {\em cdfmoy\_mpp nc\_files }
+\item[Input:] A list of homogeneous model output files ({\em e.g.: } xxx\_gridT.nc or xxx\_gridU.nc). \
+\item[Required mesh\_mask files or other files:]  none.
+\item[Output:] 2 files are produced : {\em cdfmoy.nc} and {\em cdfmoy2.nc}. {\em cdfmoy.nc} holds the mean fields
+for all the variables in the input files. {\em cdfmoy2.nc} holds the quadratic mean of some input variables (not all). 
+In the current version, the quadratic mean for sossheig, vozocrtx, vomecrty, vovecrtz are saved.
+\item[Remark:] Assumes that land value are set to 0.
+\item[Associated script:] none
+\end{description}
+
+
+\subsection*{\underline{cdfmoy\_sp:}}
+\addcontentsline{toc}{subsection}{cdfmoy\_sp}
+\index{cdfmoy\_sp}
+\begin{description}
+\item[Purpose:] Compute the mean fields for the file list given in argument, just as in cdfmoy. The only difference
+is that land value (or missing values) are not necessarily 0. Useful when 0 have a physical meaning.
+\item[Usage:] {\em cdfmoy\_sp nc\_files }
+\item[Input:] A list of homogeneous model output files ({\em e.g.: } xxx\_gridT.nc or xxx\_gridU.nc). \
+
+For instance: cdfmoy\_sp ORCA025-G32\_y0010m10d??\_gridT.nc will compute the mean 'gridT' file for month 10 of year 10.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] 2 files are produced : {\em cdfmoy.nc} and {\em cdfmoy2.nc}. {\em cdfmoy.nc} holds the mean fields
+for all the variables in the input files. {\em cdfmoy2.nc} holds the quadratic mean of some input variables (not all). 
+In the current version, the quadratic mean for sossheig, vozocrtx, vomecrty, vovecrtz are saved.
+\item[Remark:] 
+\item[Associated scripts:] {\em cdfmoy\_sp.ll}: This is an example where it is necessary to use cdfmoy\_sp instead of
+cdfmoy. 
+\end{description}
+
+\subsection*{\underline{cdfmoy\_chsp:}}
+\addcontentsline{toc}{subsection}{cdfmoy\_chsp}
+\index{cdfmoy\_chsp}
+\begin{description}
+\item[Purpose:] Compute the mean fields for the file list given in argument, just as in cdfmoy. The only difference
+is that land value (or missing values) are not necessarily 0. Useful when 0 have a physical meaning. This version takes into account 
+missing value from input files, but write results with missing value = 0 (as in drakkar runs). Usefull for reformating MERA data.
+\item[Usage:] {\em cdfmoy\_chsp nc\_files }
+\item[Input:] A list of homogeneous model output files ({\em e.g.: } xxx\_gridT.nc or xxx\_gridU.nc). \
+
+For instance: cdfmoy\_chsp MERA11\_y0010m10d??\_gridT.nc will compute the mean 'gridT' file for month 10 of year 10.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] 2 files are produced : {\em cdfmoy.nc} and {\em cdfmoy2.nc}. {\em cdfmoy.nc} holds the mean fields
+for all the variables in the input files. {\em cdfmoy2.nc} holds the quadratic mean of some input variables (not all). 
+In the current version, the quadratic mean for sossheig, vozocrtx, vomecrty, vovecrtz are saved.
+\item[Remark:] 
+\item[Associated scripts:] none
+\end{description}
+
+\subsection*{\underline{cdfmoy\_sal2\_temp2:}}
+\addcontentsline{toc}{subsection}{cdfmoy\_sal2\_temp2}
+\index{cdfmoy\_sal2\_temp2}
+\begin{description}
+\item[Purpose:] As cdfmoy above: Compute the mean fields for the file list given in argument but additional quadratic means for temperature
+   and salinity are kept in the output file, if they appear in the input file.
+\item[Usage:] {\em cdfmoy\_sal2\_temp2 nc\_files }
+\item[Input:] A list of homogeneous model output files ({\em e.g.: } xxx\_gridT.nc or xxx\_gridU.nc). \
+
+For instance: cdfmoy ORCA025-G32\_y0010m10d??\_gridT.nc will compute the mean 'gridT' file for month 10 of year 10.
+\item[Required mesh\_mask files or other files:]  none.
+\item[Output:] 2 files are produced : {\em cdfmoy.nc} and {\em cdfmoy2.nc}. {\em cdfmoy.nc} holds the mean fields
+for all the variables in the input files. {\em cdfmoy2.nc} holds the quadratic mean of some input variables (not all). 
+In the current version, the quadratic mean for sossheig, votemper, vosaline, vozocrtx, vomecrty, vovecrtz are saved.
+\item[Remark:] Assumes that land value have are set to 0. If you have used this tools, it is likely that you want to compute temperature and
+salinity variability. See {\bf cdfstdts} \index{cdfstdevts} for this purpose.
+\item[Associated script:] You can adapt {\em cdfmoy.ll} and other for this case. Its almost the same. Only the content of the {\em cdfmoy2.nc} will differ. 
+\end{description}
+
+\subsection*{\underline{cdfmoy\_annual:}}
+\addcontentsline{toc}{subsection}{cdfmoy\_annual}
+\index{cdfmoy\_annual}
+\begin{description}
+\item[Purpose:] Compute the mean fields for the file list given in argument.
+\item[Usage:] {\em cdfmoy\_annual 12 monthly mean files (DRAKKAR like)}
+\item[Input:] A list of homogeneous 12 monthly means.
+\item[Required mesh\_mask files or other files:]  none.
+\item[Output:] 1 files are produced : {\tt cdfmoy\_annual.nc}
+\item[Remark:] Assumes that land value are set to 0.  This program is usefull for calculating the annual mean from the monthly means
+calculated in DRAKKAR  project. In this case, the weight applied to the months are 6 5 7 6 6 6 6 6 6 7. Anne-Marie claims that this
+may change the computation of water mass balances.
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmoyuvwt:}}
+\addcontentsline{toc}{subsection}{cdfmoyuvwt}
+\index{cdfmoyuvwt}
+\begin{description}
+\item[Purpose:] Compute various time mean values for subsequent cdfbci or/and cdfbti.
+\item[Usage:] {\em cdfmoyuvwt config imin imax jmin jmax listoftags }
+\item[Input:] config is the conf-case name of the experiment, imin, imax, jmin, jmax, delimit a zoomed area, list of tags
+       gives the time tags to take into account in the time mean computation. This program assumes that gridT, gridU gridV and gridW 
+       files for the given config and tags are present in the current directory.
+\item[Required mesh\_mask files or other files:]  none.
+\item[Output:] 1 files are produced : {\tt moyuvwt.nc} This file contains 11 variables 
+     \begin{enumerate}
+       \item {\bf ubar}:temporal mean of u on U point
+       \item {\bf vbar}:temporal mean of v on V point
+       \item {\bf u2bar}: temporal mean of u * u on U point
+       \item {\bf v2bar}: temporal mean of v * v on V point
+       \item {\bf uvbar}: temporal mean of u * v on T point
+       \item {\bf wbar}: temporal mean of w  on W point
+       \item {\bf tbar}: temporal mean of T  on T point (in K)
+       \item {\bf utbar}: temporal mean of u * T (in K)  on T point
+       \item {\bf vtbar}: temporal mean of v * T (in K)  on T point
+       \item {\bf t2bar}: temporal mean of T * T (in $K^2$)  on T point
+       \item {\bf wtbar}: temporal mean of w * T (in $K$)  on T point
+     \end{enumerate}
+\item[Associated script:] none
+\item[Remark]: a cdfmoyuv program also exists, but is obsolete and replaced by this one.
+\item[Author]: An\'elique Melet, ask for details.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmoy\_freq:}}
+\addcontentsline{toc}{subsection}{cdfmoy\_freq}
+\index{cdfmoy\_freq}
+\begin{description}
+\item[Purpose:] Compute time mean just as cdfmoy, but this program is adapted to deal with forcing files. It is designed for instance to compute monthly mean from a 6-hour forcing file
+\item[Usage:] {\em cdfmou\_freq forcing\_file out\_frequency}
+\item[Input:] Forcing file is given as input, and out\_frequency can be either {\em daily}, {\em monthly} or {\em annual}. 
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] Output netcdf file is cdfmoy\_daily or cdfmoy\_monthly or cdfmoy\_annual depending on the required output frequemcy. It contains the same variables than the input file.
+\item[Remark/bugs :]
+\item[Associated scripts:]
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmean:}}
+\addcontentsline{toc}{subsection}{cdfmean}
+\index{cdfmean}
+\begin{description}
+\item[Purpose:] Compute the mean value of a field, weighted by the local metric. If the variable is a 3D variable,
+the mean value is given for each level, then the global mean is printed. The mean value can be computed on a limited
+domain, specified on the command line.
+\item[Usage:] {\em cdfmean nc\_files nc\_var  $T | U | V | F | W$ [ imin imax jmin jmax kmin kmax ] }
+\item[Input:] nc\_file is the name of the netcdf file which hold the variable. 
+
+nc\_var is the netcdf variable name for the mean computation. If a wrong or dummy variable is given, the program
+presents the list of available variables in the file, and ask for a choice.
+
+$ T | U | V | F | W $ : specify the point on the C-grid, corresponding to the variable nc\_var.
+
+imin imax jmin jmax  kmin kmax : optional parameters. If used, all 6 must be specified. They indicate the limited
+area (in i,j,k coordinates) where the mean value will be computed. The user can specify 0 as input, which means that
+the corresponding coordinate will be considered for the whole extent; in this case the pair of coordinates must be set 
+to 0. 
+
+For instance: {\tt cdfmean  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc votemper T } will compute the mean temperature over
+the whole domain.
+
+ {\tt cdfmean  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc xxx T } will ask a variable name from the list of variables contained
+in the file. Careful, the type of point (T U V or F ) is not asked interactively; this is not really a problem as in most
+of the OPA9 output, files are build for each type (gridT, gridU etc...).
+
+ {\tt cdfmean  ORCA025-G42\_y0010\_ANNUAL\_gridU.nc vozocrtx U  300 320 400 653 0 0 } will compute the mean U-component
+of the velocity on a horizontally limited area, for the whole water column. 
+
+ Other valid specifications for the limited area 
+can be, for example : 0 0  400 600 1 15 : the mean will be computed for the upper 15 levels, for a whole zonal band starting
+at j=400 and ending at j=600.
+
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are printed  on the standard output. For 3D fields, intermediate mean values for each level are also
+displayed.
+\item[Remark/bugs :] In this version, no special care has been taken to handle neither the periodic grids, nor the north folding conditions.
+This will be done in a future release.
+\item[Associated scripts:] {None. This program is more typically an interactive program. As it is written, it can handle grids as big
+as ORCA025 on a small Linux machine (with only 512 Mb of core memory).}
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmean-full:}}
+\addcontentsline{toc}{subsection}{cdfmean-full}
+\index{cdfmean-full}
+\begin{description}
+\item[Purpose:] Compute the mean value of a field, weighted by the local metric. If the variable is a 3D variable,
+the mean value is given for each level, then the global mean is printed. The mean value can be computed on a limited
+domain, specified on the command line. This is the -full version (full steps) of cdfmean.
+\item[Usage:] {\em cdfmean-full nc\_files nc\_var  $T | U | V | F | W$ [ imin imax jmin jmax kmin kmax ] }
+\item[Input:] nc\_file is the name of the netcdf file which hold the variable. 
+
+nc\_var is the netcdf variable name for the mean computation. If a wrong or dummy variable is given, the program
+presents the list of available variables in the file, and ask for a choice.
+
+$ T | U | V | F | W $ : specify the point on the C-grid, corresponding to the variable nc\_var.
+
+imin imax jmin jmax  kmin kmax : optional parameters. If used, all 6 must be specified. They indicate the limited
+area (in i,j,k coordinates) where the mean value will be computed. The user can specify 0 as input, which means that
+the corresponding coordinate will be considered for the whole extent; in this case the pair of coordinates must be set 
+to 0. 
+
+For instance: {\tt cdfmean-full  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc votemper T } will compute the mean temperature over
+the whole domain.
+
+ {\tt cdfmean-full  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc xxx T } will ask a variable name from the list of variables contained
+in the file. Careful, the type of point (T U V or F ) is not asked interactively; this is not really a problem as in most
+of the OPA9 output, files are build for each type (gridT, gridU etc...).
+
+ {\tt cdfmean-full  ORCA025-G42\_y0010\_ANNUAL\_gridU.nc vozocrtx U  300 320 400 653 0 0 } will compute the mean U-component
+of the velocity on a horizontally limited area, for the whole water column. 
+
+ Other valid specifications for the limited area 
+can be, for example : 0 0  400 600 1 15 : the mean will be computed for the upper 15 levels, for a whole zonal band starting
+at j=400 and ending at j=600.
+
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are printed  on the standard output. For 3D fields, intermediate mean values for each level are also
+displayed.
+\item[Remark/bugs :] In this version, no special care has been taken to handle neither the periodic grids, nor the north folding conditions.
+This will be done in a future release.
+\item[Associated scripts:] {None. This program is more typically an interactive program. As it is written, it can handle grids as big
+as ORCA025 on a small Linux machine (with only 512 Mb of core memory).}
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfsum:}}
+\addcontentsline{toc}{subsection}{cdfsum}
+\index{cdfsum}
+\begin{description}
+\item[Purpose:] Compute the sum value of the field (3D, weighted).
+\item[Usage:] {\em cdfsum nc\_file nc\_var $T| U | V | F | W$ [imin imax jmin jmax kmin kmax] }
+\item[Input:] nc\_file is the name of the netcdf file which hold the variable.  nc\_var is the netcdf variable name for the
+sum computation.
+
+$ T | U | V | F | W $ : specify the point on the C-grid, corresponding to the variable nc\_var.
+
+imin imax jmin jmax  kmin kmax : optional parameters. If used, all 6 must be specified. They indicate the limited
+area (in i,j,k coordinates) where the sum value will be computed. The user can specify 0 as input, which means that
+the corresponding coordinate will be considered for the whole extent; in this case the pair of coordinates must be set 
+to 0. 
+
+\item[Required mesh\_mask files or other files:] iles mesh\_hgr.nc, mesh\_zgr.nc ,mask.nc
+\item[Output:] done on standard output
+\item[Remark/bugs :] This program can be used for computing inventory, for instance.
+\item[Associated scripts:] none
+\end{description}
+
+\newpage
+
+\newpage
+\subsection*{\underline{cdfzeromean:}}
+\addcontentsline{toc}{subsection}{cdfzeromean}
+\index{cdfzeromean}
+\begin{description}
+\item[Purpose:] Compute the mean value of a field, weighted by the local metric. If the variable is a 3D variable,
+the mean value is given for each level, then the global mean is printed. The mean value can be computed on a limited
+domain, specified on the command line. Then, the overall mean value is rested from the initial field, in order to produce 
+a zero-mean field.
+\item[Usage:] {\em cdfzeromean nc\_files nc\_var  $T | U | V | F | W$ [ imin imax jmin jmax kmin kmax ] }
+\item[Input:] nc\_file is the name of the netcdf file which hold the variable. 
+
+nc\_var is the netcdf variable name for the mean computation. If a wrong or dummy variable is given, the program
+presents the list of available variables in the file, and ask for a choice.
+
+$ T | U | V | F | W $ : specify the point on the C-grid, corresponding to the variable nc\_var.
+
+imin imax jmin jmax  kmin kmax : optional parameters. If used, all 6 must be specified. They indicate the limited
+area (in i,j,k coordinates) where the mean value will be computed. The user can specify 0 as input, which means that
+the corresponding coordinate will be considered for the whole extent; in this case the pair of coordinates must be set 
+to 0.  The mean value is computed on this local domain. It is rested from the whole domain in the output file.
+
+ Other valid specifications for the limited area 
+can be, for example : 0 0  400 600 1 15 : the mean will be computed for the upper 15 levels, for a whole zonal band starting
+at j=400 and ending at j=600.
+
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are printed  on the standard output. For 3D fields, intermediate mean values for each level are also
+displayed. A netcdf file (zeromean.nc) is created with the zero-meaned variable, same name and attributes, except the long name
+which indicates that the variable has been modified.
+\item[Remark/bugs :] In this version, no special care has been taken to handle neither the periodic grids, nor the north folding conditions.
+This will be done in a future release.
+\item[Associated scripts:] {None. This program is more typically an interactive program. As it is written, it can handle grids as big
+as ORCA025 on a small Linux machine (with only 512 Mb of core memory).}
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfvertmean:}}
+\addcontentsline{toc}{subsection}{cdfvertmean}
+\index{cdfvertmean}
+\begin{description}
+\item[Purpose:]  Compute the vertical average of a scalar quantity  between z layers
+\item[Usage:] {\em cdfvertmean nc\_file nc\_var  $T | U | V | F | W$ z1 z2  } Partial steps.
+\item[Input:]  nc\_file  is the data file holding 3D variable nc\_var. The user must specify on which grid point type
+this variable is ( $T | U | V | F | W$ ) and the deptht (m) z1 and z2 limiting 2 horizontal layers used for the vertical mean.
+\item[Required mesh\_mask files or other files:] mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:]  The output is done on the file {\tt vertmean.nc} with the 2D variable (same unit as nc\_var) {\tt sovertmean}
+\item[Remark:]
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmeanvar:}}
+\addcontentsline{toc}{subsection}{cdfmeanvar}
+\index{cdfmeanvar}
+\begin{description}
+\item[Purpose:] This program is very similar to the previous in the list: It computes the mean value of a field, and its
+ spatial variance, weighted by the local metric. If the variable is a 3D variable,
+the mean value and variance are given for each level, then the global mean/variance are printed. The mean/variance values can be 
+ computed on a limited domain, specified on the command line.
+\item[Usage:] {\em cdfmeanvar nc\_files nc\_var  $T | U | V | F | W$ [ imin imax jmin jmax kmin kmax ] }
+\item[Input:] nc\_file is the name of the netcdf file which hold the variable. 
+
+nc\_var is the netcdf variable name for the mean computation. If a wrong or dummy variable is given, the program
+presents the list of available variables in the file, and ask for a choice.
+
+$ T | U | V | F | W $ : specify the point on the C-grid, corresponding to the variable nc\_var.
+
+imin imax jmin jmax  kmin kmax : optional parameters. If used, all 6 must be specified. They indicate the limited
+area (in i,j,k coordinates) where the mean value will be computed. The user can specify 0 as input, which means that
+the corresponding coordinate will be considered for the whole extent; in this case the pair of coordinates must be set 
+to 0. 
+
+For instance: {\tt cdfmeanvar  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc votemper T } will compute the mean temperature over
+the whole domain.
+
+ {\tt cdfmeanvar  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc xxx T } will ask a variable name from the list of variables contained
+in the file. Careful, the type of point (T U V or F ) is not asked interactively; this is not really a problem as in most
+of the OPA9 output, files are build for each type (gridT, gridU etc...).
+
+ {\tt cdfmeanvar  ORCA025-G42\_y0010\_ANNUAL\_gridU.nc vozocrtx U  300 320 400 653 0 0 } will compute the mean U-component
+of the velocity on a horizontally limited area, for the whole water column. 
+
+ Other valid specifications for the limited area 
+can be, for example : 0 0  400 600 1 15 : the mean will be computed for the upper 15 levels, for a whole zonal band starting
+at j=400 and ending at j=600.
+
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are printed  on the standard output. For 3D fields, intermediate mean values for each level are also
+displayed.
+\item[Remark/bugs :] In this version, no special care has been taken to handle neither the periodic grids, nor the north folding conditions.
+This will be done in a future release.
+\item[Associated scripts:] {None. This program is more typically an interactive program. As it is written, it can handle grids as big
+as ORCA025 on a small Linux machine (with only 512 Mb of core memory).}
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfheatc:}}
+\addcontentsline{toc}{subsection}{cdfheatc}
+\index{cdfheatc}
+\begin{description}
+\item[Purpose:] Compute the heat content for the ocean in a given 3D domain (or the whole domain).
+The heat content (Joules) is computed and given for each levels, then the global heat content (J) is printed, as well as the heat
+content per unit of volume (J/m3). A sub-domain can be specified  on the command line.
+\item[Usage:] {\em cdfheatc gridTfiles  [ imin imax jmin jmax kmin kmax ] }
+\item[Input:] gridTfile is the name of the netcdf file which holds $votemper$.  \\
+
+imin imax jmin jmax  kmin kmax : optional parameters. If used, all 6 must be specified. They indicate the limited
+area (in i,j,k coordinates) where the mean value will be computed. The user can specify 0 as input, which means that
+the corresponding coordinate will be considered for the whole extent; in this case the pair of coordinates must be set 
+to 0. 
+
+For instance: {\tt cdfheatc  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc  } will compute the heat content over
+the whole domain.
+
+ {\tt cdfheatc  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc 300 320 400 653 0 0 } will compute the heat content 
+on a horizontally limited area, for the whole water column. 
+
+ Other valid specifications for the limited area 
+can be, for example : 0 0  400 600 1 15 : the heat content will be computed for the upper 15 levels, for a whole zonal band starting
+at j=400 and ending at j=600.
+
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are printed  on the standard output. For 3D fields, intermediate  values for each level are also
+displayed.
+\item[Remark/bugs :] In this version, no special care has been taken to handle neither the periodic grids, nor the north folding conditions.
+This will be done in a future release.
+\item[Associated scripts:] {None. This program is more typically an interactive program. As it is written, it can handle grids as big
+as ORCA025 on a small Linux machine (with only 512 Mb of core memory).}
+\end{description}
+
+\subsection*{\underline{cdfheatc-full:}}
+\addcontentsline{toc}{subsection}{cdfheatc-full}
+\index{cdfheatc-full}
+\begin{description}
+\item[Purpose:] Compute the heat content for the ocean in a given 3D domain (or the whole domain).
+The heat content (Joules) is computed and given for each levels, then the global heat content (J) is printed, as well as the heat
+content per unit of volume (J/m3). A sub-domain can be specified  on the command line. This is the FULL STEP version
+\item[Usage:] {\em cdfheatc gridTfiles  [ imin imax jmin jmax kmin kmax ] }
+\item[Input:] gridTfile is the name of the netcdf file which holds $votemper$.  \\
+
+imin imax jmin jmax  kmin kmax : optional parameters. If used, all 6 must be specified. They indicate the limited
+area (in i,j,k coordinates) where the mean value will be computed. The user can specify 0 as input, which means that
+the corresponding coordinate will be considered for the whole extent; in this case the pair of coordinates must be set 
+to 0. 
+
+For instance: {\tt cdfheatc-full  ORCA025-G04\_y0010\_ANNUAL\_gridT.nc  } will compute the heat content over
+the whole domain.
+
+ {\tt cdfheatc-full  ORCA025-G04\_y0010\_ANNUAL\_gridT.nc 300 320 400 653 0 0 } will compute the heat content 
+on a horizontally limited area, for the whole water column. 
+
+ Other valid specifications for the limited area 
+can be, for example : 0 0  400 600 1 15 : the heat content will be computed for the upper 15 levels, for a whole zonal band starting
+at j=400 and ending at j=600.
+
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are printed  on the standard output. For 3D fields, intermediate  values for each level are also
+displayed.
+\item[Remark/bugs :] In this version, no special care has been taken to handle neither the periodic grids, nor the north folding conditions.
+This will be done in a future release.
+\item[Associated scripts:] {None. This program is more typically an interactive program. As it is written, it can handle grids as big
+as ORCA025 on a small Linux machine (with only 512 Mb of core memory).}
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfmxlheatc-full:}}
+\addcontentsline{toc}{subsection}{cdfmxlheatc-full}
+\index{cdfmxlheatc-full}
+\begin{description}
+\item[Purpose:] Compute the heat content for the ocean in the mixed layer read in the gridT file, FULL STEP case.
+\item[Usage:] {\em cdfmxlheatc-full gridTfile }
+\item[Input:] gridTfile is the name of the netcdf file which holds $votemper$ and $somxl010$  \\
+\item[Required mesh\_mask files or other files:]    mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are written in the netcdf file mxlheatc.nc, in the variable $somxlheatc$. Units are Joules/m2
+\end{description}
+
+\subsection*{\underline{cdfmxlsaltc:}}
+\addcontentsline{toc}{subsection}{cdfmxlsaltc}
+\index{cdfmxlsaltc}
+\begin{description}
+\item[Purpose:] Compute the salt content for the ocean in the mixed layer read in the gridT file.
+\item[Usage:] {\em cdfmxlsaltc gridTfile }
+\item[Input:] gridTfile is the name of the netcdf file which holds $votemper$ and $somxl010$  \\
+
+For instance: {\tt cdfmxlsaltc  ORCA025-G42\_y0010\_m03d15\_gridT.nc  } will compute the salt content in the mixed layer for this file.
+
+\item[Required mesh\_mask files or other files:]    mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are written in the netcdf file mxlsaltc.nc, in the variable $somxlsaltc$. Units are kg/m2
+\item[Associated scripts:] {None.}
+\end{description}
+
+\subsection*{\underline{cdfmxlhcsc:}}
+\addcontentsline{toc}{subsection}{cdfmxlhcsc}
+\index{cdfmxlhcsc}
+\begin{description}
+\item[Purpose:] Compute the heat content and Salt content in the mixed layer. One can choose a temperature criteria or a density criteria for the mxl
+     determination. The Heat/Salt content can be limited to a fraction of the MLD (for instance avoiding  near surface layers).
+\item[Usage:] {\em cdfmxlhcsc gridTfile crit val [hmin] }
+\item[Input:] gridTfile is the name of the netcdf file which holds $votemper$  \\
+              crit can be 'density' or 'temperature'  \\
+              val  is tha value for the criteria (e.g. -0.2 for temp, 0.01 or 0.03 for density). \\
+              hmin is 0 by default. If another value is given, then the vertical integral is limited to [hmin,mld] 
+
+\item[Required mesh\_mask files or other files:]    mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:] Results are written in the netcdf file mxlhcsc.nc. Variables are either \\
+      somxl010 (mld based on density criterium 0.01) \\
+      somxl030 (mld on density criterium 0.03) \\
+      somxlt02 (mld on temperature criterium -0.2)  \\
+Then always : somxlheatc and somxlsaltc
+\item[Associated scripts:] {None.}
+\end{description}
+
+
+
+\newpage
+\subsection*{\underline{cdfzonalmean:}}
+\addcontentsline{toc}{subsection}{cdfzonalmean}
+\index{cdfzonalmean}
+\begin{description}
+\item[Purpose:] Compute the zonal mean value for all the variables in the file given as argument.
+\item[Usage:] {\em cdfzonalmean nc\_files   $T | U | V | F | W$ [ sub\_basin\_mask ]}
+\item[Input:] nc\_file is the name of the netcdf file which hold the variables. 
+
+$ T | U | V | F | W $ : specify the point on the C-grid, corresponding to the variables in the file.
+
+ sub\_basin\_mask: If given the program read this file to set a sub\_basin\_mask (for global configurations). If this argument
+is not given, then the zonal mean is assumed to be global, which is OK for a basin configuration, such as NATL4, for instance.
+For instance: {\tt cdfzonalmean  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc T } will compute the zonal mean temperature over
+the whole domain; the resulting variable is a 2D variable (latitude,depth).
+
+{\tt cdfzonalmean  ORCA025-G42\_y0010\_ANNUAL\_gridT.nc T new\_maskglo}  will compute the zonal mean of all the variables contained
+in the file. A zonal mean for each sub basin will be output.
+
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:]  The program outputs as many variables as there are in the input file times the number of sub-basin (5) if the sub-basin
+mask is given. Variables name starts with 'zo' which replaces the 'vo' or 'so' of the input variable. The name of the sub basin is then
+appended to the variable name: For instance, zonal mean for votemper gives (in case of sub-basins) : $zotemper\_glo, zotemper\_atl
+zotemper\_inp, zotemper\_ind zotemper\_pac$. 
+\item[Associated scripts:] {None}
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfzonalsum:}}
+\addcontentsline{toc}{subsection}{cdfzonalsum}
+\index{cdfzonalsum}
+\begin{description}
+\item[Purpose:] Compute the zonal sum value for all the variables in the file given as argument.
+\item[Usage:] {\em cdfzonalsum nc\_files   $T | U | V | F | W$ [ sub\_basin\_mask ]}
+\item[Input:] nc\_file is the name of the netcdf file which hold the variables. 
+
+$ T | U | V | F | W $ : specify the point on the C-grid, corresponding to the variables in the file.
+
+ sub\_basin\_mask: If given the program read this file to set a sub\_basin\_mask (for global configurations). If this argument
+is not given, then the zonal sum is assumed to be global, which is OK for a basin configuration, such as NATL4, for instance.
+For instance: {\tt cdfzonalsum  ORCA025-G50\_y1958\_ANNUAL\_ptrcT.nc T } will compute the zonal sum
+of the variables  over the whole domain; the resulting variable is a 2D variable (latitude,depth), or just
+a vector (latitude) if the input variable is already a 2D horizontal variable (inventory, for instance).
+
+\item[Required mesh\_mask files or other files:]  mesh\_hgr.nc, mesh\_zgr.nc, mask.nc must be in the current directory.
+\item[Output:]  The program outputs as many variables as there are in the input file times the number of sub-basin (5) if the sub-basin
+mask is given. Variables name starts with 'zo' which replaces the 'vo' or 'so' of the input variable. The name of the sub basin is then
+appended to the variable name: For instance, zonal sum for votemper gives (in case of sub-basins) : $zotemper\_glo, zotemper\_atl
+zotemper\_inp, zotemper\_ind zotemper\_pac$.
+\item[Associated scripts:] {see cdftrc.ll}
+\item[See also:] cdfzonalout : this a formatting tool to print ASCII results in a good shape for the 1D results produced as ncdf by cdfzonalsum.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfzonalout:}}
+\addcontentsline{toc}{subsection}{cdfzonalout}
+\index{cdfzonalout}
+\begin{description}
+\item[Purpose:] Produce a nice ASCII output for 1D variables resulting from cdfzonalsum, or cdfzonalmean
+\item[Usage:] {\em cdfzonalout zonalsum.nc }
+\item[Input:] zonalsum.nc is a netcdf file output from cdfzonalsum or cdfzonalmean
+\item[Output:] Output is done on stantard output (can be re-directed to a file via $>$)
+\item[Associated scripts:] {see cdftrc.ll}
+\end{description}
+
+\begin{verbatim}
+Number of 1D variables : 6
+      zoinvcfc_glo
+      zoinvc14_glo
+      zoqtrcfc_glo
+      zoqtrc14_glo
+      zoqintcfc_glo
+      zoqintc14_glo
+ npiglo= 1
+ npjglo= 1021
+ npk   = 46
+  J  LAT      zoinvcfc_glo  zoinvc14_glo 
+ 1021 89.8876 0.114485E-06 1639.13867
+ 1020 89.9478 0.114504E-06 1660.38854
+ 1019 89.8876 0.114485E-06 1639.13867
+ 1018 89.7937 0.112609E-06 1521.98022
+ 1017 89.6954 0.111228E-06 1462.95922
+ 1016 89.5956 0.110859E-06 1355.69262
+ 1015 89.4949 0.109885E-06 1315.38806
+ 1014 89.3935 0.109691E-06 1265.77246
+ 1013 89.2915 0.109644E-06 1211.48840
+ 1012 89.1890 0.108149E-06 1163.96777
+ 1011 89.0860 0.105885E-06 1132.33557
+ 1010 88.9825 0.103872E-06 1096.84130
+ .....
+
+\end{verbatim}
+
+
+\newpage
+\subsection*{\underline{cdfvT:}}
+\addcontentsline{toc}{subsection}{cdfvT}
+\index{cdfvT}
+\begin{description}
+\item[Purpose:] Compute the mean UT, US, VT, VS for transport computation.
+\item[Usage:] {\em cdfvT CONFIG 'list\_of\_tags' }
+\item[Input:] CONFIG is the valid config name ( e.g. ORCA025-G32, NATL4-B01, ORCA05-K18 ...). In general
+model output files are build as \$CONFIG\_\$tag\_grid?.nc. The tag part of the name is usually something like
+y0008m09d10 for instance, but virtually, it is the part of the name between \$CONFIG\_ and \_grid.\\
+list\_of\_tags is just the succession of the tags that are to be used in the mean. \\
+When using cdfvT, we assume that all the data files ( i.e. gridT, gridU and gridV files for the given CONFIG and
+tags) are in the current directory. 
+
+For instance: cdfvT ORCA025-G32 y0010m10d01 y0010m10d06 y0010m10d11 will compute the mean UT etc fields for the 3
+given tags.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em vt.nc}. This file contains the four  3-D variables vozout, vozous, vomevt, vomevs. 
+\item[Remark:] For the sake of simplicity, only one file is used as output, but one should remember that
+the U-transports (UT and US) are computed at the C-grid U-point, and that the V-transports (VT and VS) are
+ computed at the C-grid V-point. In fact, temperature and salinity are interpolated on the corresponding
+velocity point, in order to respect  mass conservation.
+\item[Associated script:] {\em cdfvT.ll}: This script is used in the DRAKKAR project to compute the monthly, quarterly and
+annual means for the UT US VT VS terms.\\
+{\em cdfvT-inter}: This is a variant of the first script for inter-annual means.
+\end{description}
+
+\subsection*{\underline{cdfvsig:}}
+\addcontentsline{toc}{subsection}{cdfvsig}
+\index{cdfvsig}
+\begin{description}
+\item[Purpose:] Compute the mean u$.$sigma, v$.$sigma and w$.$sigma from tags given as arguments
+\item[Usage:] {\em cdfvsig CONFIG 'list\_of\_tags' }
+\item[Input:] CONFIG is the valid config name ( e.g. ORCA025-G32, NATL4-B01, ORCA05-K18 ...).
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em usig.nc, vsig.nc, wsig.nc}. Each of these files contains the variables (eg for u files) \\
+         vousig = 3D mean product u x sigma \\
+         vosigu = 3D mean density field at u-points \\
+         vozocrtx = 3D mean velocity computed exactly as the other fields
+\item[Remark:]  All variables can be used to compute the eddy contribution.
+\item[Associated script:] {\em cdfvsig.ll}:
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfeke:}}
+\addcontentsline{toc}{subsection}{cdfeke}
+\index{cdfeke}
+\begin{description}
+\item[Purpose:] Compute the Eddy Kinetic Energy (EKE).
+\item[Usage:] {\em cdfeke gridU gridU2 gridV gridV2 gridT}
+\item[Input:] gridU and gridU2 hold respectively the mean and quadratic mean for U-points. The same for gridV and
+gridV2. These files are produced by cdfmoy. They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). The EKE is computed with respect to this period of time. \\
+An extra gridT type file is given in argument, just for reading the T-grid, for the header of the output file. In fact,
+EKE is computed on the T-points.\\
+For instance: cdfeke ORCA035-G32\_y0008-0010\_gridU.nc ORCA035-G32\_y0008-0010\_gridU2.nc \\
+ORCA035-G32\_y0008-0010\_gridV.nc ORCA035-G32\_y0008-0010\_gridV2.nc ORCA035-G32\_y0008-0010\_gridT2.nc  \\
+will compute the EKE for the period y0008-0010.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em eke.nc}. This file hold the variable voeke.
+\item[Remark:]  EKE is computed at T-points.
+\item[Associated script:] {\em cdfeke.ll}: This script can be used to compute EKE. It is a good
+example on how to use cdfeke. Note that this script must be used after cdfmoy.ll, because it requires the mean and
+mean quadratic files to be already computed.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfrmsssh:}}
+\addcontentsline{toc}{subsection}{cdfrmsssh}
+\index{cdfrmsssh}
+\begin{description}
+\item[Purpose:] Compute the RMS of the SSH.
+\item[Usage:] {\em cdfrmsssh gridT gridT2 }
+\item[Input:] gridT and gridT2 hold respectively the mean and quadratic mean for T-points.
+These files are produced by cdfmoy. They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). The RMS is computed with respect to this period of time. \\
+For instance: cdfrmsssh ORCA035-G32\_y0008-0010\_gridT.nc ORCA035-G32\_y0008-0010\_gridT2.nc \\
+will compute the RMS SSH for the period y0008-0010.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em rmsssh.nc}. This file hold the variable sossheig\_rms.
+\item[Remark:]  
+\item[Associated script:] {\em cdfrms.ll}: This scripts is use to compute both RMS ssh and the Stdev of W.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfstdevw:}}
+\addcontentsline{toc}{subsection}{cdfstdevw}
+\index{cdfstdevw}
+\begin{description}
+\item[Purpose:] Compute the standard deviation for W.
+\item[Usage:] {\em cdfstdevw gridW gridW2 }
+\item[Input:] gridW and gridW2 hold respectively the mean and quadratic mean for W-points.
+These files are produced by cdfmoy. They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). The standard deviation is computed with respect to this period of time. \\
+For instance: cdfstdevw ORCA035-G32\_y0008-0010\_gridW.nc ORCA035-G32\_y0008-0010\_gridW2.nc \\
+will compute the standard deviation of W  for the period y0008-0010.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em rmsw.nc}. This file hold the variable vovecrtz\_rms.
+\item[Remark:]  
+\item[Associated script:] {\em cdfrms.ll}: This scripts is use to compute both RMS ssh and the Stdev of W.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfstdevts:}}
+\addcontentsline{toc}{subsection}{cdfstdevts}
+\index{cdfstdevts}
+\begin{description}
+\item[Purpose:] Compute the standard deviation for temperature and salinity
+\item[Usage:] {\em cdfstdevts gridX gridX2 }
+\item[Input:] gridX and gridX2 hold respectively the mean and quadratic mean for T-points.
+These files are produced by cdfmoy\_sal2\_temp2. They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). The standard deviation is computed with respect to this period of time. \\
+For instance: cdfstdevts ORCA035-G32\_y0008-0010\_gridT.nc ORCA035-G32\_y0008-0010\_gridT2.nc \\
+will compute the standard deviation of T and D  for the period y0008-0010.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em rmsts.nc}. This file hold the variables votemper\_rms and vosaline\_rms
+\item[Remark:] This quantity is not a very standard one. For this reason, we keep the standard cdfmoy, without saving the second order
+    momentum for T and S and create a special tool cdfmoy\_sal2\_temp2 for this purpose. Remember that both T2 and S2 are 3D fields... 
+\item[Associated script:] none.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfstd:}}
+\addcontentsline{toc}{subsection}{cdfstd}
+\index{cdfstd}
+\begin{description}
+\item[Purpose:] Compute the standard deviation for all the physical variables of the serie of files given as input
+\item[Usage:] {\em cdfstd list of files }
+\item[Input:] The input files are model output files, all holding the same variables. Each file can have more than 1 time frame in it.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em cdfstd.nc}. This file hold the standard deviation of the variables,whose name will be {\tt varname\_std}
+\item[Associated script:] none.
+\item[Contributor:] Frederic Castruccio (Meom)
+\end{description}
+
+\newpage
+\subsection*{\underline{cdflinreg:}}
+\addcontentsline{toc}{subsection}{cdflinreg}
+\index{cdflinreg}
+\begin{description}
+\item[Purpose:] Compute the linear regression coeficients as well as the $r^2$ estimator of the fit, for all the variables 
+  being in the time series of files given on input.
+\item[Usage:] {\em cdflinreg list of files }
+\item[Input:] Input files are model files output that may hold one or more time frames. 
+\item[Required mesh\_mask files or other files:]  none
+\item[Method:] $y$ being the working variables, the program determines $a$ and $b$ such as the the right $\hat{y}=a.t+b$ corresponds 
+to the best fit for the data. (Least squared sense). \\
+    $a=cov(t,y)/var(t)$ and $b=\bar{y} - a . \bar{t}$ \\
+    $r^2=a^2.var(t)/var(y)$
+\item[Output:] {\em linreg.nc}. For each variable of the input files, there are 3 output variables, says $y\_areg$, $y\_breg$ and
+     $y\_r2$. The time is taken from the input files (standard in seconds since the begining of the run), and converted in years 
+     (365 days). Therefore, when using the regression equation, take care of the time origin and units.
+\item[Associated script:] cdflinreg.ksh
+\end{description}
+
+
+
+\newpage
+\section{Transports}
+
+\subsection*{\underline{cdfmhst:}}
+\addcontentsline{toc}{subsection}{cdfmhst}
+\index{cdfmhst}
+\begin{description}
+\item[Purpose:] Compute the Meridional Heat and Salt Transport (Partial Step case).
+\item[Usage:] {\em cdfmhst VTfile [MST] }
+\item[Input:] VTfiles are the files produced by the cdfvT program.//
+MST is an optional keyword for saving also Meridional Salt Transport to a netcdf file.//
+They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). 
+For instance: cdfmhst ORCA025-G32\_y0010m01\_VT.nc
+will compute the meridional heat and salt transport for month 1 of year 0010 for the ORCA025-G32 experiment. Only the MHT
+will be saved to the netcdf file mhst.nc
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc ,mask.nc, new\_maskglo.nc \\
+This latter file holds sub basin 2D  masks; if it does'nt exist, only the global mask is taken into account, which is usefull for regional configs such as NATL4.
+\item[Output:] zonal\_heat\_trp.dat and zonal\_salt\_trp.dat which are ASCII files. It also writes the result on mhst.nc
+      file, a netcdf file. If no MST option is given on the command line, only MHT is copied to the cdf file. The ASCII files
+      remain the same.
+\\Example for zonal\_heat\_trp.dat
+\begin{scriptsize}
+\begin{verbatim}
+  Zonal heat transport (integrated along I-model coordinate) (in Pw)
+  J        Global          Atlantic         Pacific          Indian           Mediterranean     Austral
+...
+ 580   19.959  1.9821   19.959  1.0471   19.959  0.8080   19.959  0.1460  999.000  0.0000  999.000  0.0000
+ 579   19.723  1.9769   19.724  1.0465   19.724  0.8108   19.724  0.1528  999.000  0.0000  999.000  0.0000
+ 578   19.488  1.9650   19.488  1.0429   19.488  0.8054   19.488  0.1575  999.000  0.0000  999.000  0.0000
+ 577   19.252  1.9512   19.252  1.0388   19.252  0.7975   19.252  0.1608  999.000  0.0000  999.000  0.0000
+ 576   19.016  1.9334   19.016  1.0334   19.016  0.7840   19.016  0.1650  999.000  0.0000  999.000  0.0000
+ 575   18.779  1.9103   18.779  1.0252   18.779  0.7615   18.779  0.1712  999.000  0.0000  999.000  0.0000
+ 574   18.543  1.8792   18.543  1.0173   18.543  0.7235   18.543  0.1778  999.000  0.0000  999.000  0.0000
+ 573   18.305  1.8406   18.305  1.0007   18.305  0.6837   18.305  0.1818  999.000  0.0000  999.000  0.0000
+ 572   18.068  1.8064   18.068  0.9856   18.068  0.6455   18.068  0.1849  999.000  0.0000  999.000  0.0000
+ 571   17.830  1.7768   17.830  0.9721   17.830  0.6171   17.830  0.1876  999.000  0.0000  999.000  0.0000
+ 570   17.592  1.7494   17.592  0.9582   17.592  0.6000   17.592  0.1911  999.000  0.0000  999.000  0.0000
+...
+\end{verbatim}
+\end{scriptsize}
+First column indicates the corresponding J coordinate. Then pairs of column indicates the mean latitude and
+the transport. Heat transports are in Pw. Salt transports are in KT/s
+
+\item[Remark:]  missing values are indicated by 999.000
+\item[Associated script:] {\em cdfmhst.ll}. 
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmhst-full:}}
+\addcontentsline{toc}{subsection}{cdfmhst-full}
+\index{cdfmhst-full}
+\begin{description}
+\item[Purpose:] Compute the Meridional Heat and Salt Transport (Full Step case).
+\item[Usage:] {\em cdfmhst-full VTfile [MST] }
+\item[Input:] VTfiles are the files produced by the cdfvT program.//
+MST is an optional keyword for saving also Meridional Salt Transport to a netcdf file.//
+They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). 
+For instance: cdfmhst-full ORCA025-G04\_y0010m01\_VT.nc
+will compute the meridional heat and salt transport for month 1 of year 0010 for the ORCA025-G04 experiment. Only the MHT
+will be saved to the netcdf file mhst.nc.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc ,mask.nc, new\_maskglo.nc \\
+This latter file holds sub basin 2D  masks.
+\item[Output:] zonal\_heat\_trp.dat and zonal\_salt\_trp.dat which are ASCII files. It also writes the result on mhst.nc
+      file, a netcdf file. If no MST option is given on the command line, only MHT is copied to the cdf file. The ASCII files
+      remain the same. 
+\\Example for zonal\_heat\_trp.dat
+\begin{scriptsize}
+\begin{verbatim}
+  Zonal heat transport (integrated alon I-model coordinate) (in Pw)
+  J        Global          Atlantic         Pacific          Indian           Mediterranean     Austral
+...
+ 580   19.959  1.9821   19.959  1.0471   19.959  0.8080   19.959  0.1460  999.000  0.0000  999.000  0.0000
+ 579   19.723  1.9769   19.724  1.0465   19.724  0.8108   19.724  0.1528  999.000  0.0000  999.000  0.0000
+ 578   19.488  1.9650   19.488  1.0429   19.488  0.8054   19.488  0.1575  999.000  0.0000  999.000  0.0000
+ 577   19.252  1.9512   19.252  1.0388   19.252  0.7975   19.252  0.1608  999.000  0.0000  999.000  0.0000
+ 576   19.016  1.9334   19.016  1.0334   19.016  0.7840   19.016  0.1650  999.000  0.0000  999.000  0.0000
+ 575   18.779  1.9103   18.779  1.0252   18.779  0.7615   18.779  0.1712  999.000  0.0000  999.000  0.0000
+ 574   18.543  1.8792   18.543  1.0173   18.543  0.7235   18.543  0.1778  999.000  0.0000  999.000  0.0000
+ 573   18.305  1.8406   18.305  1.0007   18.305  0.6837   18.305  0.1818  999.000  0.0000  999.000  0.0000
+ 572   18.068  1.8064   18.068  0.9856   18.068  0.6455   18.068  0.1849  999.000  0.0000  999.000  0.0000
+ 571   17.830  1.7768   17.830  0.9721   17.830  0.6171   17.830  0.1876  999.000  0.0000  999.000  0.0000
+ 570   17.592  1.7494   17.592  0.9582   17.592  0.6000   17.592  0.1911  999.000  0.0000  999.000  0.0000
+...
+\end{verbatim}
+\end{scriptsize}
+First column indicates the corresponding J coordinate. Then pairs of column indicates the mean latitude and
+the transport. Heat transports are in Pw. Salt transports are in KT/s
+
+\item[Remark:]  missing values are indicated by 999.000
+\item[Associated script:] {\em cdfmhst-full.ll} 
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfhflx:}}
+\addcontentsline{toc}{subsection}{cdfhflx}
+\index{cdfhflx}
+\begin{description}
+\item[Purpose:] Compute the Meridional Heat Transport from the forcing fields
+\item[Usage:] {\em cdfhflx gridTfile }
+\item[Input:] gridTfile is a file which hold the flux variable $sohefldo$.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc,  new\_maskglo.nc \\
+This latter file holds sub basin 2D  masks; if it does'nt exist, only the global mask is taken into account, which is usefull for regional configs such as NATL4.
+\item[Output:] Results are displayed on the standard output, with columns corresponding to sub basins.
+\item[Remark:]  This computation is relative to the starting point of the integration. Transports are
+assumed to vanish at the northern point of the domain.
+\item[Associated script:] none for the moment.
+\end{description}
+
+\subsection*{\underline{cdfwflx:}}
+\addcontentsline{toc}{subsection}{cdfwflx}
+\index{cdfwflx}
+\begin{description}
+\item[Purpose:] Compute the different components of the water flux. (evaporation, precipitation, runoff, sss damping, total
+  water flux).
+\item[Usage:] {\em cdfwflx gridTfile runofffile}
+\item[Input:] gridTfile is a file which hold the flux variables.\\
+              runofffile is the file with the runoff variable $sorunoff$.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] Output is done on wflx.nc file. Variables are evap (mm/day), precip (mm/day), sssdmp (mm/day), runoff (mm/day),
+     watnet (mm/day). The runoff is directly read from the file, as well as the sss damping. Evaporation is deduced from the
+latent heat flux, stored on the gridT file ($Evap=-Q_{lat}/L_v$). Precip is deduced from the balance $watnet=Evap -Precip -Runoff +sssdmp$. Therefore, precip also takes into account the snow storage/melting on frozen areas.
+\item[Remark:] 
+\item[Associated script:] cdfwflx.ksh
+\end{description}
+
+\subsection*{\underline{cdfbuoyflx:}}
+\addcontentsline{toc}{subsection}{cdfbuoyflx}
+\index{cdfbuoyflx}
+\begin{description}
+\item[Purpose:] This is an extension of cdfwflx: It computes the different components of 
+  the water flux. (evaporation, precipitation, runoff, sss damping, total water flux. Additionally, it extracts the component
+  of the heat flux (latent, sensible, long wave, short wave, net heat fluxes), and copy them, to the output file. Then it
+  evaluates the respective component of the buoyancy flux (haline, thermal), and the total buoyancy flux ($10^{-6} kg/m^2/s$).\\
+    \[ F_{\rho} = - \rho \left [ \alpha F_T - \beta F_S \right ] \]
+\item[Usage:] {\em cdfbuoyflx gridTfile runofffile}
+\item[Input:] gridTfile is a file which hold the flux variables.\\
+              runofffile is the file with the runoff variable $sorunoff$.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] Output is done on buoyflx.nc file. Variables are evap (mm/day), precip (mm/day), sssdmp (mm/day), runoff (mm/day),
+     watnet (mm/day). The runoff is directly read from the file, as well as the sss damping. Evaporation is deduced from the
+     latent heat flux, stored on the gridT file ($Evap=-Q_{lat}/L_v$). Precip is deduced from the balance 
+    $watnet=Evap -Precip -Runoff +sssdmp$. Therefore, precip also takes into account the snow storage/melting on frozen areas. \\
+    Heat fluxes ($W/m^2$) are on variables $latent$, $sensible$, $longwave$, $solar$, $heatnet$. \\
+    Buoyancy fluxes uses the same names with the extension \_b ($10^{-6} kg/m^2/s$ ).
+    The total buoyancy flux ($buoyancy\_fl$) is also given. $SSS$ and $SST$ are also stored on the output file in order to 
+    have then at hand when performing diags with these files.
+
+\item[Remark:] 
+\item[Associated script:] cdfbuoyflx.ksh
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfvhst:}}
+\addcontentsline{toc}{subsection}{cdfvhst}
+\index{cdfvhst}
+\begin{description}
+\item[Purpose:] Compute the Vertically Integrated  Heat and Salt Transport (Partial Step case).
+\item[Usage:] {\em cdfvhst VTfile }
+\item[Input:] VTfiles are the files produced by the cdfvT program.
+They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). 
+For instance: cdfvhst ORCA025-G32\_y0010m01\_VT.nc
+will compute the vertically integrated heat and salt transport for month 1 of year 0010 for the ORCA025-G32 experiment.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc  \\
+\item[Output:]trp.nc, variables somevt somevs sozout sozous 
+\item[Remark:] for example:\\
+\begin{equation}
+somevt(i,j)=\int_{-h}^{0}{vt(i,j)e_{1v}(i,j) e_3(i,j,z) dz}  \\
+\end{equation}
+\begin{equation}
+someut(i,j)=\int_{-h}^{0}{ut(i,j)e_{2u}(i,j) e_3(i,j,z) dz} 
+\end{equation}
+\item[Associated script:] {\em cdfvhst.ll}. 
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfvhst-full:}}
+\addcontentsline{toc}{subsection}{cdfvhst-full}
+\index{cdfvhst-full}
+\begin{description}
+\item[Purpose:] Compute the Vertically Integrated  Heat and Salt Transport (Full Step case).
+\item[Usage:] {\em cdfvhst-full VTfile }
+\item[Input:] VTfiles are the files produced by the cdfvT program.
+They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). 
+For instance: cdfvhst-full ORCA025-G04\_y0010m01\_VT.nc
+will compute the vertically integrated heat and salt transport for month 1 of year 0010 for the ORCA025-G04 experiment.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc  \\
+\item[Output:]trp.nc, variables somevt somevs sozout sozous 
+\item[Remark:] for example:\\
+\begin{equation}
+somevt(i,j)=\int_{-h}^{0}{vt(i,j)e_{1v}(i,j) e_3(z) dz}  \\
+\end{equation}
+\begin{equation}
+someut(i,j)=\int_{-h}^{0}{ut(i,j)e_{2u}(i,j) e_3(z) dz} 
+\end{equation}
+\item[Associated script:] {\em cdfvhst-full.ll}. 
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfpsi:}}
+\addcontentsline{toc}{subsection}{cdfpsi}
+\index{cdfpsi}
+\begin{description}
+\item[Purpose:] Compute the Barotropic Stream Function  (Partial Step case).
+\item[Usage:] {\em cdfpsi  Ufile Vfile [V]}
+\item[Input:] Ufile and Vfile are the files holding vozocrtx and vomecrty.
+They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). \\
+The optional [V] parameter, is used to indicate that we want to save the v-computed psi, instead of the default
+u-computed. This last option is usefull for basin such as NATL4. \\
+For instance: cdfpsi ORCA025-G32\_y0010m01\_U.nc ORCA025-G32\_y0010m01\_V.nc 
+will compute the BSF for month 1 of year 0010 for the ORCA025-G32 experiment.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc  \\
+\item[Output:]psi.nc, variables sobarstf, on the C-grid f-points, masked.
+\item[Remark:]  This program is prepared to compute BSF either from the U field or the V field. To be in agreement with previous
+matlab programs, we choose to save only the result from the U field. The integration constant is set so that the BSF
+on Asia is 0. ( For Orca type simulations, point (jpiglo, jpjglo) is supposed to be in Asia). Discussion is open if it
+is better to save the mean value of the BSF derived from U field and V field. 
+\item[Associated script:] {\em cdfpsi.ll}. 
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfpsi-full:}}
+\addcontentsline{toc}{subsection}{cdfpsi-full}
+\index{cdfpsi-full}
+\begin{description}
+\item[Purpose:] Compute the Barotropic Stream Function  (Full Step case).
+\item[Usage:] {\em cdfpsi-full  Ufile Vfile }
+\item[Input:] Ufile and Vfile are the files holding vozocrtx and vomecrty.
+They correspond to a certain period of time ( monthly, quarterly, annual or
+pluri annual means). 
+For instance: cdfpsi-full ORCA025-G04\_y0010m01\_U.nc ORCA025-G04\_y0010m01\_V.nc 
+will compute the BSF for month 1 of year 0010 for the ORCA025-G04 experiment.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc  \\
+\item[Output:]psi.nc, variables sobarstf, on the C-grid f-points, masked.
+\item[Remark:]  This program is prepared to compute BSF either from the U field or the V field. To be in agreement with previous
+matlab programs, we choose to save only the result from the U field. The integration constant is set so that the BSF
+on Asia is 0. ( For Orca type simulations, point (jpiglo, jpjglo) is supposed to be in Asia). Discussion is open if it
+is better to save the mean value of the BSF derived from U field and V field. 
+\item[Associated script:] {\em cdfpsi-full.ll}. 
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfpsi-open:}}
+\addcontentsline{toc}{subsection}{cdfpsi-open}
+\index{cdfpsi-open}
+\begin{description}
+\item[Purpose:] Compute the Barotropic Stream Function from an open domain output.
+\item[Usage:] {\em cdfpsi-open  Ufile Vfile [-mask] [-moy] }
+\item[Input:] Ufile and Vfile are the files holding vozocrtx and vomecrty.\\
+   If -mask option is used, resulting sobarstf field is masked, else it is not masked. \\
+   If -moy option is used, the resulting field is the mean value between Ucomputation and Vcomputation.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc  \\
+\item[Output:]psi.nc, variables sobarstf, on the C-grid f-points.
+\item[Remark:]  It is very likely, that this program should be edited by the end used to fit its own configuration. In particular, in the standard
+       version, the upper left corner is arbitrarely set to 0. When editing, take care of the sign for integration! When applied to and extrated
+       domain from a larger model, this program will not give exactly the same BSF, because of a different starting reference.
+      A modified version suitable for SALOMON025 configuration is avaible in cdfpsi-open\_AM.f90. \\
+      Another version suitable for the Zapiola area is available in cdfpsi-open-zap.f90
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfvtrp:}}
+\addcontentsline{toc}{subsection}{cdfvtrp}
+\index{cdfvtrp}
+\begin{description}
+\item[Purpose:]  Computes the vertically integrated transports at each grid cell
+\item[Usage:] {\em cdfvtrp  Ufile Vfile  }
+\item[Input:] netcdf gridU and gridV files.
+\item[Required mesh\_mask files or other files:]    Files mesh\_hgr.nc, mesh\_zgr.nc ,mask.nc must be in te current directory
+\item[Output:] Output on trp.nc, variables somevtrp sozoutrp
+\item[Remark/bugs :] output fields are horizontal 2D. They are used as input to cdftrp\_bathy to compute transport accross isobaths.
+\item[Associated scripts:]
+\end{description}
+
+\subsection*{\underline{cdftrp\_bathy:}}
+\addcontentsline{toc}{subsection}{cdftrp\_bathy}
+\index{cdftrp\_bathy}
+\begin{description}
+\item[Purpose:] Compute transport compoenents along and across isobaths.
+\item[Usage:] {\em cdftrp\_bathy trp.nc }
+\item[Input:] trp.nc file given as input is produced by cdfvtrp program.
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mask.nc and hdept.nc (this latter file is the extraction of variable $hdept$ from
+       mesh\_zgr.nc; a link to mesh\_zgr.cd can be made).
+\item[Output:] output is done on {\em trpiso.nc} file, with 2 variables : $soualz$ and $sovacz$ for along isobath anf cross isobath component of 
+ the transport.
+\item[Remark:] This program is quite tricky to use. Be sure you to have a good understanding of what is computed, take care of the sign convention.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmoc:}}
+\addcontentsline{toc}{subsection}{cdfmoc}
+\index{cdfmoc}
+\begin{description}
+\item[Purpose:] Compute the Meridional Overturning Circulation (partial step case), from the meridional
+velocity and a basin mask file.
+\item[Usage:] {\em cdfmoc  Vfile }
+\item[Input:] Vfile is the files holding vomecrty.
+For instance: {\tt cdfmoc ORCA025-G32\_y0010\_ANNUAL\_gridV.nc }
+will compute the MOC for with ORCA025-G32 annual mean V field.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc, new\_maskglo.nc (if  new\_maskglo.nc does'nt exist, it will work for the global basin; usefull for NATL4 like configs).   \\
+\item[Output:] The results are output on the file $moc.nc$. There are 5 variables concerning the MOC, one for each sub-basin. They are degenerated 3D variables with the i-dimension
+reduced to 1 : $zomsfglo$ for the GLObal ocean,
+$zomsfatl$ for the ATLantic ocean, $zomsfinp$ for the INdoPacific ocean, $zomsfind$ for the INDian ocean and finally
+$zomsfpac$ for the PACific ocean. 
+
+Notice that the depth associated to the file corresponds to the W depth (gdepw). $nav\_lon$ is arbitrarly set to 0 ($nav\_lon(1,1:npjglo)$),
+and $nav\_lat$ is set to the latitude of the i-line going through the North Pole.
+\item[Remark:]  The name Meridional Overturning is a facility of language, because in fact what is computed is the along-I integral
+of the V component (which is not {\em stricto sensus} meridional | it follows the J-coordinate |)
+\item[Associated script:] {\em cdfmoc.ll}.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmocsig:}}
+\addcontentsline{toc}{subsection}{cdfmocsig}
+\index{cdfmocsig}
+\begin{description}
+\item[Purpose:] Compute the Meridional Overturning Circulation (partial step case) in function of $\sigma_1$  from the meridional velocity, a TS file and a basin mask file.
+\item[Usage:] {\em cdfmocsig  Vfile TSfile}
+\item[Input:] Vfile is the files holding vomecrty, TSfile hold votemper, vosaline for density computation.
+For instance: {\tt cdfmocsig ORCA025-G32\_y0010\_ANNUAL\_gridV.nc ORCA025-G32\_y0010\_ANNUAL\_gridT.nc }
+will compute the MOC for with ORCA025-G32 annual mean V field.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc, new\_maskglo.nc   \\
+\item[Output:] The results are output on the file $mocsig.nc$. There are 5 variables concerning the MOC, one for each sub-basin. They are degenerated 3D variables with the i-dimension
+reduced to 1 : $zomsfglo$ for the GLObal ocean,
+$zomsfatl$ for the ATLantic ocean, $zomsfinp$ for the INdoPacific ocean, $zomsfind$ for the INDian ocean and finally
+$zomsfpac$ for the PACific ocean. 
+
+Notice that the depth associated to the file corresponds to the W depth (gdepw). $nav\_lon$ is arbitrarly set to 0 ($nav\_lon(1,1:npjglo)$),
+and $nav\_lat$ is set to the latitude of the i-line going through the North Pole.
+\item[Remark:]  The name Meridional Overturning is a facility of language, because in fact what is computed is the along-I integral
+of the V component (which is not {\em stricto sensus} meridional | it follows the J-coordinate |)
+\item[Associated script:] {\em cdfmocsig.ll}.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmocsig-full:}}
+\addcontentsline{toc}{subsection}{cdfmocsig-full}
+\index{cdfmocsig-full}
+\begin{description}
+\item[Purpose:] Compute the Meridional Overturning Circulation (partial step case) in function of $\sigma_1$  from the meridional velocity, a TS file and a basin mask file. This is the full step version.
+\item[Usage:] {\em cdfmocsig-full  Vfile TSfile}
+\item[Input:] Vfile is the files holding vomecrty, TSfile hold votemper, vosaline for density computation.
+For instance: {\tt cdfmocsig-full ORCA025-G32\_y0010\_ANNUAL\_gridV.nc ORCA025-G32\_y0010\_ANNUAL\_gridT.nc }
+will compute the MOC for with ORCA025-G32 annual mean V field.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc, new\_maskglo.nc   \\
+\item[Output:] The results are output on the file $mocsig.nc$. There are 5 variables concerning the MOC, one for each sub-basin. They are degenerated 3D variables with the i-dimension
+reduced to 1 : $zomsfglo$ for the GLObal ocean,
+$zomsfatl$ for the ATLantic ocean, $zomsfinp$ for the INdoPacific ocean, $zomsfind$ for the INDian ocean and finally
+$zomsfpac$ for the PACific ocean. 
+
+Notice that the depth associated to the file corresponds to the W depth (gdepw). $nav\_lon$ is arbitrarly set to 0 ($nav\_lon(1,1:npjglo)$),
+and $nav\_lat$ is set to the latitude of the i-line going through the North Pole.
+\item[Remark:]  The name Meridional Overturning is a facility of language, because in fact what is computed is the along-I integral
+of the V component (which is not {\em stricto sensus} meridional | it follows the J-coordinate |)
+\item[!!!CAUTION !!!:] THIS PROGRAM IS NOT FINISHED YET. DONT USE WITH FULL\_STEPS!
+\item[Associated script:] none
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfmoc-full:}}
+\addcontentsline{toc}{subsection}{cdfmoc-full}
+\index{cdfmoc-full}
+\begin{description}
+\item[Purpose:] Compute the Meridional Overturning Circulation (partial step case), from the meridional
+velocity and a basin mask file.
+\item[Usage:] {\em cdfmoc-full  Vfile }
+\item[Input:] Vfile is the files holding vomecrty.
+For instance: {\tt cdfmoc-full ORCA025-G04\_y0010\_ANNUAL\_gridV.nc }
+will compute the MOC for with ORCA025-G04 annual mean V field.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc, new\_maskglo.nc  \\
+\item[Output:] The results are output on the file $moc.nc$. There are 5 variables concerning the MOC, one
+for each sub-basin. They are degenerated 3D variables with the i-dimension
+reduced to 1 : $zomsfglo$ for the GLObal ocean,
+$zomsfatl$ for the ATLantic ocean, $zomsfinp$ for the INdoPacific ocean, $zomsfind$ for the INDian ocean and finally
+$zomsfpac$ for the PACific ocean.
+
+Notice that the depth associated to the file corresponds to the W depth (gdepw). $nav\_lon$ is arbitrarly
+set to 0 ($nav\_lon(1,1:npjglo)$),
+and $nav\_lat$ is set to the latitude of the i-line going through the North Pole.
+\item[Remark:]  The name Meridional Overturning is a facility of language, because in fact what is computed is the along-I integral
+of the V component (which is not {\em stricto sensus} meridional | it follows the J-coordinate |)
+\item[Associated script:] {\em cdfmoc-full.ll}.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfmocatl:}}
+\addcontentsline{toc}{subsection}{cdfmocatl}
+\index{cdfmocatl}
+\begin{description}
+\item[Purpose:] Compute the Meridional Overturning Circulation (partial step case), from the meridional
+velocity and a basin mask file. This program computes the MOC for one basin only. Useful for NATL4.
+It is now obsolete as cdfmoc does the same, if no new\_maskglo.nc are available.
+\item[Usage:] {\em cdfmoc  Vfile }
+\item[Input:] Vfile is the files holding vomecrty.
+For instance: {\tt cdfmocatl  NATL4-G07\_y0010\_ANNUAL\_gridV.nc }
+will compute the MOC for with NATL4-G07 annual mean V field.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, mask.nc \\
+\item[Output:] The results are output on the file $moc.nc$. The variable concerning the MOC is adegenerated 3D variables with the i-dimension
+reduced to 1 : $zomsfatl$ for the ATLantic ocean
+
+Notice that the depth associated to the file corresponds to the W depth (gdepw). $nav\_lon$ is arbitrarly set to 0 ($nav\_lon(1,1:npjglo)$),
+and $nav\_lat$ is set to the latitude of the i-line going through the North Pole.
+\item[Remark:]  The name Meridional Overturning is a facility of language, because in fact what is computed is the along-I integral
+of the V component (which is not {\em stricto sensus} meridional | it follows the J-coordinate |)
+\item[Associated script:] {\em cdfmocatl .ll}. ({\em to be written} )
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdftransportiz:}}
+\addcontentsline{toc}{subsection}{cdftransportiz}
+\index{cdftransportiz}
+\begin{description}
+\item[Purpose:] Compute volume, heat and salt transport across a section, for depth classes. (Partial Step case )
+\item[Usage:] {\em cdftransportiz [ -test u v ] VTfile gridUfile gridVfile  'limit of level' }
+\item[Input:] VTfiles are the files produced by the cdfvT program. \\
+gridV U and gridV files are equivalent files (same period) for U and V. \\
+'limit of levels' are depth in meters where to set limits for depth classes. If no limits are given, the transport is
+computed for the whole water column. \\
+Once the data  files are read, the user is asked to give a section name (or 'EOF' for ending the program), followed
+by the geographical limits of a section (imin imax jmin jmax, in model coordinates). This user interaction can be done
+with an ascii file given as standard input. ( cdftransportiz ........ $<$ section.dat, for instance ).
+
+For instance: cdftransportiz ORCA025-G32\_y0010m01\_VT.nc ORCA025-G32\_y0010m01\_gridU.nc  ORCA025-G32\_y0010m01\_gridV.nc 
+1500 3000 $<$ section .dat \\
+will compute the transports across a section (given interactively) in three depth classes : from top to 1500 m, from 1500 m
+to 3000 m and from 3000 m to the bottom, for section described into section.dat file.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:]section\_trp.dat and the standard output (for interactivity).
+\item[Remark:] The sign of the transport is somewhat tricky. It depends on the inclination of the section. As a rule of 
+the thumb, the transport is $>0$ when going to the right hand side of the section, cruising the section from (imin,jmin) 
+(imax, jmax). When the optional '-test u v ' arguments of the command line are  given, the velocity field is assumed to 
+be a constant field with both U and V taken as the arguments. This gives an easy way to check the sign of the transports for a given section.
+
+\item[Associated script:] {\em cdftransportiz.ll}. 
+\end{description}
+
+\subsection*{\underline{cdftransportizpm:}}
+\addcontentsline{toc}{subsection}{cdftransportizpm}
+\index{cdftransportizpm}
+\begin{description}
+\item[Purpose:] Compute volume, heat and salt transport across a section, for depth classes. (Partial Step case ), just as cdftransportiz does,
+         but also indicates for each section the Positive (plus) transport and the negative (minus) transport, separately.
+\item[Usage:] {\em cdftransportizpm [ -test u v ] VTfile gridUfile gridVfile  'limit of level' }
+\item[Input:] VTfiles are the files produced by the cdfvT program. \\
+gridV U and gridV files are equivalent files (same period) for U and V. \\
+'limit of levels' are depth in meters where to set limits for depth classes. If no limits are given, the transport is
+computed for the whole water column. \\
+Once the data  files are read, the user is asked to give a section name (or 'EOF' for ending the program), followed
+by the geographical limits of a section (imin imax jmin jmax, in model coordinates). This user interaction can be done
+with an ascii file given as standard input. ( cdftransportizpm ........ $<$ section.dat, for instance ).
+
+For instance: cdftransportizpm ORCA025-G32\_y0010m01\_VT.nc ORCA025-G32\_y0010m01\_gridU.nc  ORCA025-G32\_y0010m01\_gridV.nc 
+1500 3000 $<$ section .dat \\
+will compute the transports across a section (given interactively) in three depth classes : from top to 1500 m, from 1500 m
+to 3000 m and from 3000 m to the bottom, for section described into section.dat file.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:]section\_trp.dat and the standard output (for interactivity).
+\item[Remark:] The sign of the transport is somewhat tricky. It depends on the inclination of the section. As a rule of 
+the thumb, the transport is $>0$ when going to the right hand side of the section, cruising the section from (imin,jmin) 
+(imax, jmax). When the optional '-test u v ' arguments of the command line are  given, the velocity field is assumed to 
+be a constant field with both U and V taken as the arguments. This gives an easy way to check the sign of the transports for a given section.
+
+\item[Associated script:] none
+\end{description}
+
+\subsection*{\underline{cdftransportiz-full:}}
+\addcontentsline{toc}{subsection}{cdftransportiz-full}
+\index{cdftransportiz-full}
+\begin{description}
+\item[Purpose:] Compute volume, heat and salt transport across a section, for depth classes. (Full Step case )
+\item[Usage:] {\em cdftransportiz-full [ -test u v ] VTfile gridUfile gridVfile  'limit of level' }
+\item[Input:] VTfiles are the files produced by the cdfvT program. \\
+gridV U and gridV files are equivalent files (same period) for U and V. \\
+'limit of levels' are depth in meters where to set limits for depth classes. If no limits are given, the transport is
+computed for the whole water column. \\
+Once the data  files are read, the user is asked to give a section name (or 'EOF' for ending the program), followed
+by the geographical limits of a section (imin imax jmin jmax, in model coordinates). This user interaction can be done
+with an ascii file given as standard input. ( cdftransportiz-full ........ $<$ section.dat, for instance ).
+
+For instance: cdftransportiz-full ORCA025-G04\_y0010m01\_VT.nc ORCA025-G04\_y0010m01\_gridU.nc  ORCA025-G04\_y0010m01\_gridV.nc 
+1500 3000 $<$ section .dat \\
+will compute the transports across a section (given interactively) in three depth classes : from top to 1500 m, from 1500 m
+to 3000 m and from 3000 m to the bottom, for section described into section.dat file.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:]section\_trp.dat and the standard output for interactivity.
+\item[Remark:] The sign of the transport is somewhat tricky. It depends on the inclination of the section. As a rule of 
+the thumb, the transport is $>0$ when going to the right hand side of the section, cruising the section from (imin,jmin) 
+(imax, jmax). When the optional '-test u v ' arguments of the command line are  given, the velocity field is assumed to 
+be a constant field with both U and V taken as the arguments. This gives an easy way to check the sign of the transports for a given section.
+\item[Associated script:] {\em cdftransportiz-full.ll}. 
+\item[section.dat example:] for example, a {\em section.dat} file used in DRAKKAR, ORCA025 is given below.
+\begin{verbatim}
+01_BERING
+452 461 834 834
+02_FRAM
+1067 1107 941 941
+03_BAFFIN
+927 981 920 920
+04_DENMARK_STRAIT
+1025 1055 845 830
+05_ICELAND_SCOTLAND
+1084 1120 824 785
+06_CUBA_FLORIDA
+828 828 593 603
+07_FLORIDA_BAHAMAS
+829 836 610 610
+08_DRAKE
+880 890 235 142
+09_AUS_AA
+300 300 340 120
+10_ITF
+170 170 465 410
+11_MOZAMBIQUE_CHANNEL
+1309 1328 432 432
+EOF
+\end{verbatim}
+\end{description}
+
+\subsection*{\underline{cdftransportiz\_noheat:}}
+\addcontentsline{toc}{subsection}{cdftransportiz\_noheat}
+\index{cdftransportiz\_noheat}
+\begin{description}
+\item[Purpose:] same as cdftransportiz but only for mass transport. Usefull when VT files are not available.
+\item[Usage:] {\em cdftransportiz\_noheat [ -test u v ] gridUfile gridVfile  'limit of level' }
+\item[Output:]section\_trp.dat and the standard output for interactivity.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmasstrp:}}
+\addcontentsline{toc}{subsection}{cdfmasstrp}
+\index{cdfmasstrp}
+\begin{description}
+\item[Purpose:] Compute volume transport across a section, for depth classes. (Partial Step case )
+\item[Usage:] {\em cdfmasstrp [ -test u v ]  gridUfile gridVfile  'limit of level' }
+\item[Input:]  gridV U and gridV files are simultaneous velocity component files. \\
+'limit of levels' are depth in meters where to set limits for depth classes. If no limits are given, the transport is
+computed for the whole water column. \\
+Once the data files  are read, the user is asked to give a section name (or 'EOF' for ending the program), followed
+by the geographical limits of a section (imin imax jmin jmax, in model coordinates). This user interaction can be done
+with an ascii file given as standard input. ( cdftransportiz ........ $<$ section.dat, for instance ).
+
+For instance: cdfmasstrp  ORCA025-G32\_y0010m01\_gridU.nc  ORCA025-G32\_y0010m01\_gridV.nc 
+1500 3000 $<$ section .dat \\
+will compute the transports across a section (given interactively) in three depth classes : from top to 1500 m, from 1500 m
+to 3000 m and from 3000 m to the bottom, for section described into section.dat file.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:]section\_trp.dat and standard output. .dat file is matlab ready.
+\item[Remark:] The sign of the transport is somewhat tricky. It depends on the inclination of the section. As a rule of 
+the thumb, the transport is $>0$ when going to the right hand side of the section, cruising the section from (imin,jmin) 
+(imax, jmax). When the optional '-test u v ' arguments of the command line are  given, the velocity field is assumed to 
+be a constant field with both U and V taken as the arguments. This gives an easy way to check the sign of the transports for a given section.\\
+This program is a simplification of cdftransportiz where the heat and salt transport are not computed anymore. This tool is about the same than
+cdftransportiz\_noheat, and should be used in place of. The only difference is in that in this program there is no dummy heat/salt transport output.
+\end{description}
+
+\subsection*{\underline{cdfmasstrp-full:}}
+\addcontentsline{toc}{subsection}{cdfmasstrp-full}
+\index{cdfmasstrp-full}
+\begin{description}
+\item[Purpose:] Compute volume transport across a section, for depth classes. (Full  Step case )
+\item[Usage:] {\em cdfmass [ -test u v ]  gridUfile gridVfile  'limit of level' }
+\item[Input:]  gridV U and gridV files are simultaneous velocity component files. For more details, read the documentation for
+     cdfmasstrp.
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:]section\_trp.dat and standard output. .dat file is matlab ready.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfsigtrp:}}
+\addcontentsline{toc}{subsection}{cdfsigtrp}
+\index{cdfsigtrp}
+\begin{description}
+\item[Purpose:] Compute density class transport (potential density $\sigma_0$) for either zonal or meridional section, (partial steps).
+\item[Usage:] {\em cdfsigtrp gridTfile gridUfile gridVfile  sigma\_min sigma\_max nbins [options] }
+\item[Input:] T, U and V files are output file from the model.\\
+   {\em sigma\_min sigma\_max } gives the lower and upper limit for the density classes $\sigma_0$,\\
+   $nbins$ is the number of bins (density classes) to explore between  $\sigma_{min}$ and $\sigma_{max}$. \\
+The program needs an ascii file called {\tt dens\_section.dat} where the sections are described. An example of such a file is given below:
+\begin{scriptsize}
+\begin{verbatim}
+01_Denmark_strait
+1013 1056 832 832
+02_Faoes_Bank_Channel
+1106 1106 800 808
+03_Gibraltar
+1126 1126  651 655
+EOF
+\end{verbatim}
+\end{scriptsize}
+Note the 'EOF' keyword in the file, which indicates the end of the file for the program. Also note that for this program sections are either 
+zonal or meridional; they cannot be oblique, as it is the case in cdftransportiz.\\
+For instance: \\
+{\tt cdfsigtrp ORCA025-G50\_y1949\_ANNUAL\_gridT.nc ORCA025-G50\_y1949\_ANNUAL\_gridU.nc \ \\
+ORCA025-G50\_y1949\_ANNUAL\_gridV.nc 26 30 80} \\
+will compute the density class transport for 80 classes, between $\sigma_0=26$ and $\sigma_0=30$  for the sections described in the file dens\_section.dat
+\item[Options:] 2 options are available :
+   \begin{itemize}
+	\item[-print] : give extra informations on the standard output for the sections.  These are 2D arrays for each section, giving
+   a printed 'map' of density, depth, e3 in the ( distance,vertical) plane. There are also other 2D output for printed map of isopycnal
+   depth, cumulated tansports, and bined transports in the (distance, density) plane. (Useful for short sections !! )
+       \item[-bimg] : Two bimg files are produced per section. (1)  (x/y,depth) for T,S,$\sigma_0$,U (2) (x/y, $\sigma$) for   hiso and class transport.
+        It can be used whith sections of any size. It allows a more detailed description of the flow than the standard output of the program
+       (integrated transport along the section).
+  \end{itemize}
+              
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, dens\_section.dat
+\item[Output:] This program outputs its results on  an ASCII file called trpsig.txt which is multicolumns file with the first column
+giving the density, and other colums the density class transport (in sverdrup) for each section (1 column per section). For example (3 sections):
+\begin{scriptsize}
+\begin{verbatim}
+  .../
+  27.0000  -0.3498706E+05   0.0000000E+00   0.9302920E+04
+  27.0500  -0.2951592E+05   0.0000000E+00   0.2953659E+05
+  27.1000  -0.1460002E+05   0.0000000E+00   0.6516903E+04
+  27.1500  -0.1678582E+05   0.0000000E+00   0.6516903E+04
+  27.2000  -0.5445088E+04   0.0000000E+00   0.6516903E+04
+  27.2500   0.7251206E+04  -0.1140499E+06   0.6062048E+04
+  27.3000  -0.1079158E+03  -0.7521843E+05   0.5776318E+04
+  27.3500   0.2931429E+03  -0.7162286E+05   0.5776318E+04
+  27.4000   0.7215664E+03  -0.1958259E+06   0.5776318E+04
+  27.4500   0.1075893E+05  -0.2733888E+06   0.6497963E+05
+  .../
+\end{verbatim}
+\end{scriptsize}
+First line of this example, indicates the transport for the density class [27.00,27.05[. ( line $k$ is the transport for the density class
+[$\sigma_k, \sigma_{k+1}$[ ).
+
+\item[Remark:]  The sign of the transport is $>0$ for northward and eastward transports. \\
+    A slightly different version of this program, adapted by G. Hervieux is available as cdfsigtrp2.f90. In this version, some outputs were skipped and the cumulated
+transport is saved as well as the binned transport. (cdfsigtrp2 not maintained).
+\end{description}
+
+\subsection*{\underline{cdfsigitrp:}}
+\addcontentsline{toc}{subsection}{cdfsigitrp}
+\index{cdfsigitrp}
+\begin{description}
+\item[Purpose:] This program compute density class transport just as cdfsigtrp, but the potential density is refered to a given depth instead of the surface. 
+\item[Usage:] {\em cdfsigitrp  gridTfile  gridUfile gridVfile   sigma\_min sigma\_max nbins zref [options] } \\
+   Note that this is pretty similar to cdfsigtrp except the zref argument.
+\item[Input:]  idem cdfsigtrp, except additional zref, giving the reference deptht in meters.
+\item[Required mesh\_mask files or other files:] as cdfsigtrp
+\item[Output:]  as cdfsigtrp
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfsigtrp-full:}}
+\addcontentsline{toc}{subsection}{cdfsigtrp-full}
+\index{cdfsigtrp-full}
+\begin{description}
+\item[Purpose:] Compute density class transport for either zonal or meridional section, (full steps).
+\item[Usage:] {\em cdfsigtrp-full gridTfile gridUfile gridVfile  sigma\_min sigma\_max nbins [options] }
+\item[Input:] T, U and V files are output file from the model.\\
+   {\em sigma\_min sigma\_max } gives the lower and upper limit for the density classes $\sigma_0$,\\
+   $nbins$ is the number of bins (density classes) to explore between  $\sigma_{min}$ and $\sigma_{max}$. \\
+The program needs an ascii file called {\tt dens\_section.dat} where the sections are described. An example of such a file is given below:
+\begin{scriptsize}
+\begin{verbatim}
+01_Denmark_strait
+1013 1056 832 832
+02_Faoes_Bank_Channel
+1106 1106 800 808
+03_Gibraltar
+1126 1126  651 655
+EOF
+\end{verbatim}
+\end{scriptsize}
+Note the 'EOF' keyword in the file, which indicates the end of the file for the program.\\
+For instance: \\
+{\tt cdfsigtrp-full ORCA025-G50\_y1949\_ANNUAL\_gridT.nc ORCA025-G50\_y1949\_ANNUAL\_gridU.nc \ \\
+ORCA025-G50\_y1949\_ANNUAL\_gridV.nc 26 30 80} \\
+will compute the density class tranport for 80 classes, between $\sigma_0=26$ and $\sigma_0=30$  for the sections described in the file dens\_section.dat
+\item[Options:] 2 options are available :
+   \begin{itemize}
+	\item[-print] : give extra informations on the standard output for the sections.  These are 2D arrays for each section, giving
+   a printed 'map' of density, depth, e3 in the ( distance,vertical) plane. There are also other 2D output for printed map of isopycnal
+   depth, cumulated tansports, and bined transports in the (distance, density) plane. (Useful for short sections !! )
+       \item[-bimg] : Two bimg files are produced per section. (1)  (x/y,depth) for T,S,$\sigma_0$,U (2) (x/y, $\sigma$) for   hiso and class transport.
+        It can be used whith sections of any size. It allows a more detailed description of the flow than the standard output of the program
+       (integrated transport along the section).
+  \end{itemize}
+              
+\item[Required mesh\_mask files or other files:]   mesh\_hgr.nc, mesh\_zgr.nc, dens\_section.dat
+\item[Output:] This program outputs its results on  an ASCII file called trpsig.txt which is multicolumns file with the first column
+giving the density, and other colums the density class transport (in sverdrup) for each section (1 column per section). For example (3 sections):
+\begin{scriptsize}
+\begin{verbatim}
+  .../
+  27.0000  -0.3498706E+05   0.0000000E+00   0.9302920E+04
+  27.0500  -0.2951592E+05   0.0000000E+00   0.2953659E+05
+  27.1000  -0.1460002E+05   0.0000000E+00   0.6516903E+04
+  27.1500  -0.1678582E+05   0.0000000E+00   0.6516903E+04
+  27.2000  -0.5445088E+04   0.0000000E+00   0.6516903E+04
+  27.2500   0.7251206E+04  -0.1140499E+06   0.6062048E+04
+  27.3000  -0.1079158E+03  -0.7521843E+05   0.5776318E+04
+  .../
+\end{verbatim}
+\end{scriptsize}
+First line of this example, indicates the transport for the density class [27.00,27.05[. ( line $k$ is the transport for the density class
+[$\sigma_k, \sigma_{k+1}$[ ).
+
+\item[Remark:]  The sign of the transport is $>0$ for northward and eastward transports.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdftemptrp-full:}}
+\addcontentsline{toc}{subsection}{cdftemptrp-full}
+\index{cdftemptrp-full}
+\begin{description}
+\item[Purpose:] Compute the transport between isotherms.
+\item[Usage:] {\em cdftemptrp-full gridTfile  gridUfile gridVfile   temp\_max temp\_min nbins [options] }
+\item[Input:]  The syntax is almost the same than for cdfsigtrp. Working with temperatures instead of density.
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr.nc must be in the current directory.
+\item[Output:] Ascii file trptemp.txt.
+\item[Remark:]  Contribution of Fred Castruccio.
+\end{description}
+
+
+\subsection*{\underline{cdftempvol-full:}}
+\addcontentsline{toc}{subsection}{cdftempvol-full}
+\index{cdftempvol-full}
+\begin{description}
+\item[Purpose:] Compute water volume in a given domain between isotherms. FULL STEPS version
+\item[Usage:] {\em cdftempvol-full gridTfile  imin, imax, jmin, jmax temp\_max temp\_min nbins [options] }
+\item[Input:]   The syntax is almost the same than for cdfsigtrp. Working with temperatures instead of density.
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr.nc must be in the current directory.
+\item[Output:] Ascii file voltemp.txt.
+\item[Remark:]  Contribution of Fred Castruccio.
+\end{description}
+
+
+\newpage
+\section{Derived quantities}
+\subsection*{\underline{cdfsig0:}}
+\addcontentsline{toc}{subsection}{cdfsig0}
+\index{cdfsig0}
+\begin{description}
+\item[Purpose:] Compute the potential density ${\sigma}_0$.
+\item[Usage:] {\em cdfsig0 gridT }
+\item[Input:] gridT is a file holding variables votemper and vosaline.
+For instance: cdfsig0  ORCA035-G32\_y0008m01d10\_gridT.nc  \\
+will compute ${\sigma}_0$ for the given file.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em sig0.nc}. This file hold the variable vosigma0.
+\item[Remark:]  The non-linear equation of state of NEMO OPA9 is used. Therefore, one should be aware that  ${\sigma}_0$
+computed from mean temperature and salinity fields is not the same than the mean ${\sigma}_0$ computed from instantaneous
+temperature and salinity fields. This tools can take multi time frame input file.
+\item[Associated script:] {\em cdfsigma0.ll}. This script can be used to compute ${\sigma}_0$ for a run. It scan all
+the gridT file for a given year and CONFIG, and produce the corresponding sigma0 file.
+\end{description}
+
+\subsection*{\underline{cdfsigi:}}
+\addcontentsline{toc}{subsection}{cdfsigi}
+\index{cdfsigi}
+\begin{description}
+\item[Purpose:] Compute the potential density ${\sigma}_i$, refered to a particular depth.
+\item[Usage:] {\em cdfsigi gridT Reference\_depth}
+\item[Input:] gridT is a file holding variables votemper and vosaline.\\
+       Reference\_depth is the reference depth in meters.     
+For instance:\\
+    cdfsigi  ORCA035-G32\_y0008m01d10\_gridT.nc 2000 \\
+will compute ${\sigma}_i$ for the given file, refered to 2000 m, {\it ie}, ${\sigma}_2$.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em sigi.nc}. This file hold the variable vosigmai, reference depth is documented on the 'long name' attriute.
+\item[Remark:]  The non-linear equation of state of NEMO OPA9 is used. Therefore, one should be aware that  ${\sigma}_i$
+computed from mean temperature and salinity fields is not the same than the mean ${\sigma}_i$ computed from instantaneous
+temperature and salinity fields. This tools can take multi time frame input file.
+\end{description}
+
+\subsection*{\underline{cdfsiginsitu:}}
+\addcontentsline{toc}{subsection}{cdfsiginsitu}
+\index{cdfsiginsitu}
+\begin{description}
+\item[Purpose:] Compute the insitu density ${\sigma}$.
+\item[Usage:] {\em cdfsiginsitu gridT }
+\item[Input:] gridT is a file holding variables votemper and vosaline.\\
+       Depths are taken from the input file.
+For instance:\\
+    cdfsiginsitu  ORCA035-G32\_y0008m01d10\_gridT.nc  \\
+will compute ${\sigma}$ for the given file
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em siginsitu.nc}. This file hold the variable vosigmainsitu.
+\item[Remark:]  The non-linear equation of state of NEMO OPA9 is used. Therefore, one should be aware that  ${\sigma}$
+computed from mean temperature and salinity fields is not the same than the mean ${\sigma}$ computed from instantaneous
+temperature and salinity fields. This tools can take multi time frame input file.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfbottomsig0:}}
+\addcontentsline{toc}{subsection}{cdfbottomsig0}
+\index{cdfbottomsig0}
+\begin{description}
+\item[Purpose:] Compute the bottom potential density ${\sigma}_{0bot}$ (2D variable).
+\item[Usage:] {\em cdfbottomsig0 gridT }
+\item[Input:] gridT is a file holding variables votemper and vosaline.
+
+For instance: {\tt cdfbottomsig0  ORCA035-G32\_y0008m01d10\_gridT.nc }
+will compute ${\sigma}_{0bot}$ for the given tag.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em botsig0.nc}. This file hold the variable sobotsig0.
+\item[Remark:]  The non-linear equation of state of NEMO OPA9 is used. Therefore, one should be aware that  ${\sigma}_0$
+computed from mean temperature and salinity fields is not the same than the mean ${\sigma}_0$ computed from instantaneous
+temperature and salinity fields. A companion of this program is cdfbottom.
+\item[Associated script:] {\em cdfbotsig0.ll}. This script can be used to compute ${\sigma}_{0bot}$ for a run. It scan all
+the gridT file for a given year and CONFIG, and produce the corresponding botsig0 file.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfbottomsigi:}}
+\addcontentsline{toc}{subsection}{cdfbottomsigi}
+\index{cdfbottomsigi}
+\begin{description}
+\item[Purpose:] Compute the bottom potential density ${\sigma}_{ibot}$ (2D variable), refered to the given depth.
+\item[Usage:] {\em cdfbottomsigi gridT Reference depth}
+\item[Input:] gridT is a file holding variables votemper and vosaline.
+
+For instance: {\tt cdfbottomsigi  ORCA035-G32\_y0008m01d10\_gridT.nc 2000 }
+will compute ${\sigma}_{2bot}$ for the given tag.
+\item[Required mesh\_mask files or other files:]  none
+\item[Output:] {\em botsigi.nc}. This file hold the variable sobotsigi.
+\item[Remark:]  The non-linear equation of state of NEMO OPA9 is used. Therefore, one should be aware that  ${\sigma}_i$
+computed from mean temperature and salinity fields is not the same than the mean ${\sigma}_i$ computed from instantaneous
+temperature and salinity fields. A companion of this program is cdfbottom.
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfbottom:}}
+\addcontentsline{toc}{subsection}{cdfbottom}
+\index{cdfbottom}
+\begin{description}
+\item[Purpose:] Extract the bottom values for the 3D variables contained in the file given as argument. Bottom
+values are the values for the last point of the water column before land.
+\item[Usage:] {\em cdfbottom nc\_file [ $T~|~U~|~V~|~F$ ] }
+If the point type is specified, look for the corresponding mask in mask.nc file.
+\item[Input:] Any netcdf file from NEMO output (or diagnosed from NEMO) , containing 3D fields.
+For instance: {\tt cdfbottom  ORCA035-G32\_y0008m01d10\_gridT.nc}
+will produce a file with the 2D variables {\tt votemper} and {\tt vosaline} corresponding the their bottom value.
+
+{\tt cdfbottom  ORCA035-G32\_y0008m01d10\_gridU.nc U } will produce a file with the 2D variable vozocrtx, corresponding the the
+bottom value, the umask being read on the mask.nc file. 
+\item[Required mesh\_mask files or other files:]  Eventually mask.nc file if the type point of the C grid is specified.
+\item[Output:] {\em bottom.nc}. This file hold the variable(s) having the same name than the 3D variables of the input file.
+\item[Remark:] For the sake of simplicity, and for compatibility with other cdftools, we keep the same variable name in the
+output file than in the input file, though the output variables are 2D and should 'logically' start with 'so'... 
+\item[Associated script:] {\em cdfbottom.ll}. This script can be used to compute bottom value for a run.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfrhoproj:}}
+\addcontentsline{toc}{subsection}{cdfrhoproj}
+\index{cdfrhoproj}
+\begin{description}
+\item[Purpose:] Project a variable of a netcdf file on an isopycnal surface either specified by a $\sigma_0$ on the command
+line, or taken from an input file.
+\item[Usage:] {\em cdfrhoproj [-s0 sigma0] cvar nc\_rhofile nc\_file(*) [ $T~|~U~|~V~|~F$ ] }
+If the value of $\sigma_0$ for the iso surface is given on the command line, then only this surface is calculated. In other cases, the
+values for $\sigma_0$ are taken from the local {\em rho\_lev} file, which is a very simple ascii file, with the number of surfaces given on the
+first line, followed by lines with the required $\sigma_0$ values. CAUTION: these values must increase in the file.
+\item[Input:]  nc\_rhofile already contains the density, cvar is the name of the variable that will be projected on the isopycnal, taken from file
+nc\_file. Various files can be specified. In order to handle the NEMO C-Grid, and as far as $\sigma_0$ is computed on a T-point, it is possible
+to specify the grid point type corresponding to the file. (If nothing specified, 'T' is assumed.). In any case, the resulting value are computed
+on the T-Point. 
+For instance:\\
+ {\tt cdfrhoproj vozocrtx CONFIG-CASE\_SIGMA0.nc CONFIG-CASE\_gridU.nc U} \\
+will project the zonal velocity on the isopycnal defined in  {\em rho\_lev} at the T-Points. \\
+{\tt cdfrhoproj -s0 27.8 vosaline CONFIG-CASE\_SIGMA0.nc CONFIG-CASE\_gridT.nc } \\
+will project the salinity on the 27.8 isopycnal.
+\item[Required mesh\_mask files or other files:]  rho\_lev (if the option -s0 is not given).
+\item[Output:] {\em nc\_file.nc.interp}. The suffix {\tt .interp} is appended to the input file to produce the output file. 
+The variable name is the same, and an additional variable {\tt vodepiso} is provided; it gives the depth of the isopycnal surfaces.
+In the output file, the dimension {\tt deptht} is still used, but now represent the rho levels.
+\item[Remark:]  none
+\item[Associated script:] not done already
+\end{description}
+
+\subsection*{\underline{cdfsigintegr:}}
+\addcontentsline{toc}{subsection}{cdfsigintegr}
+\index{cdfsigintegr}
+\begin{description}
+\item[Purpose:]  This program is used to integrate quantities between isopycnals.
+\item[Usage:] {\em cdfsigintegr cvar nc\_rhofile nc\_file(*) [ $T~|~U~|~V~|~F$ ] }
+  cvar is the variable to be integrated. It belongs to nc\_file. nc\_rhofile is the file with vosigma0, the potential density refered to surface.
+Chosen isopycnals are given in a simple ascii file, just the same as in cdfrhoproj:
+{\em rho\_lev} file, with the number of surfaces given on the
+first line, followed by lines with the required $\sigma_0$ values. CAUTION: these values must increase in the file.
+
+\item[Input:]  nc\_rhofile already contains the density, cvar is the name of the variable that will be projected on the isopycnal, taken from file
+nc\_file. Various files can be specified. In order to handle the NEMO C-Grid, and as far as $\sigma_0$ is computed on a T-point, it is possible
+to specify the grid point type corresponding to the file. (If nothing specified, 'T' is assumed.). In any case, the resulting value are computed
+on the T-Point. 
+For instance:\\
+ {\tt cdfsigintegr cfc11 rhofile.nc ptrcT.nc T }\\
+will integrate the CFC11 concentration between isopycnals. (in other word this is the inventory of CFC11 in the density layer).
+\item[Required mesh\_mask files or other files:]  rho\_lev, mesh\_zgr.nc
+\item[Output:] {\em nc\_file.nc.integr}. The suffix {\tt .integr} is appended to the input file to produce the output file. 
+There are 3 variables in the output file: {\tt inv} (for inventory) which is the targeted integral, {\tt isothick} giving the thickness of the
+density layers. {\tt vodepiso} which is the depth of individual isopycnal surfaces.\\
+Note that  both {\tt inv} and {\tt isothick} have a 'vertical' dimension corresponding to density layers, {\it ie} 1 less than the number of isopycanal
+surfaces given in rho\_lev.
+In the output file, the dimension {\tt deptht} is still used, but now represent the rho levels.
+\item[Remark:]  none
+\item[Associated script:] not done already
+\end{description}
+
+\subsection*{\underline{cdfisopycdep:}}
+\addcontentsline{toc}{subsection}{cdfisopycdep}
+\index{cdfisopycdep}
+\begin{description}
+\item[Purpose:] This program is used to determine the depth of isopycnal.
+\item[Usage:] {\em cdfisopycdep [-s sigma]  nc\_rhofile cdfsigmavar nc\_file(*)  }
+If the value of $\sigma$ for the iso surface is given on the command line, then only this surface is calculated. In other cases, the
+values for $\sigma$ are taken from the local {\em rho\_lev} file, which is a very simple ascii file, with the number of surfaces given on the
+first line, followed by lines with the required $\sigma$ values. CAUTION: these values must increase in the file.
+\item[Input:]  nc\_rhofile already contains the density (it can be any kind of density, {\it eg} $\sigma_2$ or in situ $\sigma$), cdfsigmavar is
+ the name of the variable holding the density field.
+For instance:\\
+ {\tt cdfisopycdep -s 34.2 CONFIG-CASE\_SIGMA.nc vosigma2 } \\
+will compute the $\sigma_2$=34.2 isopycanl depth.
+\item[Required mesh\_mask files or other files:]  rho\_lev (if the option -s0 is not given).
+\item[Output:] {\em isopycdep.nc}, with one variable {\tt vodepiso}. This variable has a 'vertical' dimension corresponding to the chosen isopycnal
+surfaces. However, the 'vertical' dimension is still named 'deptht'.
+\item[Remark:]  none
+\item[Associated script:] not done already
+\end{description}
+
+
+
+\newpage
+\subsection*{\underline{cdfbn2:}}
+\addcontentsline{toc}{subsection}{cdfbn2}
+\index{cdfbn2}
+\begin{description}
+\item[Purpose:] Compute the Brunt Vaissala frequency.
+\item[Usage:] {\em cdfbn2 gridT }
+\item[Input:] gridT is a file holding variables votemper and vosaline.
+For instance: cdfbn2  ORCA035-G32\_y0008m01d10\_gridT.nc  \\
+will compute $N^2$ for the given tag.
+\item[Required mesh\_mask files or other files:]mesh\_zgr.nc, mesh\_hgr.nc
+\item[Output:] {\em bn2.nc}. This file hold the variable vobn2. Note that this variable is located on T-point. (The intermediate
+computation is done on w points, but final results are interpolated on T-points.
+\item[Remark:]  This program uses the eosbn2 routine of the NEMO OPA9 code. It is based on an approximation formula given
+by Mc Dougall et al. (   ).
+\item[Associated script:] {\em cdfbn2.ll}. This script can be used to compute $N^2$ for a run.  It scan all
+the gridT file for a given year and CONFIG, and produce the corresponding $N^2$ file.
+\end{description}
+
+\subsection*{\underline{cdfbn2-full:}}
+\addcontentsline{toc}{subsection}{cdfbn2-full}
+\index{cdfbn2-full}
+\begin{description}
+\item[Purpose:] Compute the Brunt Vaissala frequency. (Full step case).
+\item[Usage:] {\em cdfbn2 gridT }
+\item[Input:] gridT is a file holding variables votemper and vosaline.
+For instance: cdfbn2  ORCA035-G04\_y0008m01d10\_gridT.nc  \\
+will compute $N^2$ for the given tag.
+\item[Required mesh\_mask files or other files:]mesh\_zgr.nc, mesh\_hgr.nc
+\item[Output:] {\em bn2.nc}. This file hold the variable vobn2. Note that this variable is located on T-point. (The intermediate
+computation is done on w points, but final results are interpolated on T-points.
+\item[Remark:]  This program uses the eosbn2 routine of the NEMO OPA9 code. It is based on an approximation formula given
+by Mc Dougall et al. (   ).
+\item[Associated script:] {\em cdfbn2-full.ll}. This script can be used to compute $N^2$ for a run.  It scan all
+the gridT file for a given year and CONFIG, and produce the corresponding $N^2$ file.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfets:}}
+\addcontentsline{toc}{subsection}{cdfets}
+\index{cdfets}
+\begin{description}
+\item[Purpose:] Compute the Eddy Time Scale, and Rossby Radius.
+\item[Usage:] {\em cdfets gridT }
+\item[Input:] gridT is a file holding variables votemper and vosaline.
+For instance: cdfets  ORCA035-G32\_y0008m01d10\_gridT.nc  \\
+will compute  the eddy time scale and the  $1^{st}$ rossby radius for the given tag.
+\item[Required mesh\_mask files or other files:]mesh\_zgr.nc, mesh\_hgr.nc
+\item[Output:] {\em ets.nc}. This file hold two variables voets and sorosrad.
+\item[Remark:] This routine is based on papers from Stammer et al (   ). See Julien.LeSommer@hmg.inpg.fr for more
+details.
+\item[Associated script:] {\em cdfets.ll}. 
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfcurl:}}
+\addcontentsline{toc}{subsection}{cdfcurl}
+\index{cdfcurl}
+\begin{description}
+\item[Purpose:] Compute the curl of a vector field.
+\item[Usage:] {\em cdfcurl gridU gridV nameU nameV level }\\
+ If level is different from 0, the 2D curl at level 'level' will be computed. If level is $<=$ 0, then the full 3D curl
+ is computed instead.
+\item[Input:] gridU, gridV are the cdf files holding the U and V component of the vector, nameU and nameV the cdf name
+of the variables corresponding to these components. level in the model level where to compute the curl (if $<=$ 0 the 3D
+curl is computed instead).
+For instance: cdfcurl   ORCA025-G32\_y0008m01d10\_gridU.nc ORCA025-G32\_y0008m01d10\_gridV.nc  vozocrtx vomecrty 6 \\
+will compute  the curl (relative vorticity) at level 6 for the flow field at the given tag. \\
+ cdfcurl   ORCA025-G32\_y0008m01d10\_gridU.nc ORCA025-G32\_y0008m01d10\_gridV.nc  sozotaux sometauy 1 \\
+will compute the wind-stress curl from the file.
+
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc
+\item[Output:] {\em curl.nc}. The variable name is socurl(2D) or vocurl (3D case).
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfpv:}}
+\addcontentsline{toc}{subsection}{cdfpv}
+\index{cdfpv}
+\begin{description}
+\item[Purpose:] Compute the full potential vorticity ( computed at W-point of the C-grid) taking T S U V as input.
+\item[Usage:] {\em cdfpv gridT gridU gridV }\\
+\item[Input:] gridT, gridU, gridV are the cdf files holding the temperature and salinity (gridT) and the  U and V components of the velocity. Variables names are assumed to
+be as in OPA9, respectively {\em votemper, vosaline, vozocrtx, vomecrty}.\\
+For instance: cdfpv ORCA025-G70\_y2000m01d05\_gridT.nc ORCA025-G70\_y2000m01d05\_gridU.nc ORCA025-G70\_y2000m01d05\_gridV.nc
+will compute  the potential vorticity. \\
+\item[Method:] The potential vorticity is evaluated using the following formula :\\
+
+$   PV = \frac{1}{\rho_0}(f+\zeta)\frac{\partial\sigma_0}{\partial z} $ \\
+
+where $\rho_0 $ takes the constant value of 1020 $kg/m^3$, f is the coriolis parameter ($2\Omega sin(\phi)$), $\zeta$ is the relative vorticity
+(or the curl) of the flow (as computed by cdfcurl). This program assumes that the model grid is a C-grid. PV is computed at W points, which is
+the natural point to compute $\frac{\partial\sigma_0}{\partial z} $. $\zeta$ is computed at f-points, u-v level. Therefore, in order to estimate
+$\zeta$ at W points, a 4-point horizontal average is required (to get $\zeta$ at T-points) followed by a 2-point vertical average to get it 
+at W-points.
+
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr
+\item[Output:] {\em pv.nc}. The variable name is vopv. Units are $s^{-1}m^{-1}\times10.^{11}$
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfpvor:}}
+\addcontentsline{toc}{subsection}{cdfpvor}
+\index{cdfpvor}
+\begin{description}
+\item[Purpose:] Compute the different component of the Ertel potential vorticity.
+\item[Usage:] {\em cdfpvor gridT gridU gridV }\\
+\item[Input:] gridT, gridU, gridV are the cdf files holding the temperature and salinity (gridT) and the  U and V components of the velocity. Variables names are assumed to
+be as in OPA9, respectively {\em votemper, vosaline, vozocrtx, vomecrty}.\\
+For instance: cdfpvor ORCA025-G70\_y2000m01d05\_gridT.nc ORCA025-G70\_y2000m01d05\_gridU.nc ORCA025-G70\_y2000m01d05\_gridV.nc
+will compute  the potential vorticity. \\
+\item[Method:] The total potential vorticity is evaluated as the sum of the relative vorticity and the stretching.
+
+$   PV = (f+\zeta_t)\frac{\partial\sigma_0}{\partial z} $ \\
+
+$   f  = 2 \Omega sin ( \phi_t  \pi / 180. ) $ \\
+
+$   \zeta_f= \frac{\partial u}{\partial y} -  \frac{\partial v}{\partial x}  $ \\
+
+   and $\zeta_t$ is the mean value of the 4 corners of the grid cell. \\
+$ \frac{\partial\sigma_0}{\partial z} $ is deduced from the Brunt-Vaissala frequency, using the code equation of state (McDougall,1987).
+
+
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr
+\item[Output:] {\em pvor.nc}. The variables names are vorelvor, vostrvor and vototvor. Units are $kg\cdot m^{-4}\cdot s^{-1}\times10.^{7}$
+\item[Associated script:] none
+\item[Remark:] This tools is provided by Anne-Marie Treguier. It computes almost the same thing than cdfpv, but using different algorithm.
+\end{description}
+
+\subsection*{\underline{cdflspv:}}
+\addcontentsline{toc}{subsection}{cdflspv}
+\index{cdflspv}
+\begin{description}
+\item[Purpose:] Compute the large scale potential vorticity.
+\item[Usage:] {\em cdfpvor gridT  }\\
+\item[Input:] gridT,  holds the temperature and salinity (gridT). Variables names are assumed to
+be as in OPA9, respectively {\em votemper, vosaline}.\\
+For instance: cdfpvor ORCA025-G70\_y2000m01d05\_gridT.nc 
+will compute  the large scale potential vorticity. \\
+\item[Method:] The large scale  potential vorticity is evaluated as the sum of the relative vorticity and the stretching.
+
+$   PV = (f)\frac{\partial\sigma_0}{\partial z} $ \\
+
+$   f  = 2 \Omega sin ( \phi_t  \pi / 180. ) $ \\
+
+$ \frac{\partial\sigma_0}{\partial z} $ is directly computed from $ \sigma_0 $, at W point.
+
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr
+\item[Output:] {\em lspv.nc}. The variables name is volspv. Units are $kg\cdot m^{-4}\cdot s^{-1}\times10.^{7}$
+\item[Associated script:] none
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfw:}}
+\addcontentsline{toc}{subsection}{cdfw}
+\index{cdfw}
+\begin{description}
+\item[Purpose:] Compute the vertical velocity field from the continuity equation and the horizontal flow field. \\
+This is for partials steps.
+\item[Usage:] {\em cdfw gridU gridV [nameU nameV ] }\\
+\item[Input:] gridU, gridV are the cdf files holding the U and V component of the vector, nameU and nameV the cdf name
+of the variables corresponding to these components. If they are not given, we assume that these names are respectively 
+vozocrtx, and vomecrty.
+For instance: cdfw   ORCA025-G32\_y0008m01d10\_gridU.nc ORCA025-G32\_y0008m01d10\_gridV.nc  \\
+will compute  the wn (vertical velocity)  for the flow field at the given tag. \\
+cdfw   vitU.nc vitV.nc  uzonal vmeridional \\
+will compute  wn from vitU.nc and vitV.nc files.
+
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:] {\em w.nc}. The variable name is vovecrtz.
+\item[Associated script:] none
+\item[Remark:] Comparison of wn computed by the model and wn computed by this program shows small differences ($O(10^{-10})$ )
+due to truncature on the flow field.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfgeo-uv:}}
+\addcontentsline{toc}{subsection}{cdfgeo-uv}
+\index{cdfgeo-uv}
+\begin{description}
+\item[Purpose:] Compute the geostrophic velocity from the SSH field.  This is for partials steps.
+\item[Usage:] {\em cdfgeo-uv gridT  }\\
+\item[Input:] gridT is the file with the SSH named sossheig.
+
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:] {\em ugeo.nc, vgeo.nc }. 2 netcdf files with respectively the U geostrophic component (ugeo), and the V geostrophic
+          component (variable vgeo). Note that in the actual version (to be changed ?) ugeo.nc is computed at the V point of the 
+      C-grid, vgeo.nc is computed at the U point of the C-grid.
+\item[Associated script:] none
+\item[Author]: This is a contribution by Don Julian Juanno del rinc\`on del pedregal, Cisese, Ensenada, MX.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfmxl:}}
+\addcontentsline{toc}{subsection}{cdfmxl}
+\index{cdfmxl}
+\begin{description}
+\item[Purpose:] Compute the mixed layer depth based on 3 different criteria: density criterion with $\rho_{crit}=0.01~kg.m^{-3}$,
+density criterion with  $\rho_{crit}=0.03~kg.m^{-3}$ and temperature criteria with $ |T_{crit}|=0.2^\circ C $. PARTIAL STEP version.
+\item[Usage:] {\em cdfmxl  gridT }\\
+\item[Input:]  The only file on input is the gridT type file where the program will look for temperature as {\tt votemper},
+and salinity as {\tt vosaline}.
+For instance: {\tt cdfmxl   ORCA025-G42\_y0008m01d10\_gridT.nc } 
+will compute  the mixed layer depth based on the 3 criteria.
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:] {\em mxl.nc}. The variable names are somxl010, somxl030 and somxlt02.
+\item[Associated script:] cdfmxl.ll is a script which computes the mixed layer for each gridT file in a directory.
+\item[Remark:] There is a  recent climatology of the somxlt02 variable [de Boyer Montegut \etal (2004)], which is built from
+observations of temperature profiles. 
+\end{description}
+
+\subsection*{\underline{cdfmxl-full:}}
+\addcontentsline{toc}{subsection}{cdfmxl-full}
+\index{cdfmxl-full}
+\begin{description}
+\item[Purpose:] Compute the mixed layer depth based on 3 different criteria: density criterion with $\rho_{crit}=0.01~kg.m^{-3}$,
+density criterion with  $\rho_{crit}=0.03~kg.m^{-3}$ and temperature criteria with $ |T_{crit}|=0.2^\circ C $. FULL STEP version
+\item[Usage:] {\em cdfmxl-full  gridT }\\
+\item[Input:]  The only file on input is the gridT type file where the program will look for temperature as {\tt votemper},
+and salinity as {\tt vosaline}.
+For instance: {\tt cdfmxl   ORCA025-G03\_y0008m01d10\_gridT.nc } 
+will compute  the mixed layer depth based on the 3 criteria.
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:] {\em mxl.nc}. The variable names are somxl010, somxl030 and somxlt02.
+\item[Associated script:] cdfmxl-full.ll is a script which computes the mixed layer for each gridT file in a directory.
+\item[Remark:] There is a  recent climatology of the somxlt02 variable [de Boyer Montegut \etal (2004)], which is built from
+observations of temperature profiles. 
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdficediags:}}
+\addcontentsline{toc}{subsection}{cdficediags}
+\index{cdficediags}
+\begin{description}
+\item[Purpose:]  Compute ice volume, area and extend (defined as the area where the ice concentration $> 0.15$ ) for
+both hemisphere.
+\item[Usage:] {\em cdficediags  icemodfile }\\
+\item[Input:]  ncdf file for icemod output
+\item[Required mesh\_mask files or other files:]  mesh\_hgr.nc, mask.nc
+\item[Output:] The output is done on the standard output. (see below).
+\item[Associated script:] cdficediags.ll  is used for monitoring the ice in ORCA025-G50
+\item[Remark:]  The ice volume is $\sum thickness * area * fraction $
+\end{description}
+Example of output : 
+\begin{verbatim}
+  Northern Hemisphere
+           NVolume (10^9 m3)   35268.1868656639999
+           NArea (10^9 m2)     13113.4348328960004
+           NExtend (10^9 m2)   13062.9962301439991
+
+  Southern Hemisphere
+           SVolume (10^9 m3)   4879.33240934399964
+           SArea (10^9 m2)     3477.76693043200021
+           SExtend (10^9 m2)   3394.26987212799986
+\end{verbatim}
+
+\newpage
+\subsection*{\underline{cdfcensus:}}
+\addcontentsline{toc}{subsection}{cdfcensus}
+\index{cdfcensus}
+\begin{description}
+\item[Purpose:]  Compute the water mass census for a given TS file, with eventual limitation to a specified area.
+\item[Usage:] {\em cdfcensus  gridTfile nlog [-zoom imin imax jmin jmax] [ -klim kmin kmax] [-bimg] }\\
+    The program computes the water mass census as the T,S binned volume for the whole area or a restricted area specified 
+by the line options. The output is given as an array (S,T) where the value of the array is the volume in the corresponding T,S
+bin. Additionally, $\sigma_0(S,T), \sigma_1(S,T), \sigma_4(S,T),$  are given computed from the EOS. (Plotting purposes). \\
+  nlog is an integer number $>=0$  which is used to distort the output: in fact some water masses are extremely dominant in the ocean, with
+volumes many order of magnitudes above other interesting waters. In order to rescale the output, we apply the following lines of code, as soon
+as nlog $>0$:
+\begin{verbatim}
+  ! use a distortion function ( n x log ) to reduce extrema in the output file.
+  DO ji=1,ns
+     DO jj=1,nt
+        dump(ji,jj)=rcensus(ji,jj)
+        DO ilog=1,nlog
+           dump(ji,jj)=ALOG10(1+dump(ji,jj))
+        END DO
+     END DO
+  END DO
+\end{verbatim}
+If option -bimg specified, a bimg file is output instead of a netcdf file.
+\item[Input:]  ncdf file for gridT
+\item[Required mesh\_mask files or other files:]  mesh\_hgr.nc, mesh\_zgr.nc
+\item[Output:]  Output is done on census.nc (variables volcensus,sigma0,sigma2,sigma4). The unit of volcensus is somewhat tricky, depending on the 
+  number of log rescaling that where used. A bimg output file is also available if option -bimg given.
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfpendep:}}
+\addcontentsline{toc}{subsection}{cdfpendep}
+\index{cdfpendep}
+\begin{description}
+\item[Purpose:] Computes penetration depth for passive tracer output. This is the ratio between inventory
+         and surface concentration (2D) field
+\item[Usage:] {\em cdfpendep TRCfile [-inv inventory\_name  -trc trc\_name ] }
+\item[Input:] TRC file contains the passive tracer outputs. By default, the program assumes that the inventory variable name is
+{\tt invcfc} and the concentration variable name is {\tt cfc11}. If it is not the case, respective inventory and concentration names must
+be specified on the command line with -inv and -trc options.
+\item[Output:] Outpout is done on the {\tt pendep.nc} cdf file with variable {\tt pendep}, units meters.
+\item[Required mesh\_mask files or other files:] none
+\item[Associated script:] : none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfbci:}}
+\addcontentsline{toc}{subsection}{cdfbci}
+\index{cdfbci}
+\begin{description}
+\item[Purpose:] Compute the term of energetic transfert for the baroclinic instability 
+\item[Usage:] {\em cdfbci  file }
+\item[Input:] file is produced by a companion tools cdfmoyuvwt which produces the required momentum for the BCI/BTI computation.
+\item[Output:] bci.nc file contains 5 variables : 
+     \begin{enumerate} 
+        \item {\bf dTdx}:  zonal derivate of Tbar on T point (x1000)
+        \item {\bf dTdy}:  meridional derivate of Tbar on T point (x1000)
+        \item {\bf uT}: anomaly of u times anomaly of T on T point 
+        \item {\bf vT}: anomaly of v times anomaly of T on T point 
+        \item {\bf bci}: transfert of energy for the baroclinic instability (x1000)
+      \end{enumerate}
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc
+\item[Associated script:] : none
+\item[Author:] Ang\'elique Melet. Ask for details.
+\end{description}
+
+\subsection*{\underline{cdfbti:}}
+\addcontentsline{toc}{subsection}{cdfbti}
+\index{cdfbti}
+\begin{description}
+\item[Purpose:] Compute the term of energetic transfert for the barotropic instability 
+\item[Usage:] {\em cdfbti  file }
+\item[Input:] file is produced by a companion tools cdfmoyuvwt which produces the required momentum for the BCI/BTI computation.
+\item[Output:] bti.nc file contains 8 variables : 
+     \begin{enumerate} 
+        \item {\bf dudx}:  zonal derivate of u on T point
+        \item {\bf dvdx}: zonal derivate of v on T point
+        \item {\bf dudy}:  meridional derivate of u on T point
+        \item {\bf dvdy}: meridional derivate of v on T point
+        \item {\bf anousqrt}: temporal mean of the square of the zonal speed anomaly
+        \item {\bf anovsqrt}: temporal mean of the square of the meridional speed anomaly
+        \item {\bf anouv}: temporal mean of the Reynolds term
+        \item {\bf bti}: transfert of energy for the barotropic instability 
+      \end{enumerate}
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc
+\item[Associated script:] : none
+\item[Author:] Ang\'elique Melet. Ask for details.
+\end{description}
+
+\subsection*{\underline{cdfkempemekeepe:}}
+\addcontentsline{toc}{subsection}{cdfkempemekeepe}
+\index{cdfkempemekeepe}
+\begin{description}
+\item[Purpose:] Compute the term of energetic transfert
+  from mean kinetic energy to mean potential energy (T1)
+  and from eddy potential energy to eddy kinetic energy (T3)
+\item[Usage:] {\em cdfkempemekeepe  file } (pronounciation is as read.)
+\item[Input:] file is produced by a companion tools cdfmoyuvwt which produces the required momentum for the BCI/BTI computation.
+\item[Output:] transfertst1t3.nc file contains 2 variables : 
+     \begin{enumerate} 
+        \item {\bf wT}:  temporal mean of w times temporal mean of T on T point (*1000)
+        \item {\bf anoW}: temporal mean of anomaly of w times ano of T on T point (*1000)
+      \end{enumerate}
+\item[Required mesh\_mask files or other files:] none
+\item[Associated script:] : none
+\item[Author:] Ang\'elique Melet. Ask for details.
+\end{description}
+
+\subsection*{\underline{cdfnrjcomp:}}
+\addcontentsline{toc}{subsection}{cdfnrjcomp}
+\index{cdfnrjcomp}
+\begin{description}
+\item[Purpose:] Compute the terms for energy components
+               (Mean Kinetic Energy, Eddy Kinetic Energy,
+                Mean Potential Energy, Eddy Potential Energy )
+               compute : tbar,ubar,vbar,anotsqrt,anousqrt,anovsqrt
+\item[Usage:] {\em cdfnrjcomp  file } 
+\item[Input:] file is produced by a companion tools cdfmoyuvwt which produces the required momentum for the BCI/BTI computation.
+\item[Output:] nrjcomp.nc file contains 6 variables : 
+     \begin{enumerate} 
+        \item {\bf tbar} : temporal mean of the temperature on T point
+        \item {\bf ubar}: temporal mean of the zonal velocity on T point
+        \item {\bf vbar}: temporal mean of the meridional velocity on T point
+        \item {\bf anotsqrt}: temporal mean of the square of the temperature anomaly on T point (*1000)
+        \item {\bf anousqrt}: temporal mean of the square of the zonal speed anomaly on T point (*1000)
+        \item {\bf anovsqrt}: temporal mean of the square of the meridional speed anomaly on T point (*1000)
+      \end{enumerate}
+\item[Required mesh\_mask files or other files:] none
+\item[Associated script:] : none
+\item[Author:] Ang\'elique Melet. Ask for details.
+\end{description}
+
+
+
+\newpage
+\section{Extracting and information tools}
+\subsection*{\underline{cdfprofile:}}
+\addcontentsline{toc}{subsection}{cdfprofile}
+\index{cdfprofile}
+\begin{description}
+\item[Purpose:] Extract a vertical profile for a given variable in a given file at a given I J
+\item[Usage:] {\em cdfprofile  I  J file\_name var\_name }
+\item[Input:] I J : i, j position where to look at the profile \\
+   file\_name : name of the file \\
+   var\_name : name of the variable \\
+For instance: cdfprofile  32 45 ORCA035-G32\_y0008m01d10\_gridT.nc votemper  \\
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on standard output
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfprobe:}}
+\addcontentsline{toc}{subsection}{cdfprobe}
+\index{cdfprobe}
+\begin{description}
+\item[Purpose:]Display a 2 columns output time(d) value
+\item[Usage:] {\em cdfprobe  cdf\_file I J  cdfvar [level]}
+\item[Input:] cdf\_file =  name of the file \\
+    I J : position where to look at
+   cdfvar : name of the cdf variable  \\
+   level : (optional) : Level where to look at
+   example:  cdfprobe u10.nc 300 350 u10  \\
+   example:  cdfprobe alltag\_gridT.nc 240 234 votemper 30
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on standard output
+\item[Associated script:] none
+\end{description}
+
+\subsection*{\underline{cdfwhereij:}}
+\addcontentsline{toc}{subsection}{cdfwhereij}
+\index{cdfwhereij}
+\begin{description}
+\item[Purpose:] Give the longitude and latitude of the (i,j) points from a coordinate file.
+\item[Usage:] {\em cdfwhereij  imin imax jmin jmax coordinate\_file point\_type }
+\item[Input:] imin, imax, jmin, jmax : zoom in i,j coordinates \\
+      coordinate\_file : either a coordinate or a mesh\_hgr file \\
+      point\_type : either T, U, V or F in upper or lower case \\
+For instance: cdfwhereij   32 45 123 432 coordinate\_orca025.nc f \\
+will give the zoom position in longitude latitude coordinates, for the f points 
+\item[Required mesh\_mask files or other files:] either coordinates or mesh\_hgr files.
+\item[Output:] output is done on standard output
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdffindij:}}
+\addcontentsline{toc}{subsection}{cdffindij}
+\index{cdffindij}
+\begin{description}
+\item[Purpose:] Give the i,j corresponding to longitude and latitude given as arguments.
+\item[Usage:] {\em cdffindij  xmin xmax ymin ymax [coordinate\_file]  [point\_type] }
+\item[Input:] xmin, xmax, ymin, ymax : zoom in geographical coordinates \\
+      coordinate\_file : either a coordinate or a mesh\_hgr file. If not given, assumes $coordinates.nc$ \\
+      point\_type : either T, U, V or F in upper or lower case. If not given assumes $F$ \\
+For instance: cdffindij   -30 0 -20 40  coordinate\_orca025.nc f \\
+will give the zoom position imin imax jmin jmax for the given configuration, for nearest f-points. \\
+{\tt  cdffindij -180 0 -20 25 coordinates\_ORCA\_R025\_lombok+ombai.nc F} \\
+gives:
+\begin{verbatim}
+  rdis =  0.1316580027
+  rdis =  0.1287123561
+   430  1149   417   602
+   -179.88     -0.12    -19.96     25.03
+\end{verbatim}
+rdis is a raw estimation (in Deg.) of the distance between the given position, and the real position. In some cases,
+the search algorithm fails (zoom across boundaries or in very distorted regions), and an error message is displayed.
+\item[Required mesh\_mask files or other files:] either coordinates or mesh\_hgr files.
+\item[Output:] output is done on standard output
+\item[Remark:] The arguments must be in the proper order. In particular, if the user needs to specify the point\_type
+it is necessary to also specify the name of the coordinate file.
+\item[Associated script:] none
+\end{description}
+
+\subsection*{\underline{cdfcofdis:}}
+\addcontentsline{toc}{subsection}{cdfcofdis}
+\index{cdfcofdis}
+\begin{description}
+\item[Purpose:] Compute the distance from the coast at the surface of the ocean, and write it to a netcdf file, just as the cofdis
+routine of OPA does. This is therefore the off-line version of cofdis. Remember that the on-line version is not mpp compliant! The given distance corresponds to T points.
+\item[Usage:] {\em cdfcofdis mesh\_hgr.nc  mask.nc gridT.nc }
+\item[Input:] the mesh\_zgr and mask files are given on input (with arbitrary names), together with a gridT file, used only for size and depth references.
+\item[Required mesh\_mask files or other files:] given as argument
+\item[Output:]  The output file is named dist.coast, with variable name $Tcoast$. Despites its name it is a netcdf file. Name is kept as in NEMO.
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfweight:}}
+\addcontentsline{toc}{subsection}{cdfweight}
+\index{cdfweight}
+\begin{description}
+\item[Purpose:] Return a binary weight file to be used by cdfcoloc.
+\item[Usage:] {\em cdfweight  Greg\_File  [coord\_file] [point\_type]}
+\item[Input:] Greg\_file = Like G. Holloway file : asci file iyxz.txt (is a station id). \\
+      coordinate\_file : either a coordinate or a mesh\_hgr file. If not given, assumes $coordinates.nc$ \\
+      point\_type : either T, U, V or F in upper or lower case. If not given assumes $F$ \\
+      produce a weight file called weight\_point\_type.bin \\
+For instance: cdfweight  iyxz7904.txt  coordinate\_ORCA025.nc T \\
+will produce weight\_T.bin file.
+\item[Required mesh\_mask files or other files:] either coordinates or mesh\_hgr files, mesh\_zgr.nc
+\item[Output:] weight file.  This file is an unformatted binary fortran file, suitable for cdfcoloc. It contains as
+ many records as stations in the input ascii file. Each record consists of :\\
+ID ymin xmin idep imin jmin kmin iquadran hN alpha beta gamma (read the code for more details).\\ 
+\item[Remark:] The arguments must be in the proper order. In particular, if the user needs to specify the point\_type
+it is necessary to also specify the name of the coordinate file.
+\item[Associated script:] none
+\end{description}
+
+\subsection*{\underline{cdfcoloc:}}
+\addcontentsline{toc}{subsection}{cdfcoloc}
+\index{cdfcoloc}
+\begin{description}
+\item[Purpose:] Return an ascii file with colocalized U V Sx Sy and H from a weight file given as input.
+\item[Usage:] {\em cdfcoloc weight\_root gridT gridU gridV }
+\item[Input:] weight\_root is the begining of the weight file name (excluding \_T.bin, \_U.bin or \_V.bin ) \\
+      grid T gridU gridV are the model outputfile from   which we take the velocities to be colocalized.
+\item[Required mesh\_mask files or other files:] either coordinates or mesh\_hgr files, mesh\_zgr.nc and mask.nc
+\item[Output:] produced a default izUVSxSyH.txt ASCII file, formed with 7 columns of data and one line per station. \\
+          i, z : station ID and depth (as on the Greg file). \\
+          U V : E-W and N-S (geographic) velocity component.(cm/s) \\
+          Sx, Sy : e-W and N-S (geographic) bottom slope (\%)\\
+          H: bottom topography (m) \\
+         All these values are computed with a trilinear interpolation at the station location.
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfweight2D:}}
+\addcontentsline{toc}{subsection}{cdfweight2D}
+\index{cdfweight}
+\begin{description}
+\item[Purpose:] Return a binary weight file to be used by cdfcoloc.
+\item[Usage:] {\em cdfweight  track.iyxz  [pseudo\_coord\_file] [point\_type]}
+\item[Input:]  track.iyxz: is a survey bathymetric track file, taken from GEODAS web site, for instance (file.xyz), modified in order
+      to have i lat lon bathy in this order. A script is provided to change file.xyz into file.iyxz (see below) \\
+      pseudo\_coordinate\_file : either a coordinate or a mesh\_hgr file. If not given, assumes $coordinates.nc$ \\
+      point\_type : either T, U, V or F in upper or lower case. If not given assumes $F$ \\
+      produce a weight file called weight\_point\_type.bin \\
+For instance: cdfweight  iyxz.txt  pseudo\_coordinates\_zapiola\_etopo1.nc T \\
+will produce weight\_T.bin file.
+\item[Required mesh\_mask files or other files:] either coordinates or mesh\_hgr files, mesh\_zgr.nc
+\item[Output:] weight file.  This file is an unformatted binary fortran file, suitable for cdfcoloc. It contains as
+ many records as stations in the input ascii file. Each record consists of :\\
+ID ymin xmin idep imin jmin kmin iquadran hN alpha beta gamma (read the code for more details).\\ 
+\item[Remark:]  This program is a downgrade of cdfweight. Produced weight files will be used by cdfcoloc2d. It is suitable to treat bathymetric files, for instance (etopo1, GEBCO etc...), in order to colocate hydrographic tracks.
+\item[Associated script:] xyz2iyxz.ksh  to convert GEODAS xyz file into input file for cdfweight2D
+\end{description}
+
+\subsection*{\underline{cdfcoloc2D:}}
+\addcontentsline{toc}{subsection}{cdfcoloc2D}
+\index{cdfcoloc2D}
+\begin{description}
+\item[Purpose:] Return an ascii file with colocalized H from a weight file given as input.
+\item[Usage:] {\em cdfcoloc2D weight\_root BATHYFILE } 
+\item[Input:] weight\_root is the begining of the weight file name (excluding \_T.bin) \\
+      BATHYFILE is a bathymetric file such as ETOPO1 or GEBCO1 for instance.
+\item[Required mesh\_mask files or other files:] either coordinates or mesh\_hgr files
+\item[Output:] produced a default izb.txt ASCII file, formed with 3 columns of data and one line per station. \\
+          i, z : station ID and depth (as on the Greg file). \\
+          H: bottom topography (m) \\
+         All these values are computed with a bilinear interpolation at the station location.
+\item[Remark:] mesh\_hgr.nc file is in this case a pseudo\_coordinates.nc file, computed fron the lon,lat input file by mkcoor.f90
+\item[Associated script:] none
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfclip:}}
+\addcontentsline{toc}{subsection}{cdfclip}
+\index{cdfclip}
+\begin{description}
+\item[Purpose:] Extract a subzone of a netcdf file.
+\item[Usage:] {\em cdfclip -f file -zoom imin imax jmin jmax [kmin kmax ]}
+\item[Input:] file is the netcdf file to clip \\
+      imin imax jmin jmax are the limit in (I,J) space to clip. If optional kmin and kmax are given, cdfclip also
+   clip in the vertical direction. Otherwise, it clips the whole depth of the file.
+For instance: cdfclip   -f coordinates.nc -zoom 100 300 250 400  
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on  {\tt cdfclip.nc} with same variables name as original.
+\item[Remark:] Still to be done : limit to specified variables, clip on the vertical.
+\item[Associated script:] none
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfmaxmoc:}}
+\addcontentsline{toc}{subsection}{cdfmaxmoc}
+\index{cdfmaxmoc}
+\begin{description}
+\item[Purpose:] Give the max and min intensity of the MOC, previously computed with cdfmoc.
+\item[Usage:] {\em cdfmaxmoc moc\_file  basin latmin latmax depmin depmax }
+\item[Input:] moc\_file is the netcdf file computed with $cdfmoc$ or $cdfmoc-full$ \\
+    basin is an indicator for the required basin. Can either atl, inp, ind, pac or glo. \\
+    latmin, latmax, depmin, depmax is the window (lat,dep) where the extrema are searched. 
+
+For instance: cdfmaxmoc ORCA025-G42\_y0010\_MOC.nc atl   -30 70 200 5000 \\
+will indicates the max/min of the overturning and their respective location, for year 10 of
+the run ORCA025-G42, for Atlantic basin, limited to 30S-70N, between 200 m and 5000 m depth.
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on standard output
+\item[Remark:] depmin and depmax are given as positive.
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfzoom:}}
+\addcontentsline{toc}{subsection}{cdfzoom}
+\index{cdfzoom}
+\begin{description}
+\item[Purpose:] Shows an ASCII representation of a 2D (x-y, x-z or y-z) slab of any variable from an output file
+\item[Usage:] {\em cdfzoom -f ncfile -zoom imin imax jmin jmax [-lev kmin kmax] [-fact scale\_factor] [-var cdfvarname] }
+\item[Input:] ncfile is the name of the file to look at. \\
+     imin,imax,jmin,jmax are the limits for the horizontal zoom.  \\
+     kmin, kmax  are the limits for the vertical zoom. If kmin $=$ kmax, then the x-y slab is shown at level kmin. If kmax $>$ kmin,
+then either a x-z or y-z slab will be shown, but in this case, either imin$=$imax, or jmin$=$jmax, otherwise the program will stop. \\
+      scale\_factor is an optional  dividing scale factor used to adjust the output values to the fortran format (f12.4) \\
+      cdfvarname is the name of the variable you want to look at. If not given, or wrong name, the program will propose the list of
+    available variables. \\
+
+For instance: cdfzoom -f ORCA05-G50\_y1949m01d30\_gridT.nc -lev 1 43 -zoom 470 482 175 175 -var votemper \\
+will  show the vertical slab (x-z) of the temperature field, at J=175, for I between 470 and 482, K from 1 to 43
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on standard output
+\item[Associated script:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfbathy:}}
+\addcontentsline{toc}{subsection}{cdfbathy}
+\index{cdfbathy}
+\begin{description}
+\item[Purpose:] Modify a bathymetric file for NEMO, in many different ways.
+\item[Usage:] {\em cdfbathy -f bathy\_file -zoom imin imax jmin jmax -fillzone -fullstep depmin
+      -replace 'file' -dumpzone 'file' -a -o } \\
+   -file (or -f ) : name of bathy file \\
+   -zoom (or -z ) : sub area of the bathy file to work with (imin imax jmin jmax) \\
+   -fillzone (or -fz ) : sub area will be filled with 0 up to the first coast line \\
+   -raz\_zone (or -raz ) : sub area will be filled with 0 up \\
+   -raz\_below (or -rb ) depmin : bathy set to 0 in the area when bathy <= depmin \\
+   -fullstep (or -fs ) depmin  : sub area will be reshaped as full-step, below depmin \\
+               requires the presence of the file zgr\_bat.txt (from ocean.output, eg ) \\
+   -dumpzone (or -d ): sub area will be output to an ascii file, which can be used by -replace \\
+               after manual editing \\
+   -nicedumpzone (or -nd ): sub area will be output to an ascii file (nice output) \\
+   -replace (or -r ) : sub area defined by the file will replace the original bathy \\
+   -append (or -a )  : fortran log file (log.f90) will be append with actual modif \\
+              Standard behaviour is to overwrite/create log file \\
+   -overwrite (or -o ): input bathy file will be used as output. \\
+              Standard behaviour is to use a work copy of the original file \\
+               (indexed from 01 to 99 if necessary ) 
+
+\item[Input:] This program allows a short syntax for option, and a longer, more mnemonic. \\ 
+Basically, this program works on a copy of the input file, indexed from 01 to 99 if necessary. You can work directly
+on the input file with the option -overwrite ( or -o), but take care that original data will be modified. \\
+The second important point is that all actions specified through the options apply to the sub-area indicated by the zoom 
+option, given in the (I,J) space. \\
+Specific actions are then controled by the options :\\
+\begin{description}
+  \item[information]: just create an ascii file with a formatted copy of the sub-area \\
+	-dumpzone (-d) 'file.txt' \\
+        -nicedumpzone (-nd) 'file.txt', same as -d but with a different format.
+  \item[modification]: For these king of action, a log file (log.f90) is maintained. It records the different modification in    
+               a fortran 90 file, that can be used afterward to replace the original bathy. Changes can be append to the log file
+               if -append (-a) option is given. The possible modifications are :\\
+     -fillzone (-fz) : Fill a subarea between the edge of the domain and the 1rst coast line point. Usefull to fill the 
+             Pacific, for instance, in a NATL4 configuration, extracted from ORCA025.\\
+     -raz\_zone (-raz) : the sub-area is set to 0. \\
+     -replace (-r) 'file.txt' : replace the 'patch' of bathymetry given by file.txt in the input file. The file.txt is typically
+            created from a previous call with -dumpzone option, and manually edited to fix some details of the topography. \\
+     -fullstep (-fs) : the bathy defined in the sub-area will be z-step like bathymetry. This option requires, an ASCII file 
+            describing the vertical discretization of the model. This file ( {\tt zgr\_bat.txt} ) is made from a copy of 
+            {\tt ocean.output}
+\end{description}
+\item[Required mesh\_mask files or other files:]  {\tt zgr\_bat.txt} for -fs option. ( Should be replace by mesh\_zgr.nc)
+\item[Output:] Output file is 'input\_file'.nn where nn is a 2 digit integer incremented as necessary not to overwrite 
+      existing file.
+\item[Associated script:] none
+\item[Remark:] This program was written for helping the user to tune a bathymetric file. Its dump/replace capability as well
+     as the log file maintenance is very much appreciated.  It can be improved or extended with new options, if necessary. 
+     However, it is not intended to replace the OPABAT package, which well performs initial interpolation and filtering.
+\item[Example:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfvar:}}
+\addcontentsline{toc}{subsection}{cdfvar}
+\index{cdfvar}
+\begin{description}
+\item[Purpose:] Extension to any variable of a file of cdfbathy (see cdfbathy for details).
+\item[Usage:] {\em -f file -v var -zoom imin imax jmin jmax klev jtime -fillzone -fullstep depmin
+      -replace 'file' -dumpzone 'file' -a -o}
+\item[Input:] same as cdfbathy. In addition, you specify the variable name to work with, and the level in the zoom option
+\item[Required mesh\_mask files or other files:]
+\item[Output:]  as cdfbathy
+\item[Remark/bugs :] This program requires some cleaning as some options are not relevant for a variable different than bathymetry ... For instance, do not use options such as -fullstep with temperature or salinity ... this may lead to stupid results !
+\item[Associated scripts:] none
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmax:}}
+\addcontentsline{toc}{subsection}{cdfmax}
+\index{cdfmax}
+\begin{description}
+\item[Purpose:] Display min/max of a variable in a file, and their respective location. A sub area can be specified either horizontally or vertically.
+\item[Usage:] {\em cdfmax -f ncfile [-var cdfvarname] [-zoom imin imax jmin jmax] [-lev kmin kmax] [-fact scale\_factor] [-xy]}
+\item[Input:] ncfile is the name of the file to look at. \\
+      cdfvarname is the name of the variable you want to look at. If not given, or wrong name, the program will propose the list of
+    available variables. \\
+     imin,imax,jmin,jmax are the limits for the horizontal zoom.  \\
+     kmin, kmax  are the limits for the vertical zoom. \\
+     A vertical slab can thus be specified, playing around with the limits. \\
+     scale\_factor is an optional multiplying scale factor usefull for units change. \\
+     If -xy option is used, cdfmax is forced to work on an horizontal slab, whatever the limits are.
+
+For instance: \\
+\scriptsize{
+\begin{verbatim}
+cdfmax -f ORCA05-G60_y1968m12d26_gridT.nc -zoom 500 500 300 500 -var votemper
+ votemper with multiplying factor of  1.000000000
+ i-slab  MAX:   i    long   j    lat   k     dep    MaxValue    MIN:  i    long   j     lat   k     dep    MinValue
+ 500          500  -37.75 300  24.24   8   63.88   0.24313E+02       500  -88.71 499  82.95   1    3.05  -0.17027E+01
+\end{verbatim} }
+will  show the min/max temperature over the vertical slab (y-z)  at I=500, for J between 300 and 500.
+
+\scriptsize{
+\begin{verbatim}
+cdfmax -f ORCA05-G60_y1968m12d26_gridT.nc -fact 100 -var sossheig
+ sossheig with multiplying factor of  100.0000000
+level   dep  MAX:  i     long   j    lat     MaxValue  MIN:  i     long  j     lat     MinValue
+   1    3.05       56  100.25 277  13.38   0.15471E+03      566   -4.75  92 -61.73  -0.13513E+03
+\end{verbatim} }
+will show the min/max SSH in cm.
+
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on standard output
+\item[Associated script:] none
+\item[Remark:] In the CDFTOOLS directory, the attentive reader will find a {\em cdfmax-test} version of this program. It is a beta
+version  where the input file may have more than one time step in it. It requires modification in cdfio, and it is not working in
+the standard distribution. Wait for next one !
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmax\_sp:}}
+\addcontentsline{toc}{subsection}{cdfmax\_sp}
+\index{cdfmax\_sp}
+\begin{description}
+\item[Purpose:] Display min/max of a variable in a file, and their respective location. A sub area can be specified either horizontally or vertically.
+        This is very similar to cdfmax, except that it takes into account the 'missing\_value' attribute for variables.
+\item[Usage:] {\em cdfmax\_sp -f ncfile [-var cdfvarname] [-zoom imin imax jmin jmax] [-lev kmin kmax] [-fact scale\_factor] [-xy] }
+\item[Input:] ncfile is the name of the file to look at. \\
+      cdfvarname is the name of the variable you want to look at. If not given, or wrong name, the program will propose the list of
+    available variables. \\
+     imin,imax,jmin,jmax are the limits for the horizontal zoom.  \\
+     kmin, kmax  are the limits for the vertical zoom. \\
+     A vertical slab can thus be specified, playing around with the limits. \\
+     scale\_factor is an optional multiplying scale factor usefull for units change. \\
+     If -xy is specified, the program is forced to work on an horizontal slab, even if 1 direction is degenerated.
+
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on standard output
+\item[Associated script:] none
+\item[Remark:] In the CDFTOOLS directory, the attentive reader will find a {\em cdfmax-test} version of this program. It is a beta
+version  where the input file may have more than one time step in it. It requires modification in cdfio, and it is not working in
+the standard distribution. Wait for next one !
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdf16bit:}}
+\addcontentsline{toc}{subsection}{cdf16bit}
+\index{cdf16bit}
+\begin{description}
+\item[Purpose:] Convert a 32 bit (real*4, or float) model output file into a 16 bit (integer*2 or short) outputfile. The program scans
+   the variables of the file given as input, and if the variables name's is within a pre-defined list (see below), then a \SF and
+   an \ao values are determined to re-map the float onto a short. Used \SF and \ao are written to the file as
+   an attribute of the given variable. These attributes are now recognized by many Netcdf tools and if they exist in the file they are
+   used as soon as the file is read. Defaut values are respectively 1 and 0. 
+
+   Additional capability is provided for variables with a great range of values, for which the scaling results in a big loss in precision: The
+log10 of the field is taken before the scaling. This works only for positive values. The save\_log10 attribute 
+is associated to this capability. It can take the value 0 (default, no log10 taken) or 1 ( log10 transform before scaling).
+\item[Usage:] {\em cdf16bit 32\-bit\_ncfile  [-check] [-verbose] }
+\item[Input:]  32\-bit\_ncfile is the data file.\\
+      -check : This option enables a checking of the scaling : a warning is emitted if the scaling results in an overflow for short variable. The
+               min and max values of the corresponding field is indicated, and a suggestion is made for changing \SF and \ao. \\
+      -verbose : this implicitely activates -check. It gives the same kind of information but in case of 3D variables, details are given foreach
+                 level. \\
+For instance: cdf16bit ORCA025-G70\_y2004m02\_gridT.nc -check  \\
+will produce a cdf16bit file with the same variable name as in the input file.
+\item[Required mesh\_mask files or other files:] none
+\item[Output:] output is done on cdf16bit.nc file.
+\item[Comments:]  A DRAKKAR rule is to rename this file as the original 32 bits file, but with nc16 extension. The -check option is encouraged
+      at least when initiating the conversion. If the \SF ansd \ao are not adequate, the only way is to get the code and change the values,
+      which are hard coded (in fact, what is hard coded are the min and max value for a given variable; \SF and \ao are deduced from them).
+\item[Details:] The standard variables of model output are automatically recognize. Variables not in the list are kept in float. At present,
+         only the vertical diffusivity (votkeavt) is saved using log10.
+\begin{small}
+  \begin{verbatim}
+    votemper       ! Potential temperature (Deg C)
+    vosaline       ! Salinity (PSU)
+    sossheig       ! Sea Surface Heigh (m)
+    somxl010       ! Mixed layer depth (m)
+    sohefldo       ! Total Heat flux Down (W/m2)
+    soshfldo       ! Solar Heat flux Down (W/m2)
+    sowaflup       ! Evaporation - Precipitation Up ( kg/m2/s)
+    sowafldp       ! SSS damping term Up (kg/m2/s )
+    iowaflup       ! ???
+    sowaflcd       ! Concentration Dilution water flux (kg/m2/s)
+    solhflup       ! Latent Heat Flux Up (W/m2)
+    solwfldo       ! Long Wave radiation Heat flux Down (W/m2)
+    sosbhfup       ! Sensible Heat Flux Up (W/m2)
+    vozocrtx       ! Zonal Velocity U (m/s)
+    sozotaux       !  Zonal Wind Stress (N/m2)
+    vomecrty       ! Meridional Velocity V (m/s)
+    sometauy       !  Meridional  Wind Stress (N/m2)
+    vovecrtz       ! Vertical Velocity W (m/s)
+    votkeavt       ! Vertical mixing coef log(avt) log(m2/s)   : USE SAVE_LOG10 
+    isnowthi       ! Snow Thickness (m)
+    iicethic       ! Ice Thickness (m)
+    iiceprod       ! Ice Production (m/kt) (step ice)
+    ileadfra       ! Ice Lead Fraction (%) (In fact, ice concentration)
+    iicetemp       ! Ice Temperature (Deg C )
+    ioceflxb       ! Ocean Ice flux  (W/m2)
+    iicevelu       ! Zonal Ice Velocity (m/s) (at U point)
+    iicevelv       ! Meridional Ice Velocity (m/s) (at V point)
+    isstempe       ! Sea Surface Temperature (Deg C)
+    isssalin       ! Sea Surface Salinity (PSU)
+    iocetflx       ! Total Flux at Ocean Surface (W/m2)
+    iocesflx       ! Solar Flux at Ocean Surface (W/m2)
+    iocwnsfl       ! Non Solar Flux at Ocean surface (W/m2)
+    iocesafl       ! Salt Flux at Ocean Surface (kg/m2/kt)
+    iocestru       ! Zonal Ice Ocean Stress (N/m2)
+    iocestrv       ! Meridional Ice Ocean Stress (N/m2)
+    iicesflx       ! Solar FLux at ice/ocean Surface (W/m2)
+    iicenflx       ! Non Solar FLux at ice/ocean Surface (W/m2)
+    isnowpre       ! Snow Precipitation (kg/day)
+  \end{verbatim}
+ \end{small}
+     A more flexible way to operate will be imagined soon !
+
+Let float being the physical value and short the stored value, then the following formula applies \\
+       $ float = short \times \SF + \ao $ 
+\item[Associated script:] cdf16bit.ll
+\end{description}
+
+\subsection*{\underline{cdfconvert:}}
+\addcontentsline{toc}{subsection}{cdfconvert}
+\index{cdfconvert}
+\begin{description}
+\item[Purpose:]  Convert a set of dimgfile (Clipper like)
+                 to a set of CDF files (Drakkar like )
+\item[Usage:] {\em cdfconvert 'Clipper tag ' 'CLIPPER confcase'}
+\item[Input:] Clipper tag is the tag of the dimg clipper file. \\
+               CLIPPER confcase is for instance ATL6-V6
+\item[Required mesh\_mask files or other files:] mesh\_hgr.nc and mesh\_zgr.nc. There are 2 programs 
+    (coordinates2hgr.f90 and coordinates2zgr.f90) which do the job! They require a coordinates.diags and an ASCII bathy file, {\it a la clipper}. Although
+  they are not built as cdftools, the are provided in the cdftools distribution for convenience.
+\item[Output:] {\tt CONFCASE\_TAG\_grid[TUV].nc,CONFCASE\_TAG\_PSI.nc } with the standard name for variables.
+\item[Associated script:] convclipper2nc.ksh
+\item[Remark:] As you can see in the associated script, for a given tag, the full bunch of clipper files must be located
+               in the current directory. ({\it ie} \_U\_, \_V\_, \_T\_, \_S\_, \_2D\_ and eventually \_SSH\_. \_UU\_ and \_VV\_ )
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfflxconv:}}
+\addcontentsline{toc}{subsection}{cdfflxconv}
+\index{cdfflxconv}
+\begin{description}
+\item[Purpose:]  Convert a set of fluxes dimgfile (Clipper like)
+                 to a set of CDF files (Drakkar like )
+\item[Usage:] {\em cdfflxconv  YEAR CONFIG }
+\item[Input:]  YEAR is the year on 4 digits, CONFIG, is the CLIPPER config name ({\it eg} ATL3
+\item[Required mesh\_mask files or other files:] clipper coordinates.diags file.
+\item[Output:] This program creates 6 netcdf file with the standard NEMO name for forced simulation:\\
+\begin{verbatim}
+                    ECMWF_emp_1d_${year}.${config}.nc
+                    ECMWF_qnet_1d_${year}.${config}.nc
+                    ECMWF_qsr_1d_${year}.${config}.nc
+                    ECMWF_sst_1d_${year}.${config}.nc
+                    ECMWF_taux_1d_${year}.${config}.nc
+                    ECMWF_tauy_1d_${year}.${config}.nc
+\end{verbatim}
+\item[Associated script:] cdfflxconv.ll
+\item[Remark:]
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfsstconv:}}
+\addcontentsline{toc}{subsection}{cdfsstconv}
+\index{cdfsstconv}
+\begin{description}
+\item[Purpose:]  Convert a set of SST dimgfile (Clipper like)
+                 to a set of CDF files (Drakkar like )
+\item[Usage:] {\em cdfsstconv  YEAR CONFIG }
+\item[Input:]  YEAR is the year on 4 digits, CONFIG, is the CLIPPER config name ({\it eg} ATL3
+\item[Required mesh\_mask files or other files:] clipper coordinates.diags file.
+\item[Output:] This program creates 6 netcdf file with the standard NEMO name for forced simulation:\\
+\begin{verbatim}
+                    ECMWF_sst_1d_${year}.${config}.nc
+\end{verbatim}
+\item[Associated script:] cdfsstconv.ll
+\item[Remark:] This is in fact a subset of cdfflxconv, limited to SST by ugly goto: :(
+\end{description}
+
+\subsection*{\underline{cdfstrconv:}}
+\addcontentsline{toc}{subsection}{cdfstrconv}
+\index{cdfstrconv}
+\begin{description}
+\item[Purpose:]  Convert a set of STRESS dimgfile (Clipper like)
+                 to a set of CDF files (Drakkar like )
+\item[Usage:] {\em cdfstrconv  YEAR CONFIG }
+\item[Input:]  YEAR is the year on 4 digits, CONFIG, is the CLIPPER config name ({\it eg} ATL3
+\item[Required mesh\_mask files or other files:] clipper coordinates.diags file.
+\item[Output:] This program creates 6 netcdf file with the standard NEMO name for forced simulation:\\
+\begin{verbatim}
+                    ECMWF_taux_1d_${year}.${config}.nc
+                    ECMWF_tauy_1d_${year}.${config}.nc
+\end{verbatim}
+\item[Associated script:] cdfstrconv.ll
+\item[Remark:] This is in fact a subset of cdfflxconv, limited to STRESS by ugly goto: :(
+\end{description}
+
+
+
+
+
+\newpage
+\subsection*{\underline{cdfmltmask:}}
+\addcontentsline{toc}{subsection}{cdfmltmask}
+\index{cdfmltmask}
+\begin{description}
+\item[Purpose:]  Mask a given variable of the input file with the appropriate mask read in mask file.
+\item[Usage:] {\em cdfmltmask Input\_file mask\_file cdf\_var point\_type\_on\_Cgrid}
+\item[Input:] Input\_file : file to be masked \\
+           mask\_file : mask file \\
+           cdf\_var: variable to be masked \\
+           point\_type\_on\_Cgrid : either T U V or F
+\item[Required mesh\_mask files or other files:] none, the mask name is given on command line.
+\item[Output:] output is done on Input\_file\_masked.
+\item[Associated script:] none
+\item[Contributor:] M\'elanie Juza.
+\item[Remark:] This program perform the multiplication of the input field with the mask. It can be easily taken as
+      first base for a more complex operation on files.
+\end{description}
+
+\subsection*{\underline{cdfmsk:}}
+\addcontentsline{toc}{subsection}{cdfmsk}
+\index{cdfmsk}
+\begin{description}
+\item[Purpose:]  Compute the number of sea grid points from a mask file given on input
+\item[Usage:] {\em cdfmsk maskfile}
+\item[Input:] ncfile is the name of the mask file to look at.
+\item[Required mesh\_mask files or other files:] none, except the mask given as input.
+\item[Output:] output is done on standard output.
+\item[Associated script:] none
+\item[Remark:] The interest of this program is limited; it provides a very stable info for a given config ...
+\end{description}
+
+\newpage
+\subsection*{\underline{cdfmsksal:}}
+\addcontentsline{toc}{subsection}{cdfmsksal}
+\index{cdfmsksal}
+\begin{description}
+\item[Purpose:]  Compute a bimg (chart compliant) mask file for the surface of the model, from the salinity field.
+\item[Usage:] {\em cdfmsksal gridT\_file}
+\item[Input:]  any file holding a vosaline field
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] Output is done on a bimg file, called tmask.bimg
+\item[Associated script:] none
+\item[Remark:] The output is specifically dedicated to the chart plotting program. It is usefull for masking ({\it e.g.}
+forcing files) on the fly.  Purely netcdf/Ferret acros  may skip this one !
+\end{description}
+
+\subsection*{\underline{cdfmkmask:}}
+\addcontentsline{toc}{subsection}{cdfmkmask}
+\index{cdfmkmask}
+\begin{description}
+\item[Purpose:] Compute a full 3D byte\_mask file  (tmask, umask, vmask, fmask) from salinity field in input file.
+\item[Usage:] {\em cdfmkmask gridT\_file}
+\item[Input:]  any file holding a vosaline field
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] Netcdf file mask\_sal.nc with tmask umask vmask and fmask variables, short integer.
+\item[Associated script:] none
+\item[Remark:] Caution on fmask that may differ from the one produced online by the code, because of local particular settings.
+\end{description}
+
+\subsection*{\underline{cdfmkmask-zone:}}
+\addcontentsline{toc}{subsection}{cdfmkmask-zone}
+\index{cdfmkmask-zone}
+\begin{description}
+\item[Purpose:] Compute a full 3D byte\_mask file  (tmask, umask, vmask, fmask) from salinity field in input file, limited to a given zone.
+\item[Usage:] {\em cdfmkmask gridT\_file lonmin lonmax latmin latmax output\_file}
+\item[Input:]  gridT is any file holding a vosaline field, lonmin, lonmax, latmin, latmax are the window coordinates where the the mask is build. Outside this window, the mask is set to 0 (as on land).
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] Netcdf outputfile whose name is given as arguments, with tmask umask vmask and fmask variables, short integer.
+\item[Associated script:] none
+\item[Remark:] Caution on fmask that may differ from the one produced online by the code, because of local particular settings.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfvita:}}
+\addcontentsline{toc}{subsection}{cdfvita}
+\index{cdfvita}
+\begin{description}
+\item[Purpose:]  Compute surface velocity components on the A-grid (T-point), from the C-grid opa output. It also computes the
+                  module of the velocity on the A-grid.
+\item[Usage:] {\em cdfvita gridU gridV }
+\item[Input:]  gridU, gridV: files holding the variables vozocrtx and vomecrty on the C-grid
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] Output file is vita.nc, with the variables sovitua, sovitva , sovitmod
+\item[Associated script:] none
+\item[Remark:] This program is practically ready to treat the full 3D case, if necessary
+\end{description}
+
+\subsection*{\underline{cdfspeed:}}
+\addcontentsline{toc}{subsection}{cdfspeed}
+\index{cdfspeed}
+\begin{description}
+\item[Purpose:] Compute the module of a velocity field
+\item[Usage:] {\em cdfspeed gridU gridV varU varV }
+\item[Input:]  gridU, gridV: files holding the velocity components \\
+       varU, varV the name of the variables for zonal and meridional components
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] Output file is speed.nc, with the variable U.
+\item[Associated script:] none
+\item[Remark:] This program assume that the velocity components are on the A-grid (tracer points). Which is fine for forcing fields, but not correct
+ for model output. cdfvita may be used as a pre-processor to translate model velocities on the A-grid.
+\end{description}
+
+
+\newpage
+\subsection*{\underline{cdfimprovechk:}}
+\addcontentsline{toc}{subsection}{cdfimprovechk}
+\index{cdfimprovechk}
+\begin{description}
+\item[Purpose:] Given a file with gridded 'observed' or 'sea-truth' value ({\it e.g}  Levitus files), and a reference model output for the
+same quantity as the observation, this program tests a $3^{rd}$ file (model output), giving an estimate of the improvement of the test,
+with respect to the reference. 
+\item[Usage:] {\em cdfimprovechk  cdfvariable obs.nc ref.nc test.nc }
+\item[Input:]   cdfvariable = variable name used for checking. Must be in all 3 files. \\
+                  obs.nc : observation file ('sea truth') \\
+                  ref.nc : reference file ('model base run') \\
+                  test.nc : test file (' model sensitivity experiment')
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] chk.nc, same variable (but not same sense!)\\
+        Better than a long speech, the improvement estimates is given by: \\
+
+$ chk = (reference - test ) / ( reference - observation) \cdot mask $ \\
+
+    Where this value is $< 1$  and $ > 0$, the test is better than the reference (with respect to the working variable). Where it is  greater
+than 1 it indicates a degradation of the test. Where the value is $< 0$, it denotes an over-shoot of the correction. Where the value is $< -1$,
+ the overshoot gives a worse solution than the reference.
+\item[Associated script:] none
+\item[Example:]  In particular, it was written for the tunning of TKE parameter and impact on the summer mixed layer depth. The observations
+files comes from the de Boyer Montaigu climatology; the reference case was with a standard TKE scheme. Different test cases where with the
+new improved tke scheme.  The results are interesting but not necessarly easy to undestand or interpret.
+
+\end{description}
+\newpage
+
+\subsection*{\underline{cdfcsp:}}
+\addcontentsline{toc}{subsection}{cdfcsp}
+\index{cdfcsp}
+\begin{description}
+\item[Purpose:]  Change missing value to 0.
+\item[Usage:] {\em cdfcsp 'list of files' }
+\item[Input:]  input file are typically files from OPA8.2, with a missing value of 1.e20. It can take multi time-frame files on input.
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] CAUTION: The input file is rewritten with the correction on the missing value.
+\end{description}
+
+\newpage
+
+\subsection*{\underline{cdfpolymask:}}
+\addcontentsline{toc}{subsection}{cdfpolymask}
+\index{cdfpolymask}
+\begin{description}
+\item[Purpose:]  Build a mask file (0/1) with polygon shape. Set mask to 1 in the polygon.
+\item[Usage:] {\em cdfpolymask 'polygon file' 'reference file'  }
+\item[Input:]  polygon file : This is an ASCII file describing each polygons that are to be used for masking. For each polygon, there
+is a corresponding block of lines: \\
+      -- first line is the name of the polygon (for easy navigation in the file) \\
+      -- second line gives the number of vertices for the polygon, and a flag set to 1 if the polygon crosses the date line (+/- 180 deg) (0 either). \\
+      -- next as many lines as vertices with x, y position of each vertex. \\
+         reference file: a reference netcdf file for headers.
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] results is on polymask.nc file, in the polymask variable (2D variable).
+\item[Remark:] This cdftools uses a new module called modpoly.f90 which is described in the programmer manual.
+\end{description}
+
+\subsection*{\underline{cdfsmooth:}}
+\addcontentsline{toc}{subsection}{cdfsmooth}
+\index{cdfsmooth}
+\begin{description}
+\item[Purpose:] Perform a spatial filtering on input file. Various filters are availble (list to be completed), Lanczos, Hanning, shapiro etc ...
+\item[Usage:] {\em cdfsmooth 'filename' 'n' [filter type] }
+\item[Input:]  filename hold the input data. \\
+         n is the number of grid step to filter. \\
+         filter type can be either Lanczos (L,l) or Hanning (H, h) or Shapiro (S,s) or Box (B,b)
+\item[Required mesh\_mask files or other files:] none.
+\item[Output:] Output is done on 'filename'.smooth'n' where smooth is one of L H s B etc ...
+\end{description}
+
+
+\subsection*{\underline{cdfstatcoord:}}
+\addcontentsline{toc}{subsection}{cdfstatcoord}
+\index{cdfstatcoord}
+\begin{description}
+\item[Purpose:] Compute statistics about the grid metric versus latitude
+\item[Usage:] {\em cdfstatcoord coordinate-file mask [mask variable name] }
+\item[Input:]  coordinate-file is where horizontal metrics can be found (e1t, e2t) \\
+               mask is the mask file; the statistics will be computed only for non masked points. \\
+               mask variable is by default tmask. It can be changed with this option.
+\item[Required mesh\_mask files or other files:] given as input.
+\item[Output:] Standard output as a zonal mean of e1t e2t, binned by 2 degrees latitude bands.
+\end{description}
+
+
+
+\newpage
+
+\tableofcontents
+\printindex
+\end{document}
