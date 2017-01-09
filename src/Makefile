@@ -324,6 +324,12 @@ cdfmxlhcsc: cdfio.o  eos.o cdfmxlhcsc.f90
 cdficediags: cdfio.o  cdficediags.f90
 	$(F90) cdficediags.f90 -o $(BINDIR)/cdficediags cdfio.o modcdfnames.o $(FFLAGS)
 
+cdficbclimato: cdfio.o  cdficbclimato.f90
+	$(F90) cdficbclimato.f90 -o $(BINDIR)/cdficbclimato cdfio.o modcdfnames.o $(FFLAGS)
+
+cdficbdiags: cdfio.o  cdficbdiags.f90
+	$(F90) cdficbdiags.f90 -o $(BINDIR)/cdficbdiags cdfio.o modcdfnames.o $(FFLAGS)
+
 cdfzonalmean: cdfio.o  cdfzonalmean.f90
 	$(F90) $(OMP) cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 
 

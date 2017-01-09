@@ -68,8 +68,8 @@ PROGRAM cdficbclimato
   ALLOCATE(cf_icb(numFiles))
 
   DO ji= 1, numFiles
-        CALL getarg(i+1,cf_icb(i))
-        lchk = lchk .OR. chkfile(cf_icb(i))
+        CALL getarg(ji+1,cf_icb(ji))
+        lchk = lchk .OR. chkfile(cf_icb(ji))
   END DO
 
 
@@ -90,7 +90,7 @@ PROGRAM cdficbclimato
   ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo) )
   ALLOCATE ( tim(npt),itimeVar(npt) )
  
-  itimeVar = (/(i,i=1,12)/)  
+  itimeVar = (/(ji,ji=1,12)/)  
 
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
   ALLOCATE ( rdumlon(1,1), rdumlat(1,1) )
@@ -138,7 +138,7 @@ PROGRAM cdficbclimato
      STOP
   END SELECT
 
-  itimeVar = (/(i,i=1,12)/)
+  itimeVar = (/(ji,ji=1,12)/)
   ! Check variable
   IF (chkvar(cf_icb(1), cn_iicbmass)) THEN
      cn_iicbmass='missing'
@@ -159,7 +159,7 @@ PROGRAM cdficbclimato
         ierr  = putheadervar(ncout,  cf_icb(1), ikx,      iky, ikz)
 
         tim   = getvar1d(cf_icb(1), cn_vtimec, npt     )
-        tim = (/(i,i=1,12)/)
+        tim = (/(ji,ji=1,12)/)
         ierr  = putvar1d(ncout,   tim,       npt, 'T')
      ENDIF
 
