@@ -1,6 +1,6 @@
 PROGRAM cdficbdiag
   !!======================================================================
-  !!                     ***  PROGRAM  cdficediag  ***
+  !!                     ***  PROGRAM  cdficbdiag  ***
   !!=====================================================================
   !!  ** Purpose : Compute the Ice volume, area and extend for each 
   !!               hemisphere
@@ -8,16 +8,14 @@ PROGRAM cdficbdiag
   !!  ** Method  : Use the icemod files for input and determine the
   !!               hemisphere with sign of the coriolis parameter.
   !!
-  !! History : 2.1  : 01/2006  : J.M. Molines : Original code
-  !!         : 2.1  : 07/2009  : R. Dussin    : Add Ncdf output
-  !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
-  !! Modified: 3.0  : 08/2011  : P.   Mathiot : Add LIM3 option
+  !! History : 3.0  : 01/2016  : N. Merino : Original code
+
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
-  !! $Id: cdficediags.f90 759 2014-07-21 22:01:28Z molines $
+  !! $Id: cdficbdiags.f90 759 2014-07-21 22:01:28Z molines $
   !! Copyright (c) 2010, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
@@ -58,10 +56,11 @@ PROGRAM cdficbdiag
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdficediag ICE-file [-lim3] '
+     PRINT *,' usage : cdficbdiag ICB-file  '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the spatially integrated icb mass and melt flux.'
+     PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       ICB-file : a single netcdf icb file' 
      PRINT *,'      '
@@ -163,24 +162,24 @@ PROGRAM cdficbdiag
   IF (chkvar(cf_ifil, cn_iicbmelt)) STOP
   !
   DO jt = 1, npt
-     IF (TRIM(cn_iicbmass) .NE. 'missing') ricbmass(:,:) = getvar(cf_ifil, cn_iicbmass, 1, npiglo, npjglo, ktime=jt)
-     ricbmelt(:,:) = getvar(cf_ifil, cn_iicbmelt, 1, npiglo, npjglo, ktime=jt)
+     IF (TRIM(cn_iicbmass) /= 'missing') ricbmass(:,:) = getvar(cf_ifil, cn_iicbmass, 1, npiglo, npjglo, ktime=jt)
+                                         ricbmelt(:,:) = getvar(cf_ifil, cn_iicbmelt, 1, npiglo, npjglo, ktime=jt)
 
      ! North : ff > 0 
-     dmassn     = SUM( ricbmass (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff > 0 ) )
+     dmassn    = SUM( ricbmass (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff > 0 ) )
      dmeltn    = SUM( ricbmelt (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff > 0 ) )
 
      ! South : ff < 0
-     dmasss     = SUM( ricbmass (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff < 0) )
+     dmasss    = SUM( ricbmass (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff < 0) )
      dmelts    = SUM( ricbmelt (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff < 0 )) 
 
      PRINT *,' TIME = ', jt,' ( ',tim(jt),' )'
      PRINT *,' Northern Hemisphere ' 
-     PRINT *,'          NMass (Kg)  ', dmassn
+     PRINT *,'          NMass (Kg)      ', dmassn
      PRINT *,'          NMelt (Kg/s)    ', dmeltn
      PRINT *
      PRINT *,' Southern Hemisphere ' 
-     PRINT *,'          Mass (Kg)  ', dmasss
+     PRINT *,'          Mass (Kg)      ', dmasss
      PRINT *,'          Melt (Kg/s)    ', dmelts
 
      IF ( jt == 1 ) THEN
