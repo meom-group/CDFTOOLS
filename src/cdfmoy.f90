@@ -33,7 +33,7 @@ PROGRAM cdfmoy
   !!-----------------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                               :: jk, jfil           ! dummy loop index
+  INTEGER(KIND=4)                               :: jk, jfil,jdep      ! dummy loop index
   INTEGER(KIND=4)                               :: jvar, jv, jt       ! dummy loop index
   INTEGER(KIND=4)                               :: ierr               ! working integer
   INTEGER(KIND=4)                               :: narg, iargc, ijarg ! browsing command line
@@ -84,6 +84,7 @@ PROGRAM cdfmoy
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam2            ! array of var2 name for output
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam3            ! array of var3 name for output
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam4            ! array of var3 name for output
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_depa            ! array of possible 3rd dimension name
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar2           ! attributes for square averaged values
@@ -211,27 +212,37 @@ PROGRAM cdfmoy
 
   cf_in = cf_list(1)
   IF ( chkfile (cf_in) ) STOP ! missing file
+!
+  ALLOCATE ( cv_depa(8) )
+  cv_depa (:)= (/cn_z,'z','sigma','nav_lev','levels','ncatice','icbcla','icbsect'/)
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
-  npk    = getdim (cf_in, cn_z, cdtrue=cv_dep, kstatus=ierr)
-
-  IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_in, 'z',cdtrue=cv_dep,kstatus=ierr)
-     IF (ierr /= 0 ) THEN
-       npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
-        IF ( ierr /= 0 ) THEN 
-          npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-            IF ( ierr /= 0 ) THEN 
-              npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
-              IF ( ierr /= 0 ) THEN 
-                PRINT *,' assume file with no depth'
-                npk=0
-              ENDIF
-            ENDIF
-        ENDIF
-     ENDIF
+  DO jdep=1,8
+    npk    = getdim (cf_in, cv_depa(jdep), cdtrue=cv_dep, kstatus=ierr)
+    IF ( ierr == 0 ) EXIT
+  ENDDO
+  IF ( ierr /= 0 ) THEN 
+      PRINT *,' assume file with no depth'
+      npk=0
   ENDIF
+
+! IF (ierr /= 0 ) THEN
+!    npk   = getdim (cf_in, 'z',cdtrue=cv_dep,kstatus=ierr)
+!    IF (ierr /= 0 ) THEN
+!      npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
+!       IF ( ierr /= 0 ) THEN 
+!         npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
+!           IF ( ierr /= 0 ) THEN 
+!             npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
+!             IF ( ierr /= 0 ) THEN 
+!               PRINT *,' assume file with no depth'
+!               npk=0
+!             ENDIF
+!           ENDIF
+!       ENDIF
+!    ENDIF
+! ENDIF
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
