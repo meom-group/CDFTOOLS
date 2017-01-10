@@ -1,17 +1,16 @@
-The following licence information concerns ONLY the CDFTOOLS package
-=======================================================================
 
-Copyright  IGE-MEOM (Jean-Marc.Molines@univ-grenoble-alpes.fr )
-Contributors (alphabetic order ) : 
-C.Q. Akuetevi, M. Balmaseda, E. Behrens, F. Castruccio, M. Chekki, 
-P. Colombo, J. Deshayes, N. Djath, N. Ducousso, C. Dufour, R. Dussin, 
-N. Ferry, F. Hernandez, M. Juza, A. Lecointre, S. Leroux, G. Mainsant, 
-P. Mathiot, A. Melet, X. Meunier, G. Moreau, N. Merino, W. Rath, 
-J. Regidor, M. Scheinert, A.M. Treguier
+=head1 AUTHORS
 
-This software is a computer program for analysis of NEMO model output 
-produced in the frame of the DRAKKAR project. It is designed  for the
-treatment of the NetCdf files produced by NEMO-DRAKKAR. 
+Written by Jean-Marc Molines, Grenoble - France
+
+Contributors : M. Balmaseda, E. Behrens, F. Castruccio,  J. Deshayes,
+N. Djath, N. Ducousso, C. Dufour, R. Dussin, N. Ferry, F. Hernandez,
+M. Juza, A. Lecointre, P. Mathiot, A. Melet, G. Moreau, A.M. Treguier
+
+=head1 LICENSE AND COPYRIGHT
+
+Copyright (C) 1998-2012 LEGI / Team MEOM / CNRS UMR 5519 - Grenoble - France,
+Jean-Marc.Molines@legi.grenoble-inp.fr
 
 This software is governed by the CeCILL  license under French law and
 abiding by the rules of distribution of free software.  You can  use, 

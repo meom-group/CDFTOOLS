@@ -8,3 +8,10 @@ CMakeFiles
 cmake_install.cmake
 lib
 bin
+*.so
+*.pyf
+*.pdf
+*.log
+*.aux
+*.idx
+*.toc

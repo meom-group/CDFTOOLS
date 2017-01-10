@@ -591,11 +591,12 @@ CONTAINS
     istatus = NF90_REDEF(incid)
     istatus = NF90_INQ_VARID(incid, cdvar, ivarid)
 
-    istatus=NF90_RENAME_ATT(incid, ivarid, 'units',         cdunits        )
-    zspval = getspval      ( cdfile, cdvar, clmissing                       )
-    istatus=NF90_PUT_ATT   (incid, ivarid, clmissing, pmissing_value        )
-    istatus=NF90_RENAME_ATT(incid, ivarid, 'long_name',     cdlong_name    )
-    istatus=NF90_RENAME_ATT(incid, ivarid, 'short_name',    cdshort_name   )
+!   istatus=NF90_RENAME_ATT(incid, ivarid, 'units',         cdunits        )
+    istatus=NF90_PUT_ATT(incid, ivarid, 'units',         cdunits        )
+    zspval = getspval   ( cdfile, cdvar, clmissing                       )
+    istatus=NF90_PUT_ATT(incid, ivarid, clmissing, pmissing_value        )
+    istatus=NF90_PUT_ATT(incid, ivarid, 'long_name',     cdlong_name    )
+    istatus=NF90_PUT_ATT(incid, ivarid, 'short_name',    cdshort_name   )
 
     istatus=NF90_ENDDEF(incid)
     cvaratt=istatus
@@ -1286,13 +1287,13 @@ CONTAINS
       istatus=NF90_INQ_VARID( incid,'e3t_0', id_var)
       istatus=NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim) !, dimids, nAtts)
       IF ( istatus == NF90_NOERR ) THEN
-         PRINT *, 'e3t_0 has' , inbdim, 'dimensions'
         ! iom file , change names
         ! now try to detect if it is v2 or v3, in v3, e3t_ps exist and is a 2d variable
-         istatus=NF90_INQ_VARID( incid,'e3t_ps', id_var)
-         istatus=NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim2) !, dimids, nAtts)
+         istatus=          NF90_INQ_VARID( incid,'e3t_ps', id_var)
+         istatus=istatus + NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim2) !, dimids, nAtts)
          !istatus2=NF90_INQUIRE_VAR( incid, id_var, 'e3t_0', xtype, ndims, dimids, nAtts)
-         IF (( istatus == NF90_NOERR ) .and. (inbdim2 == 2)) THEN  
+         PRINT *, 'e3t_0 has' , inbdim, 'dimensions'
+         IF ( istatus == NF90_NOERR ) THEN  
            ! case of NEMO_v3 zfr files
            ! look for mbathy and out it in memory, once for all
            IF ( .NOT. l_mbathy ) THEN
@@ -1569,8 +1570,10 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar3d  ***
     !!
-    !! ** Purpose : Return the 3D REAL variable cvar, from cdfile at level klev.
-    !!              kpi,kpj are the horizontal size of the 2D variable
+    !! ** Purpose : Return the 3D REAL variable cdvar(x,y,z), from cdfile 
+    !!              kpi,kpj,kpz are the horizontal size of the 3D variable
+    !!              Sub domain can be optionaly specified with its starting
+    !!              point, kimin, kjmin, kkmin
     !!
     !! ** Method  : Use NF90 primitive to read the block of 3D data
     !!
@@ -1673,8 +1676,9 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar3d  ***
     !!
-    !! ** Purpose : Return the 3D REAL variable cvar, from cdfile at level klev.
-    !!              kpi,kpj are the horizontal size of the 2D variable
+    !! ** Purpose : Return the 3D REAL variable cdvar(x,y,t), at level kk
+    !!              from cdfile.  kpi,kpj,kpt are the size of the variable
+    !!              subdomain starting point can be specified by kimin, kjmin, ktmin
     !!
     !! ** Method  : Use NF90 primitive to read the block of 3D data
     !!
@@ -1777,8 +1781,9 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar4d  ***
     !!
-    !! ** Purpose : Return the 3D REAL variable cvar, from cdfile at level klev.
-    !!              kpi,kpj are the horizontal size of the 2D variable
+    !! ** Purpose : Return the 4D REAL variable cdvar(x,y,z,t).
+    !!              kpi,kpj,kpz,kpt are the dimensions of the 4D variable.
+    !!              A subdomain can be specified using kimin, kjmin, kkmin, ktmin
     !!
     !! ** Method  : Use NF90 primitive to read the block of 3D data
     !!
