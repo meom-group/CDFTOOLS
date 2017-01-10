@@ -150,8 +150,17 @@ add_executable(cdfmppini cdfmppini.f90)
 add_executable(cdffixtime cdffixtime.f90)
 add_executable(cdfnamelist cdfnamelist.f90)
 add_executable(cdfchgrid cdfchgrid.f90)
+target_link_libraries (cdfchgrid modutils)
 add_executable(cdfcmp cdfcmp.f90)
-
+add_executable(cdfisf_rnf cdfisf_rnf.f90)
+add_executable(cdfisf_forcing cdfisf_forcing.f90)
+target_link_libraries (cdfisf_forcing modutils)
+add_executable(cdfisf_fill cdfisf_fill.f90)
+target_link_libraries (cdfisf_fill modutils)
+add_executable(cdfisf_poolchk cdfisf_poolchk.f90)
+target_link_libraries (cdfisf_poolchk modutils)
+# add_executable(cdficbclimato cdficbclimato.f90)
+# add_executable(cdficbdiags cdficbdiags.f90)
 
 link_libraries(eos)
 
