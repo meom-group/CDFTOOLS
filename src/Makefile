@@ -551,16 +551,26 @@ clean:
 cleanexe: clean
 	( cd $(BINDIR) ; \rm -f $(EXEC) )
 
-man: cdftools.1
+man: cdftools.1 cdftools.html
 
 cdftools.1: cdftools.opod
 	pod2man --center "CDFTOOLS / NEMO Documentation" \
 	  --release "SVN Revision $$(LANG=C svn update | grep '^At rev' | awk '{print $$3}' | cut -f 1 -d '.')" \
 	  cdftools.opod > cdftools.1
 
+cdftools.html: cdftools.opod
+	pod2html --infile=cdftools.opod --outfile=cdftools.html --title="CDFTOOLS Man pages" --css="./cdftools.css"
+
 cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod
 	cat cdftools-begin.pod > cdftools.opod
-	for s in $$( cd $(BINDIR); ls -1 ); do echo ''; echo "=head2 $$s"; echo ''; $$s; done >> cdftools.opod
+	for s in $$( cd $(BINDIR); ls -1 ); do echo ''; echo "=head2 $$s"; echo ''; $(BINDIR)/$$s; done >> cdftools.opod
+	echo ' ' >> cdftools.opod
+	echo "=head1 AUTHORS" >> cdftools.opod
+	echo ' ' >> cdftools.opod
+	echo "Project headed  by Jean-Marc Molines, (IGE, Grenoble - France)" >> cdftools.opod
+	echo ' ' >> cdftools.opod
+	grep -A1000  -i contribu ../License/CDFTOOLSCeCILL.txt | grep -m1 -B1000 ^$$ >> cdftools.opod
+	echo ' ' >> cdftools.opod
 	cat cdftools-end.pod >> cdftools.opod
 
 install:

@@ -1,16 +1,7 @@
 
-=head1 AUTHORS
-
-Written by Jean-Marc Molines, Grenoble - France
-
-Contributors : M. Balmaseda, E. Behrens, F. Castruccio,  J. Deshayes,
-N. Djath, N. Ducousso, C. Dufour, R. Dussin, N. Ferry, F. Hernandez,
-M. Juza, A. Lecointre, P. Mathiot, A. Melet, G. Moreau, A.M. Treguier
-
 =head1 LICENSE AND COPYRIGHT
 
-Copyright (C) 1998-2012 LEGI / Team MEOM / CNRS UMR 5519 - Grenoble - France,
-Jean-Marc.Molines@legi.grenoble-inp.fr
+Copyright (C) 1998-2016 IGE-MEOM (Jean-Marc.Molines@univ-grenoble-alpes.fr )
 
 This software is governed by the CeCILL  license under French law and
 abiding by the rules of distribution of free software.  You can  use, 

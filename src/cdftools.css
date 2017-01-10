@@ -1,0 +1,19 @@
+h1 {
+    color: red;
+    text-align: left;
+   }
+
+h2 {
+    color: blue;
+   }
+
+ul {
+    list-style-type: disc;
+    color: red;
+     }
+
+ul ul li {
+    list-style-type: circle;
+    color: blue;
+     }
+
