@@ -9,3 +9,7 @@ make.macro
 *.aux
 *.idx
 *.toc
+cdftools.1
+*.html
+*.opod
+*.tmp
