@@ -32,6 +32,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk \
+       cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
@@ -494,6 +495,12 @@ cdfisf_rnf: cdfio.o  cdfisf_rnf.f90
 cdfisf_poolchk: cdfio.o  modutils.o cdfisf_poolchk.f90
 	$(F90)   cdfisf_poolchk.f90  -o $(BINDIR)/cdfisf_poolchk cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
+cdficb_clim: cdfio.o  cdficb_clim.f90
+	$(F90) cdficb_clim.f90 -o $(BINDIR)/cdficb_clim cdfio.o modcdfnames.o $(FFLAGS)
+
+cdficb_diags: cdfio.o  cdficb_diags.f90
+	$(F90) cdficb_diags.f90 -o $(BINDIR)/cdficb_diags cdfio.o modcdfnames.o $(FFLAGS)
+
 cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)
 
@@ -545,16 +552,26 @@ clean:
 cleanexe: clean
 	( cd $(BINDIR) ; \rm -f $(EXEC) )
 
-man: cdftools.1
+man: cdftools.1 cdftools.html
 
 cdftools.1: cdftools.opod
 	pod2man --center "CDFTOOLS / NEMO Documentation" \
 	  --release "SVN Revision $$(LANG=C svn update | grep '^At rev' | awk '{print $$3}' | cut -f 1 -d '.')" \
 	  cdftools.opod > cdftools.1
 
+cdftools.html: cdftools.opod
+	pod2html --infile=cdftools.opod --outfile=cdftools.html --title="CDFTOOLS Man pages" --css="./cdftools.css"
+
 cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod
 	cat cdftools-begin.pod > cdftools.opod
-	for s in $$( cd $(BINDIR); ls -1 ); do echo ''; echo "=head2 $$s"; echo ''; $$s; done >> cdftools.opod
+	for s in $$( cd $(BINDIR); ls -1 ); do echo ''; echo "=head2 $$s"; echo ''; $(BINDIR)/$$s; done >> cdftools.opod
+	echo ' ' >> cdftools.opod
+	echo "=head1 AUTHORS" >> cdftools.opod
+	echo ' ' >> cdftools.opod
+	echo "Project headed  by Jean-Marc Molines, (IGE, Grenoble - France)" >> cdftools.opod
+	echo ' ' >> cdftools.opod
+	grep -A1000  -i contribu ../License/CDFTOOLSCeCILL.txt | grep -m1 -B1000 ^$$ >> cdftools.opod
+	echo ' ' >> cdftools.opod
 	cat cdftools-end.pod >> cdftools.opod
 
 install:
@@ -565,6 +582,7 @@ installman:
 	@mkdir -p $(INSTALL_MAN)/man1;
 	\cp -f cdftools.1 $(INSTALL_MAN)/man1/;
 	for s in $$( cd $(BINDIR); ls -1 ); do ( cd $(INSTALL_MAN)/man1/; ln -sf cdftools.1 $$s.1 ); done;
+	\cp -f cdftools.html ../DOC/
 f2py:
 	f2py -c --fcompiler=gnu95 -m cdftoolspython cdficediags.f90 cdfio.o modcdfnames.o  -I$(EBROOTNETCDFMINFORTRAN)/include -L$(EBROOTNETCDFMINFORTRAN)/lib64 -lnetcdf -lnetcdff
 

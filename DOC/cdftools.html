@@ -1,0 +1,4504 @@
+<?xml version="1.0" ?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<title>CDFTOOLS Man pages</title>
+<link rel="stylesheet" href="./cdftools.css" type="text/css" />
+<meta http-equiv="content-type" content="text/html; charset=utf-8" />
+<link rev="made" href="mailto:root@localhost" />
+</head>
+
+<body>
+
+
+
+<ul id="index">
+  <li><a href="#NAME">NAME</a></li>
+  <li><a href="#PACKAGE-DESCRIPTION">PACKAGE DESCRIPTION</a></li>
+  <li><a href="#SYNOPSIS">SYNOPSIS</a></li>
+  <li><a href="#COMMANDS-DESCRIPTION">COMMANDS DESCRIPTION</a>
+    <ul>
+      <li><a href="#cdf16bit">cdf16bit</a></li>
+      <li><a href="#cdf2levitusgrid2d">cdf2levitusgrid2d</a></li>
+      <li><a href="#cdf2levitusgrid3d">cdf2levitusgrid3d</a></li>
+      <li><a href="#cdf2matlab">cdf2matlab</a></li>
+      <li><a href="#cdf_xtrac_brokenline">cdf_xtrac_brokenline</a></li>
+      <li><a href="#cdfbathy">cdfbathy</a></li>
+      <li><a href="#cdfbci">cdfbci</a></li>
+      <li><a href="#cdfbn2">cdfbn2</a></li>
+      <li><a href="#cdfbotpressure">cdfbotpressure</a></li>
+      <li><a href="#cdfbottom">cdfbottom</a></li>
+      <li><a href="#cdfbottomsig">cdfbottomsig</a></li>
+      <li><a href="#cdfbti">cdfbti</a></li>
+      <li><a href="#cdfbuoyflx">cdfbuoyflx</a></li>
+      <li><a href="#cdfcensus">cdfcensus</a></li>
+      <li><a href="#cdfchgrid">cdfchgrid</a></li>
+      <li><a href="#cdfclip">cdfclip</a></li>
+      <li><a href="#cdfcmp">cdfcmp</a></li>
+      <li><a href="#cdfcofdis">cdfcofdis</a></li>
+      <li><a href="#cdfcoloc">cdfcoloc</a></li>
+      <li><a href="#cdfconvert">cdfconvert</a></li>
+      <li><a href="#cdfcsp">cdfcsp</a></li>
+      <li><a href="#cdfcurl">cdfcurl</a></li>
+      <li><a href="#cdfdegradt">cdfdegradt</a></li>
+      <li><a href="#cdfdegradu">cdfdegradu</a></li>
+      <li><a href="#cdfdegradv">cdfdegradv</a></li>
+      <li><a href="#cdfdegradw">cdfdegradw</a></li>
+      <li><a href="#cdfdifmask">cdfdifmask</a></li>
+      <li><a href="#cdfdiv">cdfdiv</a></li>
+      <li><a href="#cdfeddyscale">cdfeddyscale</a></li>
+      <li><a href="#cdfeddyscale_pass1">cdfeddyscale_pass1</a></li>
+      <li><a href="#cdfeke">cdfeke</a></li>
+      <li><a href="#cdfenstat">cdfenstat</a></li>
+      <li><a href="#cdfets">cdfets</a></li>
+      <li><a href="#cdffindij">cdffindij</a></li>
+      <li><a href="#cdffixtime">cdffixtime</a></li>
+      <li><a href="#cdfflxconv">cdfflxconv</a></li>
+      <li><a href="#cdffracinv">cdffracinv</a></li>
+      <li><a href="#cdffwc">cdffwc</a></li>
+      <li><a href="#cdfgeo-uv">cdfgeo-uv</a></li>
+      <li><a href="#cdfgeostrophy">cdfgeostrophy</a></li>
+      <li><a href="#cdfgradT">cdfgradT</a></li>
+      <li><a href="#cdfhdy">cdfhdy</a></li>
+      <li><a href="#cdfhdy3d">cdfhdy3d</a></li>
+      <li><a href="#cdfheatc">cdfheatc</a></li>
+      <li><a href="#cdfhflx">cdfhflx</a></li>
+      <li><a href="#cdfhgradb">cdfhgradb</a></li>
+      <li><a href="#cdficb_clim">cdficb_clim</a></li>
+      <li><a href="#cdficb_diags">cdficb_diags</a></li>
+      <li><a href="#cdficediags">cdficediags</a></li>
+      <li><a href="#cdfimprovechk">cdfimprovechk</a></li>
+      <li><a href="#cdfinfo">cdfinfo</a></li>
+      <li><a href="#cdfisf_fill">cdfisf_fill</a></li>
+      <li><a href="#cdfisf_forcing">cdfisf_forcing</a></li>
+      <li><a href="#cdfisf_poolchk">cdfisf_poolchk</a></li>
+      <li><a href="#cdfisf_rnf">cdfisf_rnf</a></li>
+      <li><a href="#cdfisopsi">cdfisopsi</a></li>
+      <li><a href="#cdfkempemekeepe">cdfkempemekeepe</a></li>
+      <li><a href="#cdflap">cdflap</a></li>
+      <li><a href="#cdflinreg">cdflinreg</a></li>
+      <li><a href="#cdfmaskdmp">cdfmaskdmp</a></li>
+      <li><a href="#cdfmax">cdfmax</a></li>
+      <li><a href="#cdfmaxmoc">cdfmaxmoc</a></li>
+      <li><a href="#cdfmean">cdfmean</a></li>
+      <li><a href="#cdfmhst">cdfmhst</a></li>
+      <li><a href="#cdfmkmask">cdfmkmask</a></li>
+      <li><a href="#cdfmltmask">cdfmltmask</a></li>
+      <li><a href="#cdfmoc">cdfmoc</a></li>
+      <li><a href="#cdfmocsig">cdfmocsig</a></li>
+      <li><a href="#cdfmoy">cdfmoy</a></li>
+      <li><a href="#cdfmoy_freq">cdfmoy_freq</a></li>
+      <li><a href="#cdfmoy_weighted">cdfmoy_weighted</a></li>
+      <li><a href="#cdfmoyt">cdfmoyt</a></li>
+      <li><a href="#cdfmoyuvwt">cdfmoyuvwt</a></li>
+      <li><a href="#cdfmppini">cdfmppini</a></li>
+      <li><a href="#cdfmxl">cdfmxl</a></li>
+      <li><a href="#cdfmxlhcsc">cdfmxlhcsc</a></li>
+      <li><a href="#cdfmxlheatc">cdfmxlheatc</a></li>
+      <li><a href="#cdfmxlsaltc">cdfmxlsaltc</a></li>
+      <li><a href="#cdfnamelist">cdfnamelist</a></li>
+      <li><a href="#cdfnan">cdfnan</a></li>
+      <li><a href="#cdfnorth_unfold">cdfnorth_unfold</a></li>
+      <li><a href="#cdfnrjcomp">cdfnrjcomp</a></li>
+      <li><a href="#cdfokubo-w">cdfokubo-w</a></li>
+      <li><a href="#cdfovide">cdfovide</a></li>
+      <li><a href="#cdfpendep">cdfpendep</a></li>
+      <li><a href="#cdfpolymask">cdfpolymask</a></li>
+      <li><a href="#cdfprobe">cdfprobe</a></li>
+      <li><a href="#cdfprofile">cdfprofile</a></li>
+      <li><a href="#cdfpsi">cdfpsi</a></li>
+      <li><a href="#cdfpsi_level">cdfpsi_level</a></li>
+      <li><a href="#cdfpvor">cdfpvor</a></li>
+      <li><a href="#cdfrhoproj">cdfrhoproj</a></li>
+      <li><a href="#cdfrichardson">cdfrichardson</a></li>
+      <li><a href="#cdfrmsssh">cdfrmsssh</a></li>
+      <li><a href="#cdfscale">cdfscale</a></li>
+      <li><a href="#cdfsections">cdfsections</a></li>
+      <li><a href="#cdfsig0">cdfsig0</a></li>
+      <li><a href="#cdfsigi">cdfsigi</a></li>
+      <li><a href="#cdfsiginsitu">cdfsiginsitu</a></li>
+      <li><a href="#cdfsigintegr">cdfsigintegr</a></li>
+      <li><a href="#cdfsigntr">cdfsigntr</a></li>
+      <li><a href="#cdfsigtrp">cdfsigtrp</a></li>
+      <li><a href="#cdfsigtrp_broken">cdfsigtrp_broken</a></li>
+      <li><a href="#cdfsmooth">cdfsmooth</a></li>
+      <li><a href="#cdfspeed">cdfspeed</a></li>
+      <li><a href="#cdfspice">cdfspice</a></li>
+      <li><a href="#cdfsstconv">cdfsstconv</a></li>
+      <li><a href="#cdfstatcoord">cdfstatcoord</a></li>
+      <li><a href="#cdfstats">cdfstats</a></li>
+      <li><a href="#cdfstd">cdfstd</a></li>
+      <li><a href="#cdfstdevts">cdfstdevts</a></li>
+      <li><a href="#cdfstdevw">cdfstdevw</a></li>
+      <li><a href="#cdfstrconv">cdfstrconv</a></li>
+      <li><a href="#cdfsum">cdfsum</a></li>
+      <li><a href="#cdftempvol-full">cdftempvol-full</a></li>
+      <li><a href="#cdftransport">cdftransport</a></li>
+      <li><a href="#cdfuv">cdfuv</a></li>
+      <li><a href="#cdfvFWov">cdfvFWov</a></li>
+      <li><a href="#cdfvT">cdfvT</a></li>
+      <li><a href="#cdfvar">cdfvar</a></li>
+      <li><a href="#cdfvertmean">cdfvertmean</a></li>
+      <li><a href="#cdfvhst">cdfvhst</a></li>
+      <li><a href="#cdfvint">cdfvint</a></li>
+      <li><a href="#cdfvita">cdfvita</a></li>
+      <li><a href="#cdfvita-geo">cdfvita-geo</a></li>
+      <li><a href="#cdfvsig">cdfvsig</a></li>
+      <li><a href="#cdfvtrp">cdfvtrp</a></li>
+      <li><a href="#cdfw">cdfw</a></li>
+      <li><a href="#cdfweight">cdfweight</a></li>
+      <li><a href="#cdfwflx">cdfwflx</a></li>
+      <li><a href="#cdfwhereij">cdfwhereij</a></li>
+      <li><a href="#cdfzisot">cdfzisot</a></li>
+      <li><a href="#cdfzonalmean">cdfzonalmean</a></li>
+      <li><a href="#cdfzonalmeanvT">cdfzonalmeanvT</a></li>
+      <li><a href="#cdfzonalout">cdfzonalout</a></li>
+      <li><a href="#cdfzonalsum">cdfzonalsum</a></li>
+      <li><a href="#cdfzoom">cdfzoom</a></li>
+    </ul>
+  </li>
+  <li><a href="#AUTHORS">AUTHORS</a></li>
+  <li><a href="#LICENSE-AND-COPYRIGHT">LICENSE AND COPYRIGHT</a></li>
+</ul>
+
+<h1 id="NAME">NAME</h1>
+
+<p>CDFTOOLS - diagnostics in Fortran 90 for NEMO model outputs</p>
+
+<h1 id="PACKAGE-DESCRIPTION">PACKAGE DESCRIPTION</h1>
+
+<p><code>CDFTOOLS</code> is a diagnostic package written in fortran 90 for the analysis of NEMO model output, initialized in the frame of the DRAKKAR project (https://www.drakkar-ocean.eu/). It is now available on GitHub under the CeCILL license (http://www.cecill.info/licences/Licence_CeCILL_V2-en.html).</p>
+
+<p><code>NEMO</code> web site : http://www.nemo-ocean.eu/</p>
+
+<h1 id="SYNOPSIS">SYNOPSIS</h1>
+
+<p><code>CDFTOOLS</code> is a collection of fortran program. Each program belonging to this collection is designed to perform some specific actions on NEMO output files, and generally provides another netcdf file as output. Output files follow the same CDF format as NEMO file, thus allowing for the building of a secondary data base (assuming that the primary data base is just the raw model output).</p>
+
+<p>This documentation is automatically produced by the concatenation of the <code>USAGE</code> messages produced by each particular program when invoked without any argument. (Standard behaviour of all cdftools). In the documentation, we use a rather classical formalism, where mandatory arguments are just indicated on the command line and options are indicated between squared brackets [..].</p>
+
+<p>Each program name starts with the 3 letters &#39;cdf&#39; followed by a word related to the action performed by the tools. Example: <code>cdfw Ufile.nc Vfile.nc </code> is used to compute the vertical velocity using the horizontal velocity field represented by its two components Ufile.nc and Vfile.nc.</p>
+
+<p>Better than a long speech, the following paragraphs describes each of the existing cdftools.</p>
+
+<h1 id="COMMANDS-DESCRIPTION">COMMANDS DESCRIPTION</h1>
+
+<h2 id="cdf16bit">cdf16bit</h2>
+
+<pre><code>  usage : cdf16bit 32BIT-file [ -check ] [ -verbose]
+       
+      PURPOSE :
+        Convert input 32 bit precision file into 16 bit
+        precision file using add_offset and scale_factor
+       
+      ARGUMENTS :
+        32BIT-file : input 32 bit file to be converted
+       
+      OPTIONS :
+        [ -check ]   : control than the scale factors are adequate
+        [ -verbose ] : give information level by level.
+       
+      REQUIRED FILES :
+        none 
+       
+      OUTPUT : 
+        netcdf file : cdf16bit.nc
+          variables : same names than in input file</code></pre>
+
+<h2 id="cdf2levitusgrid2d">cdf2levitusgrid2d</h2>
+
+<pre><code>  usage : cdf2levitusgrid2d IN-file OUT-file  VAR-name2D
+       
+      PURPOSE :
+        remaps (bin) 2D high resolution (finer than 1x1 deg) 
+        fields on Levitus 2D 1x1 deg grid                    
+        (does not work for vector fields)  
+        It assumes that Levitus grid SW grid cell center 
+        is (0.5W,89.5S) 
+       
+      ARGUMENTS :
+        IN-file  : netcdf input file 
+        OUT-file : netcdf output file 
+        VAR-name2D : input variable name for interpolation 
+       
+      OPTIONS :
+       
+      REQUIRED FILES :
+        mesh_hgr.nc
+        mask.nc
+        levitus_mask.nc
+       
+      OUTPUT : 
+        netcdf file : name given as second argument
+          variables : 2d_var_name</code></pre>
+
+<h2 id="cdf2levitusgrid3d">cdf2levitusgrid3d</h2>
+
+<pre><code>  usage : cdf2levitusgrid3d -f IN-file -o OUT-file  -v VAR-name3D [-360]
+         [-r resolution] 
+       
+      PURPOSE :
+        remaps (bin) 3D high resolution (finer than 1x1 deg) 
+        fields on a regular grid. (vertical grid as input grid)  
+        (does not work for vector fields)  
+        Resolution can be given as argument, default is   0.3333333      deg.
+       
+      ARGUMENTS :
+        -f IN-file  : netcdf input file 
+        -o OUT-file : netcdf output file 
+        -v VAR-name2D : input variable name for interpolation 
+       
+      OPTIONS :
+        -360 : outfile is defined from 0 to 360 deg
+               Default is from -180 to 180 
+        -r  : resolution.
+      
+      REQUIRED FILES :
+        mesh_hgr.nc
+        mask.nc
+       
+      OUTPUT : 
+        netcdf file : name given as second argument
+          variables : 3d_var_name</code></pre>
+
+<h2 id="cdf2matlab">cdf2matlab</h2>
+
+<pre><code>  usage : cdf2matlab IN-file IN-var level 
+       
+      PURPOSE :
+        Convert global nemo input file (ORCA configurations) into
+        a file with monotonically increasing longitudes.
+       
+      ARGUMENTS :
+        IN-file : input model file.
+        IN-var  : netcdf variable name to process.
+        level   : level to process.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : output.nc
+          variables : same name than in input file.</code></pre>
+
+<h2 id="cdf_xtrac_brokenline">cdf_xtrac_brokenline</h2>
+
+<pre><code>  usage :  cdf_xtrac_brokenline T-file U-file V-file [ice-file] ....
+     [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice]
+       
+      PURPOSE :
+         This tool extracts model variables from model files for a geographical
+       broken line, similar to an oceanographic campaign where an oceanic 
+       section is formed by one or more legs.
+         The broken line is specified by the position of ending points of each
+       leg, given in an ASCII file. OVIDE section is taken as default, when no
+       section file is provided.
+         This tool provides a netcdf file similar to a model file, but with a 
+       degenerated y dimension (1). In order to be able to use standard CDFTOOLS
+       relevant metric variables are saved into the output file, such as pseudo
+       e1v and e3v_ps and vmask. Therefore the output file can be considered as
+       a mesh_hgr, mesh_zgr and mask file for any &#39;meridional&#39; computation.
+         This tools works with temperatures, salinities and normal velocities.
+       The broken line is approximated in the model, by a succession of segments
+       joining F-points. The velocity is taken as either U or V depending on the
+       orientation of the segment, temperatures and salinities are interpolated
+       on the velocity points. When progressing along the broken line, velocity
+       is positive when heading to the right of the progression.
+         The barotropic transport across the broken line is computed, using the
+       same sign convention. On a closed broken line, the barotropic transport
+       should be very small.
+       
+      ARGUMENTS :
+       T-file   :  model gridT file 
+       U-file   :  model gridU file 
+       V-file   :  model gridV file 
+       ice-file :  model ice file 
+       
+      OPTIONS :
+       -f section_file1,section_file2,... : provide a comma separated list of
+               files for section definition. Section_file is an ascii file as 
+               follows:
+              * line #1 : name of the section (e.g. ovide). 
+                   Will be used for naming the output file.
+              * line #2 : number of points defining the broken line.
+              * line #3-end : a pair of Longitude latitude values defining
+                    the points. If not supplied, use hard-coded information
+                    for OVIDE section. A comment can be added at the end of
+                    of the lines, using a # as separator
+       -verbose : increase verbosity  
+       -ssh     : also save ssh along the broken line.
+       -mld     : also save mld along the broken line.
+       -ice     : also save ice properties along the broken line.
+      
+      REQUIRED FILES :
+       mesh_hgr.nc and mesh_zgr.nc must be in the current directory 
+       
+      OUTPUT : 
+        netcdf file : section_name.nc
+          variables : temperature, salinity, normal velocity, pseudo V metrics,
+                      mask, barotropic transport, bathymetry of velocity points.
+        ASCII file : section_name_section.dat usefull for cdftransport 
+       
+      SEE ALSO :
+         cdftransport, cdfmoc, cdfmocsig. This tool replaces cdfovide.
+       </code></pre>
+
+<h2 id="cdfbathy">cdfbathy</h2>
+
+<pre><code>  usage : cdfbathy/cdfvar -f IN-file [options]
+       
+      PURPOSE :
+        Allow manual modification of the input file. Very convenient
+        for bathymetric files, can also be used with any model file
+        Keep a log.f90 file of the modifications for automatic reprocessing
+       
+      ARGUMENTS :
+        IN-file : original input file. The program works on a copy of the
+                 original file (default)
+       
+      OPTIONS :
+        -file (or -f )       : name of input file 
+        -var  (or -v )       : name of cdf variable [default: Bathymetry]
+        -lev  (or -l )       : level to work with 
+        -time (or -t )       : time to work with 
+        -scale  s            : use s as a scale factor (divide when read the file)
+        -zoom (or -z )       : sub area of the bathy file to work with (imin imax jmin jmax)
+        -fillzone (or -fz )  : sub area will be filled with 0 up to the first coast line 
+        -fillpool (or -fp ) [ icrit ] : the whole file is check and fill all the pool smaller than (icrit) cell by 0
+        -raz_zone (or -raz ) : sub area will be filled with 0 up 
+        -raz_below depmin    : any depth less than depmin in subarea will be replaced by 0 
+           (or -rb depmin )  
+        -set_below depmin    : any depth less than depmin in subarea will be replaced by depmin 
+           (or -sb depmin ) 
+        -fullstep depmin     : sub area will be reshaped as full-step, below depmin
+           (or -fs depmin )    requires the presence of the file zgr_bat.txt (from ocean.output, eg )
+        -dumpzone (or -d )   : sub area will be output to an ascii file, which can be used by -replace
+                               after manual editing 
+        -nicedumpzone        : sub area will be output to an ascii file (nice output)
+                 (or -nd )
+        -replace (or -r )    : sub area defined by the file will replace the original bathy
+        -append (or -a )     : fortran log file (log.f90) will be append with actual modif
+                               Standard behaviour is to overwrite/create log file
+        -overwrite (or -o )  : input bathy file will be used as output.
+                               Standard behaviour is to use a work copy of the original file
+                               (indexed from 01 to 99 if necessary ) 
+        -log logfile         : log file for change (default is log.f90) 
+       
+      OUTPUT : 
+           netcdf file : according to used options, if the original file is to be modified
+                  a sequence number is added at the end of the input file name, to keep
+                  modifications.
+             variables : same as input file</code></pre>
+
+<h2 id="cdfbci">cdfbci</h2>
+
+<pre><code>  usage : cdfbci UVWT-file
+       
+      PURPOSE :
+        Compute elements for analysing the baroclinic instability
+       
+      ARGUMENTS :
+        UVWT-file : input file is produced by cdfmoyuvwt, and the mean
+               must be computed on a long-enough period for the 
+               statistics to be meaningful. Points are on T grid.
+       
+      REQUIRED FILES :
+        Need mesh_hgr.nc file
+       
+      OUTPUT : 
+        netcdf file : bci.nc
+          variables : 5 output variables
+              dTdx : zonal derivative of Tbar on T point (*1000)
+              dTdy : meridional derivative of Tbar on T point (*1000)
+              uT   : anomaly of u times anomaly of T on T point
+              vT   : anomaly of v times anomaly of T on T point
+              bci  : transfert of energy for the baroclinic instability (*1000)
+       
+      SEE ALSO :
+        cdfmoyuvwt </code></pre>
+
+<h2 id="cdfbn2">cdfbn2</h2>
+
+<pre><code>  usage : cdfbn2  T-file [W] [-full]
+      PURPOSE :
+        Compute the Brunt-Vaissala frequency (N2) according to
+        temperature and salinity given in the input file.
+       
+      ARGUMENTS :
+        T-file : netcdf input gridT file for temperature and salinity.
+       
+      OPTIONS :
+        [ W ] : keep N2 at W points. Default is to interpolate N2
+              at T point on the vertical.
+        [ -full ] : indicate a full step configuration instead of
+                 the default partial steps.
+       
+      REQUIRED FILES :
+        mesh_zgr.nc is needed for this program.
+       
+      OUTPUT : 
+        netcdf file : bn2.nc
+          variables : vobn2</code></pre>
+
+<h2 id="cdfbotpressure">cdfbotpressure</h2>
+
+<pre><code>  usage : cdfbotpressure T-file [-full] [-ssh] [-ssh2 ] [-xtra ] 
+       
+      PURPOSE :
+           Compute the vertical bottom pressure (pa) from in situ density
+       
+      ARGUMENTS :
+          T-file : gridT file holding either Temperature and  salinity 
+       
+      OPTIONS :
+         -full : for full step computation 
+         -ssh  : Also take SSH into account in the computation
+                 In this case, use rau0=   1035.000      kg/m3 for 
+                 surface density (as in NEMO)
+                 If you want to use 2d surface density from 
+                 the model, use option -ssh2
+         -ssh2 : as option -ssh but surface density is taken from 
+                 the model instead of a constant
+         -xtra :  Using this option, the output file also contains the ssh,
+                 and the pressure contribution of ssh to bottom pressure. 
+                 Require either -ssh or -ssh2 option. Botpressure is still
+                 the total pressure, including ssh effect.
+       
+      REQUIRED FILES :
+        mask.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file :  botpressure.nc
+          variables :  sobotpres
+       
+      SEE ALSO :
+         cdfvint
+       </code></pre>
+
+<h2 id="cdfbottom">cdfbottom</h2>
+
+<pre><code>  usage : cdfbottom  IN-file [ T | U | V | F]
+       
+      PURPOSE :
+        Create a 2D file with bottom most values for all the variables
+        which are in the input 3D file.
+       
+      ARGUMENTS :
+        IN-file : input netcdf 3D file.
+       
+      OPTIONS :
+        [ T | U | V | F] : specify the type of grid point on the C-grid
+             if not given, assume that land points are values with 0.
+       
+      REQUIRED FILES :
+        mask.nc file is required if the grid point is specified
+                   or if the land value is not 0.
+       
+      OUTPUT : 
+        netcdf file : bottom.nc
+          variables :  same names than input file, long_name attribute is
+                prefixed by Bottom </code></pre>
+
+<h2 id="cdfbottomsig">cdfbottomsig</h2>
+
+<pre><code>  usage : cdfbottomsig  T-file [zref]
+       
+      PURPOSE :
+        Create a 2D file with bottom density. In case a depth reference
+        is given, the density is refered to this depth. By default sigma-0
+        is used. Bottom most point is determined from the last non zero 
+        salinity point in the water column.
+       
+      ARGUMENTS :
+        T-file : input file with temperature and salinity 
+       
+      OPTIONS :
+        [zref] : depth reference for potential density
+               keyword &#39;ntr&#39; can also be specified, which indicates that we
+               will use neutral density
+              If not given assume sigma-0
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : botsig.nc
+          variables : sobotsig0 or sobotsigi ( kg/m3 - 1000 )
+                      or sobotsigntr (kg/m3)</code></pre>
+
+<h2 id="cdfbti">cdfbti</h2>
+
+<pre><code>  usage : cdfbti UVWT-file
+       
+      PURPOSE :
+        Compute  the terms in the barotropic energy tranfert equation.
+        The transfert of energy for the barotropic instability is 
+        bti= -[(u&#39;bar)^2*dubar/dx ...
+              +(v&#39;bar)^2*dvbar/dy ...
+              +(u&#39;v&#39;*(dubar/dy +dvbar/dx))]
+       
+      ARGUMENTS :
+        UVWT-file : netcdf file produced by cdfmoyuvwt
+       
+      REQUIRED FILES :
+        mesh_hgr.nc
+       
+      OUTPUT : 
+        netcdf file : bti.nc
+          variables : 
+                dudx : zonal derivate of ubar on T point
+                dvdx : zonal derivate of vbar on T point
+                dudy : meridional derivate of ubar on T point
+                dvdy : meridional derivate of vbar on T point
+                anousqrt : mean of (u-ubar)^2 on T point
+                anovsqrt : mean of (v-vbar)^2 on T point
+                anouv : mean of (u-ubar)*(v-vbar) on T point
+                bti  : transfert of energy for the barotropic instability.
+       
+      SEE ALSO :
+       cdfmoyuvwt, cdfbci, cdfnrjcomp, cdfkempemekeepe
+       </code></pre>
+
+<h2 id="cdfbuoyflx">cdfbuoyflx</h2>
+
+<pre><code>  usage : cdfbuoyflx  -t T-file [-r RNF-file] [-f FLX-file ] [-sss SSS-name]
+      ... [-sst SST-name] [-nc4] [-o output_file]  [-short ]
+       
+      PURPOSE :
+        Compute (or read) the heat and water fluxes components.
+        Compute (or read) the net heat and water fluxes.
+        Compute the buoyancy heat and water fluxes components.
+        Compute the net buoyancy fluxes.
+        Save sss and sst. 
+       
+      ARGUMENTS :
+        -t T-file   : netcdf file with temperature and salinity 
+       
+       
+      OPTIONS :
+        [ -r RNF-file ] : Specify a run-off file if runoff not in T-file 
+                          nor in FLX-file
+        [ -f FLX-file ] : Use this option if fluxes are not saved in gridT files
+        [ -sss SSS-name ] : Use this option if SSS variable name in T-file 
+                           differ from vosaline
+        [ -sst SST-name ] : Use this option if SST variable name in T-file 
+                           differ from votemper
+        [ -nc4 ] Use netcdf4 output with chunking and deflation level 1
+                This option is effective only if cdftools are compiled with
+                a netcdf library supporting chunking and deflation.
+        [ -o output_file ] Default is buoyflx.nc
+        [ -short ] With this option only save the buoyancy flux without 
+                   all the components of the flux.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : buoyflx.nc
+          variables : 25 variables (2D) or 1 variable in case of -short option
+       
+      SEE ALSO :
+       
+       </code></pre>
+
+<h2 id="cdfcensus">cdfcensus</h2>
+
+<pre><code>  usage :  cdfcensus T-file nlog [-zoom imin imax jmin jmax] ...
+                 ... [-klim kmin kmax]  [-full] [-bimg] ... 
+                 ... [-srange smin smax ds ] ...
+                 ... [-trange tmin tmax dt ] 
+       
+      PURPOSE :
+         Compute the volumetric water mass census: the ocean is divided in
+         T,S bins; the program gives the volume of water for each bin.
+         A sub-area can be specified, both horizontaly and vertically.
+         Temperature and salinity ranges can be also adapted, as well as the
+         width of the bins. Default values are provided. In order to attenuate
+         the huge maximum values, a log10 operator can be applied many times,
+         the number of filter passes being set on the command line.
+       
+      ARGUMENTS :
+        T-file  : netcdf file name for temperature and salinity
+        nlog    : number of log10 filter to perform. Can be 0.
+       
+      OPTIONS :
+        [-zoom imin imax jmin jmax] : define a model sub-area, in model 
+                                      coordinates
+        [-klim ik1 ik2            ] : set limits on the vertical.
+        [-srange smin smax ds     ] : define the size of the salinity bin
+                         defaut is : 25.0 40.0  0.020
+        [-trange tmin tmax dt     ] : define the size of the temperatude bin
+                         defaut is : -2.0 38.0  0.050
+        [-full                    ] : use for full step computation
+        [-bimg                    ] : output on bimg files (to be deprecated).
+       
+      REQUIRED FILES :
+        mesh_hgr.nc  and mesh_zgr.nc
+       
+      OUTPUT : 
+        - netcdf file : census.nc
+            variables : volcensus  (10^15 m3 )
+                        sigma0  (kg/m3 -1000 )
+                        sigma2  (kg/m3 -1000 )
+                        sigma3  (kg/m3 -1000 )
+        - bimg file   : According to options.</code></pre>
+
+<h2 id="cdfchgrid">cdfchgrid</h2>
+
+<pre><code>  usage : cdfchgrid -f IN-file -r REF-file -var IN-var [-nc4] [-o OUT-file] [-d]
+       
+      PURPOSE :
+        Build a new file on a refined grid, from a coarser grid, assuming that
+        the two grids are embedded, with common points (hence an odd scaling 
+        factor). Grid characteristics are hard wired in the code. Support for
+        ORCA025 --&gt; ORCA12, eORCA025 --&gt; eORCA12 is actually provided. Hooks 
+        are ready in the code for adding new conversion.
+        No interpolation, only copying value of a coarse grid cell, onto 
+        scale x scale cells of the output grid (scale is the refinement factor)
+       
+      RESTRICTION :
+        Caution for mask coherence !
+        This tool is only adapted for drowned field
+       
+      ARGUMENTS :
+        -f IN-file  : input Coarser-grid file
+        -r REF-file : Reference file used for identification of the output grid
+                should be of same geometry than the output file.
+        -var IN-var : input coarser-grid variable to be converted
+       
+      OPTIONS :
+        -nc4        : use netcdf4 chunking and deflation for the output file
+        -o OUT-file : specify output file name instead of cdfchgrid.nc
+        -d          : Display some debugging information 
+       
+      REQUIRED FILES :
+        none 
+       
+      OUTPUT : 
+        netcdf file : cdfchgrid.nc
+          variable : same name as in input file</code></pre>
+
+<h2 id="cdfclip">cdfclip</h2>
+
+<pre><code>  usage : cdfclip -f IN-file [-o OUT-file] -zoom imin imax jmin jmax [kmin kmax]
+       
+      PURPOSE :
+        Clip the input file according to the indices given in the
+        zoom statement. If no vertical zoomed area is indicated, 
+        the whole water column is considered.  This program is able
+        to extract data for a region crossing the E-W periodic boundary
+        of a global configuration. It does so if imax &lt; imin.
+       
+      ARGUMENTS :
+        -f IN-file : specify the input file to be clipped
+        -zoom imin imax jmin jmax : specify the domain to be extracted.
+            If imin=imax, or jmin = jmax assume a vertical section either 
+            meridional or zonal.
+       
+      OPTIONS :
+        [-o OUT-file ] : use OUT-file instead of cdfclip.nc for output file
+                If used, -o option must be used before -zoom argument 
+        [kmin kmax ] : specify vertical limits for the zoom, in order to reduce
+                the extracted area to some levels. Default is to take the whole
+                water column.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : cdfclip.nc This can be changed using -o option
+          variables : same as input variables.</code></pre>
+
+<h2 id="cdfcmp">cdfcmp</h2>
+
+<pre><code>  usage : cmp_var -f1 IN-file1 -f2 IN-file2 -var IN-var ...
+      ... [-lev kmin kmax ] [-zoom imin imax jmin jmax] ...
+       
+      PURPOSE :
+         Find where IN-var is different between IN-file1 and IN-file2 
+         Options allow to restrict the finding to a sub area in space
+       
+      ARGUMENTS :
+        -f1 IN-file1 : input file1
+        -f2 IN-file2 : input file2
+        -var IN-var  : input variable
+       
+      OPTIONS :
+        [-lev kmin kmax ] : restrict to level between kmin and kmax. 
+        [-zoom imin imax jmin jmax] : restrict to sub area specified
+                                      by the given limits. 
+       
+      REQUIRED FILES :
+        none 
+       
+      OUTPUT : 
+        output is done on standard output.</code></pre>
+
+<h2 id="cdfcofdis">cdfcofdis</h2>
+
+<pre><code>  usage :  cdfcofdis mesh_hgr.nc mask.nc gridT.nc [-jperio jperio ] [-surf]
+       
+      PURPOSE :
+         Compute the distance to the coast and create a file with the Tcoast
+         variable, indicating the distance to the coast. This computation is don
+ e
+         for every model level, unless -surf option is used.
+       
+      ARGUMENTS :
+        HGR-file : name of the mesh_hgr file 
+        MSK-file : name of the mask file 
+        T-file   : netcdf file at T point.
+       
+      OPTIONS :
+        [ -jperio jperio ] : define the NEMO jperio variable for north fold 
+            condition. Default is  4.
+        [ -surf ] : only compute  distance at the surface.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : dist.coast
+          variables : Tcoast (m)
+       
+       </code></pre>
+
+<h2 id="cdfcoloc">cdfcoloc</h2>
+
+<pre><code>  usage : cdfcoloc  -w root_weight -t gridT -trc TRC_file ...
+           ...  -u gridU -v gridV [-l field list ] [-h]
+        -w root_weight  : specify the root name of the weight files
+                          _T.bin, _U.bin, or _V.bin will be appended 
+                          to name if necessary.
+        -t gridT file   : name of gridT model file
+        -trc TRC file   : name of gridT model file
+        -d  diag file   : name of specific diagnostic file 
+        -u gridU file   : name of gridU model file
+        -v gridV file   : name of gridV model file
+        -b bathy file   : name of etopo like bathymetric file
+        -l field list   : list of fields to be colocated, separated by &#39;,&#39;
+                          Default list is :U,V,Sx,Sy,H
+        -h              : Give the details of available field to colocate.
+      Return a column ascii file id dep fields()
+ mask.nc is required in local directory
+ coordinates.nc,mesh_zgr.nc are also required for slope computation</code></pre>
+
+<h2 id="cdfconvert">cdfconvert</h2>
+
+<pre><code>  usage : cdfconvert CLIPPER_tag CLIPPER_Confcase
+       
+      PURPOSE :
+        Convert dimg files (CLIPPER like) to netcdf (DRAKKAR like).
+       
+      ARGUMENTS :
+        CLIPPER_tag      : a string such as y2000m01d15 for time identification.
+        CLIPPER_confcase : CONFIG-CASE of the files to be converted (eg ATL6-V6)
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : gridT, gridU, gridV files
+          variables : same as in standard NEMO output
+       
+      SEE ALSO :
+        cdfflxconv, cdfsstconv, cdfstrconv
+       </code></pre>
+
+<h2 id="cdfcsp">cdfcsp</h2>
+
+<pre><code>  usage : cdfcsp list_of_files 
+       
+      PURPOSE :
+        Replace missing_values by 0 and update attribute
+       
+      ARGUMENTS :
+        The list of cdf file to process, all variables will be processed
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : same as input file (modified)
+          variables : same as input file</code></pre>
+
+<h2 id="cdfcurl">cdfcurl</h2>
+
+<pre><code>  usage : cdfcurl -u U-file U-var -v V-file V-var -l levlist [-T] [-8]...
+            ... [-surf] [-overf] [-nc4] [-o OUT-file ]
+       
+      PURPOSE :
+        Compute the curl of a vector field, at a specified level.
+        If level is specified as 0, assume that the input files are
+        forcing files, presumably on A-grid. In this latter case, the
+        vector field is interpolated on the C-grid. In any case, the
+        curl is computed on the F-point (unless -T option is used).
+       
+      ARGUMENTS :
+        -u U-file U-var : file and variable name for zonal component
+        -v V-file V-var : file and variable name for meridional component
+        -l levlist    : levels to be processed. If set to 0, assume forcing file
+                 in input. Example of recognized syntax :
+                   -l &quot;1,10,30&quot;  or -l &quot;1-20&quot; or even -l &quot;1-3,10-20,30-&quot;
+                   -l  1 . Note that -l &quot;3-&quot; set a levlist from 3 to the bottom
+ 
+      OPTIONS :
+        -T : compute curl at T point instead of default F-point
+        -8 : save in double precision instead of standard simple precision.
+        -surf : work with single level C-grid (not forcing)
+        -overf : store the ratio curl/f where f is the coriolis parameter
+        -nc4 : use netcdf4 output with chunking and deflation 1
+        -o OUT-file : specify output file name instead of curl.nc
+       
+      REQUIRED FILES :
+         mesh_hgr.nc
+       
+      OUTPUT : 
+        netcdf file : curl.nc
+          variables : socurl or socurlt (if -T option), units : s^-1
+             or socurloverf, no units (if -overf option)</code></pre>
+
+<h2 id="cdfdegradt">cdfdegradt</h2>
+
+<pre><code>  usage : cdfdegradt IN-Tfile IN-var ri rj [i0 j0]
+        ... [-full]
+        
+      PURPOSE :
+        Degrad the horizontal resolution of NEMO T-grid ouput,       
+        for each z-level and time step, with a ratio of ri along     
+        x direction and rj along y direction. If specified, the input
+        grid is considered starting from the indices i0 and j0.      
+       
+      ARGUMENTS :
+        IN-Tfile  : netcdf T-file.
+        IN-var    : name of netcdf variable to work with
+        ri        : degradation ratio for x-direction   
+        rj        : degradation ratio for y-direction   
+       
+      OPTIONS : 
+        [i0 j0] : spatial indices from where starting the procedure   
+                  of degradation.                                    
+        [-full] : flag for full steps grid, instead of default partial
+                  steps.
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc, mesh_zgr.nc, mask.nc
+       
+      OUTPUT : 
+        netcdf file : degraded_cdfvar.nc 
+        netcdf file : flsdc.nc
+       </code></pre>
+
+<h2 id="cdfdegradu">cdfdegradu</h2>
+
+<pre><code>  usage : cdfdegradu IN-Ufile IN-var ri rj [i0 j0]
+        ... [-full]
+        
+      PURPOSE :
+        Degrad the horizontal resolution of NEMO U-grid ouput,       
+        for each z-level and time step, with a ratio of ri along     
+        x direction and rj along y direction. If specified, the input
+        grid is considered starting from the indices i0 and j0.      
+       
+      ARGUMENTS :
+        IN-Ufile  : netcdf U-file.
+        IN-var    : name of netcdf variable to work with
+        ri        : degradation ratio for x-direction   
+        rj        : degradation ratio for y-direction   
+       
+      OPTIONS : 
+        [i0 j0] : spatial indices from where starting the procedure   
+                  of degradation.                                    
+        [-full] : flag for full steps grid, instead of default partial
+                  steps.
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc, mesh_zgr.nc, mask.nc
+       
+      OUTPUT : 
+        netcdf file : degraded_cdfvar.nc 
+        netcdf file : flsdc.nc
+       </code></pre>
+
+<h2 id="cdfdegradv">cdfdegradv</h2>
+
+<pre><code>  usage : cdfdegradv IN-Vfile IN-var ri rj [i0 j0]
+        ... [-full]
+        
+      PURPOSE :
+        Degrad the horizontal resolution of NEMO V-grid ouput,       
+        for each z-level and time step, with a ratio of ri along     
+        x direction and rj along y direction. If specified, the input
+        grid is considered starting from the indices i0 and j0.      
+       
+      ARGUMENTS :
+        IN-Vfile  : netcdf V-file.
+        IN-var    : name of netcdf variable to work with
+        ri        : degradation ratio for x-direction   
+        rj        : degradation ratio for y-direction   
+       
+      OPTIONS : 
+        [i0 j0] : spatial indices from where starting the procedure   
+                  of degradation.                                    
+        [-full] : flag for full steps grid, instead of default partial
+                  steps.
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc, mesh_zgr.nc, mask.nc
+       
+      OUTPUT : 
+        netcdf file : degraded_cdfvar.nc 
+        netcdf file : flsdc.nc
+       </code></pre>
+
+<h2 id="cdfdegradw">cdfdegradw</h2>
+
+<pre><code>  usage : cdfdegradw IN-Wfile IN-var ri rj [i0 j0]
+        ... [-full]
+        
+      PURPOSE :
+        Degrad the horizontal resolution of NEMO W-grid ouput,       
+        for each z-level and time step, with a ratio of ri along     
+        x direction and rj along y direction. If specified, the input
+        grid is considered starting from the indices i0 and j0.      
+       
+      ARGUMENTS :
+        IN-Wfile  : netcdf W-file.
+        IN-var    : name of netcdf variable to work with
+        ri        : degradation ratio for x-direction   
+        rj        : degradation ratio for y-direction   
+       
+      OPTIONS : 
+        [i0 j0] : spatial indices from where starting the procedure   
+                  of degradation.                                    
+        [-full] : flag for full steps grid, instead of default partial
+                  steps.
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc, mesh_zgr.nc, mask.nc
+       
+      OUTPUT : 
+        netcdf file : degraded_cdfvar.nc 
+        netcdf file : flsdc.nc
+       </code></pre>
+
+<h2 id="cdfdifmask">cdfdifmask</h2>
+
+<pre><code>  usage : cdfdifmask  mask1 mask2
+      PURPOSE :
+        Compute the difference between 2 mask files.
+       
+      ARGUMENTS :
+        mask1, mask2 : model files to be compared.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : mask_diff.nc
+        variables : tmask, umask, vmask, fmask</code></pre>
+
+<h2 id="cdfdiv">cdfdiv</h2>
+
+<pre><code>  usage : cdfdiv -u U-file U-var -v V-file V-var -l levlist  [-8]...
+            ... [-surf] [-overf] [-full] [-o OUT-file ]
+       
+      PURPOSE :
+        Compute the divergence of the flow from the U and V velocity components
+       
+      ARGUMENTS :
+        -u U-file U-var : file and variable name for zonal component
+        -v V-file V-var : file and variable name for meridional component
+        -l levlist    : levels to be processed. If set to 0, assume forcing file
+                 in input. Example of recognized syntax :
+                   -l &quot;1,10,30&quot;  or -l &quot;1-20&quot; or even -l &quot;1-3,10-20,30-&quot;
+                   -l  1 . Note that -l &quot;3-&quot; set a levlist from 3 to the bottom
+ 
+      OPTIONS :
+        -8 : save in double precision instead of standard simple precision.
+        -surf : work with single level C-grid (not forcing)
+        -overf : store the ratio curl/f where f is the coriolis parameter
+        [ -full ] : in case of full step configuration. Default is partial step.
+        -o OUT-file : specify output file name instead of curl.nc
+       
+      REQUIRED FILES :
+         mesh_hgr.nc mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : curl.nc
+          variables : div units : s^-1
+                or divoverf, no units (if -overf option)</code></pre>
+
+<h2 id="cdfeddyscale">cdfeddyscale</h2>
+
+<pre><code>  usage : cdfeddyscale mean-cdfeddyscale_pass1-file
+       
+      PURPOSE :
+      Compute: -the Taylor scale or large scale eddy (lambda1)
+               -the small scale eddy (lambda2)
+               -and the inertial range (scar) on F-points
+       
+      lambda1 = sqrt(mean Kinetic Energie / Enstrophy)
+      lambda2 = sqrt(Enstrophy / Palinstrophy)
+      Inertial Range    = lambda1 / lambda2
+       
+      Enstrophy = 1/2 * ( mean((RV)^2) )
+      Palinstrophy = 1/2 * ( mean((dx(RV))^2 + (dy(RV))^2) )
+       
+      ARGUMENTS :
+      mean-cdfeddyscale_pass1-file : mean of the terms compute by
+      the program cdfeddyscale_pass1
+       
+      OUTPUT : 
+        netcdf file : lambda.nc
+          variables : solambda1 (m), solambda2 (m), soscar
+       
+      SEE ALSO :
+        cdfeddyscale_pass1 </code></pre>
+
+<h2 id="cdfeddyscale_pass1">cdfeddyscale_pass1</h2>
+
+<pre><code>  usage : cdfeddyscale_pass1 U-file V-file U-var V-var lev
+       
+      PURPOSE :
+      Compute: - the curl and the square of curl on F-points,
+               - the gradient components of the curl and the
+                 square of the gradient components on UV-points,
+               - the square of velocity components on UV-points,
+      for given gridU gridV files and variables. These variables are required
+      for computing eddy scales with cdfeddyscale. Therefore this program is
+      the first step in computing the eddy scales.
+      
+         These terms will used to compute the Taylor scale or large
+      scale eddy (lambda1) and the small scale eddy (lambda2) in
+      the program cdfeddyscale.
+       
+      ARGUMENTS :
+        U-file : zonal component of the vector field.
+        V-file : meridional component of the vector field.
+        U-var  : zonal component variable name
+        V-var  : meridional component variable name.
+        lev    : level to be processed. If set to 0, assume forcing file 
+                 in input.
+       
+      REQUIRED FILES :
+         mesh_hgr.nc
+       
+      OUTPUT : 
+        netcdf file : lambda_int.nc
+          variables : socurl (s^-1), socurl2 (s^-2)
+          variables : sodxcurl, sodycurl (s^-1.m^-1)
+          variables : sodxcurl2, sodycurl2 (s^-2.m^-2)
+          variables : vozocrtx2, vomecrty2 (m^2.s^-2)
+          WARNING : variables in the output file are not located at the same
+                  C-grid point.
+       
+      SEE ALSO : 
+         cdfeddyscale</code></pre>
+
+<h2 id="cdfeke">cdfeke</h2>
+
+<pre><code>  usage : cdfeke U-file [U2-file]  V-file [V2-file] T-file [-mke ] [-nc4] ...
+             ... [-o output_file]
+       
+      PURPOSE :
+         Compute the Eddy Kinetic Energy from previously computed
+         mean values and mean squared values of velocity components.
+       
+      ARGUMENTS : both &#39;General Use&#39; or &#39;Reduced Use&#39; are acceptable
+       * General Use: 5 files are given in argument, and EKE is computed
+        U-file  : gridU type file with mean U component.
+        U2-file : gridU2 type file with mean U2 component.
+        V-file  : gridV type file with mean V component.
+        V2-file : gridV2 type file with mean V2 component.
+        T-file  : any gridT or gridT2 (smaller) file, used for EKE header.
+        
+       * Reduced Use: no U2/V2 file, only MKE is computed from U and V file.
+        U-file  : gridU type file with mean U component.
+        V-file  : gridV type file with mean V component.
+        T-file  : any gridT or gridT2 (smaller) file, used for MKE header.
+              
+      OPTION :
+        -mke  : output MKE field together with EKE. 
+        -nc4  : allow netcdf4 output with compression and chunking.
+        -o output file : specify output file name instead of eke.nc
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : eke.nc unless -o option in use.
+          variables : voeke (m2/s)
+          variables : vomke (m2/s) if required</code></pre>
+
+<h2 id="cdfenstat">cdfenstat</h2>
+
+<pre><code>  usage : cdfenstat list_of_model_files [-spval0] [-nc4] [-v4d] -o OUT-file]
+      PURPOSE :
+        Compute the time average of a list of files given as arguments.
+        This program handle multi time-frame files is such a way that
+        the output files are also multi time-frame, each frame being
+        the average across the files given in the list.
+        
+        The program assume that all files in the list are of same
+        type (shape, variables , and number of time frames ). 
+        For some variables, the program also compute the time average 
+        of the squared variables, which is used in other cdftools 
+        (cdfeke, cdfrmsssh, cdfstdevw, cdfstddevts ... The actual variables
+        selected for squared average are :
+          - vozocrtx
+          - vomecrty
+          - vovecrtz
+          - sossheig
+        This selection can be adapted with the nam_cdf_namelist process.
+        (See cdfnamelist -i for details).
+        If you want to compute the average of already averaged files,
+        consider using cdfmoy_weighted instead, in order to take into
+        account a particular weight for each file in the list.
+       
+      ARGUMENTS :
+        A list of similar model output files. 
+       
+      OPTIONS :
+        [ -spval0 ] :  set missing_value attribute to 0 for all output
+                variables and take care of the input missing_value.
+                This option is usefull if missing_values differ from files 
+                to files; it was formely done by cdfmoy_chsp).
+        [ -nc4 ] : output file will be in netcdf4, with chunking and deflation
+        [ -v4d ] : uses 4D arrays for improved performance (use more memory !)
+        [ -o OUT-file ] : specify a name for output file instead of cdfmoy.nc
+       
+      REQUIRED FILES :
+        none 
+       
+      OUTPUT : 
+        netcdf file : cdfmoy.ncunless -o option in use
+        variables : are the same than in the input files. Standard Dev are 
+         named  stdev_&lt;variable&gt;</code></pre>
+
+<h2 id="cdfets">cdfets</h2>
+
+<pre><code>  usage : cdfets  T-file 
+       
+      PURPOSE :
+        Compute the eddy time scale, and a proxy for rossby radius.
+        The Rossby radius is computed as the vertical integral of N2
+        (Brunt Vaissala frequency), scaled by |f|*pi
+        The Eddy Time Scale is the ratio N/|grad B| where N is the square
+        root of N2 and |grad B| is the module of the horizontal buoyancy
+        gradient. B is the buoyancy computed as B=-g rho/rho0.
+       
+      ARGUMENTS :
+        T-file : netcdf input file for temperature and salinity (gridT).
+       
+      REQUIRED FILES :
+         mesh_hgr.nc, mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : ets.nc
+          variables : voets (days)  and sorosrad (m)</code></pre>
+
+<h2 id="cdffindij">cdffindij</h2>
+
+<pre><code>  usage :   cdffindij  xmin xmax ymin ymax  [-c COOR-file] [-p point_type]...
+                     [-f list_file ] [-d decriptor] [-o output_file] [-a] [-l]
+       
+      PURPOSE :
+        Return the model limit (i,j space) of the geographical window 
+        given on the input line. If using -f list_file option, then the output
+        is just a single point, not a window, and xmin, xmax, ymin ymax are not
+        used at all.
+       
+      ARGUMENTS :
+        xmin xmax ymin ymax : geographical limits of the window, in lon/lat
+        (relevant only if -f option not used.)
+       
+      OPTIONS :
+        [-c COOR-file ] : specify a particular coordinate file
+                      default is coordinates.nc
+        [-p point type] : specify the point on the C-grid (T U V F)
+                      default is F
+        [-f list_file ] : list_file is an ascii file describing the location
+                 (one per line) of geographical points to be translated to 
+                 model (i,j) point. Unless specified with -d option, this list
+                 file contains Longitude (X) Latitudes (Y) information.
+        [-d descriptor] : descriptor is a string indicating the position of
+                 X and Y coordinates for the lines of list_file. Default value
+                 of the descriptor is &#39;XY&#39;. Any other field on the line is 
+                 indicated with any characterm except X or Y. Example of valid
+                 descriptor : &#39;oXYooo&#39; or &#39;ooYabcdfXooo&#39; 
+        [-a  ] : With this option, output is similar to input with I,J appended
+                 to the corresponding line.
+        [-l  ] : With this option, also output the exact model longitude and 
+                 latitude of the I,J point.
+        [-o output_file] : write output in ascii output_file instead of standard
+                 output.
+       
+      REQUIRED FILES :
+        coordinates.nc or the specified coordinates file.
+       
+      OUTPUT : 
+        Output is done on standard output.</code></pre>
+
+<h2 id="cdffixtime">cdffixtime</h2>
+
+<pre><code>  usage : cdffixtime  -f IN-file -i initial date [-t tag] [-dt freq] ... 
+                ...  [-keep ] [-leap] [ -noleap]
+       
+      PURPOSE :
+         Change time_counter in file to set it according to drakkar rule,
+         time_counter attibutes &#39;units&#39; and &#39;time_origin&#39; are ajusted.
+          * units are &#39;seconds since yyyy-mm-dd hh:mm:ss&#39; 
+          * time_origin is set to &#39;yyyy-MMM-dd hh:mm:ss&#39;, MMM represents a
+         litteral abbreviation for the month (eg: JAN FEB MAR ...)
+         Once fixed, the time_counter indicates the middle of the output 
+         interval (in case of averaged output, of course).
+       
+      ARGUMENTS :
+        -f IN-file     : specify the file whose time_counter need adjustment
+        -i inital date : indicate the time origin in a fixed 2 words format
+                    yyyy-mm-dd hh:mm:ss ( eg: 1956-05-16 04:30:00 )
+       
+      OPTIONS :
+        [ -t tag ]  : supply a time tag corresponding to the file. If not
+                      supplied, tag is taken from the name of the input file
+                      assuming DRAKKAR convention ( CONFIG-CASE_tag_xxxx.nc )
+        [ -dt freq] : number of days between model output [ 5d ]
+        [-leap ]    : assume a calendar with leap years
+        [-noleap ]  : assume a calendar without leap years (default)
+        [-keep ]    : keep the actual value of time_counter, adjust time_counter
+                     attributes only;
+       
+      REQUIRED FILES :
+        none 
+       
+      OUTPUT : 
+        netcdf file : Input file is modified (only attributes)
+       </code></pre>
+
+<h2 id="cdfflxconv">cdfflxconv</h2>
+
+<pre><code>  Usage : cdfflxconv YEAR config 
+     Output 6 cdf files : for emp, qnet, qsr, sst, taux, tauy with standard var 
+ name :
+         sowaflup, sohefldo, soshfldo, sst, sozotaux, sometauy 
+     coordinates.diags ( clipper like) is required in current dir </code></pre>
+
+<h2 id="cdffracinv">cdffracinv</h2>
+
+<pre><code>  usage : cdffracinv TRC-file [-inv INV-name]
+       
+      PURPOSE :
+        Compute the fraction of inventory for passive tracers, which is 
+        the ratio between inventory at a grid point and the total inventory.
+       
+      ARGUMENTS :
+        TRC-file : netcdf file with tracer inventory.
+       
+      OPTIONS :
+        -inv INV-name  : name of the netcdf name for inventory [ invcfc ]
+       
+      REQUIRED FILES :
+        none ... but : horizontal weight to be coded ?
+       
+      OUTPUT : 
+        netcdf file : fracinv.nc
+          variables : fracinv</code></pre>
+
+<h2 id="cdffwc">cdffwc</h2>
+
+<pre><code>  usage : cdffwc IN-file BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]
+                 [-full] [-accum] [-ssh]
+       
+      PURPOSE :
+        Computes the freshwater content in a given basin from top
+        to bottom for each layer. Can handle full step configuration
+        using the -full option.
+       
+      ARGUMENTS :
+         IN-file            : netcdf input file.
+         BASIN-var1,var2,.. : Comma separated list of sub-basin variables
+                              to process.
+         OUT-file           : use specified output file instead of &lt;IN-var&gt;.nc
+       
+      OPTIONS :
+         -full  : for full step computation 
+         -accum : compute accumulated content from top to bottom
+         -ssh   : take ssh into account for surface layer
+         -sref  : reference salinity (= 34.7 by deafult)
+       
+      REQUIRED FILES :
+        mesh_zgr.nc, mesh_hgr.nc and subbasins.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file :  fwc.nc (or specified with -o option)
+          variables :  fwc_BASIN, where BASIN was set by argument BASIN-var*
+                       (cAsE sensitive !)
+       </code></pre>
+
+<h2 id="cdfgeo-uv">cdfgeo-uv</h2>
+
+<pre><code>  usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [ -C option ]
+       
+      PURPOSE :
+          Compute the geostrophic velocity component from the gradient 
+        of the SSH read in the input file. 
+          Without any -C option, the zonal component is located on a 
+        C-grid V point, the meridional one is located on C-Grid U point.
+          See the use of the -C option in order to have (Ugeo, Vgeo) 
+        at (U,V) points on the C-grid.
+       
+      ARGUMENTS :
+       -f  T-file : netcdf file with SSH (input).
+       
+      OPTIONS :
+       -o UOUT-file VOUT-file: specify the names of the output files.
+                 Default are: ugeo.nc vgeo.nc.
+       -C option : Using this option, the output velocity component are
+                at the correct (U,V) points on the C-grid
+                2 options are available :
+               option = 1 : SSH is interpolated on the F point prior derivation
+               option = 2 : Ugeo and Vgeo are interpolated on the C-grid after
+                      derivation
+                  Both option should give very similar results...
+   
+      REQUIRED FILES :
+         mesh_hgr.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        - netcdf file : ugeo.nc (default)
+            variables : vozocrtx
+            Unless -C option is used : 
+              *** CAUTION:  this variable is located on V-point ***
+        - netcdf file : vgeo.nc (default)
+            variables : vomecrty
+            Unless -C option is used : 
+              *** CAUTION:  this variable is located on U-point ***</code></pre>
+
+<h2 id="cdfgeostrophy">cdfgeostrophy</h2>
+
+<pre><code>  usage : cdfgeostrophy T-file
+       
+      PURPOSE :
+        Compute the geostrophic velocity component from the pressure gradient 
+        computed from SSH and in-situ density (T,S of input file) 
+       
+      WARNING : USE AT YOUR OWN RISKS
+       
+      ARGUMENTS :
+        T-file : netcdf file with SSH, T and S.
+       
+      REQUIRED FILES :
+         mask.nc mesh_hgr.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        - netcdf file : ugeo.nc
+            variables : vozocrtx
+        - netcdf file : vgeo.nc
+            variables : vomecrty</code></pre>
+
+<h2 id="cdfgradT">cdfgradT</h2>
+
+<pre><code>  usage : cdfgradT T-file [S-file] 
+       
+      PURPOSE :
+         Compute horizontal and vertical gradient of temperature and salinity.
+       Results are saved at U point for zonal gradient, V point for meridional
+       gradient and W for vertical gradient.
+       
+      ARGUMENTS :
+        T-file : File with votemper and vosaline variables
+            If vosaline not in T-file give a second name for S-file.
+       
+      OPTIONS :
+        S-file : File with vosaline variable if not in T file
+       
+      REQUIRED FILES :
+        mesh_hgr.nc mask.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : gradT.nc
+                     6  variables : 
+               vozogradt, vomegradt, vovegradt : 3 component of the temperature
+                           located respectively at U, V and W points
+               vozograds, vomegrads, vovegrads : 3 component of the salinity
+                           located respectively at U, V and W points
+       
+      SEE ALSO :
+       
+       </code></pre>
+
+<h2 id="cdfhdy">cdfhdy</h2>
+
+<pre><code>  usage : cdfhdy T-file level1 level2
+       
+      PURPOSE :
+         Compute dynamical height anomaly field from gridT file.
+         It is computed as the integral of (1/g) *10e4 * sum [ delta * dz ]
+             where delta = (1/rho - 1/rho0)
+             10e4 factor is for the conversion decibar to pascal.
+       
+      ARGUMENTS :
+         T-file  : netcdf file with temperature and salinity
+         level1  : upper limit for vertical integration (usually 1 = surface)
+         level2  : lower limit for vertical integration.
+       
+      REQUIRED FILES :
+        mask.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : cdfhdy.nc
+          variables : sohdy (m)</code></pre>
+
+<h2 id="cdfhdy3d">cdfhdy3d</h2>
+
+<pre><code>  usage : cdfhdy3d T-file
+       
+      PURPOSE :
+         Compute dynamic height anomaly from T-file given as argument.
+       
+      ARGUMENTS :
+        T-file : netcdf file with temperature and salinity.
+       
+       
+      REQUIRED FILES :
+         mask.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : cdfhdy3d.nc
+          variables : vohdy ( m )
+       
+      SEE ALSO :
+       cdfhdy
+       </code></pre>
+
+<h2 id="cdfheatc">cdfheatc</h2>
+
+<pre><code>  usage :  cdfheatc  T-file ...
+     ... [imin imax jmin jmax kmin kmax] [-full] 
+       
+      PURPOSE :
+         Computes the heat content in the specified area (Joules)
+         A sub-domain can be specified in option.
+       
+      ARGUMENTS :
+        T-file : a file with temperature and salinity
+       
+      OPTIONS :
+        [imin imax jmin jmax kmin kmax] : limit of a sub domain where
+                       the heat content will be calculated.
+                    - if imin = 0 then ALL i are taken
+                    - if jmin = 0 then ALL j are taken
+                    - if kmin = 0 then ALL k are taken
+        [-full ] : assume full step model output instead of default
+                   partial steps.
+        [-mxloption ] : pass 1 to compute only in the mixed layer, -1 to exclude
+                        it from the calculations 
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc, mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : to be done ....
+        Standard output</code></pre>
+
+<h2 id="cdfhflx">cdfhflx</h2>
+
+<pre><code>  usage : cdfhflx  T-file 
+       
+      PURPOSE :
+        Computes the Meridional Heat Transport (MHT) from surface heat fluxes,
+        in function of the latitude.
+        If a sub-basin file is available, MHT is computed for each sub-basin.
+        Note that the latitude is in fact a line of constant J coordinate, not
+        a true parallel, if the model grid is distorted as in the northern most
+        part of ORCA configurations.
+       
+      ARGUMENTS :
+        T-file : a file with heat fluxes (gridT). 
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc, new_maskglo.nc and mask.nc.
+        If new_maskglo.nc is not available, only global MHT is computed.
+       
+      OUTPUT : 
+        ASCII file  : hflx.out
+        netcdf file : cdfhflx.nc
+          variables : hflx_glo, [hflx_atl, hflx_inp, hflx_pac, hflx_ind]</code></pre>
+
+<h2 id="cdfhgradb">cdfhgradb</h2>
+
+<pre><code>  usage : cdfhgradb -t T-file [-s S-file] [-nc4 ] [-o OUT-file] ...
+                    ...  [-sal SAL-name]  [-tem TEMP-name] 
+       
+      PURPOSE :
+         Compute the norm of the horizontal buoyancy gradient.
+       Results are saved at T points.
+       
+      ARGUMENTS :
+        -t T-file : File with votemper and vosaline variables
+            If vosaline not in T-file use -s option.
+           Note that salinity and/or temperature variables name can be changed
+           with -sal and/or -tem options, respectively.
+       
+      OPTIONS :
+       [-s S-file ] : File with vosaline variable if not in T file
+       [-nc4      ] : use netcdf4 chunking and deflation on output 
+       [-o output file] : specify the name of output file instead of 
+                 default name hgradb_gridT.nc
+       [-sal SAL-name] : specify the name of salinity variable
+       [-tem TEM-name] : specify the name of temperature variable
+       
+      REQUIRED FILES :
+        mesh_hgr.nc mask.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : hgradb_gridT.nc ( unless specified with -o option)
+                     1  variables : 
+               vohgradb: norm of the horizontal buoyancy gradient at t-point
+       
+      SEE ALSO :
+         cdfbuoyflx  
+       </code></pre>
+
+<h2 id="cdficb_clim">cdficb_clim</h2>
+
+<pre><code>  usage : cdficb_clim 12-ICB-monthly-means-files
+       
+      PURPOSE :
+         Compute the 2D field of icb mass and icb melt.
+       
+      ARGUMENTS :
+        ICE-file : netcdf icb file
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : icbdiags.nc
+          variables : Mass  (Kg/m2 )
+                      Melt  (Kg/m2/s )</code></pre>
+
+<h2 id="cdficb_diags">cdficb_diags</h2>
+
+<pre><code>  usage : cdficb_diags ICB-file  
+       
+      PURPOSE :
+         Compute the spatially integrated icb mass and melt flux.
+       
+      ARGUMENTS :
+        ICB-file : a single netcdf icb file
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : icbdiags.nc
+          variables : [NS]Mass  (Kg )
+                      [NS]Melt    (Kg/s )
+                N = northern hemisphere
+                S = southern hemisphere
+        standard output</code></pre>
+
+<h2 id="cdficediags">cdficediags</h2>
+
+<pre><code>  usage : cdficediag ICE-file [-lim3] 
+       
+      PURPOSE :
+         Compute the ice volume, area and extent for each hemisphere.
+         The extent is computed in a similar way to NSIDC for easy 
+         comparison : the extent is the surface of the grid cells covered
+         by ice when the ice concentration is above 0.15
+       
+         For compatibility with previous version, another estimate of 
+         the extend is computed using grid cell surfaces weighted by the
+         ice concentration, but it will be deprecated soon.
+       
+      ARGUMENTS :
+        ICE-file : netcdf icemod file (LIM2 by default)
+       
+      OPTION :
+        [-lim3 ] : LIM3 variable name convention is used
+        [-o OUT-file ] : specify output file instead of icediags.nc
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : icediags.nc
+          variables : [NS]Volume  (10^9 m3 )
+                      [NS]Area    (10^9 m2 )
+                      [NS]Extent  (10^9 m2 ) -- obsolete --
+                      [NS]Exnsidc (10^9 m2 )
+                N = northern hemisphere
+                S = southern hemisphere
+        standard output</code></pre>
+
+<h2 id="cdfimprovechk">cdfimprovechk</h2>
+
+<pre><code>  usage : cdfimprovechk IN-var OBS-file REF-file TST-file
+       
+      PURPOSE :
+         Estimate the improvement/deterioration of a test run,
+         compared with a reference run relative to some observations
+         This program computes the quantity zchk= ( REF - TEST )/(REF - OBS)
+         Where 0 &lt; zchk &lt;= 1, the TST is better than the reference
+         Where 1 &lt; zchk, the TST  was corrected in the right sense but too much
+         Where  zchk &lt; 0, the TST  was corrected was corrected in the wrong way.
+       
+      ARGUMENTS :
+         IN-var    : netcdf input variable
+         OBS-file  : netcdf observation file
+         REF-file  : netcdf reference file
+         TST-file  : netcdf test file
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : chk.nc
+          variables : same as input variable.</code></pre>
+
+<h2 id="cdfinfo">cdfinfo</h2>
+
+<pre><code>  usage : cdfinfo &#39;model cdf file&#39; [-dep dep] 
+       
+      PURPOSE :
+         Gives very basic information about the file given in arguments.
+       
+      ARGUMENTS :
+         model output file in netcdf.
+       
+      OPTIONS :
+         [-dep depth ] : return the nearest k index corresponding to depth 
+       
+      OUTPUT : 
+         On standard ouput, gives the size of the domain, the depth 
+         dimension name, the number of variables.
+       </code></pre>
+
+<h2 id="cdfisf_fill">cdfisf_fill</h2>
+
+<pre><code>  usage : cdfisf_fill  -f ISF-file -v ISF-var -l ISF-list [-nc4 ] [-o OUT-file]
+       
+      PURPOSE : Build a nc file with a single value for each pool around a list
+                of given point. A warning is given when neighbouring ice-shelves
+                cannot be discriminated (no gap in between). In this case, hand
+                edit on the ISF-file is required.
+       
+      ARGUMENTS : 
+          -f ISF-file : netcdf file  which contains the ice shelf draft variable
+                      (mesh_zgr is OK). It is used as a mask, only.
+          -v ISF-var  : variable name corresponding to the ice shelf draft or 
+                       ice shelf level
+          -l ISF-list : text file containing at least the following information:
+  
+                  1  NAME    LON  LAT I  J 
+                  ...             
+                  i  NAMEi   LON  LAT I  J 
+                  ...             
+                  EOF             
+                  No NAME  X    Y   I  J 
+       
+      OPTIONS : 
+           -nc4 : use NetCDF4 chunking and deflation for the output
+           -o OUT-file : specify the name of the output file instead of fill.nc
+                  This file will be one of the input file for cdfmkforcingisf 
+                  as the ISF-fill_file 
+       
+      OUTPUT : 
+               netcdf file : fill.nc 
+               variable : sofillvar contains for all points in ice shelf NAME 
+                          the value -i (negative value)
+               text file : &lt;ISF-list&gt;_zmin_zmax.txt 
+                         this output file is similar to &lt;ISF-list&gt; but updated
+                         with the minimum and maximul value of ice-draft for 
+                         each shelf.
+       
+      SEE ALSO : 
+            cdfisf_forcing,  cdfisf_rnf 
+       </code></pre>
+
+<h2 id="cdfisf_forcing">cdfisf_forcing</h2>
+
+<pre><code>  usage : cdfisf_forcing -f ISF-fill_file  -v ISF-fill_var -l ISF-listfile 
+              -m ISF-poolmask [-vm ISF-poolmask_variable] [-p PATTERN-file] 
+             [-vp PATTERN-variable] [-nc4] [-o OUT-file ]
+       
+      PURPOSE : 
+          Build basal melting rate file used in NEMO ISF when nn_isf=4 
+       
+      ARGUMENTS : 
+           -f ISF-fill_file : file built by cdfisf_fill (all the ice shelves 
+                              are tagged with an id)
+           -v ISF-fill_var  : name of fill variable to use in ISF-fill_file
+           -l ISF-listfile : text file used to build the ISF-fill_file. 
+                             Only the last variable on each line is used (GT/y)
+       
+      OPTIONS :
+           -p PATTERN-file : specify the file use for patterns. 
+                             [ default : isfpattern.nc ]
+           -vp PATTERN-variable : specify the name of the pattern variable. 
+                             [ default : sowflisf ]
+           -vm ISF-poolmask_variable : specify the name of the variable used 
+                  for masking the pools. [ default : isfpoolmask ]
+           -nc4 : use netcdf4 chunking and deflation
+           -o OUT-file : specify output filename. [ default : isfforcing.nc ]
+               
+      REQUIRED FILES : 
+            mesh_zgr.nc mesh_hgr.nc,
+            isfpattern.nc (ie reference file used to define the isf melting 
+                  pattern), unless -p option is used to give different name.
+       
+      OUTPUT :
+          netcdf file : isfforcing.nc unless specified with -o option
+          variable : sofwfisf 
+       
+      SEE ALSO : cdfisf_fill, cdfisf_rnf, cdfisf_poolchk
+       </code></pre>
+
+<h2 id="cdfisf_poolchk">cdfisf_poolchk</h2>
+
+<pre><code>  usage : cdfisf_poolchk -m MASK-file -d ISFDRAFT-file [-v ISFDRAFT-variable]
+             [-nc4] [-o OUT-file]
+       
+      PURPOSE :
+        Produce a netcdf mask file with 1 everywhere, except for points 
+        not connected to the open ocean (Frequent for cavities below 
+        ice-shelves), which have 0 value. Both 3D and 2D variables are
+        created, the 2D variables beiing used for cdfisf_forcing.
+       
+      ARGUMENTS :
+        -m MASK-file : name of the input NEMO mask file, with tmask variable.
+        -d ISFDRAFT-file : name of the file with ice shelf draft.
+       
+      OPTIONS :
+        -v ISFDRAFT-variable: name of the variable for ice shelf draft.
+        -nc4 : use netcdf4 with chunking and deflation for the output.
+        -o OUT-file : name of the output file. [Default : poolmask.nc ]
+       
+      REQUIRED FILES :
+        Only the mask file given as argument
+       
+      OUTPUT : 
+        netcdf file : poolmask.nc unless -o option is used.
+          variables : tmask_pool3d, tmask_pool2d
+       
+      SEE ALSO :
+       cdfisf_fill, cdfisf_forcing, cdfisf_rnf
+       </code></pre>
+
+<h2 id="cdfisf_rnf">cdfisf_rnf</h2>
+
+<pre><code>  usage : cdfisf_rnf -f ISF-fill-file -v ISF-fill_var -l ISF-listfile -w width 
+      [-b BATHY-file] [-vb BATHY-var] [-i ISFDRAFT-file] [-vi ISFDRAFT-variable]
+      [-nc4] [-o OUT-file ]
+       
+      PURPOSE :
+         Build a netcdf file runoff file using the basal melting of the 
+         ice-shelves. This netcdf file is intented to be used with NEMO when
+         nn_isf namelist parameter is set to 3.
+       
+      ARGUMENTS :
+           -f ISF-fill_file : file built by cdffill (all the ice shelves are
+                              tagged with an id)
+           -v ISF-fill_var  : name of fill variable to use in ISF-fill_file
+           -l ISF-list : Text file with the melting rate (GT/y) given for
+                each ice shelf.
+           -w width : specify the width (in grid points) on which the run-off
+                will be applied.
+       
+      OPTIONS :
+           -b BATHY-file : give name of bathy file.
+                       [ default : bathy.nc ]
+           -vp BATHY-var : give name of bathy variable.
+                       [ default : Bathymetry ]
+           -i ISFDRAFT-file : give name of isf_draft file.
+                       [ default : isf_draft.nc ]
+           -vi ISFDRAFT-var : give name of isf_draft variable.
+                       [ default : isf_draft ]
+           -nc4 : Use this option to have netcdf4 output file, with chunking
+                and deflation.
+           -o OUT-file : Specify the name of the output file instead of 
+                the default name rnfisf.nc
+       
+      REQUIRED FILES :
+        mesh_hgr.nc and all files specified on the command line
+       
+      OUTPUT : 
+        netcdf file : rnfisf.nc unless -o option used
+          variables : sozisfmax (m), sozisfmin(m), sofwfisf (kg/m2/s)
+       
+      SEE ALSO :
+        cdfisf_fill, cdfisf_forcing, cdfisf_poolchk
+       </code></pre>
+
+<h2 id="cdfisopsi">cdfisopsi</h2>
+
+<pre><code>  usage : cdfisopsi ref_level sigma_ref gridT 
+       Compute  a geostrophic streamfunction
+       projected  on an isopycn.
+          ref_level = reference level for pot. density
+          sigma_ref = density level to project on
+          gridT     = input file for temperature and salinity
+   
+          Output on isopsi.nc variable soisopsi
+          Depths are taken from input file 
+          requires mesh_hgr.nc and mesh_zgr.nc</code></pre>
+
+<h2 id="cdfkempemekeepe">cdfkempemekeepe</h2>
+
+<pre><code> usage : cdfkempemekeepe file
+      Produce a cdf file transfertst1t3.nc with wT and anowT variables
+      file is from cdfmoyuvwt
+      the mean must have been computed on a period long enough
+      for the statistics to be meaningful
+                          </code></pre>
+
+<h2 id="cdflap">cdflap</h2>
+
+<pre><code>  usage : cdflap IN-file IN-var  IN-type [-overf2] [-nometric]
+       
+      PURPOSE :
+        Compute the Laplacian of the variable IN-var in file IN-file
+        Assumes that the data are on a C-grid model (as NEMO) 
+       
+      ARGUMENTS :
+        IN-file : netcdf file in input
+        IN-var  : name of the variable to process 
+        IN-TYPE : Position of the variable on the C-grid [ T U V F ]
+       
+      OPTIONS :
+        -overf2 : save laplacien/f/f*g (where f is the local coriolis 
+             parameter, and g is the accelaration due to gravity --9.81 m/s2-- )
+             For the SSH field, this is a proxy for geostrophic vorticity
+        -nometric : compute laplacian without considering metrics 
+       
+      REQUIRED FILES :
+        mesh_hgr.nc mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : lap.nc
+          variables : lap&lt;var&gt; (unit/m2)
+        if option -overf2 is used, netcdf file is lapoverf2.nc and 
+        variable is lap&lt;var&gt;overf2</code></pre>
+
+<h2 id="cdflinreg">cdflinreg</h2>
+
+<pre><code>  usage : cdflinreg &#39;list of model files&#39; 
+       
+      PURPOSE :
+         Compute the linear regression coefficients for a bunch of
+         input files. 
+       
+      ARGUMENTS :
+        A list of netcdf model file of same kind
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : linreg.nc
+          variables : for each input variables, there are 3 computed field
+                 - slope coefficient
+                 - barycenter 
+                 - Pearson Coefficient</code></pre>
+
+<h2 id="cdfmaskdmp">cdfmaskdmp</h2>
+
+<pre><code>  usage : cdfmaskdmp T-file S-file  ... 
+                ... [ref_dep snmin swidth hmin hwidth latmax latwidth]
+       
+      PURPOSE :
+        Compute a damping mask with smooth transition according to density,
+        depth and latitude criteria.
+       
+      ARGUMENTS :
+        T-file : temperature file
+        S-file : salinity file
+         They can be the same file, but as many climatologied are provided
+         in separate files, we decided to put both in the command line.
+       
+      OPTIONS :
+         ** If used, they must all be provided in the correct order (!) **
+        ref_dep  : reference depth for potential density.
+        snmin    : density minimum for the mask.
+        swidth   : density width for tapering
+        hmin     : minimum depth
+        hwidth   : depth width  for tapering
+        latmax   : maximum latitude
+        latwidth : latitude width  for tapering
+       
+        Actual default values are :
+         ref_dep  =    2000.000    
+         snmin    =    37.16000    
+         swidth   =   2.5000000E-02
+         hmin     =    1000.000    
+         hwidth   =    100.0000    
+         latmax   =   -20.00000    
+         latwidth =    2.000000    
+       
+      REQUIRED FILES :
+        mask.nc
+       
+      OUTPUT : 
+        netcdf file : mask_dmp.nc
+          variables : wdmp</code></pre>
+
+<h2 id="cdfmax">cdfmax</h2>
+
+<pre><code>  usage : cdfmax -f file -var cdfvar ...
+       ... [-lev kmin kmax ] [-zoom imin imax jmin jmax] ...
+       ... [-time tmin tmax ] [-fact multfact]  [-xy ]
+       
+      PURPOSE :
+         Find minimum and maximum of a file as well as their 
+         respective location. Options allow to restrict the 
+         finding to a sub area in time and space. This program
+         also deal with vertical slabs in a domain.
+       
+      ARGUMENTS :
+        -f file  : input file 
+        -var cdfvar : input variable
+       
+      OPTIONS :
+        [-lev kmin kmax ] : restrict to level between kmin and kmax. 
+        [-zoom imin imax jmin jmax] : restrict to sub area specified
+                        by the given limits. If the zoomed area is 
+                        degenerated to a single line, then the vertical
+                        slab is considered as domain.
+        [-time tmin tmax ] : restrict to the indicated time windows.
+        [-fact multfact] : use a multiplicative factor for the output
+        [-xy ] : force horizontal slab even in the case of a degenerated
+                        zoomed area.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        output is done on standard output.</code></pre>
+
+<h2 id="cdfmaxmoc">cdfmaxmoc</h2>
+
+<pre><code>  usage : cdfmaxmoc OVT-file basin_name latmin latmax depmin depmax
+       
+      PURPOSE :
+         Compute the maximum and minimum of the overturning, from file OVT-file,
+         for oceanic basin specified by cbasin, and in the geographical frame 
+         defined by latmin latmax, depmin, depmax.
+       
+      ARGUMENTS :
+        OVT-file   : overturning file from cdfmoc, with or w/o sub basins.
+        basin_name : name of oceanic subbasin as defined in new_maskglo.nc
+                 usually it can be one of atl, glo, inp, ind or pac
+                 glo means no subbasins.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : maxmoc.nc
+          6 variables : 
+             maxmoc, minmoc ( sv )      : max and min of overturning
+             latmaxmoc latminmoc ( deg) : latitudes of max and min.
+             depmaxmoc depminmoc ( m)   : depth of max amd min .
+       
+      SEE ALSO :
+        cdfmoc 
+       </code></pre>
+
+<h2 id="cdfmean">cdfmean</h2>
+
+<pre><code>  usage : cdfmean  IN-file IN-var T|U|V|F|W [imin imax jmin jmax kmin kmax]
+        ... [-full] [-var] [-zeromean] 
+       
+      PURPOSE :
+         Computes the mean value of the field (3D, weighted). For 3D fields,
+         a horizontal mean for each level is also given. If a spatial window
+         is specified, the mean value is computed only in this window.
+       
+      ARGUMENTS :
+        IN-file : input netcdf file.
+        IN-var  : name of netcdf variable to work with.
+        T|U|V|F|W : position of cdfvar on the C-grid
+       
+      OPTIONS :
+        [imin imax jmin jmax kmin kmax] : spatial windows where mean value 
+                   is computed:
+                   if imin = 0 then ALL i are taken
+                   if jmin = 0 then ALL j are taken
+                   if kmin = 0 then ALL k are taken
+        [ -full ] : compute the mean for full steps, instead of default 
+                    partial steps.
+        [ -var ]  : also compute the spatial variance of cdfvar 
+        [ -zeromean ] : create a file with cdfvar having a zero spatial mean.
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc, mesh_zgr.nc, mask.nc
+       
+      OUTPUT : 
+        - netcdf file : cdfmean.nc
+            variables : mean_cdfvar, mean_3D_cdfvar 
+                     [var_cdfvar, var_3D_cdfvar, in case of -var]
+        - netcdf file : zeromean.nc [ in case of -zeromean option]
+            variables : cdfvar
+        - ASCII files : cdfmean.txt
+                        [ cdfvar.txt, in case of -var ]
+        - all output on ASCII files are also sent to standard output.</code></pre>
+
+<h2 id="cdfmhst">cdfmhst</h2>
+
+<pre><code>  usage : cdfmhst  VT-file | (V-file T-file [S-file])  [MST] [-full] ...
+               ...  [-Zdim] 
+       
+      PURPOSE :
+        Compute the meridional heat/salt transport as a function of 
+        latitude. If the file new_maskglo.nc is provided, the meridional 
+        heat/salt transport for each sub-basin is also computed.
+       
+      ARGUMENTS :
+        VT-file  : netcdf file containing the mean value of the products
+                   U.S, U.T, V.S and V.T (obtained with cdfvT).
+          or   
+        V-file T-file [S-file] : specify V, T S file as separate files. If
+                  S-file is not specified, assume that salinity is in T-file.
+       
+      OPTIONS :
+        [MST ]   : output flag for meridional salt transport on netcdf files.
+                   If not specified, only the MHT is output.
+        [-full ] : to be set for full step case.
+        [-Zdim ] : to be set to output vertical structure of Heat/salt transport
+       
+      REQUIRED FILES :
+         mesh_hgr.nc, mesh_zgr.nc and mask.nc
+         If new_maskglo.nc is also available, sub-basin meridional transports
+         are also computed.
+       
+      OUTPUT : 
+        ASCII files : zonal_heat_trp.dat : Meridional Heat Transport
+                      zonal_salt_trp.dat : Meridional Salt Transport
+        netcdf file : mhst.nc
+            variables : ( [... ] : MST option ) 
+                        zomht_glo  : Meridional Heat Transport (global)
+                      [ zomst_glo  : Meridional Salt Transport (global) ] 
+        If new_maskglo.nc is available, per basin meridional transport 
+        are also available:
+                        zomht_atl  : Meridional Heat Transport
+                      [ zomst_atl  : Meridional Salt Transport ]
+                        zomht_inp  : Meridional Heat Transport
+                      [ zomst_inp  : Meridional Salt Transport ]
+                        zomht_ind  : Meridional Heat Transport
+                      [ zomst_ind  : Meridional Salt Transport ]
+                        zomht_pac  : Meridional Heat Transport
+                      [ zomst_pac  : Meridional Salt Transport ]
+                        zomht_inp0 : Meridional Heat Transport
+                      [ zomst_inp0 : Meridional Salt Transport ]</code></pre>
+
+<h2 id="cdfmkmask">cdfmkmask</h2>
+
+<pre><code>  usage : cdfmkmask T-file [-zoom lonmin lonmax latmin latmax] ...
+                    ... [-zoomij iimin iimax ijmin ijmax] ...
+                    ... [-zoombat bathymin bathymax]  ...
+                    ... [-zoomvar varname varmin varmax]  ...
+                    ... [-time ] [-o OUT-file ]
+       
+      PURPOSE :
+        Build a mask file from vosaline array read from the input file.
+        It assumes that land salinity values are set to 0.
+       
+      ARGUMENTS :
+        T-file : netcdf file with salinity.
+                 if T-file = -maskfile, we assume a reference file named mask.nc
+                 with tmask variable.
+                 if T-file = -mbathy, we assume a reference file named 
+                 bathylevel.nc with mbathy variable, giving the number of 
+                 levels in the ocean.
+       
+      OPTIONS :
+        [-zoom lonmin lonmax latmin latmax] : geographical windows used to
+                         limit the area where the mask is builded. Outside
+                         this area, the mask is set to 0.
+        [-zoomij iimin iimax ijmin ijmax] : model grid windows used to
+                         limit the area where the mask is builded. Outside
+                         this area, the mask is set to 0.
+        [-zoombat bathymin bathymax] : depth windows used to
+                         limit the area where the mask is builded. Outside
+                         this area, the mask is set to 0.
+                         Need mesh_zgr.nc
+        [-zoomvar varname varmin varmax] : range of varname used to
+                         limit the area where the mask is builded. Outside
+                         this area, the mask is set to 0.
+        [-time ] : If further time step is available
+                         a mask for each time step is done
+        [-o OUT-file ] : output file name to be used in place of standard
+                         name [ mask_sal.nc ]
+       
+      REQUIRED FILES :
+        If option -zoombat is used, file mesh_zgr.nc is required.
+        If option T-file is -maskfile then mask.nc is required.
+        If option T-file is -mbathy then bathylevel.nc and mesh_zgr.nc
+         are required.
+       
+      OUTPUT : 
+        netcdf file : mask_sal.nc or OUT-file.
+          variables : tmask, umask, vmask, fmask
+                 fmask can differ from standard fmask because it does not
+                 reflect the slip/noslip lateral condition.</code></pre>
+
+<h2 id="cdfmltmask">cdfmltmask</h2>
+
+<pre><code>  usage : cdfmltmask -f IN-file -m MSK-file -v IN-var1,var2,...  
+               -p  T| U | V | F | W | P  [-s _Fillvalue] [-nc4] [-o OUT-file]
+               [ -M MSK-var ]
+       
+      PURPOSE :
+        Multiply IN-var(s) of IN-file by the mask corresponding to the
+        C-grid point position given by the -p argument.
+       
+      ARGUMENTS :
+        -f IN-file  : input netcdf file.
+        -m MSK-file : input netcdf mask file.
+        -v IN-var1,var2,...   : Comma separated list of variable names to mask.
+        -p T| U | V | F | W | P : C-grid position of IN-var
+                 P indicate a polygon mask created by cdfpoly.
+       OPTIONS : 
+         -s _FillValue : specify values for masked areas [0 by default ]
+         -nc4 : output file will be chunked and deflated
+         -o OUT-file : name of output file, instead of &lt;IN-file&gt;_masked
+         -M MSK-var : use MSK-var in the MSK-file, instead of the one defined
+                by default according to the -p option. Overrid -p option.
+       
+      REQUIRED FILES :
+         none, all are given as arguments.
+       
+      OUTPUT : (jvar)
+        The output file is a copy of the input file with only
+        the requested variable masked.
+        netcdf file : IN-file_masked unless specified with -o 
+          variables : IN-var (same as input).</code></pre>
+
+<h2 id="cdfmoc">cdfmoc</h2>
+
+<pre><code>  usage : cdfmoc  V_file [-full] [-decomp ] [T_file] [S_file] [U_file] ...
+                 [-o OUT-file] [-rapid] 
+      PURPOSE :
+        Computes the MOC for oceanic sub basins as described 
+        in new_maskglo.nc
+       
+      ARGUMENTS :
+        V_file : file with meridional velocity component (mandatory).
+        T_file : file with temperature and salinity
+                (required only for -decomp option).
+        S_file  (required only for -rapid option, might be the same as T_file).
+        U_file  (required only for -rapid option).
+       
+      OPTIONS :
+        [-full ] : use full step instead of default partial step
+        [-decomp ] : decompose MOC in 3 components: Geostrophic,
+                  Barotropic,  Ageostrophic). For this option a 
+                  gridT file is required.
+        [-rapid ] : Compute the AMOC at 26.5 N in the same waay than the
+                   RAPID MOCHA array, separating the Gulfstream transport,
+                   and the contribution of different water masses :
+                    - 0-800m      : Thermocline recirculation
+                    - 800-1100m   : AIW recirculation
+                    - 1100-3000m  : upper-NADW recirculation
+                    - 3000-5000m  : lower-NADW recirculation
+                    - 5000-bottom : AABW recirculation
+        [-o OUT-file ] : specify output file instead of moc.nc
+       
+      REQUIRED FILES :
+        Files mesh_hgr.nc mesh_hgr.nc and mask.nc
+        File new_maskglo.nc. If this latter file is not available 
+              only the MOC for the global domain is computed
+       
+      OUTPUT : 
+        netcdf file : moc.nc
+        variables zomsfglo : Global ocean 
+        variables zomsfatl : Atlantic Ocean 
+        variables zomsfinp : Indo Pacific 
+        variables zomsfind : Indian Ocean alone
+        variables zomsfpac : Pacific Ocean alone
+        variables zomsfinp0 : Indo Pacific Net
+       
+        If decomposition is required , ( option -decomp ) add 3 additional
+        variables per basin with suffixes _sh, _bt, _ag.
+       
+        If option -rapid is used the output file (rapid_moc.nc) is degenerated
+        into 6 scalar values : tr_gs, tr_THERM, tr_AIW, tr_UNADW, tr_LNADW, 
+        tr_BW and a vertical profile of the AMOC at 26.5N, as computed
+        traditionally.
+        Additional variables are also computed following CLIVAR-GODAE 
+        reanalysis intercomparison project recommendations. </code></pre>
+
+<h2 id="cdfmocsig">cdfmocsig</h2>
+
+<pre><code>  usage : cdfmocsig  V_file T_file depth_ref [-eiv] [-full]  ... 
+          ...  [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] [-v]
+      PURPOSE : 
+        Computes the MOC in density-latitude coordinates. The global value
+        is always computed. Values for oceanic sub-basins are calculated
+        if the file new_maskglo.nc is provided.
+        Last arguments is the reference depth for potential density, in m.
+        Actually only 0 1000 or 2000 are available with standard values for
+        density bins. If you specify another reference depth, you must also
+        specify the minimum density, the bin size and the number of bins,
+        with the options -sigmin, -sigstp, -nbins
+       
+      ARGUMENTS :
+         V_file  : Netcdf gridV file
+         T_file  : Netcdf gridT file
+         depth_ref : reference depth for density 
+                for depth values of 0 1000 or 2000, pre-defined limits for
+                minimum density, number of density bins and width of density
+                bins are provided. For other reference depth, you must use
+                -sigmin, -sigstp and -nbins options (see below).
+                Keyword &#39;ntr&#39; can also be used in place of depth_ref in 
+                order to use neutral density (no default bin defined so far).
+       
+      OPTIONS :
+        [-eiv ] : takes into account VEIV Meridional eddy induced velocity
+                  -&gt; To be used only if Gent and McWilliams parameterization 
+                     has been used 
+        [ -full ] : Works with full step instead of standard partial steps
+        [ -sigmin ] : Specify minimum of density for bining
+        [ -sigstp ] : Specify density step for bining
+        [ -nbins ]  : Specify the number of density bins you want
+        [ -isodep]  : Compute the zonal mean of isopycnal depths used for mocsig
+        [ -v  ]     : Verbose option for more info during execution
+       
+      REQUIRED FILES :
+         Files mesh_zgr.nc, mesh_hgr.nc, mask.nc
+         File new_maskglo.nc is optional [sub basins masks]
+       
+      OUTPUT : 
+        netcdf file : mocsig.nc
+        variables zomsfglo : Global ocean 
+        variables zomsfatl : Atlantic Ocean 
+        variables zomsfinp : Indo Pacific 
+        variables zomsfind : Indian Ocean alone
+        variables zomsfpac : Pacific Ocean alone
+        If file new_maskglo.nc is not present, mask.nc file
+        is used and only zomsfglo is produced.
+        If option -isodep is used, each MOC variable is complemented by a iso
+        variable, giving the zonal mean of ispycnal depth (e.g.zoisoglo).</code></pre>
+
+<h2 id="cdfmoy">cdfmoy</h2>
+
+<pre><code>  usage : cdfmoy list_of_model_files [-spval0] [-cub ] [-zeromean] [-max]
+                [-nomissincl] [-nc4 ] [-o output_file_root ]
+       
+      PURPOSE :
+        Computes the time average of a list of files given as arguments.
+        The program assumes that all files in the list are of same
+        type (shape, variables etc...). 
+        For some variables, the program also computes the time average 
+        of the squared variables, which is used in other cdftools 
+        (cdfeke, cdfrmsssh, cdfstdevw, cdfstddevts ... The actual variables
+        selected for squared average are :
+          - vozocrtx
+          - vomecrty
+          - vovecrtz
+          - sossheig
+        This selection can be adapted with the nam_cdf_namelist process.
+        (See cdfnamelist -i for details).
+        If you want to compute the average of already averaged files,
+        consider using cdfmoy_weighted instead, in order to take into
+        account a particular weight for each file in the list.
+       
+      ARGUMENTS :
+        A list of similar model output files. 
+       
+      OPTIONS :
+        [ -spval0 ] :  set missing_value attribute to 0 for all output
+                variables and take care of the input missing_value.
+                This option is usefull if missing_values differ from files 
+                to files; it was formely done by cdfmoy_chsp).
+        [ -cub ] :  use this option if you want to compute third order moments
+                for the eligible variables, which are at present :
+               - sossheig
+               - votemper
+               This selection can be adapted with the nam_cdf_namelist process.
+               (See cdfnamelist -i for details).
+        [ -zeromean ] : with this option, the spatial mean value for each 
+               time frame is substracted from the original field before 
+               averaging, square averaging and eventually cubic averaging.
+        [-max ] : with this option, a file with the minimum and maximum values
+               of the variables is created.
+        [-nomissincl ] : with this option, the output mean is set to missing
+               value at any gridpoint where the variable contains a  missing
+               value for at least one timestep. You should combine with option
+               -spval0 if missing values are not 0 in all  the input files.
+        [ -nc4 ] Use netcdf4 output with chunking and deflation level 1
+                This option is effective only if cdftools are compiled with
+                a netcdf library supporting chunking and deflation.
+        [ -o output file root ] Default is cdfmoy
+       
+      REQUIRED FILES :
+        If -zeromean option is used, need mesh_hgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : cdfmoy.nc and cdfmoy2.nc
+        variables : are the same than in the input files. For squared averages
+        _sqd is append to the original variable name.
+        If -cub option is used, the file cdfmoy3.nc is also created
+        with _cub append to the original variable name.
+        If -max option is used, file cdfmoy_minmax.nc is also created, with 
+        same variable names.
+       
+      SEE ALSO :
+        cdfmoy_weighted, cdfstdev
+       </code></pre>
+
+<h2 id="cdfmoy_freq">cdfmoy_freq</h2>
+
+<pre><code>  usage : cdfmoy_freq -i IN-file -f averaging-length [ -v3d] [-v4d] 
+               [-nc4] [-o output root] 
+       
+      PURPOSE :
+        This program takes a file covering 1 year of data (evenly spaced)
+        and sub-samples the data by performing box averages, which span is given
+        as argument.  The original data sampling can be hours, days or monthes 
+        or even seasons.
+        The program recognizes leap years, and when feb. 29 is found, it is 
+        included in the current &#39;box&#39; (averaging length is thus increased
+        by 1 day.
+       
+      ARGUMENTS :
+        -i IN-file : gives the name of the yearly file containing either 365 
+                   or 366 days
+        -f averaging-length : Set the time size of the averaging box. 
+                  Averaging length is specified using XIOS convention (e.g. 1d,
+                  5d, 1mo, 1y ; 4mo stands for seasonal means )
+       
+      OPTIONS :
+        [-v3d] : use 3d variable (x,y,t) : save execution time, increase memory
+        [-v4d] : use 4d variable (x,y,z,t): save execution time, increase memory
+        [-nc4] : use netcdf4 with chunking and deflation for the output file
+        [-o output_root] : specify the root of the output file name instead 
+                    of cdfmoy_. Final name will have &lt;freq&gt; appened
+                    to the root.
+       
+      REQUIRED FILES :
+         none.
+       
+      OUTPUT : 
+        netcdf file :  cdfmoy_output&lt;freq&gt;.nc
+          variables :  same as variables in input file.
+       
+      SEE ALSO :
+       cdfmoy, cdfmoy_weighted
+       </code></pre>
+
+<h2 id="cdfmoy_weighted">cdfmoy_weighted</h2>
+
+<pre><code>  usage : cdfmoy_weighted list of files [-old5d ] [-month] [-leap] ...
+       [-skip variable] [-nc4] [-o output file]
+      PURPOSE :
+        Compute weight average of files. The weight for each file is
+        read from the iweight attribute. In particular, this attribute
+        is set to the number of elements used when computing a time
+        average (cdfmoy program). A primary application is thus for
+        computing annual mean from monthly means.
+       
+      ARGUMENTS :
+        The list of files to be averaged, which are supposed to be of
+        the same type and to contain the same variables. This list MUST
+        be given before any options
+       
+      OPTIONS :
+        [-old5d ] : This option is used to mimic/replace the cdfmoy_annual
+                    which is no longer available. With this option, 12 monthly
+                    files must be given, and it is assumed that the monthly
+                    means were computed from 5d output of a simulation using
+                    a noleap calendar ( weights are fixed, predetermined)
+        [-month ] : This option is used to build annual mean from true month
+                    output (1mo) in XIOS output for instance.
+        [-leap ] : This option has only effect together with the -month option.
+                   When used set 29 days in february
+        [-skip variable ] : name of variable to skip 
+        [ -nc4 ] : Use netcdf4 chunking and deflation in output file.
+        [-o output file ] : Specify the name for output file instead of the
+                  default name cdfmoy_weighted.nc
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : cdfmoy_weighted.nc
+        variables : same as in the input files</code></pre>
+
+<h2 id="cdfmoyt">cdfmoyt</h2>
+
+<pre><code>  usage : cdfmoyt list_of_model_files [-spval0]  
+      PURPOSE :
+        Compute the time average of a list of files given as arguments.
+        This program handle multi time-frame files is such a way that
+        the output files are also multi time-frame, each frame being
+        the average across the files given in the list.
+        
+        The program assume that all files in the list are of same
+        type (shape, variables , and number of time frames ). 
+        For some variables, the program also compute the time average 
+        of the squared variables, which is used in other cdftools 
+        (cdfeke, cdfrmsssh, cdfstdevw, cdfstddevts ... The actual variables
+        selected for squared average are :
+          - vozocrtx
+          - vomecrty
+          - vovecrtz
+          - sossheig
+        This selection can be adapted with the nam_cdf_namelist process.
+        (See cdfnamelist -i for details).
+        If you want to compute the average of already averaged files,
+        consider using cdfmoy_weighted instead, in order to take into
+        account a particular weight for each file in the list.
+       
+      ARGUMENTS :
+        A list of similar model output files. 
+       
+      OPTIONS :
+        [ -spval0 ] :  set missing_value attribute to 0 for all output
+                variables and take care of the input missing_value.
+                This option is usefull if missing_values differ from files 
+                to files; it was formely done by cdfmoy_chsp).
+       
+      REQUIRED FILES :
+        none 
+       
+      OUTPUT : 
+        netcdf file : cdfmoy.nc and cdfmoy2.nc
+        variables : are the same than in the input files. For squared averages
+        _sqd is append to the original variable name.</code></pre>
+
+<h2 id="cdfmoyuvwt">cdfmoyuvwt</h2>
+
+<pre><code>  usage : cdfmoyuv CONFCASE [-zoom imin imax jmin jmax ] &#39;list of tags&#39; 
+       
+      PURPOSE :
+        Compute temporal mean fields for velocity components (u,v,w) and
+        temperature (t), as well as second order moments ( u2, v2, t2, uv, ut,
+        vt, wt).
+         These fields are required in other cdftools which computes either 
+         barotropic (cdfbti) or baroclinic (cdfbci) instabilities, and a global
+         energy balance (cdfnrjcomp)
+       
+      ARGUMENTS :
+        CONFCASE : the root name for the data files. Grid files are assumed to
+                   be gridT, gridU, gridV, gridW. ( grid_T, grid_U, grid_V and
+                   grid_W are also supported.
+        List_of_tags : The list of time tags corresponding to the time serie
+                   whose mean is being computed.
+       
+      OPTIONS :
+        [-zoom imin imax jmin jmax ] : limit the mean computation to the 
+                   specified sub area.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : moyuvwt.nc
+          variables :  There are 11 variables produced by this program.
+                  tbar, t2bar : mean t (Kelvin) and mean t^2 (K^2)   [T-point]
+                  ubar, u2bar : mean u (m/s) and mean u^2 (m2/s2)    [U-point]
+                  vbar, v2bar : mean v (m/s) and mean v^2 (m2/s2)    [V-point]
+                  wbar        : mean w (m/s)                         [W-point]
+                  uvbar       : mean product u . v (m2/s2)           [T-point]
+                  utbar, vtbar, wtbar : mean product [uvw].t (m/s.K) [T-point]
+       
+      SEE ALSO :
+       cdfbti, cdfbci and cdfnrjcomp
+       </code></pre>
+
+<h2 id="cdfmppini">cdfmppini</h2>
+
+<pre><code>  usage : cdfmppini jpni jpnj [m/b/z] [-jperio jperio]
+       
+      PURPOSE :
+        Perform the mpp initialisation with NEMO routine mpp_init2 and
+        give some statistics about the domains. Save the layout on a 
+        text file.
+       
+      ARGUMENTS :
+        jpni : number of domains in the i direction.
+        jpnj : number of domains in the j direction.
+       
+      OPTIONS :
+        [m/b/z] : use one of these letter to choose the land/sea mask.
+                m  : take mask from mask.nc (tmask) [ default ]
+                b  : take mask from bathy_meter.nc (Bathymetry)
+                z  : take mask from mesh_zgr.nc (mbathy)
+                    Default is m
+        [-jperio jperio ] : specify jperio. 
+                          default value is  6
+       
+      REQUIRED FILES :
+        one of mask.nc, bathy_meter.nc or mesh_zgr.nc according to option
+       
+      OUTPUT : 
+        - Standard output
+        - ASCII file mppini.txt</code></pre>
+
+<h2 id="cdfmxl">cdfmxl</h2>
+
+<pre><code>  usage : cdfmxl T-file [S-file] [-nc4] [-o output file]
+       
+      PURPOSE :
+        Compute 7 estimates of the mixed layer depth from temperature
+        and salinity given in the input file, based on 3 different criteria:
+        1- Density criterium (0.01 kg/m3 difference between surface and MLD)
+        2- Density criterium (0.03 kg/m3 difference between surface and MLD)
+        3- Temperature criterium (0.2 C absolute difference between surface 
+           and MLD)
+        4- Temperature criterium (0.2 C absolute difference between T at 10m 
+           and MLD)
+        5- Temperature criterium (0.5 C absolute difference between T at 10m 
+           and MLD)
+        6- Density criterium (0.03 kg/m3 difference between rho at 10m and MLD) 
+        7- Density criterium (0.125 kg/m3 difference between rho at 10m and MLD)
+  
+       
+      ARGUMENTS :
+        T-file   : input netcdf file (gridT)
+        [S-file] : input netcdf file (gridS) Optional if vosaline not in T-file
+       
+      OPTIONS :
+        [-nc4] : use netcdf4 chunking and deflation on output 
+        [-o output file] : specify the name of output file instead of 
+                 default name mxl.nc
+       
+      REQUIRED FILES :
+         mesh_zgr.nc
+          In case of FULL STEP configuration, bathy_level.nc is also required.
+       
+      OUTPUT : 
+        netcdf file : mxl.nc
+          variables : somxl010    = mld on density criterium 0.01 ref. surf.
+                      somxl030    = mld on density criterium 0.03 ref. surf.
+                      somxlt02    = mld on temperature criterium -0.2 ref. surf.
+                      somxlt02z10 = mld on temperature criterium -0.2 ref. 10m
+                      somxlt05z10 = mld on temperature criterium -0.5 ref. 10m
+                      somxl030z10 = mld on density criterium 0.03 ref. 10m
+                      somxl125z10 = mld on density criterium 0.125 ref. 10m</code></pre>
+
+<h2 id="cdfmxlhcsc">cdfmxlhcsc</h2>
+
+<pre><code>  usage : cdfmxlhcsc T-file criteria value [hmin]
+       
+      PURPOSE :
+        Compute the mixed layer depth, the heat content and salt content.
+       
+      ARGUMENTS :
+        T-file : netcdf input file for temperature and salinity (gridT).
+        criteria : one of temperature, t,  T for temperature criteria.
+                   or density, d,  D  for density criteria.
+        value  : value of the criteria (eg: 0.2 for temp, 0.01 or 0.03 for dens)
+       
+      OPTIONS :
+        [ hmin ] : limit the vertical integral from hmin to mld. By default, 
+                   hmin is set to 0 so that the integral is performed on the
+                   whole mixed layer.
+       
+      REQUIRED FILES :
+        mesh_hgr.nc mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : mxlhcsc.nc
+          variables : -  somxl010 (mld based on density criterium 0.01)
+           (2D)          or somxl030 (mld on density criterium 0.03)
+                         or somxlt02 (mld on temperature criterium -0.2)
+                         -  somxlheatc (heat content computed in the MLD)
+                         -  somxlsaltc (salt content computed in the MLD)
+       
+      SEE ALSO :
+        cdfmxl, cdfmxlheatc and  cdfmxlsaltc.
+       </code></pre>
+
+<h2 id="cdfmxlheatc">cdfmxlheatc</h2>
+
+<pre><code>  usage : cdfmxlheatc T-file [-full]
+       
+      PURPOSE :
+        Computed the heat content in the mixed layer (Joules/m2).
+       
+      ARGUMENTS :
+        T-file : netcdf input file with temperature and mld (gridT).
+       
+      OPTIONS :
+        [ -full ] : for full step configurations, default is partial step.
+        [-o OUT-file ] : specify output file instead of mxlheatc.nc
+       
+       
+      REQUIRED FILES :
+        mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : mxlheatc.nc
+          variables : somxlheatc (Joules/m2)
+       
+      SEE ALSO :
+        cdfmxl, cdfmxlhcsc and  cdfmxlsaltc.
+       </code></pre>
+
+<h2 id="cdfmxlsaltc">cdfmxlsaltc</h2>
+
+<pre><code>  usage : cdfmxlsaltc T-file [-full ]
+       
+      PURPOSE :
+        Compute the salt content in the mixed layer.
+       
+      ARGUMENTS :
+        T-file : netcdf file with salinity and mixed layer deptht.
+       
+      OPTIONS :
+        [-full ] : indicate a full step configuration.
+        [-o OUT-file ] : specify output file instead of mxlsaltc.nc
+       
+      REQUIRED FILES :
+        mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : mxlsaltc.nc
+          variables : somxlsaltc (kg/m2 )
+       
+      SEE ALSO :
+        cdfmxl, cdfmxlhcsc, cdfmxlheatc 
+       </code></pre>
+
+<h2 id="cdfnamelist">cdfnamelist</h2>
+
+<pre><code>  usage :  cdfnamelist [-i] [-p]
+       
+      PURPOSE :
+        Give information [-i option] on the namelist mechanism implemented
+        in CDFTOOLS v3. Write a namelist template [-p option ] to initialize
+        the mechanism.
+       
+      ARGUMENTS :
+        none
+       
+      OPTIONS :
+        [ -i ] : print informations 
+        [ -p ] : write a template namelist.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        with option -p, print a template namelist : PrintCdfNames.namlist
+       </code></pre>
+
+<h2 id="cdfnan">cdfnan</h2>
+
+<pre><code>  usage : cdfnan list_of_model_output_files [-value replace] [-absmax rabsmax ] 
+       
+      PURPOSE :
+        Detect NaN values in the input files, and change them to 
+        either spval (missing_value) or the value given as option.
+        Does the same for absolute values &gt; huge(0.0)
+       
+      ARGUMENTS :
+        list of model output files. They must be of same type and have
+        similar sizes. CAUTION : input files are rewritten !
+       
+      OPTIONS :
+        [-value replace ] : use replace instead of missing_value for
+                            changing NaN.
+        [-absmax rabsmax ] : replace values whose absolute value is greater 
+                            than rabsmax.
+       
+      OUTPUT : 
+        netcdf file : input file is rewritten without NaN.
+          variables : same name as input.</code></pre>
+
+<h2 id="cdfnorth_unfold">cdfnorth_unfold</h2>
+
+<pre><code>  usage : cdfnorth_unfold IN-file jatl jpacif pivot Cgrid_point
+       
+      PURPOSE :
+        Unfold the Artic Ocean in an ORCA configuration. Produce a netcdf
+        file with the Artic ocean as a whole. The area can be adjusted on
+        both Atlantic and Pacific sides.
+       
+      ARGUMENTS :
+        IN-file     : netcdf file to be unfolded.
+        jatl        : J index to start the unfold process in the Atlantic.
+        jpacif      : J index to start the unfold process in the Pacific.
+        pivot       : type of pivot for the north fold condition ( T or F )
+        Cgrid_point : grid point where the variables in the input file are
+                      located. If all variables in a single file are not on
+                      the same C-grid location, there might be a problem ...
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : unfold.nc
+          variables : same name and units than in the input file.</code></pre>
+
+<h2 id="cdfnrjcomp">cdfnrjcomp</h2>
+
+<pre><code>  usage : cdfnrjcomp IN-file
+       
+      PURPOSE :
+        Compute contributing terms of the energy equation at T-points.
+        Input file contains mean values processed by cdfmoyuvwt.
+        The means must have been computed on long enough period
+        for the statistics to be meaningful
+       
+      ARGUMENTS :
+        IN-file   : netcdf file produced by cdfmoyuvwt.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : nrjcomp.nc
+          all variables are located at T point.
+          variables : tbar : mean temperature 
+                      ubar : mean zonal velocity
+                      vbar : mean meridional velocity
+                      anotsqrt : mean squared temperature anomaly
+                      anousqrt : mean squared zonal velocity anomaly
+                      anovsqrt : mean squared meridional velocity anomaly</code></pre>
+
+<h2 id="cdfokubo-w">cdfokubo-w</h2>
+
+<pre><code>  usage : cdfokubow U-file V-file U-var V-var lev
+       
+      PURPOSE :
+        Compute Okubo-Weiss parameter of a vector field, at a specified level.
+        If level is specified as 0, assume that the input files are
+        forcing files, presumably on A-grid. In this latter case, the
+        vector field is interpolated on the C-grid. In any case, the
+        curl is computed on the F-point.
+       
+      ARGUMENTS :
+        U-file : zonal component of the vector field.
+        V-file : meridional component of the vector field.
+        U-var  : zonal component variable name
+        V-var  : meridional component variable name.
+        lev    : level to be processed. If set to 0, assume forcing file 
+                 in input.
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : okubow.nc
+          variables : sokubow (s^-2)</code></pre>
+
+<h2 id="cdfovide">cdfovide</h2>
+
+<pre><code> usage : cdfovide gridTfile gridUfile gridVfile 
+      Files mesh_hgr.nc and mesh_zgr.nc must be in te current directory 
+      Output on netcdf file ovide.nc</code></pre>
+
+<h2 id="cdfpendep">cdfpendep</h2>
+
+<pre><code>  usage :  cdfpendep TRC-file INV-file  ... 
+                     ... [-inv inventory_name -trc trc_name ]
+       
+      PURPOSE :
+         Compute the penetration depth for passive tracers. It is the
+         ratio between the inventory and the surface concentration of
+         the tracer.
+       
+      ARGUMENTS :
+        TRC-file : netcdf file with tracer concentration.
+        INV-file : netcdf file with inventory of the tracer.
+       
+      OPTIONS :
+        [-inv inventory_name ] : specify netcdf variable name for inventory.
+                                 Default is INVCFC
+        [-trc tracer_name ]    : specify netcdf variable name for tracer.
+                                 Default is CFC11
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : pendep.nc
+          variables : pendep (m)</code></pre>
+
+<h2 id="cdfpolymask">cdfpolymask</h2>
+
+<pre><code>  usage : cdfpolymask POLY-file REF-file [ -r]
+       
+      PURPOSE :
+        Create a maskfile with polymask variable having 1
+        inside the polygon, and 0 outside. Option -r revert
+        the behaviour (0 inside, 1 outside).
+       
+      ARGUMENTS :
+        POLY-file : input ASCII file describing a polyline in I J grid.
+             This file is structured by block, one block corresponding 
+             to a polygon:
+               1rst line of the block gives a polygon name
+               2nd line gives the number of vertices (nvert) and a dummy 0
+               the block finishes  with nvert pairs of (I,J) describing 
+               the polygon vertices.
+        REF-file  : reference netcdf file for header of polymask file.
+       
+      OPTIONS :
+         [ -r ] : revert option. When used, 0 is inside the polygon,
+                  1 outside.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : polymask.nc
+          variables : polymask</code></pre>
+
+<h2 id="cdfprobe">cdfprobe</h2>
+
+<pre><code>  usage :  cdfprobe IN-file ilook jlook cdfvar [level]
+       
+      PURPOSE :
+       Display a 2 columns output time (in days), value.
+       
+      ARGUMENTS :
+        IN-file : input file to look for
+        ilook jlook : i,j position of the probe.
+        cdfvar : name of the cdf variabled to be displayed
+       
+      OPTIONS :
+        [level] : This optional last argument is used
+                to specify a model level, instead of first.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        2 columns ( time , value ) ASCII output on display
+        time are given in days since the begining of the run.</code></pre>
+
+<h2 id="cdfprofile">cdfprofile</h2>
+
+<pre><code>  usage : cdfprofile  I J IN-file IN-var [-dep depth ]
+       
+      PURPOSE :
+        Extract a vertical profile at location I J, for a variable
+        in an input file.
+       
+      ARGUMENTS :
+        I   J   : I, J position of the point to extract from file.
+        IN-file : input file to work with.
+        IN-var  : variable name whose profile is requested.
+       
+      OPTIONS :
+        -dep depth : specify a depth where vertical value will be
+                      interpolated.
+       
+      REQUIRED FILES :
+         none 
+       
+      OUTPUT : 
+        netcdf file : profile.nc
+           variable : name given as argument.
+        Profile is also written on standard output.</code></pre>
+
+<h2 id="cdfpsi">cdfpsi</h2>
+
+<pre><code>  usage : cdfpsi U-file V-file [V] [-full ] [-mask ] [-mean] [-nc4 ] ...
+           ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file]
+       
+      PURPOSE :
+        Computes the barotropic stream function (a proxy ) as the integral of 
+        the transport.
+       
+      ARGUMENTS :
+        U-file  : netcdf file of zonal velocity.
+        V-file  : netcdf file of meridional velocity.
+       
+      OPTIONS :
+        [V] : use V field instead of U field for integration.
+        [ -full ] : indicates a full step case. Default is partial steps.
+        [ -mask ] : mask output fields. Note that the land value is significant.
+                    It correspond to the potential on this continent.
+        [ -mean ] : save the average of the computations done with U and V.
+        [ -nc4  ] : use netcdf4 output files with chunking and deflation
+        [ -ssh T-file ] : compute the transport in the &#39;ssh&#39; layer, using 
+                   surface velocities. Take the ssh from T-file specified in 
+                   this option. This is a experimental option, not certified ...
+        [ -open ] : for open domain configuration. See also -ref to set 
+                    reference point.
+        [ -ref iref jref ] : Set the reference point in i,j coordinates.
+                    BSF at reference point is arbitrarly set to zero.
+        [ -o  OUT-file ] : specify output file name instead of default psi.nc
+       
+      REQUIRED FILES :
+        mesh_hgr.nc and mesh_zgr.nc.
+        mask.nc is required only if -mask option used.
+       
+      OUTPUT : 
+        netcdf file : psi.nc
+          variables : sobarstf (m3/s )
+        If option -ssh is used, 2 additional variables are added to the file :
+                      sobarstfssh (m3/s ) : contribution of SSH
+                      sobarstftotal (m3/s ) : total BSF
+       </code></pre>
+
+<h2 id="cdfpsi_level">cdfpsi_level</h2>
+
+<pre><code>  Usage : cdfpsi_level  Ufile Vfile &lt;V&gt; (optional argument)
+  Computes the barotropic stream function as the integral of the transport
+  PARTIAL CELLS VERSION
+  Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc must be in te current directory
+  Output on psi_level.nc, variables sobarstf on f-points
+  Default works well for a global ORCA grid. use V 3rdargument for North Atlanti
+ c</code></pre>
+
+<h2 id="cdfpvor">cdfpvor</h2>
+
+<pre><code>  usage : cdfpvor T-file  U-file V-file [-full] [-lspv ] [-nc4] [-o output file]
+       
+      PURPOSE :
+        Compute the Ertel potential vorticity and save the relative  
+        vorticity, the stretching and the total potential vorticity. 
+        Qtot = ( f + xsi ) . D(rho)/D(z)  = Qstrech + Qrel           
+        With -lspv option, compute only Qstretch or Large Scale P V 
+       
+      ARGUMENTS :
+        T-file : netcdf file for temperature and salinity.           
+        U-file : netcdf file for zonal component of the velocity.    
+        V-file : netcdf file for meridional component of the velocity.
+       
+      OPTIONS :
+        [-full ] : indicate a full step configuration.                
+        [-lspv ] : calculate only the large scale potential vorticity.
+                   ( replace the old cdflspv tool).
+                   If used only T-file is required, no need for velocities.
+        [-nc4 ] :  use netcdf4 with chunking and deflation 
+        [-o output file ] : use output file instead of default pvor.nc
+       
+      REQUIRED FILES :
+        mesh_hgr.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : pvor.nc
+          variables : vorelvor (1.e-7 kg.m-4.s-1 ) relative vorticity
+                      vostrvor (1.e-7 kg.m-4.s-1 ) stretching vorticity
+                      vototvor (1.e-7 kg.m-4.s-1 ) total potential vorticity
+                   Ertel PV are located at T points.
+            
+        With option -lspv :
+        netcdf file : lspv.nc
+          variables :  volspv  (1.e-7 kg.m-4.s-1 ) large scale potential vortici
+ ty
+                   LSPV is  located at W points.
+       
+      SEE ALSO :
+        cdfcurl ( compute only the curl on 1 level)
+       </code></pre>
+
+<h2 id="cdfrhoproj">cdfrhoproj</h2>
+
+<pre><code>  usage : cdfrhoproj IN-var RHO-file List_of_IN-files [VAR-type] [-debug ]... 
+        ... [-isodep] [-s0 sig0 | -s0 sigmin,sigstp,nbins ] [-sig sigma_name]..
+        ... [-noiso]
+       
+      PURPOSE :
+        Project IN-var on isopycnal surfaces. The isosurfaces can be defined in
+        many ways : (1) In a pre-defined ASCII file named rho_levsee format
+        below.  (2) using -s0 option.
+        IN-var will be interpolated on the T point of the C-grid, previous
+        to projection on isopycnal.
+        
+        WARNING: This cdftool is one of the few using 3D arrays. Further 
+        development is required to work with vertical slabs instead.
+       
+      ARGUMENTS :
+        IN-var   : name of the input variable to be projected
+        RHO-file : netcdf file with potential density field. If not a sigma0
+                   file, use -sig option to indicate the name of the density
+                   variable.
+        List_of_IN-file  : netcdf files with IN-var 
+       
+      OPTIONS :
+        [-s0 sigma  | -s0 sigmin,sigstp,nbins ]  : In the first form define a 
+                     single sigma surface on the command line, while in the 2nd
+                     form, it uses the same numbers than cdfmocsig to define
+                     equally spaced (sigstp) density surfaces, starting from 
+                     sigmin and up to sigmin + (nbins)*sigstp
+                     This option prevails the use of rho_lev file.
+        [VAR-type] : position of IN-var on the C-grid ( either T U V F W S )
+                     default is &#39;T&#39;. 
+                     S is used in case of section files (cdf_xtract_brokenline).
+        [-sig sigma_name] : name of the density variable in RHO_file.
+                     default is vosigma0
+        [-isodep ] : only compute the isopycnal depth. then stop. In this case
+                     you must still specify a IN-var variable (in fact a dummy
+                      name).
+        [-noiso]   : do not save isopycnal depth (suitable for big files).
+        [-debug]   : produce extra prints. Must be use before other options ..
+       
+      REQUIRED FILES :
+        no metrics, information is taken from depth variable in input files.
+        rho_lev if not using -s0 option.
+        rho_lev is an ascii file, first line giving the number of isopycnal
+                            following lines with isopycnal value, 1 per line.
+       
+      OUTPUT : 
+        There are as many output files as input files.
+        netcdf file : IN-file.interp
+          variables : VAR-in (unit is the same as input var)
+                      vodepiso (m) : depth of isopycnal.
+       
+        If option -isodep is used, only isopycnal depth is output :
+        netcdf file : isopycdep.nc
+          variables : vodepiso (m) 
+       
+      SEE ALSO :
+        replace cdfisopycdep when using -isodep option,  cdfmocsig
+        </code></pre>
+
+<h2 id="cdfrichardson">cdfrichardson</h2>
+
+<pre><code>  usage : cdfrichardson  gridT gridU gridV [ W ] [-full]
+      PURPOSE :
+        Compute the Richardson Number (Ri) according to
+        temperature, salinity and velocity components
+        given in the input files.
+       
+      ARGUMENTS :
+        gridT : input gridT file for temperature and salinity
+        gridU : input gridU file for zonal velocity component
+        gridV : input gridV file for meridional velocity component
+       
+      OPTIONS :
+        [ W ] : keep N2 at W points. Default is to interpolate N2
+              at T point on the vertical
+        [ -full ] : indicate a full step configuration instead of
+                 the default partial steps.
+       
+      REQUIRED FILES :
+        mesh_zgr.nc is needed for this program.
+       
+      OUTPUT : 
+        netcdf file : richardson.nc
+        variables : voric</code></pre>
+
+<h2 id="cdfrmsssh">cdfrmsssh</h2>
+
+<pre><code>  usage : cdfrmsssh T-file T2-file [-nc4] [-o outputfile]
+       
+      PURPOSE :
+        Compute the standard deviation of the SSH from its
+        mean value and its mean square value. 
+       
+        Note that what is computed in this program is stictly the
+        standard deviation. It is very often called RMS, which is
+        an abuse. It is the same only in the case of zero mean value.
+        However, for historical reason, the name of this tool, remains
+        unchanged: cdfrmsssh
+       
+      ARGUMENTS :
+        T-file  : netcdf file with mean values for SSH
+        T2-file : netcdf file with mean squared values for SSH
+       
+      OPTIONS :
+        [-nc4] : use netcdf4 with chunking and deflation 
+        [-o output file ] : specify the name of the output file instead
+                           of default name rms.nc
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : rms.nc
+          variables : sossheig_rms, same unit than the input.
+       
+      SEA ALSO :
+        cdfstd, cdfstdevw, cdfstdevts.</code></pre>
+
+<h2 id="cdfscale">cdfscale</h2>
+
+<pre><code>  usage : cdfscale INOUT-file IN-var scale 
+       
+      PURPOSE :
+        Replace IN-var in INOUT-file by its values x scale.
+       
+      ARGUMENTS :
+        INOUT-file : netcdf input file (!overwritten!).
+        IN-var : netcdf variable to be scaled.
+        scale : Scale value to be used (multiplication factor).
+       
+      OUTPUT : 
+        netcdf file : input file is rewritten 
+          variables : same name as input.</code></pre>
+
+<h2 id="cdfsections">cdfsections</h2>
+
+<pre><code> Usage : 
+  cdfsections  Ufile Vfile Tfile larf lorf Nsec lat1 lon1 lat2 lon2 n1
+               [ lat3 lon3 n2 ] [ lat4 lon4 n3 ] ....
+    
+  Computes temperature, salinity, sig0, sig1, sig2, sig4, Uorth, Utang 
+  along a section made of Nsec linear segments (see output attributes).
+  Output is section.nc, var. as a function of X(km), depth(m) and time.
+    
+ Arguments : 
+  # larf and lorf -&gt; location of X=0 for the X-absice (may be out of section)
+  # Nsec -&gt; number of segments used to compute the whole section.
+  # lat1,lat2,lat3,... -&gt; extrema latitudes of the segments (from -90 to 90)
+  # lon1,lon2,lon3,... -&gt; extrema latitudes of the segments (from 0 to 360)
+  # n1, n2, ...        -&gt; number of output points on each segment.
+    (you have to give Nsec+1 values of lati/loni and Nsec values of ni)
+  
+  It is recommended to put a lot of points on each section if the aim
+  is to compute X-integrations along the section (10 x the model resolution).
+ NB : sections cannot cross the Greenwich line !!
+ NB : Not yet tested north of 60N.
+ NB : require a large amount of memory !
+      -&gt; reduce domain size with  ncks -d  if insufficient memory error.
+  
+ Example for one linear section : 
+  cdfsections U.nc V.nc T.nc 48.0 305.0 1 49.0 307.0 50.5 337.5 20
+ Example for a section made of 2 linear segments : 
+  cdfsections U.nc V.nc T.nc 48.0 305.0 2 49.0 307.0 50.5 337.5 20 40.3 305.1 50</code></pre>
+
+<h2 id="cdfsig0">cdfsig0</h2>
+
+<pre><code>  usage : cdfsig0 -t T-file [-sal SAL-name] [-tem TEM-name] [-nc4] [-o OUT-file]
+       
+      PURPOSE :
+        Compute potential density (sigma-0) refered to the surface.
+       
+      ARGUMENTS :
+        -t T-file  : netcdf file with temperature and salinity.
+          (for backward compatibility, -t can be ommited when T-file is the only
+          argument.)
+       
+      OPTIONS :
+        [-sal SAL-name]  : name of salinity variable
+        [-tem TEM-name]  : name of temperature variable
+        [-nc4]  : enable chunking and compression
+        [-o OUT-file]    : specify output filename instead of sig0.nc
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : sig0.nc
+          variables : vosigma0 ( kg/m3 - 1000 )
+       
+      SEE ALSO :
+        cdfsigi</code></pre>
+
+<h2 id="cdfsigi">cdfsigi</h2>
+
+<pre><code>  usage : cdfsigi T-file Ref-dep(m) 
+       
+      PURPOSE :
+        Compute potential density refered to the depth given in arguments.
+       
+      ARGUMENTS :
+        T-file : netcdf file with temperature and salinity
+        Ref-dep : reference depth in meter.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : sigi.nc
+          variables : vosigmai (kg/m3 -1000 )
+       
+      SEE ALSO :
+       cdfsig0
+       </code></pre>
+
+<h2 id="cdfsiginsitu">cdfsiginsitu</h2>
+
+<pre><code>  usage : cdfsiginsitu -t T-file [-sal SAL-name] [-tem TEM-name ] ...
+                 [-dep depth] [-o OUT-file ] [-nc4 ] 
+       
+      PURPOSE :
+        Compute in situ density from temperature and salinity.
+        Depths are taken from input file.
+       
+      ARGUMENTS :
+        -t T-file : netcdf file with temperature and salinity.
+          (for backward compatibility, -t can be ommited when T-file is the only
+          argument.)
+       
+      OPTIONS :
+        [-sal SAL-name] : name of salinity variable
+        [-tem TEM-name] : name of temperature variable
+        [-dep depth ]   : depth to be used in case of 2D input file (only)
+        [-nc4]          : enable chunking and compression
+        [-o OUT-file]   : specify output filename instead of siginsitu.nc
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : siginsitu.ncor the file name specified 
+                    with -o option
+          variables : vosigmainsitu (kg/m3 -1000 )
+       
+      SEE ALSO :
+       cdfsig0, cdfsigi 
+       </code></pre>
+
+<h2 id="cdfsigintegr">cdfsigintegr</h2>
+
+<pre><code>  usage : cdfsigintegr IN-var RHO-file list_of_files [ VAR-type ] ...
+               ... [ -sig sigma_name] [ -full ] 
+       
+      PURPOSE :
+        Take a list of input files with specific IN-var variable, associated
+        with a reference density file. A set of isopycnal surfaces is defined
+        in an ASCII file (rho_lev by default), using same depth reference than
+        the input reference density file. This program computes the integral of
+        IN-var between the isopycnals defined in rho_lev. It also gives the 
+        isopycnal depth and thickness of density layers.
+       
+        Rho_lev file first line indicates the number of following isopycnals.
+        Then a list of the densities is given, one per line.
+       
+      ARGUMENTS :
+        IN-var : input variable to be integrated
+        RHO-file : netcdf file with already computed density
+        list_of_files : a list of model netcdf files containing IN-var.
+       
+      OPTIONS :
+        [ VAR-type ] : one of T U V F W which defined the position on
+                IN-var in the model C-grid. Default is T
+        [ -sig sigma_name ] : give the name of sigma variable in RHO-file.
+                Default is vosigma0
+        [ -full ] : indicate a full step configuration.
+        [ -rholev  file] : indicates name of file defining the limits for 
+                integration. Default is rho_lev
+       
+      REQUIRED FILES :
+        mesh_zgr.nc and rho_lev
+       
+      OUTPUT : 
+        netcdf file : IN-file.integr
+          variables : inv_IN-var  : inventory of IN-var from input file.
+                      vodepiso (m) : depth of isopycnal.
+                      isothick (m) : thickness of isopycnal layer.
+                      mean_IN-var (same unit as IN-var) : mean IN-var in the iso
+ pycnal
+       
+      SEE ALSO :
+       cdfrhoproj, cdfsigtrp, cdfisopycdep
+       </code></pre>
+
+<h2 id="cdfsigntr">cdfsigntr</h2>
+
+<pre><code>  usage : cdfsigntr T-file
+       
+      PURPOSE :
+        Compute neutral volumic mass (kg/m3) from temperature and salinity.
+       
+      ARGUMENTS :
+        T-file  : netcdf file with temperature and salinity.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : signtr.nc
+          variables : vosigntr ( kg/m3 )
+       
+      SEE ALSO :
+        cdfsig0, cdfsigi, cdfsiginsitu</code></pre>
+
+<h2 id="cdfsigtrp">cdfsigtrp</h2>
+
+<pre><code>  usage :  cdfsigtrp T-file U-file V-file sigma_min sigma_max nbins ...
+               ... [-print ] [-bimg ] [-full ] [ -refdep ref_depth] ...
+               ... [-neutral ] [-section file ] [-temp ]
+       
+      PURPOSE :
+        Compute density class transports, according to the density class
+        definition ( minimum, maximum and number of bins) given in arguments.
+        Section position are given in dens_section.dat, an ASCII file 
+        with pairs of lines giving section name and section location as
+        imin imax jmin jmax. Only zonal or meridional section are allowed.
+        The name of this file can be specified with the -section option, if
+        it differs from the standard name. Optionaly, a netcdf root variable 
+        name and a netcdf root long-name can be provided on the line giving 
+        the section name.
+       
+        This program can also be used to compute transport by class of 
+        temperatures, provided the temperatures decrease monotonically 
+        downward. In this case, use -temp option and of course specify
+        sigma_min, sigma_max as temperatures.
+       
+      ARGUMENTS :
+        T-file : netcdf file with temperature and salinity
+        U-file : netcdf file with zonal velocity component
+        V-file : netcdf file with meridional velocity component
+        sigma_min : minimum density for binning
+        sigma_max : maximum density for binning
+        nbins : number of bins. This will fix the bin &#39;width&#39; 
+       
+      OPTIONS :
+        [ -full ] : for full step configuration
+        [ -bimg ] : produce extra bimg output file which shows the details
+                of the sections (normal velocity, density, temperature, 
+                salinity, transports, isopycnal depths. (to be change to 
+                netcdf files for more common use.
+        [ -ncdf ] : produce extra netcdf output file which shows the details
+                of the sections (normal velocity, density, temperature, 
+                salinity, transports, isopycnal depths. 
+        [ -print ]: write the binned transports on standard output, for each
+                sections.
+        [ -refdep ref_depth ]: give a reference depths for the computation of
+                potential density. Sigma_min, sigma_max must be adapted 
+                accordingly.
+        [ -neutral ]: use neutral density instead of potential density 
+        [ -section file] : give the name of section file.
+                Default is dens_section.dat
+        [ -temp ] : use temperature instead of density for binning
+       
+      REQUIRED FILES :
+        mesh_hgr.nc, mesh_zgr.nc and dens_section.dat
+       
+      OUTPUT : 
+        Netcdf file : There is 1 netcdf file per section. File name is build
+          from section name : Section_name_trpsig.nc
+          variables : sigma_class (upper limit of the bin)
+                      sigtrp : transport (Sv per bin)
+       
+        ascii file  : trpsig.txt
+       
+        bimg  file  :  There are 2 bimg files whose name is build from section
+          name : section_name_trpdep.bimg and section_name_trpsig.bimg.
+          This file is written only if -bimg option is used.
+       
+       Standard output : the results are written on standard output only if 
+          the -print option is used.
+       
+      SEE ALSO :
+       cdfrhoproj, cdftransport, cdfsigintegr 
+       </code></pre>
+
+<h2 id="cdfsigtrp_broken">cdfsigtrp_broken</h2>
+
+<pre><code>  usage :  cdfsigtrp_broken TSV-file sigma_min sigma_max nbins ...
+               ... [-print ] [-bimg ] [-full ] [ -refdep ref_depth] ...
+               ... [-neutral ] [-section file ] [-temp ]
+       
+      PURPOSE :
+        Compute density class transports, according to the density class
+        definition ( minimum, maximum and number of bins) given in arguments.
+        Section position are given in dens_section.dat, an ASCII file 
+        with pairs of lines giving section name and section location as
+        imin imax jmin jmax. Only zonal or meridional section are allowed.
+        The name of this file can be specified with the -section option, if
+        it differs from the standard name. Optionaly, a netcdf root variable 
+        name and a netcdf root long-name can be provided on the line giving 
+        the section name.
+        In this particular tool, the section used is the result of 
+        cdf_xtrac_brokenline. In this way, it is possible to calculate the
+        transport of density class in oblicous sections (non dependance on 
+        zonal or meridional).
+       
+        This program can also be used to compute transport by class of 
+        temperatures, provided the temperatures decrease monotonically 
+        downward. In this case, use -temp option and of course specify
+        sigma_min, sigma_max as temperatures.
+       
+      ARGUMENTS :
+        TSV-file : netcdf_broken_line file with temperature, salinity
+        and the normal velocity through the section
+        sigma_min : minimum density for binning
+        sigma_max : maximum density for binning
+        nbins : number of bins. This will fix the bin &#39;width&#39; 
+       
+      OPTIONS :
+        [ -full ] : for full step configuration
+        [ -bimg ] : produce extra bimg output file which shows the details
+                of the sections (normal velocity, density, temperature, 
+                salinity, transports, isopycnal depths. (to be change to 
+                netcdf files for more common use.
+        [ -ncdf ] : produce extra netcdf output file which shows the details
+                of the sections (normal velocity, density, temperature, 
+                salinity, transports, isopycnal depths. 
+        [ -print ]: write the binned transports on standard output, for each
+                sections.
+        [ -refdep ref_depth ]: give a reference depths for the computation of
+                potential density. Sigma_min, sigma_max must be adapted 
+                accordingly.
+        [ -neutral ]: use neutral density instead of potential density 
+        [ -section file] : give the name of section file.
+                Default is dens_section.dat
+        [ -temp ] : use temperature instead of density for binning
+       
+      REQUIRED FILES :
+        mesh_zgr.nc and dens_section.dat
+       
+      OUTPUT : 
+        Netcdf file : There is 1 netcdf file per section. File name is build
+          from section name : Section_name_trpsig.nc
+          variables : sigma_class (upper limit of the bin)
+                      sigtrp : transport (Sv per bin)
+       
+        ascii file  : trpsig.txt
+       
+        bimg  file  :  There are 2 bimg files whose name is build from section
+          name : section_name_trpdep.bimg and section_name_trpsig.bimg.
+          This file is written only if -bimg option is used.
+       
+       Standard output : the results are written on standard output only if 
+          the -print option is used.
+       
+      SEE ALSO :
+       cdfrhoproj, cdftransport, cdfsigintegr, cdfsigtrp, cdf_xtrac_brokenline 
+       </code></pre>
+
+<h2 id="cdfsmooth">cdfsmooth</h2>
+
+<pre><code>  usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level_list ] ...
+        [-a anisotripoc ratio ] [-nc4 ] 
+       
+      PURPOSE :
+        Perform a spatial smoothing on the file using a particular
+        filter as specified in the option. Available filters
+        are : Lanczos, Hanning, Shapiro, Box car average. Default
+        is Lanczos filter.
+       
+      ARGUMENTS :
+        -f  IN-file  : input data file. All variables will be filtered
+        -c  ncut     : number of grid step to be filtered, or number
+                     of iteration of the Shapiro filter.
+       
+      OPTIONS :
+        -t filter_type : Lanczos      , L, l  (default)
+                         Hanning      , H, h
+                         Shapiro      , S, s
+                         Box          , B, b
+        -a aniso       : anisotropic ratio for Box car 
+        -k level_list  : levels to be filtered (default = all levels)
+                level_list is a comma-separated list of levels.
+                   the syntax 1-3,6,9-12 will select 1 2 3 6 9 10 11 12
+        -nc4 : produce netcdf4 output file with chunking and deflation.
+       
+      OUTPUT : 
+        Output file name is build from input file name with indication
+        of the filter type (1 letter) and of ncut.
+        netcdf file :   IN-file[LHSB]ncut
+          variables : same as input variables.</code></pre>
+
+<h2 id="cdfspeed">cdfspeed</h2>
+
+<pre><code>  usage : cdfspeed  U-file V-file U-var V-var [-t T-file] ...
+             ... [-nc4] [-o OUT-file ] [-lev level_list]
+     PURPOSE :
+        Computes the speed of ocean currents or wind speed
+        
+        If the input files are 3D, the input is assumed to be 
+        a model output on native C-grid. Speed is computed on the A-grid.
+        
+        If the input file is 2D and then we assume that this is 
+        a forcing file already on the A-grid.
+     
+     ARGUMENTS :
+        U-file : netcdf file for U component
+        V-file : netcdf file for V component
+        U-var  : netcdf variable name for U component
+        V-var  : netcdf variable name for V component
+     
+     OPTIONS :
+        -t T-file  : indicate any file on gridT for correct header
+                  of the output file (usefull for 3D files)
+        -lev level_list  : indicate a list of levels to be processed
+                  If not used, all levels are processed.
+                  This option should be the last on the command line
+        -nc4 : use netcdf4 output with chunking and deflation
+        -o OUT-file : use specified output file instead of speed.nc
+     
+     OUTPUT :
+        Output on speed.nc  variable U </code></pre>
+
+<h2 id="cdfspice">cdfspice</h2>
+
+<pre><code>  usage : cdfspice -t T-file [-sal SAL-name] [-tem TEM-name] ...
+         ... [-nc4] [-o OUT-file]
+       
+      PURPOSE :
+        Compute the spiceness corresponding to temperatures and salinities
+        given in the input file.
+       
+        spiciness = sum(i=0,5)[sum(j=0,4)[b(i,j)*theta^i*(s-35)^j]]
+                  with:  b     -&gt; coefficients
+                         theta -&gt; potential temperature
+                         s     -&gt; salinity
+       
+      ARGUMENTS :
+        -t T-file : netcdf file with temperature and salinity (gridT)
+            Single argument T-file can also be used, for backward compatibility
+      
+      OPTIONS :
+        [-sal SAL-name]  : name of salinity variable
+        [-tem TEM-name]  : name of temperature variable
+        [-nc4]  : enable chunking and compression
+        [-o OUT-file]    : specify output filename instead of spice.nc
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : spice.nc
+          variables : vospice
+       
+      REFERENCE :
+        Flament (2002) &quot;A state variable for characterizing 
+              water masses and their diffusive stability: spiciness.&quot;
+              Progress in Oceanography Volume 54, 2002, Pages 493-501.</code></pre>
+
+<h2 id="cdfsstconv">cdfsstconv</h2>
+
+<pre><code>  Usage : cdfflxconv YEAR config 
+     Output 6 cdf files : for emp, qnet, qsr, sst, taux, tauy with standard var 
+ name :
+         sowaflup, sohefldo, soshfldo, sst, sozotaux, sometauy 
+     coordinates.diags ( clipper like) is required in current dir </code></pre>
+
+<h2 id="cdfstatcoord">cdfstatcoord</h2>
+
+<pre><code>  usage : cdfstatcoord COOR-file MSK-file [ MSK-var ]
+       
+      PURPOSE :
+        Computes and displays statistics about grid metrics vs latitude.
+        Bins e1 and e2 by latitude bins, and compute the mean of each bin.
+       
+      ARGUMENTS :
+        COOR-file : coordinates file with e1 e2 metrics
+        MSK-file  : mask file 
+       
+      OPTIONS :
+        [MSK-var] : mask variable name. Default is tmask
+       
+      REQUIRED FILES :
+        none apart those requested on command line.
+       
+      OUTPUT : 
+        Standard output</code></pre>
+
+<h2 id="cdfstats">cdfstats</h2>
+
+<pre><code>  usage : cdfstats IN-file REF-file ncy [VAR-name1 [VAR-name2]] ...
+                 [-m mesh_mask file ]
+       
+      PURPOSE :
+             This tool computes some statistics (rms, correlation, 
+          signal/noise ratio and signal ratio [ratio of std 
+          deviation]) between to files. In this tool, the files
+          are supposed to hold monthly averages values, for many 
+          years. Specifying ncy=12, allows to remove the seasonal
+          cycle of the data.
+             This program was initially written for SSH statistics
+          between model output and AVISO files (default variable
+          names are sossheig for this reason ). It can
+          now be used with any variables.
+       
+      ARGUMENTS :
+         IN-file  : First data file ( usually model output) 
+         REF-file : Second data file ( usually observation file) 
+         ncy      : 1 or 12. If set to 12, annual cycle is removed 
+                    from the data 
+         [VAR-name1 [VAR-name2]] : If variable names of input files
+                  are not sossheig they can be specified
+                  on the command line. If only one name is given, it is
+                  assumed that both file use same variable name.
+       
+      OPTIONS :
+         -m mesh_mask file : specify a mesh_mask file holding the tmaskutil
+                  and the horizontal metrics. If this option is not used,
+                  mask are taken in mask.nc and horizontal metric
+                  is taken in mesh_hgr.nc
+       
+      REQUIRED FILES :
+        mask.nc and mesh_hgr.nc
+            or mesh_mask file specified in -m option
+       
+      OUTPUT : 
+         netcdf file : stats.nc
+          variables are : 
+                rms    : RMS between the input files
+                correl : CORREL between the input files
+                rrat   : Signal to noise ratio 
+                srat   : Signal ratio (stdev ratio) 
+       </code></pre>
+
+<h2 id="cdfstd">cdfstd</h2>
+
+<pre><code>  usage : cdfstd [-save] [-spval0] [-nomissincl] [-stdopt] list_of files 
+       
+      PURPOSE :
+        Compute the standard deviation of the variables belonging to a set of
+        files given as arguments.  This computation is direct and does not 
+        required a pre-processing with any of the cdfmoy tools.
+       
+      ARGUMENTS :
+        List on netcdf files of the same type, forming a time-series
+       
+      OPTIONS :
+        [ -save ] : Save the mean value of the field, in addition to the 
+            std deviation. If used must be appear before list of files.
+        [ -spval0 ] :  set missing_value attribute to 0 for all output
+            variables and take care of the input missing_value.
+            This option is usefull if missing_values differ from files 
+            to files.
+            If used it should be called  before the list of input files.
+        [-nomissincl ] : with this option, the output std and mean are set to
+            missing value at any gridpoint where the variable contains a 
+            missing value for at least one timestep. You should combine 
+            with -spval0 if missing values are not 0 in all the input files.
+            If used it should be called  before the list of input files.
+        [ -stdopt ]:  use a  more optimal algorithm to compute std
+            and std is unbiased.  If used it should be called  before
+             the list of input files.
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        - netcdf file : cdfstd.nc
+            variables :  IN-var_std, same units than input variables.
+        - netcdf file : cdfmoy.nc in case of -save option.
+            variables :  IN-var, same units than input variables.
+       
+      SEE ALSO :
+         cdfmoy, cdfrmsssh, cdfstdevw</code></pre>
+
+<h2 id="cdfstdevts">cdfstdevts</h2>
+
+<pre><code>  usage : cdfstdevts T-file T2-file 
+       
+      PURPOSE :
+        Compute the standard deviation of the temperature
+        and salinity from their mean and  mean square values. 
+       
+      ARGUMENTS :
+        T-file  : netcdf file with mean values for T, S
+        T2-file : netcdf file with mean squared values for T,S
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : stdevts.nc
+          variables : votemper_stdev, same unit than the input.
+                      vosaline_stdev, same unit than the input.
+       
+      SEA ALSO :
+        cdfstd, cdfrmsssh, cdfstdevw.</code></pre>
+
+<h2 id="cdfstdevw">cdfstdevw</h2>
+
+<pre><code>  usage : cdfstdevw W-file W2-file [varname] [-o output_file] [-nc4 ]
+       
+      PURPOSE :
+        Computes the standard deviation of the vertical velocity
+        from its mean value and its mean square value. If a variable name 
+        is given, then computes rms of this variable instead of the vertical 
+        velocity.
+       
+        Note that what is computed in this program is stictly the
+        standard deviation. It is very often called RMS, which is
+        an abuse. It is the same only in the case of zero mean value.
+       
+      ARGUMENTS :
+        W-file  : netcdf file with mean values for w ( or given variable)
+        W2-file : netcdf file with mean squared values for w (or given variable)
+       
+      OPTIONS: 
+         varname : give name of variable if not vovecrtz
+       
+      REQUIRED FILES :
+        none
+       
+      OUTPUT : 
+        netcdf file : rmsw.nc (if varname specified, output file is rms_var.nc)
+          variables : vovecrtz_rms, (or varname_rms)  same unit than the input.
+       
+      SEA ALSO :
+        cdfstd, cdfrmsssh, cdfstdevts.</code></pre>
+
+<h2 id="cdfstrconv">cdfstrconv</h2>
+
+<pre><code>  Usage : cdfstrconv YEAR config 
+     Output 6 cdf files : for emp, qnet, qsr, sst, taux, tauy with standard var 
+ name :
+         sowaflup, sohefldo, soshfldo, sst, sozotaux, sometauy 
+     coordinates.diags ( clipper like) is required in current dir </code></pre>
+
+<h2 id="cdfsum">cdfsum</h2>
+
+<pre><code>  usage : cdfsum IN-file IN-var T| U | V | F | W  ... 
+              ... [imin imax jmin jmax kmin kmax] [-full ] 
+       
+      PURPOSE :
+        Computes the sum value of the field (3D, weighted)
+        This sum can be optionally limited to a sub-area.
+       
+      ARGUMENTS :
+        IN-file : netcdf input file.
+        IN-var  : netcdf variable to work with.
+        T| U | V | F | W : C-grid point where IN-var is located.
+       
+      OPTIONS :
+        [imin imax jmin jmax kmin kmax] : limit of the sub area to work with.
+               if imin=0 all i are taken
+               if jmin=0 all j are taken
+               if kmin=0 all k are taken
+       
+      REQUIRED FILES :
+       mesh_hgr.nc, mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        Standard output.
+        netcdf file : cdfsum.nc with 2 variables : vertical profile of sum
+                      and 3D sum.</code></pre>
+
+<h2 id="cdftempvol-full">cdftempvol-full</h2>
+
+<pre><code> Usage : cdftempvol-full  gridTfile  imin, imax, jmin, jmax temp_max temp_min nbins [options]
+            imin, imax, jmin, jmax : horizontal limit of the box
+            temp_max, temp_min : limit for temperature bining 
+                           nbins : number of bins to use 
+     Possible options :
+         -print :additional output is send to std output
+         -bimg : 2D (x=lat/lon, y=temp) output on bimg file for hiso, cumul trp, trp
+ Files mesh_hgr.nc, mesh_zgr.nc must be in the current directory
+ Output on voltemp.txt</code></pre>
+
+<h2 id="cdftransport">cdftransport</h2>
+
+<pre><code>  usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc]...
+                   ... [VT-file] U-file V-file [-full] |-time jt] ...
+                   ... [-time jt ] [-zlimit limits of level]
+       
+     PURPOSE :
+       Compute the transports accross a section.
+       The name of the section and the imin, imax, jmin, jmax for the section 
+       is read from the standard input. To finish the program use the key name
+       &#39;EOF&#39; for the section name.
+       OBC U,V files can be used if -obc option is specified.
+       
+      ARGUMENTS :
+       [VT-file ] : netcdf file with mean values of vt, vs, ut, us for heat and
+                    salt transport. If options -noheat or -plus_minus are used
+                    this file name must be omitted.
+       [U-file ] : netcdf file with the zonal velocity component.
+       [V-file ] : netcdf file with the meridional velocity component.
+       
+      OPTIONS :
+       [-test u v ]: use constant the u and v velocity components for sign 
+                     test purpose.
+       [-noheat ]  : use when heat and salt transport are not requested.
+                     This option must come before the file names, and if used
+                     VT file must not be given.
+       [ -plus_minus or -pm ] : separate positive and negative contribution to
+                     the volume transport. This option implicitly set -noheat,
+                     and must be used before the file names.
+       [-obc ]    : indicates that input files are obc files (vertical slices)
+                     Take care that for this case, mesh files must be adapted.
+                     This option implicitly set -noheat, and must be used before
+                     the file names.
+       [-full ]   :  use for full step configurations.
+       [-time jt ]:  compute transports for time index jt. Default is 1.
+       [-zlimit list of depth] : Specify depths limits defining layers where the
+                     transports will be computed. If not used, the transports 
+                     are computed for the whole water column. If used, this 
+                     option must be the last on the command line.
+       
+      REQUIRED FILES :
+       Files mesh_hgr.nc, mesh_zgr.nc must be in the current directory.
+       
+      OUTPUT : 
+       - Standard output 
+       - ASCII file reflecting the standard output: section_trp.dat
+       - ASCII files for volume, heat and salt transport: vtrp.txt, htrp.txt 
+           and strp.txt.
+       - Netcdf files for each section. name of the file is buildt
+           from section name.
+       
+      SEE ALSO :
+        cdfsigtrp
+       </code></pre>
+
+<h2 id="cdfuv">cdfuv</h2>
+
+<pre><code>  usage : cdfuv CONFIG-CASE &#39;list_of_tags&#39; 
+      PURPOSE :
+        Compute the time average values for U.V  product, at T point.
+        Mean U and V values at T points, and mean U&#39;.V&#39; product are 
+        saved as well.
+       
+      ARGUMENTS :
+        CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)
+             The program will look for gridU and gridV files for
+             this config (grid_U and grid_V are also accepted).
+        list_of_tags : a list of time tags that will be used for time
+             averaging. e.g. y2000m01d05 y2000m01d10 ...
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : uv.nc
+        variables : vouv  : Mean U.V at T point
+                    vozocrtx_t : Mean U at T point
+                    vomecrty_t : Mean V at T point
+                    vouv_prime : Mean U&#39;.V&#39; at T point</code></pre>
+
+<h2 id="cdfvFWov">cdfvFWov</h2>
+
+<pre><code>  usage : cdfvFWov V-secfile S-secfile ZGR-secfile HGR-secfile MSK-secfile
+      PURPOSE :
+         Compute the fresh water transport and its overturning component through
+         a section specified by the input files (data and metrics).
+       
+      ARGUMENTS :
+         All arguments are &#39;section files&#39;, which are assumed to be files with
+         2 zonal lines of data ( j and j+1 ): 
+          - V_secfile : meridional velocity section file.
+          - S_secfile : salinity section file.
+          - ZGR_secfile : mesh_zgr section file 
+          - HGR_secfile : mesh_hgr section file 
+          - MSK_secfile : mask section file 
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : vFWov.nc
+        variables : netvFW, totvFW, ovFW
+        Output file only has time relevant dimension. Other dims are set to 1.
+        Degenerated dimensions can be removed with :
+            ncwga -a x,y,depthw vFWov.nc -o out.nc</code></pre>
+
+<h2 id="cdfvT">cdfvT</h2>
+
+<pre><code>  usage : cdfvT CONFIG-CASE [-o output_file ] [-nc4 ] &#39;list_of_tags&#39; 
+      PURPOSE :
+        Compute the time average values for second order products 
+        V.T, V.S, U.T and U.S used in heat and salt transport computation.
+       
+      ARGUMENTS :
+        CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)
+             The program will look for gridT, gridU and gridV files for
+             this config ( grid_T, grid_U and grid_V are also accepted).
+             Additionaly, if gridS or grid_S file is found, it will be taken
+             in place of gridT for the salinity variable.
+        [-nc4 ] use netcdf4 output with chunking and deflation 1
+        [-o output file ] default :vt.nc  must be before tag list
+        list_of_tags : a list of time tags that will be used for time
+             averaging. e.g. y2000m01d05 y2000m01d10 ...
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : vt.nc
+        variables : vozout, vozous, vomevt and vomevs</code></pre>
+
+<h2 id="cdfvar">cdfvar</h2>
+
+<pre><code>  usage : cdfbathy/cdfvar -f IN-file [options]
+       
+      PURPOSE :
+        Allow manual modification of the input file. Very convenient
+        for bathymetric files, can also be used with any model file
+        Keep a log.f90 file of the modifications for automatic reprocessing
+       
+      ARGUMENTS :
+        IN-file : original input file. The program works on a copy of the
+                 original file (default)
+       
+      OPTIONS :
+        -file (or -f )       : name of input file 
+        -var  (or -v )       : name of cdf variable [default: Bathymetry]
+        -lev  (or -l )       : level to work with 
+        -time (or -t )       : time to work with 
+        -scale  s            : use s as a scale factor (divide when read the file)
+        -zoom (or -z )       : sub area of the bathy file to work with (imin imax jmin jmax)
+        -fillzone (or -fz )  : sub area will be filled with 0 up to the first coast line 
+        -fillpool (or -fp ) [ icrit ] : the whole file is check and fill all the pool smaller than (icrit) cell by 0
+        -raz_zone (or -raz ) : sub area will be filled with 0 up 
+        -raz_below depmin    : any depth less than depmin in subarea will be replaced by 0 
+           (or -rb depmin )  
+        -set_below depmin    : any depth less than depmin in subarea will be replaced by depmin 
+           (or -sb depmin ) 
+        -fullstep depmin     : sub area will be reshaped as full-step, below depmin
+           (or -fs depmin )    requires the presence of the file zgr_bat.txt (from ocean.output, eg )
+        -dumpzone (or -d )   : sub area will be output to an ascii file, which can be used by -replace
+                               after manual editing 
+        -nicedumpzone        : sub area will be output to an ascii file (nice output)
+                 (or -nd )
+        -replace (or -r )    : sub area defined by the file will replace the original bathy
+        -append (or -a )     : fortran log file (log.f90) will be append with actual modif
+                               Standard behaviour is to overwrite/create log file
+        -overwrite (or -o )  : input bathy file will be used as output.
+                               Standard behaviour is to use a work copy of the original file
+                               (indexed from 01 to 99 if necessary ) 
+        -log logfile         : log file for change (default is log.f90) 
+       
+      OUTPUT : 
+           netcdf file : according to used options, if the original file is to be modified
+                  a sequence number is added at the end of the input file name, to keep
+                  modifications.
+             variables : same as input file</code></pre>
+
+<h2 id="cdfvertmean">cdfvertmean</h2>
+
+<pre><code>  usage :  cdfvertmean [-debug] IN-file IN-var1,var2,.. v-type dep1 dep2 [-full]
+               ... [-o OUT-file ]
+       
+      PURPOSE :
+        Compute the vertical mean between dep1 and dep2 given in m,
+        for variable IN-var in the input file.
+       
+      ARGUMENTS :
+        IN-file  : netcdf input file.
+        IN-var1,var2,.. : Comma separated list of input variables to process.
+        v-type   : one of T U V W indicating position of variable on C-grid
+        dep1 dep2 : depths limit for vertical integration (meters), from top 
+                 to bottom, positive depths.
+       
+      OPTIONS :
+        [-full  ] : for full step configurations. Default is partial step.
+        [-debug ] : print some extra informations.
+        [-o OUT-file ] : specify output file instead of vertmean.nc
+       
+      REQUIRED FILES :
+        mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : vertmean.nc
+          variables : varin_vertmean (same units as input variable)
+       </code></pre>
+
+<h2 id="cdfvhst">cdfvhst</h2>
+
+<pre><code>  usage : cdfvhst  VTfile [-full ]
+      PURPOSE :
+          Computes the vertically integrated heat and salt transports 
+          at each grid cell.
+       
+      ARGUMENTS :
+          VTfile : file which contains UT, VT, US, VS quantities
+               (produced by cdfvT.f90)
+       
+      OPTIONS :
+          [ -full ] : use full step computation (default is partial steps).
+       
+      REQUIRED FILES :
+          Files mesh_hgr.nc, mesh_zgr.nc
+       
+      OUTPUT : 
+          Netcdf file : trp.nc
+          Variables : somevt, somevs, sozout and  sozous</code></pre>
+
+<h2 id="cdfvint">cdfvint</h2>
+
+<pre><code>  usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]
+                  [-tmean] [-smean]
+       
+      PURPOSE :
+           Compute the vertical integral of the variable from top 
+        to bottom, and save the cumulated valued, level by level.
+        For temperature (default var), the integral is transformed
+        to Heat Content ( 10^6 J/m2) hence for salinity, the integral
+        represents PSU.m 
+       
+      ARGUMENTS :
+          T-file : gridT file holding either temperature or salinity 
+         [IN-var ] : name of input variable to process. Default is 
+                votemper. Can also be vosaline
+       
+      OPTIONS :
+         -GSOP : Use 7 GSOP standard level for the output 
+                 Default is to take the model levels for the output
+         -OCCI : Use 3 levels for the output: 700m, 2000m and bottom
+                 Default is to take the model levels for the output
+         -full : for full step computation 
+         -nc4  : use netcdf4 output with chunking and deflation
+         -tmean : output mean temperature instead of heat content
+         -smean : output mean salinity instead of PSU.m
+         -o OUT-file : use specified output file instead of &lt;IN-var&gt;.nc
+       
+      REQUIRED FILES :
+        mask.nc, mesh_hgr.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file :  VAR-name.nc (or specified with -o option)
+          variables :  either voheatc or vohsalt, unless -tmean or -smean used
+                In this latter case, variables are votemper and 
+               vosaline
+       
+      SEE ALSO :
+         cdfvertmean, cdfheatc, cdfmxlhcsc and  cdfmxlheatc
+       </code></pre>
+
+<h2 id="cdfvita">cdfvita</h2>
+
+<pre><code>  usage : cdfvita U-file V_file T-file [-w W-file] [-geo ] [-cubic] [-nc4] ...
+                  ... [-o OUT-file] [-lev level_list]
+       
+      PURPOSE :
+        Create a file with velocity components, module  and direction
+        at T points from file on C-grid. T-file is used only for
+        getting the header of the output file. Any file on T grid
+        can be used.
+       
+      ARGUMENTS :
+        U-file  : netcdf file with zonal component of velocity
+        V-file  : netcdf file with meridional component of velocity
+        T-file  : netcdf file with T points header OK.
+       
+      OPTIONS :
+        [ -w W-file ] : if used, also compute vertical velocities at
+                        T points.
+        [ -geo ]     : indicate that input velocity files are produced 
+                       by cdfgeo-uv, hence ugeo on V-point, vgeo on U-points
+                       ( U-file and V_file are the same !)
+        [ -cubic ]   : Save the cube of the veocity module 
+        [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1
+                  This option is effective only if cdftools are compiled with
+                  a netcdf library supporting chunking and deflation.
+        [ -o OUT-file ] : Specify name of output file instead of vita.nc
+        [ -lev level_list] : specify a list of level to be used 
+                    (default option is to use all input levels).
+                    This option MUST be the last on the command line !!
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : vita.nc unless -o option is used
+          variables : sovitua, sovitva, sovitmod, sovitdir, [sovitmod3], [sovitw
+ a]</code></pre>
+
+<h2 id="cdfvita-geo">cdfvita-geo</h2>
+
+<pre><code>  usage : cdfvita-geo  Ugeo-file Vgeo_file T-file [-w W-file] [-lev level_list]
+       
+      PURPOSE :
+        Create a file with velocity components and module computed
+        at T points from file on C-grid. T-file is used only for
+        getting the header of the output file. Any file on T grid
+        can be used.
+       
+      ARGUMENTS :
+        Ugeo-file  : netcdf file with zonal component of velocity
+        Vgeo-file  : netcdf file with meridional component of velocity
+        T-file  : netcdf file with T points header OK.
+       
+      OPTIONS :
+        [ -w W-file ] : if used, also compute vertical velocities at
+                        T points.
+        [ -lev level_list] : specify a list of level to be used 
+                    (default option is to use all input levels).
+                    This option MUST be the last on the command line !!
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : vita.nc
+          variables : sovitua, sovitva, sovitmod, [sovitwa]</code></pre>
+
+<h2 id="cdfvsig">cdfvsig</h2>
+
+<pre><code>  usage : cdfvsig CONFIG  [-no-w] [-no-sig]  [-no-uv] [-T ] [-pref pref1,pref2,.
+ ..]
+         ... &#39;list_of_tags&#39; 
+      PURPOSE :
+        Compute the time average values for second order products 
+        U.sig,  V.sig and W.sig.  Also save mean sigma-0 interpolated at
+        velocity points, as well as mean velocity component, for further use.
+       
+      ARGUMENTS :
+        CONFIG is the config name of a given experiment (eg ORCA025-G70)
+             The program will look for gridT, gridU, gridV  and gridW files for
+             this config ( grid_T, grid_U, grid_V and grid_W are also accepted).
+        list_of_tags : a list of time tags that will be used for time
+             averaging. e.g. y2000m01d05 y2000m01d10.
+             ! IMPORTANT : list_of_tag are at the end of the command line ! 
+       
+      OPTIONS ( to be used before the list_of tags ):
+         -T : compute u and v at T points, so that usig, vsig will be at T point
+         -no-w : no computation of vertical products
+         -no-sig : no output of density on U V points
+         -no-uv : no output of mean velocity components
+         -pref pref1,pref2,..: give comma separated list of reference depths for
+              density computation. eg : -pref 0,2000,3000  If not specified 
+              assumes pref=0.
+       
+      REQUIRED FILES :
+         mask.nc
+       
+      OUTPUT : 
+        netcdf file : usig.nc, vsig.nc and wsig.nc
+        variables : vousig, vovsig, vowsig : mean product v x sigma-0 
+                                             at velocity point.
+                    vosigu, vosigv, vosigw : mean sigma-0 at velocity point.
+                    vozocrtx, vomecrty, vovecrtz : mean velocity components.</code></pre>
+
+<h2 id="cdfvtrp">cdfvtrp</h2>
+
+<pre><code>  usage : cdfvtrp  U-file V-file [ -full ] [ -bathy ]
+      PURPOSE :
+        Computes the vertically integrated transports at each grid cell.
+       
+      ARGUMENTS :
+        U-file : netcdf gridU file
+        V-file : netcdf gridV file
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mesh_zgr.nc
+         mask.nc is required only with -bathy option.
+       
+      OPTIONS :
+        [-full ]  : To be used in case of full step configuration.
+                    Default is partial steps.
+        [-bathy ] : When used, cdfvtrp also compute the along slope
+                    and cross slope transport components.
+                    Bathymetry is read from mesh_zgr.nc file.
+       
+      OUTPUT : 
+        netcdf file : trp.nc
+        variables : 
+            sozoutrp : zonal transport.
+            somevtrp : meridional transport.
+           If option -bathy is used :
+            soastrp : along slope transport
+            socstrp : cross slope transport</code></pre>
+
+<h2 id="cdfw">cdfw</h2>
+
+<pre><code>  usage : cdfw U-file V-file [ U-var V-var ] [ -full]
+       
+      PURPOSE :
+        Compute the vertical velocity from the vertical integration of
+        of the horizontal divergence of the velocity.
+       
+      ARGUMENTS :
+        U-file : netcdf file with the zonal velocity component.
+        V-file : netcdf file with the meridional velocity component.
+       
+      OPTIONS :
+        [ U-var V-var ] : names of the zonal and meridional velocity 
+                          components. Default are vozocrtx and vomecrty
+        [ -full ] : in case of full step configuration. Default is partial step.
+       
+      REQUIRED FILES :
+        mesh_hgr.nc and mesh_zgr.nc
+       
+      OUTPUT : 
+        netcdf file : w.nc
+          variables : vovecrtz (m/s)</code></pre>
+
+<h2 id="cdfweight">cdfweight</h2>
+
+<pre><code>  usage : cdfweight  [-f] IN-file [-c COORD-file] ... 
+               ...  [-t point_type] [-2d] [-v] 
+       
+      PURPOSE :
+        Produce a weight file for further bilinear collocalisation 
+        with cdfcoloc program. It takes the position of the points
+        to be collocated into a simple ascii file. 
+       
+      ARGUMENTS :
+        [-f ] IN-file   : input file is a iyxz ASCII file, 1 line per point.
+       
+      OPTIONS :
+        [-c COORD-file] : coordinate file [coordinates.nc]
+        [-t point_type] : point type on C-grid (either T U V or F ) [F]
+        [-2d ]          : tell cdfweight that only 2D weights are to be computed
+ .
+        [-v ]           : Verbose mode for extra information (debug mode).
+       
+      REQUIRED FILES :
+         coordinates.nc file if not passed as argument.
+         If working with 3D files, mesh_zgr.nc is required.
+       
+      OUTPUT : 
+        binary weight file : weight_point_type.bin
+        standard output : almost the same info that is saved in the binary file
+                    When using -v option, even more informations !</code></pre>
+
+<h2 id="cdfwflx">cdfwflx</h2>
+
+<pre><code>  usage : cdfwflx T-file Runoff
+       
+      PURPOSE :
+        Computes the water fluxes components. Suitable for 
+        annual means files. All output variables are in mm/days.
+       
+      ARGUMENTS :
+        T-file  : model output file with water fluxes (gridT) 
+        Runoff : file with the climatological runoff on the
+                 model grid.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        netcdf file : wflx.nc
+        variables : soevap, soprecip, sorunoff, sowadmp, sowaflux</code></pre>
+
+<h2 id="cdfwhereij">cdfwhereij</h2>
+
+<pre><code>  usage : cdfwhereij  imin imax jmin jmax [-c COOR-file ] [ -p point_type]
+       
+      PURPOSE :
+        Return the geographical coordinates of a model sub-area specified
+        in i,j space on the command line.
+       
+      ARGUMENTS :
+        imin imax jmin jmax : (i,j) space window coordinates
+       
+      OPTIONS :
+        [-c COOR_file  ] : specify a coordinates file.
+                       default is coordinates.nc
+        [-p point type ] : specify a point type on the C-grid (T U V F) 
+                       default is T
+       
+      REQUIRED FILES :
+        coordinates.nc or COOR-file given in the -c option
+       
+      OUTPUT : 
+        Standard output</code></pre>
+
+<h2 id="cdfzisot">cdfzisot</h2>
+
+<pre><code>  usage : cdfzisot T-file RefTemp [Output File]
+       
+      PURPOSE :
+        Compute depth of an isotherm given as argument
+       
+      ARGUMENTS :
+        T-file  : input netcdf file (gridT)
+        RefTemp : Temperature of the isotherm.
+        Output File : netCDF Optional (defaults: zisot.nc)
+       
+      REQUIRED FILES :
+         mesh_zgr.nc
+          In case of FULL STEP configuration, bathy_level.nc is also required.
+       
+      OUTPUT : 
+        netcdf file : zisot.nc</code></pre>
+
+<h2 id="cdfzonalmean">cdfzonalmean</h2>
+
+<pre><code>  usage : cdfzonalmean IN-file point_type [ BASIN-file] [-debug]...
+        ...[-var var1,var2,..] [-max ] [-pdep | --positive_depths]
+       
+      PURPOSE :
+        Compute the zonal mean of all the variables available in the
+        input file. This program assume that all the variables are
+        located on the same C-grid point, specified on the command line.
+          Using -var option limits the variables to be processed.
+       
+        Zonal mean is in fact the mean value computed along the I coordinate.
+        The result is a vertical slice, in the meridional direction.
+       
+        REMARK : partial step are not handled properly (but probably 
+                 minor impact on results).
+       
+      ARGUMENTS :
+        IN-file    : input netcdf file.
+        point_type : indicate the location on C-grid (T|U|V|F|W)
+       
+      OPTIONS :
+        [BASIN-file] : netcdf file describing sub basins, similar to 
+                       new_maskglo.nc. If this name is not given 
+                       as option, only the global zonal mean is computed.
+        [-max     ] : output the zonal maximum and minimum of the variable 
+        [-var var1,var2,.. ] : Comma separated list of selected variables
+        [-pdep | --positive_depths ] : use positive depths in the output file.
+                       Default behaviour is to have negative depths.
+        [-ndep_in ] : negative depths are used in the input file.
+                       Default behaviour is to have positive depths.
+        [-debug   ] : add some print for debug
+       
+      REQUIRED FILES :
+        mesh_hgr.nc, mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : zonalmean.nc
+          variables : output variable names are built with the following
+                      convention: zoxxxx_bas
+                       where zo replace vo/so prefix of the input variable
+                       where bas is a suffix for each sub-basins (or glo)
+                       if a BASIN-file is used.
+                  If option -max is used, each standard output variable
+                      is associated with a var_max variable.</code></pre>
+
+<h2 id="cdfzonalmeanvT">cdfzonalmeanvT</h2>
+
+<pre><code>  usage : cdfzonalmeanvT [-b BASIN-file] [-pdep |--positive_depths] ... 
+                    ...  [-ndep_in]   CONFIG-CASE  &#39;list_of_tags&#39; 
+       
+      PURPOSE :
+        Compute the mean product of zonal mean V by zonal mean of T and S.
+       
+        Zonal mean is in fact the mean value computed along the I coordinate.
+        The result is a vertical slice, in the meridional direction.
+       
+        REMARK : partial step are not handled properly (but probably 
+                 minor impact on results).
+       
+      ARGUMENTS :
+        CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)
+             The program will look for gridT, gridU and gridV files for
+             this config ( grid_T, grid_U and grid_V are also accepted).
+             Additionaly, if gridS or grid_S file is found, it will be taken
+             in place of gridT for the salinity variable.
+        list_of_tags : a list of time tags that will be used for time
+             averaging. e.g. y2000m01d05 y2000m01d10 ...
+       
+      OPTIONS :
+        [-b BASIN-file] : netcdf file describing sub basins, similar to 
+                       new_maskglo.nc. If this name is not given 
+                       as option, only the global zonal mean is computed.
+        [-pdep | --positive_depths ] : use positive depths in the output file.
+                       Default behaviour is to have negative depths.
+        [-ndep_in ] : negative depths are used in the input file.
+                       Default behaviour is to have positive depths.
+        [-debug   ] : add some print for debug
+       
+      REQUIRED FILES :
+        mesh_hgr.nc, mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : zonalmeanvt.nc
+          variables : zovzot : mean product of zonal_mean(V) x zonal_mean(T)
+                      zovzot : mean product of zonal_mean(V) x zonal_mean(S)
+                        A suffix _bas is append to variable name oin order to
+                      indicate the basin (atl, inp, ind, pac) or glo for global
+          </code></pre>
+
+<h2 id="cdfzonalout">cdfzonalout</h2>
+
+<pre><code>  usage :  cdfzonalout ZONAL-file
+       
+      PURPOSE :
+         This is a formatting program for zonal files, either mean or integral.
+         It displays results on the standard output from the input zonal file.
+         It only works with 1D zonal variables, skipping 2D variables, that
+         cannot be easily displayed !
+       
+      ARGUMENTS :
+         ZONAL-file : input netcdf zonal file produced by one of the zonal
+                      tools.
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+         - Standard output,  structured in columns:
+              J  LAT  ( zonal mean, var = 1--&gt; nvar) </code></pre>
+
+<h2 id="cdfzonalsum">cdfzonalsum</h2>
+
+<pre><code>  usage : cdfzonalsum IN-file point_type [ BASIN-file] ...
+                   ... [-var var1,var2,..] [-pdep | --positive_depths]
+                   ... [-pdeg | --per_degree] [-debug]
+       
+      PURPOSE :
+        Compute the zonal sum of all the variables available in the
+        input file. This program assume that all the variables are
+        located on the same C-grid point, specified on the command line.
+          Using -var option limits the variables to be processed.
+       
+        Zonal sum is in fact the integral value computed along the I coordinate.
+        The result is a vertical slice, in the meridional direction.
+       
+        REMARK : partial step are not handled properly (but probably 
+                 minor impact on results).
+       
+      ARGUMENTS :
+        IN-file    : input netcdf file.
+        point_type : indicate the location on C-grid (T|U|V|F|W)
+       
+      OPTIONS :
+        [BASIN-file] : netcdf file describing sub basins, similar to 
+                       new_maskglo.nc. If this name is not given 
+                       as option, only the global zonal integral is computed.
+        [-var var1,var2,.. ] : Comma separated list of selected variables
+        [-pdep | --positive_depths ] : use positive depths in the output file.
+                       Default behaviour is to have negative depths.
+        [-pdeg | --per_degree ] : When using this option, the zonal integral
+                       is normalized per degree of latitude. This was formally
+                       done with cdfzonalintdeg program, which is now merged
+                       in this one.
+                       Default behaviour is not to normalize.
+        [-debug ] : add some print for debug
+       
+      REQUIRED FILES :
+        mesh_hgr.nc, mesh_zgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : zonalsum.nc or zonalintdeg.nc (-pdeg option)
+          variables : output variable names are built with the following
+                      convention: zoixxxx_bas
+                       where zoi replace vo/so prefix of the input variable
+                       where bas is a suffix for each sub-basins (or glo)
+                       if a BASIN-file is used.
+             Units are modified by adding &#39;.m2&#39; at the end. Can be improved !
+             In addition, &#39;.degree-1&#39; is append to unit with -pdeg option.</code></pre>
+
+<h2 id="cdfzoom">cdfzoom</h2>
+
+<pre><code>  usage : cdfzoom -f file -zoom imin imax jmin jmax  ...
+                ... -var cdfvar [-lev kmin kmax ] ...
+                ... [ -time tmin tmax ] [ -fact factor] 
+      PURPOSE :
+       Display the numerical values of a zoomed area. By
+       default, all times and levels are shown. If the zoomed
+       area is degenerated to a single line, then the vertical
+       slab is displayed.
+       
+      ARGUMENTS :
+        -f file : name of input file
+        -zoom imin imax jmin jmax : spatial window definition
+        -var cdfvar : cdf variable name to work with.
+       
+      OPTIONS :
+        [-lev kmin kmax ]  : vertical limits for display.
+        [-time tmin tmax ] : time limits for display.
+        [-fact factor ]    : use a scaling factor for display.
+                             Values are DIVIDED by factor
+       
+      REQUIRED FILES :
+         none
+       
+      OUTPUT : 
+        display on standard output
+ </code></pre>
+
+<h1 id="AUTHORS">AUTHORS</h1>
+
+<p>Project headed by Jean-Marc Molines, (IGE, Grenoble - France)</p>
+
+<p>Contributors (alphabetic order ) : C.Q. Akuetevi, M. Balmaseda, E. Behrens, F. Castruccio, M. Chekki, P. Colombo, J. Deshayes, N. Djath, N. Ducousso, C. Dufour, R. Dussin, N. Ferry, F. Hernandez, M. Juza, A. Lecointre, S. Leroux, G. Mainsant, P. Mathiot, A. Melet, X. Meunier, G. Moreau, N. Merino, W. Rath, J. Regidor, M. Scheinert, A.M. Treguier</p>
+
+<h1 id="LICENSE-AND-COPYRIGHT">LICENSE AND COPYRIGHT</h1>
+
+<p>Copyright (C) 1998-2016 IGE-MEOM (Jean-Marc.Molines@univ-grenoble-alpes.fr )</p>
+
+<p>This software is governed by the CeCILL license under French law and abiding by the rules of distribution of free software. You can use, modify and/ or redistribute the software under the terms of the CeCILL license as circulated by CEA, CNRS and INRIA at the following URL &quot;http://www.cecill.info&quot;.</p>
+
+<p>As a counterpart to the access to the source code and rights to copy, modify and redistribute granted by the license, users are provided only with a limited warranty and the software&#39;s author, the holder of the economic rights, and the successive licensors have only limited liability.</p>
+
+<p>In this respect, the user&#39;s attention is drawn to the risks associated with loading, using, modifying and/or developing or reproducing the software by the user in light of its specific status of free software, that may mean that it is complicated to manipulate, and that also therefore means that it is reserved for developers and experienced professionals having in-depth computer knowledge. Users are therefore encouraged to load and test the software&#39;s suitability as regards their requirements in conditions enabling the security of their systems and/or data to be ensured and, more generally, to use and operate it in the same conditions as regards security.</p>
+
+<p>The fact that you are presently reading this means that you have had knowledge of the CeCILL license and that you accept its terms.</p>
+
+
+</body>
+
+</html>
+
+
