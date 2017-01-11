@@ -64,6 +64,8 @@
       <li><a href="#cdfheatc">cdfheatc</a></li>
       <li><a href="#cdfhflx">cdfhflx</a></li>
       <li><a href="#cdfhgradb">cdfhgradb</a></li>
+      <li><a href="#cdficb_clim">cdficb_clim</a></li>
+      <li><a href="#cdficb_diags">cdficb_diags</a></li>
       <li><a href="#cdficediags">cdficediags</a></li>
       <li><a href="#cdfimprovechk">cdfimprovechk</a></li>
       <li><a href="#cdfinfo">cdfinfo</a></li>
@@ -1558,6 +1560,45 @@
       SEE ALSO :
          cdfbuoyflx  
        </code></pre>
+
+<h2 id="cdficb_clim">cdficb_clim</h2>
+
+<pre><code>  usage : cdficb_clim 12-ICB-monthly-means-files
+       
+      PURPOSE :
+         Compute the 2D field of icb mass and icb melt.
+       
+      ARGUMENTS :
+        ICE-file : netcdf icb file
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : icbdiags.nc
+          variables : Mass  (Kg/m2 )
+                      Melt  (Kg/m2/s )</code></pre>
+
+<h2 id="cdficb_diags">cdficb_diags</h2>
+
+<pre><code>  usage : cdficb_diags ICB-file  
+       
+      PURPOSE :
+         Compute the spatially integrated icb mass and melt flux.
+       
+      ARGUMENTS :
+        ICB-file : a single netcdf icb file
+       
+      REQUIRED FILES :
+         mesh_hgr.nc and mask.nc
+       
+      OUTPUT : 
+        netcdf file : icbdiags.nc
+          variables : [NS]Mass  (Kg )
+                      [NS]Melt    (Kg/s )
+                N = northern hemisphere
+                S = southern hemisphere
+        standard output</code></pre>
 
 <h2 id="cdficediags">cdficediags</h2>
 

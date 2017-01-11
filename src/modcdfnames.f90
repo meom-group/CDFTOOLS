@@ -82,6 +82,9 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_iowaflup='iowaflup' !: Ice Ocean Water flux ( + = freezing, - = melting)
   CHARACTER(LEN=256) :: cn_soicecov='soicecov' !: Ice cover
 
+  CHARACTER(LEN=256) :: cn_iicbmass='berg_mass'!: Mass of Icebergs (kg/m2)
+  CHARACTER(LEN=256) :: cn_iicbmelt='berg_melt'!: Melting rate of icebergs (kg/m2/s)
+
   ! MOC variables
   CHARACTER(LEN=256) :: cn_zomsfatl='zomsfatl' !: moc in the Atlantic
   CHARACTER(LEN=256) :: cn_zomsfglo='zomsfglo' !: moc in the Global ocean

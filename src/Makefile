@@ -32,6 +32,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk \
+       cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
@@ -324,12 +325,6 @@ cdfmxlhcsc: cdfio.o  eos.o cdfmxlhcsc.f90
 cdficediags: cdfio.o  cdficediags.f90
 	$(F90) cdficediags.f90 -o $(BINDIR)/cdficediags cdfio.o modcdfnames.o $(FFLAGS)
 
-cdficbclimato: cdfio.o  cdficbclimato.f90
-	$(F90) cdficbclimato.f90 -o $(BINDIR)/cdficbclimato cdfio.o modcdfnames.o $(FFLAGS)
-
-cdficbdiags: cdfio.o  cdficbdiags.f90
-	$(F90) cdficbdiags.f90 -o $(BINDIR)/cdficbdiags cdfio.o modcdfnames.o $(FFLAGS)
-
 cdfzonalmean: cdfio.o  cdfzonalmean.f90
 	$(F90) $(OMP) cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 
 
@@ -499,6 +494,12 @@ cdfisf_rnf: cdfio.o  cdfisf_rnf.f90
 
 cdfisf_poolchk: cdfio.o  modutils.o cdfisf_poolchk.f90
 	$(F90)   cdfisf_poolchk.f90  -o $(BINDIR)/cdfisf_poolchk cdfio.o modutils.o modcdfnames.o $(FFLAGS)
+
+cdficb_clim: cdfio.o  cdficb_clim.f90
+	$(F90) cdficb_clim.f90 -o $(BINDIR)/cdficb_clim cdfio.o modcdfnames.o $(FFLAGS)
+
+cdficb_diags: cdfio.o  cdficb_diags.f90
+	$(F90) cdficb_diags.f90 -o $(BINDIR)/cdficb_diags cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfovide: cdfio.o  cdfovide.f90
 	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)
