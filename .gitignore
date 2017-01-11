@@ -10,6 +10,5 @@ make.macro
 *.idx
 *.toc
 cdftools.1
-*.html
 *.opod
 *.tmp
