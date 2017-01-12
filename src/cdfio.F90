@@ -2787,7 +2787,7 @@ CONTAINS
     IF (kstatus /=  NF90_NOERR ) THEN
        PRINT *, 'ERROR in NETCDF routine, status=',kstatus
        PRINT *,NF90_STRERROR(kstatus)
-       STOP
+       STOP 1
     END IF
 
   END SUBROUTINE ERR_HDL
