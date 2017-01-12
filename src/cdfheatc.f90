@@ -168,13 +168,13 @@ PROGRAM cdfheatc
      PRINT * ,'TIME : ', tim(jt)
      IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
 
-     DO jk = ikmin,ikmax
+     DO jk = 1,nvpk
         ik = jk + ikmin -1
         ! Get velocities v at ik
         temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
         IF ( jt == 1 ) THEN
             PRINT *, 'Read mask'
-            tmask(:,:,jk)   = getvar(cn_fmsk, 'tmask', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+            tmask(:,:,jk)   = getvar(cn_fmsk, 'tmask', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
 
             ! get e3t at level ik ( ps...)
             PRINT *, 'Load e3t'
