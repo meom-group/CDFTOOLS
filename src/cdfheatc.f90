@@ -21,6 +21,7 @@ PROGRAM cdfheatc
 
   INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
   INTEGER(KIND=4)                           :: ik                  ! working integer
+  INTEGER(KIND=4)                           :: ierr                ! working integer
   INTEGER(KIND=4)                           :: iimin=0, iimax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ijmin=0, ijmax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ikmin=0, ikmax=0    ! domain limitation for computation
@@ -33,12 +34,12 @@ PROGRAM cdfheatc
   REAL(KIND=4), PARAMETER                   :: pprho0=1020.        ! water density (kg/m3)
   REAL(KIND=4), PARAMETER                   :: ppcp=4000.          ! calorific capacity (J/kg/m3)
 
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2t            ! horizontal metrics
-   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: weight            ! horizontal metrics
-  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: e3t                 ! vertical metric
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2t                 ! horizontal metrics
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: weight              ! horizontal metrics
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: e3t               ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp                ! temperature
-  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: tmask               ! tmask
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mxldep              ! mixed layer depth
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: tmask             ! tmask
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rmxldep             ! mixed layer depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
@@ -89,6 +90,7 @@ PROGRAM cdfheatc
      STOP
   ENDIF
 
+  PRINT *,'I am debugging the correct one'
   ijarg = 1 
   CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
 
@@ -136,15 +138,21 @@ PROGRAM cdfheatc
   PRINT *, 'nvpk   = ', nvpk
 
   ! Allocate arrays
+  PRINT *, 'Allocate TMASK'
   ALLOCATE ( tmask(npiglo,npjglo,nvpk))
+  PRINT *, 'Allocate temp'
   ALLOCATE ( temp (npiglo,npjglo))
-  ALLOCATE (e2t(npiglo,npjglo), e3t(npiglo,npjglo, nvpk))
-  ALLOCATE (weight(npiglo,npjglo))
+  PRINT *, 'Allocate e2t and e3t'
+  ALLOCATE ( e2t(npiglo,npjglo), e3t(npiglo,npjglo,nvpk))
+  PRINT *, 'Allocate weight'
+  ALLOCATE ( weight(npiglo,npjglo))
 
   IF (mxloption /= 0) THEN
-      ALLOCATE ( mxldep(npiglo,npjglo))
+      PRINT *, 'Allocate rmxldep'
+      ALLOCATE ( rmxldep(npiglo,npjglo))
   ENDIF
 
+  PRINT *, 'Allocate gdepw'
   ALLOCATE ( gdepw(npk), tim(npt))
   IF ( lfull ) ALLOCATE ( e31d(npk))
 
@@ -158,33 +166,34 @@ PROGRAM cdfheatc
      dvol = 0.d0
      dsum = 0.d0
      PRINT * ,'TIME : ', tim(jt)
-     IF (mxloption /= 0) THEN
-         mxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
-     ENDIF
+     IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
 
      DO jk = ikmin,ikmax
         ik = jk + ikmin -1
         ! Get velocities v at ik
         temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
         IF ( jt == 1 ) THEN
-            tmask(:,:, jk)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
+            PRINT *, 'Read mask'
+            tmask(:,:,jk)   = getvar(cn_fmsk, 'tmask', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
 
             ! get e3t at level ik ( ps...)
+            PRINT *, 'Load e3t'
             IF ( lfull ) THEN
                e3t(:,:, jk) = e31d(jk)
             ELSE
-               e3t(:,:, jk) = getvar(cn_fzgr, cn_ve3t, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
+               e3t(:,:, jk) = getvar(cn_fzgr, 'e3t_0', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
             ENDIF
         ENDIF
+        PRINT *, 'Compute weight'
         weight = e2t * tmask(:,:,jk)
 
         dsurf  = sum(weight)
         
         SELECT CASE ( mxloption ) 
          CASE ( 1 ) 
-            weight(:,:) = MAX ( 0., MIN( e3t(:,:, jk),mxldep-gdepw(ik) ) ) * weight
+            weight(:,:) = MAX ( 0., MIN( e3t(:,:, jk),rmxldep-gdepw(ik) ) ) * weight
          CASE ( -1 )
-            weight(:,:) = MIN ( e3t(:,:, jk), MAX( 0.,gdepw(ik)+e3t(:,:,jk)-mxldep ) ) * weight
+            weight(:,:) = MIN ( e3t(:,:, jk), MAX( 0.,gdepw(ik)+e3t(:,:,jk)-rmxldep ) ) * weight
          CASE ( 0 )
             weight(:,:)= e3t(:,:, jk) * weight
          END SELECT

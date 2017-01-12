@@ -1,6 +1,15 @@
 *~
 *.mod
 *.o
+<<<<<<< HEAD
+=======
+CMakeCache.txt
+CMakeFiles
+.metadata/
+cmake_install.cmake
+lib
+bin
+>>>>>>> develop-cmake
 *.so
 *.pyf
 *.pdf
@@ -8,9 +17,12 @@
 *.aux
 *.idx
 *.toc
+<<<<<<< HEAD
 CMakeCache.txt
 CMakeFiles
 .metadata/
 cmake_install.cmake
 lib
 bin
+=======
+>>>>>>> develop-cmake

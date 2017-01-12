@@ -47,6 +47,10 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_glamv='glamv', cn_gphiv='gphiv'   !:  glam gphi
   CHARACTER(LEN=256) :: cn_glamf='glamf', cn_gphif='gphif'   !:  glam gphi
 
+  ! Mask variables
+  CHARACTER(LEN=256) :: cn_tmask='tmask', cn_umask='umask'   !:  tmask, umask
+  CHARACTER(LEN=256) :: cn_vmask='vmask', cn_fmask='fmask'   !:  tmask, umask
+
   ! Generic mesh-mask file names  cn_f...
   CHARACTER(LEN=256) :: cn_fzgr='mesh_zgr.nc'
   CHARACTER(LEN=256) :: cn_fhgr='mesh_hgr.nc'
@@ -173,6 +177,8 @@ MODULE modCdfNames
     NAMELIST/nammetrics/ cn_vff
     NAMELIST/nammetrics/ cn_glamt, cn_glamu, cn_glamv, cn_glamf
     NAMELIST/nammetrics/ cn_gphit, cn_gphiu, cn_gphiv, cn_gphif
+    ! mask variables
+    NAMELIST/nammask/ cn_tmask, cn_umask, cn_vmask, cn_fmask
     !        mesh_zgr
     NAMELIST/nammetrics/ cn_gdept, cn_gdepw
     NAMELIST/nammetrics/ cn_hdept, cn_hdepw

@@ -55,8 +55,8 @@ PROGRAM cdfvita
    LOGICAL                                    :: lvertical = .FALSE.     ! vertical velocity  flag 
    LOGICAL                                    :: lperio    = .FALSE.     ! E_W periodicity flag 
    LOGICAL                                    :: lgeo      = .FALSE.     ! input U V files are geostrophic files
-   LOGICAL                                    :: lcub      = .FALSE.     ! input U V files are geostrophic files
-   LOGICAL                                    :: lnc4      = .FALSE.     ! input U V files are geostrophic files
+   LOGICAL                                    :: lcub      = .FALSE.     ! save U*U*U on  A grid
+   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
