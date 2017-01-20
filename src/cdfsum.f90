@@ -53,7 +53,8 @@ PROGRAM cdfsum
   CHARACTER(LEN=256)                        :: cldum               ! dummy string
   CHARACTER(LEN=256)                        :: cf_in               ! file name 
   CHARACTER(LEN=256)                        :: cf_out='cdfsum.nc'  ! output file name 
-  CHARACTER(LEN=256)                        :: cv_dep              ! depth name
+  CHARACTER(LEN=256)                        :: cv_dep              ! depth name in mesh_zgr
+  CHARACTER(LEN=256)                        :: cdep                ! depth name in output file
   CHARACTER(LEN=256)                        :: cv_in               ! variable name
   CHARACTER(LEN=20)                         :: cv_e1, cv_e2, cv_e3 ! name of the horiz/vert metrics
   CHARACTER(LEN=20)                         :: cv_msk              ! name of mask variable
@@ -193,30 +194,35 @@ PROGRAM cdfsum
      cv_e3  = 'e3t_ps'
      cv_msk = 'tmask'
      cv_dep = cn_gdept
+     cdep   = cn_vdeptht
   CASE ( 'U' )
      cv_e1  = cn_ve1u
      cv_e2  = cn_ve2u
      cv_e3  = 'e3t_ps'
      cv_msk = 'umask'
      cv_dep = cn_gdept
+     cdep   = cn_vdepthu
   CASE ( 'V' )
      cv_e1  = cn_ve1v
      cv_e2  = cn_ve2v
      cv_e3  = 'e3t_ps'
      cv_msk = 'vmask'
      cv_dep = cn_gdept
+     cdep   = cn_vdepthv
   CASE ( 'F' )
      cv_e1  = cn_ve1f
      cv_e2  = cn_ve2f
      cv_e3  = 'e3t_ps'
      cv_msk = 'fmask'
      cv_dep = cn_gdept
+     cdep   = cn_vdeptht
   CASE ( 'W' )
      cv_e1  = cn_ve1t
      cv_e2  = cn_ve2t
      cv_e3  = 'e3w_ps'
      cv_msk = 'tmask'
      cv_dep = cn_gdepw
+     cdep   = cn_vdepthw
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
      STOP
@@ -313,12 +319,12 @@ PROGRAM cdfsum
     stypvar(2)%cshort_name    = 'sum_3D'//TRIM(clshort_name)
     stypvar(2)%caxis          = 'T'
 
-    ncout = create      (cf_out,     'none',  1,     1  ,   nvpk, cdep=cv_dep)
-    ierr  = createvar   (ncout,      stypvar, 2    , ipk,   id_varout        )
-    ierr  = putheadervar(ncout,      cf_in,   1,     1, npk,                 &
-                    &  pnavlon=zdumlon, pnavlat=zdumlat,                     &
-                    &  pdep=gdep(ikmin:ikmax),                               &
-                    &  cdep=cv_dep                                           )
+    ncout = create      (cf_out,     'none',  1,     1  ,   nvpk, cdep=cdep)
+    ierr  = createvar   (ncout,      stypvar, 2    , ipk,   id_varout      )
+    ierr  = putheadervar(ncout,      cf_in,   1,     1, npkk,              &
+                    &  pnavlon=zdumlon, pnavlat=zdumlat,                   &
+                    &  pdep=gdep(ikmin:ikmax),                             &
+                    &  cdep=cdep                                           )
     tim   = getvar1d(cf_in, cn_vtimec, npt)
     ierr  = putvar1d(ncout,  tim,      npt, 'T')
   
