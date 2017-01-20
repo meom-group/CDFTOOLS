@@ -1482,32 +1482,36 @@
 
 <h2 id="cdfheatc">cdfheatc</h2>
 
-<pre><code>  usage :  cdfheatc  T-file ...
-     ... [imin imax jmin jmax kmin kmax] [-full] 
+<pre><code>  usage :  cdfheatc  -f T-file [-mxloption option] ...
+      [-zoom imin imax jmin jmax kmin kmax] [-full] [-o OUT-file]
        
       PURPOSE :
-         Computes the heat content in the specified area (Joules)
-         A sub-domain can be specified in option.
+         Computes the heat content in the specified 3D area (Joules)
        
       ARGUMENTS :
-        T-file : a file with temperature and salinity
+        -f T-file : name of the input file with temperature (and MLD if needed).
        
       OPTIONS :
-        [imin imax jmin jmax kmin kmax] : limit of a sub domain where
+        [-zoom imin imax jmin jmax kmin kmax] : limit of a sub domain where
                        the heat content will be calculated.
                     - if imin = 0 then ALL i are taken
                     - if jmin = 0 then ALL j are taken
                     - if kmin = 0 then ALL k are taken
         [-full ] : assume full step model output instead of default
                    partial steps.
-        [-mxloption ] : pass 1 to compute only in the mixed layer, -1 to exclude
-                        it from the calculations 
+        [-mxloption option]: option= 1 : compute only in the mixed layer,
+                             option=-1 : exclude mixed layer in the computation
+                             option= 0 : [Default], do not take care of mxl.
+        [-o OUT-file ] : specify netcdf output filename instead of heatc.nc
        
       REQUIRED FILES :
         Files mesh_hgr.nc, mesh_zgr.nc and mask.nc
        
       OUTPUT : 
-        netcdf file : to be done ....
+        netcdf file : heatc.nc unless -o option is used.
+               variables: heatc3d (Joules)
+                        : heatc(dep) (Joules) 
+                        : heatc3dpervol (Joules/m3) 
         Standard output</code></pre>
 
 <h2 id="cdfhflx">cdfhflx</h2>
