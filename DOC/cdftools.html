@@ -284,7 +284,8 @@
 <h2 id="cdf_xtrac_brokenline">cdf_xtrac_brokenline</h2>
 
 <pre><code>  usage :  cdf_xtrac_brokenline T-file U-file V-file [ice-file] ....
-     [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice]
+     [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice] 
+     [-vt] [-o ROOT_name]
        
       PURPOSE :
          This tool extracts model variables from model files for a geographical
@@ -329,15 +330,22 @@
        -ssh     : also save ssh along the broken line.
        -mld     : also save mld along the broken line.
        -ice     : also save ice properties along the broken line.
+       -vt      : also save products vt and vs along the broken line.
+       -o ROOT-name : specified the prefix to be used for the output file name.
+                  Note that it may be a good idea to include a separator 
+                  character such as _ at the end of the ROOT_name.
       
       REQUIRED FILES :
-       mesh_hgr.nc and mesh_zgr.nc must be in the current directory 
+       mesh_hgr.nc and mesh_zgr.nc in the current directory 
        
       OUTPUT : 
-        netcdf file : section_name.nc
+        netcdf file : &lt;section_name&gt;.nc (default). If -o option is used, the
+                      name will be &lt;ROOT-name&gt;&lt;section_name&gt;.nc
           variables : temperature, salinity, normal velocity, pseudo V metrics,
-                      mask, barotropic transport, bathymetry of velocity points.
-        ASCII file : section_name_section.dat usefull for cdftransport 
+                     mask, barotropic transport, bathymetry of velocity points.
+                     Additional variables can be set when using options.
+        ASCII file : &lt;section_name&gt;_section.dat usefull for cdftransport, gives
+                   the position in I,J of the geographical input points.
        
       SEE ALSO :
          cdftransport, cdfmoc, cdfmocsig. This tool replaces cdfovide.
