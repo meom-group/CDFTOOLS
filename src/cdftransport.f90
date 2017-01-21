@@ -109,6 +109,7 @@ PROGRAM cdftransport
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphif          ! latitudes of F points
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zu, zut, zus   ! Zonal velocities and uT uS
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zv, zvt, zvs   ! Meridional velocities and uT uS
+   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zt, zs         ! temperature and salinity
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdum           ! dummy (1x1) array for ncdf output
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zuobc, zvobc   ! arrays for OBC files (vertical slice)
    REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim            ! time counter
@@ -193,13 +194,14 @@ PROGRAM cdftransport
    LOGICAL                                     :: lobc    = .FALSE.   ! flag for obc input files
    LOGICAL                                     :: l_merid = .FALSE.   ! flag for meridional obc
    LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
+   LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
    narg= iargc()
    ! Print usage if no argument
    IF ( narg == 0 ) THEN
-      PRINT *,' usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc]...'
+      PRINT *,' usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc] [-TS] '
       PRINT *,'                  ... [VT-file] U-file V-file [-full] |-time jt] ...'
       PRINT *,'                  ... [-time jt ] [-zlimit limits of level]'
       PRINT *,'      '
@@ -227,9 +229,11 @@ PROGRAM cdftransport
       PRINT *,'                    the volume transport. This option implicitly set -noheat,'
       PRINT *,'                    and must be used before the file names.'
       PRINT *,'      [-obc ]    : indicates that input files are obc files (vertical slices)'
-      PRINT *,'                    Take care that for this case, mesh files must be adapted.'
-      PRINT *,'                    This option implicitly set -noheat, and must be used before'
-      PRINT *,'                    the file names.'
+      PRINT *,'                   Take care that for this case, mesh files must be adapted.'
+      PRINT *,'                   This option implicitly set -noheat, and must be used before'
+      PRINT *,'                   the file names.'
+      PRINT *,'      [ -TS ]    : Indicate that UT VT US VS will be recomputed from T U V '
+      PRINT *,'                   files. T-file is passed as the first file instead of VT '
       PRINT *,'      [-full ]   :  use for full step configurations.'
       PRINT *,'      [-time jt ]:  compute transports for time index jt. Default is 1.'
       PRINT *,'      [-zlimit list of depth] : Specify depths limits defining layers where the'
@@ -282,8 +286,11 @@ PROGRAM cdftransport
          lheat = .FALSE.
 
       CASE ('-obc' )
-         lobc   = .TRUE.
+         lobc  = .TRUE.
          lheat = .FALSE.
+   
+      CASE ( '-TS' ) 
+         l_tsfil = .TRUE.
 
       CASE ('-zlimit' )  ! this should be the last option on the line
          nxtarg = ijarg - 1
@@ -393,6 +400,9 @@ PROGRAM cdftransport
       ALLOCATE ( dtrpus(npiglo,npjglo,nclass), dtrpvs(npiglo,npjglo,nclass))
       ALLOCATE ( dheatrpsum(nclass), dsaltrpsum(nclass)     )
       ALLOCATE ( dheatallegcl(nclass), dsaltallegcl(nclass) )
+      IF ( l_tsfil ) THEN
+        ALLOCATE (zt(npiglo+1,npjglo+1), zs(npiglo+1, npjglo+1) )
+      ENDIF
    ENDIF
    !
    ALLOCATE ( e1v(npiglo,npjglo),e3v(npiglo,npjglo)       )
@@ -479,10 +489,20 @@ PROGRAM cdftransport
             zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
             zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
             IF (lheat) THEN
-               zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
-               zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
-               zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
-               zvs(:,:) = getvar(cf_tfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
+               IF ( l_tsfil ) THEN
+                 zt(:,:) = 0. ; zs(:,:) = 0.
+                 zt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
+                 zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
+                 zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo))
+                 zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo))
+                 zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  1:npjglo+1))
+                 zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  1:npjglo+1))
+               ELSE
+                 zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
+                 zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
+                 zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
+                 zvs(:,:) = getvar(cf_tfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
+               ENDIF
             ENDIF
          ENDIF
 
