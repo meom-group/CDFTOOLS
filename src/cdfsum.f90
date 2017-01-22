@@ -58,6 +58,7 @@ PROGRAM cdfsum
   CHARACTER(LEN=256)                        :: cv_in               ! variable name
   CHARACTER(LEN=20)                         :: cv_e1, cv_e2, cv_e3 ! name of the horiz/vert metrics
   CHARACTER(LEN=20)                         :: cv_msk              ! name of mask variable
+  CHARACTER(LEN=20)                         :: cl_vmsk             ! name of external mask variable (-M option)
   CHARACTER(LEN=20)                         :: cvartype            ! variable type
   CHARACTER(LEN=256)                        :: clunits            ! attribute of output file : units
   CHARACTER(LEN=256)                        :: cllong_name        !     "      long name
@@ -69,6 +70,7 @@ PROGRAM cdfsum
   LOGICAL                                   :: lforcing            ! forcing flag
   LOGICAL                                   :: lchk                ! flag for missing files
   LOGICAL                                   :: lerror=.FALSE.      ! flag for missing arguments
+  LOGICAL                                   :: lfmsk=.FALSE.       ! flag for using non standard mask file
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -76,6 +78,7 @@ PROGRAM cdfsum
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfsum -f IN-file -v IN-var -p T| U | V | F | W  ... '
      PRINT *,'          ... [-zoom imin imax jmin jmax kmin kmax] [-full ] [-o OUT-file] '
+     PRINT *,'          ... [-M MSK-file VAR-mask ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the sum value of the field (3D, weighted)' 
@@ -93,9 +96,16 @@ PROGRAM cdfsum
      PRINT *,'              if kmin=0 all k are taken'
      PRINT *,'       [ -full : ] Use full steps instead of default partial steps'
      PRINT *,'       [-o OUT-file ] : name of the output file instead of', TRIM(cf_out)
+     PRINT *,'       [-M MSK-file VAR-mask] : Allow the use of a non standard mask file '
+     PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and the variable'
+     PRINT *,'              associated with the grid point set by -p argument.'
+     PRINT *,'              This option is a usefull alternative to -zoom option, when the '
+     PRINT *,'              area of interest is not ''box-like'' '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
-     PRINT *,'      ', TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
+     PRINT *,'      ', TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk),'. If'
+     PRINT *,'         -M option is used, the specified mask file is required instead '
+     PRINT *,'         ', TRIM(cn_fmsk)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Standard output.'
@@ -125,6 +135,9 @@ PROGRAM cdfsum
                         CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ijmax
                         CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ikmin
                         CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ikmax
+     CASE ( '-M' ) ;    lfmsk =.TRUE.
+                        CALL getarg(ijarg, cn_fmsk ) ; ijarg=ijarg+1 
+                        CALL getarg(ijarg, cl_vmsk ) ; ijarg=ijarg+1 
      CASE DEFAULT 
          PRINT *,' Option ', TRIM(cldum),' not understood ...'
          STOP
@@ -227,6 +240,9 @@ PROGRAM cdfsum
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
      STOP
   END SELECT
+
+  ! set cv_mask to on-line specified name if -M option used
+  IF ( lfmsk ) cv_msk = cl_vmsk
 
   e1(:,:) = getvar  (cn_fhgr, cv_e1, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   e2(:,:) = getvar  (cn_fhgr, cv_e2, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
