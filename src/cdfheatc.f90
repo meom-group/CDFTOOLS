@@ -37,7 +37,6 @@ PROGRAM cdfheatc
   REAL(KIND=4), PARAMETER                   :: pprho0=1020.        ! water density (kg/m3)
   REAL(KIND=4), PARAMETER                   :: ppcp=4000.          ! calorific capacity (J/kg/m3)
 
-  REAL(KIND=4), DIMENSION(1,1)              :: zdum                ! working pseudo array for nc output
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1t, e2t            ! horizontal metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp                ! temperature
@@ -52,12 +51,14 @@ PROGRAM cdfheatc
   REAL(KIND=8)                              :: dvol2d              ! volume of a layer
   REAL(KIND=8)                              :: dsum2d              ! weigthed sum per layer
   REAL(KIND=8)                              :: dsurf               ! surface of a layer
+  REAL(KIND=8), DIMENSION(1,1)              :: dl_dum              ! working pseudo array for nc output
 
   TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar          ! structure for attributes
 
   CHARACTER(LEN=256)                        :: cf_tfil             ! input gridT file
   CHARACTER(LEN=256)                        :: cf_out='heatc.nc'   ! netcdf output file
   CHARACTER(LEN=256)                        :: cldum               ! dummy character variable
+  CHARACTER(LEN=256)                        :: cv_msk='tmask'      ! variable for masking
 
   LOGICAL                                   :: lfull=.FALSE.       ! flag for full step computation
   LOGICAL                                   :: lchk                ! flag for missing files
@@ -70,6 +71,7 @@ PROGRAM cdfheatc
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfheatc  -f T-file [-mxloption option] ...'
      PRINT *,'     [-zoom imin imax jmin jmax kmin kmax] [-full] [-o OUT-file]'
+     PRINT *,'     [-M MSK-file VAR-mask ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Computes the heat content in the specified 3D area (Joules)'
@@ -89,6 +91,10 @@ PROGRAM cdfheatc
      PRINT *,'                            option=-1 : exclude mixed layer in the computation'
      PRINT *,'                            option= 0 : [Default], do not take care of mxl.'
      PRINT *,'       [-o OUT-file ] : specify netcdf output filename instead of ',TRIM(cf_out)
+     PRINT *,'       [-M MSK-file VAR-mask] : Allow the use of a non standard mask file '
+     PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and ',TRIM(cv_msk) 
+     PRINT *,'              This option is a usefull alternative to -zoom option, when the '
+     PRINT *,'              area of interest is not ''box-like'' '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
@@ -99,6 +105,9 @@ PROGRAM cdfheatc
      PRINT *,'                       : heatc(dep) (Joules) '
      PRINT *,'                       : heatc3dpervol (Joules/m3) '
      PRINT *,'       Standard output'
+     PRINT *,'       '
+     PRINT *,'      SEE ALSO: '
+     PRINT *,'          cdfpolymask '
      STOP
   ENDIF
 
@@ -117,6 +126,9 @@ PROGRAM cdfheatc
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ( '-M' )   
+        CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1 
+        CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
      CASE DEFAULT
         PRINT *,' A single argument is considered as a T-file'
         CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1 
@@ -184,9 +196,9 @@ PROGRAM cdfheatc
 
      DO jk = 1,nvpk
         ik = jk + ikmin -1
-        ! Get velocities v at ik
+        ! Get temperatures temp at ik
         temp( :,:)   = getvar(cf_tfil, cn_votemper, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
-        tmask(:,:)   = getvar(cn_fmsk, 'tmask',     ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )           
+        tmask(:,:)   = getvar(cn_fmsk, cv_msk,      ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )           
 
         ! get e3t at level ik ( ps...)
         IF ( lfull ) THEN
@@ -214,17 +226,17 @@ PROGRAM cdfheatc
         ELSE
            PRINT *, ' No points in the water at level ',ik,'(',gdepw(ik),' m) '
         ENDIF
-        zdum(1,1) = pprho0*ppcp*dsum2d
-        ierr = putvar(ncout, id_varout(jp_hc2d), zdum(:,:),jk, 1, 1, ktime=jt )
+        dl_dum(1,1) = pprho0*ppcp*dsum2d
+        ierr = putvar(ncout, id_varout(jp_hc2d), dl_dum(:,:),jk, 1, 1, ktime=jt )
 
      END DO
      
      PRINT * ,' Total Heat content        : ', pprho0*ppcp*dsum ,' Joules'
      PRINT * ,' Total Heat content/volume : ', pprho0*ppcp*dsum/dvol ,' Joules/m3 '
-     zdum(1,1)=pprho0*ppcp*dsum
-     ierr = putvar(ncout, id_varout(jp_hc3d), zdum(:,:),1, 1, 1, ktime=jt )
-     zdum(1,1)=zdum(1,1)/dvol
-     ierr = putvar(ncout, id_varout(jp_hcvol), zdum(:,:),1, 1, 1, ktime=jt )
+     dl_dum(1,1)=pprho0*ppcp*dsum
+     ierr = putvar(ncout, id_varout(jp_hc3d), dl_dum(:,:),1, 1, 1, ktime=jt )
+     dl_dum(1,1)=dl_dum(1,1)/dvol
+     ierr = putvar(ncout, id_varout(jp_hcvol), dl_dum(:,:),1, 1, 1, ktime=jt )
   END DO
   ierr = closeout(ncout )
 CONTAINS
@@ -239,7 +251,6 @@ CONTAINS
     ! indeed 4 scalar but that will be considered as (x,y,t) ie (1,1,t)
     INTEGER(KIND=4) :: ivar=3, ierr
     REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zdumlon, zdumlat
-!  INTEGER(KIND=4), PARAMETER                :: jp_hc3d=1; jp_hc2d=2 ; jp_hcvol=3
     !!----------------------------------------------------------------------
     ALLOCATE(stypvar(ivar) )
     ALLOCATE(    ipk(ivar), id_varout(ivar) )
@@ -254,6 +265,7 @@ CONTAINS
     stypvar%savelog10         = 0.
     stypvar%conline_operation = 'N/A'
     stypvar%caxis             = 'T'
+    stypvar%cprecision        = 'r8'
 
     stypvar(jp_hc3d)%cname          = 'heatc3d'
     stypvar(jp_hc3d)%cunits         = 'Joules'
