@@ -426,13 +426,25 @@ PROGRAM cdftransport
    !
    ! read metrics and grid position
    e1v(:,:)   = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
-   e2u(:,:)   = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
+   IF ( l_self ) THEN
+     e2u(:,:)   = 1.  ! dummy value, not used
+     glamf(:,:) = 1.
+     gphif(:,:) = 1.
+     ! use e31d for temporary calculation
+     e31d(:)    =  getvar1d(cf_tfil, cn_vdeptht, npk)
+     gdepw(1)   = 0.
+     gdepw(2:npk) = 0.5 * (e31d(1:npk-1) + e31d(2:npk)) ! This is just a proxy for gdepw
+                                                        ! max error ~ 1m for 46 lev
+     e31d(:)    = 1.  ! set dummy value for e31d 
+   ELSE
+     e2u(:,:)   = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
 
-   glamf(:,:) = getvar(cn_fhgr, cn_glamf, 1,npiglo, npjglo)
-   gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1,npiglo, npjglo)
+     glamf(:,:) = getvar(cn_fhgr, cn_glamf, 1,npiglo, npjglo)
+     gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1,npiglo, npjglo)
 
-   gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
-   e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk) ! used only for full step
+     gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+     e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk) ! used only for full step
+   ENDIF
 
    ! look for nearest level to imeter and setup ilev0 and ilev1 (t-index of class limit)
    ik = 1
@@ -498,21 +510,30 @@ PROGRAM cdftransport
             ELSE IF ( l_merid ) THEN ; zu(1,:)=zuobc(:,jk) ; zv(1,:)=zvobc(:,jk) 
             ENDIF
          ELSE
-            zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
+            IF ( l_self ) THEN
+               zu(:,:) = 0.
+            ELSE
+               zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
+            ENDIF
             zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
             IF (lheat) THEN
                IF ( l_tsfil ) THEN
                  zt(:,:) = 0. ; zs(:,:) = 0.
                  zt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
-                 zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
+                 zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
                  zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo  ))
                  zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo  ))
                  zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  2:npjglo+1))
                  zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  2:npjglo+1))
                ELSE
-                 zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
+                 IF ( l_self ) THEN
+                     zut(:,:) = 0.
+                     zus(:,:) = 0.
+                 ELSE
+                     zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
+                     zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
+                 ENDIF
                  zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
-                 zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
                  zvs(:,:) = getvar(cf_tfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
                ENDIF
             ENDIF
@@ -523,8 +544,13 @@ PROGRAM cdftransport
             e3v(:,:) = e31d(jk)
             e3u(:,:) = e31d(jk)
          ELSE
-            e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-            e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+            IF ( l_self) THEN
+               e3u(:,:) = 1. !dummy value
+               e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.FALSE.)  ! In broken line name is e3v_ps
+            ELSE
+               e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+               e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+            ENDIF
          ENDIF
 
          dwku (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
