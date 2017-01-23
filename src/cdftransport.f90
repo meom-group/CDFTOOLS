@@ -195,6 +195,7 @@ PROGRAM cdftransport
    LOGICAL                                     :: l_merid = .FALSE.   ! flag for meridional obc
    LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
    LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
+   LOGICAL                                     :: l_self  = .FALSE.   ! flag for self mesh/mask files in the input
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
@@ -203,7 +204,7 @@ PROGRAM cdftransport
    IF ( narg == 0 ) THEN
       PRINT *,' usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc] [-TS] '
       PRINT *,'                  ... [VT-file] U-file V-file [-full] |-time jt] ...'
-      PRINT *,'                  ... [-time jt ] [-zlimit limits of level]'
+      PRINT *,'                  ... [-time jt ] [-zlimit limits of level] [-self]'
       PRINT *,'      '
       PRINT *,'    PURPOSE :'
       PRINT *,'      Compute the transports accross a section.'
@@ -240,9 +241,12 @@ PROGRAM cdftransport
       PRINT *,'                    transports will be computed. If not used, the transports '
       PRINT *,'                    are computed for the whole water column. If used, this '
       PRINT *,'                    option must be the last on the command line.'  
+      PRINT *,'      [ -self ] : This option indicates that input files corresponds to a '
+      PRINT *,'                  broken line, hence  data files hold the metrics.'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'      Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' must be in the current directory.'
+      PRINT *,'            unless -self option is used.'
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
       PRINT *,'      - Standard output '
@@ -253,7 +257,7 @@ PROGRAM cdftransport
       PRINT *,'          from section name.'
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
-      PRINT *,'       cdfsigtrp'
+      PRINT *,'       cdfsigtrp cdf_xtrac_brokenline'
       PRINT *,'      '
       STOP
    ENDIF
@@ -292,6 +296,9 @@ PROGRAM cdftransport
       CASE ( '-TS' ) 
          l_tsfil = .TRUE.
 
+      CASE ( '-self' ) 
+         l_self = .TRUE.
+
       CASE ('-zlimit' )  ! this should be the last option on the line
          nxtarg = ijarg - 1
          nclass = narg - nxtarg + 1
@@ -309,6 +316,11 @@ PROGRAM cdftransport
          CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1 
       END SELECT
    END DO
+
+   IF ( l_self ) THEN
+       cn_fzgr = cf_vfil
+       cn_fhgr = cf_vfil
+   ENDIF
 
    ! checking if all required files are available
    lchk = lchk .OR. chkfile(cn_fzgr)
@@ -493,10 +505,10 @@ PROGRAM cdftransport
                  zt(:,:) = 0. ; zs(:,:) = 0.
                  zt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
                  zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
-                 zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo))
-                 zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo))
-                 zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  1:npjglo+1))
-                 zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  1:npjglo+1))
+                 zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo  ))
+                 zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo  )).
+                 zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  2:npjglo+1)).
+                 zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  2:npjglo+1)).
                ELSE
                  zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
                  zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
