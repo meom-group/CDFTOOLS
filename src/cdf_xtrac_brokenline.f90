@@ -624,19 +624,19 @@ PROGRAM cdf_xtract_brokenline
             END DO
 
             ! output section variable at level jk, in separated output section files
-            ierr = putvar (ncout(jsec), id_varout(np_tem), tempersec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
-            ierr = putvar (ncout(jsec), id_varout(np_sal), salinesec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
-            ierr = putvar (ncout(jsec), id_varout(np_una), uzonalsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
-            ierr = putvar (ncout(jsec), id_varout(np_vna), vmeridsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_tem), tempersec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_sal), salinesec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_una), uzonalsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_vna), vmeridsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
             ! along-track normal velocity, horiz. and vert. resolution, and mask
             zvmod(:,1)= uzonalsec(:,jk) + vmeridsec(:,jk)
-            ierr = putvar (ncout(jsec), id_varout(np_vmod), zvmod(:,1),              jk, npsec(jsec)-1, 1, ktime=jt ) 
-            IF (ll_ssh) ierr = putvar (ncout(jsec), id_varout(np_ssh), sshsec (:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_mld) ierr = putvar (ncout(jsec), id_varout(np_mld), rmldsec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icethick), ricethicksec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icefra), ricefrasec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (lvt )   ierr = putvar (ncout(jsec), id_varout(np_vt ), zvmod(:,1)*tempersec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (lvt )   ierr = putvar (ncout(jsec), id_varout(np_vs ), zvmod(:,1)*salinesec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_vmod    ), zvmod(:,1),                jk, npsec(jsec)-1, 1, ktime=jt ) 
+            IF (ll_ssh) ierr = putvar (ncout(jsec), id_varout(np_ssh     ), sshsec (:,jk),              1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_mld) ierr = putvar (ncout(jsec), id_varout(np_mld     ), rmldsec(:,jk),              1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icethick), ricethicksec(:,jk),         1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icefra  ), ricefrasec(:,jk),           1, npsec(jsec)-1, 1, ktime=jt )
+            IF (lvt   ) ierr = putvar (ncout(jsec), id_varout(np_vt      ), zvmod(:,1)*tempersec(:,jk),jk, npsec(jsec)-1, 1, ktime=jt )
+            IF (lvt   ) ierr = putvar (ncout(jsec), id_varout(np_vs      ), zvmod(:,1)*salinesec(:,jk),jk, npsec(jsec)-1, 1, ktime=jt )
 
             IF ( jt == 1 ) THEN   ! output of time independent variables at first time step only
                ! save a mask of the section
@@ -883,7 +883,7 @@ CONTAINS
          stypvar(ivar)%clong_name  = 'icethick along '//TRIM(csection(ksec))//' section'
          stypvar(ivar)%cshort_name = cn_iicethic
          stypvar(ivar)%caxis       = 'TX'
-         ipk(ivar)                 = 1     
+         ipk(ivar)                 = 1
          ivar = ivar + 1
    
          np_icefra = ivar
@@ -902,23 +902,23 @@ CONTAINS
          np_vt = ivar
          stypvar(ivar)%cname       = cn_vomevt
          stypvar(ivar)%cunits      = 'C.m/s'
-         stypvar(ivar)%valid_min   = -10000.
+         stypvar(ivar)%valid_min   = -1000000.
          stypvar(ivar)%valid_max   = 1000000.
          stypvar(ivar)%clong_name  = 'VT product along '//TRIM(csection(ksec))//' section'
          stypvar(ivar)%cshort_name = cn_vomevt
-         stypvar(ivar)%caxis       = 'TX'
-         ipk(ivar)                 = 1
+         stypvar(ivar)%caxis       = 'TZX'
+         ipk(ivar)                 = npk
          ivar = ivar + 1
 
          np_vs = ivar
          stypvar(ivar)%cname       = cn_vomevs
-         stypvar(ivar)%cunits      = 'C.m/s'
-         stypvar(ivar)%valid_min   = -10000.
+         stypvar(ivar)%cunits      = 'PSU.m/s'
+         stypvar(ivar)%valid_min   = -1000000.
          stypvar(ivar)%valid_max   = 1000000.
          stypvar(ivar)%clong_name  = 'VS product along '//TRIM(csection(ksec))//' section'
          stypvar(ivar)%cshort_name = cn_vomevs
-         stypvar(ivar)%caxis       = 'TX'
-         ipk(ivar)                 = 1
+         stypvar(ivar)%caxis       = 'TZX'
+         ipk(ivar)                 = npk
          ivar = ivar + 1
       ENDIF
 
