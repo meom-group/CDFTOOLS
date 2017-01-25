@@ -159,8 +159,8 @@ add_executable(cdfisf_fill cdfisf_fill.f90)
 target_link_libraries (cdfisf_fill modutils)
 add_executable(cdfisf_poolchk cdfisf_poolchk.f90)
 target_link_libraries (cdfisf_poolchk modutils)
-# add_executable(cdficbclimato cdficbclimato.f90)
-# add_executable(cdficbdiags cdficbdiags.f90)
+add_executable(cdficb_clim cdficb_clim.f90)
+add_executable(cdficb_diags cdficb_diags.f90)
 
 link_libraries(eos)
 
