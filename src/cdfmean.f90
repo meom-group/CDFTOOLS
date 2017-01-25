@@ -93,7 +93,7 @@ PROGRAM cdfmean
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmean  IN-file IN-var T|U|V|F|W [imin imax jmin jmax kmin kmax]'
-     PRINT *,'       ... [-full] [-var] [-zeromean] '
+     PRINT *,'       ... [-full] [-var] [-zeromean] [-o OUT-file] [-oz ZEROMEAN-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Computes the mean value of the field (3D, weighted). For 3D fields,'
@@ -115,6 +115,9 @@ PROGRAM cdfmean
      PRINT *,'                   partial steps.'
      PRINT *,'       [ -var ]  : also compute the spatial variance of cdfvar '
      PRINT *,'       [ -zeromean ] : create a file with cdfvar having a zero spatial mean.'
+     PRINT *,'       [ -o OUT-file] : specify the name of the output file instead of ',TRIM(cf_ncout)
+     PRINT *,'       [ -zo ZEROMEAN-file] : specify the name of the output file for option '
+     PRINT *,'                   -zeromean, instead of ', TRIM(cf_zerom)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ', TRIM(cn_fhgr),', ', TRIM(cn_fzgr),', ', TRIM(cn_fmsk)
@@ -132,8 +135,8 @@ PROGRAM cdfmean
   ENDIF
 
   ! Open standard output with recl=256 to avoid wrapping of long lines (ifort)
-  OPEN(6,FORM='FORMATTED',RECL=256)  ! ifort
-  !  OPEN(6,FORM='FORMATTED')          ! gfortran
+  ! OPEN(6,FORM='FORMATTED',RECL=256)  ! ifort
+  OPEN(6,FORM='FORMATTED')          ! gfortran
 
   cglobal = 'Partial step computation'
   ijarg = 1 ; ii = 0
@@ -147,6 +150,10 @@ PROGRAM cdfmean
         lvar = .true. 
      CASE ('-zeromean' )
         lzeromean = .true. 
+     CASE ('-o' )
+        CALL getarg(ijarg, cf_ncout ) ; ijarg = ijarg + 1
+     CASE ('-oz' )
+        CALL getarg(ijarg, cf_zerom ) ; ijarg = ijarg + 1
      CASE DEFAULT 
         ii=ii+1
         SELECT CASE (ii) 
@@ -347,7 +354,7 @@ PROGRAM cdfmean
         ELSE
           e3(:,:) = getvar(cn_fzgr, cv_e3,    ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
         ENDIF
-        ! 
+        !
         dsurf  = SUM(DBLE(          e1 * e2      * zmask))
         dvol2d = SUM(DBLE(          e1 * e2 * e3 * zmask))
         dvol   = dvol + dvol2d
@@ -453,5 +460,6 @@ PROGRAM cdfmean
   ierr=closeout(ncout              )
  
   ENDIF
+
 
 END PROGRAM cdfmean

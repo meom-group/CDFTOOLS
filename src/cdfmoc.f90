@@ -545,11 +545,11 @@ PROGRAM cdfmoc
        INTEGER(KIND=4), INTENT(in)  :: kk  ! level to work with
        REAL(KIND=4), DIMENSION(npiglo,npjglo) :: get_e3v
 
-       ivmask(:,:) = getvar(cn_fmsk, 'vmask', jk, npiglo, npjglo)
+       ivmask(:,:) = getvar(cn_fmsk, 'vmask', kk, npiglo, npjglo)
        IF ( lfull ) THEN
           get_e3v(:,:) = e31d(jk)
        ELSE
-          get_e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+          get_e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', kk, npiglo, npjglo, ldiom=.TRUE.)
        ENDIF
        get_e3v(:,:) = get_e3v(:,:) * ivmask(:,:)
 

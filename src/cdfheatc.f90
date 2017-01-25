@@ -90,7 +90,6 @@ PROGRAM cdfheatc
      STOP
   ENDIF
 
-  PRINT *,'I am debugging the correct one'
   ijarg = 1 
   CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
 
