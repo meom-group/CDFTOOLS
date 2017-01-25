@@ -1,6 +1,6 @@
-PROGRAM cdficbclimato
+PROGRAM cdficb_clim
   !!======================================================================
-  !!                     ***  PROGRAM  cdficbclimato  ***
+  !!                     ***  PROGRAM  cdficb_clim  ***
   !!=====================================================================
   !!  ** Purpose : Compute the iceberg mass and melt
   !!
@@ -42,7 +42,7 @@ PROGRAM cdficbclimato
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdficbclimato 12-ICB-monthly-means-files'
+     PRINT *,' usage : cdficb_clim 12-ICB-monthly-means-files'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the 2D field of icb mass and icb melt.'
@@ -171,4 +171,4 @@ PROGRAM cdficbclimato
   END DO ! time loop
   ierr = closeout(ncout)
 
-END PROGRAM cdficbclimato
+END PROGRAM cdficb_clim

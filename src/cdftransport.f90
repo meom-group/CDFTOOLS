@@ -109,6 +109,7 @@ PROGRAM cdftransport
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphif          ! latitudes of F points
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zu, zut, zus   ! Zonal velocities and uT uS
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zv, zvt, zvs   ! Meridional velocities and uT uS
+   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zt, zs         ! temperature and salinity
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdum           ! dummy (1x1) array for ncdf output
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zuobc, zvobc   ! arrays for OBC files (vertical slice)
    REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim            ! time counter
@@ -193,15 +194,17 @@ PROGRAM cdftransport
    LOGICAL                                     :: lobc    = .FALSE.   ! flag for obc input files
    LOGICAL                                     :: l_merid = .FALSE.   ! flag for meridional obc
    LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
+   LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
+   LOGICAL                                     :: l_self  = .FALSE.   ! flag for self mesh/mask files in the input
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
    narg= iargc()
    ! Print usage if no argument
    IF ( narg == 0 ) THEN
-      PRINT *,' usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc]...'
+      PRINT *,' usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc] [-TS] '
       PRINT *,'                  ... [VT-file] U-file V-file [-full] |-time jt] ...'
-      PRINT *,'                  ... [-time jt ] [-zlimit limits of level]'
+      PRINT *,'                  ... [-time jt ] [-zlimit limits of level] [-self]'
       PRINT *,'      '
       PRINT *,'    PURPOSE :'
       PRINT *,'      Compute the transports accross a section.'
@@ -227,18 +230,23 @@ PROGRAM cdftransport
       PRINT *,'                    the volume transport. This option implicitly set -noheat,'
       PRINT *,'                    and must be used before the file names.'
       PRINT *,'      [-obc ]    : indicates that input files are obc files (vertical slices)'
-      PRINT *,'                    Take care that for this case, mesh files must be adapted.'
-      PRINT *,'                    This option implicitly set -noheat, and must be used before'
-      PRINT *,'                    the file names.'
+      PRINT *,'                   Take care that for this case, mesh files must be adapted.'
+      PRINT *,'                   This option implicitly set -noheat, and must be used before'
+      PRINT *,'                   the file names.'
+      PRINT *,'      [ -TS ]    : Indicate that UT VT US VS will be recomputed from T U V '
+      PRINT *,'                   files. T-file is passed as the first file instead of VT '
       PRINT *,'      [-full ]   :  use for full step configurations.'
       PRINT *,'      [-time jt ]:  compute transports for time index jt. Default is 1.'
       PRINT *,'      [-zlimit list of depth] : Specify depths limits defining layers where the'
       PRINT *,'                    transports will be computed. If not used, the transports '
       PRINT *,'                    are computed for the whole water column. If used, this '
       PRINT *,'                    option must be the last on the command line.'  
+      PRINT *,'      [ -self ] : This option indicates that input files corresponds to a '
+      PRINT *,'                  broken line, hence  data files hold the metrics.'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'      Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' must be in the current directory.'
+      PRINT *,'            unless -self option is used.'
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
       PRINT *,'      - Standard output '
@@ -249,7 +257,7 @@ PROGRAM cdftransport
       PRINT *,'          from section name.'
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
-      PRINT *,'       cdfsigtrp'
+      PRINT *,'       cdfsigtrp cdf_xtrac_brokenline'
       PRINT *,'      '
       STOP
    ENDIF
@@ -282,8 +290,14 @@ PROGRAM cdftransport
          lheat = .FALSE.
 
       CASE ('-obc' )
-         lobc   = .TRUE.
+         lobc  = .TRUE.
          lheat = .FALSE.
+   
+      CASE ( '-TS' ) 
+         l_tsfil = .TRUE.
+
+      CASE ( '-self' ) 
+         l_self = .TRUE.
 
       CASE ('-zlimit' )  ! this should be the last option on the line
          nxtarg = ijarg - 1
@@ -302,6 +316,11 @@ PROGRAM cdftransport
          CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1 
       END SELECT
    END DO
+
+   IF ( l_self ) THEN
+       cn_fzgr = cf_vfil
+       cn_fhgr = cf_vfil
+   ENDIF
 
    ! checking if all required files are available
    lchk = lchk .OR. chkfile(cn_fzgr)
@@ -393,6 +412,9 @@ PROGRAM cdftransport
       ALLOCATE ( dtrpus(npiglo,npjglo,nclass), dtrpvs(npiglo,npjglo,nclass))
       ALLOCATE ( dheatrpsum(nclass), dsaltrpsum(nclass)     )
       ALLOCATE ( dheatallegcl(nclass), dsaltallegcl(nclass) )
+      IF ( l_tsfil ) THEN
+        ALLOCATE (zt(npiglo+1,npjglo+1), zs(npiglo+1, npjglo+1) )
+      ENDIF
    ENDIF
    !
    ALLOCATE ( e1v(npiglo,npjglo),e3v(npiglo,npjglo)       )
@@ -404,13 +426,25 @@ PROGRAM cdftransport
    !
    ! read metrics and grid position
    e1v(:,:)   = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
-   e2u(:,:)   = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
+   IF ( l_self ) THEN
+     e2u(:,:)   = 1.  ! dummy value, not used
+     glamf(:,:) = 1.
+     gphif(:,:) = 1.
+     ! use e31d for temporary calculation
+     e31d(:)    =  getvar1d(cf_tfil, cn_vdeptht, npk)
+     gdepw(1)   = 0.
+     gdepw(2:npk) = 0.5 * (e31d(1:npk-1) + e31d(2:npk)) ! This is just a proxy for gdepw
+                                                        ! max error ~ 1m for 46 lev
+     e31d(:)    = 1.  ! set dummy value for e31d 
+   ELSE
+     e2u(:,:)   = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
 
-   glamf(:,:) = getvar(cn_fhgr, cn_glamf, 1,npiglo, npjglo)
-   gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1,npiglo, npjglo)
+     glamf(:,:) = getvar(cn_fhgr, cn_glamf, 1,npiglo, npjglo)
+     gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1,npiglo, npjglo)
 
-   gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
-   e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk) ! used only for full step
+     gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+     e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk) ! used only for full step
+   ENDIF
 
    ! look for nearest level to imeter and setup ilev0 and ilev1 (t-index of class limit)
    ik = 1
@@ -476,13 +510,32 @@ PROGRAM cdftransport
             ELSE IF ( l_merid ) THEN ; zu(1,:)=zuobc(:,jk) ; zv(1,:)=zvobc(:,jk) 
             ENDIF
          ELSE
-            zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
+            IF ( l_self ) THEN
+               zu(:,:) = 0.
+            ELSE
+               zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
+            ENDIF
             zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
             IF (lheat) THEN
-               zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
-               zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
-               zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
-               zvs(:,:) = getvar(cf_tfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
+               IF ( l_tsfil ) THEN
+                 zt(:,:) = 0. ; zs(:,:) = 0.
+                 zt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
+                 zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
+                 zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo  ))
+                 zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo  ))
+                 zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  2:npjglo+1))
+                 zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  2:npjglo+1))
+               ELSE
+                 IF ( l_self ) THEN
+                     zut(:,:) = 0.
+                     zus(:,:) = 0.
+                 ELSE
+                     zut(:,:) = getvar(cf_tfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
+                     zus(:,:) = getvar(cf_tfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
+                 ENDIF
+                 zvt(:,:) = getvar(cf_tfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
+                 zvs(:,:) = getvar(cf_tfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
+               ENDIF
             ENDIF
          ENDIF
 
@@ -491,8 +544,13 @@ PROGRAM cdftransport
             e3v(:,:) = e31d(jk)
             e3u(:,:) = e31d(jk)
          ELSE
-            e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-            e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+            IF ( l_self) THEN
+               e3u(:,:) = 1. !dummy value
+               e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.FALSE.)  ! In broken line name is e3v_ps
+            ELSE
+               e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+               e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+            ENDIF
          ENDIF
 
          dwku (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0

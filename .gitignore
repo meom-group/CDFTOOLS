@@ -15,3 +15,6 @@ bin
 *.aux
 *.idx
 *.toc
+cdftools.1
+*.opod
+*.tmp

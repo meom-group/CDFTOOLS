@@ -1,6 +1,6 @@
-PROGRAM cdficbdiag
+PROGRAM cdficb_diags
   !!======================================================================
-  !!                     ***  PROGRAM  cdficbdiag  ***
+  !!                     ***  PROGRAM  cdficb_diags  ***
   !!=====================================================================
   !!  ** Purpose : Compute the Ice volume, area and extend for each 
   !!               hemisphere
@@ -15,7 +15,7 @@ PROGRAM cdficbdiag
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_3.0 , MEOM 2011
-  !! $Id: cdficbdiags.f90 759 2014-07-21 22:01:28Z molines $
+  !! $Id: cdficb_diags.f90 759 2014-07-21 22:01:28Z molines $
   !! Copyright (c) 2010, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
@@ -56,7 +56,7 @@ PROGRAM cdficbdiag
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdficbdiag ICB-file  '
+     PRINT *,' usage : cdficb_diags ICB-file  '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the spatially integrated icb mass and melt flux.'
@@ -201,4 +201,4 @@ PROGRAM cdficbdiag
   END DO ! time loop
   ierr = closeout(ncout)
 
-END PROGRAM cdficbdiag
+END PROGRAM cdficb_diags
