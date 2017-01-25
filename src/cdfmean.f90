@@ -64,7 +64,7 @@ PROGRAM cdfmean
   CHARACTER(LEN=256)                         :: cv_dep             ! deptht name
   CHARACTER(LEN=20)                          :: cv_e1, cv_e2       ! horizontal metrics names
   CHARACTER(LEN=20)                          :: cv_e3, cv_e31d     ! vertical metrics names
-  CHARACTER(LEN=20)                          :: cv_msk             ! mask variable name
+  CHARACTER(LEN=20)                          :: cv_msk = ''        ! mask variable name
   CHARACTER(LEN=256)                         :: cf_in              ! input file name
   CHARACTER(LEN=256)                         :: cf_out   = 'cdfmean.txt' ! ASCII output file for mean
   CHARACTER(LEN=256)                         :: cf_var   = 'cdfvar.txt'  ! ASCII output file for variance
@@ -111,6 +111,10 @@ PROGRAM cdfmean
      PRINT *,'                  if imin = 0 then ALL i are taken'
      PRINT *,'                  if jmin = 0 then ALL j are taken'
      PRINT *,'                  if kmin = 0 then ALL k are taken'
+     PRINT *,'       [-M MSK-file VAR-mask] : Allow the use of a non standard mask file '
+     PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and ',TRIM(cv_msk)
+     PRINT *,'              This option is a usefull alternative to the previous options, when the '
+     PRINT *,'              area of interest is not ''box-like'''
      PRINT *,'       [ -full ] : compute the mean for full steps, instead of default '
      PRINT *,'                   partial steps.'
      PRINT *,'       [ -var ]  : also compute the spatial variance of cdfvar '
@@ -162,6 +166,9 @@ PROGRAM cdfmean
         CALL getarg(ijarg, cf_var ) ; ijarg = ijarg + 1
      CASE ('-ot' )
         CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
+     CASE ( '-M' )
+        CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1
+        CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
      CASE DEFAULT 
         ii=ii+1
         SELECT CASE (ii) 
@@ -241,35 +248,35 @@ PROGRAM cdfmean
      cv_e2    = cn_ve2t
      cv_e3    = 'e3t_ps'
      cv_e31d  = cn_ve3t
-     cv_msk = 'tmask'
+     IF (cv_msk   == '' ) THEN ; cv_msk = 'tmask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'U' )
      cv_e1    = cn_ve1u
      cv_e2    = cn_ve2u
      cv_e3    = 'e3t_ps'
      cv_e31d  = cn_ve3t
-     cv_msk = 'umask'
+     IF (cv_msk   == '' ) THEN ; cv_msk = 'umask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'V' )
      cv_e1    = cn_ve1v
      cv_e2    = cn_ve2v
      cv_e3    = 'e3t_ps'
      cv_e31d  = cn_ve3t
-     cv_msk = 'vmask'
+     IF (cv_msk   == '' ) THEN ; cv_msk = 'vmask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'F' )
      cv_e1    = cn_ve1f
      cv_e2    = cn_ve2f
      cv_e3    = 'e3t_ps'
      cv_e31d  = cn_ve3t
-     cv_msk = 'fmask'
+     IF (cv_msk   == '' ) THEN ; cv_msk = 'fmask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'W' )
      cv_e1    = cn_ve1t
      cv_e2    = cn_ve2t
      cv_e3    = 'e3w_ps'
      cv_e31d  = cn_ve3w
-     cv_msk = 'tmask'
+     IF (cv_msk   == '' ) THEN ; cv_msk = 'tmask' ;  ENDIF
      cv_dep   = cn_gdepw
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(ctype)
@@ -362,7 +369,7 @@ PROGRAM cdfmean
         ELSE
           e3(:,:) = getvar(cn_fzgr, cv_e3,    ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
         ENDIF
-        ! 
+        !
         dsurf  = SUM(DBLE(          e1 * e2      * zmask))
         dvol2d = SUM(DBLE(          e1 * e2 * e3 * zmask))
         dvol   = dvol + dvol2d
