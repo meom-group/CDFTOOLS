@@ -114,15 +114,18 @@
      INTEGER(KIND=4)                              :: idz     ! z dimid
      INTEGER(KIND=4)                              :: idt     ! t dimid
      INTEGER(KIND=4)                              :: idb     ! time-bound  dimid
+     INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ideflat ! deflate level (nvar)
      INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nvatt   ! number of att of each variable (var)
      INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nvid    ! varid of each variable (var)
      INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nvdim   ! dimension of each variable (var)
      INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: itype   ! type of each variable (var)
      INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nlen    ! len of each dimension ( ndims)
+     INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ichunk  ! size of chunk (nvar, ndims)
      INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: idimids ! dimids of each variable (nvar, ndims) 
      CHARACTER(LEN=255)                            :: c_fnam ! name of working file
      CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_vnam ! name of each variable (var)
      CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_dnam ! name of each dimension (ndims)
+     LOGICAL,           DIMENSION(:), ALLOCATABLE :: lconti  ! contiguous flag (nvar)
      !   extra information for global attribute 
      INTEGER(KIND=4)                :: number_total          ! DOMAIN_number_total
      INTEGER(KIND=4)                :: number                ! DOMAIN_number
@@ -3007,18 +3010,47 @@ CONTAINS
     ALLOCATE (GetNcFile%c_vnam  (GetNcFile%nvars) )
     ALLOCATE (GetNcFile%nvatt   (GetNcFile%nvars) )
     ALLOCATE (GetNcFile%itype   (GetNcFile%nvars) )
-    ALLOCATE (GetNcFile%c_dnam(GetNcFile%ndims) )
+    ALLOCATE (GetNcFile%c_dnam  (GetNcFile%ndims) )
     ALLOCATE (GetNcFile%nlen    (GetNcFile%ndims) )
     ALLOCATE (GetNcFile%idimids (GetNcFile%nvars,GetNcFile%ndims) )
 
+    ! Look for dimensions
+    DO jdim = 1, GetNcFile%ndims
+       ierr = NF90_INQUIRE_DIMENSION(GetNcFile%ncid,jdim,                 &
+            &                         name   = GetNcFile%c_dnam(jdim),    &
+            &                         len    = GetNcFile%nlen  (jdim) )
+    ENDDO
+    ! Look for variables
     DO jvar = 1, GetNcFile%nvars
        ierr = NF90_INQUIRE_VARIABLE (GetNcFile%ncid, jvar,                &
             &                         name   = GetNcFile%c_vnam(jvar),    &
             &                         xtype  = GetNcFile%itype(jvar),     &
             &                         ndims  = GetNcFile%nvdim(jvar),     &
             &                         dimids = GetNcFile%idimids(jvar,:), &
-            &                         nAtts  = GetNcFile%nvatt(jvar)      )
+            &                         nAtts  = GetNcFile%nvatt(jvar),     &
+            &                         contiguous = GetNcFile%lconti(jvar),   &
+            &                         chunksizes = GetNcFile%ichunk(jvar,:), &
+            &                         deflate_level = GetNcFile%ideflat(jvar)      )
     END DO
+    ! Look for attributes
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_number_total'   , GetNcFile%number_total       )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_number      '   , GetNcFile%number             )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_dimensions_ids' , GetNcFile%idimensions_ids(:) )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_size_global'    , GetNcFile%isize_global(:)    )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_size_local'     , GetNcFile%isize_local(:)     )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_position_first' , GetNcFile%iposition_first(:) )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_position_last'  , GetNcFile%iposition_last(:)  )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_halo_size_start', GetNcFile%ihalo_size_start(:))
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_halo_size_end'  , GetNcFile%ihalo_size_end(:)  )
+    ierr = NF90_GET_ATT (GetNcFile%ncid, NF90_GLOBAL, 'DOMAIN_type'           , GetNcFile%c_type             )
+
+    ! NOTE : for recombined files, no more DOMAIN attributes !!!
+    ! DOMAIN_dimensions_ids gives ids for x, y 
+    idx = GetNcFile%idimensions_ids(1)
+    idy = GetNcFile%idimensions_ids(2)
+    ! time is unlimited dim
+    idt = GetNcFile%iunlim
+
     ! try to infer size of the domain assuming some basis:
     ! (1) 2D var are (x,y)
     ! (2) time dim is unlimited
