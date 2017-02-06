@@ -236,7 +236,7 @@ PROGRAM cdfmltmask
   DO jvar = 1, nvar 
      ierr = getvaratt (cf_in, cv_in(jvar), cunits, zspval, clname, csname)
      IF ( csname == "" ) csname=TRIM( cv_in(jvar) )
-     ierr = cvaratt   (cf_out, cv_in(jvar), cunits, zspv0,  clname, csname)
+!    ierr = cvaratt   (cf_out, cv_in(jvar), cunits, zspv0,  clname, csname)
   END DO
 
 CONTAINS
