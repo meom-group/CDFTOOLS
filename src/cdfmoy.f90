@@ -214,9 +214,6 @@ PROGRAM cdfmoy
   cf_in = cf_list(1)
   IF ( chkfile (cf_in) ) STOP ! missing file
 !
-  ALLOCATE ( cv_depa(8) )
-  cv_depa (:)= (/cn_z,'z','sigma','nav_lev','levels','ncatice','icbcla','icbsect'/)
-
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
   
