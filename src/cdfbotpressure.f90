@@ -22,6 +22,7 @@ PROGRAM cdfbotpressure
    IMPLICIT NONE
 
    INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
+   INTEGER(KIND=4)                           :: it                  ! time index
    INTEGER(KIND=4)                           :: ierr, ij, iko       ! working integer
    INTEGER(KIND=4)                           :: narg, iargc, ijarg  ! command line 
    INTEGER(KIND=4)                           :: npiglo, npjglo      ! size of the domain
@@ -53,6 +54,7 @@ PROGRAM cdfbotpressure
    LOGICAL                                   :: lssh2 =.FALSE.      ! Use ssh and variable surf.density in the bot pressure
    LOGICAL                                   :: lxtra =.FALSE.      ! Save ssh and ssh pressure
    LOGICAL                                   :: lchk  =.FALSE.      ! flag for missing files
+   LOGICAL                                   :: l_vvl =.FALSE.      ! flag for vvl
 
    TYPE(variable), DIMENSION(:), ALLOCATABLE :: stypvar             ! extension for attributes
    !!----------------------------------------------------------------------
@@ -60,7 +62,7 @@ PROGRAM cdfbotpressure
 
    narg= iargc()
    IF ( narg == 0 ) THEN
-      PRINT *,' usage : cdfbotpressure T-file [-full] [-ssh] [-ssh2 ] [-xtra ] '
+      PRINT *,' usage : cdfbotpressure T-file [-full] [-ssh] [-ssh2 ] [-xtra ] [-vvl ]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'          Compute the vertical bottom pressure (pa) from in situ density'
@@ -81,6 +83,7 @@ PROGRAM cdfbotpressure
       PRINT *,'                and the pressure contribution of ssh to bottom pressure. '
       PRINT *,'                Require either -ssh or -ssh2 option. Botpressure is still'
       PRINT *,'                the total pressure, including ssh effect.'
+      PRINT *,'        -vvl  : Use  time-varying vertical metrics e3t'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'       ', TRIM(cn_fmsk),' and ', TRIM(cn_fzgr) 
@@ -104,6 +107,7 @@ PROGRAM cdfbotpressure
       CASE ( '-ssh2' ) ; lssh2 = .TRUE. 
       CASE ( '-xtra' ) ; lxtra = .TRUE.  ; nvar = 3  ! more outputs
       CASE ( '-full' ) ; lfull = .TRUE. 
+      CASE ( '-vvl'  ) ; l_vvl = .TRUE. 
       CASE DEFAULT     
          ij = ij + 1
          SELECT CASE ( ij)
@@ -120,6 +124,8 @@ PROGRAM cdfbotpressure
    lchk = chkfile ( cn_fmsk ) .OR. lchk
    lchk = chkfile ( cn_fzgr ) .OR. lchk
    IF ( lchk ) STOP ! missing files
+
+   IF ( l_vvl ) cn_fe3t = cf_in
 
    ! log information so far
    cf_out = 'botpressure.nc'
@@ -198,6 +204,9 @@ PROGRAM cdfbotpressure
    PRINT *, 'Output files initialised ...'
 
    DO jt = 1, npt
+      IF ( l_vvl ) THEN ; it = jt
+      ELSE ;              it = 1
+      ENDIF
       IF ( lssh ) THEN
         zt(:,:)       = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * pp_rau0 * zt(:,:)
@@ -232,7 +241,7 @@ PROGRAM cdfbotpressure
      
          dl_sigi(:,:) = 1000. + sigmai(zt, zs, hdept, npiglo, npjglo)
          IF ( lfull ) THEN ; e3t(:,:) = e31d(jk)
-                      ELSE ; e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+                      ELSE ; e3t(:,:) = getvar(cn_fe3t, 'e3t_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
          ENDIF
          dl_bpres(:,:) = dl_bpres(:,:) + dl_sigi(:,:) * e3t(:,:) * pp_grav * 1.d0 * tmask(:,:) 
 

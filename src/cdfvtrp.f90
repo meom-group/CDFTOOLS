@@ -23,6 +23,7 @@ PROGRAM cdfvtrp
   IMPLICIT NONE
 
   INTEGER(KIND=4)                            :: ji, jj, jk, jt       ! dummy loop index
+  INTEGER(KIND=4)                            :: it                   ! time index
   INTEGER(KIND=4)                            :: ierr, ireq           ! working integer
   INTEGER(KIND=4)                            :: narg, iargc, ijarg   ! command line 
   INTEGER(KIND=4)                            :: npiglo, npjglo       ! size of the domain
@@ -56,12 +57,13 @@ PROGRAM cdfvtrp
   LOGICAL                                    :: lfull  = .FALSE.     ! flag for full step
   LOGICAL                                    :: lbathy = .FALSE.     ! flag for slope current
   LOGICAL                                    :: lchk   = .FALSE.     ! flag for missing files
+  LOGICAL                                    :: l_vvl  = .FALSE.     ! flag for vvl
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvtrp  U-file V-file [ -full ] [ -bathy ]'
+     PRINT *,' usage : cdfvtrp  U-file V-file [ -full ] [ -bathy ] [-vvl]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the vertically integrated transports at each grid cell.' 
      PRINT *,'      '
@@ -69,16 +71,17 @@ PROGRAM cdfvtrp
      PRINT *,'       U-file : netcdf gridU file' 
      PRINT *,'       V-file : netcdf gridV file' 
      PRINT *,'      '
-     PRINT *,'     REQUIRED FILES :'
-     PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
-     PRINT *,'        ',TRIM(cn_fmsk),' is required only with -bathy option.'
-     PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full ]  : To be used in case of full step configuration.'
      PRINT *,'                   Default is partial steps.'
      PRINT *,'       [-bathy ] : When used, cdfvtrp also compute the along slope'
      PRINT *,'                   and cross slope transport components.'
      PRINT *,'                   Bathymetry is read from ',TRIM(cn_fzgr),' file.'
+     PRINT *,'       [ -vvl  ] : Use time-varying vertical metrics'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
+     PRINT *,'        ',TRIM(cn_fmsk),' is required only with -bathy option.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
@@ -97,6 +100,7 @@ PROGRAM cdfvtrp
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum ) 
      CASE ('-full'  ) ; lfull  = .TRUE.
+     CASE ('-vvl'   ) ; l_vvl  = .TRUE.
      CASE ('-bathy' ) ; lbathy = .TRUE. ; nvarout = 4
      CASE DEFAULT 
         ireq=ireq+1  ! required arguments
@@ -114,6 +118,11 @@ PROGRAM cdfvtrp
   lchk = lchk .OR. chkfile ( cf_vfil )
   IF ( lbathy ) lchk = lchk .OR. chkfile ( cn_fmsk )
   IF ( lchk ) STOP   ! missing files
+
+  IF ( l_vvl) THEN
+     cn_fe3u = cf_ufil
+     cn_fe3v = cf_vfil
+  ENDIF
 
   ALLOCATE ( ipk(nvarout), id_varout(nvarout), stypvar(nvarout) )
 
@@ -183,6 +192,10 @@ PROGRAM cdfvtrp
   DO jt = 1, npt
      dtrpu(:,:)= 0.d0
      dtrpv(:,:)= 0.d0
+     IF ( l_vvl ) THEN  ; it = jt
+     ELSE ;               it = 1
+     ENDIF
+
      DO jk = 1,npk
         PRINT *,'level ',jk
         ! Get velocities at jk
@@ -194,8 +207,8 @@ PROGRAM cdfvtrp
            e3v(:,:) = e31d(jk)
            e3u(:,:) = e31d(jk)
         ELSE
-           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-           e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+           e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
+           e3u(:,:) = getvar(cn_fe3u, 'e3u_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
         ENDIF
         dwku(:,:) = zu(:,:)*e2u(:,:)*e3u(:,:)*1.d0
         dwkv(:,:) = zv(:,:)*e1v(:,:)*e3v(:,:)*1.d0

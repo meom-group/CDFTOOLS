@@ -21,7 +21,7 @@ PROGRAM cdfheatc
 
   INTEGER(KIND=4), PARAMETER                :: jp_hc3d=1, jp_hc2d=2 , jp_hcvol=3
   INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
-  INTEGER(KIND=4)                           :: ik                  ! working integer
+  INTEGER(KIND=4)                           :: ik, it              ! working integer
   INTEGER(KIND=4)                           :: ierr                ! working integer
   INTEGER(KIND=4)                           :: iimin=0, iimax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ijmin=0, ijmax=0    ! domain limitation for computation
@@ -62,6 +62,7 @@ PROGRAM cdfheatc
 
   LOGICAL                                   :: lfull=.FALSE.       ! flag for full step computation
   LOGICAL                                   :: lchk                ! flag for missing files
+  LOGICAL                                   :: l_vvl=.FALSE.       ! flag for vvl configuration
 
   ! NETCDF OUTPUT
   !!----------------------------------------------------------------------
@@ -71,7 +72,7 @@ PROGRAM cdfheatc
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfheatc  -f T-file [-mxloption option] ...'
      PRINT *,'     [-zoom imin imax jmin jmax kmin kmax] [-full] [-o OUT-file]'
-     PRINT *,'     [-M MSK-file VAR-mask ]'
+     PRINT *,'     [-M MSK-file VAR-mask ] [-vvl ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Computes the heat content in the specified 3D area (Joules)'
@@ -95,6 +96,7 @@ PROGRAM cdfheatc
      PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and ',TRIM(cv_msk) 
      PRINT *,'              This option is a usefull alternative to -zoom option, when the '
      PRINT *,'              area of interest is not ''box-like'' '
+     PRINT *,'       [ -vvl ] : use time-varying  e3t for integration'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
@@ -117,6 +119,7 @@ PROGRAM cdfheatc
      SELECT CASE ( cldum )
      CASE ( '-f'    ) ; CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1
      CASE ( '-full' ) ; lfull = .true.
+     CASE ( '-vvl'  ) ; l_vvl = .true.
      CASE ( '-mxloption' ) ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) mxloption
      CASE ( '-o   ' ) ; CALL getarg ( ijarg, cf_out)    ; ijarg = ijarg + 1 
      CASE ( '-zoom' )   
@@ -140,6 +143,8 @@ PROGRAM cdfheatc
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
   IF ( lchk ) STOP ! missing files
+
+  IF ( l_vvl ) cn_fe3t = cf_tfil
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -189,6 +194,9 @@ PROGRAM cdfheatc
   CALL CreateOutput
 
   DO jt=1,npt
+     IF ( l_vvl ) THEN ; it = jt
+     ELSE ;              it = 1
+     ENDIF
      dvol = 0.d0
      dsum = 0.d0
      PRINT * ,'TIME : ', tim(jt)
@@ -204,7 +212,7 @@ PROGRAM cdfheatc
         IF ( lfull ) THEN
            e3t(:,:) = e31d(ik)
         ELSE
-           e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)
+           e3t(:,:) = getvar(cn_fe3t, 'e3t_ps', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.TRUE.)
         ENDIF
         
         SELECT CASE ( mxloption ) 

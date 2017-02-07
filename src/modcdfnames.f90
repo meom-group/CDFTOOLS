@@ -53,6 +53,10 @@ MODULE modCdfNames
 
   ! Generic mesh-mask file names  cn_f...
   CHARACTER(LEN=256) :: cn_fzgr='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cn_fe3t='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cn_fe3u='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cn_fe3v='mesh_zgr.nc'
+  CHARACTER(LEN=256) :: cn_fe3w='mesh_zgr.nc'
   CHARACTER(LEN=256) :: cn_fhgr='mesh_hgr.nc'
   CHARACTER(LEN=256) :: cn_fmsk='mask.nc'
   CHARACTER(LEN=256) :: cn_fcoo='coordinates.nc'
@@ -210,7 +214,7 @@ MODULE modCdfNames
     NAMELIST/namcubvar/ nn_cubvar, cn_cubvar
 
     ! name of mesh_mask files
-    NAMELIST/nammeshmask/ cn_fzgr, cn_fhgr, cn_fmsk, cn_fcoo, cn_fbasins
+    NAMELIST/nammeshmask/ cn_fzgr, cn_fe3t, cn_fe3u, cn_fe3v, cn_fe3w, cn_fhgr, cn_fmsk, cn_fcoo, cn_fbasins
 
     ! Bathymetry
     NAMELIST/nambathy/ cn_fbathymet, cn_fbathylev, cn_bathymet, cn_bathylev, cn_mbathy

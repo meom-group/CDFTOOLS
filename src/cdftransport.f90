@@ -58,6 +58,7 @@ PROGRAM cdftransport
 
    INTEGER(KIND=4)                             :: jclass, jseg   ! dummy loop index
    INTEGER(KIND=4)                             :: ji, jj, jk     ! dummy loop index
+   INTEGER(KIND=4)                             :: it             ! time index
    INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: imeter         ! limit beetween depth level, in m (nclass -1)
    INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ilev0, ilev1   ! limit in levels  (nclass)
    INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipk, id_varout ! Netcdf output
@@ -196,6 +197,7 @@ PROGRAM cdftransport
    LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
    LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
    LOGICAL                                     :: l_self  = .FALSE.   ! flag for self mesh/mask files in the input
+   LOGICAL                                     :: l_vvl   = .FALSE.   ! flag for vvl condition
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
@@ -203,7 +205,7 @@ PROGRAM cdftransport
    ! Print usage if no argument
    IF ( narg == 0 ) THEN
       PRINT *,' usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc] [-TS] '
-      PRINT *,'                  ... [VT-file] U-file V-file [-full] |-time jt] ...'
+      PRINT *,'                  ... [VT-file] U-file V-file [-full] |-time jt] [-vvl] ...'
       PRINT *,'                  ... [-time jt ] [-zlimit limits of level] [-self]'
       PRINT *,'      '
       PRINT *,'    PURPOSE :'
@@ -237,6 +239,7 @@ PROGRAM cdftransport
       PRINT *,'                   files. T-file is passed as the first file instead of VT '
       PRINT *,'      [-full ]   :  use for full step configurations.'
       PRINT *,'      [-time jt ]:  compute transports for time index jt. Default is 1.'
+      PRINT *,'      [-vvl  ]   :  use time varying  vertical metrics e3 read in the data file'
       PRINT *,'      [-zlimit list of depth] : Specify depths limits defining layers where the'
       PRINT *,'                    transports will be computed. If not used, the transports '
       PRINT *,'                    are computed for the whole water column. If used, this '
@@ -296,6 +299,9 @@ PROGRAM cdftransport
       CASE ( '-TS' ) 
          l_tsfil = .TRUE.
 
+      CASE ( '-vvl' ) 
+         l_vvl = .TRUE.
+
       CASE ( '-self' ) 
          l_self = .TRUE.
 
@@ -316,10 +322,19 @@ PROGRAM cdftransport
          CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1 
       END SELECT
    END DO
+   
+   it = 1
+   IF ( l_vvl ) THEN
+      cn_fe3u = cf_ufil
+      cn_fe3v = cf_vfil
+      it = itime
+   ENDIF
 
    IF ( l_self ) THEN
        cn_fzgr = cf_vfil
        cn_fhgr = cf_vfil
+       cn_fe3u = cf_vfil
+       cn_fe3v = cf_vfil
    ENDIF
 
    ! checking if all required files are available
@@ -546,10 +561,10 @@ PROGRAM cdftransport
          ELSE
             IF ( l_self) THEN
                e3u(:,:) = 1. !dummy value
-               e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.FALSE.)  ! In broken line name is e3v_ps
+               e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=it, ldiom=.FALSE.)  ! In broken line name is e3v_ps
             ELSE
-               e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-               e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+               e3u(:,:) = getvar(cn_fe3u, 'e3u_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
+               e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
             ENDIF
          ENDIF
 
