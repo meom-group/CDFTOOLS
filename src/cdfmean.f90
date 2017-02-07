@@ -93,7 +93,9 @@ PROGRAM cdfmean
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmean  IN-file IN-var T|U|V|F|W [imin imax jmin jmax kmin kmax]'
-     PRINT *,'       ... [-full] [-var] [-zeromean] [-o OUT-file] [-oz ZEROMEAN-file]'
+     PRINT *,'       ... [-full] [-var] [-zeromean] [-M MSK-file VAR-mask ]
+     PRINT *,'       ... [-o OUT-file] [ -ot OUTASCII-file] [-oz ZEROMEAN-file]'
+     PRINT *,'       ... [ -ov VAR-file]
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Computes the mean value of the field (3D, weighted). For 3D fields,'
