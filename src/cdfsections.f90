@@ -5,7 +5,7 @@ program cdfsections
 !
 ! ** Purpose : extract oceanic fields along a track made of several sections.
 !
-! ** Method : computes N sections by taking the nearest point north of 60°N 
+! ** Method : computes N sections by taking the nearest point north of 60N 
 !             and near undefined values (bottom or coasts), and interpolates 
 !             between the four nearest points elsewhere.
 !             
@@ -19,7 +19,7 @@ program cdfsections
 ! WARNING : 
 !  - require large memory : reduce domain size with ncks if insufficient memory error.
 !  - does not work if the section crosses the Greenwich line (easy to modify if needed).
-!  - not yet tested north of 60°N (but should work) ...
+!  - not yet tested north of 60N (but should work) ...
 !
 ! history :
 ! N. JOURDAIN (LEGI-MEOM), April 2009
@@ -112,7 +112,7 @@ REAL*8,ALLOCATABLE,DIMENSION(:) :: d, X1
      PRINT *,' It is recommended to put a lot of points on each section if the aim'
      PRINT *,' is to compute X-integrations along the section (10 x the model resolution).'
      PRINT *,'NB : sections cannot cross the Greenwich line !!'
-     PRINT *,'NB : Not yet tested north of 60°N.'
+     PRINT *,'NB : Not yet tested north of 60N.'
      PRINT *,'NB : require a large amount of memory !' 
      PRINT *,'     -> reduce domain size with  ncks -d  if insufficient memory error.'
      PRINT *,' '

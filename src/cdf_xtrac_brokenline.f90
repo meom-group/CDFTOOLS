@@ -44,8 +44,8 @@ PROGRAM cdf_xtract_brokenline
    INTEGER(KIND=4) :: np_e1vn, np_e3un, np_e3vn       !  "
    INTEGER(KIND=4) :: np_vmod, np_e1v,  np_e3v        !  "
    INTEGER(KIND=4) :: np_vmsk, np_baro, np_bat        !  "
-   INTEGER(KIND=4) :: np_ssh,  np_mld                 !  "
-   INTEGER(KIND=4) :: np_icethick, np_icefra         !  "
+   INTEGER(KIND=4) :: np_ssh,  np_mld,  np_vt, np_vs  !  "
+   INTEGER(KIND=4) :: np_icethick, np_icefra          !  "
    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ncout                     ! Netcdf error and ncid
    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout  ! netcdf output stuff
 
@@ -82,7 +82,8 @@ PROGRAM cdf_xtract_brokenline
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temper, saline      ! model Temperature and salinity
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: uzonal, vmerid      ! model zonal and meridional velocity
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ssh, rmld           ! model SSH and MLD
-   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ricethick, ricefra    ! ice thickness and fraction
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ricethick, ricefra  ! ice thickness and fraction
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvmod               ! ice thickness and fraction
    ! along section array (dimension x,z or x,1 )
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: tempersec, salinesec, uzonalsec, vmeridsec
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: sshsec, rmldsec
@@ -98,6 +99,7 @@ PROGRAM cdf_xtract_brokenline
 
    CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
    CHARACTER(LEN=255) :: cf_icefil                    ! input ice file
+   CHARACTER(LEN=255) :: cf_root=''                   ! root name used as prefix
    CHARACTER(LEN=255) :: cf_out                       ! output file
    CHARACTER(LEN=255) :: cf_secdat                    ! output section file (suitable for cdftransport or cdfsigtrp)
    CHARACTER(LEN=255) :: cverb='n'                    ! verbose key for findij
@@ -112,6 +114,7 @@ PROGRAM cdf_xtract_brokenline
    LOGICAL  :: lssh     = .FALSE.                    ! flag for saving ssh
    LOGICAL  :: lmld     = .FALSE.                    ! flag for saving mld
    LOGICAL  :: lice     = .FALSE.                    ! flag for saving ice*
+   LOGICAL  :: lvt      = .FALSE.                    ! flag for saving products vt, vs
    LOGICAL  :: ll_ssh, ll_mld, ll_ice                ! working flag for jk =1
 
    TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar  ! variable definition and attributes
@@ -124,7 +127,8 @@ PROGRAM cdf_xtract_brokenline
    narg = iargc()
    IF ( narg < 3 ) THEN
       PRINT *,' usage :  cdf_xtrac_brokenline T-file U-file V-file [ice-file] ....'
-      PRINT *,'    [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice]'
+      PRINT *,'    [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice] '
+      PRINT *,'    [-vt] [-o ROOT_name]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'        This tool extracts model variables from model files for a geographical' 
@@ -169,15 +173,22 @@ PROGRAM cdf_xtract_brokenline
       PRINT *,'      -ssh     : also save ssh along the broken line.'
       PRINT *,'      -mld     : also save mld along the broken line.'
       PRINT *,'      -ice     : also save ice properties along the broken line.'
+      PRINT *,'      -vt      : also save products vt and vs along the broken line.'
+      PRINT *,'      -o ROOT-name : specified the prefix to be used for the output file name.'
+      PRINT *,'                 Note that it may be a good idea to include a separator '
+      PRINT *,'                 character such as _ at the end of the ROOT_name.'
       PRINT *,'     '
       PRINT *,'     REQUIRED FILES :'
-      PRINT *,'      ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' must be in the current directory ' 
+      PRINT *,'      ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' in the current directory ' 
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
-      PRINT *,'       netcdf file : section_name.nc'
+      PRINT *,'       netcdf file : <section_name>.nc (default). If -o option is used, the'
+      PRINT *,'                     name will be <ROOT-name><section_name>.nc'
       PRINT *,'         variables : temperature, salinity, normal velocity, pseudo V metrics,'
-      PRINT *,'                     mask, barotropic transport, bathymetry of velocity points.'
-      PRINT *,'       ASCII file : section_name_section.dat usefull for cdftransport '
+      PRINT *,'                    mask, barotropic transport, bathymetry of velocity points.'
+      PRINT *,'                    Additional variables can be set when using options.'
+      PRINT *,'       ASCII file : <section_name>_section.dat usefull for cdftransport, gives'
+      PRINT *,'                  the position in I,J of the geographical input points.'
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
       PRINT *,'        cdftransport, cdfmoc, cdfmocsig. This tool replaces cdfovide.' 
@@ -193,7 +204,9 @@ PROGRAM cdf_xtract_brokenline
       CASE ( '-verbose' ) ; lverbose=.TRUE.  ; cverb='y'
       CASE ( '-ssh'     ) ; lssh    =.TRUE.  ; nvar = nvar + 1  ! 
       CASE ( '-mld'     ) ; lmld    =.TRUE.  ; nvar = nvar + 1  !
-      CASE ( '-ice'     ) ; lice    =.TRUE.  ; nvar = nvar + 1  !
+      CASE ( '-ice'     ) ; lice    =.TRUE.  ; nvar = nvar + 2  !
+      CASE ( '-vt '     ) ; lvt     =.TRUE.  ; nvar = nvar + 2  !
+      CASE ( '-o '      ) ;  CALL getarg(ijarg, cf_root) ; ijarg = ijarg + 1  !
       CASE ( '-f' )       ;  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
          CALL ParseFiles(cldum)        ! many section files can be given separated with comma
       CASE DEFAULT 
@@ -370,6 +383,7 @@ PROGRAM cdf_xtract_brokenline
    ALLOCATE( batsec   (npsecmax-1,1  ), vmasksec (npsecmax-1,npk) )
    ALLOCATE( tempersec(npsecmax-1,npk), salinesec(npsecmax-1,npk) )
    ALLOCATE( uzonalsec(npsecmax-1,npk), vmeridsec(npsecmax-1,npk) )
+   ALLOCATE( zvmod (npsecmax-1,1) )  ! working array
    IF ( lssh ) ALLOCATE ( sshsec (npsecmax-1,1) )
    IF ( lmld ) ALLOCATE ( rmldsec(npsecmax-1,1) )
    IF ( lice ) ALLOCATE(ricethicksec(npsecmax-1,1),ricefrasec(npsecmax-1,1))
@@ -402,8 +416,8 @@ PROGRAM cdf_xtract_brokenline
 
    !  Loop on section for metrics and non z-depending variables
    DO jsec = 1, nsec   ! loop on sections
-      cf_out    = TRIM(csection(jsec))//'.nc'
-      cf_secdat = TRIM(csection(jsec))//'_section.dat'
+      cf_out    = TRIM(cf_root)//TRIM(csection(jsec))//'.nc'
+      cf_secdat = TRIM(cf_root)//TRIM(csection(jsec))//'_section.dat'
 
       ipoint = 1
       DO jleg=1, nsta(jsec) -1      ! loop on legs 
@@ -610,17 +624,19 @@ PROGRAM cdf_xtract_brokenline
             END DO
 
             ! output section variable at level jk, in separated output section files
-            ierr = putvar (ncout(jsec), id_varout(np_tem), tempersec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
-            ierr = putvar (ncout(jsec), id_varout(np_sal), salinesec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
-            ierr = putvar (ncout(jsec), id_varout(np_una), uzonalsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
-            ierr = putvar (ncout(jsec), id_varout(np_vna), vmeridsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_tem), tempersec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_sal), salinesec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_una), uzonalsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+                        ierr = putvar (ncout(jsec), id_varout(np_vna), vmeridsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
             ! along-track normal velocity, horiz. and vert. resolution, and mask
-            ierr = putvar (ncout(jsec), id_varout(np_vmod),uzonalsec(:,jk) + vmeridsec(:,jk), &
-                 &                                                  jk, npsec(jsec)-1, 1, ktime=jt ) 
-            IF (ll_ssh) ierr = putvar (ncout(jsec), id_varout(np_ssh), sshsec (:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_mld) ierr = putvar (ncout(jsec), id_varout(np_mld), rmldsec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icethick), ricethicksec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
-            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icefra), ricefrasec(:,jk), 1, npsec(jsec)-1, 1, ktime=jt )
+            zvmod(:,1)= uzonalsec(:,jk) + vmeridsec(:,jk)
+                        ierr = putvar (ncout(jsec), id_varout(np_vmod    ), zvmod(:,1),                jk, npsec(jsec)-1, 1, ktime=jt ) 
+            IF (ll_ssh) ierr = putvar (ncout(jsec), id_varout(np_ssh     ), sshsec (:,jk),              1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_mld) ierr = putvar (ncout(jsec), id_varout(np_mld     ), rmldsec(:,jk),              1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icethick), ricethicksec(:,jk),         1, npsec(jsec)-1, 1, ktime=jt )
+            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icefra  ), ricefrasec(:,jk),           1, npsec(jsec)-1, 1, ktime=jt )
+            IF (lvt   ) ierr = putvar (ncout(jsec), id_varout(np_vt      ), zvmod(:,1)*tempersec(:,jk),jk, npsec(jsec)-1, 1, ktime=jt )
+            IF (lvt   ) ierr = putvar (ncout(jsec), id_varout(np_vs      ), zvmod(:,1)*salinesec(:,jk),jk, npsec(jsec)-1, 1, ktime=jt )
 
             IF ( jt == 1 ) THEN   ! output of time independent variables at first time step only
                ! save a mask of the section
@@ -867,7 +883,8 @@ CONTAINS
          stypvar(ivar)%clong_name  = 'icethick along '//TRIM(csection(ksec))//' section'
          stypvar(ivar)%cshort_name = cn_iicethic
          stypvar(ivar)%caxis       = 'TX'
-         ipk(ivar)                 = 1     
+         ipk(ivar)                 = 1
+         ivar = ivar + 1
    
          np_icefra = ivar
          stypvar(ivar)%cname       = cn_ileadfra
@@ -878,6 +895,31 @@ CONTAINS
          stypvar(ivar)%cshort_name = cn_ileadfra
          stypvar(ivar)%caxis       = 'TX'
          ipk(ivar)                 = 1
+         ivar = ivar + 1
+      ENDIF
+     
+      IF ( lvt ) THEN
+         np_vt = ivar
+         stypvar(ivar)%cname       = cn_vomevt
+         stypvar(ivar)%cunits      = 'C.m/s'
+         stypvar(ivar)%valid_min   = -1000000.
+         stypvar(ivar)%valid_max   = 1000000.
+         stypvar(ivar)%clong_name  = 'VT product along '//TRIM(csection(ksec))//' section'
+         stypvar(ivar)%cshort_name = cn_vomevt
+         stypvar(ivar)%caxis       = 'TZX'
+         ipk(ivar)                 = npk
+         ivar = ivar + 1
+
+         np_vs = ivar
+         stypvar(ivar)%cname       = cn_vomevs
+         stypvar(ivar)%cunits      = 'PSU.m/s'
+         stypvar(ivar)%valid_min   = -1000000.
+         stypvar(ivar)%valid_max   = 1000000.
+         stypvar(ivar)%clong_name  = 'VS product along '//TRIM(csection(ksec))//' section'
+         stypvar(ivar)%cshort_name = cn_vomevs
+         stypvar(ivar)%caxis       = 'TZX'
+         ipk(ivar)                 = npk
+         ivar = ivar + 1
       ENDIF
 
       ! create output fileset

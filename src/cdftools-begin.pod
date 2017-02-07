@@ -1,21 +1,23 @@
 =head1  NAME
 
-cdftools - diagnostics in Fortran 90 for NEMO model outputs
+CDFTOOLS - diagnostics in Fortran 90 for NEMO model outputs
 
-=head1 SYNOPSIS
+=head1 PACKAGE DESCRIPTION
 
- cdf* option...
-
-=head1 DESCRIPTION
-
-C<CDFTOOLS> is a diagnostic package written in fortran 90
-for the analysis of NEMO model output in the frame of the DRAKKAR project.
-
-This software is a computer program for analysis of NEMO model output 
-produced in the frame of the DRAKKAR project. It is designed  for the
-treatment of the NetCdf files produced by NEMO-DRAKKAR. 
+C<CDFTOOLS> is a diagnostic package written in fortran 90 for the analysis of NEMO model output, initialized in  the frame of the DRAKKAR project (https://www.drakkar-ocean.eu/). It is now available on GitHub under the CeCILL license (http://www.cecill.info/licences/Licence_CeCILL_V2-en.html).
 
 C<NEMO> web site : http://www.nemo-ocean.eu/
 
-=head1 COMMAND
+=head1 SYNOPSIS
+
+C<CDFTOOLS> is a collection of fortran program. Each program belonging to this collection is
+designed to perform some specific actions on NEMO output files, and generally provides another netcdf file as output. Output files follow the same CDF format as NEMO file, thus allowing for the building of a secondary data base (assuming that the primary data base is just the raw model output).
+
+This documentation is automatically produced by the concatenation of the C<USAGE> messages produced by each particular program when invoked without any argument. (Standard behaviour of all cdftools). In the documentation, we use a rather classical formalism, where mandatory arguments are just indicated on the command line and options are indicated between squared brackets [..].
+
+Each program name starts with the 3 letters 'cdf' followed by a word related to the action performed by the tools. Example:  C<cdfw  Ufile.nc Vfile.nc > is used to compute the vertical velocity using the horizontal velocity field represented by its two components Ufile.nc and Vfile.nc.
+
+Better than a long speech, the following paragraphs  describes each of the existing cdftools.
+
+=head1 COMMANDS DESCRIPTION
 

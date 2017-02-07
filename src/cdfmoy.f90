@@ -36,6 +36,7 @@ PROGRAM cdfmoy
   INTEGER(KIND=4)                               :: jk, jfil,jdep      ! dummy loop index
   INTEGER(KIND=4)                               :: jvar, jv, jt       ! dummy loop index
   INTEGER(KIND=4)                               :: ierr               ! working integer
+  INTEGER(KIND=4)                               :: idep, idep_max     ! possible depth index, maximum
   INTEGER(KIND=4)                               :: narg, iargc, ijarg ! browsing command line
   INTEGER(KIND=4)                               :: nfil               ! number of files to average
   INTEGER(KIND=4)                               :: npiglo, npjglo     ! size of the domain
@@ -84,7 +85,7 @@ PROGRAM cdfmoy
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam2            ! array of var2 name for output
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam3            ! array of var3 name for output
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam4            ! array of var3 name for output
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_depa            ! array of possible 3rd dimension name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep            ! array of possible depth name (or 3rd dimension)
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar2           ! attributes for square averaged values
@@ -218,35 +219,25 @@ PROGRAM cdfmoy
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
-  DO jdep=1,8
-    npk    = getdim (cf_in, cv_depa(jdep), cdtrue=cv_dep, kstatus=ierr)
-    IF ( ierr == 0 ) EXIT
+  
+  ! looking for npk among various possible name
+  idep_max=8
+  ALLOCATE ( clv_dep(idep_max) )
+  clv_dep(:) = (/cn_z,'z','sigma','nav_lev','levels','ncatice','icbcla','icbsect'/)
+  idep=1  ; ierr=1000
+  DO WHILE ( ierr /= 0 .AND. idep <= idep_max )
+     npk  = getdim (cf_in, clv_dep(idep), cdtrue=cv_dep, kstatus=ierr)
+     idep = idep + 1
   ENDDO
-  IF ( ierr /= 0 ) THEN 
+
+  IF ( ierr /= 0 ) THEN  ! none of the dim name was found
       PRINT *,' assume file with no depth'
       npk=0
   ENDIF
 
-! IF (ierr /= 0 ) THEN
-!    npk   = getdim (cf_in, 'z',cdtrue=cv_dep,kstatus=ierr)
-!    IF (ierr /= 0 ) THEN
-!      npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
-!       IF ( ierr /= 0 ) THEN 
-!         npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-!           IF ( ierr /= 0 ) THEN 
-!             npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
-!             IF ( ierr /= 0 ) THEN 
-!               PRINT *,' assume file with no depth'
-!               npk=0
-!             ENDIF
-!           ENDIF
-!       ENDIF
-!    ENDIF
-! ENDIF
-
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
-  PRINT *, 'npk    = ', npk
+  PRINT *, 'npk    = ', npk , 'Dep name :' , TRIM(cv_dep)
 
   ALLOCATE( dtab(npiglo,npjglo), dtab2(npiglo,npjglo), v2d(npiglo,npjglo),rmask2d(npiglo,npjglo)) ! [from SL]
   ALLOCATE( rmean(npiglo,npjglo), rmean2(npiglo,npjglo) )
