@@ -1484,6 +1484,7 @@
 
 <pre><code>  usage :  cdfheatc  -f T-file [-mxloption option] ...
       [-zoom imin imax jmin jmax kmin kmax] [-full] [-o OUT-file]
+      [-M MSK-file VAR-mask ]
        
       PURPOSE :
          Computes the heat content in the specified 3D area (Joules)
@@ -1503,6 +1504,10 @@
                              option=-1 : exclude mixed layer in the computation
                              option= 0 : [Default], do not take care of mxl.
         [-o OUT-file ] : specify netcdf output filename instead of heatc.nc
+        [-M MSK-file VAR-mask] : Allow the use of a non standard mask file 
+               with VAR-mask, instead of mask.nc and tmask
+               This option is a usefull alternative to -zoom option, when the 
+               area of interest is not &#39;box-like&#39; 
        
       REQUIRED FILES :
         Files mesh_hgr.nc, mesh_zgr.nc and mask.nc
@@ -1512,7 +1517,10 @@
                variables: heatc3d (Joules)
                         : heatc(dep) (Joules) 
                         : heatc3dpervol (Joules/m3) 
-        Standard output</code></pre>
+        Standard output
+        
+       SEE ALSO: 
+           cdfpolymask </code></pre>
 
 <h2 id="cdfhflx">cdfhflx</h2>
 
@@ -2022,7 +2030,9 @@
 <h2 id="cdfmean">cdfmean</h2>
 
 <pre><code>  usage : cdfmean  IN-file IN-var T|U|V|F|W [imin imax jmin jmax kmin kmax]
-        ... [-full] [-var] [-zeromean] 
+        ... [-full] [-var] [-zeromean] [-M MSK-file VAR-mask ]
+        ... [-o OUT-file] [ -ot OUTASCII-file] [-oz ZEROMEAN-file]
+        ... [ -ov VAR-file]
        
       PURPOSE :
          Computes the mean value of the field (3D, weighted). For 3D fields,
@@ -2040,10 +2050,24 @@
                    if imin = 0 then ALL i are taken
                    if jmin = 0 then ALL j are taken
                    if kmin = 0 then ALL k are taken
+        [-M MSK-file VAR-mask] : Allow the use of a non standard mask file 
+               with VAR-mask, instead of mask.nc and 
+               This option is a usefull alternative to the previous options, whe
+ n the 
+               area of interest is not &#39;box-like&#39;
         [ -full ] : compute the mean for full steps, instead of default 
                     partial steps.
         [ -var ]  : also compute the spatial variance of cdfvar 
         [ -zeromean ] : create a file with cdfvar having a zero spatial mean.
+        [ -o OUT-file] : specify the name of the output file instead of 
+ cdfmean.nc
+        [ -ot OUTASCII-file] : specify the name of the output ASCII file instead
+  
+                    of cdfmean.txt
+        [ -oz ZEROMEAN-file] : specify the name of the output file for option 
+                    -zeromean, instead of zeromean.nc
+        [ -ov VAR-file] : specify the name of the output file for option 
+                    -var, instead of cdfvar.txt
        
       REQUIRED FILES :
         Files mesh_hgr.nc, mesh_zgr.nc, mask.nc
@@ -2061,7 +2085,7 @@
 <h2 id="cdfmhst">cdfmhst</h2>
 
 <pre><code>  usage : cdfmhst  VT-file | (V-file T-file [S-file])  [MST] [-full] ...
-               ...  [-Zdim] 
+               ...  [-Zdim] [-o OUT-file]
        
       PURPOSE :
         Compute the meridional heat/salt transport as a function of 
@@ -2080,6 +2104,7 @@
                    If not specified, only the MHT is output.
         [-full ] : to be set for full step case.
         [-Zdim ] : to be set to output vertical structure of Heat/salt transport
+        [-o OUT-file ] : change name of the output file. Default:mhst.nc
        
       REQUIRED FILES :
          mesh_hgr.nc, mesh_zgr.nc and mask.nc
@@ -2089,7 +2114,7 @@
       OUTPUT : 
         ASCII files : zonal_heat_trp.dat : Meridional Heat Transport
                       zonal_salt_trp.dat : Meridional Salt Transport
-        netcdf file : mhst.nc
+        netcdf file : mhst.nc unless -o option is used.
             variables : ( [... ] : MST option ) 
                         zomht_glo  : Meridional Heat Transport (global)
                       [ zomst_glo  : Meridional Salt Transport (global) ] 
@@ -2835,7 +2860,7 @@
 
 <h2 id="cdfpolymask">cdfpolymask</h2>
 
-<pre><code>  usage : cdfpolymask POLY-file REF-file [ -r]
+<pre><code>  usage : cdfpolymask -p POLY-file -ref REF-file [ -r] [-o OUT_file]
        
       PURPOSE :
         Create a maskfile with polymask variable having 1
@@ -2843,18 +2868,22 @@
         the behaviour (0 inside, 1 outside).
        
       ARGUMENTS :
-        POLY-file : input ASCII file describing a polyline in I J grid.
+        -p POLY-file : input ASCII file describing a polyline in I J grid.
              This file is structured by block, one block corresponding 
              to a polygon:
                1rst line of the block gives a polygon name
                2nd line gives the number of vertices (nvert) and a dummy 0
                the block finishes  with nvert pairs of (I,J) describing 
                the polygon vertices.
-        REF-file  : reference netcdf file for header of polymask file.
+        -ref REF-file  : reference netcdf file for header of polymask file.
+              This file will be used to look for domain dimensions, and 
+              in order to build the output file (nav_lon, nav_lat etc ...)
        
       OPTIONS :
          [ -r ] : revert option. When used, 0 is inside the polygon,
                   1 outside.
+         [ -o OUT-file ] : spefify the name of the output mask file instead
+                  of polymask.nc
        
       REQUIRED FILES :
         none
@@ -3744,31 +3773,45 @@
 
 <h2 id="cdfsum">cdfsum</h2>
 
-<pre><code>  usage : cdfsum IN-file IN-var T| U | V | F | W  ... 
-              ... [imin imax jmin jmax kmin kmax] [-full ] 
+<pre><code>  usage : cdfsum -f IN-file -v IN-var -p T| U | V | F | W  ... 
+           ... [-zoom imin imax jmin jmax kmin kmax] [-full ] [-o OUT-file] 
+           ... [-M MSK-file VAR-mask ]
        
       PURPOSE :
         Computes the sum value of the field (3D, weighted)
-        This sum can be optionally limited to a sub-area.
+        This sum can be optionally limited to a 3D sub-area.
        
       ARGUMENTS :
-        IN-file : netcdf input file.
-        IN-var  : netcdf variable to work with.
-        T| U | V | F | W : C-grid point where IN-var is located.
+        -f IN-file : netcdf input file.
+        -v IN-var  : netcdf variable to work with.
+        -p T| U | V | F | W : C-grid point where IN-var is located.
        
       OPTIONS :
-        [imin imax jmin jmax kmin kmax] : limit of the sub area to work with.
+        [-zoom imin imax jmin jmax kmin kmax] : limit of the 3D sub area. 
                if imin=0 all i are taken
                if jmin=0 all j are taken
                if kmin=0 all k are taken
+        [ -full : ] Use full steps instead of default partial steps
+        [-o OUT-file ] : name of the output file instead ofcdfsum.nc
+        [-M MSK-file VAR-mask] : Allow the use of a non standard mask file 
+               with VAR-mask, instead of mask.nc and the variable
+               associated with the grid point set by -p argument.
+               This option is a usefull alternative to -zoom option, when the 
+               area of interest is not &#39;box-like&#39; 
        
       REQUIRED FILES :
-       mesh_hgr.nc, mesh_zgr.nc and mask.nc
+       mesh_hgr.nc, mesh_zgr.nc and mask.nc. If
+          -M option is used, the specified mask file is required instead 
+          mask.nc
        
       OUTPUT : 
         Standard output.
-        netcdf file : cdfsum.nc with 2 variables : vertical profile of sum
-                      and 3D sum.</code></pre>
+        netcdf file : cdfsum.nc unless modified with -o option. 
+            - 2 variables : vertical profile of sum and 3D sum.
+                          names are sum_&lt;varname&gt; and sum3D_&lt;varname&gt;.
+       
+      SEE ALSO: 
+        cdfmean </code></pre>
 
 <h2 id="cdftempvol-full">cdftempvol-full</h2>
 
@@ -3784,9 +3827,9 @@
 
 <h2 id="cdftransport">cdftransport</h2>
 
-<pre><code>  usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc]...
+<pre><code>  usage : cdftransport [-test  u v ] [-noheat ] [-plus_minus ] [-obc] [-TS] 
                    ... [VT-file] U-file V-file [-full] |-time jt] ...
-                   ... [-time jt ] [-zlimit limits of level]
+                   ... [-time jt ] [-zlimit limits of level] [-self]
        
      PURPOSE :
        Compute the transports accross a section.
@@ -3812,18 +3855,23 @@
                      the volume transport. This option implicitly set -noheat,
                      and must be used before the file names.
        [-obc ]    : indicates that input files are obc files (vertical slices)
-                     Take care that for this case, mesh files must be adapted.
-                     This option implicitly set -noheat, and must be used before
-                     the file names.
+                    Take care that for this case, mesh files must be adapted.
+                    This option implicitly set -noheat, and must be used before
+                    the file names.
+       [ -TS ]    : Indicate that UT VT US VS will be recomputed from T U V 
+                    files. T-file is passed as the first file instead of VT 
        [-full ]   :  use for full step configurations.
        [-time jt ]:  compute transports for time index jt. Default is 1.
        [-zlimit list of depth] : Specify depths limits defining layers where the
                      transports will be computed. If not used, the transports 
                      are computed for the whole water column. If used, this 
                      option must be the last on the command line.
+       [ -self ] : This option indicates that input files corresponds to a 
+                   broken line, hence  data files hold the metrics.
        
       REQUIRED FILES :
        Files mesh_hgr.nc, mesh_zgr.nc must be in the current directory.
+             unless -self option is used.
        
       OUTPUT : 
        - Standard output 
@@ -3834,7 +3882,7 @@
            from section name.
        
       SEE ALSO :
-        cdfsigtrp
+        cdfsigtrp cdf_xtrac_brokenline
        </code></pre>
 
 <h2 id="cdfuv">cdfuv</h2>
