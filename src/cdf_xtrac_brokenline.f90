@@ -31,6 +31,7 @@ PROGRAM cdf_xtract_brokenline
    IMPLICIT NONE
 
    INTEGER(KIND=4) :: jsec, jleg, jt, jk,  jipt, jvar ! dummy loop index
+   INTEGER(KIND=4) :: it                              ! time index for vvl
    INTEGER(KIND=4) :: narg, iargc, ijarg, ifree       ! command line
    INTEGER(KIND=4) :: numin=10                        ! logical unit for input section file
    INTEGER(KIND=4) :: numout=11                       ! logical unit for output section.dat (used in cdftransport)
@@ -115,6 +116,7 @@ PROGRAM cdf_xtract_brokenline
    LOGICAL  :: lmld     = .FALSE.                    ! flag for saving mld
    LOGICAL  :: lice     = .FALSE.                    ! flag for saving ice*
    LOGICAL  :: lvt      = .FALSE.                    ! flag for saving products vt, vs
+   LOGICAL  :: l_vvl    = .FALSE.                    ! flag for vvl
    LOGICAL  :: ll_ssh, ll_mld, ll_ice                ! working flag for jk =1
 
    TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar  ! variable definition and attributes
@@ -128,7 +130,7 @@ PROGRAM cdf_xtract_brokenline
    IF ( narg < 3 ) THEN
       PRINT *,' usage :  cdf_xtrac_brokenline T-file U-file V-file [ice-file] ....'
       PRINT *,'    [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice] '
-      PRINT *,'    [-vt] [-o ROOT_name]'
+      PRINT *,'    [-vt] [-vvl] [-o ROOT_name]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'        This tool extracts model variables from model files for a geographical' 
@@ -174,6 +176,7 @@ PROGRAM cdf_xtract_brokenline
       PRINT *,'      -mld     : also save mld along the broken line.'
       PRINT *,'      -ice     : also save ice properties along the broken line.'
       PRINT *,'      -vt      : also save products vt and vs along the broken line.'
+      PRINT *,'      -vvl     : use time-varying vertical metrics'
       PRINT *,'      -o ROOT-name : specified the prefix to be used for the output file name.'
       PRINT *,'                 Note that it may be a good idea to include a separator '
       PRINT *,'                 character such as _ at the end of the ROOT_name.'
@@ -206,6 +209,7 @@ PROGRAM cdf_xtract_brokenline
       CASE ( '-mld'     ) ; lmld    =.TRUE.  ; nvar = nvar + 1  !
       CASE ( '-ice'     ) ; lice    =.TRUE.  ; nvar = nvar + 2  !
       CASE ( '-vt '     ) ; lvt     =.TRUE.  ; nvar = nvar + 2  !
+      CASE ( '-vvl '    ) ; l_vvl   =.TRUE.                     !
       CASE ( '-o '      ) ;  CALL getarg(ijarg, cf_root) ; ijarg = ijarg + 1  !
       CASE ( '-f' )       ;  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
          CALL ParseFiles(cldum)        ! many section files can be given separated with comma
@@ -232,6 +236,10 @@ PROGRAM cdf_xtract_brokenline
       ENDDO
    ENDIF
    IF ( lchk     ) STOP ! missing files
+   IF ( l_vvl    ) THEN
+      cn_fe3u = cf_ufil
+      cn_fe3v = cf_vfil
+   ENDIF
 
    ! nvar and nsec are  now fixed
    ALLOCATE( stypvar(nvar), ipk(nvar), id_varout(nvar) )
@@ -498,6 +506,9 @@ PROGRAM cdf_xtract_brokenline
 
    ! Temperature and salinity are interpolated on the respective U or V  point for better flux computation
    DO jt=1, npt  ! time loop
+      IF ( l_vvl ) THEN ;  it=jt
+      ELSE ;               it=1
+      ENDIF
       dbarot(:) = 0.d0    ! reset barotropic transport  for all sections
       IF ( lssh ) ssh (:,:)     = getvar(cf_tfil  , cn_sossheig, 1, npiglo, npjglo, ktime = jt)
       IF ( lmld ) rmld(:,:)     = getvar(cf_tfil  , cn_somxl010, 1, npiglo, npjglo, ktime = jt)
@@ -509,8 +520,8 @@ PROGRAM cdf_xtract_brokenline
          saline(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
          uzonal(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime = jt)
          vmerid(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime = jt)
-         e3u(:,:)    = getvar(cn_fzgr, 'e3u_ps',    jk, npiglo, npjglo, ldiom=.TRUE.)
-         e3v(:,:)    = getvar(cn_fzgr, 'e3v_ps',    jk, npiglo, npjglo, ldiom=.TRUE.)
+         e3u(:,:)    = getvar(cn_fe3u, 'e3u_ps',    jk, npiglo, npjglo, ktime = it, ldiom=.TRUE.)
+         e3v(:,:)    = getvar(cn_fe3v, 'e3v_ps',    jk, npiglo, npjglo, ktime = it, ldiom=.TRUE.)
 
          ll_ssh = ( lssh .AND. jk == 1 )
          ll_mld = ( lmld .AND. jk == 1 )
