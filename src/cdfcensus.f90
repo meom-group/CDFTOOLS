@@ -44,6 +44,7 @@ PROGRAM cdfcensus
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: ji, jj, jk, jt, jlog
+  INTEGER(KIND=4)                           :: it_vvl                    ! time index for vvl
   INTEGER(KIND=4)                           :: npiglo, npjglo            ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt                  ! size of the domain
   INTEGER(KIND=4)                           :: nlog
@@ -192,6 +193,8 @@ PROGRAM cdfcensus
         CALL getarg(ijarg,cldum) ; READ(cldum,*) zdt   ; ijarg = ijarg+1
      CASE ( '-full' )
         lfull = .TRUE.
+     CASE ( '-vvl'  )
+        l_vvl = .TRUE.
      CASE DEFAULT
         PRINT *,' Unknown option :',TRIM(cldum)
         STOP
@@ -202,6 +205,8 @@ PROGRAM cdfcensus
   ii1 = MAX(ii1,1) ; ii2 = MIN(ii2,npiglo)
   ij1 = MAX(ij1,1) ; ij2 = MIN(ij2,npjglo)
   ik1 = MAX(ik1,1) ; ik2 = MIN(ik2,npk   )
+ 
+  IF ( l_vvl ) cn_fe3t=cf_tfil
 
   PRINT '(a,6i5)','indices:',ii1, ii2, ij1, ij2, ik1, ik2
 
@@ -232,6 +237,9 @@ PROGRAM cdfcensus
   CALL CreateOutput
 
   DO jt = 1, npt
+     IF ( l_vvl ) THEN ; it_vvl=jt
+     ELSE ;              it_vvl=1
+     ENDIF
      ! reset cumulating variables to 0
      dcensus(:,:) = 0.d0
      dvoltotal    = 0.d0
@@ -243,7 +251,7 @@ PROGRAM cdfcensus
         IF ( lfull ) THEN
            e3t(:,:) = e31d(jk)
         ELSE
-           e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+           e3t(:,:) = getvar(cn_fe3t, 'e3t_ps', jk, npiglo, npjglo, ktime=it_vvl, ldiom=.TRUE.)
         ENDIF
 
         DO ji=ii1,ii2
