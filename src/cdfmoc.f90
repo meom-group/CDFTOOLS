@@ -87,6 +87,7 @@ PROGRAM cdfmoc
   LOGICAL                                     :: lchk  = .FALSE. ! check for missing files
   LOGICAL                                     :: ldec  = .FALSE. ! flag for decomposition option
   LOGICAL                                     :: lrap  = .FALSE. ! flag for rapid option
+  LOGICAL                                     :: l_vvl = .FALSE. ! flog for vvl
 
   ! Variables used only when MOC decomposition is requested
   INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: iumask         ! iumask (used if decomposition)
@@ -116,13 +117,14 @@ PROGRAM cdfmoc
   CHARACTER(LEN=256)                          :: cf_tfil         ! Grid T file (case of decomposition)
   CHARACTER(LEN=256)                          :: cf_ufil         ! Grid U file (case Rapid)
   CHARACTER(LEN=256)                          :: cf_sfil         ! Grid S file (case Rapid)
+
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoc  V_file [-full] [-decomp ] [T_file] [S_file] [U_file] ...'
-     PRINT *,'                [-o OUT-file] [-rapid] '
+     PRINT *,'                [-o OUT-file] [-rapid] [-vvl ]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the MOC for oceanic sub basins as described '
      PRINT *,'       in ',TRIM(cn_fbasins)
@@ -147,6 +149,7 @@ PROGRAM cdfmoc
      PRINT *,'                   - 1100-3000m  : upper-NADW recirculation'
      PRINT *,'                   - 3000-5000m  : lower-NADW recirculation'
      PRINT *,'                   - 5000-bottom : AABW recirculation'
+     PRINT *,'       [ -vvl  ] : Use time-varying vertical metrics'
      PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_moc)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -187,6 +190,8 @@ PROGRAM cdfmoc
         ldec    = .TRUE.
      CASE ('-rapid') 
         lrap    = .TRUE.
+     CASE ('-vvl'  ) 
+        l_vvl   = .TRUE.
      CASE ('-o') 
         CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1
      CASE DEFAULT
@@ -209,6 +214,7 @@ PROGRAM cdfmoc
   lchk = lchk .OR. chkfile ( cf_vfil )
   IF ( ldec ) lchk = lchk .OR. chkfile ( TRIM(cf_tfil) ) 
   IF ( lchk ) STOP  ! missing file(s)
+  IF ( l_vvl) cn_fe3v = cf_vfil
 
   IF ( lrap ) THEN 
      ! all the work will be done in a separated routine for RAPID-MOCHA section
@@ -281,10 +287,12 @@ PROGRAM cdfmoc
   IF ( ldec  ) e1u(:,:) = getvar  (cn_fhgr, cn_ve1u,  1, npiglo,npjglo)
   IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
 
-  DO jk= 1, npk
-     ! save e3v masked with vmask as 3d array
-     e3v(:,:,jk) = get_e3v(jk)
-  END DO
+  IF ( .NOT. l_vvl ) THEN  ! load ve3 only once 
+    DO jk= 1, npk
+       ! save e3v masked with vmask as 3d array
+       e3v(:,:,jk) = get_e3v(jk,1)
+    END DO
+  ENDIF
 
   iloc=MAXLOC(gphiv)
   rdumlat(1,:) = gphiv(iloc(1),:)
@@ -308,6 +316,12 @@ PROGRAM cdfmoc
   ENDIF
 
   DO jt = 1, npt
+     IF ( l_vvl ) THEN  ! load ve3 every step
+        DO jk= 1, npk
+          ! save e3v masked with vmask as 3d array
+          e3v(:,:,jk) = get_e3v(jk,jt)
+        END DO
+     ENDIF
      ! --------------------------
      ! 1) Compute total MOC: dmoc
      ! --------------------------
@@ -532,7 +546,7 @@ PROGRAM cdfmoc
 
      ierr = closeout(ncout)
    CONTAINS
-     FUNCTION get_e3v(kk)
+     FUNCTION get_e3v(kk,kt)
        !!---------------------------------------------------------------------
        !!                  ***  FUNCTION get_e3  ***
        !!
@@ -543,13 +557,14 @@ PROGRAM cdfmoc
        !!
        !!----------------------------------------------------------------------
        INTEGER(KIND=4), INTENT(in)  :: kk  ! level to work with
+       INTEGER(KIND=4), INTENT(in)  :: kt  ! time for reading e3v (vvl case)
        REAL(KIND=4), DIMENSION(npiglo,npjglo) :: get_e3v
 
        ivmask(:,:) = getvar(cn_fmsk, 'vmask', jk, npiglo, npjglo)
        IF ( lfull ) THEN
           get_e3v(:,:) = e31d(jk)
        ELSE
-          get_e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+          get_e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=kt, ldiom=.TRUE.)
        ENDIF
        get_e3v(:,:) = get_e3v(:,:) * ivmask(:,:)
 
