@@ -10,7 +10,7 @@ PROGRAM cdfcensus
   !!              S < Smodele < S+ds.
   !!              If Smodel or T model are out of the bound they are 
   !!              cumulated in the nearest (T,S) cell.
-  !!                  The output is done on a bimg file where S is given as
+  !!                  The output is done on a netcdf file where S is given as
   !!              the x-direction and T the y-direction, the field value 
   !!              being the volume of water. Due to a very large range in 
   !!              the water volume over the TS field the field is indeed 
@@ -61,7 +61,7 @@ PROGRAM cdfcensus
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1t, e2t
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsx, zty
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: rdumdep, tim
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d
   REAL(KIND=4)                              :: ztmin, ztmax, zdt, ztm
   REAL(KIND=4)                              :: zsmin, zsmax, zds, zsm
@@ -71,7 +71,6 @@ PROGRAM cdfcensus
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcensus, ddump
 
   CHARACTER(LEN=256)                        :: cf_tfil
-  CHARACTER(LEN=256)                        :: cf_bimg='censusopa.bimg'
   CHARACTER(LEN=256)                        :: cf_out='census.nc'
   CHARACTER(LEN=256)                        :: cglobal
   CHARACTER(LEN=256)                        :: cline1, cline2, cline3, cline4
@@ -79,9 +78,9 @@ PROGRAM cdfcensus
 
   TYPE(variable), DIMENSION(4)              :: stypvar
 
-  LOGICAL                                   :: lcdf=.TRUE. , lbimg=.FALSE.
   LOGICAL                                   :: lchk
   LOGICAL                                   :: lfull = .FALSE.   ! flag for full step
+  LOGICAL                                   :: l_vvl = .FALSE.   ! flag for vvl
 
   ! Initialisations
   DATA ztmin, ztmax, zdt /-2.0, 38.0, 0.05/
@@ -93,9 +92,9 @@ PROGRAM cdfcensus
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfcensus T-file nlog [-zoom imin imax jmin jmax] ...'
-     PRINT *,'                ... [-klim kmin kmax]  [-full] [-bimg] ... '
+     PRINT *,'                ... [-klim kmin kmax]  [-full] ... '
      PRINT *,'                ... [-srange smin smax ds ] ...'
-     PRINT *,'                ... [-trange tmin tmax dt ] '
+     PRINT *,'                ... [-trange tmin tmax dt ] [-vvl ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the volumetric water mass census: the ocean is divided in'
@@ -119,7 +118,7 @@ PROGRAM cdfcensus
      PRINT *,'       [-trange tmin tmax dt     ] : define the size of the temperatude bin'
      PRINT '(a,2f5.1,x,f6.3)','                         defaut is :', ztmin, ztmax, zdt
      PRINT *,'       [-full                    ] : use for full step computation'
-     PRINT *,'       [-bimg                    ] : output on bimg files (to be deprecated).'
+     PRINT *,'       [-vvl                     ] : use time-varying vertical metrics.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),'  and ',TRIM(cn_fzgr) 
@@ -130,7 +129,6 @@ PROGRAM cdfcensus
      PRINT *,'                       sigma0  (kg/m3 -1000 )'
      PRINT *,'                       sigma2  (kg/m3 -1000 )'
      PRINT *,'                       sigma3  (kg/m3 -1000 )'
-     PRINT *,'       - bimg file   : According to options.'
      STOP
   ENDIF
 
@@ -184,9 +182,6 @@ PROGRAM cdfcensus
      CASE ( '-klim' )
         CALL getarg(ijarg,cldum) ; READ(cldum,*) ik1  ; ijarg = ijarg+1
         CALL getarg(ijarg,cldum) ; READ(cldum,*) ik2  ; ijarg = ijarg+1
-     CASE ( '-bimg' )
-        lbimg = .TRUE.
-        lcdf  = .FALSE.
      CASE ( '-srange' )
         CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmin ; ijarg = ijarg+1
         CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmax ; ijarg = ijarg+1
@@ -220,7 +215,7 @@ PROGRAM cdfcensus
   ! Allocate arrays
   ALLOCATE ( dcensus (ns,nt), ddump(ns,nt) )
   ALLOCATE ( rsigma0(ns,nt), rsigma2(ns,nt), rsigma4(ns,nt) )
-  ALLOCATE ( zsx (ns,nt), zty(ns,nt), rdumdep(1), tim(npt))
+  ALLOCATE ( zsx (ns,nt), zty(ns,nt), tim(npt))
 
   ! fill up rsigma0 array with theoretical density
   DO ji=1,ns
@@ -233,39 +228,8 @@ PROGRAM cdfcensus
   rsigma0 = sigma0(zty, zsx,        ns, nt)
   rsigma2 = sigmai(zty, zsx, 2000., ns, nt)
   rsigma4 = sigmai(zty, zsx, 4000., ns, nt)
-  rdumdep(1) = 0.
 
-  IF ( lcdf ) THEN
-     ! create output fileset
-     ipk(:)= 1                  
-     stypvar%rmissing_value    = -100.
-     stypvar%valid_min         = 0.
-     stypvar%valid_max         = 1.e20
-     stypvar%conline_operation = 'N/A'
-     stypvar%caxis             = 'TYX'
-
-     stypvar(1)%cname          = 'volcensus'
-     stypvar(2)%cname          = 'sigma0'
-     stypvar(3)%cname          = 'sigma2'
-     stypvar(4)%cname          = 'sigma4'
-
-     stypvar(1)%cunits         = 'm3'
-     stypvar(2:4)%cunits       = 'kg/m3'
-
-     stypvar(1)%clong_name     = 'Volume_Census_TS'
-     stypvar(2)%clong_name     = 'Sigma0_TS'
-     stypvar(3)%clong_name     = 'Sigma2_TS'
-     stypvar(4)%clong_name     = 'Sigma4_TS'
-
-     stypvar(1)%cshort_name    = 'volcensus'
-     stypvar(2)%cshort_name    = 'sigma0'
-     stypvar(3)%cshort_name    = 'sigma2'
-     stypvar(4)%cshort_name    = 'sigma4'
-
-     ncout = create      (cf_out, cf_tfil,  ns, nt,  1                                           )
-     ierr  = createvar   (ncout,  stypvar,  4,  ipk, id_varout, cdglobal=cglobal                 )
-     ierr  = putheadervar(ncout,  cf_tfil,  ns, nt,  1,   pnavlon=zsx, pnavlat=zty, pdep=rdumdep )
-  ENDIF
+  CALL CreateOutput
 
   DO jt = 1, npt
      ! reset cumulating variables to 0
@@ -322,45 +286,61 @@ PROGRAM cdfcensus
         ddump(:,:) = LOG10 (1.d0 + ddump(:,:) )
      ENDDO
 
-     IF ( lcdf ) THEN
-        ! Output on census.nc file
-        ierr = putvar(ncout, id_varout(1), REAL(ddump), 1, ns, nt, ktime=jt)
-        ierr = putvar(ncout, id_varout(2), rsigma0,     1, ns, nt, ktime=jt)
-        ierr = putvar(ncout, id_varout(3), rsigma2,     1, ns, nt, ktime=jt)
-        ierr = putvar(ncout, id_varout(4), rsigma4,     1, ns, nt, ktime=jt)
-     ENDIF
+     ! Output on census.nc file
+     ierr = putvar(ncout, id_varout(1), REAL(ddump), 1, ns, nt, ktime=jt)
+     ierr = putvar(ncout, id_varout(2), rsigma0,     1, ns, nt, ktime=jt)
+     ierr = putvar(ncout, id_varout(3), rsigma2,     1, ns, nt, ktime=jt)
+     ierr = putvar(ncout, id_varout(4), rsigma4,     1, ns, nt, ktime=jt)
   ENDDO  ! time loop
 
-  IF ( lcdf ) THEN
      tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
      ierr = putvar1d(ncout,   tim,       npt, 'T')
      ierr = closeout(ncout)
-  ENDIF
-
-  IF (lbimg ) THEN
-     ! Output on bimg file
-     OPEN (10,file=cf_bimg,form='UNFORMATTED')
-
-     WRITE(cline1,942)' Water Masses Census [10-15 m3] on',ii1,ii2,ij1,ij2
-942  FORMAT(a,4i5)
-     cline2 = '   computed from the following T-S files:'
-     cline3 = cf_tfil
-     cline4 = ''
-     !
-     WRITE(10) cline1
-     WRITE(10) cline2
-     WRITE(10) cline3
-     WRITE(10) cline4
-     WRITE(10) ns, nt, 1, 1, 4, nlog
-     WRITE(10) zsmin, ztmin, zds, zdt, 0.
-     WRITE(10) 0.
-     WRITE(10) 0.
-     WRITE(10) ((REAL(ddump(ji,jj)),ji=1,ns),jj=1,nt)
-     WRITE(10) ((rsigma0(ji,jj),    ji=1,ns),jj=1,nt)
-     WRITE(10) ((rsigma2(ji,jj),    ji=1,ns),jj=1,nt)
-     WRITE(10) ((rsigma4(ji,jj),    ji=1,ns),jj=1,nt)
-     CLOSE(10)
-  ENDIF
 
   PRINT *,' Done.'
+CONTAINS
+
+ SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf files for output
+    !!
+    !! ** Method  :   Set file structure and use it !
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(1) :: zdumdep   ! dummy dep array for output
+
+    zdumdep(:)=0.
+    ! create output fileset
+    ipk(:)= 1                  
+    stypvar%rmissing_value    = -100.
+    stypvar%valid_min         = 0.
+    stypvar%valid_max         = 1.e20
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TYX'
+
+    stypvar(1)%cname          = 'volcensus'
+    stypvar(2)%cname          = 'sigma0'
+    stypvar(3)%cname          = 'sigma2'
+    stypvar(4)%cname          = 'sigma4'
+
+    stypvar(1)%cunits         = 'm3'
+    stypvar(2:4)%cunits       = 'kg/m3'
+
+    stypvar(1)%clong_name     = 'Volume_Census_TS'
+    stypvar(2)%clong_name     = 'Sigma0_TS'
+    stypvar(3)%clong_name     = 'Sigma2_TS'
+    stypvar(4)%clong_name     = 'Sigma4_TS'
+
+    stypvar(1)%cshort_name    = 'volcensus'
+    stypvar(2)%cshort_name    = 'sigma0'
+    stypvar(3)%cshort_name    = 'sigma2'
+    stypvar(4)%cshort_name    = 'sigma4'
+
+    ncout = create      (cf_out, cf_tfil,  ns, nt,  1                                           )
+    ierr  = createvar   (ncout,  stypvar,  4,  ipk, id_varout, cdglobal=cglobal                 )
+    ierr  = putheadervar(ncout,  cf_tfil,  ns, nt,  1,   pnavlon=zsx, pnavlat=zty, pdep=zdumdep )
+
+ END SUBROUTINE CreateOutput
+
 END PROGRAM cdfcensus
