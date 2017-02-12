@@ -63,14 +63,17 @@
 
   IMPLICIT NONE
 
+  ! Global var defining the mesh_mask_version (not in namelist)
+  CHARACTER(LEN=256), PUBLIC  :: cg_zgr_ver='v3.6'
+  LOGICAL, PUBLIC             :: lg_vvl=.FALSE.  ! flag (global and public) for vvl ( set to T when vvl )
+
   PRIVATE 
   INTEGER(KIND=4) :: nid_x, nid_y, nid_z, nid_t, nid_lat, nid_lon, nid_dep, nid_tim
   INTEGER(KIND=4) :: nid_lon1d, nid_lat1d
-  LOGICAL         :: l_mbathy=.false.
+  LOGICAL         :: l_mbathy = .false.
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mbathy         !: for reading e3._ps in nemo3.x
   REAL(KIND=4),    DIMENSION(:,:), ALLOCATABLE :: e3t_ps, e3w_ps !: for reading e3._ps in nemo3.x
   REAL(KIND=4),    DIMENSION(:),   ALLOCATABLE :: e3t_0, e3w_0   !: for readinf e3._ps in nemo3.x
-
   
   INTEGER(KIND=4)    :: nstart_date  = -1                      !# from global file attribute
   CHARACTER(LEN=256) :: ctime_units  = 'seconds since 0000-01-01 00:00:00'
@@ -1200,7 +1203,6 @@ CONTAINS
 
   END FUNCTION getvarname
 
-
   FUNCTION  getvar (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime, ldiom)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar  ***
@@ -1246,6 +1248,7 @@ CONTAINS
     ELSE
        ilev=1
     ENDIF
+    ! Optionall arguments
 
     IF (PRESENT(kimin) ) THEN
        imin=kimin
@@ -1277,104 +1280,45 @@ CONTAINS
        lliom=.false.
     ENDIF
 
-    clvar=cdvar
-
     ! Must reset the flags to false for every call to getvar
+    clvar=cdvar
     llog = .FALSE.
     lsf  = .FALSE.
     lao  = .FALSE.
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
 
-    IF ( lliom) THEN  ! try to detect if input file is a zgr IOM file, looking for e3t_0
-      istatus=NF90_INQ_VARID( incid,'e3t_0', id_var)
-      istatus=NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim) !, dimids, nAtts)
-      IF ( istatus == NF90_NOERR ) THEN
-        ! iom file , change names
-        ! now try to detect if it is v2 or v3, in v3, e3t_ps exist and is a 2d variable
-         istatus=          NF90_INQ_VARID( incid,'e3t_ps', id_var)
-         istatus=istatus + NF90_INQUIRE_VARIABLE( incid, id_var, xtype=ityp, ndims=inbdim2) !, dimids, nAtts)
-         !istatus2=NF90_INQUIRE_VAR( incid, id_var, 'e3t_0', xtype, ndims, dimids, nAtts)
-         PRINT *, 'e3t_0 has' , inbdim, 'dimensions'
-         IF ( istatus == NF90_NOERR ) THEN  
-           ! case of NEMO_v3 zfr files
-           ! look for mbathy and out it in memory, once for all
-           IF ( .NOT. l_mbathy ) THEN
-             PRINT *,'MESH_ZGR V3 detected'
-             l_mbathy=.true.
-             istatus=NF90_INQ_DIMID(incid,'x',id_var) ; istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ii )
-             istatus=NF90_INQ_DIMID(incid,'y',id_var) ; istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ij )
-             istatus=NF90_INQ_DIMID(incid,'z',id_var) ; istatus=NF90_INQUIRE_DIMENSION(incid,id_var, len=ik0)
-
-             ALLOCATE( mbathy(ii,ij))               ! mbathy is allocated on the whole domain
-             ALLOCATE( e3t_ps(ii,ij),e3w_ps(ii,ij)) ! e3._ps  are  allocated on the whole domain
-             ALLOCATE( e3t_0(ik0), e3w_0(ik0) )     ! whole depth
-
-             istatus=NF90_INQ_VARID (incid,'mbathy', id_var)
-             IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no mbathy found !' ; STOP
-             ENDIF
-             istatus=NF90_GET_VAR(incid,id_var, mbathy, start=(/1,1,1/), count=(/ii,ij,1/) )
-             !
-             istatus=NF90_INQ_VARID (incid,'e3t_ps', id_var)
-             IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_ps found !' ; STOP
-             ENDIF
-             istatus=NF90_GET_VAR(incid,id_var,e3t_ps, start=(/1,1,1/), count=(/ii,ij,1/) )
-             !
-             istatus=NF90_INQ_VARID (incid,'e3w_ps', id_var)
-             IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_ps found !' ; STOP
-             ENDIF
-             istatus=NF90_GET_VAR(incid,id_var,e3w_ps, start=(/1,1,1/), count=(/ii,ij,1/) )
-             !
-             istatus=NF90_INQ_VARID (incid,'e3t_0', id_var)
-             IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_0 found !' ; STOP
-             ENDIF
-             istatus=NF90_GET_VAR(incid,id_var,e3t_0, start=(/1,1/), count=(/ik0,1/) )
-             !
-             istatus=NF90_INQ_VARID (incid,'e3w_0', id_var)
-             IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_0 found !' ; STOP
-             ENDIF
-             istatus=NF90_GET_VAR(incid,id_var,e3w_0, start=(/1,1/), count=(/ik0,1/) )
-             DO ji=1,ii
-                DO jj=1,ij
-                   IF ( e3t_ps (ji,jj) == 0 .AND. mbathy(ji,jj) /= 0 ) e3t_ps(ji,jj)=e3t_0(mbathy(ji,jj))
-                END DO
-             END DO
-           ENDIF
-          ! zgr v3
-          SELECT CASE ( clvar )
-           CASE ('e3u_ps')  ; clvar='e3u_ps'
-           CASE ('e3v_ps')  ; clvar='e3v_ps'
-           CASE ('e3w_ps')  ; clvar='e3w_ps'
-          END SELECT
-
-         ELSEIF ( inbdim>2 ) THEN
-          !  case of NEMO_V3.6 STABLE zgr file
-          SELECT CASE ( clvar )
-           CASE ('e3t_ps')  ; clvar='e3t_0'
-           CASE ('e3u_ps')  ; clvar='e3u_0'
-           CASE ('e3v_ps')  ; clvar='e3v_0'
-           CASE ('e3w_ps')  ; clvar='e3w_0'
-          END SELECT
-          
-         ELSE
-          ! zgr v2
-          SELECT CASE ( clvar )
-           CASE ('e3t_ps')  ; clvar='e3t'
-           CASE ('e3u_ps')  ; clvar='e3u'
-           CASE ('e3v_ps')  ; clvar='e3v'
-           CASE ('e3w_ps')  ; clvar='e3w'
-          END SELECT
-         ENDIF
+    IF ( lliom) THEN  !
+      IF ( clvar == cn_ve3t ) THEN
+        SELECT CASE ( cg_zgr_ver )
+        CASE ( 'v2.0' ) ; clvar = 'e3t_ps'
+        CASE ( 'v3.0' ) ; clvar = 'e3t'
+        CASE ( 'v3.6' ) ; clvar = 'e3t_0'
+        END SELECT
+      ELSE IF ( clvar == cn_ve3u ) THEN
+        SELECT CASE ( cg_zgr_ver )
+        CASE ( 'v2.0' ) ; clvar = 'e3u_ps'
+        CASE ( 'v3.0' ) ; clvar = 'e3u'
+        CASE ( 'v3.6' ) ; clvar = 'e3u_0'
+        END SELECT
+      ELSE IF ( clvar == cn_ve3v ) THEN
+        SELECT CASE ( cg_zgr_ver )
+        CASE ( 'v2.0' ) ; clvar = 'e3v_ps'
+        CASE ( 'v3.0' ) ; clvar = 'e3v'
+        CASE ( 'v3.6' ) ; clvar = 'e3v_0'
+        END SELECT
+      ELSE IF ( clvar == cn_ve3w ) THEN
+        SELECT CASE ( cg_zgr_ver )
+        CASE ( 'v2.0' ) ; clvar = 'e3v_ps'
+        CASE ( 'v3.0' ) ; clvar = 'e3v'
+        CASE ( 'v3.6' ) ; clvar = 'e3v_0'
+        END SELECT
       ENDIF
     ENDIF
 
     istatus=NF90_INQUIRE(incid, unlimitedDimId=id_dimunlim)
     CALL ERR_HDL(NF90_INQ_VARID ( incid,clvar,id_var))
+
     ! look for time dim in variable
     inldim=0
     istatus=NF90_INQUIRE_VARIABLE(incid, id_var, ndims=inbdim,dimids=inldim(:) )
@@ -1383,11 +1327,11 @@ CONTAINS
     istart(2) = jmin
     ! JMM ! it workd for X Y Z T file,   not for X Y T .... try to found a fix !
     IF ( inldim(3) == id_dimunlim ) THEN
-    istart(3) = itime
-    istart(4) = 1
+      istart(3) = itime
+      istart(4) = 1
     ELSE
-    istart(3) = ilev
-    istart(4) = itime
+      istart(3) = ilev
+      istart(4) = itime
     ENDIF
 
     icount(1)=kpi
@@ -1399,7 +1343,7 @@ CONTAINS
 
     istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'savelog10')
     IF (istatus == NF90_NOERR ) THEN
-       ! there is a scale factor for this variable
+       ! The file is saved a the log of the field
        istatus=NF90_GET_ATT(incid,id_var,'savelog10',ilog)
        IF ( ilog /= 0 ) llog=.TRUE.
     ENDIF
@@ -1413,147 +1357,23 @@ CONTAINS
 
     istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'add_offset')
     IF (istatus == NF90_NOERR ) THEN
-       ! there is a scale factor for this variable
+       ! there is an add_offset for this variable
        istatus=NF90_GET_ATT(incid,id_var,'add_offset', ao)
        IF ( ao /= 0.) lao=.TRUE.
     ENDIF
 
 
-    IF (llperio ) THEN
+    IF (llperio ) THEN ! Deal with E-W periodic conditions ( used when reading across the folding line)
       ALLOCATE (zend (ipiglo-imin,kpj), zstart(imax-1,kpj) )
-      IF (l_mbathy .AND. &
-        &  ( cdvar == 'e3t_ps' .OR. cdvar == 'e3w_ps' .OR. cdvar == 'e3u_ps' .OR. cdvar == 'e3v_ps'))  THEN
-       istatus=0
-       clvar=cdvar
-       SELECT CASE ( clvar )
-         CASE ( 'e3t_ps', 'e3u_ps', 'e3v_ps' ) 
-           DO ji=1,ipiglo-imin
-            DO jj=1,kpj
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zend(ji,jj)=e3t_ps(imin+ji-1, jmin+jj-1)
-             ELSE
-               zend(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
-           DO ji=1,imax-1
-            DO jj=1,kpj
-             ik=mbathy(ji+1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zstart(ji,jj)=e3t_ps(ji+1, jmin+jj-1)
-             ELSE
-               zstart(ji,jj)=e3t_0(ilev)
-             ENDIF
-            END DO
-           END DO
-          getvar(1:ipiglo-imin,:)=zend
-          getvar(ipiglo-imin+1:kpi,:)=zstart
-         IF (clvar == 'e3u_ps') THEN
-         DO ji=1,kpi-1
-          DO jj=1,kpj
-            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji+1,jj))
-          END DO
-         END DO
-           ! not very satisfactory but still....
-           getvar(kpi,:)=getvar(kpi-1,:)
-         ENDIF
-
-         IF (clvar == 'e3v_ps') THEN
-         DO ji=1,kpi
-          DO jj=1,kpj-1
-            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji,jj+1))
-          END DO
-         END DO
-           ! not very satisfactory but still....
-           getvar(:,kpj)=getvar(:,kpj-1)
-         ENDIF
-         
-         CASE ( 'e3w_ps')
-           DO ji=1,ipiglo-imin
-            DO jj=1,kpj
-             ik=mbathy(imin+ji-1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zend(ji,jj)=e3w_ps(imin+ji-1, jmin+jj-1)
-             ELSE
-               zend(ji,jj)=e3w_0(ilev)
-             ENDIF
-            END DO
-           END DO
-           DO ji=1,imax-1
-            DO jj=1,kpj
-             ik=mbathy(ji+1, jmin+jj-1)
-             IF (ilev == ik ) THEN
-               zstart(ji,jj)=e3w_ps(ji+1, jmin+jj-1)
-             ELSE
-               zstart(ji,jj)=e3w_0(ilev)
-             ENDIF
-            END DO
-           END DO
-       getvar(1:ipiglo-imin,:)=zend
-       getvar(ipiglo-imin+1:kpi,:)=zstart
-
-       END SELECT
-      ELSE
-       istatus=NF90_GET_VAR(incid,id_var,zend, start=(/imin,jmin,ilev,itime/),count=(/ipiglo-imin,kpj,1,1/))
-       istatus=NF90_GET_VAR(incid,id_var,zstart, start=(/2,jmin,ilev,itime/),count=(/imax-1,kpj,1,1/))
-       getvar(1:ipiglo-imin,:)=zend
-       getvar(ipiglo-imin+1:kpi,:)=zstart
-      ENDIF
+       istatus=NF90_GET_VAR(incid,id_var,zend,   start=(/imin,jmin,ilev,itime/),count=(/ipiglo-imin,kpj,1,1/))
+       istatus=NF90_GET_VAR(incid,id_var,zstart, start=(/2   ,jmin,ilev,itime/),count=(/imax-1,     kpj,1,1/))
+       getvar(1:ipiglo-imin    ,:) = zend
+       getvar(ipiglo-imin+1:kpi,:) = zstart
       DEALLOCATE(zstart, zend )
     ELSE
-      IF (l_mbathy .AND. &
-        &  ( cdvar == 'e3t_ps' .OR. cdvar == 'e3w_ps' .OR. cdvar == 'e3u_ps' .OR. cdvar == 'e3v_ps'))  THEN
-       istatus=0
-       clvar=cdvar
-       SELECT CASE ( clvar )
-         CASE ( 'e3t_ps', 'e3u_ps', 'e3v_ps' ) 
-         DO ji=1,kpi
-          DO jj=1,kpj
-           ik=mbathy(imin+ji-1, jmin+jj-1)
-           IF (ilev == ik ) THEN
-             getvar(ji,jj)=e3t_ps(imin+ji-1, jmin+jj-1)
-           ELSE
-             getvar(ji,jj)=e3t_0(ilev)
-           ENDIF
-          END DO
-         END DO
-         IF (clvar == 'e3u_ps') THEN
-         DO ji=1,kpi-1
-          DO jj=1,kpj
-            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji+1,jj))
-          END DO
-         END DO
-           ! not very satisfactory but still....
-           getvar(kpi,:)=getvar(2,:) 
-         ENDIF
-         IF (clvar == 'e3v_ps') THEN
-         DO ji=1,kpi
-          DO jj=1,kpj-1
-            getvar(ji,jj)=MIN(getvar(ji,jj),getvar(ji,jj+1))
-          END DO
-         END DO
-           ! not very satisfactory but still....
-           IF ( kpj /= 1 ) getvar(:,kpj)=getvar(:,kpj-1)
-         ENDIF
-
-         CASE ( 'e3w_ps')
-         DO ji=1,kpi
-          DO jj=1,kpj
-           ik=mbathy(imin+ji-1, jmin+jj-1)
-           IF (ilev == ik ) THEN
-             getvar(ji,jj)=e3w_ps(imin+ji-1, jmin+jj-1)
-           ELSE
-             getvar(ji,jj)=e3w_0(ilev)
-           ENDIF
-          END DO
-         END DO
-
-       END SELECT
-      ELSE
-        istatus=NF90_GET_VAR(incid,id_var,getvar, start=istart,count=icount)
-      ENDIF
+      istatus=NF90_GET_VAR(incid,id_var,getvar, start=istart,count=icount)
     ENDIF
+
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar for ', TRIM(clvar)
        CALL ERR_HDL(istatus)
@@ -2155,45 +1975,67 @@ CONTAINS
     !!-------------------------------------------------------------------------
     istart(:) = 1
     icount(:) = 1
-    icount(3)=kk
+    icount(1) = kk
     clvar=cdvar
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,incid)
     ! check for IOM style mesh_zgr or coordinates :
-    ! IOIPSL (x_a=y_a=1)               IOM 
-    ! gdept(time,z,y_a,x_a)            gdept_0(t,z)
-    ! gdepw(time,z,y_a,x_a)            gdepw_0(t,z)
-    !   e3t(time,z,y_a,x_a)            e3t_0(t,z)
-    !   e3w(time,z,y_a,x_a)            e3w_0(t,z)
-    istatus=NF90_INQ_VARID ( incid,'gdept_0',id_var)
-    IF ( istatus == NF90_NOERR) THEN
-     icount(1)=kk ; icount(3)=1
-     SELECT CASE (clvar)
-        CASE ('gdepw') 
-           clvar='gdepw_0'
-        CASE ('gdept')
-           clvar='gdept_0'
-        CASE ('e3t')
-           clvar='e3t_0'
-        CASE ('e3w')
-           clvar='e3w_0'
-      END SELECT
-    ENDIF
-    istatus=NF90_INQ_VARID ( incid,'gdept_1d',id_var)
-    IF ( istatus == NF90_NOERR) THEN
-     icount(1)=kk ; icount(3)=1
-     SELECT CASE (clvar)
-        CASE ('gdepw') 
-           clvar='gdepw_1d'
-        CASE ('gdept')
-           clvar='gdept_1d'
-        CASE ('e3t')
-           clvar='e3t_1d'
-        CASE ('e3w')
-           clvar='e3w_1d'
-      END SELECT
+    ! IOIPSL (x_a=y_a=1)(2.0)          IOM(3.0)           3.6
+    ! gdept(time,z,y_a,x_a)            gdept_0(t,z)    gdept_1d(t,z)
+    ! gdepw(time,z,y_a,x_a)            gdepw_0(t,z)    gdepw_1d(t,z)
+    !   e3t(time,z,y_a,x_a)            e3t_0(t,z)      e3t_1d(t,z)
+    !   e3w(time,z,y_a,x_a)            e3w_0(t,z)      e3w_1d(t,z)
+
+    SELECT CASE ( cg_zgr_ver ) 
+    CASE ( 'v2.0') ; icount(1)=1  ; icount(3)=kk
+    CASE ( 'v3.0') ; icount(1)=kk ; icount(3)=1
+    CASE ( 'v3.6') ; icount(1)=kk ; icount(3)=1
+    END SELECT
+   
+    IF ( clvar == cn_gdept) THEN
+    SELECT CASE ( cg_zgr_ver )
+    CASE ( 'v2.0')
+      clvar = 'gdept'
+    CASE ( 'v3.0')
+      clvar = 'gdept_0'
+    CASE ( 'v3.6')
+      clvar = 'gdept_1d'
+    END SELECT
     ENDIF
 
+    IF ( clvar == cn_gdepw) THEN
+    SELECT CASE ( cg_zgr_ver )
+    CASE ( 'v2.0')
+      clvar = 'gdepw'
+    CASE ( 'v3.0')
+      clvar = 'gdepw_0'
+    CASE ( 'v3.6')
+      clvar = 'gdepw_1d'
+    END SELECT
+    ENDIF
+
+    IF ( clvar == cn_ve3t) THEN
+    SELECT CASE ( cg_zgr_ver )
+    CASE ( 'v2.0')
+      clvar = 'e3t'
+    CASE ( 'v3.0')
+      clvar = 'e3t_0'
+    CASE ( 'v3.6')
+      clvar = 'e3t_1d'
+    END SELECT
+    ENDIF
+
+    IF ( clvar == cn_ve3w) THEN
+    SELECT CASE ( cg_zgr_ver )
+    CASE ( 'v2.0')
+      clvar = 'e3w'
+    CASE ( 'v3.0')
+      clvar = 'e3w_0'
+    CASE ( 'v3.6')
+      clvar = 'e3w_1d'
+    END SELECT
+    ENDIF
+    
     istatus=NF90_INQ_VARID ( incid,clvar,id_var)
     istatus=NF90_GET_VAR(incid,id_var,getvare3,start=istart,count=icount)
     IF ( istatus /= 0 ) THEN
@@ -2900,7 +2742,8 @@ CONTAINS
     CHARACTER(LEN=*),  INTENT(in) :: cd_file
     LOGICAL, OPTIONAL, INTENT(in) :: ld_verbose
 
-    LOGICAL                      :: ll_exist, ll_verbose
+    INTEGER(KIND=4)               :: ierr
+    LOGICAL                       :: ll_exist, ll_verbose
     !!----------------------------------------------------------------------
     IF ( PRESENT(ld_verbose) ) THEN
        ll_verbose = ld_verbose
@@ -2913,6 +2756,7 @@ CONTAINS
 
        IF (ll_exist) THEN
           chkfile = .false.
+          IF ( cd_file == cn_fzgr ) ierr = SetMeshZgrVersion ()
        ELSE
           IF ( ll_verbose ) PRINT *, ' File ',TRIM(cd_file),' is missing '
           chkfile = .true.
@@ -2923,7 +2767,7 @@ CONTAINS
 
   END FUNCTION chkfile
 
-  LOGICAL FUNCTION chkvar (cd_file, cd_var)
+  LOGICAL FUNCTION chkvar (cd_file, cd_var, ld_verbose )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION chkvar  ***
     !!
@@ -2935,14 +2779,20 @@ CONTAINS
     !!              IF ( chkvar( cf_toto, cv_toto) ) STOP  ! missing var
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=*), INTENT(in) :: cd_file
-    CHARACTER(LEN=*), INTENT(in) :: cd_var
+    CHARACTER(LEN=*),  INTENT(in) :: cd_file
+    CHARACTER(LEN=*),  INTENT(in) :: cd_var
+    LOGICAL, OPTIONAL, INTENT(in) :: ld_verbose
 
     INTEGER(KIND=4)              :: istatus
     INTEGER(KIND=4)              :: incid, id_t, id_var
-
+    LOGICAL                      :: ll_verbose
     !!----------------------------------------------------------------------
     IF ( TRIM(cd_var) /= 'none')  THEN
+       IF ( PRESENT(ld_verbose) ) THEN
+          ll_verbose = ld_verbose
+       ELSE
+          ll_verbose = .TRUE.
+       ENDIF
     
        ! Open cdf dataset
        istatus = NF90_OPEN(cd_file, NF90_NOWRITE,incid)
@@ -2952,8 +2802,7 @@ CONTAINS
        IF ( istatus == NF90_NOERR ) THEN
           chkvar = .false.
        ELSE
-          PRINT *, ' '
-          PRINT *, ' Var ',TRIM(cd_var),' is missing in file ',TRIM(cd_file)
+          IF ( ll_verbose ) PRINT *, ' Var ',TRIM(cd_var),' is missing in file ',TRIM(cd_file)
           chkvar = .true.
        ENDIF
        
@@ -3155,6 +3004,34 @@ CONTAINS
     GetNcFile%nlen(idy) = GetNcFile%npj
 
   END FUNCTION GetNcFile
+
+  INTEGER FUNCTION  SetMeshZgrVersion
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE SetMeshZgrVersion  ***
+    !!
+    !! ** Purpose :  This routine set the global variable cg_zgr_ver 
+    !!              according to the format of the set of mesh_mask file
+    !!
+    !! ** Method  : Use the algorithm formelly in getvar with option ldiom=true
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=10)  :: clvar='e3t_0'
+    !!----------------------------------------------------------------------
+   
+    IF ( chkvar (cn_fzgr, clvar, .false.) ) THEN  ! use quiet mode
+         cg_zgr_ver='v2.0'
+    ELSE
+      IF ( getvdim (cn_fzgr, clvar) == 2 ) THEN
+         cg_zgr_ver='v0.0'
+      ELSE
+         cg_zgr_ver='v3.6'
+      ENDIF
+    ENDIF
+    PRINT *,' mesh_zgr version is ', TRIM( cg_zgr_ver )
+    SetMeshZgrVersion=1
+
+  END FUNCTION SetMeshZgrVersion
+
 
 END MODULE cdfio
 
