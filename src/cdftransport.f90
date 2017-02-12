@@ -197,7 +197,6 @@ PROGRAM cdftransport
    LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
    LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
    LOGICAL                                     :: l_self  = .FALSE.   ! flag for self mesh/mask files in the input
-   LOGICAL                                     :: l_vvl   = .FALSE.   ! flag for vvl condition
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
@@ -300,7 +299,7 @@ PROGRAM cdftransport
          l_tsfil = .TRUE.
 
       CASE ( '-vvl' ) 
-         l_vvl = .TRUE.
+         lg_vvl = .TRUE.
 
       CASE ( '-self' ) 
          l_self = .TRUE.
@@ -324,10 +323,11 @@ PROGRAM cdftransport
    END DO
    
    it = 1
-   IF ( l_vvl ) THEN
+   IF ( lg_vvl ) THEN
+      ! when vvl vertical metrics is stored in the data file with name cn_ve3u 
       cn_fe3u = cf_ufil
       cn_fe3v = cf_vfil
-      it = itime
+      it      = itime
    ENDIF
 
    IF ( l_self ) THEN
@@ -335,6 +335,10 @@ PROGRAM cdftransport
        cn_fhgr = cf_vfil
        cn_fe3u = cf_vfil
        cn_fe3v = cf_vfil
+       ! in broken line the metrics is saved as e3._ps 
+       ! this is to be changed but take care of backward compatibility
+       cn_ve3u = 'e3u_ps'
+       cn_ve3v = 'e3v_ps'
    ENDIF
 
    ! checking if all required files are available
@@ -561,10 +565,10 @@ PROGRAM cdftransport
          ELSE
             IF ( l_self) THEN
                e3u(:,:) = 1. !dummy value
-               e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=it, ldiom=.FALSE.)  ! In broken line name is e3v_ps
+               e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.FALSE.)  ! In broken line name is e3v_ps
             ELSE
-               e3u(:,:) = getvar(cn_fe3u, 'e3u_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
-               e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
+               e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
+               e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
             ENDIF
          ENDIF
 
