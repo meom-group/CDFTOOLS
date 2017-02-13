@@ -45,16 +45,16 @@ PROGRAM cdfbotpressure
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_bpres            ! Bottom pressure
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_sigi             ! insitu density
 
-   CHARACTER(LEN=256)                        :: cf_in, cf_out       ! input/output file
+   CHARACTER(LEN=256)                        :: cf_in               ! input/output file
+   CHARACTER(LEN=256)                        :: cf_out='botpressure.nc'   ! output file
    CHARACTER(LEN=256)                        :: cldum               ! dummy string for command line browsing
-   CHARACTER(LEN=256)                        :: cglobal            ! Global attribute
+   CHARACTER(LEN=256)                        :: cglobal             ! Global attribute
 
    LOGICAL                                   :: lfull =.FALSE.      ! flag for full step computation
    LOGICAL                                   :: lssh  =.FALSE.      ! Use ssh and cst surf. density in the bot pressure
    LOGICAL                                   :: lssh2 =.FALSE.      ! Use ssh and variable surf.density in the bot pressure
    LOGICAL                                   :: lxtra =.FALSE.      ! Save ssh and ssh pressure
    LOGICAL                                   :: lchk  =.FALSE.      ! flag for missing files
-   LOGICAL                                   :: l_vvl =.FALSE.      ! flag for vvl
 
    TYPE(variable), DIMENSION(:), ALLOCATABLE :: stypvar             ! extension for attributes
    !!----------------------------------------------------------------------
@@ -63,6 +63,7 @@ PROGRAM cdfbotpressure
    narg= iargc()
    IF ( narg == 0 ) THEN
       PRINT *,' usage : cdfbotpressure T-file [-full] [-ssh] [-ssh2 ] [-xtra ] [-vvl ]'
+      PRINT *,'              ...   [ -o OUT-file ] '
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'          Compute the vertical bottom pressure (pa) from in situ density'
@@ -84,13 +85,14 @@ PROGRAM cdfbotpressure
       PRINT *,'                Require either -ssh or -ssh2 option. Botpressure is still'
       PRINT *,'                the total pressure, including ssh effect.'
       PRINT *,'        -vvl  : Use  time-varying vertical metrics e3t'
+      PRINT *,'        -o OUT-file : specify output file instead of ',TRIM(cf_out)
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'       ', TRIM(cn_fmsk),' and ', TRIM(cn_fzgr) 
       PRINT *,'      '
       PRINT *,'     OUTPUT : '
-      PRINT *,'       netcdf file :  botpressure.nc'
-      PRINT *,'         variables :  sobotpres'
+      PRINT *,'       netcdf file : ',TRIM(cf_out),' unless -o option is used.'
+      PRINT *,'         variables :  sobotpres, [',TRIM(cn_sossheig),' sosshpre ]'
       PRINT *,'      '
       PRINT *,'     SEE ALSO :'
       PRINT *,'        cdfvint'
@@ -107,7 +109,8 @@ PROGRAM cdfbotpressure
       CASE ( '-ssh2' ) ; lssh2 = .TRUE. 
       CASE ( '-xtra' ) ; lxtra = .TRUE.  ; nvar = 3  ! more outputs
       CASE ( '-full' ) ; lfull = .TRUE. 
-      CASE ( '-vvl'  ) ; l_vvl = .TRUE. 
+      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
+      CASE ( '-o'    ) ; CALL getarg( ijarg,cf_out) ; ijarg = ijarg + 1
       CASE DEFAULT     
          ij = ij + 1
          SELECT CASE ( ij)
@@ -125,10 +128,7 @@ PROGRAM cdfbotpressure
    lchk = chkfile ( cn_fzgr ) .OR. lchk
    IF ( lchk ) STOP ! missing files
 
-   IF ( l_vvl ) cn_fe3t = cf_in
-
-   ! log information so far
-   cf_out = 'botpressure.nc'
+   IF ( lg_vvl ) cn_fe3t = cf_in
 
    npiglo = getdim (cf_in, cn_x )
    npjglo = getdim (cf_in, cn_y )
@@ -154,59 +154,13 @@ PROGRAM cdfbotpressure
    ALLOCATE ( dl_psurf(npiglo, npjglo))
    ALLOCATE ( dl_sigi(npiglo, npjglo))
 
-   ! prepare output variable
-   ipk(:)                       = 1
-   stypvar(1)%cname             = 'sobotpres'
-   stypvar(1)%cunits            = 'Pascal'
-   stypvar(1)%rmissing_value    = 0.
-   stypvar(1)%valid_min         = 0
-   stypvar(1)%valid_max         =  1.e15
-   stypvar(1)%clong_name        = 'Bottom Pressure'
-   stypvar(1)%cshort_name       = 'sobotpres'
-   stypvar(1)%cprecision         = 'r8'
-   stypvar(1)%conline_operation = 'N/A'
-   stypvar(1)%caxis             = 'TYX'
-
-   IF ( lxtra ) THEN
-      stypvar(2)%cname             = 'sossheig'
-      stypvar(2)%cunits            = 'm'
-      stypvar(2)%rmissing_value    =  0.
-      stypvar(2)%valid_min         = -10.
-      stypvar(2)%valid_max         =  10.
-      stypvar(2)%clong_name        = 'Sea Surface Height'
-      stypvar(2)%cshort_name       = 'sossheig'
-      stypvar(2)%conline_operation = 'N/A'
-      stypvar(2)%caxis             = 'TYX'
-
-      stypvar(3)%cname             = 'sosshpre'
-      stypvar(3)%cunits            = 'Pascal'
-      stypvar(3)%rmissing_value    =  0.
-      stypvar(3)%valid_min         = -100000.
-      stypvar(3)%valid_max         =  100000.
-      stypvar(3)%clong_name        = 'Pressure due to SSH'
-      stypvar(3)%cshort_name       = 'sosshpre'
-      stypvar(3)%cprecision         = 'r8'
-      stypvar(3)%conline_operation = 'N/A'
-      stypvar(3)%caxis             = 'TYX'
-   ENDIF
-
-   ! Initialize output file
-   gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk )
-   e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk )
-
-   ncout = create      (cf_out, cf_in, npiglo, npjglo, 1                       )
-   ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal )
-   ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, 1                      )
-
-   tim   = getvar1d    (cf_in, cn_vtimec, npt     )
-   ierr  = putvar1d    (ncout, tim,       npt, 'T')
-
-   PRINT *, 'Output files initialised ...'
+   CALL CreateOutput
 
    DO jt = 1, npt
-      IF ( l_vvl ) THEN ; it = jt
-      ELSE ;              it = 1
+      IF ( lg_vvl ) THEN ; it = jt
+      ELSE ;               it = 1
       ENDIF
+
       IF ( lssh ) THEN
         zt(:,:)       = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * pp_rau0 * zt(:,:)
@@ -241,7 +195,7 @@ PROGRAM cdfbotpressure
      
          dl_sigi(:,:) = 1000. + sigmai(zt, zs, hdept, npiglo, npjglo)
          IF ( lfull ) THEN ; e3t(:,:) = e31d(jk)
-                      ELSE ; e3t(:,:) = getvar(cn_fe3t, 'e3t_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
+                      ELSE ; e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
          ENDIF
          dl_bpres(:,:) = dl_bpres(:,:) + dl_sigi(:,:) * e3t(:,:) * pp_grav * 1.d0 * tmask(:,:) 
 
@@ -250,5 +204,65 @@ PROGRAM cdfbotpressure
    END DO  ! next time frame
 
    ierr = closeout(ncout)
+
+CONTAINS
+   SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose : Create netCDF output file 
+    !!
+    !! ** Method  : Use Global information to create the file
+    !!----------------------------------------------------------------------
+ 
+    ipk(:)                       = 1
+    stypvar(1)%cname             = 'sobotpres'
+    stypvar(1)%cunits            = 'Pascal'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = 0
+    stypvar(1)%valid_max         =  1.e15
+    stypvar(1)%clong_name        = 'Bottom Pressure'
+    stypvar(1)%cshort_name       = 'sobotpres'
+    stypvar(1)%cprecision         = 'r8'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+
+    IF ( lxtra ) THEN
+       stypvar(2)%cname             = TRIM(cn_sossheig)
+       stypvar(2)%cunits            = 'm'
+       stypvar(2)%rmissing_value    =  0.
+       stypvar(2)%valid_min         = -10.
+       stypvar(2)%valid_max         =  10.
+       stypvar(2)%clong_name        = 'Sea Surface Height'
+       stypvar(2)%cshort_name       = TRIM(cn_sossheig)
+       stypvar(2)%conline_operation = 'N/A'
+       stypvar(2)%caxis             = 'TYX'
+
+       stypvar(3)%cname             = 'sosshpre'
+       stypvar(3)%cunits            = 'Pascal'
+       stypvar(3)%rmissing_value    =  0.
+       stypvar(3)%valid_min         = -100000.
+       stypvar(3)%valid_max         =  100000.
+       stypvar(3)%clong_name        = 'Pressure due to SSH'
+       stypvar(3)%cshort_name       = 'sosshpre'
+       stypvar(3)%cprecision         = 'r8'
+       stypvar(3)%conline_operation = 'N/A'
+       stypvar(3)%caxis             = 'TYX'
+    ENDIF
+
+    ! Initialize output file
+    gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk )
+    e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk )
+
+    ncout = create      (cf_out, cf_in, npiglo, npjglo, 1                       )
+    ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal )
+    ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, 1                      )
+
+    tim   = getvar1d    (cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d    (ncout, tim,       npt, 'T')
+
+    PRINT *, 'Output files initialised ...'
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfbotpressure
