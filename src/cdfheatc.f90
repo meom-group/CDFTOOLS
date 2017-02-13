@@ -62,7 +62,6 @@ PROGRAM cdfheatc
 
   LOGICAL                                   :: lfull=.FALSE.       ! flag for full step computation
   LOGICAL                                   :: lchk                ! flag for missing files
-  LOGICAL                                   :: l_vvl=.FALSE.       ! flag for vvl configuration
 
   ! NETCDF OUTPUT
   !!----------------------------------------------------------------------
@@ -119,7 +118,7 @@ PROGRAM cdfheatc
      SELECT CASE ( cldum )
      CASE ( '-f'    ) ; CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1
      CASE ( '-full' ) ; lfull = .true.
-     CASE ( '-vvl'  ) ; l_vvl = .true.
+     CASE ( '-vvl'  ) ; lg_vvl = .true.
      CASE ( '-mxloption' ) ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) mxloption
      CASE ( '-o   ' ) ; CALL getarg ( ijarg, cf_out)    ; ijarg = ijarg + 1 
      CASE ( '-zoom' )   
@@ -144,7 +143,7 @@ PROGRAM cdfheatc
   lchk = chkfile(cf_tfil) .OR. lchk
   IF ( lchk ) STOP ! missing files
 
-  IF ( l_vvl ) cn_fe3t = cf_tfil
+  IF ( lg_vvl ) cn_fe3t = cf_tfil
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -194,8 +193,8 @@ PROGRAM cdfheatc
   CALL CreateOutput
 
   DO jt=1,npt
-     IF ( l_vvl ) THEN ; it = jt
-     ELSE ;              it = 1
+     IF ( lg_vvl ) THEN ; it = jt
+     ELSE ;               it = 1
      ENDIF
      dvol = 0.d0
      dsum = 0.d0
@@ -212,7 +211,7 @@ PROGRAM cdfheatc
         IF ( lfull ) THEN
            e3t(:,:) = e31d(ik)
         ELSE
-           e3t(:,:) = getvar(cn_fe3t, 'e3t_ps', ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.TRUE.)
+           e3t(:,:) = getvar(cn_fe3t, cn_ve3t, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl)
         ENDIF
         
         SELECT CASE ( mxloption ) 
