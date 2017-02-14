@@ -87,7 +87,6 @@ PROGRAM cdfmoc
   LOGICAL                                     :: lchk  = .FALSE. ! check for missing files
   LOGICAL                                     :: ldec  = .FALSE. ! flag for decomposition option
   LOGICAL                                     :: lrap  = .FALSE. ! flag for rapid option
-  LOGICAL                                     :: l_vvl = .FALSE. ! flog for vvl
 
   ! Variables used only when MOC decomposition is requested
   INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: iumask         ! iumask (used if decomposition)
@@ -191,7 +190,7 @@ PROGRAM cdfmoc
      CASE ('-rapid') 
         lrap    = .TRUE.
      CASE ('-vvl'  ) 
-        l_vvl   = .TRUE.
+        lg_vvl   = .TRUE.
      CASE ('-o') 
         CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1
      CASE DEFAULT
@@ -212,9 +211,9 @@ PROGRAM cdfmoc
   lchk = lchk .OR. chkfile ( cn_fzgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_vfil )
-  IF ( ldec ) lchk = lchk .OR. chkfile ( TRIM(cf_tfil) ) 
-  IF ( lchk ) STOP  ! missing file(s)
-  IF ( l_vvl) cn_fe3v = cf_vfil
+  IF ( ldec  ) lchk = lchk .OR. chkfile ( TRIM(cf_tfil) ) 
+  IF ( lchk  ) STOP  ! missing file(s)
+  IF ( lg_vvl) cn_fe3v = cf_vfil
 
   IF ( lrap ) THEN 
      ! all the work will be done in a separated routine for RAPID-MOCHA section
@@ -287,7 +286,7 @@ PROGRAM cdfmoc
   IF ( ldec  ) e1u(:,:) = getvar  (cn_fhgr, cn_ve1u,  1, npiglo,npjglo)
   IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
 
-  IF ( .NOT. l_vvl ) THEN  ! load ve3 only once 
+  IF ( .NOT. lg_vvl ) THEN  ! load ve3 only once 
     DO jk= 1, npk
        ! save e3v masked with vmask as 3d array
        e3v(:,:,jk) = get_e3v(jk,1)
@@ -302,7 +301,7 @@ PROGRAM cdfmoc
   CALL CreateOutput
 
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
-  ibmask(npglo,:,:) = getvar(cn_fmsk,   'vmask', 1, npiglo, npjglo)
+  ibmask(npglo,:,:) = getvar(cn_fmsk,   cn_vmask, 1, npiglo, npjglo)
   IF ( lbas ) THEN
      ibmask(npatl,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
      ibmask(npind,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
@@ -316,7 +315,7 @@ PROGRAM cdfmoc
   ENDIF
 
   DO jt = 1, npt
-     IF ( l_vvl ) THEN  ! load ve3 every step
+     IF ( lg_vvl ) THEN  ! load ve3 every step
         DO jk= 1, npk
           ! save e3v masked with vmask as 3d array
           e3v(:,:,jk) = get_e3v(jk,jt)
@@ -560,11 +559,11 @@ PROGRAM cdfmoc
        INTEGER(KIND=4), INTENT(in)  :: kt  ! time for reading e3v (vvl case)
        REAL(KIND=4), DIMENSION(npiglo,npjglo) :: get_e3v
 
-       ivmask(:,:) = getvar(cn_fmsk, 'vmask', jk, npiglo, npjglo)
+       ivmask(:,:) = getvar(cn_fmsk, cn_vmask, jk, npiglo, npjglo)
        IF ( lfull ) THEN
           get_e3v(:,:) = e31d(jk)
        ELSE
-          get_e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=kt, ldiom=.TRUE.)
+          get_e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=kt, ldiom=.NOT.lg_vvl )
        ENDIF
        get_e3v(:,:) = get_e3v(:,:) * ivmask(:,:)
 
