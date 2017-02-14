@@ -25,6 +25,7 @@ PROGRAM cdfdiv
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: ji, jj, jk, jt     ! dummy loop index
+  INTEGER(KIND=4)                           :: it                 ! time index for vvl
   INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
   INTEGER(KIND=4)                           :: nlev               ! number of output levels
@@ -47,6 +48,7 @@ PROGRAM cdfdiv
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_ff              ! Coriolis parameter at T point
 
   CHARACTER(LEN=256)                        :: cf_ufil, cf_vfil   ! file names
+  CHARACTER(LEN=256)                        :: cf_tfil            ! T-file for vvl e3t metrics
   CHARACTER(LEN=256)                        :: cf_out = 'curl.nc' ! output file name
   CHARACTER(LEN=256)                        :: cv_u, cv_v         ! variable names
   CHARACTER(LEN=256)                        :: cldum              ! dummy string
@@ -59,15 +61,16 @@ PROGRAM cdfdiv
   LOGICAL                                   :: ldblpr   = .FALSE. ! flag for dble precision output
   LOGICAL                                   :: lsurf    = .FALSE. ! flag for 1 lev on C grid.
   LOGICAL                                   :: loverf   = .FALSE. ! flag for 1 lev on C grid.
-  LOGICAL                                   :: lfull=.FALSE.      ! full step flag
+  LOGICAL                                   :: lfull    = .FALSE. ! full step flag
+  LOGICAL                                   :: lnc4     = .FALSE. ! Use nc4 with chunking and deflation
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames() 
-
   narg = iargc()
   IF ( narg < 8 ) THEN
      PRINT *,' usage : cdfdiv -u U-file U-var -v V-file V-var -l levlist  [-8]...'
-     PRINT *,'           ... [-surf] [-overf] [-full] [-o OUT-file ]'
+     PRINT *,'          ... [-surf] [-overf] [-full] [-o OUT-file ] [-nc4] '
+     PRINT *,'          ... [-vvl T-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the divergence of the flow from the U and V velocity components'
@@ -81,17 +84,21 @@ PROGRAM cdfdiv
      PRINT *,'                  -l  1 . Note that -l "3-" set a levlist from 3 to the bottom'
      PRINT * 
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -8 : save in double precision instead of standard simple precision.'
-     PRINT *,'       -surf : work with single level C-grid (not forcing)'
-     PRINT *,'       -overf : store the ratio curl/f where f is the coriolis parameter'
-     PRINT *,'       [ -full ] : in case of full step configuration. Default is partial step.'
-     PRINT *,'       -o OUT-file : specify output file name instead of ',TRIM(cf_out) 
+     PRINT *,'       [-8 ]: save in double precision instead of standard simple precision.'
+     PRINT *,'       [-surf ] : work with single level C-grid (not forcing)'
+     PRINT *,'       [-overf ] : store the ratio curl/f where f is the coriolis parameter'
+     PRINT *,'       [-full ] : in case of full step configuration. Default is partial step.'
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out) 
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-vvl T-file] : use time-varying e3t, specify T-file for e3t.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ', TRIM(cn_fhgr),' ',TRIM(cn_fzgr)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : div units : s^-1'
      PRINT *,'               or divoverf, no units (if -overf option)'
      STOP
@@ -110,16 +117,14 @@ PROGRAM cdfdiv
      CASE ('-l')
         CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
         CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
-     CASE ('-8')
-        ldblpr = .true.
-     CASE ('-surf')
-        lsurf = .true.
-     CASE ('-overf')
-        loverf = .true.
-     CASE ('-full')
-        lfull = .true.
-     CASE ('-o')
-        CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE ('-8'    ) ; ldblpr = .TRUE.
+     CASE ('-surf' ) ; lsurf  = .TRUE.
+     CASE ('-overf') ; loverf = .TRUE.
+     CASE ('-full' ) ; lfull  = .TRUE.
+     CASE ('-nc4'  ) ; lnc4   = .TRUE.
+     CASE ('-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ('-vvl'  ) ; lg_vvl = .TRUE.
+                       CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1 
      CASE DEFAULT
         PRINT *,  TRIM(cldum), ' : unknown option '
      END SELECT
@@ -131,36 +136,23 @@ PROGRAM cdfdiv
   lchk = chkfile(cf_vfil ) .OR. lchk
   IF ( lchk ) STOP ! missing files
 
-  ! define new variables for output
-  stypvar(1)%cname             = 'div'
-  stypvar(1)%cunits            = 's-1'
-  IF (loverf)  stypvar(1)%cname             = 'divoverf'
-  IF (loverf)  stypvar(1)%cunits            = '-'
-
-  stypvar(1)%cprecision        ='r4'
-  IF ( ldblpr )  stypvar(1)%cprecision     ='r8'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = -1000.
-  stypvar(1)%valid_max         =  1000.
-  stypvar(1)%clong_name        = 'Divergence '
-  stypvar(1)%cshort_name       = 'div'
-  IF (loverf ) stypvar(1)%clong_name        = 'Divergence normalized by f'
-  IF (loverf ) stypvar(1)%cshort_name       = 'divoverf'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-
-  ipk(1) = nlev  !  nlevel so far
+  IF ( lg_vvl ) THEN
+    cn_fe3u = cf_ufil
+    cn_fe3v = cf_vfil
+    cn_fe3t = cf_tfil
+  ENDIF
 
   npiglo = getdim(cf_ufil,cn_x)
   npjglo = getdim(cf_ufil,cn_y)
   npk    = getdim(cf_ufil,cn_z)
   npt    = getdim(cf_ufil,cn_t) 
 
-  PRINT *, 'npiglo = ',npiglo
-  PRINT *, 'npjglo = ',npjglo
-  PRINT *, 'npk    = ',npk
-  PRINT *, 'npt    = ',npt
-  PRINT *, 'nlev   = ',nlev
+  PRINT *, 'NPIGLO = ', npiglo
+  PRINT *, 'NPJGLO = ', npjglo
+  PRINT *, 'NPK    = ', npk
+  PRINT *, 'NPT    = ', npt
+  PRINT *, 'NLEV   = ', nlev
+
 
   !test if lev exists
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
@@ -181,11 +173,10 @@ PROGRAM cdfdiv
 
   ! if forcing field 
   IF ( nilev(1) == 0 .AND. npk==0 ) THEN
-     lforcing=.true.
+     lforcing=.TRUE.
      npk = 1 ; nilev(1)=1
      PRINT *, 'npk =0, assume 1'
   END IF
-
 
   IF ( npt==0 ) THEN
      PRINT *, 'npt=0, assume 1'
@@ -242,20 +233,15 @@ PROGRAM cdfdiv
   ! look for  E-W periodicity
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
 
-  ! create output fileset
-  PRINT *,' Create ',TRIM(cf_out)
-  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev, cdep=cn_vdeptht                    )
-  PRINT *,' Create variables in  ',TRIM(cf_out)
-  ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout                                )
-  PRINT *,' Fill header variables  in  ',TRIM(cf_out)
-  ierr  = putheadervar(ncout,  'dummy', npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
-  PRINT *,' Output file ready for write !'
+  CALL CreateOutput
 
-  tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
-  ierr = putvar1d(ncout,   tim,       npt,  'T')
 
   DO jt=1,npt
      IF (MOD(jt,100)==0 ) PRINT *, jt,'/',npt
+
+     IF ( lg_vvl ) THEN  ; it=jt
+     ELSE                ; it=1
+     ENDIF
      DO jk = 1, nlev
 
         zun(:,:) =  getvar(cf_ufil, cv_u, nilev(jk) ,npiglo,npjglo, ktime=jt)
@@ -267,11 +253,10 @@ PROGRAM cdfdiv
            e3t(:,:) = e31d(jk)
         ELSE
            ! e3 metrics at level jk ( Partial steps)
-           e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-           e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+           e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+           e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+           e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
         ENDIF
-
 
         IF ( lforcing ) THEN ! for forcing file u and v are on the A grid
            DO ji=1, npiglo-1
@@ -312,6 +297,7 @@ PROGRAM cdfdiv
   ierr = closeout(ncout)
 
 CONTAINS
+
   SUBROUTINE ParseLevel( cdum )
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE ParsLevel  ***
@@ -398,6 +384,46 @@ CONTAINS
 
 
   END SUBROUTINE ParseLevel
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define new variables for output
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'div'
+    stypvar(1)%cunits            = 's-1'
+    IF (loverf)  stypvar(1)%cname             = 'divoverf'
+    IF (loverf)  stypvar(1)%cunits            = '-'
+
+    stypvar(1)%cprecision        ='r4'
+    IF ( ldblpr )  stypvar(1)%cprecision     ='r8'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = -1000.
+    stypvar(1)%valid_max         =  1000.
+    stypvar(1)%clong_name        = 'Divergence '
+    stypvar(1)%cshort_name       = 'div'
+    IF (loverf ) stypvar(1)%clong_name        = 'Divergence normalized by f'
+    IF (loverf ) stypvar(1)%cshort_name       = 'divoverf'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+
+    ipk(1) = nlev  !  nlevel so far
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev, cdep=cn_vdeptht, ld_nc4=lnc4 )
+    ierr  = createvar   (ncout ,   stypvar, 1 ,   ipk,    id_varout,             ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  'dummy', npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
+
+    tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout,   tim,       npt,  'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfdiv
 
