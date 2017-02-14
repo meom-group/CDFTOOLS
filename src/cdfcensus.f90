@@ -159,8 +159,8 @@ PROGRAM cdfcensus
      CASE DEFAULT
         ireq=ireq+1
         SELECT CASE ( ireq) 
-        CASE (1 ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
-        CASE (2 ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg + 1  ; READ(cldum,*) nlog
+        CASE (1 ) ; cf_tfil = cldum
+        CASE (2 ) ; READ(cldum,*) nlog
         CASE DEFAULT 
           PRINT *, ' ERROR : too many ''free'' arguments ..'
           STOP
