@@ -57,13 +57,13 @@ PROGRAM cdfvtrp
   LOGICAL                                    :: lfull  = .FALSE.     ! flag for full step
   LOGICAL                                    :: lbathy = .FALSE.     ! flag for slope current
   LOGICAL                                    :: lchk   = .FALSE.     ! flag for missing files
-  LOGICAL                                    :: l_vvl  = .FALSE.     ! flag for vvl
+  LOGICAL                                    :: lnc4   = .FALSE.     ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvtrp  U-file V-file [ -full ] [ -bathy ] [-vvl]'
+     PRINT *,' usage : cdfvtrp U-file V-file [-full] [-bathy] [-vvl] [-o OUT-file] [-nc4]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the vertically integrated transports at each grid cell.' 
      PRINT *,'      '
@@ -78,6 +78,10 @@ PROGRAM cdfvtrp
      PRINT *,'                   and cross slope transport components.'
      PRINT *,'                   Bathymetry is read from ',TRIM(cn_fzgr),' file.'
      PRINT *,'       [ -vvl  ] : Use time-varying vertical metrics'
+     PRINT *,'       [ -o OUT-file  ] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -100,7 +104,9 @@ PROGRAM cdfvtrp
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum ) 
      CASE ('-full'  ) ; lfull  = .TRUE.
-     CASE ('-vvl'   ) ; l_vvl  = .TRUE.
+     CASE ('-vvl'   ) ; lg_vvl = .TRUE.
+     CASE ('-o'     ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE ('-nc4'   ) ; lnc4   = .TRUE.
      CASE ('-bathy' ) ; lbathy = .TRUE. ; nvarout = 4
      CASE DEFAULT 
         ireq=ireq+1  ! required arguments
@@ -119,7 +125,7 @@ PROGRAM cdfvtrp
   IF ( lbathy ) lchk = lchk .OR. chkfile ( cn_fmsk )
   IF ( lchk ) STOP   ! missing files
 
-  IF ( l_vvl) THEN
+  IF ( lg_vvl) THEN
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil
   ENDIF
@@ -130,25 +136,6 @@ PROGRAM cdfvtrp
   npjglo = getdim (cf_ufil, cn_y)
   npk    = getdim (cf_ufil, cn_z)
   npt    = getdim (cf_ufil, cn_t)
-
-  ! define  variables for output 
-  ipk(:) = 1   ! all 2D variables
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -100.
-  stypvar%valid_max         = 100.
-  stypvar%cunits            = 'm3/s'
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TYX'
-
-  stypvar(1)%cname       = cn_sozoutrp                         ; stypvar(2)%cname       = cn_somevtrp
-  stypvar(1)%clong_name  = 'Zonal_barotropic_transport'        ; stypvar(2)%clong_name  = 'Meridional_barotropic_transport'
-  stypvar(1)%cshort_name = cn_sozoutrp                         ; stypvar(2)%cshort_name = cn_somevtrp
-
-  IF ( lbathy ) THEN
-     stypvar(3)%cname       = cv_soastrp                       ; stypvar(4)%cname       = cv_socstrp
-     stypvar(3)%clong_name  = 'Along_Slope_Barotropic_Transp'  ; stypvar(4)%clong_name  = 'Cross_Slope_Barotropic_Transp'
-     stypvar(3)%cshort_name = cv_soastrp                       ; stypvar(4)%cshort_name = cv_socstrp
-  ENDIF
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -170,13 +157,7 @@ PROGRAM cdfvtrp
      ALLOCATE ( zalpha(npiglo,npjglo) )
   ENDIF
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_ufil, npiglo,  npjglo, 1         )
-  ierr  = createvar   (ncout,  stypvar, nvarout, ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 1         )
-
-  tim   = getvar1d(cf_ufil, cn_vtimec, npt     )
-  ierr  = putvar1d(ncout,   tim,       npt, 'T')
+  CALL CreateOutput
 
   e1v(:,:) = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
   e2u(:,:) = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
@@ -185,14 +166,14 @@ PROGRAM cdfvtrp
   IF ( lbathy ) THEN  ! read extra metrics
     e1u(:,:)   = getvar(cn_fhgr, cn_ve1u,  1, npiglo, npjglo)
     e2v(:,:)   = getvar(cn_fhgr, cn_ve2v,  1, npiglo, npjglo)
-    tmask(:,:) = getvar(cn_fmsk, 'tmask',  1, npiglo, npjglo)
+    tmask(:,:) = getvar(cn_fmsk, cn_tmask, 1, npiglo, npjglo)
     hdepw(:,:) = getvar(cn_fzgr, cn_hdepw, 1, npiglo, npjglo)
   ENDIF
 
   DO jt = 1, npt
      dtrpu(:,:)= 0.d0
      dtrpv(:,:)= 0.d0
-     IF ( l_vvl ) THEN  ; it = jt
+     IF ( lg_vvl ) THEN ; it = jt
      ELSE ;               it = 1
      ENDIF
 
@@ -207,8 +188,8 @@ PROGRAM cdfvtrp
            e3v(:,:) = e31d(jk)
            e3u(:,:) = e31d(jk)
         ELSE
-           e3v(:,:) = getvar(cn_fe3v, 'e3v_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
-           e3u(:,:) = getvar(cn_fe3u, 'e3u_ps', jk, npiglo, npjglo, ktime=it, ldiom=.TRUE.)
+           e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
+           e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
         ENDIF
         dwku(:,:) = zu(:,:)*e2u(:,:)*e3u(:,:)*1.d0
         dwkv(:,:) = zv(:,:)*e1v(:,:)*e3v(:,:)*1.d0
@@ -266,5 +247,44 @@ PROGRAM cdfvtrp
   END DO
 
   ierr = closeout (ncout)
+CONTAINS
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define  variables for output 
+    ipk(:) = 1   ! all 2D variables
+    stypvar%rmissing_value    = 0.
+    stypvar%valid_min         = -100.
+    stypvar%valid_max         = 100.
+    stypvar%cunits            = 'm3/s'
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TYX'
+
+    stypvar(1)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /) ; stypvar(2)%ichunk      = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname       = cn_sozoutrp                         ; stypvar(2)%cname       = cn_somevtrp
+    stypvar(1)%clong_name  = 'Zonal_barotropic_transport'        ; stypvar(2)%clong_name  = 'Meridional_barotropic_transport'
+    stypvar(1)%cshort_name = cn_sozoutrp                         ; stypvar(2)%cshort_name = cn_somevtrp
+
+    IF ( lbathy ) THEN
+       stypvar(3)%ichunk      = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(3)%cname       = cv_soastrp                       ; stypvar(4)%cname       = cv_socstrp
+       stypvar(3)%clong_name  = 'Along_Slope_Barotropic_Transp'  ; stypvar(4)%clong_name  = 'Cross_Slope_Barotropic_Transp'
+       stypvar(3)%cshort_name = cv_soastrp                       ; stypvar(4)%cshort_name = cv_socstrp
+    ENDIF
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_ufil, npiglo,  npjglo, 1         , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar, nvarout, ipk,    id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 1                       )
+  
+    tim   = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,   tim,       npt, 'T')
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfvtrp
