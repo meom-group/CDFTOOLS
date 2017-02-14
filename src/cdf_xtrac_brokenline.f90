@@ -116,7 +116,6 @@ PROGRAM cdf_xtract_brokenline
    LOGICAL  :: lmld     = .FALSE.                    ! flag for saving mld
    LOGICAL  :: lice     = .FALSE.                    ! flag for saving ice*
    LOGICAL  :: lvt      = .FALSE.                    ! flag for saving products vt, vs
-   LOGICAL  :: l_vvl    = .FALSE.                    ! flag for vvl
    LOGICAL  :: ll_ssh, ll_mld, ll_ice                ! working flag for jk =1
 
    TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar  ! variable definition and attributes
@@ -209,7 +208,7 @@ PROGRAM cdf_xtract_brokenline
       CASE ( '-mld'     ) ; lmld    =.TRUE.  ; nvar = nvar + 1  !
       CASE ( '-ice'     ) ; lice    =.TRUE.  ; nvar = nvar + 2  !
       CASE ( '-vt '     ) ; lvt     =.TRUE.  ; nvar = nvar + 2  !
-      CASE ( '-vvl '    ) ; l_vvl   =.TRUE.                     !
+      CASE ( '-vvl '    ) ; lg_vvl  =.TRUE.                     !
       CASE ( '-o '      ) ;  CALL getarg(ijarg, cf_root) ; ijarg = ijarg + 1  !
       CASE ( '-f' )       ;  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
          CALL ParseFiles(cldum)        ! many section files can be given separated with comma
@@ -236,7 +235,7 @@ PROGRAM cdf_xtract_brokenline
       ENDDO
    ENDIF
    IF ( lchk     ) STOP ! missing files
-   IF ( l_vvl    ) THEN
+   IF ( lg_vvl   ) THEN
       cn_fe3u = cf_ufil
       cn_fe3v = cf_vfil
    ENDIF
@@ -506,22 +505,22 @@ PROGRAM cdf_xtract_brokenline
 
    ! Temperature and salinity are interpolated on the respective U or V  point for better flux computation
    DO jt=1, npt  ! time loop
-      IF ( l_vvl ) THEN ;  it=jt
-      ELSE ;               it=1
+      IF ( lg_vvl ) THEN ;  it=jt
+      ELSE ;                it=1
       ENDIF
       dbarot(:) = 0.d0    ! reset barotropic transport  for all sections
-      IF ( lssh ) ssh (:,:)     = getvar(cf_tfil  , cn_sossheig, 1, npiglo, npjglo, ktime = jt)
-      IF ( lmld ) rmld(:,:)     = getvar(cf_tfil  , cn_somxl010, 1, npiglo, npjglo, ktime = jt)
-      IF ( lice ) ricethick(:,:) = getvar(cf_icefil, cn_iicethic , 1, npiglo, npjglo, ktime = jt)
-      IF ( lice ) ricefra(:,:)   = getvar(cf_icefil, cn_ileadfra , 1, npiglo, npjglo, ktime = jt)
+      IF ( lssh ) ssh (:,:)      = getvar(cf_tfil  , cn_sossheig, 1, npiglo, npjglo, ktime = jt)
+      IF ( lmld ) rmld(:,:)      = getvar(cf_tfil  , cn_somxl010, 1, npiglo, npjglo, ktime = jt)
+      IF ( lice ) ricethick(:,:) = getvar(cf_icefil, cn_iicethic, 1, npiglo, npjglo, ktime = jt)
+      IF ( lice ) ricefra(:,:)   = getvar(cf_icefil, cn_ileadfra, 1, npiglo, npjglo, ktime = jt)
 
       DO jk=1,npk   ! level loop , read only once the horizontal slab
          temper(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
          saline(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
          uzonal(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime = jt)
          vmerid(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime = jt)
-         e3u(:,:)    = getvar(cn_fe3u, 'e3u_ps',    jk, npiglo, npjglo, ktime = it, ldiom=.TRUE.)
-         e3v(:,:)    = getvar(cn_fe3v, 'e3v_ps',    jk, npiglo, npjglo, ktime = it, ldiom=.TRUE.)
+         e3u(:,:)    = getvar(cn_fe3u, cn_ve3u,     jk, npiglo, npjglo, ktime = it, ldiom=.NOT.lg_vvl )
+         e3v(:,:)    = getvar(cn_fe3v, cn_ve3v,     jk, npiglo, npjglo, ktime = it, ldiom=.NOT.lg_vvl )
 
          ll_ssh = ( lssh .AND. jk == 1 )
          ll_mld = ( lmld .AND. jk == 1 )
