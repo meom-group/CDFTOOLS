@@ -48,7 +48,7 @@ PROGRAM cdfcensus
   INTEGER(KIND=4)                           :: npiglo, npjglo            ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt                  ! size of the domain
   INTEGER(KIND=4)                           :: nlog
-  INTEGER(KIND=4)                           :: narg, iargc, ijarg
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg, ireq
   INTEGER(KIND=4)                           :: it, is
   INTEGER(KIND=4)                           :: ii1, ii2
   INTEGER(KIND=4)                           :: ij1, ij2
@@ -81,7 +81,6 @@ PROGRAM cdfcensus
 
   LOGICAL                                   :: lchk
   LOGICAL                                   :: lfull = .FALSE.   ! flag for full step
-  LOGICAL                                   :: l_vvl = .FALSE.   ! flag for vvl
 
   ! Initialisations
   DATA ztmin, ztmax, zdt /-2.0, 38.0, 0.05/
@@ -133,9 +132,41 @@ PROGRAM cdfcensus
      STOP
   ENDIF
 
-  ijarg = 1
-  CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
-  CALL getarg(ijarg, cldum  ) ; ijarg = ijarg + 1  ; READ(cldum,*) nlog
+  ijarg = 1  ; ireq=0
+  DO WHILE ( ijarg <= narg ) 
+     CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
+     SELECT CASE ( cldum)
+     CASE ( '-zoom' )
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ii1  ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ii2  ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ij1  ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ij2  ; ijarg = ijarg+1
+     CASE ( '-klim' )
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ik1  ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ik2  ; ijarg = ijarg+1
+     CASE ( '-srange' )
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmin ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmax ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) zds   ; ijarg = ijarg+1
+     CASE ( '-trange' )
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmin ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmax ; ijarg = ijarg+1
+        CALL getarg(ijarg,cldum) ; READ(cldum,*) zdt   ; ijarg = ijarg+1
+     CASE ( '-full' )
+        lfull = .TRUE.
+     CASE ( '-vvl'  )
+        lg_vvl = .TRUE.
+     CASE DEFAULT
+        ireq=ireq+1
+        SELECT CASE ( ireq) 
+        CASE (1 ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
+        CASE (2 ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg + 1  ; READ(cldum,*) nlog
+        CASE DEFAULT 
+          PRINT *, ' ERROR : too many ''free'' arguments ..'
+          STOP
+        END SELECT
+     END SELECT
+  END DO
   cglobal = 'Census computed from '//TRIM(cf_tfil)
 
   lchk =           chkfile ( cn_fzgr )
@@ -171,42 +202,13 @@ PROGRAM cdfcensus
   ij1 = 1 ; ij2 = npjglo
   ik1 = 1 ; ik2 = npk
 
-  ! Read additional optional argument (zoom)
-  DO WHILE ( ijarg <= narg ) 
-     CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
-     SELECT CASE ( cldum)
-     CASE ( '-zoom' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ii1  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ii2  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ij1  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ij2  ; ijarg = ijarg+1
-     CASE ( '-klim' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ik1  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ik2  ; ijarg = ijarg+1
-     CASE ( '-srange' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmin ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmax ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zds   ; ijarg = ijarg+1
-     CASE ( '-trange' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmin ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmax ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zdt   ; ijarg = ijarg+1
-     CASE ( '-full' )
-        lfull = .TRUE.
-     CASE ( '-vvl'  )
-        l_vvl = .TRUE.
-     CASE DEFAULT
-        PRINT *,' Unknown option :',TRIM(cldum)
-        STOP
-     END SELECT
-  END DO
 
   ! Extra checking for over bound
   ii1 = MAX(ii1,1) ; ii2 = MIN(ii2,npiglo)
   ij1 = MAX(ij1,1) ; ij2 = MIN(ij2,npjglo)
   ik1 = MAX(ik1,1) ; ik2 = MIN(ik2,npk   )
  
-  IF ( l_vvl ) cn_fe3t=cf_tfil
+  IF ( lg_vvl ) cn_fe3t=cf_tfil
 
   PRINT '(a,6i5)','indices:',ii1, ii2, ij1, ij2, ik1, ik2
 
@@ -237,8 +239,8 @@ PROGRAM cdfcensus
   CALL CreateOutput
 
   DO jt = 1, npt
-     IF ( l_vvl ) THEN ; it_vvl=jt
-     ELSE ;              it_vvl=1
+     IF ( lg_vvl ) THEN ; it_vvl=jt
+     ELSE ;               it_vvl=1
      ENDIF
      ! reset cumulating variables to 0
      dcensus(:,:) = 0.d0
@@ -251,7 +253,7 @@ PROGRAM cdfcensus
         IF ( lfull ) THEN
            e3t(:,:) = e31d(jk)
         ELSE
-           e3t(:,:) = getvar(cn_fe3t, 'e3t_ps', jk, npiglo, npjglo, ktime=it_vvl, ldiom=.TRUE.)
+           e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it_vvl, ldiom=.NOT.lg_vvl )
         ENDIF
 
         DO ji=ii1,ii2
