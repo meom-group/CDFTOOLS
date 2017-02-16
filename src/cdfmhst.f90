@@ -106,7 +106,7 @@ PROGRAM cdfmhst
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmhst  VT-file | (V-file T-file [S-file])  [MST] [-full] ...'
-     PRINT *,'              ...  [-Zdim] '
+     PRINT *,'              ...  [-Zdim] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the meridional heat/salt transport as a function of '
@@ -125,6 +125,7 @@ PROGRAM cdfmhst
      PRINT *,'                  If not specified, only the MHT is output.' 
      PRINT *,'       [-full ] : to be set for full step case.'
      PRINT *,'       [-Zdim ] : to be set to output vertical structure of Heat/salt transport'
+     PRINT *,'       [-o OUT-file ] : change name of the output file. Default:', TRIM(cf_outnc)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ', TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk)
@@ -134,16 +135,16 @@ PROGRAM cdfmhst
      PRINT *,'     OUTPUT : '
      PRINT *,'       ASCII files : ', TRIM(cf_outh),' : Meridional Heat Transport'
      PRINT *,'                     ', TRIM(cf_outs),' : Meridional Salt Transport'
-     PRINT *,'       netcdf file : ', TRIM(cf_outnc)
+     PRINT *,'       netcdf file : ', TRIM(cf_outnc),' unless -o option is used.'
      PRINT *,'           variables : ( [... ] : MST option ) '
      PRINT *,'                       ', TRIM(cv_zomht),cbasin(1),' : Meridional Heat Transport (global)'
      PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(1),' : Meridional Salt Transport (global) ] '
      PRINT *,'       If ',TRIM(cn_fbasins),' is available, per basin meridional transport '
      PRINT *,'       are also available:' 
-              DO jbasins=2, 6
-     PRINT *,'                       ', TRIM(cv_zomht),cbasin(jbasins),' : Meridional Heat Transport'
-     PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(jbasins),' : Meridional Salt Transport ]'
-              END DO
+     DO jbasins=2, 6
+        PRINT *,'                       ', TRIM(cv_zomht),cbasin(jbasins),' : Meridional Heat Transport'
+        PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(jbasins),' : Meridional Salt Transport ]'
+     END DO
      STOP
   ENDIF
 
@@ -158,13 +159,14 @@ PROGRAM cdfmhst
      CASE ( 'MST' )   ; npvar    = 2
      CASE ( '-full' ) ; lfull    = .TRUE.
      CASE ( '-Zdim' ) ; lzdim    = .TRUE.
+     CASE ( '-o'    ) ; CALL getarg(ijarg, cf_outnc) ; ijarg = ijarg+1
      CASE DEFAULT     ; ifile = ifile + 1
-          SELECT CASE (ifile)
-          CASE ( 1) ; cf_vtfil = cldum
-          CASE ( 2) ; cf_tfil  = cldum
-          CASE ( 3) ; cf_sfil  = cldum
-          CASE DEFAULT ; PRINT *,' WARNING: more than 3 files in input : weird '
-          END SELECT
+        SELECT CASE (ifile)
+        CASE ( 1) ; cf_vtfil = cldum
+        CASE ( 2) ; cf_tfil  = cldum
+        CASE ( 3) ; cf_sfil  = cldum
+        CASE DEFAULT ; PRINT *,' WARNING: more than 3 files in input : weird '
+        END SELECT
      END SELECT
   END DO
 
@@ -258,7 +260,7 @@ PROGRAM cdfmhst
   ! Allocate output variables
   ALLOCATE(stypvar(nbasinso*npvar),  cvarname(nbasinso*npvar) )
   ALLOCATE(    ipk(nbasinso*npvar), id_varout(nbasinso*npvar) )
-  
+
   ipk(:)=npko               ! all output variables either 1 or npko levels
   DO jbasins = 1,nbasinso
      cvarname(jbasins)                  = TRIM(cv_zomht)//TRIM(cbasin(jbasins))
@@ -307,11 +309,11 @@ PROGRAM cdfmhst
         PRINT *,'level ',jk
         ! Get temperature and salinity at jk
         IF ( lsepf ) THEN
-          zv(:,:)= getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jt)
-          zt(:,:)= getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-          zs(:,:)= getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
-          zvt(:,:)=0.
-          zvs(:,:)=0.
+           zv(:,:)= getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jt)
+           zt(:,:)= getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
+           zs(:,:)= getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+           zvt(:,:)=0.
+           zvs(:,:)=0.
            DO ji=1, npiglo
               DO jj = 1, npjglo -1
                  zvt(ji,jj) = 0.5 * ( zt(ji,jj) + zt(ji,jj+1) )*zv(ji,jj)  ! temper at Vpoint
@@ -320,8 +322,8 @@ PROGRAM cdfmhst
            END DO
 
         ELSE
-          zvt(:,:)= getvar(cf_vtfil, cn_vomevt, jk, npiglo, npjglo, ktime=jt)
-          zvs(:,:)= getvar(cf_vtfil, cn_vomevs, jk, npiglo, npjglo, ktime=jt)
+           zvt(:,:)= getvar(cf_vtfil, cn_vomevt, jk, npiglo, npjglo, ktime=jt)
+           zvs(:,:)= getvar(cf_vtfil, cn_vomevs, jk, npiglo, npjglo, ktime=jt)
         ENDIF
         ! get e3v at level jk
         IF ( lfull ) THEN
@@ -337,124 +339,124 @@ PROGRAM cdfmhst
         dtrps(:,:) = dtrps(:,:) + dwks(:,:)  
 
 
-     !global
-     zmask(:,:) = getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
-     DO jj=1,npjglo
-        dzonal_heat_glo(jj) = SUM( dtrph(2:npiglo-1,jj)*zmask(2:npiglo-1,jj) )
-        dzonal_salt_glo(jj) = SUM( dtrps(2:npiglo-1,jj)*zmask(2:npiglo-1,jj) )
-     END DO
-
-     IF ( llglo ) THEN
-        ! Zonal mean with mask
-        ! Atlantic 
-        zmask(:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
+        !global
+        zmask(:,:) = getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
         DO jj=1,npjglo
-           dzonal_heat_atl(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
-           dzonal_salt_atl(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
+           dzonal_heat_glo(jj) = SUM( dtrph(2:npiglo-1,jj)*zmask(2:npiglo-1,jj) )
+           dzonal_salt_glo(jj) = SUM( dtrps(2:npiglo-1,jj)*zmask(2:npiglo-1,jj) )
         END DO
 
-        ! Pacific
-        zmask(:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
-        DO jj=1,npjglo
-           dzonal_heat_pac(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
-           dzonal_salt_pac(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
-        END DO
+        IF ( llglo ) THEN
+           ! Zonal mean with mask
+           ! Atlantic 
+           zmask(:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
+           DO jj=1,npjglo
+              dzonal_heat_atl(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
+              dzonal_salt_atl(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
+           END DO
 
-        ! Indian
-        zmask(:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
-        DO jj=1,npjglo
-           dzonal_heat_ind(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
-           dzonal_salt_ind(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
-        END DO
+           ! Pacific
+           zmask(:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+           DO jj=1,npjglo
+              dzonal_heat_pac(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
+              dzonal_salt_pac(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
+           END DO
 
-        ! Austral
-        dzonal_heat_aus = 0.d0
-        dzonal_salt_aus = 0.d0
-        !    zmask(:,:)=getvar(cn_fbasins,'tmaskant',1,npiglo,npjglo)
-        !    DO jj=1,npjglo
-        !       dzonal_heat_aus(jj)= SUM( dtrph(:,jj)*zmask(:,jj))
-        !       dzonal_salt_aus(jj)= SUM( dtrps(:,jj)*zmask(:,jj))
-        !    END DO
+           ! Indian
+           zmask(:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
+           DO jj=1,npjglo
+              dzonal_heat_ind(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
+              dzonal_salt_ind(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
+           END DO
 
-        !   ! Med
-        dzonal_heat_med = 0.d0
-        dzonal_salt_med = 0.d0
+           ! Austral
+           dzonal_heat_aus = 0.d0
+           dzonal_salt_aus = 0.d0
+           !    zmask(:,:)=getvar(cn_fbasins,'tmaskant',1,npiglo,npjglo)
+           !    DO jj=1,npjglo
+           !       dzonal_heat_aus(jj)= SUM( dtrph(:,jj)*zmask(:,jj))
+           !       dzonal_salt_aus(jj)= SUM( dtrps(:,jj)*zmask(:,jj))
+           !    END DO
 
-        !    zmask(:,:)=getvar(cn_fbasins,'tmaskmed',1,npiglo,npjglo)
-        !    DO jj=1,npjglo
-        !       dzonal_heat_med(jj)= SUM( dtrph(:,jj)*zmask(:,jj))
-        !       dzonal_salt_med(jj)= SUM( dtrps(:,jj)*zmask(:,jj))
-        !    END DO
-     ENDIF
-      
-     IF (  lzdim  .OR. ( jk == npk ) ) THEN  !output this level
-        IF ( lzdim ) THEN ; ik0 = jk ;  ELSE ;  ik0 = 1  ; ENDIF
-     
-        DO jvar=1,npvar   !  MHT [ and MST ]  (1 or 2 )
-           IF ( jvar == 1 ) THEN
-              ! MHT
-              ivar=1
-              dmtrp(:) = dzonal_heat_glo(:)/1.d15                            ! GLO
-              WHERE ( dmtrp == 0 ) dmtrp = ppspval
-              ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-              ivar=ivar+1
-              IF ( nbasins == 5 ) THEN
-                 dmtrp(:) = dzonal_heat_atl(:)/1.d15                         ! ATL
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval         
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
-                 dmtrp(:) = (dzonal_heat_ind(:) + dzonal_heat_pac(:))/1.d15  ! INP
+           !   ! Med
+           dzonal_heat_med = 0.d0
+           dzonal_salt_med = 0.d0
+
+           !    zmask(:,:)=getvar(cn_fbasins,'tmaskmed',1,npiglo,npjglo)
+           !    DO jj=1,npjglo
+           !       dzonal_heat_med(jj)= SUM( dtrph(:,jj)*zmask(:,jj))
+           !       dzonal_salt_med(jj)= SUM( dtrps(:,jj)*zmask(:,jj))
+           !    END DO
+        ENDIF
+
+        IF (  lzdim  .OR. ( jk == npk ) ) THEN  !output this level
+           IF ( lzdim ) THEN ; ik0 = jk ;  ELSE ;  ik0 = 1  ; ENDIF
+
+           DO jvar=1,npvar   !  MHT [ and MST ]  (1 or 2 )
+              IF ( jvar == 1 ) THEN
+                 ! MHT
+                 ivar=1
+                 dmtrp(:) = dzonal_heat_glo(:)/1.d15                            ! GLO
                  WHERE ( dmtrp == 0 ) dmtrp = ppspval
                  ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
                  ivar=ivar+1
-                 dmtrp(:) = dzonal_heat_ind(:)/1.d15                         ! IND
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
-                 dmtrp(:) = dzonal_heat_pac(:)/1.d15                         ! PAC
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
-                 ! now inp0
-                 dmtrp(:) = ( dzonal_heat_glo(:) - dzonal_heat_atl(:) )/1.d15 ! INP0
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
-              ENDIF
-           ELSE
-              ! MST
-              dmtrp(:) = dzonal_salt_glo(:)/1.d6                              ! GLO
-              WHERE ( dmtrp == 0 ) dmtrp = ppspval
-              ierr=putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-              ivar=ivar+1
-              IF ( nbasins == 5 ) THEN
-                 dmtrp(:) = dzonal_salt_atl(:)/1.d6                           ! ATL
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
-                 dmtrp(:) = (dzonal_salt_ind(:) + dzonal_salt_pac(:))/1.d6    ! INP
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
-                 dmtrp(:) = dzonal_salt_ind(:)/1.d6                           ! IND
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
-                 dmtrp(:) = dzonal_salt_pac(:)/1.d6                           ! PAC
+                 IF ( nbasins == 5 ) THEN
+                    dmtrp(:) = dzonal_heat_atl(:)/1.d15                         ! ATL
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval         
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    dmtrp(:) = (dzonal_heat_ind(:) + dzonal_heat_pac(:))/1.d15  ! INP
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    dmtrp(:) = dzonal_heat_ind(:)/1.d15                         ! IND
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    dmtrp(:) = dzonal_heat_pac(:)/1.d15                         ! PAC
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    ! now inp0
+                    dmtrp(:) = ( dzonal_heat_glo(:) - dzonal_heat_atl(:) )/1.d15 ! INP0
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                 ENDIF
+              ELSE
+                 ! MST
+                 dmtrp(:) = dzonal_salt_glo(:)/1.d6                              ! GLO
                  WHERE ( dmtrp == 0 ) dmtrp = ppspval
                  ierr=putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
                  ivar=ivar+1
-                 ! now inp0
-                 dmtrp(:) = ( dzonal_salt_glo(:) - dzonal_salt_atl(:) )/1.d6  ! INP0  
-                 WHERE ( dmtrp == 0 ) dmtrp = ppspval
-                 ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
-                 ivar=ivar+1
+                 IF ( nbasins == 5 ) THEN
+                    dmtrp(:) = dzonal_salt_atl(:)/1.d6                           ! ATL
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    dmtrp(:) = (dzonal_salt_ind(:) + dzonal_salt_pac(:))/1.d6    ! INP
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    dmtrp(:) = dzonal_salt_ind(:)/1.d6                           ! IND
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    dmtrp(:) = dzonal_salt_pac(:)/1.d6                           ! PAC
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr=putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                    ! now inp0
+                    dmtrp(:) = ( dzonal_salt_glo(:) - dzonal_salt_atl(:) )/1.d6  ! INP0  
+                    WHERE ( dmtrp == 0 ) dmtrp = ppspval
+                    ierr = putvar(ncout, id_varout(ivar), REAL(dmtrp), ik0, 1, npjglo, ktime=jt)
+                    ivar=ivar+1
+                 ENDIF
               ENDIF
-           ENDIF
-        END DO
+           END DO
 
-     ENDIF   ! end loop on check for ouptut
-  END DO  ! loop to next level
+        ENDIF   ! end loop on check for ouptut
+     END DO  ! loop to next level
 
 
      WRITE(numouth,*)'! Zonal heat transport (integrated alon I-model coordinate) (in Pw)'

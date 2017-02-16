@@ -50,7 +50,7 @@ PROGRAM cdfpolymask
 
   narg = iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfpolymask POLY-file REF-file [ -r]'
+     PRINT *,' usage : cdfpolymask -p POLY-file -ref REF-file [ -r] [-o OUT_file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create a maskfile with polymask variable having 1'
@@ -58,18 +58,22 @@ PROGRAM cdfpolymask
      PRINT *,'       the behaviour (0 inside, 1 outside).'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       POLY-file : input ASCII file describing a polyline in I J grid.'
+     PRINT *,'       -p POLY-file : input ASCII file describing a polyline in I J grid.'
      PRINT *,'            This file is structured by block, one block corresponding '
      PRINT *,'            to a polygon:'
      PRINT *,'              1rst line of the block gives a polygon name'
      PRINT *,'              2nd line gives the number of vertices (nvert) and a dummy 0'
      PRINT *,'              the block finishes  with nvert pairs of (I,J) describing '
      PRINT *,'              the polygon vertices.'
-     PRINT *,'       REF-file  : reference netcdf file for header of polymask file.'
+     PRINT *,'       -ref REF-file  : reference netcdf file for header of polymask file.'
+     PRINT *,'             This file will be used to look for domain dimensions, and '
+     PRINT *,'             in order to build the output file (nav_lon, nav_lat etc ...)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        [ -r ] : revert option. When used, 0 is inside the polygon,'
      PRINT *,'                 1 outside.'
+     PRINT *,'        [ -o OUT-file ] : spefify the name of the output mask file instead'
+     PRINT *,'                 of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -81,16 +85,16 @@ PROGRAM cdfpolymask
   ENDIF
 
   ijarg = 1 
-  CALL getarg (ijarg, cf_poly) ; ijarg = ijarg + 1
-  CALL getarg (ijarg, cf_ref ) ; ijarg = ijarg + 1
 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum ) 
-     CASE ( '-r' ) ; lreverse = .TRUE.
+     CASE ( '-p'   ) ; CALL getarg (ijarg, cf_poly ) ; ijarg = ijarg + 1
+     CASE ( '-ref' ) ; CALL getarg (ijarg, cf_ref  ) ; ijarg = ijarg + 1
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out  ) ; ijarg = ijarg + 1
+     CASE ( '-r'   ) ; lreverse = .TRUE.
      CASE DEFAULT
-        PRINT *,' unknown optional arugment (', TRIM(cldum),' )'
-        PRINT *,' in actual version only -r -- for reverse -- is recognized '
+        PRINT *,' unknown optional argument (', TRIM(cldum),' )'
         STOP
      END SELECT
   END DO
