@@ -80,19 +80,19 @@ PROGRAM cdfmhst
 
   TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar          ! structure for attributes
 
-  CHARACTER(LEN=256)                           :: cf_vtfil         ! input VT or V file name
-  CHARACTER(LEN=256)                           :: cf_vfil          ! separate V files
-  CHARACTER(LEN=256)                           :: cf_tfil          ! separate T,S files
-  CHARACTER(LEN=256)                           :: cf_sfil          ! separate T,S files
-  CHARACTER(LEN=256)                           :: cf_outh='zonal_heat_trp.dat'
-  CHARACTER(LEN=256)                           :: cf_outs='zonal_salt_trp.dat'
-  CHARACTER(LEN=256)                           :: cf_outnc='mhst.nc'
-  CHARACTER(LEN=256)                           :: cv_zomht='zomht' ! MHT variable name
-  CHARACTER(LEN=256)                           :: cv_zomst='zomst' ! MST variable name
-  CHARACTER(LEN=256)                           :: cldum            ! dummy character variable
+  CHARACTER(LEN=2048)                           :: cf_vtfil         ! input VT or V file name
+  CHARACTER(LEN=2048)                           :: cf_vfil          ! separate V files
+  CHARACTER(LEN=2048)                           :: cf_tfil          ! separate T,S files
+  CHARACTER(LEN=2048)                           :: cf_sfil          ! separate T,S files
+  CHARACTER(LEN=2048)                           :: cf_outh='zonal_heat_trp.dat'
+  CHARACTER(LEN=2048)                           :: cf_outs='zonal_salt_trp.dat'
+  CHARACTER(LEN=2048)                           :: cf_outnc='mhst.nc'
+  CHARACTER(LEN=2048)                           :: cv_zomht='zomht' ! MHT variable name
+  CHARACTER(LEN=2048)                           :: cv_zomst='zomst' ! MST variable name
+  CHARACTER(LEN=2048)                           :: cldum            ! dummy character variable
   CHARACTER(LEN=5),  DIMENSION(6)              :: cbasin=(/'_glo ','_atl ','_inp ','_ind ','_pac ','_inp0'/)
   CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: cvarname         ! varname arrays
-  CHARACTER(LEN=256)                           :: cldimension      ! varname arrays
+  CHARACTER(LEN=2048)                           :: cldimension      ! varname arrays
 
   LOGICAL                                      :: llglo = .FALSE.  ! flag for sub basin file
   LOGICAL                                      :: lchk  = .FALSE.  ! flag for missing files

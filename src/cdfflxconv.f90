@@ -49,25 +49,25 @@ PROGRAM cdfflxconv
   REAL(KIND=8) , DIMENSION (:), ALLOCATABLE ::  timetag, timetagp,timetagn
   REAL(KIND=4) ,DIMENSION(1)                  :: timean 
 
-  CHARACTER(LEN=256) :: ctag, confcase
+  CHARACTER(LEN=2048) :: ctag, confcase
 
   ! Dimg stuff
   INTEGER   :: irecl, ii, nt, ndim, irec
   INTEGER   :: numflx=10, numcoo=11, numtau=12, numsst=14, numsstp=15, numsstn=16
-  CHARACTER(LEN=256) :: cflux, ctau, csstr,csstrp, csstrn
-  CHARACTER(LEN=256) :: coord='coordinates.diags'
-  CHARACTER(LEN=256) :: cheader, cdum, config
+  CHARACTER(LEN=2048) :: cflux, ctau, csstr,csstrp, csstrn
+  CHARACTER(LEN=2048) :: coord='coordinates.diags'
+  CHARACTER(LEN=2048) :: cheader, cdum, config
   CHARACTER(LEN=4) :: cver
   REAL(KIND=4) :: x1,y1, dx,dy, spval
   ! coordinates.diags
   INTEGER :: nrecl8
   REAL(KIND=8) :: zrecl8, zpiglo,zpjglo
   REAL(KIND=8) , DIMENSION (:,:), ALLOCATABLE ::  dzvar
-  CHARACTER(LEN=256) :: cltextco
+  CHARACTER(LEN=2048) :: cltextco
   LOGICAL :: lexist
 
   ! Netcdf Stuff
-  CHARACTER(LEN=256) :: cemp, cqnet, cqsr, ctaux, ctauy, csst
+  CHARACTER(LEN=2048) :: cemp, cqnet, cqsr, ctaux, ctauy, csst
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvaremp,typvarqnet,typvarqsr
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: typvartaux,typvartauy,typvarsst
   INTEGER, DIMENSION(:), ALLOCATABLE ::  ipkemp, ipkqnet, ipkqsr, id_varoutemp,id_varoutqnet, id_varoutqsr
@@ -502,7 +502,7 @@ PROGRAM cdfflxconv
        IMPLICIT NONE
        CHARACTER(LEN=*), INTENT(in) ::  clname
        CHARACTER(LEN=4)  ::  cver
-       CHARACTER(LEN=256) ::  clheader
+       CHARACTER(LEN=2048) ::  clheader
        !
        INTEGER :: irecl
 

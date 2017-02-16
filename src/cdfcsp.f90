@@ -31,11 +31,11 @@ PROGRAM cdfcsp
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: tab              ! working array
   REAL(KIND=4)                                  :: zspval           ! special value read in file
 
-  CHARACTER(LEN=256)                            :: cf_in            ! input file name
-  CHARACTER(LEN=256)                            :: cunits           ! units attribute
-  CHARACTER(LEN=256)                            :: clname           ! long name attribute
-  CHARACTER(LEN=256)                            :: csname           ! short name attribute
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names         ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in            ! input file name
+  CHARACTER(LEN=2048)                            :: cunits           ! units attribute
+  CHARACTER(LEN=2048)                            :: clname           ! long name attribute
+  CHARACTER(LEN=2048)                            :: csname           ! short name attribute
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names         ! array of var name
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar          ! type for attributes
   !!----------------------------------------------------------------------

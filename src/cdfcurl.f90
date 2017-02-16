@@ -43,10 +43,10 @@ PROGRAM cdfcurl
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_rotn            ! curl at T point 
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_ff              ! Coriolis parameter at F point
 
-  CHARACTER(LEN=256)                        :: cf_ufil, cf_vfil   ! file names
-  CHARACTER(LEN=256)                        :: cf_out = 'curl.nc' ! output file name
-  CHARACTER(LEN=256)                        :: cv_u, cv_v         ! variable names
-  CHARACTER(LEN=256)                        :: cldum              ! dummy string
+  CHARACTER(LEN=2048)                        :: cf_ufil, cf_vfil   ! file names
+  CHARACTER(LEN=2048)                        :: cf_out = 'curl.nc' ! output file name
+  CHARACTER(LEN=2048)                        :: cv_u, cv_v         ! variable names
+  CHARACTER(LEN=2048)                        :: cldum              ! dummy string
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attibutes
 
@@ -343,7 +343,7 @@ CONTAINS
     INTEGER(KIND=4)                 :: ilength, ik1, ik2
     INTEGER(KIND=4)                 :: icomma, idash, ipos, ipos1
     INTEGER(KIND=4), DIMENSION(350) :: ilev
-    CHARACTER(LEN=256) :: cldum
+    CHARACTER(LEN=2048) :: cldum
     CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: clblk
     !!----------------------------------------------------------------------
     ilength=LEN(TRIM(cdum) )

@@ -45,9 +45,9 @@ PROGRAM cdficb_diags
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar              ! structure of output
   !
-  CHARACTER(LEN=256)                         :: cf_ifil              ! input ice file
-  CHARACTER(LEN=256)                         :: cf_out='icbdiags.nc' ! output file
-  CHARACTER(LEN=256)                         :: cldum                ! dummy string
+  CHARACTER(LEN=2048)                         :: cf_ifil              ! input ice file
+  CHARACTER(LEN=2048)                         :: cf_out='icbdiags.nc' ! output file
+  CHARACTER(LEN=2048)                         :: cldum                ! dummy string
   !
   LOGICAL                                    :: lchk  = .false.      ! missing file flag
   LOGICAL                                    :: llim3 = .false.      ! LIM3 flag

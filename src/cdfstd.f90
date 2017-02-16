@@ -49,13 +49,13 @@ PROGRAM cdfstd
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dstd                ! standard deviation
   REAL(KIND=8)                                  :: dtotal_time         ! cumulated time
 
-  CHARACTER(LEN=256)                            :: cf_in               ! input file
-  CHARACTER(LEN=256)                            :: cf_out='cdfstd.nc'  ! std dev output file
-  CHARACTER(LEN=256)                            :: cf_moy='cdfmoy.nc'  ! mean output file (optional)
-  CHARACTER(LEN=256)                            :: cv_dep              ! depth variable name
-  CHARACTER(LEN=256)                            :: cldum               ! dummy string
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! array of var name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nameso           ! array of var name for output
+  CHARACTER(LEN=2048)                            :: cf_in               ! input file
+  CHARACTER(LEN=2048)                            :: cf_out='cdfstd.nc'  ! std dev output file
+  CHARACTER(LEN=2048)                            :: cf_moy='cdfmoy.nc'  ! mean output file (optional)
+  CHARACTER(LEN=2048)                            :: cv_dep              ! depth variable name
+  CHARACTER(LEN=2048)                            :: cldum               ! dummy string
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! array of var name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nameso           ! array of var name for output
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvari            ! attributes of input variables
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvaro            ! attributes of output variables

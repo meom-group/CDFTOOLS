@@ -44,11 +44,11 @@ PROGRAM cdfmxlsaltc
   REAL(KIND=8)                                  :: dvol                ! total volume
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dmxlsaltc           ! heat content
 
-  CHARACTER(LEN=256)                            :: cf_tfil             ! input file name
-  CHARACTER(LEN=256)                            :: cf_out='mxlsaltc.nc'! output file
-  CHARACTER(LEN=256)                            :: cv_out='somxlsaltc' ! input file name
-  CHARACTER(LEN=256)                            :: cglobal             ! global attribute
-  CHARACTER(LEN=256)                            :: cldum               ! dummy string
+  CHARACTER(LEN=2048)                            :: cf_tfil             ! input file name
+  CHARACTER(LEN=2048)                            :: cf_out='mxlsaltc.nc'! output file
+  CHARACTER(LEN=2048)                            :: cv_out='somxlsaltc' ! input file name
+  CHARACTER(LEN=2048)                            :: cglobal             ! global attribute
+  CHARACTER(LEN=2048)                            :: cldum               ! dummy string
 
   TYPE(variable), DIMENSION(1)                  :: stypvar             ! stucture for attributes (output)
 

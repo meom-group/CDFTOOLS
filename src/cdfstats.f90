@@ -45,11 +45,11 @@ PROGRAM cdfstats
    REAL(KIND=8)                              :: dl_spmu, dl_spmv       ! global mean (info only)
    REAL(KIND=8)                              :: dl_fct, dl_fcts        ! scaling coefficients
 
-   CHARACTER(LEN=256)                        :: cf_in, cf_ref          ! input and reference file names
-   CHARACTER(LEN=256)                        :: cf_msk, cf_hgr         ! current mask and hgr file
-   CHARACTER(LEN=256)                        :: cf_out = 'stats.nc'    ! output file
-   CHARACTER(LEN=256)                        :: cglobal                ! Global attribute
-   CHARACTER(LEN=256)                        :: cldum                  ! dummy string for arguments
+   CHARACTER(LEN=2048)                        :: cf_in, cf_ref          ! input and reference file names
+   CHARACTER(LEN=2048)                        :: cf_msk, cf_hgr         ! current mask and hgr file
+   CHARACTER(LEN=2048)                        :: cf_out = 'stats.nc'    ! output file
+   CHARACTER(LEN=2048)                        :: cglobal                ! Global attribute
+   CHARACTER(LEN=2048)                        :: cldum                  ! dummy string for arguments
    CHARACTER(LEN=20)                         :: cv_name1, cv_name2     ! variable name
    CHARACTER(LEN=2)                          :: cy                     ! (1 or 12 ) 
 

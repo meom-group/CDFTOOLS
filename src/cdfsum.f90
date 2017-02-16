@@ -50,20 +50,20 @@ PROGRAM cdfsum
   REAL(KIND=8)                              :: dsum, dsum2d        ! global sum /layer sum
   REAL(KIND=8)                              :: dsumt               ! global sum over time
 
-  CHARACTER(LEN=256)                        :: cldum               ! dummy string
-  CHARACTER(LEN=256)                        :: cf_in               ! file name 
-  CHARACTER(LEN=256)                        :: cf_out='cdfsum.nc'  ! output file name 
-  CHARACTER(LEN=256)                        :: cv_dep              ! depth name in mesh_zgr
-  CHARACTER(LEN=256)                        :: cdep                ! depth name in output file
-  CHARACTER(LEN=256)                        :: cv_in               ! variable name
+  CHARACTER(LEN=2048)                        :: cldum               ! dummy string
+  CHARACTER(LEN=2048)                        :: cf_in               ! file name 
+  CHARACTER(LEN=2048)                        :: cf_out='cdfsum.nc'  ! output file name 
+  CHARACTER(LEN=2048)                        :: cv_dep              ! depth name in mesh_zgr
+  CHARACTER(LEN=2048)                        :: cdep                ! depth name in output file
+  CHARACTER(LEN=2048)                        :: cv_in               ! variable name
   CHARACTER(LEN=20)                         :: cv_e1, cv_e2, cv_e3 ! name of the horiz/vert metrics
   CHARACTER(LEN=20)                         :: cv_msk              ! name of mask variable
   CHARACTER(LEN=20)                         :: cl_vmsk             ! name of external mask variable (-M option)
   CHARACTER(LEN=20)                         :: cvartype            ! variable type
-  CHARACTER(LEN=256)                        :: clunits            ! attribute of output file : units
-  CHARACTER(LEN=256)                        :: cllong_name        !     "      long name
-  CHARACTER(LEN=256)                        :: clshort_name       !     "      short name
-  CHARACTER(LEN=256)                        :: cglobal            !     "      global 
+  CHARACTER(LEN=2048)                        :: clunits            ! attribute of output file : units
+  CHARACTER(LEN=2048)                        :: cllong_name        !     "      long name
+  CHARACTER(LEN=2048)                        :: clshort_name       !     "      short name
+  CHARACTER(LEN=2048)                        :: cglobal            !     "      global 
 
   TYPE(variable), DIMENSION(2)              :: stypvar             ! structure of output
 

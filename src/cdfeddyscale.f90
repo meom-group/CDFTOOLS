@@ -51,9 +51,9 @@ PROGRAM cdfeddyscale
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlambda2           ! small scale eddy
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: scar               ! inertial range
 
-  CHARACTER(LEN=256)                        :: cf_meanfil   ! file names
-  CHARACTER(LEN=256)                        :: cf_out = 'lambda.nc' ! output file name
-  CHARACTER(LEN=256)                        :: cldum              ! dummy string
+  CHARACTER(LEN=2048)                        :: cf_meanfil   ! file names
+  CHARACTER(LEN=2048)                        :: cf_out = 'lambda.nc' ! output file name
+  CHARACTER(LEN=2048)                        :: cldum              ! dummy string
 
   TYPE (variable), DIMENSION(3)             :: stypvar            ! structure for attibutes
 

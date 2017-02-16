@@ -49,18 +49,18 @@ PROGRAM cdfvertmean
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dvol2d              ! layer volume
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dvertmean           ! value of integral
 
-  CHARACTER(LEN=256)                            :: cf_in               ! input file name
-  CHARACTER(LEN=256)                            :: cf_out='vertmean.nc'! output file
-  CHARACTER(LEN=256)                            :: cv_cur              ! variable name
-  CHARACTER(LEN=256)                            :: cv_dep              ! depth name
-  CHARACTER(LEN=256)                            :: cv_e3               ! vertical metric name (partial)
-  CHARACTER(LEN=256)                            :: cv_e31d             ! vertical metric name (full)
-  CHARACTER(LEN=256)                            :: cv_msk              ! mask variable name
-  CHARACTER(LEN=256)                            :: ctype='T'           ! position of the variable
-  CHARACTER(LEN=256)                            :: cglobal             ! global attribute
-  CHARACTER(LEN=256)                            :: cldum               ! dummy string
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! name of input variables
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in               ! name of output variables
+  CHARACTER(LEN=2048)                            :: cf_in               ! input file name
+  CHARACTER(LEN=2048)                            :: cf_out='vertmean.nc'! output file
+  CHARACTER(LEN=2048)                            :: cv_cur              ! variable name
+  CHARACTER(LEN=2048)                            :: cv_dep              ! depth name
+  CHARACTER(LEN=2048)                            :: cv_e3               ! vertical metric name (partial)
+  CHARACTER(LEN=2048)                            :: cv_e31d             ! vertical metric name (full)
+  CHARACTER(LEN=2048)                            :: cv_msk              ! mask variable name
+  CHARACTER(LEN=2048)                            :: ctype='T'           ! position of the variable
+  CHARACTER(LEN=2048)                            :: cglobal             ! global attribute
+  CHARACTER(LEN=2048)                            :: cldum               ! dummy string
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names            ! name of input variables
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_in               ! name of output variables
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE     :: stypvarin           ! stucture for attributes (input)
   TYPE(variable), DIMENSION(:), ALLOCATABLE     :: stypvar             ! stucture for attributes (output)

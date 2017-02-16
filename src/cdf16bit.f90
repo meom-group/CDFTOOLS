@@ -46,10 +46,10 @@ PROGRAM cdf16bit
   REAL(KIND=4)                                  :: zzmax, zzmin       ! min and max of the full 3D field
   REAL(KIND=4)                                  :: spval              ! missing value, fill_value, spval ...
 
-  CHARACTER(LEN=256)                            :: cf_in              ! input file
-  CHARACTER(LEN=256)                            :: cf_out='cdf16bit.nc' ! outputfile
-  CHARACTER(LEN=256)                            :: cldum              ! dummy string
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names           ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in              ! input file
+  CHARACTER(LEN=2048)                            :: cf_out='cdf16bit.nc' ! outputfile
+  CHARACTER(LEN=2048)                            :: cldum              ! dummy string
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names           ! array of var name
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! Type variable is defined in cdfio.
 
@@ -222,7 +222,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     INTEGER(KIND=4), INTENT(in) :: kvar  ! variable number
 
-    CHARACTER(LEN=256) :: clvarname
+    CHARACTER(LEN=2048) :: clvarname
     REAL(KIND=4)       :: zvmin, zvmax
     !!----------------------------------------------------------------------
 

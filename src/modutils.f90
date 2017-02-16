@@ -71,7 +71,7 @@ CONTAINS
 
   END SUBROUTINE SetGlobalAtt
 
-  CHARACTER(LEN=256) FUNCTION SetFileName(cdconf, cdtag, cdgrid ,ld_stop )
+  CHARACTER(LEN=2048) FUNCTION SetFileName(cdconf, cdtag, cdgrid ,ld_stop )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION SetFileName  ***
     !!

@@ -35,11 +35,11 @@ PROGRAM cdfsig0
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
 
-  CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
-  CHARACTER(LEN=256)                        :: cf_out='sig0.nc'   ! output file name
-  CHARACTER(LEN=256)                        :: cldum              ! dummy characte variable variable
-  CHARACTER(LEN=256)                        :: cv_sal             ! salinity name in netcdf
-  CHARACTER(LEN=256)                        :: cv_tem             ! temperature name in netcdf
+  CHARACTER(LEN=2048)                        :: cf_tfil            ! input filename
+  CHARACTER(LEN=2048)                        :: cf_out='sig0.nc'   ! output file name
+  CHARACTER(LEN=2048)                        :: cldum              ! dummy characte variable variable
+  CHARACTER(LEN=2048)                        :: cv_sal             ! salinity name in netcdf
+  CHARACTER(LEN=2048)                        :: cv_tem             ! temperature name in netcdf
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
   LOGICAL                                   :: lnc4 = .FALSE.     ! flag for missing files

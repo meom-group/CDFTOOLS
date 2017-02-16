@@ -35,10 +35,10 @@
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rotn, cisah1, cisah2t, cisah2         ! curl and fmask
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                                   ! time counter
 
-  CHARACTER(LEN=256)                        :: cf_ufil, cf_vfil                      ! file names
-  CHARACTER(LEN=256)                        :: cf_out = 'okubow.nc'                  ! output file name
-  CHARACTER(LEN=256)                        :: cv_u, cv_v                            ! variable names
-  CHARACTER(LEN=256)                        :: cldum                                 ! dummy string
+  CHARACTER(LEN=2048)                        :: cf_ufil, cf_vfil                      ! file names
+  CHARACTER(LEN=2048)                        :: cf_out = 'okubow.nc'                  ! output file name
+  CHARACTER(LEN=2048)                        :: cv_u, cv_v                            ! variable names
+  CHARACTER(LEN=2048)                        :: cldum                                 ! dummy string
 
   TYPE (variable), DIMENSION(1)             :: stypvar                               ! structure for attibutes
 

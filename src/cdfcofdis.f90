@@ -47,10 +47,10 @@ PROGRAM cdfcofdis
   ! 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: pdct                       ! 2D only in this version
                                                                           ! It is a 3D arg in original cofdis
-  CHARACTER(LEN=256)                        :: cf_out='dist.coast'
-  CHARACTER(LEN=256)                        :: cf_tfil
-  CHARACTER(LEN=256)                        :: cv_out='Tcoast'
-  CHARACTER(LEN=256)                        :: cldum
+  CHARACTER(LEN=2048)                        :: cf_out='dist.coast'
+  CHARACTER(LEN=2048)                        :: cf_tfil
+  CHARACTER(LEN=2048)                        :: cv_out='Tcoast'
+  CHARACTER(LEN=2048)                        :: cldum
 
   TYPE(variable), DIMENSION(1)              :: stypvar
 

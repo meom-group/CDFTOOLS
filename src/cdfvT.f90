@@ -45,14 +45,14 @@ PROGRAM cdfvT
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulvt, dcumulvs   ! Arrays for cumulated values
   REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
-  CHARACTER(LEN=256)                        :: cf_tfil              ! T file name
-  CHARACTER(LEN=256)                        :: cf_sfil              ! S file name [default: idem T file]
-  CHARACTER(LEN=256)                        :: cf_ufil              ! zonal velocity file
-  CHARACTER(LEN=256)                        :: cf_vfil              ! meridional velocity file
-  CHARACTER(LEN=256)                        :: cf_out='vt.nc'       ! output file
-  CHARACTER(LEN=256)                        :: config               ! configuration name
-  CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
-  CHARACTER(LEN=256)                        :: cldum                ! dummy character argument
+  CHARACTER(LEN=2048)                        :: cf_tfil              ! T file name
+  CHARACTER(LEN=2048)                        :: cf_sfil              ! S file name [default: idem T file]
+  CHARACTER(LEN=2048)                        :: cf_ufil              ! zonal velocity file
+  CHARACTER(LEN=2048)                        :: cf_vfil              ! meridional velocity file
+  CHARACTER(LEN=2048)                        :: cf_out='vt.nc'       ! output file
+  CHARACTER(LEN=2048)                        :: config               ! configuration name
+  CHARACTER(LEN=2048)                        :: ctag                 ! current tag to work with               
+  CHARACTER(LEN=2048)                        :: cldum                ! dummy character argument
 
   TYPE (variable), DIMENSION(4)             :: stypvar              ! structure for attributes
 

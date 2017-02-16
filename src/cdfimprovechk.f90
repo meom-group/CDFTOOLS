@@ -42,11 +42,11 @@ PROGRAM cdfimprovechk
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zchk              ! check index output
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim               ! time counter
 
-  CHARACTER(LEN=256)                        :: cf_obs            ! observation-file name
-  CHARACTER(LEN=256)                        :: cf_ref            ! reference-file name
-  CHARACTER(LEN=256)                        :: cf_tst            ! test-file name
-  CHARACTER(LEN=256)                        :: cv_in             ! cdf variable name
-  CHARACTER(LEN=256)                        :: cf_out='chk.nc'   ! output filename
+  CHARACTER(LEN=2048)                        :: cf_obs            ! observation-file name
+  CHARACTER(LEN=2048)                        :: cf_ref            ! reference-file name
+  CHARACTER(LEN=2048)                        :: cf_tst            ! test-file name
+  CHARACTER(LEN=2048)                        :: cv_in             ! cdf variable name
+  CHARACTER(LEN=2048)                        :: cf_out='chk.nc'   ! output filename
 
   TYPE (variable), DIMENSION(1)             :: stypvar           ! structure for attributes
 

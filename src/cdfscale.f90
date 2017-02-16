@@ -31,11 +31,11 @@ PROGRAM cdfscale
   REAL(KIND=4)                                  :: vscale                 ! spval, replace value
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tab                    ! Arrays for data
 
-  CHARACTER(LEN=256)                            :: cldum                  ! dummy string for getarg
-  CHARACTER(LEN=256)                            :: cf_inout               ! file name
-  CHARACTER(LEN=256)                            :: cunits, clname, csname ! attributes
-  CHARACTER(LEN=256)                            :: cv_inout               ! variable name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names               ! array of var name
+  CHARACTER(LEN=2048)                            :: cldum                  ! dummy string for getarg
+  CHARACTER(LEN=2048)                            :: cf_inout               ! file name
+  CHARACTER(LEN=2048)                            :: cunits, clname, csname ! attributes
+  CHARACTER(LEN=2048)                            :: cv_inout               ! variable name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names               ! array of var name
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar                ! type for attributes
 

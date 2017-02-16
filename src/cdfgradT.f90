@@ -42,9 +42,9 @@ PROGRAM cdfgradT
    REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgradt_x, dgradt_y, dgradt_z  ! Temperature gradient component
    REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgrads_x, dgrads_y, dgrads_z  ! Salinity gradient component
 
-   CHARACTER(LEN=256)                         :: cf_tfil             ! input file name for T and S
-   CHARACTER(LEN=256)                         :: cf_sfil             ! input file name for S (optional)
-   CHARACTER(LEN=256)                         :: cf_out = 'gradT.nc' ! output file name
+   CHARACTER(LEN=2048)                         :: cf_tfil             ! input file name for T and S
+   CHARACTER(LEN=2048)                         :: cf_sfil             ! input file name for S (optional)
+   CHARACTER(LEN=2048)                         :: cf_out = 'gradT.nc' ! output file name
 
    TYPE(variable), DIMENSION(jp_varout)       :: stypvar             ! output data structure
 

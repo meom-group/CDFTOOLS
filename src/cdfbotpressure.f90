@@ -44,9 +44,9 @@ PROGRAM cdfbotpressure
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_bpres            ! Bottom pressure
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_sigi             ! insitu density
 
-   CHARACTER(LEN=256)                        :: cf_in, cf_out       ! input/output file
-   CHARACTER(LEN=256)                        :: cldum               ! dummy string for command line browsing
-   CHARACTER(LEN=256)                        :: cglobal            ! Global attribute
+   CHARACTER(LEN=2048)                        :: cf_in, cf_out       ! input/output file
+   CHARACTER(LEN=2048)                        :: cldum               ! dummy string for command line browsing
+   CHARACTER(LEN=2048)                        :: cglobal            ! Global attribute
 
    LOGICAL                                   :: lfull =.FALSE.      ! flag for full step computation
    LOGICAL                                   :: lssh  =.FALSE.      ! Use ssh and cst surf. density in the bot pressure

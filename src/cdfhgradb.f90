@@ -53,12 +53,12 @@ PROGRAM cdfhgradb
 
    REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zalbet, zbeta         ! for alpha and beta
 
-   CHARACTER(LEN=256)                         :: cf_tfil             ! input file name for T and S
-   CHARACTER(LEN=256)                         :: cf_sfil             ! input file name for S (optional)
-   CHARACTER(LEN=256)                         :: cf_out = 'hgradb_gridT.nc' ! output file name
-   CHARACTER(LEN=256)                         :: cldum               ! dummy character variable
-   CHARACTER(LEN=256)                         :: cv_sal              ! salinity name in netcdf
-   CHARACTER(LEN=256)                         :: cv_tem              ! temperature name in netcdf
+   CHARACTER(LEN=2048)                         :: cf_tfil             ! input file name for T and S
+   CHARACTER(LEN=2048)                         :: cf_sfil             ! input file name for S (optional)
+   CHARACTER(LEN=2048)                         :: cf_out = 'hgradb_gridT.nc' ! output file name
+   CHARACTER(LEN=2048)                         :: cldum               ! dummy character variable
+   CHARACTER(LEN=2048)                         :: cv_sal              ! salinity name in netcdf
+   CHARACTER(LEN=2048)                         :: cv_tem              ! temperature name in netcdf
 
    TYPE(variable), DIMENSION(jp_varout)       :: stypvar             ! output data structure
 

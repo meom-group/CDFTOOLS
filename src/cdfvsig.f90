@@ -70,16 +70,16 @@ PROGRAM cdfvsig
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulw, dcumulw2    ! Arrays for cumulated values
   REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
-  CHARACTER(LEN=256)                        :: cf_tfil              ! TS file name
-  CHARACTER(LEN=256)                        :: cf_ufil              ! zonal velocity file
-  CHARACTER(LEN=256)                        :: cf_vfil              ! meridional velocity file
-  CHARACTER(LEN=256)                        :: cf_wfil              ! vertical velocity file
-  CHARACTER(LEN=256)                        :: cf_outu='usig.nc'    ! output file
-  CHARACTER(LEN=256)                        :: cf_outv='vsig.nc'    ! output file
-  CHARACTER(LEN=256)                        :: cf_outw='wsig.nc'    ! output file
-  CHARACTER(LEN=256)                        :: config               ! configuration name
-  CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
-  CHARACTER(LEN=256)                        :: cldum                ! dummy character var for browsing
+  CHARACTER(LEN=2048)                        :: cf_tfil              ! TS file name
+  CHARACTER(LEN=2048)                        :: cf_ufil              ! zonal velocity file
+  CHARACTER(LEN=2048)                        :: cf_vfil              ! meridional velocity file
+  CHARACTER(LEN=2048)                        :: cf_wfil              ! vertical velocity file
+  CHARACTER(LEN=2048)                        :: cf_outu='usig.nc'    ! output file
+  CHARACTER(LEN=2048)                        :: cf_outv='vsig.nc'    ! output file
+  CHARACTER(LEN=2048)                        :: cf_outw='wsig.nc'    ! output file
+  CHARACTER(LEN=2048)                        :: config               ! configuration name
+  CHARACTER(LEN=2048)                        :: ctag                 ! current tag to work with               
+  CHARACTER(LEN=2048)                        :: cldum                ! dummy character var for browsing
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvaru             ! structure for attributes
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvarv             ! structure for attributes
@@ -406,7 +406,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     INTEGER(KIND=4)    :: jsig, ivaru, ivarv, ivarw
     CHARACTER(LEN=1)   :: cldep
-    CHARACTER(LEN=256) :: cl_global, cl_refu, cl_refv, cl_refw
+    CHARACTER(LEN=2048) :: cl_global, cl_refu, cl_refv, cl_refw
     !!----------------------------------------------------------------------
     ALLOCATE ( stypvaru(nfieldu), ipku(nfieldu), id_varoutu(nfieldu)    )
     ALLOCATE ( stypvarv(nfieldv), ipkv(nfieldv), id_varoutv(nfieldv)     )

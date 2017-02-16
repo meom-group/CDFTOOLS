@@ -69,11 +69,11 @@ PROGRAM cdfpvor
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dstretch             ! stretching vorticity
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dareat               ! area of T cells
 
-  CHARACTER(LEN=256)                          :: cf_tfil              ! input T file
-  CHARACTER(LEN=256)                          :: cf_ufil              ! input U file
-  CHARACTER(LEN=256)                          :: cf_vfil              ! input V file
-  CHARACTER(LEN=256)                          :: cf_out='pvor.nc'     ! output file
-  CHARACTER(LEN=256)                          :: cldum                ! dummy character variable
+  CHARACTER(LEN=2048)                          :: cf_tfil              ! input T file
+  CHARACTER(LEN=2048)                          :: cf_ufil              ! input U file
+  CHARACTER(LEN=2048)                          :: cf_vfil              ! input V file
+  CHARACTER(LEN=2048)                          :: cf_out='pvor.nc'     ! output file
+  CHARACTER(LEN=2048)                          :: cldum                ! dummy character variable
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE   :: stypvar              ! structure for attribute
 

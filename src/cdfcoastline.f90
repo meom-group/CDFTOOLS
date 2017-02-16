@@ -25,14 +25,14 @@ PROGRAM cdfcofpoint
 
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE ::  zmask, mask, mask_out  !: npiglo x npjglo
 
-  CHARACTER(LEN=256) :: cfile, cldum
-  CHARACTER(LEN=256) :: cmask='mask.nc'
+  CHARACTER(LEN=2048) :: cfile, cldum
+  CHARACTER(LEN=2048) :: cmask='mask.nc'
 
   ! output stuff
   INTEGER, DIMENSION(1) :: ipk, id_varout
   TYPE(variable), DIMENSION(1) :: stypvar
   REAL(KIND=4) ,DIMENSION(1)                  :: timean
-  CHARACTER(LEN=256) :: cfileout='pointcoast.nc'
+  CHARACTER(LEN=2048) :: cfileout='pointcoast.nc'
   INTEGER :: ncout, ierr
 
   narg= iargc()

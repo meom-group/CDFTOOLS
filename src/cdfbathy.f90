@@ -62,15 +62,15 @@ PROGRAM cdfbathy
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: bathyin             ! initial data value
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: bathy               ! modified data value
   !
-  CHARACTER(LEN=256)                           :: cf_in               ! original input file name
-  CHARACTER(LEN=256)                           :: cf_root             ! root part of the file name
-  CHARACTER(LEN=256)                           :: cf_dump             ! dump txt file name (out)
-  CHARACTER(LEN=256)                           :: cf_replace          ! replace txt file name (in)
+  CHARACTER(LEN=2048)                           :: cf_in               ! original input file name
+  CHARACTER(LEN=2048)                           :: cf_root             ! root part of the file name
+  CHARACTER(LEN=2048)                           :: cf_dump             ! dump txt file name (out)
+  CHARACTER(LEN=2048)                           :: cf_replace          ! replace txt file name (in)
   CHARACTER(LEN=80)                            :: cf_batfile = 'zgrbat.txt' ! txt file giving vertical mesh
   CHARACTER(LEN=80)                            :: cf_log = 'log.f90'  ! default log file
   CHARACTER(LEN=80)                            :: cv_in               ! variable name
-  CHARACTER(LEN=256)                           :: cwkc                ! filename of working copy
-  CHARACTER(LEN=256)                           :: cldum               ! dummy string
+  CHARACTER(LEN=2048)                           :: cwkc                ! filename of working copy
+  CHARACTER(LEN=2048)                           :: cldum               ! dummy string
 
   LOGICAL :: lexist     = .TRUE.,  lfill      = .FALSE.       ! all required flags for options
   LOGICAL :: lfullstep  = .FALSE., lappend    = .FALSE.       ! all required flags for options
@@ -372,7 +372,7 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
     INTEGER(KIND=4) :: inumzgr = 10, il, iostat, idum, ifoo
-    CHARACTER(LEN=256) :: cline, clfile
+    CHARACTER(LEN=2048) :: cline, clfile
     !!----------------------------------------------------------------------
     clfile = cf_batfile       ! defined in the main program
     il=0
@@ -524,7 +524,7 @@ CONTAINS
 
     INTEGER(KIND=4)    :: ji, jj
     INTEGER(KIND=4)    :: inumdmp=20 , ini
-    CHARACTER(LEN=256) :: cl_fmtr, cl_fmti
+    CHARACTER(LEN=2048) :: cl_fmtr, cl_fmti
     !!----------------------------------------------------------------------
     ini = kimax - kimin + 1
     WRITE(cl_fmtr,99) ini
@@ -554,7 +554,7 @@ CONTAINS
 
     INTEGER(KIND=4)    :: ji, jj
     INTEGER(KIND=4)    :: inumdmp=20 , ini
-    CHARACTER(LEN=256) :: cl_fmtr, cl_fmti
+    CHARACTER(LEN=2048) :: cl_fmtr, cl_fmti
     !!----------------------------------------------------------------------
     ini=kimax-kimin+1
     WRITE(cl_fmtr,99) ini

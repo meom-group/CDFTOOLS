@@ -60,23 +60,23 @@ PROGRAM cdfmean
   REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvmeanout3d         ! global 3D mean value
   REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvariance3d         ! global 3D mean variance
 
-  CHARACTER(LEN=256)                         :: cv_nam             ! current variable name
-  CHARACTER(LEN=256)                         :: cv_dep             ! deptht name
+  CHARACTER(LEN=2048)                         :: cv_nam             ! current variable name
+  CHARACTER(LEN=2048)                         :: cv_dep             ! deptht name
   CHARACTER(LEN=20)                          :: cv_e1, cv_e2       ! horizontal metrics names
   CHARACTER(LEN=20)                          :: cv_e3, cv_e31d     ! vertical metrics names
   CHARACTER(LEN=20)                          :: cv_msk = ''        ! mask variable name
-  CHARACTER(LEN=256)                         :: cf_in              ! input file name
-  CHARACTER(LEN=256)                         :: cf_out   = 'cdfmean.txt' ! ASCII output file for mean
-  CHARACTER(LEN=256)                         :: cf_var   = 'cdfvar.txt'  ! ASCII output file for variance
-  CHARACTER(LEN=256)                         :: cf_ncout = 'cdfmean.nc'  ! NCDF output file
-  CHARACTER(LEN=256)                         :: cf_zerom = 'zeromean.nc' ! NCDF output file with zeromean field
-  CHARACTER(LEN=256)                         :: ctype              ! type of C-grid point to work with
-  CHARACTER(LEN=256)                         :: clunits            ! attribute of output file : units
-  CHARACTER(LEN=256)                         :: cllong_name        !     "      long name
-  CHARACTER(LEN=256)                         :: clshort_name       !     "      short name
-  CHARACTER(LEN=256)                         :: cglobal            !     "      global 
-  CHARACTER(LEN=256)                         :: cldum              ! dummy char variable
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names        ! list of file names
+  CHARACTER(LEN=2048)                         :: cf_in              ! input file name
+  CHARACTER(LEN=2048)                         :: cf_out   = 'cdfmean.txt' ! ASCII output file for mean
+  CHARACTER(LEN=2048)                         :: cf_var   = 'cdfvar.txt'  ! ASCII output file for variance
+  CHARACTER(LEN=2048)                         :: cf_ncout = 'cdfmean.nc'  ! NCDF output file
+  CHARACTER(LEN=2048)                         :: cf_zerom = 'zeromean.nc' ! NCDF output file with zeromean field
+  CHARACTER(LEN=2048)                         :: ctype              ! type of C-grid point to work with
+  CHARACTER(LEN=2048)                         :: clunits            ! attribute of output file : units
+  CHARACTER(LEN=2048)                         :: cllong_name        !     "      long name
+  CHARACTER(LEN=2048)                         :: clshort_name       !     "      short name
+  CHARACTER(LEN=2048)                         :: cglobal            !     "      global 
+  CHARACTER(LEN=2048)                         :: cldum              ! dummy char variable
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names        ! list of file names
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar            ! structure of output
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvarin          ! structure of input data

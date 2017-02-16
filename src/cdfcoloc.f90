@@ -66,24 +66,24 @@ PROGRAM cdfcoloc
   REAL(KIND=8), DIMENSION(:,:),      ALLOCATABLE :: dinterp        ! result array (nid,jptyp)
 
   ! file name
-  CHARACTER(LEN=256)                             :: cf_out  
-  CHARACTER(LEN=256)                             :: cf_skip 
-  CHARACTER(LEN=256)                             :: cf_weight 
-  CHARACTER(LEN=256)                             :: cf_weight_root
-  CHARACTER(LEN=256)                             :: cf_gridt   = 'none'
-  CHARACTER(LEN=256)                             :: cf_gridtrc = 'none'
-  CHARACTER(LEN=256)                             :: cf_diag    = 'none'
-  CHARACTER(LEN=256)                             :: cf_gridu   = 'none'
-  CHARACTER(LEN=256)                             :: cf_gridv   = 'none'
-  CHARACTER(LEN=256)                             :: cf_bathy   = 'none'
-  CHARACTER(LEN=256)                             :: cf_in
-  CHARACTER(LEN=256)                             :: cf_weight_t
-  CHARACTER(LEN=256)                             :: cf_weight_u
-  CHARACTER(LEN=256)                             :: cf_weight_v
-  CHARACTER(LEN=256)                             :: cctyp, cvar, cvmask    ! current mooring
-  CHARACTER(LEN=256)                             :: cldum   ! dummy char variable for line input
-  CHARACTER(LEN=256)                             :: ctmplst0 ! current list of type: separated by ,
-  CHARACTER(LEN=256)                             :: cformat  ! ASCII format adapted to ntyp
+  CHARACTER(LEN=2048)                             :: cf_out  
+  CHARACTER(LEN=2048)                             :: cf_skip 
+  CHARACTER(LEN=2048)                             :: cf_weight 
+  CHARACTER(LEN=2048)                             :: cf_weight_root
+  CHARACTER(LEN=2048)                             :: cf_gridt   = 'none'
+  CHARACTER(LEN=2048)                             :: cf_gridtrc = 'none'
+  CHARACTER(LEN=2048)                             :: cf_diag    = 'none'
+  CHARACTER(LEN=2048)                             :: cf_gridu   = 'none'
+  CHARACTER(LEN=2048)                             :: cf_gridv   = 'none'
+  CHARACTER(LEN=2048)                             :: cf_bathy   = 'none'
+  CHARACTER(LEN=2048)                             :: cf_in
+  CHARACTER(LEN=2048)                             :: cf_weight_t
+  CHARACTER(LEN=2048)                             :: cf_weight_u
+  CHARACTER(LEN=2048)                             :: cf_weight_v
+  CHARACTER(LEN=2048)                             :: cctyp, cvar, cvmask    ! current mooring
+  CHARACTER(LEN=2048)                             :: cldum   ! dummy char variable for line input
+  CHARACTER(LEN=2048)                             :: ctmplst0 ! current list of type: separated by ,
+  CHARACTER(LEN=2048)                             :: cformat  ! ASCII format adapted to ntyp
   CHARACTER(LEN=12), DIMENSION(jptyp)            :: ctype  !  all possible type defined there
   CHARACTER(LEN=12), DIMENSION(:),ALLOCATABLE    :: cltype !  actual type used given as argument
 
@@ -508,7 +508,7 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
     INTEGER(KIND=4)    :: jt
-    CHARACTER(LEN=256) :: cltmplst
+    CHARACTER(LEN=2048) :: cltmplst
     !!----------------------------------------------------------------------
     
     cltmplst = ctmplst0

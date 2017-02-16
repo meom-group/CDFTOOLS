@@ -50,19 +50,19 @@ PROGRAM cdflap
   REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dlap               ! output laplacian
   REAL(KIND=8)                                 :: dspval=99999.d0    ! output laplacian
 
-  CHARACTER(LEN=256)                           :: cf_in              ! input file name
-  CHARACTER(LEN=256)                           :: cv_in              ! input variable name
-  CHARACTER(LEN=256)                           :: cv_units           ! units of input variable name
-  CHARACTER(LEN=256)                           :: cv_lat             ! name of latitude variable in hgr
+  CHARACTER(LEN=2048)                           :: cf_in              ! input file name
+  CHARACTER(LEN=2048)                           :: cv_in              ! input variable name
+  CHARACTER(LEN=2048)                           :: cv_units           ! units of input variable name
+  CHARACTER(LEN=2048)                           :: cv_lat             ! name of latitude variable in hgr
   CHARACTER(LEN=3)                             :: ct_in              ! input variable type [ T U V F ] on C-grid
-  CHARACTER(LEN=256)                           :: cf_out='lap.nc'    !output file name
-  CHARACTER(LEN=256)                           :: cln_in             ! Long name of input variable
-  CHARACTER(LEN=256)                           :: csn_in             ! Short name of input variable
-  CHARACTER(LEN=256)                           :: cldum              ! dummy string
+  CHARACTER(LEN=2048)                           :: cf_out='lap.nc'    !output file name
+  CHARACTER(LEN=2048)                           :: cln_in             ! Long name of input variable
+  CHARACTER(LEN=2048)                           :: csn_in             ! Short name of input variable
+  CHARACTER(LEN=2048)                           :: cldum              ! dummy string
   CHARACTER(LEN=10)                            :: ce1_i1, ce1_i2     ! name of relevant horizontal i-metric
   CHARACTER(LEN=10)                            :: ce2_j1, ce2_j2     ! name of relevant horizontal i-metric
   CHARACTER(LEN=10)                            :: cmask_i, cmask_j   ! name of relevant mask variable
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
 
   TYPE(variable), DIMENSION(1)                 :: stypvar            ! output attributes
   TYPE(variable), DIMENSION(:), ALLOCATABLE    :: sdum               ! input attributes

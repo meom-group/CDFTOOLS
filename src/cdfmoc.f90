@@ -75,10 +75,10 @@ PROGRAM cdfmoc
 
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dmoc            ! nbasins x npjglo x npk
 
-  CHARACTER(LEN=256)                          :: cf_vfil         ! meridional velocity file
-  CHARACTER(LEN=256)                          :: cf_moc = 'moc.nc'  ! output file name
-  CHARACTER(LEN=256)                          :: cglobal         ! Global attribute for output file
-  CHARACTER(LEN=256)                          :: cldum           ! dummy char variable
+  CHARACTER(LEN=2048)                          :: cf_vfil         ! meridional velocity file
+  CHARACTER(LEN=2048)                          :: cf_moc = 'moc.nc'  ! output file name
+  CHARACTER(LEN=2048)                          :: cglobal         ! Global attribute for output file
+  CHARACTER(LEN=2048)                          :: cldum           ! dummy char variable
 
   TYPE(variable) ,DIMENSION(:),   ALLOCATABLE :: stypvar         ! structure for attribute
 
@@ -113,9 +113,9 @@ PROGRAM cdfmoc
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dvbt            ! Barotropic velocity
   REAL(KIND=8)                                :: dgeo            ! Barotropic velocity
 
-  CHARACTER(LEN=256)                          :: cf_tfil         ! Grid T file (case of decomposition)
-  CHARACTER(LEN=256)                          :: cf_ufil         ! Grid U file (case Rapid)
-  CHARACTER(LEN=256)                          :: cf_sfil         ! Grid S file (case Rapid)
+  CHARACTER(LEN=2048)                          :: cf_tfil         ! Grid T file (case of decomposition)
+  CHARACTER(LEN=2048)                          :: cf_ufil         ! Grid U file (case Rapid)
+  CHARACTER(LEN=2048)                          :: cf_sfil         ! Grid S file (case Rapid)
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 

@@ -29,9 +29,9 @@ PROGRAM cdfdifmask
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zmask, zmask2          ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                    ! dummy time variable
 
-  CHARACTER(LEN=256)                         :: cf_out='mask_diff.nc'  ! Output file name
-  CHARACTER(LEN=256)                         :: cf_msk1, cf_msk2       ! name of input files
-  CHARACTER(LEN=256)                         :: cv_in                  ! variable name
+  CHARACTER(LEN=2048)                         :: cf_out='mask_diff.nc'  ! Output file name
+  CHARACTER(LEN=2048)                         :: cf_msk1, cf_msk2       ! name of input files
+  CHARACTER(LEN=2048)                         :: cv_in                  ! variable name
 
   TYPE(variable), DIMENSION(4)               :: stypvar                ! data structure
 

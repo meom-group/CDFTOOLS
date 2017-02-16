@@ -73,17 +73,17 @@ PROGRAM cdfsigintegr_pedro
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dm2dint          ! int of the modulus
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dalpha           ! 3D coefficient (npiso)
 
-  CHARACTER(LEN=256)                            :: cf_rholev = 'rho_lev' ! input file for rho surfaces
-  CHARACTER(LEN=256)                            :: cf_ufil          ! input file for u data
-  CHARACTER(LEN=256)                            :: cf_vfil          ! input file for v data
-  CHARACTER(LEN=256)                            :: cf_rho           ! input file for density
-  CHARACTER(LEN=256)                            :: cf_out           ! output file
-  CHARACTER(LEN=256)                            :: cv_in            ! name of input variable
-  CHARACTER(LEN=256)                            :: cldum            ! dummy string variable
-  CHARACTER(LEN=256)                            :: cluni            ! dummy string variable for variable units
-  CHARACTER(LEN=256)                            :: cglobal          ! global attribute
-  CHARACTER(LEN=256)                            :: ctype='T'        ! position of variable on C grid
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names         ! temporary arry for variable name in file
+  CHARACTER(LEN=2048)                            :: cf_rholev = 'rho_lev' ! input file for rho surfaces
+  CHARACTER(LEN=2048)                            :: cf_ufil          ! input file for u data
+  CHARACTER(LEN=2048)                            :: cf_vfil          ! input file for v data
+  CHARACTER(LEN=2048)                            :: cf_rho           ! input file for density
+  CHARACTER(LEN=2048)                            :: cf_out           ! output file
+  CHARACTER(LEN=2048)                            :: cv_in            ! name of input variable
+  CHARACTER(LEN=2048)                            :: cldum            ! dummy string variable
+  CHARACTER(LEN=2048)                            :: cluni            ! dummy string variable for variable units
+  CHARACTER(LEN=2048)                            :: cglobal          ! global attribute
+  CHARACTER(LEN=2048)                            :: ctype='T'        ! position of variable on C grid
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names         ! temporary arry for variable name in file
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar          ! structure for attributes
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypzvar         ! structure for attributes

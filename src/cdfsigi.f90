@@ -38,9 +38,9 @@ PROGRAM cdfsigi
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask           ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim             ! time counter
 
-  CHARACTER(LEN=256)                        :: cf_tfil         ! input filename
-  CHARACTER(LEN=256)                        :: cf_out='sigi.nc'! output file name
-  CHARACTER(LEN=256)                        :: cldum           ! dummy string
+  CHARACTER(LEN=2048)                        :: cf_tfil         ! input filename
+  CHARACTER(LEN=2048)                        :: cf_out='sigi.nc'! output file name
+  CHARACTER(LEN=2048)                        :: cldum           ! dummy string
 
   TYPE (variable), DIMENSION(1)             :: stypvar         ! structure for attributes
   !!

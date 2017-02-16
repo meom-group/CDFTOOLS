@@ -40,11 +40,11 @@ PROGRAM cdfeke
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: eke                 ! velocities etc...
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: rmke                ! Mean Kinetic energy
 
-  CHARACTER(LEN=256)                         :: cf_out='eke.nc'     ! file name
-  CHARACTER(LEN=256)                         :: cf_ufil, cf_u2fil   ! file name
-  CHARACTER(LEN=256)                         :: cf_vfil, cf_v2fil   !   "
-  CHARACTER(LEN=256)                         :: cf_tfil             !   "
-  CHARACTER(LEN=256)                         :: cdum                ! dummy character variable
+  CHARACTER(LEN=2048)                         :: cf_out='eke.nc'     ! file name
+  CHARACTER(LEN=2048)                         :: cf_ufil, cf_u2fil   ! file name
+  CHARACTER(LEN=2048)                         :: cf_vfil, cf_v2fil   !   "
+  CHARACTER(LEN=2048)                         :: cf_tfil             !   "
+  CHARACTER(LEN=2048)                         :: cdum                ! dummy character variable
 
   TYPE(variable), DIMENSION(2)               :: stypvar             !
 

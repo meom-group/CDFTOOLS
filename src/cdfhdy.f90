@@ -45,9 +45,9 @@ PROGRAM cdfhdy
   REAL(KIND=8)                              :: drau0 = 1000.d0  ! density of fresh water
   REAL(KIND=8)                              :: dgrav = 9.81d0   ! gravity
 
-  CHARACTER(LEN=256)                        :: cf_tfil          ! input file name
-  CHARACTER(LEN=256)                        :: cf_out='cdfhdy.nc' ! output file name
-  CHARACTER(LEN=256)                        :: cldum            ! dummy string
+  CHARACTER(LEN=2048)                        :: cf_tfil          ! input file name
+  CHARACTER(LEN=2048)                        :: cf_out='cdfhdy.nc' ! output file name
+  CHARACTER(LEN=2048)                        :: cldum            ! dummy string
 
   TYPE(variable) , DIMENSION(1)             :: stypvar          ! structure for attributes
   !!----------------------------------------------------------------------

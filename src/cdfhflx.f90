@@ -54,9 +54,9 @@ PROGRAM cdfhflx
 
   TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar                ! attributes output
 
-  CHARACTER(LEN=256)                          :: cf_tfil                ! input file
-  CHARACTER(LEN=256)                          :: cf_out='hflx.out'      ! output txt file
-  CHARACTER(LEN=256)                          :: cf_outnc='cdfhflx.nc'  ! output nc file
+  CHARACTER(LEN=2048)                          :: cf_tfil                ! input file
+  CHARACTER(LEN=2048)                          :: cf_out='hflx.out'      ! output txt file
+  CHARACTER(LEN=2048)                          :: cf_outnc='cdfhflx.nc'  ! output nc file
 
   LOGICAL                                     :: lglo = .FALSE.         ! global or subbasin computation
   LOGICAL                                     :: lchk = .FALSE.         ! missing file flag

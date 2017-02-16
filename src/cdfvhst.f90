@@ -43,9 +43,9 @@ PROGRAM cdfvhst
 
   TYPE (variable), DIMENSION(4)              :: stypvar         ! structure output variables
 
-  CHARACTER(LEN=256)                         :: cf_vtfil        ! input file name (vt)
-  CHARACTER(LEN=256)                         :: cf_out='trp.nc' ! output file name
-  CHARACTER(LEN=256)                         :: cldum           ! dummy char variable
+  CHARACTER(LEN=2048)                         :: cf_vtfil        ! input file name (vt)
+  CHARACTER(LEN=2048)                         :: cf_out='trp.nc' ! output file name
+  CHARACTER(LEN=2048)                         :: cldum           ! dummy char variable
 
   LOGICAL                                    :: lfull=.FALSE.   ! flag for full step
   !!----------------------------------------------------------------------

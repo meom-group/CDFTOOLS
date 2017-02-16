@@ -34,8 +34,8 @@ PROGRAM cdfzonalout
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar       ! dummy structure
 
-  CHARACTER(LEN=256)                            :: cf_zonal      ! input file name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names      ! input variable names
+  CHARACTER(LEN=2048)                            :: cf_zonal      ! input file name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names      ! input variable names
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 

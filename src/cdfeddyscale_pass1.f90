@@ -52,10 +52,10 @@ PROGRAM cdfeddyscale_pass1
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_vomecrty2       ! square of velocity components
 
 
-   CHARACTER(LEN=256)                        :: cf_ufil, cf_vfil   ! file names
-   CHARACTER(LEN=256)                        :: cf_out = 'lambda_int.nc' ! output file name
-   CHARACTER(LEN=256)                        :: cv_u, cv_v         ! variable names
-   CHARACTER(LEN=256)                        :: cldum              ! dummy string
+   CHARACTER(LEN=2048)                        :: cf_ufil, cf_vfil   ! file names
+   CHARACTER(LEN=2048)                        :: cf_out = 'lambda_int.nc' ! output file name
+   CHARACTER(LEN=2048)                        :: cv_u, cv_v         ! variable names
+   CHARACTER(LEN=2048)                        :: cldum              ! dummy string
 
    TYPE (variable), DIMENSION(jp_nvar)       :: stypvar            ! structure for attibutes
 

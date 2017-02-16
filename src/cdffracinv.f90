@@ -31,12 +31,12 @@ PROGRAM cdffracinv
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: fracinv               ! fraction of inventory
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                   ! time counter
 
-  CHARACTER(LEN=256)                        :: cf_trc                ! tracer file (for inventory)
-  CHARACTER(LEN=256)                        :: cf_out='fracinv.nc'   ! output file name
-  CHARACTER(LEN=256)                        :: cv_inv='invcfc'       ! inventory name
-  CHARACTER(LEN=256)                        :: cv_out='fracinv'      ! output variable name
-  CHARACTER(LEN=256)                        :: cglobal               ! global attribute
-  CHARACTER(LEN=256)                        :: cldum                 ! dummy string
+  CHARACTER(LEN=2048)                        :: cf_trc                ! tracer file (for inventory)
+  CHARACTER(LEN=2048)                        :: cf_out='fracinv.nc'   ! output file name
+  CHARACTER(LEN=2048)                        :: cv_inv='invcfc'       ! inventory name
+  CHARACTER(LEN=2048)                        :: cv_out='fracinv'      ! output variable name
+  CHARACTER(LEN=2048)                        :: cglobal               ! global attribute
+  CHARACTER(LEN=2048)                        :: cldum                 ! dummy string
 
   TYPE(variable), DIMENSION(1)              :: stypvar               ! structure for attributes
   !!----------------------------------------------------------------------

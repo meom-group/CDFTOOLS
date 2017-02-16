@@ -75,10 +75,10 @@ PROGRAM cdfmxl
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(1)                   :: rdep           ! dummy depth for output
 
-  CHARACTER(LEN=256)                           :: cf_tfil        ! input T file
-  CHARACTER(LEN=256)                           :: cf_sfil        ! input S file (F.Hernandez)
-  CHARACTER(LEN=256)                           :: cf_out='mxl.nc'! output file name
-  CHARACTER(LEN=256)                           :: cldum          ! dummy character variable
+  CHARACTER(LEN=2048)                           :: cf_tfil        ! input T file
+  CHARACTER(LEN=2048)                           :: cf_sfil        ! input S file (F.Hernandez)
+  CHARACTER(LEN=2048)                           :: cf_out='mxl.nc'! output file name
+  CHARACTER(LEN=2048)                           :: cldum          ! dummy character variable
 
   TYPE(variable), DIMENSION(jp_varout)         :: stypvar        ! structure for attributes 
 

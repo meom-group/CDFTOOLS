@@ -46,11 +46,11 @@ PROGRAM cdfvita
 
    TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar                 ! data attributes
 
-   CHARACTER(LEN=256)                         :: cf_ufil, cf_vfil        ! velocity files on C grid
-   CHARACTER(LEN=256)                         :: cf_wfil                 ! optional W file on C grid
-   CHARACTER(LEN=256)                         :: cf_tfil                 ! GridT file for T position
-   CHARACTER(LEN=256)                         :: cf_out='vita.nc'        ! output file name
-   CHARACTER(LEN=256)                         :: cldum                   ! dummy char variable
+   CHARACTER(LEN=2048)                         :: cf_ufil, cf_vfil        ! velocity files on C grid
+   CHARACTER(LEN=2048)                         :: cf_wfil                 ! optional W file on C grid
+   CHARACTER(LEN=2048)                         :: cf_tfil                 ! GridT file for T position
+   CHARACTER(LEN=2048)                         :: cf_out='vita.nc'        ! output file name
+   CHARACTER(LEN=2048)                         :: cldum                   ! dummy char variable
 
    LOGICAL                                    :: lvertical = .FALSE.     ! vertical velocity  flag 
    LOGICAL                                    :: lperio    = .FALSE.     ! E_W periodicity flag 

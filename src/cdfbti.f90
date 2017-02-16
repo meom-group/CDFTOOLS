@@ -42,8 +42,8 @@ PROGRAM cdfbti
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: anouv, bti             !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: dudx, dudy, dvdx, dvdy !
 
-  CHARACTER(LEN=256)                        :: cf_out='bti.nc'      ! output file name
-  CHARACTER(LEN=256)                        :: cf_uvwtfil                  ! input file name
+  CHARACTER(LEN=2048)                        :: cf_out='bti.nc'      ! output file name
+  CHARACTER(LEN=2048)                        :: cf_uvwtfil                  ! input file name
 
   TYPE (variable), DIMENSION(jp_varout)     :: stypvar                ! structure for attibutes
 

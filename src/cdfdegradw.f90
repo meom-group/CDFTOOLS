@@ -50,20 +50,20 @@ PROGRAM cdfdegradw
   REAL(KIND=8)                              :: dvol, dsum, dsurf  ! cumulated values
   REAL(KIND=8)                              :: dvol2d, dsum2d     !
 
-  CHARACTER(LEN=256)                        :: cf_wfil            ! input filename
-  CHARACTER(LEN=256)                        :: cf_ncout,cf_ncout2 ! output file name
+  CHARACTER(LEN=2048)                        :: cf_wfil            ! input filename
+  CHARACTER(LEN=2048)                        :: cf_ncout,cf_ncout2 ! output file name
   !
-  CHARACTER(LEN=256)                        :: cv_nam             ! current variable name
-  CHARACTER(LEN=256)                        :: cv_dep             ! deptht name
+  CHARACTER(LEN=2048)                        :: cv_nam             ! current variable name
+  CHARACTER(LEN=2048)                        :: cv_dep             ! deptht name
   CHARACTER(LEN=20)                         :: cv_e1, cv_e2       ! horizontal metrics names
   CHARACTER(LEN=20)                         :: cv_e3, cv_e31d     ! vertical metrics names
   CHARACTER(LEN=20)                         :: cv_msk             ! mask variable name
   !
-  CHARACTER(LEN=256)                        :: clunits            ! attribute of output file : units
-  CHARACTER(LEN=256)                        :: cllong_name        !     "      long name
-  CHARACTER(LEN=256)                        :: cglobal            !     "      global 
-  CHARACTER(LEN=256)                        :: clshort_name       !     "      short name
-  CHARACTER(LEN=256)                        :: cldum              ! dummy char variable
+  CHARACTER(LEN=2048)                        :: clunits            ! attribute of output file : units
+  CHARACTER(LEN=2048)                        :: cllong_name        !     "      long name
+  CHARACTER(LEN=2048)                        :: cglobal            !     "      global 
+  CHARACTER(LEN=2048)                        :: clshort_name       !     "      short name
+  CHARACTER(LEN=2048)                        :: cldum              ! dummy char variable
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: stypvar            ! structure of output
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: stypvar2           ! structure of sub-domain counter output

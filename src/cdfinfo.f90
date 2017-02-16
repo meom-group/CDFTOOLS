@@ -29,10 +29,10 @@ PROGRAM cdfinfo
   REAL(KIND=4)                                  :: zdep                     ! depth to look for
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zdept                    ! depth array
 
-  CHARACTER(LEN=256)                            :: cf_in                    ! file name
-  CHARACTER(LEN=256)                            :: cv_dep                   ! depth name
-  CHARACTER(LEN=256)                            :: cl_dum                   ! dummy input variable
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in                    ! file name
+  CHARACTER(LEN=2048)                            :: cv_dep                   ! depth name
+  CHARACTER(LEN=2048)                            :: cl_dum                   ! dummy input variable
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
   
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar                  ! variable attributes
   

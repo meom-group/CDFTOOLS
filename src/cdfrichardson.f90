@@ -43,12 +43,12 @@ PROGRAM cdfrichardson
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zmask, e3w               ! mask and metric
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep, tim, e3w1d         ! depth and time
 
-  CHARACTER(LEN=256)                           :: cldum                    ! dummy char variable
-  CHARACTER(LEN=256)                           :: cf_tfil                  ! input T file name
-  CHARACTER(LEN=256)                           :: cf_ufil                  ! input U file name
-  CHARACTER(LEN=256)                           :: cf_vfil                  ! input V file name
-  CHARACTER(LEN=256)                           :: cf_out = 'richardson.nc' ! output file name
-  CHARACTER(LEN=256)                           :: cglobal                  ! global attribute
+  CHARACTER(LEN=2048)                           :: cldum                    ! dummy char variable
+  CHARACTER(LEN=2048)                           :: cf_tfil                  ! input T file name
+  CHARACTER(LEN=2048)                           :: cf_ufil                  ! input U file name
+  CHARACTER(LEN=2048)                           :: cf_vfil                  ! input V file name
+  CHARACTER(LEN=2048)                           :: cf_out = 'richardson.nc' ! output file name
+  CHARACTER(LEN=2048)                           :: cglobal                  ! global attribute
   CHARACTER(LEN=80)                            :: cv_e3w  = 'e3w_ps'       ! e3w variable name (partial step)
   CHARACTER(LEN=80)                            :: cv_ric  = 'voric'        ! cdf variable name for N2
   CHARACTER(LEN=80)                            :: cv_dep                   ! cdf variable name for depth

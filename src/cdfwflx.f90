@@ -43,9 +43,9 @@ PROGRAM cdfwflx
   REAL(KIND=4), DIMENSION(1)                 :: tim, dep         ! time_counter and dummy depth
   REAL(KIND=4)                               :: Lv=2.5e6         ! latent HF <--> evap conversion
 
-  CHARACTER(LEN=256)                         :: cf_tfil          ! input gridT file name
-  CHARACTER(LEN=256)                         :: cf_rnf           ! input runoff file name
-  CHARACTER(LEN=256)                         :: cf_out='wflx.nc' ! output file
+  CHARACTER(LEN=2048)                         :: cf_tfil          ! input gridT file name
+  CHARACTER(LEN=2048)                         :: cf_rnf           ! input runoff file name
+  CHARACTER(LEN=2048)                         :: cf_out='wflx.nc' ! output file
 
   TYPE(variable), DIMENSION(jpvarout)        :: stypvar          ! structure for attributes
   

@@ -46,10 +46,10 @@ PROGRAM cdfw
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d               ! vertical metrics ( full step)
 
-  CHARACTER(LEN=256)                           :: cf_ufil            ! U file name
-  CHARACTER(LEN=256)                           :: cf_vfil            ! V file name
-  CHARACTER(LEN=256)                           :: cf_out='w.nc'      ! W file name ( output)
-  CHARACTER(LEN=256)                           :: cldum              ! dummy string
+  CHARACTER(LEN=2048)                           :: cf_ufil            ! U file name
+  CHARACTER(LEN=2048)                           :: cf_vfil            ! V file name
+  CHARACTER(LEN=2048)                           :: cf_out='w.nc'      ! W file name ( output)
+  CHARACTER(LEN=2048)                           :: cldum              ! dummy string
 
   TYPE(variable), DIMENSION(1)                 :: stypvar            ! output attributes
 

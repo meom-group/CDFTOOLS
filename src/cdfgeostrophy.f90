@@ -117,9 +117,9 @@ PROGRAM cdfgeostrophy
   REAL(KIND=4)                              :: zp3, zp4       ! dummy for pressure interp
   REAL(KIND=4)                              :: zumask, zvmask ! dummy for mask 
 
-  CHARACTER(LEN=256)                        :: cf_tfil        ! input file name
-  CHARACTER(LEN=256)                        :: cf_uout='ugeo.nc' 
-  CHARACTER(LEN=256)                        :: cf_vout='vgeo.nc'
+  CHARACTER(LEN=2048)                        :: cf_tfil        ! input file name
+  CHARACTER(LEN=2048)                        :: cf_uout='ugeo.nc' 
+  CHARACTER(LEN=2048)                        :: cf_vout='vgeo.nc'
 
   TYPE(variable), DIMENSION(1)              :: stypvaru       ! attributes for ugeo
   TYPE(variable), DIMENSION(1)              :: stypvarv       ! attributes for vgeo

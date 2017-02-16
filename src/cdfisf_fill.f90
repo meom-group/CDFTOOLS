@@ -39,13 +39,13 @@ PROGRAM cdfisf_fill
   REAL(KIND=4)                                  :: rdraftmin, rdraftmax
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab
 
-  CHARACTER(LEN=256)                            :: cf_in              ! input file name
-  CHARACTER(LEN=256)                            :: cf_isflist         ! input file name (txt)
-  CHARACTER(LEN=256)                            :: cf_isflistup       ! output file name (update of input, with draftmin/max
-  CHARACTER(LEN=256)                            :: cf_out='fill.nc'   ! output file for average
-  CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
-  CHARACTER(LEN=256)                            :: cv_in              ! depth dimension name
-  CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
+  CHARACTER(LEN=2048)                            :: cf_in              ! input file name
+  CHARACTER(LEN=2048)                            :: cf_isflist         ! input file name (txt)
+  CHARACTER(LEN=2048)                            :: cf_isflistup       ! output file name (update of input, with draftmin/max
+  CHARACTER(LEN=2048)                            :: cf_out='fill.nc'   ! output file for average
+  CHARACTER(LEN=2048)                            :: cv_dep             ! depth dimension name
+  CHARACTER(LEN=2048)                            :: cv_in              ! depth dimension name
+  CHARACTER(LEN=2048)                            :: cdum               ! dummy string argument
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
   LOGICAL                                       :: lnc4 = .FALSE.     ! flag for netcdf4 chunk and deflation
