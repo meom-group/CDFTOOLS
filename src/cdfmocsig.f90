@@ -85,7 +85,7 @@ PROGRAM cdfmocsig
   CHARACTER(LEN=2048)                              :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=2048)                              :: cf_tfil              ! temperature/salinity file
   CHARACTER(LEN=2048)                              :: cf_moc='mocsig.nc'   ! output file
-  CHARACTER(LEN=255)                              :: cglobal              ! Global attribute
+  CHARACTER(LEN=2048)                              :: cglobal              ! Global attribute
   CHARACTER(LEN=2048)                              :: cldum                ! dummy char variable
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE       :: stypvar              ! output var properties

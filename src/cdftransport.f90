@@ -1020,8 +1020,8 @@ CONTAINS
       CHARACTER(LEN=*),             INTENT(in ) :: cdlongname
       !!
       INTEGER(KIND=4)                           :: ivar
-      CHARACTER(LEN=255)                        :: csuffixvarnam
-      CHARACTER(LEN=255)                        :: cprefixlongnam
+      CHARACTER(LEN=2048)                        :: csuffixvarnam
+      CHARACTER(LEN=2048)                        :: cprefixlongnam
       !!----------------------------------------------------------------------
       ! set suffixes according to variable/longname 
       IF ( cdvarname /= 'none' ) THEN

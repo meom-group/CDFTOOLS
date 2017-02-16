@@ -84,14 +84,14 @@ PROGRAM cdfovide
 ! constants
   REAL(KIND=4)   ::  rau0=1000.,  rcp=4000.
 
-  CHARACTER(LEN=80) :: ctype='F'
-  CHARACTER(LEN=80) :: cfilet , cfileu, cfilev, csection 
+  CHARACTER(LEN=2048) :: ctype='F'
+  CHARACTER(LEN=2048) :: cfilet , cfileu, cfilev, csection 
   LOGICAL  :: lagain, lbord
   LOGICAL  :: ltest=.FALSE.
   LOGICAL  :: lchk
   
 ! cdf output stuff
-  CHARACTER(LEN=80) :: cfileoutnc='ovide.nc'
+  CHARACTER(LEN=2048) :: cfileoutnc='ovide.nc'
   TYPE (variable), DIMENSION(:), ALLOCATABLE   :: stypvar
   INTEGER(KIND=4)    :: ierr, ncout
   REAL(KIND=4), DIMENSION(1)                    ::  tim

@@ -97,16 +97,16 @@ PROGRAM cdf_xtract_brokenline
    REAL(KIND=8)                              :: dtmp    ! temporary cumulating variable
    REAL(KIND=8), DIMENSION(:), ALLOCATABLE   :: dbarot  ! for barotropic transport computation
 
-   CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
-   CHARACTER(LEN=255) :: cf_icefil                    ! input ice file
-   CHARACTER(LEN=255) :: cf_root=''                   ! root name used as prefix
-   CHARACTER(LEN=255) :: cf_out                       ! output file
-   CHARACTER(LEN=255) :: cf_secdat                    ! output section file (suitable for cdftransport or cdfsigtrp)
-   CHARACTER(LEN=255) :: cverb='n'                    ! verbose key for findij
+   CHARACTER(LEN=2048) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
+   CHARACTER(LEN=2048) :: cf_icefil                    ! input ice file
+   CHARACTER(LEN=2048) :: cf_root=''                   ! root name used as prefix
+   CHARACTER(LEN=2048) :: cf_out                       ! output file
+   CHARACTER(LEN=2048) :: cf_secdat                    ! output section file (suitable for cdftransport or cdfsigtrp)
+   CHARACTER(LEN=2048) :: cverb='n'                    ! verbose key for findij
    CHARACTER(LEN=5  ) :: cstar, cend                  ! dummy character variable
-   CHARACTER(LEN=255) :: cldum                        ! can handle a long list of section files ...
-   CHARACTER(LEN=255), DIMENSION(:), ALLOCATABLE :: cf_sec    ! input section file dim: nsec
-   CHARACTER(LEN=255), DIMENSION(:), ALLOCATABLE :: csection  ! section name
+   CHARACTER(LEN=2048) :: cldum                        ! can handle a long list of section files ...
+   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cf_sec    ! input section file dim: nsec
+   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: csection  ! section name
 
    LOGICAL  :: lchk                                  ! flag for missing files
    LOGICAL  :: lverbose = .FALSE.                    ! flag for verbosity
@@ -944,7 +944,7 @@ CONTAINS
       !!----------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(in) :: cdum
 
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      CHARACTER(LEN=2048), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
       INTEGER  :: ji
       INTEGER  :: inchar,  i1=1
       !!----------------------------------------------------------------------

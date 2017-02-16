@@ -238,9 +238,9 @@ CONTAINS
     !!               variable NAM_CDF_NAMES
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=90)  :: cl_namlist= 'nam_cdf_names'
+    CHARACTER(LEN=2048)  :: cl_namlist= 'nam_cdf_names'
     CHARACTER(LEN=2048) :: cl_env    = 'NAM_CDF_NAMES'
-    CHARACTER(LEN=90)  :: cldum, cl_home
+    CHARACTER(LEN=2048)  :: cldum, cl_home
     LOGICAL            :: ll_exist
     INTEGER(KIND=4)    :: inam = 10
     !!----------------------------------------------------------------------
@@ -290,7 +290,7 @@ CONTAINS
     !! ** Method  :  Use namelist facilities 
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=80) :: cl_filout='PrintCdfNames.namlist'
+    CHARACTER(LEN=2048) :: cl_filout='PrintCdfNames.namlist'
     CHARACTER(LEN=24) :: cl_date
     INTEGER(KIND=4)   :: iout=3
     !!----------------------------------------------------------------------

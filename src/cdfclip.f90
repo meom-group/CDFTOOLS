@@ -46,7 +46,7 @@ PROGRAM cdfclip
   CHARACTER(LEN=2048)                            :: cf_in                   ! input file name
   CHARACTER(LEN=2048)                            :: cf_out='cdfclip.nc'     ! output file name
   CHARACTER(LEN=2048)                            :: cv_dep, cv_tim          ! depth and time variable names
-  CHARACTER(LEN=255)                            :: cglobal                 ! global attribute to write on output file
+  CHARACTER(LEN=2048)                            :: cglobal                 ! global attribute to write on output file
   CHARACTER(LEN=2048)                            :: cldum                   ! dummy character variable
   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names                ! array of var name
   

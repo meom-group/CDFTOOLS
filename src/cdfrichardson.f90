@@ -49,9 +49,9 @@ PROGRAM cdfrichardson
   CHARACTER(LEN=2048)                           :: cf_vfil                  ! input V file name
   CHARACTER(LEN=2048)                           :: cf_out = 'richardson.nc' ! output file name
   CHARACTER(LEN=2048)                           :: cglobal                  ! global attribute
-  CHARACTER(LEN=80)                            :: cv_e3w  = 'e3w_ps'       ! e3w variable name (partial step)
-  CHARACTER(LEN=80)                            :: cv_ric  = 'voric'        ! cdf variable name for N2
-  CHARACTER(LEN=80)                            :: cv_dep                   ! cdf variable name for depth
+  CHARACTER(LEN=2048)                            :: cv_e3w  = 'e3w_ps'       ! e3w variable name (partial step)
+  CHARACTER(LEN=2048)                            :: cv_ric  = 'voric'        ! cdf variable name for N2
+  CHARACTER(LEN=2048)                            :: cv_dep                   ! cdf variable name for depth
 
   TYPE(variable), DIMENSION(1)                 :: stypvar                  ! variable attribute
 

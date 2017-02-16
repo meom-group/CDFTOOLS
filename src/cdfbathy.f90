@@ -66,9 +66,9 @@ PROGRAM cdfbathy
   CHARACTER(LEN=2048)                           :: cf_root             ! root part of the file name
   CHARACTER(LEN=2048)                           :: cf_dump             ! dump txt file name (out)
   CHARACTER(LEN=2048)                           :: cf_replace          ! replace txt file name (in)
-  CHARACTER(LEN=80)                            :: cf_batfile = 'zgrbat.txt' ! txt file giving vertical mesh
-  CHARACTER(LEN=80)                            :: cf_log = 'log.f90'  ! default log file
-  CHARACTER(LEN=80)                            :: cv_in               ! variable name
+  CHARACTER(LEN=2048)                            :: cf_batfile = 'zgrbat.txt' ! txt file giving vertical mesh
+  CHARACTER(LEN=2048)                            :: cf_log = 'log.f90'  ! default log file
+  CHARACTER(LEN=2048)                            :: cv_in               ! variable name
   CHARACTER(LEN=2048)                           :: cwkc                ! filename of working copy
   CHARACTER(LEN=2048)                           :: cldum               ! dummy string
 
@@ -414,7 +414,7 @@ CONTAINS
 
     INTEGER(KIND=4)        :: ji, jj
     INTEGER(KIND=4)        :: inumlog=10
-    CHARACTER(LEN=80)      :: clfile
+    CHARACTER(LEN=2048)      :: clfile
     !!----------------------------------------------------------------------
     clfile = cf_log
 

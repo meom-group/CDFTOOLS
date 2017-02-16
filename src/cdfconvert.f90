@@ -590,7 +590,7 @@ CONTAINS
     INTEGER(KIND=4)              :: inum = 100
 
     CHARACTER(LEN=4)             :: clver
-    CHARACTER(LEN=80)            :: clheader
+    CHARACTER(LEN=2048)            :: clheader
     !!----------------------------------------------------------------------
 
 !

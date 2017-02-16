@@ -630,7 +630,7 @@ CONTAINS
       INTEGER(KIND=4)                                       :: ii, inum=10
       INTEGER(KIND=4)                                       :: ipos  
       CHARACTER(LEN=2048)                                    :: cline
-      CHARACTER(LEN=80), DIMENSION(3)                       :: cldum
+      CHARACTER(LEN=2048), DIMENSION(3)                       :: cldum
       LOGICAL                                               :: llfirst
       !!----------------------------------------------------------------------
       llfirst=.FALSE.
@@ -756,8 +756,8 @@ CONTAINS
 
       REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zdum
       TYPE(variable),  DIMENSION(4) :: sl_typvar
-      CHARACTER(LEN=255)            :: csuffixvarnam
-      CHARACTER(LEN=255)            :: cprefixlongnam
+      CHARACTER(LEN=2048)            :: csuffixvarnam
+      CHARACTER(LEN=2048)            :: cprefixlongnam
       !!----------------------------------------------------------------------
       IF ( cvarname(ksec) /= 'none' ) THEN
          csuffixvarnam = '_'//TRIM(cvarname(ksec))

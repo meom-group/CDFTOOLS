@@ -344,7 +344,7 @@ CONTAINS
     INTEGER(KIND=4)                 :: icomma, idash, ipos, ipos1
     INTEGER(KIND=4), DIMENSION(350) :: ilev
     CHARACTER(LEN=2048) :: cldum
-    CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: clblk
+    CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: clblk
     !!----------------------------------------------------------------------
     ilength=LEN(TRIM(cdum) )
 

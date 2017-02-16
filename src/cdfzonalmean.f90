@@ -428,7 +428,7 @@ CONTAINS
       !!----------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(in) :: cdum
 
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      CHARACTER(LEN=2048), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
       INTEGER  :: ji
       INTEGER  :: inchar,  i1=1
       !!----------------------------------------------------------------------

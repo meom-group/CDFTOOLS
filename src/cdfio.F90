@@ -122,7 +122,7 @@
      INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nlen    ! len of each dimension ( ndims)
      INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ichunk  ! size of chunk (nvar, ndims)
      INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: idimids ! dimids of each variable (nvar, ndims) 
-     CHARACTER(LEN=255)                            :: c_fnam ! name of working file
+     CHARACTER(LEN=2048)                            :: c_fnam ! name of working file
      CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_vnam ! name of each variable (var)
      CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_dnam ! name of each dimension (ndims)
      LOGICAL,           DIMENSION(:), ALLOCATABLE :: lconti  ! contiguous flag (nvar)
@@ -136,7 +136,7 @@
      INTEGER(KIND=4), DIMENSION(2)  :: iposition_last        ! DOMAIN_position_last 
      INTEGER(KIND=4), DIMENSION(2)  :: ihalo_size_start      ! DOMAIN_halo_size_start
      INTEGER(KIND=4), DIMENSION(2)  :: ihalo_size_end        ! DOMAIN_halo_size_end
-     CHARACTER(LEN=80)              :: c_type                ! DOMAIN_type
+     CHARACTER(LEN=2048)              :: c_type                ! DOMAIN_type
   END TYPE ncfile
 
 
@@ -1011,7 +1011,7 @@ CONTAINS
     INTEGER(KIND=4) :: ji
     INTEGER(KIND=4) :: incid, idims, iuldid, idimv, ivars, istatus
     INTEGER(KIND=4), DIMENSION(4) :: idimt
-    CHARACTER(LEN=80) :: clvar ='none'
+    CHARACTER(LEN=2048) :: clvar ='none'
     
     !!----------------------------------------------------------------------
     istatus = NF90_OPEN   (cdfile,NF90_NOWRITE,incid)
