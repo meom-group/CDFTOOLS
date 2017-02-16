@@ -47,11 +47,11 @@ PROGRAM cdfmkmask
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat               ! latitude and longitude
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rbat                     ! bathymetry 
 
-   CHARACTER(LEN=256)                        :: cf_tfil                  ! file name
-   CHARACTER(LEN=256)                        :: cf_out = 'mask_sal.nc'   ! output file
-   CHARACTER(LEN=256)                        :: cv_mask                  ! variable name
-   CHARACTER(LEN=256)                        :: cv_dep                   ! variable name
-   CHARACTER(LEN=256)                        :: cldum                    ! dummy string
+   CHARACTER(LEN=2048)                        :: cf_tfil                  ! file name
+   CHARACTER(LEN=2048)                        :: cf_out = 'mask_sal.nc'   ! output file
+   CHARACTER(LEN=2048)                        :: cv_mask                  ! variable name
+   CHARACTER(LEN=2048)                        :: cv_dep                   ! variable name
+   CHARACTER(LEN=2048)                        :: cldum                    ! dummy string
 
    TYPE (variable), DIMENSION(4)             :: stypvar                  ! output attribute
 

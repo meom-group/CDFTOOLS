@@ -43,12 +43,12 @@ PROGRAM cdfclip
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rdepg, rdep             !
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                     !
 
-  CHARACTER(LEN=256)                            :: cf_in                   ! input file name
-  CHARACTER(LEN=256)                            :: cf_out='cdfclip.nc'     ! output file name
-  CHARACTER(LEN=256)                            :: cv_dep, cv_tim          ! depth and time variable names
-  CHARACTER(LEN=255)                            :: cglobal                 ! global attribute to write on output file
-  CHARACTER(LEN=256)                            :: cldum                   ! dummy character variable
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in                   ! input file name
+  CHARACTER(LEN=2048)                            :: cf_out='cdfclip.nc'     ! output file name
+  CHARACTER(LEN=2048)                            :: cv_dep, cv_tim          ! depth and time variable names
+  CHARACTER(LEN=2048)                            :: cglobal                 ! global attribute to write on output file
+  CHARACTER(LEN=2048)                            :: cldum                   ! dummy character variable
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names                ! array of var name
   
   TYPE (variable), DIMENSION(:),   ALLOCATABLE  :: stypvar                 !
 

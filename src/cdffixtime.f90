@@ -52,13 +52,13 @@ PROGRAM cdffixtime
   REAL(KIND=4), DIMENSION(1) :: rdaycnes        ! CNES julian day corresponding to current tag
   REAL(KIND=4), DIMENSION(1) :: rseconds        ! seconds since rday0
 
-  CHARACTER(LEN=80)          :: cf_in           ! input file 
-  CHARACTER(LEN=80)          :: cldum           ! dummy character variable
-  CHARACTER(LEN=80)          :: ctag='none'     ! tag default. Interpreted from file name if possible
-  CHARACTER(LEN=80)          :: cldate, ctim    ! date and time as string
-  CHARACTER(LEN=80)          :: ctag0           ! time tag from input initial date/time
-  CHARACTER(LEN=80)          :: ctim_unit       ! attribute value for time_counter unit
-  CHARACTER(LEN=80)          :: ctim_origin     ! attribute value for time_counter time_origin
+  CHARACTER(LEN=2048)          :: cf_in           ! input file 
+  CHARACTER(LEN=2048)          :: cldum           ! dummy character variable
+  CHARACTER(LEN=2048)          :: ctag='none'     ! tag default. Interpreted from file name if possible
+  CHARACTER(LEN=2048)          :: cldate, ctim    ! date and time as string
+  CHARACTER(LEN=2048)          :: ctag0           ! time tag from input initial date/time
+  CHARACTER(LEN=2048)          :: ctim_unit       ! attribute value for time_counter unit
+  CHARACTER(LEN=2048)          :: ctim_origin     ! attribute value for time_counter time_origin
   CHARACTER(LEN=3)           :: cmm             ! month in character
 
   LOGICAL                    :: lnoleap=.true.  ! flag for noleap years

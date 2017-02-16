@@ -52,14 +52,14 @@ PROGRAM cdffwc
    REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dfwc                ! fwc. as 2dim to be consistent with putvar()
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE  :: dl_vint1, dl_vol2d   ! verticall int quantity         
 
-   CHARACTER(LEN=256)                         :: cf_in                ! input file
-   CHARACTER(LEN=256)                         :: cf_out='fwc.nc'      ! output file 
-   CHARACTER(LEN=256)                         :: cldum                ! dummy string for command line browsing
-   CHARACTER(LEN=256)                         :: cf_subbas='subbasins.nc'     ! subbasins file
-   CHARACTER(LEN=256)                         :: cv_cur               ! variable name
+   CHARACTER(LEN=2048)                         :: cf_in                ! input file
+   CHARACTER(LEN=2048)                         :: cf_out='fwc.nc'      ! output file 
+   CHARACTER(LEN=2048)                         :: cldum                ! dummy string for command line browsing
+   CHARACTER(LEN=2048)                         :: cf_subbas='subbasins.nc'     ! subbasins file
+   CHARACTER(LEN=2048)                         :: cv_cur               ! variable name
 
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names           ! name of input variables
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in              ! name of output variables
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names           ! name of input variables
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_in              ! name of output variables
 
 
 
@@ -292,7 +292,7 @@ PROGRAM cdffwc
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*), INTENT(in) :: cdum
 
-    CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+    CHARACTER(LEN=2048), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
     INTEGER  :: ji
     INTEGER  :: inchar,  i1=1
     !!----------------------------------------------------------------------

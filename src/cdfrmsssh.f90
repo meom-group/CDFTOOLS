@@ -33,11 +33,11 @@ PROGRAM cdfrmsssh
 
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dsdev             ! standard deviation
 
-  CHARACTER(LEN=256)                         :: cf_in             ! input mean file name
-  CHARACTER(LEN=256)                         :: cf_in2            ! input mean2 file name
-  CHARACTER(LEN=256)                         :: cf_out = 'rms.nc' ! output file name
-  CHARACTER(LEN=256)                         :: cv_in, cv_in2     ! input variable names
-  CHARACTER(LEN=256)                         :: cldum             ! dummy character variable
+  CHARACTER(LEN=2048)                         :: cf_in             ! input mean file name
+  CHARACTER(LEN=2048)                         :: cf_in2            ! input mean2 file name
+  CHARACTER(LEN=2048)                         :: cf_out = 'rms.nc' ! output file name
+  CHARACTER(LEN=2048)                         :: cv_in, cv_in2     ! input variable names
+  CHARACTER(LEN=2048)                         :: cldum             ! dummy character variable
 
   TYPE(variable), DIMENSION(1)               :: stypvaro          ! output data structure
 

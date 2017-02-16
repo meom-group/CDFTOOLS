@@ -73,16 +73,16 @@
 
   
   INTEGER(KIND=4)    :: nstart_date  = -1                      !# from global file attribute
-  CHARACTER(LEN=256) :: ctime_units  = 'seconds since 0000-01-01 00:00:00'
-  CHARACTER(LEN=256) :: ctime_origin = 'N/A'                   !# 
-  CHARACTER(LEN=256) :: calendar     = 'N/A'                   !# gregorian noleap xxxd
-  CHARACTER(LEN=256) :: config                                 !# config name associated with file
-  CHARACTER(LEN=256) :: ccase                                  !# case name associated with  file
+  CHARACTER(LEN=2048) :: ctime_units  = 'seconds since 0000-01-01 00:00:00'
+  CHARACTER(LEN=2048) :: ctime_origin = 'N/A'                   !# 
+  CHARACTER(LEN=2048) :: calendar     = 'N/A'                   !# gregorian noleap xxxd
+  CHARACTER(LEN=2048) :: config                                 !# config name associated with file
+  CHARACTER(LEN=2048) :: ccase                                  !# case name associated with  file
   CHARACTER(LEN=10 ) :: cfreq                                  !# raw model output frequency (5d, 30d 1h ..)
 
   TYPE, PUBLIC ::   variable 
-     CHARACTER(LEN=256) :: cname             !# variable name
-     CHARACTER(LEN=256) :: cunits            !# variable unit
+     CHARACTER(LEN=2048) :: cname             !# variable name
+     CHARACTER(LEN=2048) :: cunits            !# variable unit
      REAL(KIND=4)       :: rmissing_value    !# variable missing value or spval
      REAL(KIND=4)       :: valid_min         !# valid minimum
      REAL(KIND=4)       :: valid_max         !# valid maximum
@@ -91,11 +91,11 @@
      REAL(KIND=4)       :: savelog10=0.      !# flag for log10 transform
      INTEGER(KIND=4)    :: iwght=1           !# weight of the variable for cdfmoy_weighted
      INTEGER(KIND=4), DIMENSION(4) :: ichunk !# chunksize
-     CHARACTER(LEN=256) :: clong_name        !# Long Name of the variable
-     CHARACTER(LEN=256) :: cshort_name       !# short name of the variable
-     CHARACTER(LEN=256) :: conline_operation !# ???
-     CHARACTER(LEN=256) :: caxis             !# string defining the dim of the variable
-     CHARACTER(LEN=256) :: cprecision='r4'   !# possible values are i2, r4, r8
+     CHARACTER(LEN=2048) :: clong_name        !# Long Name of the variable
+     CHARACTER(LEN=2048) :: cshort_name       !# short name of the variable
+     CHARACTER(LEN=2048) :: conline_operation !# ???
+     CHARACTER(LEN=2048) :: caxis             !# string defining the dim of the variable
+     CHARACTER(LEN=2048) :: cprecision='r4'   !# possible values are i2, r4, r8
   END TYPE variable
 
   TYPE, PUBLIC  :: ncfile                         ! logical structure reflecting file structure
@@ -122,7 +122,7 @@
      INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nlen    ! len of each dimension ( ndims)
      INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ichunk  ! size of chunk (nvar, ndims)
      INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: idimids ! dimids of each variable (nvar, ndims) 
-     CHARACTER(LEN=255)                            :: c_fnam ! name of working file
+     CHARACTER(LEN=2048)                            :: c_fnam ! name of working file
      CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_vnam ! name of each variable (var)
      CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: c_dnam ! name of each dimension (ndims)
      LOGICAL,           DIMENSION(:), ALLOCATABLE :: lconti  ! contiguous flag (nvar)
@@ -136,13 +136,13 @@
      INTEGER(KIND=4), DIMENSION(2)  :: iposition_last        ! DOMAIN_position_last 
      INTEGER(KIND=4), DIMENSION(2)  :: ihalo_size_start      ! DOMAIN_halo_size_start
      INTEGER(KIND=4), DIMENSION(2)  :: ihalo_size_end        ! DOMAIN_halo_size_end
-     CHARACTER(LEN=80)              :: c_type                ! DOMAIN_type
+     CHARACTER(LEN=2048)              :: c_type                ! DOMAIN_type
   END TYPE ncfile
 
 
   INTEGER(KIND=4), PARAMETER :: jp_missing_nm = 3
   
-  CHARACTER(LEN=256), DIMENSION(jp_missing_nm) :: & ! take care of same length for each element
+  CHARACTER(LEN=2048), DIMENSION(jp_missing_nm) :: & ! take care of same length for each element
         & cl_missing_nm = (/'missing_value','Fillvalue    ','_Fillvalue   '/)
   CHARACTER(LEN=256 ) :: cl_dum              !# dummy char argument
 
@@ -196,7 +196,7 @@ CONTAINS
 
     INTEGER(KIND=4)    :: ja
     INTEGER(KIND=4)    :: istatus, idvar, iatt
-    CHARACTER(LEN=256) :: clatt
+    CHARACTER(LEN=2048) :: clatt
     !!----------------------------------------------------------------------
     IF ( kcin /= -9999) THEN    ! there is a reference file open
        istatus = NF90_INQ_VARID(kcin, cdvar, idvar)
@@ -269,7 +269,7 @@ CONTAINS
 
     INTEGER(KIND=4)               :: istatus, icout, incid, idum
     INTEGER(KIND=4) ,DIMENSION(4) :: invdim
-    CHARACTER(LEN=256)            :: cldep, cldepref, cldepvar, clonvar, clatvar
+    CHARACTER(LEN=2048)            :: cldep, cldepref, cldepvar, clonvar, clatvar
     LOGICAL                       :: ll_xycoo, ll_nc4
     !!----------------------------------------------------------------------
     IF ( PRESENT (ld_nc4 ) ) THEN 
@@ -455,7 +455,7 @@ CONTAINS
     INTEGER(KIND=4), DIMENSION(knvars) :: getvarid  ! return function
 
     INTEGER(KIND=4)                       :: jv     ! dummy loop index
-    CHARACTER(LEN=256), DIMENSION(knvars) :: cdvar
+    CHARACTER(LEN=2048), DIMENSION(knvars) :: cdvar
     INTEGER(KIND=4)                       :: incid
     INTEGER(KIND=4)                       :: istatus
     !!----------------------------------------------------------------------
@@ -545,7 +545,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     INTEGER(KIND=4),     INTENT(in) :: kout
     CHARACTER(LEN=20),  INTENT(in)  :: cdvartime
-    CHARACTER(LEN=256), INTENT(in) :: ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin
+    CHARACTER(LEN=2048), INTENT(in) :: ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin
 
     INTEGER(KIND=4) :: ivarid
     !!----------------------------------------------------------------------
@@ -581,14 +581,14 @@ CONTAINS
     !! ** Purpose : Change variable attributs in an existing variable
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=256), INTENT(in) :: cdfile, cdvar
-    CHARACTER(LEN=256), INTENT(in) :: cdunits, cdlong_name, cdshort_name
+    CHARACTER(LEN=2048), INTENT(in) :: cdfile, cdvar
+    CHARACTER(LEN=2048), INTENT(in) :: cdunits, cdlong_name, cdshort_name
     REAL(KIND=4),       INTENT(in) :: pmissing_value
 
     INTEGER(KIND=4) :: istatus
     INTEGER(KIND=4) :: incid, ivarid
     REAL(KIND=4)    :: zspval
-    CHARACTER(LEN=256) :: clmissing   ! get the actual missing_value attribute name
+    CHARACTER(LEN=2048) :: clmissing   ! get the actual missing_value attribute name
     !!----------------------------------------------------------------------
     istatus = NF90_OPEN (cdfile, NF90_WRITE, incid)
     istatus = NF90_REDEF(incid)
@@ -800,7 +800,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*),             INTENT(in ) :: cdfile     ! File name to look at
     CHARACTER(LEN=*),             INTENT(in ) :: cdim_name  ! File name to look at
-    CHARACTER(LEN=256), OPTIONAL, INTENT(out) :: cdtrue     ! full name of the read dimension
+    CHARACTER(LEN=2048), OPTIONAL, INTENT(out) :: cdtrue     ! full name of the read dimension
     INTEGER(KIND=4),    OPTIONAL, INTENT(out) :: kstatus    ! status of the nf inquire
     LOGICAL,            OPTIONAL, INTENT(in ) :: ldexact    ! when true look for exact cdim_name
 
@@ -808,7 +808,7 @@ CONTAINS
     INTEGER(KIND=4)    :: incid, id_dim, idv
     INTEGER(KIND=4)    :: istatus
     INTEGER(KIND=4)    :: idims
-    CHARACTER(LEN=256) :: clnam
+    CHARACTER(LEN=2048) :: clnam
     LOGICAL            :: lexact   = .false.
     LOGICAL, SAVE      :: ll_first = .true.
     !!-----------------------------------------------------------
@@ -968,7 +968,7 @@ CONTAINS
 
     INTEGER(KIND=4)    :: jvar
     INTEGER(KIND=4)    :: istatus, incid, id_var, ivar, idi, istatus0
-    CHARACTER(LEN=256) :: clongname='long_name', clongn
+    CHARACTER(LEN=2048) :: clongname='long_name', clongn
     !!----------------------------------------------------------------------
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid))
 
@@ -1011,7 +1011,7 @@ CONTAINS
     INTEGER(KIND=4) :: ji
     INTEGER(KIND=4) :: incid, idims, iuldid, idimv, ivars, istatus
     INTEGER(KIND=4), DIMENSION(4) :: idimt
-    CHARACTER(LEN=80) :: clvar ='none'
+    CHARACTER(LEN=2048) :: clvar ='none'
     
     !!----------------------------------------------------------------------
     istatus = NF90_OPEN   (cdfile,NF90_NOWRITE,incid)
@@ -1075,7 +1075,7 @@ CONTAINS
 
     INTEGER(KIND=4)    :: incid, ipk, jv, iipk
     INTEGER(KIND=4)    :: istatus
-    CHARACTER(LEN=256) :: cldep='dep'
+    CHARACTER(LEN=2048) :: cldep='dep'
     !!----------------------------------------------------------------------
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,incid)
 
@@ -1116,13 +1116,13 @@ CONTAINS
     CHARACTER(LEN=*),          INTENT(in) :: cdfile
     INTEGER(KIND=4),           INTENT(in) :: knvars    ! Number of variables in cdfile
     TYPE (variable),   DIMENSION (knvars) :: sdtypvar  ! Retrieve variables attribute
-    CHARACTER(LEN=256), DIMENSION(knvars) :: getvarname
+    CHARACTER(LEN=2048), DIMENSION(knvars) :: getvarname
 
     INTEGER(KIND=4)    :: incid,  jv, ilen
     INTEGER(KIND=4)    :: istatus
     INTEGER(KIND=4)    :: iatt
     REAL(KIND=4)       :: zatt
-    CHARACTER(LEN=256) :: cldum=''
+    CHARACTER(LEN=2048) :: cldum=''
     !!----------------------------------------------------------------------
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,incid)
 
@@ -1232,7 +1232,7 @@ CONTAINS
     REAL(KIND=4)                                :: sf=1., ao=0.        !: Scale factor and add_offset
     REAL(KIND=4)                                :: spval  !: missing value
     REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: zend, zstart
-    CHARACTER(LEN=256)                          :: clvar
+    CHARACTER(LEN=2048)                          :: clvar
     LOGICAL                                     :: lliom=.false., llperio=.false.
     LOGICAL                                     :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
     !!
@@ -2151,7 +2151,7 @@ CONTAINS
     INTEGER(KIND=4), DIMENSION(4) :: istart, icount
     INTEGER(KIND=4)               :: incid, id_var
     INTEGER(KIND=4)               :: istatus
-    CHARACTER(LEN=256)            :: clvar   ! local name for cdf var (modified)
+    CHARACTER(LEN=2048)            :: clvar   ! local name for cdf var (modified)
     !!-------------------------------------------------------------------------
     istart(:) = 1
     icount(:) = 1
@@ -2239,8 +2239,8 @@ CONTAINS
     INTEGER(KIND=4)                           :: istatus, idep, jj
     REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: z2d
     REAL(KIND=4), DIMENSION(kpk)              :: z1d
-    CHARACTER(LEN=256), DIMENSION(jpdep )     :: cldept= (/'deptht ','depthu ','depthv ','depthw ','nav_lev','z      '/)
-    CHARACTER(LEN=256)                        :: cldep
+    CHARACTER(LEN=2048), DIMENSION(jpdep )     :: cldept= (/'deptht ','depthu ','depthv ','depthw ','nav_lev','z      '/)
+    CHARACTER(LEN=2048)                        :: cldep
     LOGICAL                                   :: ll_xycoo
     !!----------------------------------------------------------------------
     IF (PRESENT(ld_xycoo) ) THEN 
@@ -2817,7 +2817,7 @@ CONTAINS
     REAL(KIND=4), DIMENSION(:), ALLOCATABLE :: ztime, zval
     REAL(KIND=4)                            :: ztmp  
     REAL(KIND=4)                            :: zao=0., zsf=1.0   !: add_offset, scale_factor
-    CHARACTER(LEN=256)                      :: clname
+    CHARACTER(LEN=2048)                      :: clname
     LOGICAL                                 :: ll_netcdf=.false.
     !!----------------------------------------------------------------------
     ! Klev can be used to give the model level we want to look at
@@ -2965,7 +2965,7 @@ CONTAINS
 
   END FUNCTION chkvar
 
-  CHARACTER(LEN=256) FUNCTION Get_Env ( cd_env )
+  CHARACTER(LEN=2048) FUNCTION Get_Env ( cd_env )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION Get_Env  ***
     !!

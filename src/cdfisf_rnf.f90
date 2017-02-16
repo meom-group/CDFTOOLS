@@ -49,16 +49,16 @@ PROGRAM cdfisf_rnf
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dfwfisf2d
 
   !                                                FILES
-  CHARACTER(LEN=256)                            :: cf_fill            ! input file names
-  CHARACTER(LEN=256)                            :: cf_isflist         ! input file names
-  CHARACTER(LEN=256)                            :: cf_bathy='bathy.nc'! bathymetry file name
-  CHARACTER(LEN=256)                            :: cf_isfdr='isf_draft.nc'! ice_draft file name
-  CHARACTER(LEN=256)                            :: cf_out='rnfisf.nc' ! output file for average
+  CHARACTER(LEN=2048)                            :: cf_fill            ! input file names
+  CHARACTER(LEN=2048)                            :: cf_isflist         ! input file names
+  CHARACTER(LEN=2048)                            :: cf_bathy='bathy.nc'! bathymetry file name
+  CHARACTER(LEN=2048)                            :: cf_isfdr='isf_draft.nc'! ice_draft file name
+  CHARACTER(LEN=2048)                            :: cf_out='rnfisf.nc' ! output file for average
   !                                                VARIABLES
-  CHARACTER(LEN=256)                            :: cv_fill            ! fill var name
-  CHARACTER(LEN=256)                            :: cv_bathy='Bathymetry' ! bathymetry name
-  CHARACTER(LEN=256)                            :: cv_isfdr='isf_draft'  ! ice shelf draft name
-  CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
+  CHARACTER(LEN=2048)                            :: cv_fill            ! fill var name
+  CHARACTER(LEN=2048)                            :: cv_bathy='Bathymetry' ! bathymetry name
+  CHARACTER(LEN=2048)                            :: cv_isfdr='isf_draft'  ! ice shelf draft name
+  CHARACTER(LEN=2048)                            :: cdum               ! dummy string argument
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 

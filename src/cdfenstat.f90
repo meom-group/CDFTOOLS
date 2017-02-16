@@ -54,12 +54,12 @@ PROGRAM cdfenstat
   REAL(KIND=8), DIMENSION(:,:,:,:),   ALLOCATABLE :: d4tmp               ! temporary array
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtotal_time        ! to compute mean time
 
-  CHARACTER(LEN=256)                            :: cf_in              ! input file names
-  CHARACTER(LEN=256)                            :: cf_out  = 'cdfmoy.nc'  ! output file for average
-  CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
-  CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_list            ! list of input files
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in              ! input file names
+  CHARACTER(LEN=2048)                            :: cf_out  = 'cdfmoy.nc'  ! output file for average
+  CHARACTER(LEN=2048)                            :: cv_dep             ! depth dimension name
+  CHARACTER(LEN=2048)                            :: cldum              ! dummy string argument
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cf_list            ! list of input files
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 

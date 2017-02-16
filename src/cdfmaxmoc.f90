@@ -49,10 +49,10 @@ PROGRAM cdfmaxmoc
   !
   TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar           ! structure of output
   !
-  CHARACTER(LEN=256)                          :: cf_moc            ! input file 
-  CHARACTER(LEN=256)                          :: cf_ncout='maxmoc.nc' ! output file
-  CHARACTER(LEN=256)                          :: cldum             ! dummy string for I/O
-  CHARACTER(LEN=256)                          :: cbasin, cv_in     ! basin name and cdf variable name
+  CHARACTER(LEN=2048)                          :: cf_moc            ! input file 
+  CHARACTER(LEN=2048)                          :: cf_ncout='maxmoc.nc' ! output file
+  CHARACTER(LEN=2048)                          :: cldum             ! dummy string for I/O
+  CHARACTER(LEN=2048)                          :: cbasin, cv_in     ! basin name and cdf variable name
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   narg=iargc()

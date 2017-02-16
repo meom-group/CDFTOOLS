@@ -37,10 +37,10 @@ PROGRAM cdfpolymask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rpmask                 ! mask array
   REAL(KIND=4), DIMENSION(1)                :: tim                    ! dummy time counter
 
-  CHARACTER(LEN=256)                        :: cf_ref                 ! name of reference file
-  CHARACTER(LEN=256)                        :: cf_poly                ! name of ascii poly file
-  CHARACTER(LEN=256)                        :: cf_out='polymask.nc'   ! output file name
-  CHARACTER(LEN=256)                        :: cldum                  ! dummy arguments
+  CHARACTER(LEN=2048)                        :: cf_ref                 ! name of reference file
+  CHARACTER(LEN=2048)                        :: cf_poly                ! name of ascii poly file
+  CHARACTER(LEN=2048)                        :: cf_out='polymask.nc'   ! output file name
+  CHARACTER(LEN=2048)                        :: cldum                  ! dummy arguments
 
   TYPE(variable), DIMENSION(1)              :: stypvar                ! output attribute
 
@@ -153,7 +153,7 @@ CONTAINS
     INTEGER(KIND=4)                           :: ji, jj, jjpoly ! dummy loop index
     INTEGER(KIND=4)                           :: infront        ! number of
     REAL(KIND=4)                              :: zin, zout      ! 
-    CHARACTER(LEN=256), DIMENSION(jpolys)     :: cl_area        ! name of the areas 
+    CHARACTER(LEN=2048), DIMENSION(jpolys)     :: cl_area        ! name of the areas 
     LOGICAL                                   :: ll_in          ! flag for in/out poly
     !!----------------------------------------------------------------------
     IF ( lreverse ) THEN

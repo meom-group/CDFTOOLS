@@ -69,10 +69,10 @@ PROGRAM cdfmxlhcsc
 
   TYPE(variable), DIMENSION(3)                 :: stypvar         ! output attributes
 
-  CHARACTER(LEN=256)                           :: cf_tfil         ! input file
-  CHARACTER(LEN=256)                           :: cf_out='mxlhcsc.nc' ! output file
-  CHARACTER(LEN=256)                           :: criteria        ! type of criteria used for mld
-  CHARACTER(LEN=256)                           :: cldum           ! dummy string
+  CHARACTER(LEN=2048)                           :: cf_tfil         ! input file
+  CHARACTER(LEN=2048)                           :: cf_out='mxlhcsc.nc' ! output file
+  CHARACTER(LEN=2048)                           :: criteria        ! type of criteria used for mld
+  CHARACTER(LEN=2048)                           :: cldum           ! dummy string
 
   LOGICAL                                      :: lchk          ! flag for missing files
   LOGICAL                                      :: lfull=.FALSE. ! flag for full step

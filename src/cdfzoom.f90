@@ -36,9 +36,9 @@ PROGRAM cdfzoom
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: v2d                    ! data array
   REAL(KIND=4)                              :: fact                   ! scaling factor
   !
-  CHARACTER(LEN=256)                        :: cldum                  ! summy character variable
-  CHARACTER(LEN=256)                        :: cf_in                  ! input file name
-  CHARACTER(LEN=256)                        :: cv_in='none'           ! variable name
+  CHARACTER(LEN=2048)                        :: cldum                  ! summy character variable
+  CHARACTER(LEN=2048)                        :: cf_in                  ! input file name
+  CHARACTER(LEN=2048)                        :: cv_in='none'           ! variable name
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 

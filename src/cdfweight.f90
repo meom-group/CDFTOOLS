@@ -65,9 +65,9 @@ PROGRAM cdfweight
   REAL(KIND=8)                              :: dl_alpha, dl_beta       ! reduced coordinates (0-1) in the NP gridcell
   REAL(KIND=8)                              :: dl_gam                  ! vertical weight
 
-  CHARACTER(LEN=256)                        :: cf_coord, cf_in         ! file names (in)
-  CHARACTER(LEN=256)                        :: cf_weight               ! weight file name (out)
-  CHARACTER(LEN=256)                        :: ctype, cldum            ! C-grid type point, dummy character
+  CHARACTER(LEN=2048)                        :: cf_coord, cf_in         ! file names (in)
+  CHARACTER(LEN=2048)                        :: cf_weight               ! weight file name (out)
+  CHARACTER(LEN=2048)                        :: ctype, cldum            ! C-grid type point, dummy character
 
   LOGICAL                                   :: lldebug = .FALSE.       ! verbose/debug flag
   LOGICAL                                   :: ll2d    = .FALSE.       ! 2D field flag

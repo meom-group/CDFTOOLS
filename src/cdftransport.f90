@@ -170,21 +170,21 @@ PROGRAM cdftransport
 
    TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar        ! structure of output
 
-   CHARACTER(LEN=256)                          :: cf_tfil        ! VT file  (in)
-   CHARACTER(LEN=256)                          :: cf_ufil        ! U file   (in)
-   CHARACTER(LEN=256)                          :: cf_vfil        ! V file   (in)
-   CHARACTER(LEN=256)                          :: cf_out='section_trp.dat'  ! output file name (ASCII)
-   CHARACTER(LEN=256)                          :: cf_outnc            ! output netcdf file
-   CHARACTER(LEN=256)                          :: cf_vtrp='vtrp.txt'  ! output volume transport file
-   CHARACTER(LEN=256)                          :: cf_htrp='htrp.txt'  ! output heat transport file
-   CHARACTER(LEN=256)                          :: cf_strp='strp.txt'  ! output salt transport file
-   CHARACTER(LEN=256)                          :: csection            ! section names
-   CHARACTER(LEN=256)                          :: cvarname            ! variable names (root)
-   CHARACTER(LEN=256)                          :: clongname           ! variable longname (root)
+   CHARACTER(LEN=2048)                          :: cf_tfil        ! VT file  (in)
+   CHARACTER(LEN=2048)                          :: cf_ufil        ! U file   (in)
+   CHARACTER(LEN=2048)                          :: cf_vfil        ! V file   (in)
+   CHARACTER(LEN=2048)                          :: cf_out='section_trp.dat'  ! output file name (ASCII)
+   CHARACTER(LEN=2048)                          :: cf_outnc            ! output netcdf file
+   CHARACTER(LEN=2048)                          :: cf_vtrp='vtrp.txt'  ! output volume transport file
+   CHARACTER(LEN=2048)                          :: cf_htrp='htrp.txt'  ! output heat transport file
+   CHARACTER(LEN=2048)                          :: cf_strp='strp.txt'  ! output salt transport file
+   CHARACTER(LEN=2048)                          :: csection            ! section names
+   CHARACTER(LEN=2048)                          :: cvarname            ! variable names (root)
+   CHARACTER(LEN=2048)                          :: clongname           ! variable longname (root)
    CHARACTER(LEN=512)                          :: cglobal             ! global attribute
-   CHARACTER(LEN=256)                          :: cldum               ! dummy char variable
-   CHARACTER(LEN=256)                          :: cline               ! dummy char variable
-   CHARACTER(LEN=256), DIMENSION(3)            :: cldumt              ! dummy char variable
+   CHARACTER(LEN=2048)                          :: cldum               ! dummy char variable
+   CHARACTER(LEN=2048)                          :: cline               ! dummy char variable
+   CHARACTER(LEN=2048), DIMENSION(3)            :: cldumt              ! dummy char variable
 
    LOGICAL                                     :: ltest   = .FALSE.   ! flag for test case
    LOGICAL                                     :: lfull   = .FALSE.   ! flag for full step case
@@ -1020,8 +1020,8 @@ CONTAINS
       CHARACTER(LEN=*),             INTENT(in ) :: cdlongname
       !!
       INTEGER(KIND=4)                           :: ivar
-      CHARACTER(LEN=255)                        :: csuffixvarnam
-      CHARACTER(LEN=255)                        :: cprefixlongnam
+      CHARACTER(LEN=2048)                        :: csuffixvarnam
+      CHARACTER(LEN=2048)                        :: cprefixlongnam
       !!----------------------------------------------------------------------
       ! set suffixes according to variable/longname 
       IF ( cdvarname /= 'none' ) THEN

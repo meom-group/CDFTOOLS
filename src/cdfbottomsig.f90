@@ -41,11 +41,11 @@ PROGRAM cdfbottomsig
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zmask          ! 2D mask at surface
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim            ! time counter
 
-  CHARACTER(LEN=256)                         :: cf_out='botsig.nc' ! Output file name
-  CHARACTER(LEN=256)                         :: cf_tfil        ! input filename
-  CHARACTER(LEN=256)                         :: cv_sig         ! output variable name
-  CHARACTER(LEN=256)                         :: cref           ! message for depth reference
-  CHARACTER(LEN=256)                         :: cldum          ! dummy char variable
+  CHARACTER(LEN=2048)                         :: cf_out='botsig.nc' ! Output file name
+  CHARACTER(LEN=2048)                         :: cf_tfil        ! input filename
+  CHARACTER(LEN=2048)                         :: cv_sig         ! output variable name
+  CHARACTER(LEN=2048)                         :: cref           ! message for depth reference
+  CHARACTER(LEN=2048)                         :: cldum          ! dummy char variable
 
   TYPE (variable), DIMENSION(1)              :: stypvar        ! structure for attributes
 

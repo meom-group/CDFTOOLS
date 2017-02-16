@@ -46,12 +46,12 @@ PROGRAM cdfmoyuvwt
   REAL(KIND=8)                                  :: dcoef
   REAL(KIND=8)                                  :: dtotal_time
 
-  CHARACTER(LEN=256)                            :: cf_ufil, cf_vfil
-  CHARACTER(LEN=256)                            :: cf_wfil, cf_tfil
-  CHARACTER(LEN=256)                            :: cf_out='moyuvwt.nc'
-  CHARACTER(LEN=256)                            :: cldum
-  CHARACTER(LEN=256)                            :: config , ctag
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: ctabtag
+  CHARACTER(LEN=2048)                            :: cf_ufil, cf_vfil
+  CHARACTER(LEN=2048)                            :: cf_wfil, cf_tfil
+  CHARACTER(LEN=2048)                            :: cf_out='moyuvwt.nc'
+  CHARACTER(LEN=2048)                            :: cldum
+  CHARACTER(LEN=2048)                            :: config , ctag
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: ctabtag
 
   TYPE (variable), DIMENSION(jp_var)            :: stypvar         ! structure for attibutes
 

@@ -72,7 +72,7 @@ PROGRAM cdftransig_xy3d
   CHARACTER(LEN=80 )                           :: ctag 
   CHARACTER(LEN=80 )                           :: cldum
   CHARACTER(LEN=80 )                           :: cldepcode='1000'
-  CHARACTER(LEN=256)                           :: cglobal
+  CHARACTER(LEN=2048)                           :: cglobal
   CHARACTER(LEN=7  )                           :: clsigma 
 
   TYPE (variable), DIMENSION(2)                :: stypvar     ! structure for attributes

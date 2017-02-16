@@ -38,12 +38,12 @@ PROGRAM cdffindij
   REAL(KIND=4)       :: xmin, xmax, ymin, ymax     ! geographical window
   REAL(KIND=4)       :: zlon, zlat                 ! position of model point
 
-  CHARACTER(LEN=256) :: cltype='F'                 ! point type to search for
-  CHARACTER(LEN=256) :: cldum                      ! dummy character variable
-  CHARACTER(LEN=256) :: clcoo                      ! dummy character variable
-  CHARACTER(LEN=256) :: cf_list                    ! list_file name
-  CHARACTER(LEN=256) :: cf_out                     ! output file name
-  CHARACTER(LEN=256) :: cldes='XY'                 ! descriptor for input file
+  CHARACTER(LEN=2048) :: cltype='F'                 ! point type to search for
+  CHARACTER(LEN=2048) :: cldum                      ! dummy character variable
+  CHARACTER(LEN=2048) :: clcoo                      ! dummy character variable
+  CHARACTER(LEN=2048) :: cf_list                    ! list_file name
+  CHARACTER(LEN=2048) :: cf_out                     ! output file name
+  CHARACTER(LEN=2048) :: cldes='XY'                 ! descriptor for input file
   CHARACTER(LEN=50), DIMENSION(:), ALLOCATABLE  :: cfields ! string array to receive
                                                    ! fields of the list_file
 

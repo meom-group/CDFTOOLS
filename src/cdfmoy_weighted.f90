@@ -43,12 +43,12 @@
   REAL(KIND=8), DIMENSION (:)  ,    ALLOCATABLE :: dtab1d              ! array for cumulated values
   REAL(KIND=8)                                  :: dtotal_time, dsumw  ! cumulated times and weights
 
-  CHARACTER(LEN=256)                            :: cf_in               ! current input file name
-  CHARACTER(LEN=256)                            :: cf_out='cdfmoy_weighted.nc' ! output file name
-  CHARACTER(LEN=256)                            :: cv_dep              ! name of depth variable
-  CHARACTER(LEN=256)                            :: cv_skip             ! name of  variable to skip
-  CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in               ! current input file name
+  CHARACTER(LEN=2048)                            :: cf_out='cdfmoy_weighted.nc' ! output file name
+  CHARACTER(LEN=2048)                            :: cv_dep              ! name of depth variable
+  CHARACTER(LEN=2048)                            :: cv_skip             ! name of  variable to skip
+  CHARACTER(LEN=2048)                            :: cldum               ! dummy character variable
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var name
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for output var attributes
 

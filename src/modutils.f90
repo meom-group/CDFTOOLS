@@ -71,7 +71,7 @@ CONTAINS
 
   END SUBROUTINE SetGlobalAtt
 
-  CHARACTER(LEN=256) FUNCTION SetFileName(cdconf, cdtag, cdgrid ,ld_stop )
+  CHARACTER(LEN=2048) FUNCTION SetFileName(cdconf, cdtag, cdgrid ,ld_stop )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION SetFileName  ***
     !!
@@ -120,8 +120,8 @@ CONTAINS
     INTEGER(KIND=4)                        :: ji, jk
     INTEGER(KIND=4)                        :: inlev, ipos, iposm,  ik1, ik2
     INTEGER(KIND=4), DIMENSION(jp_maxlist) :: itmp
-    CHARACTER(LEN=80)                      :: cldum
-    CHARACTER(LEN=80)                      :: cldum2
+    CHARACTER(LEN=2048)                      :: cldum
+    CHARACTER(LEN=2048)                      :: cldum2
     !----------------------------------------------------------------------------
     cldum=cd_list
     ipos=1

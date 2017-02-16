@@ -34,8 +34,8 @@ PROGRAM cdfnrjcomp
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: anousqrt, anovsqrt 
   REAL(KIND=4), DIMENSION(1)                 :: tim                   ! time counter
 
-  CHARACTER(LEN=256)                         :: cf_in                 ! input filename
-  CHARACTER(LEN=256)                         :: cf_out='nrjcomp.nc'   ! output file name
+  CHARACTER(LEN=2048)                         :: cf_in                 ! input filename
+  CHARACTER(LEN=2048)                         :: cf_out='nrjcomp.nc'   ! output file name
   TYPE (variable), DIMENSION(6)              :: stypvar               ! structure for attibutes
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()

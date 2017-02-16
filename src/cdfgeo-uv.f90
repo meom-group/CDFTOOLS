@@ -51,11 +51,11 @@ PROGRAM cdfgeo_uv
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zwrk           ! working array for interpolation
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: umask, vmask   ! mask at u and v points
 
-  CHARACTER(LEN=256)                        :: cf_tfil        ! input file name
-  CHARACTER(LEN=256)                        :: cf_uout='ugeo.nc' 
-  CHARACTER(LEN=256)                        :: cf_vout='vgeo.nc'
-  CHARACTER(LEN=256)                        :: cl_dum         ! dummy character variable
-  CHARACTER(LEN=256)                        :: cl_global      ! global attribute
+  CHARACTER(LEN=2048)                        :: cf_tfil        ! input file name
+  CHARACTER(LEN=2048)                        :: cf_uout='ugeo.nc' 
+  CHARACTER(LEN=2048)                        :: cf_vout='vgeo.nc'
+  CHARACTER(LEN=2048)                        :: cl_dum         ! dummy character variable
+  CHARACTER(LEN=2048)                        :: cl_global      ! global attribute
 
   TYPE(variable), DIMENSION(1)              :: stypvaru       ! attributes for ugeo
   TYPE(variable), DIMENSION(1)              :: stypvarv       ! attributes for vgeo

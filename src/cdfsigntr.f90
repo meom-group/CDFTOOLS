@@ -34,8 +34,8 @@ PROGRAM cdfsigntr
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
 
-  CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
-  CHARACTER(LEN=256)                        :: cf_out='signtr.nc'   ! output file name
+  CHARACTER(LEN=2048)                        :: cf_tfil            ! input filename
+  CHARACTER(LEN=2048)                        :: cf_out='signtr.nc'   ! output file name
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
   !!----------------------------------------------------------------------

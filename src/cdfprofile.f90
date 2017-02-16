@@ -40,11 +40,11 @@ PROGRAM cdfprofile
   REAL(KIND=4), DIMENSION(1,1)                  :: rdumlon, rdumlat  ! dummy array for output
   REAL(KIND=4), DIMENSION(1,1)                  :: rdummy            ! dummy array
 
-  CHARACTER(LEN=256)                            :: cldum             ! dummy character variable
-  CHARACTER(LEN=256)                            :: cf_in             ! input file 
-  CHARACTER(LEN=256)                            :: cf_out='profile.nc'
-  CHARACTER(LEN=256)                            :: cv_in, cv_dep     ! variable name and depth name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
+  CHARACTER(LEN=2048)                            :: cldum             ! dummy character variable
+  CHARACTER(LEN=2048)                            :: cf_in             ! input file 
+  CHARACTER(LEN=2048)                            :: cf_out='profile.nc'
+  CHARACTER(LEN=2048)                            :: cv_in, cv_dep     ! variable name and depth name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar_input     ! structure of input data
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar           ! structure of output data

@@ -39,12 +39,12 @@ PROGRAM cdfpdf
   REAL(KIND=4)                              :: vmin, vmax, bin_siz
   REAL(KIND=4)                              :: below, above, spval
 
-  CHARACTER(LEN=256)                        :: cf_ifil
-  CHARACTER(LEN=256)                        :: cf_asc='pdf.txt'
-  CHARACTER(LEN=256)                        :: cf_out='pdf.nc'
-  CHARACTER(LEN=256)                        :: cv_nam
-  CHARACTER(LEN=256)                        :: cldum
-  CHARACTER(LEN=256)                        :: cglobal
+  CHARACTER(LEN=2048)                        :: cf_ifil
+  CHARACTER(LEN=2048)                        :: cf_asc='pdf.txt'
+  CHARACTER(LEN=2048)                        :: cf_out='pdf.nc'
+  CHARACTER(LEN=2048)                        :: cv_nam
+  CHARACTER(LEN=2048)                        :: cldum
+  CHARACTER(LEN=2048)                        :: cglobal
 
   TYPE(variable), DIMENSION(1)              :: stypvar           ! output data structure
 

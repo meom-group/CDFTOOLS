@@ -51,16 +51,16 @@ PROGRAM cdfvFWov
   REAL(KIND=8)                               :: dztrp, dcellarea
   REAL(KIND=8), PARAMETER                    :: dp_rsal=35.d0       ! reference salinity for freshwater calculation
 
-  CHARACTER(LEN=256)                         :: cf_vfil             ! input V file
-  CHARACTER(LEN=256)                         :: cf_sfil             ! input S file
-  CHARACTER(LEN=256)                         :: cf_zgr              ! zgr file
-  CHARACTER(LEN=256)                         :: cf_hgr              ! hgr file
-  CHARACTER(LEN=256)                         :: cf_mask             ! mask file
-  CHARACTER(LEN=256)                         :: cf_out    = 'vFWov.nc'  ! output file
-  CHARACTER(LEN=256)                         :: cv_netvFW = 'netvFW'    ! output variable 1
-  CHARACTER(LEN=256)                         :: cv_totvFW = 'totvFW'    ! output variable 2
-  CHARACTER(LEN=256)                         :: cv_ovFW   = 'ovFW'      ! output variable 3
-  CHARACTER(LEN=256)                         :: cglobal             ! Global attribute for output file
+  CHARACTER(LEN=2048)                         :: cf_vfil             ! input V file
+  CHARACTER(LEN=2048)                         :: cf_sfil             ! input S file
+  CHARACTER(LEN=2048)                         :: cf_zgr              ! zgr file
+  CHARACTER(LEN=2048)                         :: cf_hgr              ! hgr file
+  CHARACTER(LEN=2048)                         :: cf_mask             ! mask file
+  CHARACTER(LEN=2048)                         :: cf_out    = 'vFWov.nc'  ! output file
+  CHARACTER(LEN=2048)                         :: cv_netvFW = 'netvFW'    ! output variable 1
+  CHARACTER(LEN=2048)                         :: cv_totvFW = 'totvFW'    ! output variable 2
+  CHARACTER(LEN=2048)                         :: cv_ovFW   = 'ovFW'      ! output variable 3
+  CHARACTER(LEN=2048)                         :: cglobal             ! Global attribute for output file
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar             ! I/O data structure
 

@@ -35,17 +35,17 @@ PROGRAM cdfmltmask
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zmask              ! mask at jk level 
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zvmask             ! masked cv_in at jk level
 
-  CHARACTER(LEN=256)                          :: cunits             ! units attribute
-  CHARACTER(LEN=256)                          :: clname             ! long_name attribute
-  CHARACTER(LEN=256)                          :: csname             ! short_name attribute
-  CHARACTER(LEN=256)                          :: cf_in              ! input file name
-  CHARACTER(LEN=256)                          :: cf_out             ! output file name
-  CHARACTER(LEN=256)                          :: cf_msk             ! input mask file name
-  CHARACTER(LEN=256)                          :: cvartype           ! variable position on Cgrid
-  CHARACTER(LEN=256)                          :: cv_dep             ! depth dim name
-  CHARACTER(LEN=256)                          :: cldum              ! dummy string
+  CHARACTER(LEN=2048)                          :: cunits             ! units attribute
+  CHARACTER(LEN=2048)                          :: clname             ! long_name attribute
+  CHARACTER(LEN=2048)                          :: csname             ! short_name attribute
+  CHARACTER(LEN=2048)                          :: cf_in              ! input file name
+  CHARACTER(LEN=2048)                          :: cf_out             ! output file name
+  CHARACTER(LEN=2048)                          :: cf_msk             ! input mask file name
+  CHARACTER(LEN=2048)                          :: cvartype           ! variable position on Cgrid
+  CHARACTER(LEN=2048)                          :: cv_dep             ! depth dim name
+  CHARACTER(LEN=2048)                          :: cldum              ! dummy string
   CHARACTER(LEN=20)                           :: cv_msk             ! mask variable name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in            ! cdf variable names to process
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_in            ! cdf variable names to process
 
   LOGICAL                                     :: lnc4=.false.       ! use Netcdf4 chunking and deflation
   LOGICAL                                     :: lout=.false.       ! specified output file name
@@ -253,7 +253,7 @@ CONTAINS
       !!----------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(in) :: cdum
 
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      CHARACTER(LEN=2048), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
       INTEGER  :: ji
       INTEGER  :: inchar,  i1=1
       !!----------------------------------------------------------------------

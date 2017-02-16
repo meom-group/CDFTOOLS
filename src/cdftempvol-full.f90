@@ -56,10 +56,10 @@ PROGRAM cdftempvol_full
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE   :: zwvol, zwvolbin, volbin2      !: volume arrays
   REAL(KIND=8), DIMENSION (:), ALLOCATABLE     :: volbin                        !: volume arrays
 
-  CHARACTER(LEN=256) :: cfilet                                                   !: files name
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'          !: coordinates files
-  CHARACTER(LEN=256) :: cfilout='voltemp.txt'                                    !: output file
-  CHARACTER(LEN=256) :: cdum                                                     !: dummy string
+  CHARACTER(LEN=2048) :: cfilet                                                   !: files name
+  CHARACTER(LEN=2048) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc'          !: coordinates files
+  CHARACTER(LEN=2048) :: cfilout='voltemp.txt'                                    !: output file
+  CHARACTER(LEN=2048) :: cdum                                                     !: dummy string
 
   LOGICAL    :: l_print=.FALSE.             !: flag  for printing additional results
   LOGICAL    :: l_print2=.FALSE.             !: flag  for printing additional results

@@ -37,8 +37,8 @@ PROGRAM cdfkempemekeepe
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: anowtxz
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim            ! time counter (dummy)
 
-  CHARACTER(LEN=256)                          :: cf_uvwtfil          ! input file
-  CHARACTER(LEN=256)                          :: cf_out='transfertst1t3.nc'
+  CHARACTER(LEN=2048)                          :: cf_uvwtfil          ! input file
+  CHARACTER(LEN=2048)                          :: cf_out='transfertst1t3.nc'
 
   TYPE  (variable), DIMENSION(2)              :: stypvar        ! structure for attibutes
   !!----------------------------------------------------------------------

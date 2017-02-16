@@ -44,14 +44,14 @@ PROGRAM cdfnorth_unfold
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                      ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                      ! time counter
 
-  CHARACTER(LEN=256)                            :: cf_in                    ! input file name
-  CHARACTER(LEN=256)                            :: cf_out='unfold.nc'       ! output file names 
-  CHARACTER(LEN=256)                            :: cv_dep                   ! depth name
-  CHARACTER(LEN=256)                            :: cpivot                   ! pivot position
-  CHARACTER(LEN=256)                            :: ctype                    ! variable position
-  CHARACTER(LEN=256)                            :: cglobal                  ! variable position
-  CHARACTER(LEN=256)                            :: cldum                    ! dummy string
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in                    ! input file name
+  CHARACTER(LEN=2048)                            :: cf_out='unfold.nc'       ! output file names 
+  CHARACTER(LEN=2048)                            :: cv_dep                   ! depth name
+  CHARACTER(LEN=2048)                            :: cpivot                   ! pivot position
+  CHARACTER(LEN=2048)                            :: ctype                    ! variable position
+  CHARACTER(LEN=2048)                            :: cglobal                  ! variable position
+  CHARACTER(LEN=2048)                            :: cldum                    ! dummy string
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar                  ! output var attribute
 

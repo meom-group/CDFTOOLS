@@ -42,11 +42,11 @@ PROGRAM cdfisf_poolchk
   REAL(KIND=4), DIMENSION(:),        ALLOCATABLE :: rsum              ! iceshelf draft
   REAL(KIND=4), DIMENSION(:,:),      ALLOCATABLE :: rdraft            ! iceshelf draft
 
-  CHARACTER(LEN=255) :: cf_in
-  CHARACTER(LEN=255) :: cf_out='poolmask.nc'
-  CHARACTER(LEN=255) :: cf_isfdr='isf_draft.nc'
-  CHARACTER(LEN=255) :: cv_isfdr='isf_draft'
-  CHARACTER(LEN=255) :: cdum
+  CHARACTER(LEN=2048) :: cf_in
+  CHARACTER(LEN=2048) :: cf_out='poolmask.nc'
+  CHARACTER(LEN=2048) :: cf_isfdr='isf_draft.nc'
+  CHARACTER(LEN=2048) :: cv_isfdr='isf_draft'
+  CHARACTER(LEN=2048) :: cdum
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 

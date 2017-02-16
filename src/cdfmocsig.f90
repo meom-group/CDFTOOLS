@@ -82,11 +82,11 @@ PROGRAM cdfmocsig
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: depi_tmp             ! temporary cumulated depth array
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: wdep_tmp             ! temporary count array
 
-  CHARACTER(LEN=256)                              :: cf_vfil              ! meridional velocity file
-  CHARACTER(LEN=256)                              :: cf_tfil              ! temperature/salinity file
-  CHARACTER(LEN=256)                              :: cf_moc='mocsig.nc'   ! output file
-  CHARACTER(LEN=255)                              :: cglobal              ! Global attribute
-  CHARACTER(LEN=256)                              :: cldum                ! dummy char variable
+  CHARACTER(LEN=2048)                              :: cf_vfil              ! meridional velocity file
+  CHARACTER(LEN=2048)                              :: cf_tfil              ! temperature/salinity file
+  CHARACTER(LEN=2048)                              :: cf_moc='mocsig.nc'   ! output file
+  CHARACTER(LEN=2048)                              :: cglobal              ! Global attribute
+  CHARACTER(LEN=2048)                              :: cldum                ! dummy char variable
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE       :: stypvar              ! output var properties
 

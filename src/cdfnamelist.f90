@@ -23,7 +23,7 @@ PROGRAM cdfnamelist
 
   INTEGER(KIND=4)   :: narg, iargc, ijarg
 
-  CHARACTER(LEN=80) :: cldum
+  CHARACTER(LEN=2048) :: cldum
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 

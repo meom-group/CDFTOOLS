@@ -94,28 +94,28 @@ PROGRAM cdfsigtrp
 
    TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar              ! structure of output
 
-   CHARACTER(LEN=256)                            :: cf_tfil              ! temperature salinity file
-   CHARACTER(LEN=256)                            :: cf_ufil              ! zonal velocity file
-   CHARACTER(LEN=256)                            :: cf_vfil              ! meridional velocity file
-   CHARACTER(LEN=256)                            :: cf_section='dens_section.dat'  ! input section file
-   CHARACTER(LEN=256)                            :: cf_out='trpsig.txt'  ! output  ascii file
-   CHARACTER(LEN=256)                            :: cf_bimg              ! output bimg file (2d)
-   CHARACTER(LEN=256)                            :: cf_nc                ! output netcdf file (2d)
-   CHARACTER(LEN=256)                            :: cf_outnc             ! output netcdf file (1d, 0d))
-   CHARACTER(LEN=256)                            :: cv_dep               ! depth variable
-   CHARACTER(LEN=256)                            :: cldum                ! dummy string
-   CHARACTER(LEN=256)                            :: cglobal              ! global attribute
+   CHARACTER(LEN=2048)                            :: cf_tfil              ! temperature salinity file
+   CHARACTER(LEN=2048)                            :: cf_ufil              ! zonal velocity file
+   CHARACTER(LEN=2048)                            :: cf_vfil              ! meridional velocity file
+   CHARACTER(LEN=2048)                            :: cf_section='dens_section.dat'  ! input section file
+   CHARACTER(LEN=2048)                            :: cf_out='trpsig.txt'  ! output  ascii file
+   CHARACTER(LEN=2048)                            :: cf_bimg              ! output bimg file (2d)
+   CHARACTER(LEN=2048)                            :: cf_nc                ! output netcdf file (2d)
+   CHARACTER(LEN=2048)                            :: cf_outnc             ! output netcdf file (1d, 0d))
+   CHARACTER(LEN=2048)                            :: cv_dep               ! depth variable
+   CHARACTER(LEN=2048)                            :: cldum                ! dummy string
+   CHARACTER(LEN=2048)                            :: cglobal              ! global attribute
    CHARACTER(LEN=80 )                            :: cfmt_9000            ! format string 
    CHARACTER(LEN=80 )                            :: cfmt_9001            ! format string
    CHARACTER(LEN=80 )                            :: cfmt_9002            ! format string
    CHARACTER(LEN=80 )                            :: cfmt_9003            ! format string
-   CHARACTER(LEN=256)                            :: cl_vnam, cl_lname    ! working variables
-   CHARACTER(LEN=256)                            :: csuffixvarname       !
-   CHARACTER(LEN=256)                            :: cprefixlongname      !
-   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names             ! names of input variables
-   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: csection             ! section name
-   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cvarname             ! output variable name (root)
-   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clongname            ! output long name (root)
+   CHARACTER(LEN=2048)                            :: cl_vnam, cl_lname    ! working variables
+   CHARACTER(LEN=2048)                            :: csuffixvarname       !
+   CHARACTER(LEN=2048)                            :: cprefixlongname      !
+   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names             ! names of input variables
+   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: csection             ! section name
+   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cvarname             ! output variable name (root)
+   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: clongname            ! output long name (root)
 
    LOGICAL                                       :: l_merid              ! flag for meridional section
    LOGICAL                                       :: ltemp  =.FALSE.      ! flag for use of temperature
@@ -611,9 +611,9 @@ CONTAINS
       !!
       !!----------------------------------------------------------------------
       CHARACTER(LEN=*),                       INTENT(in   ) :: cdfile
-      CHARACTER(LEN=256), DIMENSION(knumber), INTENT(out  ) :: cdsection
-      CHARACTER(LEN=256), DIMENSION(knumber), INTENT(out  ) :: cdvarname
-      CHARACTER(LEN=256), DIMENSION(knumber), INTENT(out  ) :: cdlongname
+      CHARACTER(LEN=2048), DIMENSION(knumber), INTENT(out  ) :: cdsection
+      CHARACTER(LEN=2048), DIMENSION(knumber), INTENT(out  ) :: cdvarname
+      CHARACTER(LEN=2048), DIMENSION(knumber), INTENT(out  ) :: cdlongname
       INTEGER(KIND=4),                        INTENT(inout) :: knumber
       INTEGER(KIND=4), DIMENSION(knumber),    INTENT(out  ) :: kimin, kimax, kjmin, kjmax
 
@@ -621,8 +621,8 @@ CONTAINS
       INTEGER(KIND=4)                                       :: jsec
       INTEGER(KIND=4)                                       :: ii, inum=10
       INTEGER(KIND=4)                                       :: ipos  
-      CHARACTER(LEN=256)                                    :: cline
-      CHARACTER(LEN=80), DIMENSION(3)                       :: cldum
+      CHARACTER(LEN=2048)                                    :: cline
+      CHARACTER(LEN=2048), DIMENSION(3)                       :: cldum
       LOGICAL                                               :: llfirst
       !!----------------------------------------------------------------------
       llfirst=.FALSE.
@@ -748,8 +748,8 @@ CONTAINS
 
       REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zdum
       TYPE(variable),  DIMENSION(4) :: sl_typvar
-      CHARACTER(LEN=255)            :: csuffixvarnam
-      CHARACTER(LEN=255)            :: cprefixlongnam
+      CHARACTER(LEN=2048)            :: csuffixvarnam
+      CHARACTER(LEN=2048)            :: cprefixlongnam
       !!----------------------------------------------------------------------
       IF ( cvarname(ksec) /= 'none' ) THEN
          csuffixvarnam = '_'//TRIM(cvarname(ksec))

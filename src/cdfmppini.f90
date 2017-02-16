@@ -39,10 +39,10 @@ PROGRAM cdfmppini
   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: nbondi, nbondj, icount
 
 
-  CHARACTER(LEN=80)                            :: cf_msk='m'
-  CHARACTER(LEN=80)                            :: cf_out='mppini.txt'
-  CHARACTER(LEN=80)                            :: cv_in
-  CHARACTER(LEN=80)                            :: cldum
+  CHARACTER(LEN=2048)                            :: cf_msk='m'
+  CHARACTER(LEN=2048)                            :: cf_out='mppini.txt'
+  CHARACTER(LEN=2048)                            :: cv_in
+  CHARACTER(LEN=2048)                            :: cldum
 
   LOGICAL                                      :: lwp=.true.
   !----------------------------------------------------------------------------

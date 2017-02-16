@@ -61,20 +61,20 @@ PROGRAM cdf2levitusgrid3d
 
    REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: d_out, d_n         ! output field and weighting field
 
-   CHARACTER(LEN=256)                           :: cdum               ! dummy char variable
-   CHARACTER(LEN=256)                           :: cf_in              ! input file name
-   CHARACTER(LEN=256)                           :: cf_out             ! output file name ( output)
-   CHARACTER(LEN=256)                           :: cf_levitus_mask='levitus_mask.nc'   ! Levitus mask filename
-   CHARACTER(LEN=256)                           :: cv_nam             ! variable name
-   CHARACTER(LEN=256)                           :: cldum              ! dummy string
-   CHARACTER(LEN=256)                           :: ctcalendar         ! time attributes
-   CHARACTER(LEN=256)                           :: cttitle            ! time attributes
-   CHARACTER(LEN=256)                           :: ctlong_name        ! time attributes
-   CHARACTER(LEN=256)                           :: ctaxis             ! time attributes
-   CHARACTER(LEN=256)                           :: ctunits            ! time attributes
-   CHARACTER(LEN=256)                           :: cttime_origin      ! time attributes
+   CHARACTER(LEN=2048)                           :: cdum               ! dummy char variable
+   CHARACTER(LEN=2048)                           :: cf_in              ! input file name
+   CHARACTER(LEN=2048)                           :: cf_out             ! output file name ( output)
+   CHARACTER(LEN=2048)                           :: cf_levitus_mask='levitus_mask.nc'   ! Levitus mask filename
+   CHARACTER(LEN=2048)                           :: cv_nam             ! variable name
+   CHARACTER(LEN=2048)                           :: cldum              ! dummy string
+   CHARACTER(LEN=2048)                           :: ctcalendar         ! time attributes
+   CHARACTER(LEN=2048)                           :: cttitle            ! time attributes
+   CHARACTER(LEN=2048)                           :: ctlong_name        ! time attributes
+   CHARACTER(LEN=2048)                           :: ctaxis             ! time attributes
+   CHARACTER(LEN=2048)                           :: ctunits            ! time attributes
+   CHARACTER(LEN=2048)                           :: cttime_origin      ! time attributes
 
-   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
+   CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
    CHARACTER(LEN=6)                              :: ctyp              ! 'fill' or 'smooth' for shapiro
 
    TYPE(variable), DIMENSION(:),   ALLOCATABLE  :: stypvar            ! input attributes

@@ -76,11 +76,11 @@ PROGRAM cdfbuoyflx
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: b_qsw , bh_net                    ! BF heat flux components
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsst, zsss, buoyancy_fl           ! Total buoyancy flux
 
-  CHARACTER(LEN=256)                        :: cf_tfil ,cf_flxfil, cf_rnfil      ! input file gridT, flx and runoff
-  CHARACTER(LEN=256)                        :: cf_out='buoyflx.nc'               ! output file
-  CHARACTER(LEN=256)                        :: cldum                             ! dummy character variable
-  CHARACTER(LEN=256)                        :: cv_sss                            ! Actual name for SSS
-  CHARACTER(LEN=256)                        :: cv_sst                            ! Actual name for SST
+  CHARACTER(LEN=2048)                        :: cf_tfil ,cf_flxfil, cf_rnfil      ! input file gridT, flx and runoff
+  CHARACTER(LEN=2048)                        :: cf_out='buoyflx.nc'               ! output file
+  CHARACTER(LEN=2048)                        :: cldum                             ! dummy character variable
+  CHARACTER(LEN=2048)                        :: cv_sss                            ! Actual name for SSS
+  CHARACTER(LEN=2048)                        :: cv_sst                            ! Actual name for SST
 
   TYPE(variable), ALLOCATABLE, DIMENSION(:) :: stypvar                           ! structure for attributes
 

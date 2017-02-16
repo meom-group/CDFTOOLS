@@ -62,8 +62,8 @@ PROGRAM cdfets
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dbuoy, dbu, dbv           ! Double precision
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dlda, dM2, dets           ! Double precision
 
-  CHARACTER(LEN=256)                          :: cf_tfil                   ! out file names
-  CHARACTER(LEN=256)                          :: cf_out = 'ets.nc'         ! in file names
+  CHARACTER(LEN=2048)                          :: cf_tfil                   ! out file names
+  CHARACTER(LEN=2048)                          :: cf_out = 'ets.nc'         ! in file names
 
   TYPE (variable), DIMENSION(2)               :: stypvar                   ! structure for attribute
 

@@ -60,15 +60,15 @@ PROGRAM cdfpsi
   REAL(KIND=8), POINTER, DIMENSION(:,:)     :: dpsi            ! point to dpsiu or dpsiv
   REAL(KIND=8), POINTER, DIMENSION(:,:)     :: dpsissh         ! point to dpsisshu or dpsisshv
 
-  CHARACTER(LEN=256)                        :: cf_ufil         ! gridU netcdf file name
-  CHARACTER(LEN=256)                        :: cf_vfil         ! gridV netcdf file name
-  CHARACTER(LEN=256)                        :: cf_tfil         ! gridT netcdf file name (-ssh option)
-  CHARACTER(LEN=256)                        :: cf_out='psi.nc' ! output file name
-  CHARACTER(LEN=256)                        :: cv_out='sobarstf' ! output variable name
-  CHARACTER(LEN=256)                        :: cv_outssh='sobarstfssh'    ! output variable name
-  CHARACTER(LEN=256)                        :: cv_outotal='sobarstftotal' ! output variable name
-  CHARACTER(LEN=256)                        :: cldum           ! dummy character variable
-  CHARACTER(LEN=256)                        :: cglobal         ! global attribute
+  CHARACTER(LEN=2048)                        :: cf_ufil         ! gridU netcdf file name
+  CHARACTER(LEN=2048)                        :: cf_vfil         ! gridV netcdf file name
+  CHARACTER(LEN=2048)                        :: cf_tfil         ! gridT netcdf file name (-ssh option)
+  CHARACTER(LEN=2048)                        :: cf_out='psi.nc' ! output file name
+  CHARACTER(LEN=2048)                        :: cv_out='sobarstf' ! output variable name
+  CHARACTER(LEN=2048)                        :: cv_outssh='sobarstfssh'    ! output variable name
+  CHARACTER(LEN=2048)                        :: cv_outotal='sobarstftotal' ! output variable name
+  CHARACTER(LEN=2048)                        :: cldum           ! dummy character variable
+  CHARACTER(LEN=2048)                        :: cglobal         ! global attribute
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: stypvar         ! structure for attributes
 

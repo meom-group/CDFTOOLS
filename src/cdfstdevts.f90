@@ -33,12 +33,12 @@ PROGRAM cdfstdevts
 
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dsdev             ! standard deviation
 
-  CHARACTER(LEN=256)                         :: cf_in             ! input mean file name
-  CHARACTER(LEN=256)                         :: cf_in2            ! input mean2 file name
-  CHARACTER(LEN=256)                         :: cf_out = 'stdevts.nc'! output file name
-  CHARACTER(LEN=256)                         :: cv_in, cv_in2     ! input variable names
-  CHARACTER(LEN=256)                         :: cldum             ! dummy character variable
-  CHARACTER(LEN=256), DIMENSION(2)           :: cv_namesi         ! input variable names
+  CHARACTER(LEN=2048)                         :: cf_in             ! input mean file name
+  CHARACTER(LEN=2048)                         :: cf_in2            ! input mean2 file name
+  CHARACTER(LEN=2048)                         :: cf_out = 'stdevts.nc'! output file name
+  CHARACTER(LEN=2048)                         :: cv_in, cv_in2     ! input variable names
+  CHARACTER(LEN=2048)                         :: cldum             ! dummy character variable
+  CHARACTER(LEN=2048), DIMENSION(2)           :: cv_namesi         ! input variable names
 
   TYPE(variable), DIMENSION(2)               :: stypvaro          ! output data structure
 

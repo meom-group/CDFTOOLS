@@ -70,12 +70,12 @@ PROGRAM cdfcensus
   REAL(KIND=8)                              :: dvoltotal, dvolpoint
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcensus, ddump
 
-  CHARACTER(LEN=256)                        :: cf_tfil
-  CHARACTER(LEN=256)                        :: cf_bimg='censusopa.bimg'
-  CHARACTER(LEN=256)                        :: cf_out='census.nc'
-  CHARACTER(LEN=256)                        :: cglobal
-  CHARACTER(LEN=256)                        :: cline1, cline2, cline3, cline4
-  CHARACTER(LEN=256)                        :: cldum
+  CHARACTER(LEN=2048)                        :: cf_tfil
+  CHARACTER(LEN=2048)                        :: cf_bimg='censusopa.bimg'
+  CHARACTER(LEN=2048)                        :: cf_out='census.nc'
+  CHARACTER(LEN=2048)                        :: cglobal
+  CHARACTER(LEN=2048)                        :: cline1, cline2, cline3, cline4
+  CHARACTER(LEN=2048)                        :: cldum
 
   TYPE(variable), DIMENSION(4)              :: stypvar
 

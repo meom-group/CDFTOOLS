@@ -35,10 +35,10 @@ PROGRAM cdf2matlab
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvarout, zvarwork   ! working arrays arrays
   REAL(KIND=4), DIMENSION(1)                :: tim
 
-  CHARACTER(LEN=256)                        :: cf_in               ! input file name
-  CHARACTER(LEN=256)                        :: cf_out='output.nc'  ! output file name
-  CHARACTER(LEN=256)                        :: cv_in               ! input variable  name
-  CHARACTER(LEN=256)                        :: cldum               !  dummy character variable
+  CHARACTER(LEN=2048)                        :: cf_in               ! input file name
+  CHARACTER(LEN=2048)                        :: cf_out='output.nc'  ! output file name
+  CHARACTER(LEN=2048)                        :: cv_in               ! input variable  name
+  CHARACTER(LEN=2048)                        :: cldum               !  dummy character variable
 
   TYPE(variable), DIMENSION(3)              :: stypvar             ! structure for attribute
   !!----------------------------------------------------------------------

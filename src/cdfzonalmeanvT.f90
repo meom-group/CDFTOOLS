@@ -50,12 +50,12 @@ PROGRAM cdfzonalmeanvT
    REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: darea, dl_tmp       ! npjglo
    REAL(KIND=8), DIMENSION (:,:,:,:), ALLOCATABLE :: dzovt, dzovs       ! 1xnpjglo x npk x npbasins
 
-   CHARACTER(LEN=256)                           :: cf_tfil, cf_sfil    ! input files names for T S
-   CHARACTER(LEN=256)                           :: cf_vfil             ! input files names for V
-   CHARACTER(LEN=256)                           :: cf_out='zonalmeanvt.nc' ! output file name
-   CHARACTER(LEN=256)                           :: cf_basins='none'    ! sub basin file name
-   CHARACTER(LEN=256)                           :: cldum               ! dummy character variable
-   CHARACTER(LEN=256)                           :: confcase            ! confcase name
+   CHARACTER(LEN=2048)                           :: cf_tfil, cf_sfil    ! input files names for T S
+   CHARACTER(LEN=2048)                           :: cf_vfil             ! input files names for V
+   CHARACTER(LEN=2048)                           :: cf_out='zonalmeanvt.nc' ! output file name
+   CHARACTER(LEN=2048)                           :: cf_basins='none'    ! sub basin file name
+   CHARACTER(LEN=2048)                           :: cldum               ! dummy character variable
+   CHARACTER(LEN=2048)                           :: confcase            ! confcase name
    CHARACTER(LEN=4  ), DIMENSION(5)             :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/) ! sub basin suffixes
 
    TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for input variables

@@ -53,18 +53,18 @@ PROGRAM cdfzonalsum
 
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzosum              ! jpbasins x npjglo x npk
 
-  CHARACTER(LEN=256)                            :: cf_in               ! input file name
-  CHARACTER(LEN=256)                            :: cf_out='zonalsum.nc' ! output file name
-  CHARACTER(LEN=256)                            :: cf_pdeg='zonalintdeg.nc' ! output file name
-  CHARACTER(LEN=256)                            :: cf_basins='none'    ! sub basin file name
+  CHARACTER(LEN=2048)                            :: cf_in               ! input file name
+  CHARACTER(LEN=2048)                            :: cf_out='zonalsum.nc' ! output file name
+  CHARACTER(LEN=2048)                            :: cf_pdeg='zonalintdeg.nc' ! output file name
+  CHARACTER(LEN=2048)                            :: cf_basins='none'    ! sub basin file name
   CHARACTER(LEN=10 )                            :: cv_e1, cv_e2        ! horizontal metrics variable names
   CHARACTER(LEN=10 )                            :: cv_phi              ! latitude variable name
   CHARACTER(LEN=10 )                            :: cv_msk              ! mask variable name
   CHARACTER(LEN=10 )                            :: cv_depi, cv_depo    ! depth variable name (input/output)
-  CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
-  CHARACTER(LEN=256)                            :: ctyp                ! variable type on C-grid
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! input variable names
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nameso           ! output variable names
+  CHARACTER(LEN=2048)                            :: cldum               ! dummy character variable
+  CHARACTER(LEN=2048)                            :: ctyp                ! variable type on C-grid
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_namesi           ! input variable names
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nameso           ! output variable names
   CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: cv_fix              ! name of the specified variable to process (-var option)
   CHARACTER(LEN=4  ), DIMENSION(5)              :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/) ! sub basin suffixes
 
@@ -396,7 +396,7 @@ CONTAINS
       !!----------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(in) :: cdum
 
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      CHARACTER(LEN=2048), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
       INTEGER  :: ji
       INTEGER  :: inchar,  i1=1
       !!----------------------------------------------------------------------

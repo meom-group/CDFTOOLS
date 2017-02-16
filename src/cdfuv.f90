@@ -45,13 +45,13 @@ PROGRAM cdfuv
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dupvp                ! Arrays for U'.V'
   REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
-  CHARACTER(LEN=256)                        :: cf_tfil              ! Temperature file for reference only
-  CHARACTER(LEN=256)                        :: cf_ufil              ! zonal velocity file
-  CHARACTER(LEN=256)                        :: cf_vfil              ! meridional velocity file
-  CHARACTER(LEN=256)                        :: cf_out='uv.nc'       ! output file
-  CHARACTER(LEN=256)                        :: config               ! configuration name
-  CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
-  CHARACTER(LEN=256)                        :: cl_name              ! temporary variable name
+  CHARACTER(LEN=2048)                        :: cf_tfil              ! Temperature file for reference only
+  CHARACTER(LEN=2048)                        :: cf_ufil              ! zonal velocity file
+  CHARACTER(LEN=2048)                        :: cf_vfil              ! meridional velocity file
+  CHARACTER(LEN=2048)                        :: cf_out='uv.nc'       ! output file
+  CHARACTER(LEN=2048)                        :: config               ! configuration name
+  CHARACTER(LEN=2048)                        :: ctag                 ! current tag to work with               
+  CHARACTER(LEN=2048)                        :: cl_name              ! temporary variable name
 
   TYPE (variable), DIMENSION(4)             :: stypvar              ! structure for attributes
 

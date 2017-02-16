@@ -72,20 +72,20 @@ PROGRAM cdfmoy
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab3              ! arrays for cumulated values
   REAL(KIND=8)                                  :: dtotal_time        ! to compute mean time
 
-  CHARACTER(LEN=256)                            :: cf_in              ! input file names
-  CHARACTER(LEN=256)                            :: cf_root='cdfmoy'       ! optional root of output files 
-  CHARACTER(LEN=256)                            :: cf_out  = 'cdfmoy.nc'  ! output file for average
-  CHARACTER(LEN=256)                            :: cf_out2 = 'cdfmoy2.nc' ! output file for squared average
-  CHARACTER(LEN=256)                            :: cf_out3 = 'cdfmoy3.nc' ! output file for squared average
-  CHARACTER(LEN=256)                            :: cf_out4 = 'cdfmoy_minmax.nc'  ! output file for min/max
-  CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
-  CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_list            ! list of input files
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam2            ! array of var2 name for output
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam3            ! array of var3 name for output
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nam4            ! array of var3 name for output
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep            ! array of possible depth name (or 3rd dimension)
+  CHARACTER(LEN=2048)                            :: cf_in              ! input file names
+  CHARACTER(LEN=2048)                            :: cf_root='cdfmoy'       ! optional root of output files 
+  CHARACTER(LEN=2048)                            :: cf_out  = 'cdfmoy.nc'  ! output file for average
+  CHARACTER(LEN=2048)                            :: cf_out2 = 'cdfmoy2.nc' ! output file for squared average
+  CHARACTER(LEN=2048)                            :: cf_out3 = 'cdfmoy3.nc' ! output file for squared average
+  CHARACTER(LEN=2048)                            :: cf_out4 = 'cdfmoy_minmax.nc'  ! output file for min/max
+  CHARACTER(LEN=2048)                            :: cv_dep             ! depth dimension name
+  CHARACTER(LEN=2048)                            :: cldum              ! dummy string argument
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cf_list            ! list of input files
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nam             ! array of var name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nam2            ! array of var2 name for output
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nam3            ! array of var3 name for output
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nam4            ! array of var3 name for output
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: clv_dep            ! array of possible depth name (or 3rd dimension)
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar2           ! attributes for square averaged values

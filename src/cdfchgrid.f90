@@ -47,15 +47,15 @@ PROGRAM cdfchgrid
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                    ! time counter of the file
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rdep                   ! depth of the file
 
-  CHARACTER(LEN=256)                            :: cf_out='cdfchgrid.nc'  ! output file name
-  CHARACTER(LEN=256)                            :: cf_in                  ! input file name
-  CHARACTER(LEN=256)                            :: cf_ref                 ! reference file for output file
-  CHARACTER(LEN=256)                            :: cv_in                  ! variable name
-  CHARACTER(LEN=256)                            :: cldum                  ! working string
-  CHARACTER(LEN=256)                            :: cv_dep                 ! true name of dep dimension
-  CHARACTER(LEN=256)                            :: cl_trf                 ! conversion key
-  CHARACTER(LEN=256)                            :: cglobal                ! Global attribute with command line
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names               ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_out='cdfchgrid.nc'  ! output file name
+  CHARACTER(LEN=2048)                            :: cf_in                  ! input file name
+  CHARACTER(LEN=2048)                            :: cf_ref                 ! reference file for output file
+  CHARACTER(LEN=2048)                            :: cv_in                  ! variable name
+  CHARACTER(LEN=2048)                            :: cldum                  ! working string
+  CHARACTER(LEN=2048)                            :: cv_dep                 ! true name of dep dimension
+  CHARACTER(LEN=2048)                            :: cl_trf                 ! conversion key
+  CHARACTER(LEN=2048)                            :: cglobal                ! Global attribute with command line
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names               ! array of var name
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar                ! structure for variable attribute
   LOGICAL                                       :: lnc4=.FALSE.           ! flag for nc4 output with chinking and deflation

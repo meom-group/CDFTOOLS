@@ -62,9 +62,9 @@ PROGRAM cdfisopsi
   REAL(KIND=4)                                :: ztmean, zsmean  ! mean temperature and salinity on isopycnal
   REAL(KIND=4)                                :: hmean, pmean  ! mean isopycnal depth and mean pressure
 
-  CHARACTER(LEN=256) :: cf_tfil                              ! input gridT file
-  CHARACTER(LEN=256) :: cf_out='isopsi.nc'                   ! output file name
-  CHARACTER(LEN=256) :: cldum                                ! dummy character variable for reading
+  CHARACTER(LEN=2048) :: cf_tfil                              ! input gridT file
+  CHARACTER(LEN=2048) :: cf_out='isopsi.nc'                   ! output file name
+  CHARACTER(LEN=2048) :: cldum                                ! dummy character variable for reading
 
   TYPE(variable) , DIMENSION(jp_vars) :: stypvar         ! structure for attributes
   !!----------------------------------------------------------------------

@@ -38,12 +38,12 @@ PROGRAM cdfbottom
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zmask                    ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                      ! time counter of the file
 
-  CHARACTER(LEN=256)                         :: cf_out='bottom.nc'       ! output file name
-  CHARACTER(LEN=256)                         :: cf_in, cldum             ! working strings
-  CHARACTER(LEN=256)                         :: cv_dep                   ! true name of dep dimension
+  CHARACTER(LEN=2048)                         :: cf_out='bottom.nc'       ! output file name
+  CHARACTER(LEN=2048)                         :: cf_in, cldum             ! working strings
+  CHARACTER(LEN=2048)                         :: cv_dep                   ! true name of dep dimension
   CHARACTER(LEN=5)                           :: cv_msk=' '               ! name of the mask variable
   CHARACTER(LEN=1)                           :: ctype=' '                ! point type (T U V ..)
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names              ! array of var name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names              ! array of var name
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar                  ! structure for variable attribute
   !!--------------------------------------------------------------------------------------------------------------

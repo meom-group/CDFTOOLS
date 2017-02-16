@@ -53,11 +53,11 @@ PROGRAM cdflinreg
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE     :: dmean, dmean2, dmean3     ! 
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE     :: dareg, dbreg, dpear       ! slope, origin ordinate, pearson coef
 
-  CHARACTER(LEN=256)                            :: cf_in                     ! file names
-  CHARACTER(LEN=256)                            :: cf_out='linreg.nc'        ! file names
-  CHARACTER(LEN=256)                            :: cv_dep                    ! depth variable name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namesi                 ! array of var name
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_nameso                 ! array of var22 name for output
+  CHARACTER(LEN=2048)                            :: cf_in                     ! file names
+  CHARACTER(LEN=2048)                            :: cf_out='linreg.nc'        ! file names
+  CHARACTER(LEN=2048)                            :: cv_dep                    ! depth variable name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_namesi                 ! array of var name
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_nameso                 ! array of var22 name for output
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE    :: stypvari, stypvaro        ! data structure
 

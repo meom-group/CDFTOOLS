@@ -36,8 +36,8 @@ PROGRAM cdfbci
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: bci
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rdtdx, rdtdy
 
-  CHARACTER(LEN=256)                        :: cf_in
-  CHARACTER(LEN=256)                        :: cf_out='bci.nc'
+  CHARACTER(LEN=2048)                        :: cf_in
+  CHARACTER(LEN=2048)                        :: cf_out='bci.nc'
 
   TYPE (variable), DIMENSION(5)             :: stypvar         !: structure for attibutes
   !!----------------------------------------------------------------------

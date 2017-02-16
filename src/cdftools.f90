@@ -66,8 +66,8 @@ CONTAINS
 
     REAL(KIND=4)                              :: zglamfound, zglamin, zglamax, zgphmin, zgphmax
 
-    CHARACTER(LEN=256)                        :: cl_type='F'
-    CHARACTER(LEN=256)                        :: clcoo
+    CHARACTER(LEN=2048)                        :: cl_type='F'
+    CHARACTER(LEN=2048)                        :: clcoo
 
     LOGICAL                                   :: ll_again, ll_bnd, ll_verbose=.false.
     !!--------------------------------------------------------------------------

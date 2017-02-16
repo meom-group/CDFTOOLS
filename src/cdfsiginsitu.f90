@@ -38,11 +38,11 @@ PROGRAM cdfsiginsitu
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdept              ! depth of T points
 
-  CHARACTER(LEN=256)                        :: cf_tfil             ! input filename
-  CHARACTER(LEN=256)                        :: cf_out='siginsitu.nc' ! output file name
-  CHARACTER(LEN=256)                        :: cldum              ! dummy characte variable variable
-  CHARACTER(LEN=256)                        :: cv_sal             ! salinity name in netcdf
-  CHARACTER(LEN=256)                        :: cv_tem             ! temperature name in netcdf
+  CHARACTER(LEN=2048)                        :: cf_tfil             ! input filename
+  CHARACTER(LEN=2048)                        :: cf_out='siginsitu.nc' ! output file name
+  CHARACTER(LEN=2048)                        :: cldum              ! dummy characte variable variable
+  CHARACTER(LEN=2048)                        :: cv_sal             ! salinity name in netcdf
+  CHARACTER(LEN=2048)                        :: cv_tem             ! temperature name in netcdf
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
   LOGICAL                                   :: lnc4 = .FALSE.     ! flag for missing files

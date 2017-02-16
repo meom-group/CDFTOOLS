@@ -29,11 +29,11 @@ PROGRAM cdfwhereij
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glam, gphi     ! longitude, latitude
 
-  CHARACTER(LEN=256)                        :: cv_lam         ! longitude name
-  CHARACTER(LEN=256)                        :: cv_phi         ! latitude name
-  CHARACTER(LEN=256)                        :: ctype='T'      ! type of point on C-grid
-  CHARACTER(LEN=256)                        :: cldum          ! dummmy string
-  CHARACTER(LEN=256)                        :: clcoo          ! dummy character variable
+  CHARACTER(LEN=2048)                        :: cv_lam         ! longitude name
+  CHARACTER(LEN=2048)                        :: cv_phi         ! latitude name
+  CHARACTER(LEN=2048)                        :: ctype='T'      ! type of point on C-grid
+  CHARACTER(LEN=2048)                        :: cldum          ! dummmy string
+  CHARACTER(LEN=2048)                        :: clcoo          ! dummy character variable
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   clcoo = cn_fcoo

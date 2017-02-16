@@ -47,16 +47,16 @@ PROGRAM cdfisf_forcing
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de12t
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dl_fwfisf2d, dl_fwfispat
 
-  CHARACTER(LEN=256)                            :: cf_fill            ! input file names
-  CHARACTER(LEN=256)                            :: cf_isflist         ! input file names
-  CHARACTER(LEN=256)                            :: cf_out='isfforcing.nc' ! output file for average
-  CHARACTER(LEN=256)                            :: cf_pat='isfpattern.nc' ! pattern file
-  CHARACTER(LEN=256)                            :: cf_pool='isfpool.nc'   ! pools mask file
-  CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
-  CHARACTER(LEN=256)                            :: cv_pat='sowflisf'  ! pattern variable name
-  CHARACTER(LEN=256)                            :: cv_pool='isfpoolmask'! pattern variable name
-  CHARACTER(LEN=256)                            :: cv_fill            ! isf index variable in cf_fill
-  CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
+  CHARACTER(LEN=2048)                            :: cf_fill            ! input file names
+  CHARACTER(LEN=2048)                            :: cf_isflist         ! input file names
+  CHARACTER(LEN=2048)                            :: cf_out='isfforcing.nc' ! output file for average
+  CHARACTER(LEN=2048)                            :: cf_pat='isfpattern.nc' ! pattern file
+  CHARACTER(LEN=2048)                            :: cf_pool='isfpool.nc'   ! pools mask file
+  CHARACTER(LEN=2048)                            :: cv_dep             ! depth dimension name
+  CHARACTER(LEN=2048)                            :: cv_pat='sowflisf'  ! pattern variable name
+  CHARACTER(LEN=2048)                            :: cv_pool='isfpoolmask'! pattern variable name
+  CHARACTER(LEN=2048)                            :: cv_fill            ! isf index variable in cf_fill
+  CHARACTER(LEN=2048)                            :: cdum               ! dummy string argument
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 

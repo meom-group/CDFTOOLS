@@ -62,13 +62,13 @@ PROGRAM cdfmeshmask
 
   LOGICAL :: lchk=.FALSE.
 
-  CHARACTER(LEN=80) :: cdum
-  CHARACTER(LEN=80) :: cf_nam
-  CHARACTER(LEN=80) :: cf_bat
-  CHARACTER(LEN=80) :: cf_coo
-  CHARACTER(LEN=80) :: cf_zgr = 'cdf_mesh_zgr.nc'
-  CHARACTER(LEN=80) :: cf_hgr = 'cdf_mesh_hgr.nc'
-  CHARACTER(LEN=80) :: cf_msk = 'cdf_mask.nc'
+  CHARACTER(LEN=2048) :: cdum
+  CHARACTER(LEN=2048) :: cf_nam
+  CHARACTER(LEN=2048) :: cf_bat
+  CHARACTER(LEN=2048) :: cf_coo
+  CHARACTER(LEN=2048) :: cf_zgr = 'cdf_mesh_zgr.nc'
+  CHARACTER(LEN=2048) :: cf_hgr = 'cdf_mesh_hgr.nc'
+  CHARACTER(LEN=2048) :: cf_msk = 'cdf_mask.nc'
 
   INTEGER ::    jpk     , jpkm1
   INTEGER  ::   nn_bathy        !: = 0/1 ,compute/read the bathymetry file

@@ -55,10 +55,10 @@ PROGRAM cdfheatc
 
   TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar          ! structure for attributes
 
-  CHARACTER(LEN=256)                        :: cf_tfil             ! input gridT file
-  CHARACTER(LEN=256)                        :: cf_out='heatc.nc'   ! netcdf output file
-  CHARACTER(LEN=256)                        :: cldum               ! dummy character variable
-  CHARACTER(LEN=256)                        :: cv_msk='tmask'      ! variable for masking
+  CHARACTER(LEN=2048)                        :: cf_tfil             ! input gridT file
+  CHARACTER(LEN=2048)                        :: cf_out='heatc.nc'   ! netcdf output file
+  CHARACTER(LEN=2048)                        :: cldum               ! dummy character variable
+  CHARACTER(LEN=2048)                        :: cv_msk='tmask'      ! variable for masking
 
   LOGICAL                                   :: lfull=.FALSE.       ! flag for full step computation
   LOGICAL                                   :: lchk                ! flag for missing files

@@ -73,12 +73,12 @@ PROGRAM cdfsmooth
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar           ! struture for attribute
 
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
-  CHARACTER(LEN=256)                            :: cf_in, cf_out     ! file names
-  CHARACTER(LEN=256)                            :: cv_dep, cv_tim    ! variable name for depth and time
-  CHARACTER(LEN=256)                            :: ctyp              ! filter type
-  CHARACTER(LEN=256)                            :: cldum             ! dummy character variable
-  CHARACTER(LEN=256)                            :: clklist           ! ciphered k-list of level
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
+  CHARACTER(LEN=2048)                            :: cf_in, cf_out     ! file names
+  CHARACTER(LEN=2048)                            :: cv_dep, cv_tim    ! variable name for depth and time
+  CHARACTER(LEN=2048)                            :: ctyp              ! filter type
+  CHARACTER(LEN=2048)                            :: cldum             ! dummy character variable
+  CHARACTER(LEN=2048)                            :: clklist           ! ciphered k-list of level
  
   LOGICAL                                       :: lnc4 = .false.    ! flag for netcdf4 output with chinking and deflation
 

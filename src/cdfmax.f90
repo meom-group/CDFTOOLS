@@ -39,10 +39,10 @@ PROGRAM cdfmax
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE     :: h                    ! depth 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE     :: v2d, rlon, rlat      ! data array, longitude, latitude
 
-  CHARACTER(LEN=256)                            :: cf_in                ! input file name
-  CHARACTER(LEN=256)                            :: cv_in='none'         ! current variable name
-  CHARACTER(LEN=256)                            :: cldum                ! dummy char variable
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names             ! list of variables in file
+  CHARACTER(LEN=2048)                            :: cf_in                ! input file name
+  CHARACTER(LEN=2048)                            :: cv_in='none'         ! current variable name
+  CHARACTER(LEN=2048)                            :: cldum                ! dummy char variable
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names             ! list of variables in file
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar              ! dummy dtructure to read var names
 

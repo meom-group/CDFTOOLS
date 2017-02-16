@@ -48,11 +48,11 @@ PROGRAM cdfmaskdmp
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: zdep               ! deptht
 
-  CHARACTER(LEN=256)                        :: cf_tfil            ! input filename for temperature
-  CHARACTER(LEN=256)                        :: cf_sfil            ! input filename for salinity
-  CHARACTER(LEN=256)                        :: cf_out='mask_dmp.nc' ! output file name
-  CHARACTER(LEN=256)                        :: cldum              ! dummy string
-  CHARACTER(LEN=256)                        :: cglobal            ! Global attribute with command name
+  CHARACTER(LEN=2048)                        :: cf_tfil            ! input filename for temperature
+  CHARACTER(LEN=2048)                        :: cf_sfil            ! input filename for salinity
+  CHARACTER(LEN=2048)                        :: cf_out='mask_dmp.nc' ! output file name
+  CHARACTER(LEN=2048)                        :: cldum              ! dummy string
+  CHARACTER(LEN=2048)                        :: cglobal            ! Global attribute with command name
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
   !!----------------------------------------------------------------------

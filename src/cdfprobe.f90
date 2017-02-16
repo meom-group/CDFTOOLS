@@ -20,7 +20,7 @@ PROGRAM cdfprobe
 
   INTEGER(KIND=4)    :: narg, iargc            ! browse line
   INTEGER(KIND=4)    :: iilook, ijlook, ilevel ! point to look at
-  CHARACTER(LEN=256) :: cf_in, cldum , cv_in   ! file name  variable name
+  CHARACTER(LEN=2048) :: cf_in, cldum , cv_in   ! file name  variable name
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 

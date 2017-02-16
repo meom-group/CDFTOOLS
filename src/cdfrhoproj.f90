@@ -49,15 +49,15 @@ PROGRAM cdfrhoproj
   REAL(KIND=4)                                  :: zspvali=0.
   REAL(KIND=4)                                  :: sigmin, sigstp
 
-  CHARACTER(LEN=256)                            :: cf_rholev='rho_lev'
-  CHARACTER(LEN=256)                            :: cf_dta
-  CHARACTER(LEN=256)                            :: cf_rhofil
-  CHARACTER(LEN=256)                            :: cf_out
-  CHARACTER(LEN=256)                            :: cv_in
-  CHARACTER(LEN=256)                            :: cv_sig
-  CHARACTER(LEN=256)                            :: ctype='T'
-  CHARACTER(LEN=256)                            :: cldum
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names     ! temporary arry for variable name in file
+  CHARACTER(LEN=2048)                            :: cf_rholev='rho_lev'
+  CHARACTER(LEN=2048)                            :: cf_dta
+  CHARACTER(LEN=2048)                            :: cf_rhofil
+  CHARACTER(LEN=2048)                            :: cf_out
+  CHARACTER(LEN=2048)                            :: cv_in
+  CHARACTER(LEN=2048)                            :: cv_sig
+  CHARACTER(LEN=2048)                            :: ctype='T'
+  CHARACTER(LEN=2048)                            :: cldum
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names     ! temporary arry for variable name in file
  
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar      ! structure for attributes
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypzvar     ! structure for attributes
@@ -412,7 +412,7 @@ PROGRAM cdfrhoproj
     !!----------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(in) :: cdum
 
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      CHARACTER(LEN=2048), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
       INTEGER  :: ji
       INTEGER  :: inchar,  i1=1
       !!----------------------------------------------------------------------

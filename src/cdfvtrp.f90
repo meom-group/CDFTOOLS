@@ -46,12 +46,12 @@ PROGRAM cdfvtrp
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar              ! structure for attribute
 
-  CHARACTER(LEN=256)                         :: cf_ufil              ! input U- file
-  CHARACTER(LEN=256)                         :: cf_vfil              ! input V- file
-  CHARACTER(LEN=256)                         :: cf_out='trp.nc'      ! output file
-  CHARACTER(LEN=256)                         :: cv_soastrp='soastrp' ! Along Slope TRansPort
-  CHARACTER(LEN=256)                         :: cv_socstrp='socstrp' ! Cross Slope TRansPort
-  CHARACTER(LEN=256)                         :: cldum                ! dummy character variable
+  CHARACTER(LEN=2048)                         :: cf_ufil              ! input U- file
+  CHARACTER(LEN=2048)                         :: cf_vfil              ! input V- file
+  CHARACTER(LEN=2048)                         :: cf_out='trp.nc'      ! output file
+  CHARACTER(LEN=2048)                         :: cv_soastrp='soastrp' ! Along Slope TRansPort
+  CHARACTER(LEN=2048)                         :: cv_socstrp='socstrp' ! Cross Slope TRansPort
+  CHARACTER(LEN=2048)                         :: cldum                ! dummy character variable
 
   LOGICAL                                    :: lfull  = .FALSE.     ! flag for full step
   LOGICAL                                    :: lbathy = .FALSE.     ! flag for slope current

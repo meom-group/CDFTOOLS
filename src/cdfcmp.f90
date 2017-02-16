@@ -33,10 +33,10 @@ PROGRAM cdfcmp
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                   ! arrays of var id's
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: var1, var2            ! variables to compare
   REAL(KIND=4)                                  :: dvar                  ! relative difference
-  CHARACTER(LEN=256)                            :: cf1_in,cf2_in         ! input file name
-  CHARACTER(LEN=256)                            :: cv_in                 ! variable name
-  CHARACTER(LEN=256)                            :: cldum                 ! working string
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names              ! array of var name
+  CHARACTER(LEN=2048)                            :: cf1_in,cf2_in         ! input file name
+  CHARACTER(LEN=2048)                            :: cv_in                 ! variable name
+  CHARACTER(LEN=2048)                            :: cldum                 ! working string
+  CHARACTER(LEN=2048), DIMENSION(:), ALLOCATABLE :: cv_names              ! array of var name
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar               ! Type variable is defined in cdfio.
 
   !!--------------------------------------------------------------------------------------------------------------

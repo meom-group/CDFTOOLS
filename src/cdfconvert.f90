@@ -54,20 +54,20 @@ PROGRAM cdfconvert
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: zdep            ! depth
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim             ! time counter
 
-  CHARACTER(LEN=256)                         :: cf_ufil         ! output gridU file
-  CHARACTER(LEN=256)                         :: cf_vfil         ! output gridV file
-  CHARACTER(LEN=256)                         :: cf_tfil         ! output gridT file
-  CHARACTER(LEN=256)                         :: cf_bsfil        ! output BSF file
-  CHARACTER(LEN=256)                         :: cf_dimgu        ! input dimg U file
-  CHARACTER(LEN=256)                         :: cf_dimgv        ! input dimg V file
-  CHARACTER(LEN=256)                         :: cf_dimgt        ! input dimg T file
-  CHARACTER(LEN=256)                         :: cf_dimgs        ! input dimg S file
-  CHARACTER(LEN=256)                         :: cf_dimg2d       ! input dimg 2D file
-  CHARACTER(LEN=256)                         :: cf_dimguu       ! input dimg U2 file
-  CHARACTER(LEN=256)                         :: cf_dimgvv       ! input dimg V2 file
-  CHARACTER(LEN=256)                         :: cf_dimgssh      ! input dimg SSH file
-  CHARACTER(LEN=256)                         :: ctag            ! time tag
-  CHARACTER(LEN=256)                         :: confcase        ! config-case
+  CHARACTER(LEN=2048)                         :: cf_ufil         ! output gridU file
+  CHARACTER(LEN=2048)                         :: cf_vfil         ! output gridV file
+  CHARACTER(LEN=2048)                         :: cf_tfil         ! output gridT file
+  CHARACTER(LEN=2048)                         :: cf_bsfil        ! output BSF file
+  CHARACTER(LEN=2048)                         :: cf_dimgu        ! input dimg U file
+  CHARACTER(LEN=2048)                         :: cf_dimgv        ! input dimg V file
+  CHARACTER(LEN=2048)                         :: cf_dimgt        ! input dimg T file
+  CHARACTER(LEN=2048)                         :: cf_dimgs        ! input dimg S file
+  CHARACTER(LEN=2048)                         :: cf_dimg2d       ! input dimg 2D file
+  CHARACTER(LEN=2048)                         :: cf_dimguu       ! input dimg U2 file
+  CHARACTER(LEN=2048)                         :: cf_dimgvv       ! input dimg V2 file
+  CHARACTER(LEN=2048)                         :: cf_dimgssh      ! input dimg SSH file
+  CHARACTER(LEN=2048)                         :: ctag            ! time tag
+  CHARACTER(LEN=2048)                         :: confcase        ! config-case
   CHARACTER(LEN=80 )                         :: cheader         ! comment in header of dimg file
   CHARACTER(LEN=4  )                         :: cver            ! dimg version
 
@@ -590,7 +590,7 @@ CONTAINS
     INTEGER(KIND=4)              :: inum = 100
 
     CHARACTER(LEN=4)             :: clver
-    CHARACTER(LEN=80)            :: clheader
+    CHARACTER(LEN=2048)            :: clheader
     !!----------------------------------------------------------------------
 
 !

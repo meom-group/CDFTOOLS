@@ -43,9 +43,9 @@ PROGRAM cdfzisot
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rzisotup       ! depth of the isotherm above
                                                                  ! in case of inversion
 
-  CHARACTER(LEN=256)                           :: cf_tfil        ! input T file
-  CHARACTER(LEN=256)                           :: cf_out='zisot.nc'! defaults output file name
-  CHARACTER(LEN=256)                           :: cdum           ! dummy value
+  CHARACTER(LEN=2048)                           :: cf_tfil        ! input T file
+  CHARACTER(LEN=2048)                           :: cf_out='zisot.nc'! defaults output file name
+  CHARACTER(LEN=2048)                           :: cdum           ! dummy value
 
   TYPE(variable), DIMENSION(pnvarout)          :: stypvar        ! structure for output var. attributes
   !!----------------------------------------------------------------------

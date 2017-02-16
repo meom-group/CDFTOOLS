@@ -12,132 +12,132 @@ MODULE modCdfNames
   PUBLIC
 
   ! Dimension name : cn_. [ 1 letter only ]
-  CHARACTER(LEN=256) :: cn_x='x'               !: longitude, I dimension
-  CHARACTER(LEN=256) :: cn_y='y'               !: latitude,  J dimension
-  CHARACTER(LEN=256) :: cn_z='depth'           !: depth, z dimension
-  CHARACTER(LEN=256) :: cn_t='time_counter'    !: time dimension
+  CHARACTER(LEN=2048) :: cn_x='x'               !: longitude, I dimension
+  CHARACTER(LEN=2048) :: cn_y='y'               !: latitude,  J dimension
+  CHARACTER(LEN=2048) :: cn_z='depth'           !: depth, z dimension
+  CHARACTER(LEN=2048) :: cn_t='time_counter'    !: time dimension
 
   ! Dimension variable
-  CHARACTER(LEN=256) :: cn_vlon2d  = 'nav_lon'      !: longitude
-  CHARACTER(LEN=256) :: cn_vlat2d  = 'nav_lat'      !: latitude
-  CHARACTER(LEN=256) :: cn_vdeptht = 'deptht'       !: depth
-  CHARACTER(LEN=256) :: cn_vdepthu = 'depthu'       !: depth
-  CHARACTER(LEN=256) :: cn_vdepthv = 'depthv'       !: depth
-  CHARACTER(LEN=256) :: cn_vdepthw = 'depthw'       !: depth
-  CHARACTER(LEN=256) :: cn_vtimec  = 'time_counter' !: time 
-  CHARACTER(LEN=256) :: cn_vlon1d  = 'lon'          !: longitude 1d
-  CHARACTER(LEN=256) :: cn_vlat1d  = 'lat'          !: latitude  1d
+  CHARACTER(LEN=2048) :: cn_vlon2d  = 'nav_lon'      !: longitude
+  CHARACTER(LEN=2048) :: cn_vlat2d  = 'nav_lat'      !: latitude
+  CHARACTER(LEN=2048) :: cn_vdeptht = 'deptht'       !: depth
+  CHARACTER(LEN=2048) :: cn_vdepthu = 'depthu'       !: depth
+  CHARACTER(LEN=2048) :: cn_vdepthv = 'depthv'       !: depth
+  CHARACTER(LEN=2048) :: cn_vdepthw = 'depthw'       !: depth
+  CHARACTER(LEN=2048) :: cn_vtimec  = 'time_counter' !: time 
+  CHARACTER(LEN=2048) :: cn_vlon1d  = 'lon'          !: longitude 1d
+  CHARACTER(LEN=2048) :: cn_vlat1d  = 'lat'          !: latitude  1d
 
   ! Attribute of a variable
-  CHARACTER(LEN=256) :: cn_missing_value = '_FillValue' !: missing value (to be replaced bby _Fill_Value)
+  CHARACTER(LEN=2048) :: cn_missing_value = '_FillValue' !: missing value (to be replaced bby _Fill_Value)
 
   ! Metrics
-  CHARACTER(LEN=256) :: cn_ve1t='e1t', cn_ve2t='e2t'   !: e.t
-  CHARACTER(LEN=256) :: cn_ve1u='e1u', cn_ve2u='e2u'   !: e.u
-  CHARACTER(LEN=256) :: cn_ve1v='e1v', cn_ve2v='e2v'   !: e.v
-  CHARACTER(LEN=256) :: cn_ve1f='e1f', cn_ve2f='e2f'   !: e.v
-  CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3.
-  CHARACTER(LEN=256) :: cn_vff='ff'
+  CHARACTER(LEN=2048) :: cn_ve1t='e1t', cn_ve2t='e2t'   !: e.t
+  CHARACTER(LEN=2048) :: cn_ve1u='e1u', cn_ve2u='e2u'   !: e.u
+  CHARACTER(LEN=2048) :: cn_ve1v='e1v', cn_ve2v='e2v'   !: e.v
+  CHARACTER(LEN=2048) :: cn_ve1f='e1f', cn_ve2f='e2f'   !: e.v
+  CHARACTER(LEN=2048) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3.
+  CHARACTER(LEN=2048) :: cn_vff='ff'
 
-  CHARACTER(LEN=256) :: cn_gdept='gdept', cn_gdepw='gdepw'   !: 1d dep variable
-  CHARACTER(LEN=256) :: cn_hdept='hdept', cn_hdepw='hdepw'   !: 2d dep variable
+  CHARACTER(LEN=2048) :: cn_gdept='gdept', cn_gdepw='gdepw'   !: 1d dep variable
+  CHARACTER(LEN=2048) :: cn_hdept='hdept', cn_hdepw='hdepw'   !: 2d dep variable
 
-  CHARACTER(LEN=256) :: cn_glamt='glamt', cn_gphit='gphit'   !:  glam gphi
-  CHARACTER(LEN=256) :: cn_glamu='glamu', cn_gphiu='gphiu'   !:  glam gphi
-  CHARACTER(LEN=256) :: cn_glamv='glamv', cn_gphiv='gphiv'   !:  glam gphi
-  CHARACTER(LEN=256) :: cn_glamf='glamf', cn_gphif='gphif'   !:  glam gphi
+  CHARACTER(LEN=2048) :: cn_glamt='glamt', cn_gphit='gphit'   !:  glam gphi
+  CHARACTER(LEN=2048) :: cn_glamu='glamu', cn_gphiu='gphiu'   !:  glam gphi
+  CHARACTER(LEN=2048) :: cn_glamv='glamv', cn_gphiv='gphiv'   !:  glam gphi
+  CHARACTER(LEN=2048) :: cn_glamf='glamf', cn_gphif='gphif'   !:  glam gphi
 
   ! Mask variables
-  CHARACTER(LEN=256) :: cn_tmask='tmask', cn_umask='umask'   !:  tmask, umask
-  CHARACTER(LEN=256) :: cn_vmask='vmask', cn_fmask='fmask'   !:  tmask, umask
+  CHARACTER(LEN=2048) :: cn_tmask='tmask', cn_umask='umask'   !:  tmask, umask
+  CHARACTER(LEN=2048) :: cn_vmask='vmask', cn_fmask='fmask'   !:  tmask, umask
 
   ! Generic mesh-mask file names  cn_f...
-  CHARACTER(LEN=256) :: cn_fzgr='mesh_zgr.nc'
-  CHARACTER(LEN=256) :: cn_fhgr='mesh_hgr.nc'
-  CHARACTER(LEN=256) :: cn_fmsk='mask.nc'
-  CHARACTER(LEN=256) :: cn_fcoo='coordinates.nc'
-  CHARACTER(LEN=256) :: cn_fbasins='new_maskglo.nc'
+  CHARACTER(LEN=2048) :: cn_fzgr='mesh_zgr.nc'
+  CHARACTER(LEN=2048) :: cn_fhgr='mesh_hgr.nc'
+  CHARACTER(LEN=2048) :: cn_fmsk='mask.nc'
+  CHARACTER(LEN=2048) :: cn_fcoo='coordinates.nc'
+  CHARACTER(LEN=2048) :: cn_fbasins='new_maskglo.nc'
 
   ! Variable name  : cn_v... [ starts with cn_v ]
-  CHARACTER(LEN=256) :: cn_votemper='votemper' !: temperature
-  CHARACTER(LEN=256) :: cn_vosaline='vosaline' !: salinity
-  CHARACTER(LEN=256) :: cn_vozocrtx='vozocrtx' !: zonal velocity
-  CHARACTER(LEN=256) :: cn_vomecrty='vomecrty' !: meridional velocity
-  CHARACTER(LEN=256) :: cn_vomeeivv='vomeeivv' !: meridional Eddy Induced Velocity
-  CHARACTER(LEN=256) :: cn_vovecrtz='vovecrtz' !: vertical velocity
-  CHARACTER(LEN=256) :: cn_sossheig='sossheig' !: Sea Surface Height
-  CHARACTER(LEN=256) :: cn_somxl010='somxl010' !: Mixed layer depth (density criterium)
-  CHARACTER(LEN=256) :: cn_somxlt02='somxlt02' !: Mixed layer depth (temperature criterium)
-  CHARACTER(LEN=256) :: cn_sozotaux='sozotaux' !: Zonal wind stress
+  CHARACTER(LEN=2048) :: cn_votemper='votemper' !: temperature
+  CHARACTER(LEN=2048) :: cn_vosaline='vosaline' !: salinity
+  CHARACTER(LEN=2048) :: cn_vozocrtx='vozocrtx' !: zonal velocity
+  CHARACTER(LEN=2048) :: cn_vomecrty='vomecrty' !: meridional velocity
+  CHARACTER(LEN=2048) :: cn_vomeeivv='vomeeivv' !: meridional Eddy Induced Velocity
+  CHARACTER(LEN=2048) :: cn_vovecrtz='vovecrtz' !: vertical velocity
+  CHARACTER(LEN=2048) :: cn_sossheig='sossheig' !: Sea Surface Height
+  CHARACTER(LEN=2048) :: cn_somxl010='somxl010' !: Mixed layer depth (density criterium)
+  CHARACTER(LEN=2048) :: cn_somxlt02='somxlt02' !: Mixed layer depth (temperature criterium)
+  CHARACTER(LEN=2048) :: cn_sozotaux='sozotaux' !: Zonal wind stress
 
-  CHARACTER(LEN=256) :: cn_sohefldo='sohefldo' !: Total Heat FLux
-  CHARACTER(LEN=256) :: cn_solhflup='solhflup' !: Latent Heat FLux 
-  CHARACTER(LEN=256) :: cn_sosbhfup='sosbhfup' !: Sensible heat Flux
-  CHARACTER(LEN=256) :: cn_solwfldo='solwfldo' !: Long Wave downward Heat Flux
-  CHARACTER(LEN=256) :: cn_soshfldo='soshfldo' !: Solar Heat FLux
+  CHARACTER(LEN=2048) :: cn_sohefldo='sohefldo' !: Total Heat FLux
+  CHARACTER(LEN=2048) :: cn_solhflup='solhflup' !: Latent Heat FLux 
+  CHARACTER(LEN=2048) :: cn_sosbhfup='sosbhfup' !: Sensible heat Flux
+  CHARACTER(LEN=2048) :: cn_solwfldo='solwfldo' !: Long Wave downward Heat Flux
+  CHARACTER(LEN=2048) :: cn_soshfldo='soshfldo' !: Solar Heat FLux
 
-  CHARACTER(LEN=256) :: cn_sowaflup='sowaflup' !: Fresh Water Flux
-  CHARACTER(LEN=256) :: cn_sowaflcd='sowaflcd' !: Concentration Dilution water flux
-  CHARACTER(LEN=256) :: cn_sowafldp='sowafldp' !: SSS damping water Flux
-  CHARACTER(LEN=256) :: cn_iowaflup='iowaflup' !: Ice Ocean Water flux ( + = freezing, - = melting)
-  CHARACTER(LEN=256) :: cn_soicecov='soicecov' !: Ice cover
+  CHARACTER(LEN=2048) :: cn_sowaflup='sowaflup' !: Fresh Water Flux
+  CHARACTER(LEN=2048) :: cn_sowaflcd='sowaflcd' !: Concentration Dilution water flux
+  CHARACTER(LEN=2048) :: cn_sowafldp='sowafldp' !: SSS damping water Flux
+  CHARACTER(LEN=2048) :: cn_iowaflup='iowaflup' !: Ice Ocean Water flux ( + = freezing, - = melting)
+  CHARACTER(LEN=2048) :: cn_soicecov='soicecov' !: Ice cover
 
-  CHARACTER(LEN=256) :: cn_iicbmass='berg_mass'!: Mass of Icebergs (kg/m2)
-  CHARACTER(LEN=256) :: cn_iicbmelt='berg_melt'!: Melting rate of icebergs (kg/m2/s)
+  CHARACTER(LEN=2048) :: cn_iicbmass='berg_mass'!: Mass of Icebergs (kg/m2)
+  CHARACTER(LEN=2048) :: cn_iicbmelt='berg_melt'!: Melting rate of icebergs (kg/m2/s)
 
   ! MOC variables
-  CHARACTER(LEN=256) :: cn_zomsfatl='zomsfatl' !: moc in the Atlantic
-  CHARACTER(LEN=256) :: cn_zomsfglo='zomsfglo' !: moc in the Global ocean
-  CHARACTER(LEN=256) :: cn_zomsfpac='zomsfpac' !: moc in the Pacific
-  CHARACTER(LEN=256) :: cn_zomsfinp='zomsfinp' !: moc in the Indo-Pacific
-  CHARACTER(LEN=256) :: cn_zomsfind='zomsfind' !: moc in the Indian ocean
-  CHARACTER(LEN=256) :: cn_zomsfinp0='zomsfinp0' !: moc in the Indo-Pacific Net
+  CHARACTER(LEN=2048) :: cn_zomsfatl='zomsfatl' !: moc in the Atlantic
+  CHARACTER(LEN=2048) :: cn_zomsfglo='zomsfglo' !: moc in the Global ocean
+  CHARACTER(LEN=2048) :: cn_zomsfpac='zomsfpac' !: moc in the Pacific
+  CHARACTER(LEN=2048) :: cn_zomsfinp='zomsfinp' !: moc in the Indo-Pacific
+  CHARACTER(LEN=2048) :: cn_zomsfind='zomsfind' !: moc in the Indian ocean
+  CHARACTER(LEN=2048) :: cn_zomsfinp0='zomsfinp0' !: moc in the Indo-Pacific Net
   !
-  CHARACTER(LEN=256) :: cn_zoisoatl='zoisoatl' !: moc in the Atlantic
-  CHARACTER(LEN=256) :: cn_zoisoglo='zoisoglo' !: moc in the Global ocean
-  CHARACTER(LEN=256) :: cn_zoisopac='zoisopac' !: moc in the Pacific
-  CHARACTER(LEN=256) :: cn_zoisoinp='zoisoinp' !: moc in the Indo-Pacific
-  CHARACTER(LEN=256) :: cn_zoisoind='zoisoind' !: moc in the Indian ocean
-  CHARACTER(LEN=256) :: cn_zoisoinp0='zoisoinp0' !: moc in the Indo-Pacific Net
+  CHARACTER(LEN=2048) :: cn_zoisoatl='zoisoatl' !: moc in the Atlantic
+  CHARACTER(LEN=2048) :: cn_zoisoglo='zoisoglo' !: moc in the Global ocean
+  CHARACTER(LEN=2048) :: cn_zoisopac='zoisopac' !: moc in the Pacific
+  CHARACTER(LEN=2048) :: cn_zoisoinp='zoisoinp' !: moc in the Indo-Pacific
+  CHARACTER(LEN=2048) :: cn_zoisoind='zoisoind' !: moc in the Indian ocean
+  CHARACTER(LEN=2048) :: cn_zoisoinp0='zoisoinp0' !: moc in the Indo-Pacific Net
   
   ! transport variables
-  CHARACTER(LEN=256) :: cn_vozout='vozout'     !: product U x T at U point
-  CHARACTER(LEN=256) :: cn_vomevt='vomevt'     !: product V x T at V point
-  CHARACTER(LEN=256) :: cn_vozous='vozous'     !: product U x S at U point
-  CHARACTER(LEN=256) :: cn_vomevs='vomevs'     !: product V x S at V point
-  CHARACTER(LEN=256) :: cn_sozout='sozout'     !: product U x T at U point
-  CHARACTER(LEN=256) :: cn_somevt='somevt'     !: product V x T at V point
-  CHARACTER(LEN=256) :: cn_sozous='sozous'     !: product U x S at U point
-  CHARACTER(LEN=256) :: cn_somevs='somevs'     !: product V x S at V point
-  CHARACTER(LEN=256) :: cn_sozoutrp='sozoutrp' !: vertically integrated trp at U point
-  CHARACTER(LEN=256) :: cn_somevtrp='somevtrp' !: vertically integrated trp at V point
-  CHARACTER(LEN=256) :: cn_vouv='vouv'         !: product U x V at T point
+  CHARACTER(LEN=2048) :: cn_vozout='vozout'     !: product U x T at U point
+  CHARACTER(LEN=2048) :: cn_vomevt='vomevt'     !: product V x T at V point
+  CHARACTER(LEN=2048) :: cn_vozous='vozous'     !: product U x S at U point
+  CHARACTER(LEN=2048) :: cn_vomevs='vomevs'     !: product V x S at V point
+  CHARACTER(LEN=2048) :: cn_sozout='sozout'     !: product U x T at U point
+  CHARACTER(LEN=2048) :: cn_somevt='somevt'     !: product V x T at V point
+  CHARACTER(LEN=2048) :: cn_sozous='sozous'     !: product U x S at U point
+  CHARACTER(LEN=2048) :: cn_somevs='somevs'     !: product V x S at V point
+  CHARACTER(LEN=2048) :: cn_sozoutrp='sozoutrp' !: vertically integrated trp at U point
+  CHARACTER(LEN=2048) :: cn_somevtrp='somevtrp' !: vertically integrated trp at V point
+  CHARACTER(LEN=2048) :: cn_vouv='vouv'         !: product U x V at T point
 
   ! density, isopycnal diagnostics
-  CHARACTER(LEN=256) :: cn_vosigma0='vosigma0' !: potential density refered to surface
-  CHARACTER(LEN=256) :: cn_vosigmai='vosigmai' !: potential density refered to a partiular depth
-  CHARACTER(LEN=256) :: cn_vosigntr='vosigntr' !: neutral density
-  CHARACTER(LEN=256) :: cn_vodepiso='vodepiso' !: depth of isopycnal
-  CHARACTER(LEN=256) :: cn_isothick='isothick' !: isopycnal tickness (from cdfsigintegr)
+  CHARACTER(LEN=2048) :: cn_vosigma0='vosigma0' !: potential density refered to surface
+  CHARACTER(LEN=2048) :: cn_vosigmai='vosigmai' !: potential density refered to a partiular depth
+  CHARACTER(LEN=2048) :: cn_vosigntr='vosigntr' !: neutral density
+  CHARACTER(LEN=2048) :: cn_vodepiso='vodepiso' !: depth of isopycnal
+  CHARACTER(LEN=2048) :: cn_isothick='isothick' !: isopycnal tickness (from cdfsigintegr)
 
   ! Passive tracer variable
-  CHARACTER(LEN=256) :: cn_invcfc='INVCFC'     !: CFC inventory
-  CHARACTER(LEN=256) :: cn_cfc11='CFC11'       !: CFC concentration
-  CHARACTER(LEN=256) :: cn_pendep='pendep'     !: CFC penetration depth (from cdfpendep)
+  CHARACTER(LEN=2048) :: cn_invcfc='INVCFC'     !: CFC inventory
+  CHARACTER(LEN=2048) :: cn_cfc11='CFC11'       !: CFC concentration
+  CHARACTER(LEN=2048) :: cn_pendep='pendep'     !: CFC penetration depth (from cdfpendep)
   
   ! ice variable names
-  CHARACTER(LEN=256) :: cn_iicethic='iicethic' !: ice thickness
-  CHARACTER(LEN=256) :: cn_ileadfra='ileadfra' !: ice concentration
-  CHARACTER(LEN=256) :: cn_iicethic3='iicethic'!: ice thickness (LIM3)
-  CHARACTER(LEN=256) :: cn_ileadfra3='iiceconc'!: ice concentration (LIM3)
+  CHARACTER(LEN=2048) :: cn_iicethic='iicethic' !: ice thickness
+  CHARACTER(LEN=2048) :: cn_ileadfra='ileadfra' !: ice concentration
+  CHARACTER(LEN=2048) :: cn_iicethic3='iicethic'!: ice thickness (LIM3)
+  CHARACTER(LEN=2048) :: cn_ileadfra3='iiceconc'!: ice concentration (LIM3)
   
   ! Bathymetry
-  CHARACTER(LEN=256) :: cn_fbathymet='bathy_meter.nc' !: file Bathymetry in meters
-  CHARACTER(LEN=256) :: cn_fbathylev='bathy_level.nc' !: file Bathymetry in levels
+  CHARACTER(LEN=2048) :: cn_fbathymet='bathy_meter.nc' !: file Bathymetry in meters
+  CHARACTER(LEN=2048) :: cn_fbathylev='bathy_level.nc' !: file Bathymetry in levels
 
-  CHARACTER(LEN=256) :: cn_bathymet='Bathymetry' !: variable Bathymetry in meters
-  CHARACTER(LEN=256) :: cn_bathylev='bathy_level'!: variable Bathymetry in levels
-  CHARACTER(LEN=256) :: cn_mbathy  ='mbathy'     !: variable mbathy in levels
+  CHARACTER(LEN=2048) :: cn_bathymet='Bathymetry' !: variable Bathymetry in meters
+  CHARACTER(LEN=2048) :: cn_bathylev='bathy_level'!: variable Bathymetry in levels
+  CHARACTER(LEN=2048) :: cn_mbathy  ='mbathy'     !: variable mbathy in levels
 
   ! variables to be squared when performing cdfmoy
   INTEGER(KIND=4), PARAMETER :: jp_sqdvarmax=10
@@ -238,9 +238,9 @@ CONTAINS
     !!               variable NAM_CDF_NAMES
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=90)  :: cl_namlist= 'nam_cdf_names'
-    CHARACTER(LEN=256) :: cl_env    = 'NAM_CDF_NAMES'
-    CHARACTER(LEN=90)  :: cldum, cl_home
+    CHARACTER(LEN=2048)  :: cl_namlist= 'nam_cdf_names'
+    CHARACTER(LEN=2048) :: cl_env    = 'NAM_CDF_NAMES'
+    CHARACTER(LEN=2048)  :: cldum, cl_home
     LOGICAL            :: ll_exist
     INTEGER(KIND=4)    :: inam = 10
     !!----------------------------------------------------------------------
@@ -290,7 +290,7 @@ CONTAINS
     !! ** Method  :  Use namelist facilities 
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=80) :: cl_filout='PrintCdfNames.namlist'
+    CHARACTER(LEN=2048) :: cl_filout='PrintCdfNames.namlist'
     CHARACTER(LEN=24) :: cl_date
     INTEGER(KIND=4)   :: iout=3
     !!----------------------------------------------------------------------

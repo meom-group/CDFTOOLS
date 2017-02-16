@@ -25,7 +25,7 @@ PROGRAM cdfmsk
   REAL(KIND=4)                              :: zss                  !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask                ! 2D mask at current level
 
-  CHARACTER(LEN=256)                        :: cf_msk               ! file name
+  CHARACTER(LEN=2048)                        :: cf_msk               ! file name
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 

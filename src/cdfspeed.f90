@@ -33,11 +33,11 @@ PROGRAM cdfspeed
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdept, gdeptall      ! deptht values for requested/all levels
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zu, zv, zspeed       ! working arrays, speed
 
-  CHARACTER(LEN=256)                         :: cf_vfil, cf_ufil     ! file for u and v components
-  CHARACTER(LEN=256)                         :: cf_tfil='none'       ! file for T point position
-  CHARACTER(LEN=256)                         :: cv_u, cv_v           ! name of u and v variable
-  CHARACTER(LEN=256)                         :: cf_out='speed.nc'    ! output file name
-  CHARACTER(LEN=256)                         :: cldum                ! dummy char variable
+  CHARACTER(LEN=2048)                         :: cf_vfil, cf_ufil     ! file for u and v components
+  CHARACTER(LEN=2048)                         :: cf_tfil='none'       ! file for T point position
+  CHARACTER(LEN=2048)                         :: cv_u, cv_v           ! name of u and v variable
+  CHARACTER(LEN=2048)                         :: cf_out='speed.nc'    ! output file name
+  CHARACTER(LEN=2048)                         :: cldum                ! dummy char variable
 
   TYPE (variable), DIMENSION(1)              :: stypvar              ! structure for attibutes
 

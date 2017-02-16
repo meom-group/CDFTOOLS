@@ -47,10 +47,10 @@ PROGRAM cdfvint
 
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_vint1, dl_vint2  ! verticall int quantity         
 
-   CHARACTER(LEN=256)                        :: cf_in, cf_out       ! input/output file
-   CHARACTER(LEN=256)                        :: cv_in, cv_out       ! variable name in and out
-   CHARACTER(LEN=256)                        :: cunits, clongname   ! variable attributes
-   CHARACTER(LEN=256)                        :: cldum               ! dummy string for command line browsing
+   CHARACTER(LEN=2048)                        :: cf_in, cf_out       ! input/output file
+   CHARACTER(LEN=2048)                        :: cv_in, cv_out       ! variable name in and out
+   CHARACTER(LEN=2048)                        :: cunits, clongname   ! variable attributes
+   CHARACTER(LEN=2048)                        :: cldum               ! dummy string for command line browsing
 
    LOGICAL                                   :: lfull =.FALSE.      ! flag for full step computation
    LOGICAL                                   :: lgsop =.FALSE.      ! selected depths gsop intercomparison

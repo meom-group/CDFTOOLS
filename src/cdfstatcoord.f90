@@ -32,8 +32,8 @@ PROGRAM cdfstatcoord
 
   REAL(KIND=8)                              :: de1mean, de2mean     ! mean value of horiz metrics
 
-  CHARACTER(LEN=256)                        :: cf_coo, cf_msk       ! file names
-  CHARACTER(LEN=256)                        :: cv_msk='tmask'       ! mask variable name
+  CHARACTER(LEN=2048)                        :: cf_coo, cf_msk       ! file names
+  CHARACTER(LEN=2048)                        :: cv_msk='tmask'       ! mask variable name
 
   LOGICAL, DIMENSION(:,:), ALLOCATABLE      :: lgood                ! flag for point selection
   !!----------------------------------------------------------------------
