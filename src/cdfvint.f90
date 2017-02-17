@@ -24,7 +24,7 @@ PROGRAM cdfvint
    IMPLICIT NONE
 
    INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
-   INTEGER(KIND=4)                           :: ierr, ij, iko       ! working integer
+   INTEGER(KIND=4)                           :: ierr, ij, iko, it   ! working integer
    INTEGER(KIND=4)                           :: narg, iargc, ijarg  ! command line 
    INTEGER(KIND=4)                           :: npiglo, npjglo      ! size of the domain
    INTEGER(KIND=4)                           :: npk, npt            ! size of the domain
@@ -42,8 +42,8 @@ PROGRAM cdfvint
    REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
    REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
    REAL(KIND=4)                              :: rdep1, rdep2        ! depth counters
-   REAL(KIND=4)                              :: tol  = 1.0             ! tolerance 
-   REAL(KIND=4)                              :: sclf = 1.0            ! scale factor
+   REAL(KIND=4)                              :: tol  = 1.0          ! tolerance 
+   REAL(KIND=4)                              :: sclf = 1.0          ! scale factor
 
    REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_vint1, dl_vint2  ! verticall int quantity         
 
@@ -69,7 +69,7 @@ PROGRAM cdfvint
    narg= iargc()
    IF ( narg == 0 ) THEN
       PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]'
-      PRINT *,'                 [-tmean] [-smean]'
+      PRINT *,'                 [-tmean] [-smean] [-vvl] '
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'          Compute the vertical integral of the variable from top '
@@ -92,6 +92,9 @@ PROGRAM cdfvint
       PRINT *,'        -nc4  : use netcdf4 output with chunking and deflation'
       PRINT *,'        -tmean : output mean temperature instead of heat content'
       PRINT *,'        -smean : output mean salinity instead of PSU.m'
+      PRINT *,'        -vvl   : use time-varying metrics for vertical integration'
+      PRINT *,'               (still some details to fix for the last cell including the'
+      PRINT *,'                target deptht).'
       PRINT *,'        -o OUT-file : use specified output file instead of <IN-var>.nc'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
@@ -123,6 +126,7 @@ PROGRAM cdfvint
       CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
       CASE ( '-tmean') ; ltmean= .TRUE. 
       CASE ( '-smean') ; lsmean= .TRUE. 
+      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
       CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
       CASE DEFAULT     
          ij = ij + 1
@@ -140,7 +144,9 @@ PROGRAM cdfvint
    lchk = chkfile ( cn_fhgr ) .OR. lchk
    lchk = chkfile ( cn_fzgr ) .OR. lchk
    IF ( lchk ) STOP ! missing files
-  
+
+   IF (lg_vvl ) cn_fe3t = cf_in
+
    IF ( ltmean .AND. cv_in == cn_vosaline ) THEN
        PRINT *,' WARNING : flag -tmean is useless with variable', TRIM(cv_in)
        ltmean = .FALSE.
@@ -149,7 +155,6 @@ PROGRAM cdfvint
        PRINT *,' WARNING : flag -smean is useless with variable', TRIM(cv_in)
        lsmean = .FALSE.
    ENDIF
-
 
    ! Set output information according to variable name
    IF ( cv_in == cn_votemper ) THEN
@@ -217,22 +222,6 @@ PROGRAM cdfvint
 
    ALLOCATE ( dl_vint1(npiglo, npjglo), dl_vint2(npiglo,npjglo) )
 
-   ! prepare output variable
-   ipk(:)                       = npko
-  ! choose chunk size for output ... not easy not used if lnc4=.false. but
-  ! anyway ..
-   stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
-
-   stypvar(1)%cname             = TRIM(cv_out)
-   stypvar(1)%cunits            = TRIM(cunits)
-   stypvar(1)%rmissing_value    = 0.
-   stypvar(1)%valid_min         = -1.e15
-   stypvar(1)%valid_max         =  1.e15
-   stypvar(1)%clong_name        = TRIM(clongname)
-   stypvar(1)%cshort_name       = TRIM(cv_out)
-   stypvar(1)%conline_operation = 'N/A'
-   stypvar(1)%caxis             = 'TZYX'
-
    ! Initialize output file
    gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk )
    e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk )
@@ -245,25 +234,19 @@ PROGRAM cdfvint
    gdepo(:) = (/700.,2000.,6000./) ! SL: occiput levels
    ENDIF
 
-   IF ((.not.lgsop).and.(.not.locci)) THEN 
+   IF ((.not.lgsop).AND.(.not.locci)) THEN 
       gdepo(1:npk-1) = gdepw(2:npk)
       gdepo(npk)     = 6000.
    ENDIF
 
-
+   CALL CreateOutput
 
    PRINT*,'OUTPUT DEPTHS ARE : ',gdepo
-   ncout = create      (cf_out, 'none', npiglo, npjglo, npko, cdep=cn_vdepthw, ld_xycoo=.FALSE. &
-                            , ld_nc4=lnc4)
-   ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout , ld_nc4=lnc4)
-   ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, npko, pdep=gdepo,     ld_xycoo=.FALSE.)
-
-   tim   = getvar1d    (cf_in, cn_vtimec, npt     )
-   ierr  = putvar1d    (ncout, tim,       npt, 'T')
-
-   PRINT *, 'Output files initialised ...'
 
    DO jt = 1, npt
+      IF ( lg_vvl ) THEN ; it=jt
+      ELSE               ; it=1
+      ENDIF
       dl_vint1(:,:) = 0.d0
       iko  = 1
       rdep1 = 0.0 ; rdep2 = 0.0
@@ -273,10 +256,10 @@ PROGRAM cdfvint
          rdep1          = rdep2
          dl_vint2(:,:) = dl_vint1 (:,:)
 
-         tmask(:,:)= getvar(cn_fmsk, 'tmask', jk, npiglo, npjglo           )
-         zt(:,:)   = getvar(cf_in,   cv_in,   jk, npiglo, npjglo, ktime=jt )
+         tmask(:,:)= getvar(cn_fmsk, cn_tmask, jk, npiglo, npjglo           )
+         zt(:,:)   = getvar(cf_in,   cv_in,    jk, npiglo, npjglo, ktime=jt )
          IF ( lfull ) THEN ; e3t(:,:) = e31d(jk)
-                      ELSE ; e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+                      ELSE ; e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
          ENDIF
 
          rdep2 = rdep1 + e31d(jk)
@@ -306,5 +289,43 @@ PROGRAM cdfvint
    END DO  ! next time frame
 
    ierr = closeout(ncout)
+
+CONTAINS
+   
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! prepare output variable
+    ipk(:)                       = npko
+    ! choose chunk size for output ... not easy not used if lnc4=.false. but
+    ! anyway ..
+    stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+
+    stypvar(1)%cname             = TRIM(cv_out)
+    stypvar(1)%cunits            = TRIM(cunits)
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = -1.e15
+    stypvar(1)%valid_max         =  1.e15
+    stypvar(1)%clong_name        = TRIM(clongname)
+    stypvar(1)%cshort_name       = TRIM(cv_out)
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
+
+   ncout = create      (cf_out, 'none', npiglo, npjglo, npko, cdep=cn_vdepthw, ld_xycoo=.FALSE. &
+                            , ld_nc4=lnc4)
+   ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout , ld_nc4=lnc4)
+   ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, npko, pdep=gdepo,     ld_xycoo=.FALSE.)
+
+   tim   = getvar1d    (cf_in, cn_vtimec, npt     )
+   ierr  = putvar1d    (ncout, tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdfvint
