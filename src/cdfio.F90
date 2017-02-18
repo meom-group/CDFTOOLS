@@ -3005,7 +3005,7 @@ CONTAINS
 
   END FUNCTION GetNcFile
 
-  INTEGER FUNCTION  SetMeshZgrVersion
+  INTEGER FUNCTION  SetMeshZgrVersion()
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE SetMeshZgrVersion  ***
     !!
