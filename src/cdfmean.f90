@@ -323,12 +323,12 @@ PROGRAM cdfmean
      DO jk = 1, nvpk
         ik = jk+ikmin-1
         ! Get velocities v at ik
-        zv   (:,:) = getvar(cf_in,  cv_nam,   ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
+        zv   (:,:) = getvar(cf_in,   cv_nam, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
         zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
         IF ( lfull ) THEN
           e3(:,:) = e31d(jk)
         ELSE
-          e3(:,:) = getvar(cf_e3, cv_e3,    ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl )
+          e3(:,:) = getvar(cf_e3, cv_e3, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl )
         ENDIF
         !
         dsurf  = SUM(DBLE(          e1 * e2      * zmask))
