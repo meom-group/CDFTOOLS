@@ -24,6 +24,7 @@ PROGRAM cdfvertmean
   IMPLICIT NONE
 
   INTEGER(KIND=4)                               :: jk, jvar, jvarin, jt! dummy loop index
+  INTEGER(KIND=4)                               :: it                  ! time index for vvl
   INTEGER(KIND=4)                               :: ik1, ik2            ! vertical limit of integration
   INTEGER(KIND=4)                               :: narg, iargc         ! command line 
   INTEGER(KIND=4)                               :: ijarg, ireq         ! command line 
@@ -51,6 +52,7 @@ PROGRAM cdfvertmean
 
   CHARACTER(LEN=256)                            :: cf_in               ! input file name
   CHARACTER(LEN=256)                            :: cf_out='vertmean.nc'! output file
+  CHARACTER(LEN=256)                            :: cf_e3               ! vertical metric file
   CHARACTER(LEN=256)                            :: cv_cur              ! variable name
   CHARACTER(LEN=256)                            :: cv_dep              ! depth name
   CHARACTER(LEN=256)                            :: cv_e3               ! vertical metric name (partial)
@@ -66,15 +68,17 @@ PROGRAM cdfvertmean
   TYPE(variable), DIMENSION(:), ALLOCATABLE     :: stypvar             ! stucture for attributes (output)
 
   LOGICAL                                       :: lfull =.FALSE.      ! full step flag
-  LOGICAL                                       :: ldebug=.FALSE.      ! full step flag
+  LOGICAL                                       :: ldebug=.FALSE.      ! debug flag for extra output
+  LOGICAL                                       :: lnc4  =.FALSE.      ! netcdf4 flag
   LOGICAL                                       :: lchk                ! file existence flag (true if missing)
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfvertmean [-debug] IN-file IN-var1,var2,.. v-type dep1 dep2 [-full]'
-     PRINT *,'              ... [-o OUT-file ]'
+     PRINT *,' usage :  cdfvertmean [-debug] IN-file IN-var1,var2,.. VAR-type dep1 dep2 [-full]'
+     PRINT *,'              ... [-o OUT-file ] [-nc4] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the vertical mean between dep1 and dep2 given in m,'
@@ -83,14 +87,18 @@ PROGRAM cdfvertmean
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       IN-file  : netcdf input file.' 
      PRINT *,'       IN-var1,var2,.. : Comma separated list of input variables to process.'
-     PRINT *,'       v-type   : one of T U V W indicating position of variable on C-grid'
+     PRINT *,'       VAR-type  : one of T U V W indicating position of variable on C-grid'
      PRINT *,'       dep1 dep2 : depths limit for vertical integration (meters), from top '
      PRINT *,'                to bottom, positive depths.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full  ] : for full step configurations. Default is partial step.'
      PRINT *,'       [-debug ] : print some extra informations.'
+     PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out)
+     PRINT *,'       [ -nc4 ]: Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fzgr),' and ',TRIM(cn_fmsk)
@@ -108,6 +116,8 @@ PROGRAM cdfvertmean
      SELECT CASE ( cldum )
      CASE ( '-full'  ) ; lfull  = .TRUE.
      CASE ( '-debug' ) ; ldebug = .TRUE.
+     CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
+     CASE ( '-nc4'   ) ; lnc4   = .TRUE.
      CASE ( '-o' )     ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE DEFAULT
         ireq=ireq+1
@@ -126,7 +136,7 @@ PROGRAM cdfvertmean
   lchk = chkfile (cn_fzgr)
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_in  ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk  ) STOP ! missing files
 
   CALL SetGlobalAtt (cglobal)
 
@@ -162,48 +172,20 @@ PROGRAM cdfvertmean
   ALLOCATE ( gdep(npk), tim(npt)                             )
   IF ( lfull ) ALLOCATE ( e31d(npk) )
 
-  rdep(1)                      = 0.
-  ipk(:)                       = 1
-  DO jvar=1, nvaro
-     DO jvarin=1,nvars
-        IF ( cv_in(jvar) == stypvarin(jvarin)%cname ) EXIT  ! cv_in match cv_varin.
-     END DO
-     stypvar(jvar)%cname             = TRIM(cv_in(jvar))//'_vert_mean'
-     stypvar(jvar)%cunits            = stypvarin(jvarin)%cunits
-     stypvar(jvar)%rmissing_value    = stypvarin(jvarin)%rmissing_value
-     stypvar(jvar)%valid_min         = stypvarin(jvarin)%valid_min
-     stypvar(jvar)%valid_max         = stypvarin(jvarin)%valid_max
-     stypvar(jvar)%clong_name        = 'vertical average of '//TRIM(stypvarin(jvarin)%clong_name)
-     stypvar(jvar)%cshort_name       = TRIM(cv_in(jvar))//'_vert_mean'
-     stypvar(jvar)%conline_operation = 'N/A'
-     stypvar(jvar)%caxis             = 'TYX'
-  END DO
-
-  ! Initialize output file
-  ncout = create      (cf_out, cf_in,   npiglo, npjglo, 1)
-  ierr  = createvar   (ncout,  stypvar, nvaro,  ipk,    id_varout, cdglobal=cglobal  )
-  ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, 1, pdep=rdep)
-
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
+  CALL CreateOutput
 
   SELECT CASE ( ctype)
-  CASE( 'T','t');  cv_dep=cn_gdepw ; cv_e3='e3t_ps' ; cv_e31d=cn_ve3t 
-  CASE( 'U','u');  cv_dep=cn_gdepw ; cv_e3='e3u_ps' ; cv_e31d=cn_ve3t 
-  CASE( 'V','v');  cv_dep=cn_gdepw ; cv_e3='e3v_ps' ; cv_e31d=cn_ve3t 
-  CASE( 'W','w');  cv_dep=cn_gdept ; cv_e3='e3w_ps' ; cv_e31d=cn_ve3w
+  CASE( 'T','t');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3t ; cv_e31d=cn_ve3t ;  cv_msk = cn_tmask ; cf_e3 = cn_fe3t
+  CASE( 'U','u');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3u ; cv_e31d=cn_ve3t ;  cv_msk = cn_umask ; cf_e3 = cn_fe3u
+  CASE( 'V','v');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3v ; cv_e31d=cn_ve3t ;  cv_msk = cn_vmask ; cf_e3 = cn_fe3v
+  CASE( 'W','w');  cv_dep=cn_gdept ; cv_e3 = cn_ve3w ; cv_e31d=cn_ve3w ;  cv_msk = cn_tmask ; cf_e3 = cn_fe3w
   CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP
   END SELECT
 
+  IF ( lg_vvl) cf_e3 = cf_in
+
                gdep(:) = getvare3(cn_fzgr, cv_dep,  npk)
   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cv_e31d, npk)
-
-  ! set mask variable name
-  SELECT CASE (ctype )
-  CASE ('T','t','W','w') ; cv_msk='tmask'
-  CASE ('U','u')         ; cv_msk='umask'
-  CASE ('V','v')         ; cv_msk='vmask'
-  END SELECT
 
   ! Look for ik1 and ik2 as nearest level of rdep_up and rdep_down
   ik1 = 1; ik2 = npk
@@ -217,6 +199,10 @@ PROGRAM cdfvertmean
   PRINT '(a,2f10.3)', 'corresponding depth        : ', gdep(ik1), gdep(MIN(ik2+1,npk))
 
   DO jt=1,npt
+     IF ( lg_vvl ) THEN ; it = jt
+     ELSE               ; it = 1
+     ENDIF
+
      DO jvar = 1,nvaro
         cv_cur = cv_in(jvar)
         dvol           = 0.d0
@@ -230,7 +216,7 @@ PROGRAM cdfvertmean
 
            ! get e3 at level jk ( ps...)
            IF ( lfull ) THEN ; e3(:,:) = e31d(jk)
-           ELSE              ; e3(:,:) = getvar(cn_fzgr, cv_e3, jk, npiglo, npjglo, ldiom=.TRUE.)
+           ELSE              ; e3(:,:) = getvar(cf_e3, cv_e3, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
            ENDIF
 
            IF ( jk == ik1 ) THEN
@@ -298,5 +284,42 @@ CONTAINS
     ENDDO
   END SUBROUTINE ParseVars
 
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+
+    rdep(1)                      = 0.
+    ipk(:)                       = 1
+    DO jvar=1, nvaro
+       DO jvarin=1,nvars
+          IF ( cv_in(jvar) == stypvarin(jvarin)%cname ) EXIT  ! cv_in match cv_varin.
+       END DO
+       stypvar(jvar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(jvar)%cname             = TRIM(cv_in(jvar))//'_vert_mean'
+       stypvar(jvar)%cunits            = stypvarin(jvarin)%cunits
+       stypvar(jvar)%rmissing_value    = stypvarin(jvarin)%rmissing_value
+       stypvar(jvar)%valid_min         = stypvarin(jvarin)%valid_min
+       stypvar(jvar)%valid_max         = stypvarin(jvarin)%valid_max
+       stypvar(jvar)%clong_name        = 'vertical average of '//TRIM(stypvarin(jvarin)%clong_name)
+       stypvar(jvar)%cshort_name       = TRIM(cv_in(jvar))//'_vert_mean'
+       stypvar(jvar)%conline_operation = 'N/A'
+       stypvar(jvar)%caxis             = 'TYX'
+    END DO
+
+    ! Initialize output file
+    ncout = create      (cf_out, cf_in,   npiglo, npjglo, 1                          , ld_nc4=lnc4)
+    ierr  = createvar   (ncout,  stypvar, nvaro,  ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4)
+    ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, 1, pdep=rdep)
+
+    tim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfvertmean
