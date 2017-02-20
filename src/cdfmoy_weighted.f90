@@ -25,6 +25,7 @@
 
   INTEGER(KIND=4)                               :: jk, jt, jvar        ! dummy loop index
   INTEGER(KIND=4)                               :: ierr                ! working integer
+  INTEGER(KIND=4)                               :: idep, idep_max      ! possible depth inde
   INTEGER(KIND=4)                               :: narg, iargc, ijarg  ! command line
   INTEGER(KIND=4)                               :: npiglo, npjglo, npk ! size of the domain
   INTEGER(KIND=4)                               :: nvars               ! number of variables in a file
@@ -36,33 +37,39 @@
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout           ! array of output var id's
 
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: v2d                 ! array to read a layer of data
+  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: e3                  ! array to read vertical metrics
   REAL(KIND=4), DIMENSION (:)  ,    ALLOCATABLE :: v1d                 ! array to read column of data
   REAL(KIND=4), DIMENSION(1)                    :: timean, tim         ! time counter
 
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dtab                ! array for cumulated values
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de3s                ! arrays for cumulated e3 (vvl)
   REAL(KIND=8), DIMENSION (:)  ,    ALLOCATABLE :: dtab1d              ! array for cumulated values
   REAL(KIND=8)                                  :: dtotal_time, dsumw  ! cumulated times and weights
 
   CHARACTER(LEN=256)                            :: cf_in               ! current input file name
   CHARACTER(LEN=256)                            :: cf_out='cdfmoy_weighted.nc' ! output file name
+  CHARACTER(LEN=256)                            :: cf_e3               ! file name for reading vertical metrics (vvl)
   CHARACTER(LEN=256)                            :: cv_dep              ! name of depth variable
+  CHARACTER(LEN=256)                            :: cv_e3               ! name of e3t variable for vvl
   CHARACTER(LEN=256)                            :: cv_skip             ! name of  variable to skip
   CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep             ! array of possible depth name or 3rd dim.
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for output var attributes
 
-  LOGICAL                                       :: lold5d=.FALSE.      ! flag for old5d output
-  LOGICAL                                       :: lmonth=.FALSE.      ! flag for true month output
-  LOGICAL                                       :: lleap=.FALSE.       ! flag for leap years
-  LOGICAL                                       :: lnc4=.FALSE.        ! flag for netcdf4 output with chunking and deflation
+  LOGICAL                                       :: lold5d = .FALSE.      ! flag for old5d output
+  LOGICAL                                       :: lmonth = .FALSE.      ! flag for true month output
+  LOGICAL                                       :: lleap  = .FALSE.      ! flag for leap years
+  LOGICAL                                       :: lnc4   = .FALSE.      ! flag for netcdf4 output with chunking and deflation
+  LOGICAL                                       :: ll_vvl                ! working flag for vvl AND 3D fields
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy_weighted list of files [-old5d ] [-month] [-leap] ...'
-     PRINT *,'      [-skip variable] [-nc4] [-o output file]'
+     PRINT *,'      [-skip variable] [-nc4] [-vvl] [-o output file]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute weight average of files. The weight for each file is'
      PRINT *,'       read from the iweight attribute. In particular, this attribute'
@@ -86,7 +93,8 @@
      PRINT *,'       [-leap ] : This option has only effect together with the -month option.'
      PRINT *,'                  When used set 29 days in february'
      PRINT *,'       [-skip variable ] : name of variable to skip '
-     PRINT *,'       [ -nc4 ] : Use netcdf4 chunking and deflation in output file.'
+     PRINT *,'       [-nc4 ] : Use netcdf4 chunking and deflation in output file.'
+     PRINT *,'       [-vvl ] : Use time-varying vertical metrics for weighted averages.'
      PRINT *,'       [-o output file ] : Specify the name for output file instead of the'
      PRINT *,'                 default name ', TRIM(cf_out)
      PRINT *,'      '
@@ -107,6 +115,7 @@
      CASE ( '-old5d' )  ; lold5d = .TRUE.
      CASE ( '-month' )  ; lmonth = .TRUE.
      CASE ( '-leap'  )  ; lleap  = .TRUE.
+     CASE ( '-vvl'   )  ; lg_vvl = .TRUE.
      CASE ( '-nc4'   )  ; lnc4   = .TRUE.
      CASE ( '-o'     )  ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
      CASE ( '-skip'  )  ; CALL getarg ( ijarg, cv_skip) ; ijarg = ijarg +1
@@ -127,23 +136,20 @@
 
   npiglo = getdim (cf_in, cn_x                              )
   npjglo = getdim (cf_in, cn_y                              )
-  npk    = getdim (cf_in, cn_z, cdtrue=cv_dep, kstatus=ierr )
 
-  IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_in,'z',cdtrue=cv_dep, kstatus=ierr   )
-     IF (ierr /= 0 ) THEN
-        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
-        IF ( ierr /= 0 ) THEN
-           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-           IF ( ierr /= 0 ) THEN
-              npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
-              IF ( ierr /= 0 ) THEN
-                 PRINT *,' assume file with no depth'
-                 npk=0
-              ENDIF
-           ENDIF
-        ENDIF
-     ENDIF
+  ! looking for npk among various possible name
+  idep_max=8
+  ALLOCATE ( clv_dep(idep_max) )
+  clv_dep(:) = (/cn_z,'z','sigma','nav_lev','levels','ncatice','icbcla','icbsect'/)
+  idep=1  ; ierr=1000
+  DO WHILE ( ierr /= 0 .AND. idep <= idep_max )
+     npk  = getdim (cf_in, clv_dep(idep), cdtrue=cv_dep, kstatus=ierr)
+     idep = idep + 1
+  ENDDO
+
+  IF ( ierr /= 0 ) THEN  ! none of the dim name was found
+      PRINT *,' assume file with no depth'
+      npk=0
   ENDIF
 
   PRINT *, 'npiglo = ', npiglo
@@ -151,6 +157,9 @@
   PRINT *, 'npk    = ', npk
 
   ALLOCATE( dtab(npiglo,npjglo), v2d(npiglo,npjglo) )
+  IF ( lg_vvl ) THEN
+     ALLOCATE( de3s(npiglo,npjglo), e3(npiglo,npjglo) )
+  ENDIF
 
   nvars = getnvar(cf_in)
   PRINT *,' nvars =', nvars
@@ -159,26 +168,21 @@
   ALLOCATE (stypvar(nvars)  )
   ALLOCATE (id_var(nvars), ipk(nvars), id_varout(nvars) )
 
-  ! get list of variable names and collect attributes in stypvar (optional)
-  cv_names(:) = getvarname(cf_in, nvars, stypvar)
-
-  id_var(:)   = (/(jvar, jvar=1,nvars)/)
-
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk(cf_in, nvars, cdep=cv_dep)
-  WHERE( ipk == 0 ) cv_names='none'
-  stypvar(:)%cname = cv_names
-
-  DO jk = 1, nvars
-     stypvar(jk)%ichunk  = (/ npiglo, MAX(1,npjglo/30), 1, 1 /)
-  ENDDO
-
-  ! create output file taking the sizes in cf_in
-  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk,      cdep=cv_dep , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout             , ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk,      cdep=cv_dep               )
+  ! Prepare output files
+  CALL CreateOutput
+  ! for vvl, look for e3x variable in the file
+  cv_e3 = 'none'
+  IF ( lg_vvl ) THEN
+    DO jvar = 1, nvars
+      IF ( INDEX(cv_names(jvar), 'e3' ) /= 0 ) THEN
+         cv_e3=cv_names(jvar)
+         EXIT
+      ENDIF
+    ENDDO
+  ENDIF
 
   DO jvar = 1,nvars
+     ll_vvl=lg_vvl .AND.  (ipk(jvar) > 1) ! JMM : assume 2D var are not weigthed averaged !!!
      IF ( cv_names(jvar) == cn_vlon2d .OR. &
           cv_names(jvar) == cn_vlat2d .OR. &
           cv_names(jvar) == 'none'    .OR. &
@@ -207,14 +211,22 @@
         DO jk = 1, ipk(jvar)
            PRINT *,'Level ',jk
            dtab(:,:) = 0.d0 ; dtotal_time = 0.d0 ; dsumw=0.d0
+           IF ( ll_vvl ) THEN  ; de3s(:,:)  = 0.d0    ; ENDIF
 
            DO jt = 1, ixtra
               CALL getarg   (jt, cf_in)
-
               iweight   = setweight(cf_in, jt, cv_names(jvar)) 
               dsumw     = dsumw + iweight
               v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk ,npiglo, npjglo )
-              dtab(:,:) = dtab(:,:) + iweight * v2d(:,:)
+
+              IF ( ll_vvl ) THEN
+                 cf_e3     = cf_in
+                 e3(:,:)   = getvar (cf_e3, cv_e3, jk ,npiglo, npjglo, ktime=jt )
+                 de3s(:,:) = de3s(:,:) + iweight * e3(:,:)  ! cumulate e3
+                 dtab(:,:) = dtab(:,:) + iweight * e3(:,:) * v2d(:,:)
+              ELSE
+                 dtab(:,:) = dtab(:,:) + iweight * v2d(:,:)
+              ENDIF
 
               IF (jk == 1 .AND. jvar == nvars )  THEN
                  tim         = getvar1d(cf_in, cn_vtimec, 1 )
@@ -224,7 +236,11 @@
 
            ! finish with level jk ; compute mean (assume spval is 0 )
            ! store variable on outputfile
-           ierr = putvar(ncout, id_varout(jvar), SNGL(dtab(:,:)/dsumw), jk, npiglo, npjglo, kwght=INT(dsumw) )
+           IF ( ll_vvl ) THEN
+             ierr = putvar(ncout, id_varout(jvar), SNGL(dtab(:,:)/de3s ), jk, npiglo, npjglo, kwght=INT(dsumw) )
+           ELSE
+             ierr = putvar(ncout, id_varout(jvar), SNGL(dtab(:,:)/dsumw), jk, npiglo, npjglo, kwght=INT(dsumw) )
+           ENDIF
            IF (jk == 1 .AND. jvar == nvars )  THEN
               timean(1) = dtotal_time/dsumw
               ierr      = putvar1d(ncout, timean, 1, 'T')
@@ -270,5 +286,34 @@ CONTAINS
     ENDIF
 
   END FUNCTION setweight
+  
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file 
+    !!
+    !! ** Method  :  Create file, define dims and variables
+    !!
+    !!----------------------------------------------------------------------
+    ! get list of variable names and collect attributes in stypvar (optional)
+    cv_names(:) = getvarname(cf_in, nvars, stypvar)
+
+    id_var(:)   = (/(jvar, jvar=1,nvars)/)
+
+    ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+    ipk(:)     = getipk(cf_in, nvars, cdep=cv_dep)
+    WHERE( ipk == 0 ) cv_names='none'
+    stypvar(:)%cname = cv_names
+
+    DO jk = 1, nvars
+       stypvar(jk)%ichunk  = (/ npiglo, MAX(1,npjglo/30), 1, 1 /)
+    ENDDO
+
+    ! create output file taking the sizes in cf_in
+    ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk,      cdep=cv_dep , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout             , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk,      cdep=cv_dep               )
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfmoy_weighted
