@@ -25,7 +25,7 @@ PROGRAM cdfsum
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
-  INTEGER(KIND=4)                           :: ik                  ! dummy loop index
+  INTEGER(KIND=4)                           :: ik, it              ! working integer
   INTEGER(KIND=4)                           :: iimin=0, iimax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ijmin=0, ijmax=0    ! domain limitation for computation
   INTEGER(KIND=4)                           :: ikmin=0, ikmax=0    ! domain limitation for computation
@@ -52,6 +52,7 @@ PROGRAM cdfsum
 
   CHARACTER(LEN=256)                        :: cldum               ! dummy string
   CHARACTER(LEN=256)                        :: cf_in               ! file name 
+  CHARACTER(LEN=256)                        :: cf_e3               ! name of vertical metrics file
   CHARACTER(LEN=256)                        :: cf_out='cdfsum.nc'  ! output file name 
   CHARACTER(LEN=256)                        :: cv_dep              ! depth name in mesh_zgr
   CHARACTER(LEN=256)                        :: cdep                ! depth name in output file
@@ -69,16 +70,17 @@ PROGRAM cdfsum
 
   LOGICAL                                   :: lforcing            ! forcing flag
   LOGICAL                                   :: lchk                ! flag for missing files
-  LOGICAL                                   :: lerror=.FALSE.      ! flag for missing arguments
-  LOGICAL                                   :: lfmsk=.FALSE.       ! flag for using non standard mask file
+  LOGICAL                                   :: lnc4  = .FALSE.     ! flag for netcdf4 
+  LOGICAL                                   :: lerror= .FALSE.     ! flag for missing arguments
+  LOGICAL                                   :: lfmsk = .FALSE.     ! flag for using non standard mask file
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfsum -f IN-file -v IN-var -p T| U | V | F | W  ... '
-     PRINT *,'          ... [-zoom imin imax jmin jmax kmin kmax] [-full ] [-o OUT-file] '
-     PRINT *,'          ... [-M MSK-file VAR-mask ]'
+     PRINT *,'          ... [-zoom imin imax jmin jmax kmin kmax] [-full ] ...'
+     PRINT *,'          ... [-o OUT-file] [-nc4] [-M MSK-file VAR-mask ] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the sum value of the field (3D, weighted)' 
@@ -94,8 +96,10 @@ PROGRAM cdfsum
      PRINT *,'              if imin=0 all i are taken'
      PRINT *,'              if jmin=0 all j are taken'
      PRINT *,'              if kmin=0 all k are taken'
-     PRINT *,'       [ -full : ] Use full steps instead of default partial steps'
+     PRINT *,'       [-full ]:  Use full steps instead of default partial steps'
+     PRINT *,'       [-vvl  ]:  use time -varying  vertical metrics'
      PRINT *,'       [-o OUT-file ] : name of the output file instead of', TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : use netcdf4 chunking and deflation.'
      PRINT *,'       [-M MSK-file VAR-mask] : Allow the use of a non standard mask file '
      PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and the variable'
      PRINT *,'              associated with the grid point set by -p argument.'
@@ -128,6 +132,8 @@ PROGRAM cdfsum
      CASE ( '-v '   ) ; CALL getarg(ijarg, cv_in   ) ; ijarg=ijarg+1
      CASE ( '-p '   ) ; CALL getarg(ijarg, cvartype) ; ijarg=ijarg+1
      CASE ( '-o '   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-vvl ' ) ; lg_vvl=.TRUE.
+     CASE ( '-nc4 ' ) ; lnc4  =.TRUE.
      CASE ( '-zoom' ) ; 
                         CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimin
                         CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimax
@@ -204,42 +210,49 @@ PROGRAM cdfsum
   CASE ( 'T' )
      cv_e1  = cn_ve1t
      cv_e2  = cn_ve2t
-     cv_e3  = 'e3t_ps'
-     cv_msk = 'tmask'
+     cf_e3  = cn_fe3t
+     cv_e3  = cn_ve3t
+     cv_msk = cn_tmask
      cv_dep = cn_gdept
      cdep   = cn_vdeptht
   CASE ( 'U' )
      cv_e1  = cn_ve1u
      cv_e2  = cn_ve2u
-     cv_e3  = 'e3t_ps'
-     cv_msk = 'umask'
+     cf_e3  = cn_fe3u
+     cv_e3  = cn_ve3u
+     cv_msk = cn_umask
      cv_dep = cn_gdept
      cdep   = cn_vdepthu
   CASE ( 'V' )
      cv_e1  = cn_ve1v
      cv_e2  = cn_ve2v
-     cv_e3  = 'e3t_ps'
-     cv_msk = 'vmask'
+     cf_e3  = cn_fe3v
+     cv_e3  = cn_ve3v
+     cv_msk = cn_vmask
      cv_dep = cn_gdept
      cdep   = cn_vdepthv
   CASE ( 'F' )
      cv_e1  = cn_ve1f
      cv_e2  = cn_ve2f
-     cv_e3  = 'e3t_ps'
-     cv_msk = 'fmask'
+     cf_e3  = cn_fe3t
+     cv_e3  = cn_ve3t  !!!! CAUTION : e3f not defined
+     cv_msk = cn_fmask
      cv_dep = cn_gdept
      cdep   = cn_vdeptht
   CASE ( 'W' )
      cv_e1  = cn_ve1t
      cv_e2  = cn_ve2t
-     cv_e3  = 'e3w_ps'
-     cv_msk = 'tmask'
+     cf_e3  = cn_fe3w
+     cv_e3  = cn_ve3w
+     cv_msk = cn_tmask
      cv_dep = cn_gdepw
      cdep   = cn_vdepthw
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
      STOP
   END SELECT
+
+  IF ( lg_vvl ) cf_e3 = cf_in
 
   ! set cv_mask to on-line specified name if -M option used
   IF ( lfmsk ) cv_msk = cl_vmsk
@@ -252,6 +265,9 @@ PROGRAM cdfsum
 
   dsumt = 0.d0
   DO jt = 1,npt
+     IF ( lg_vvl ) THEN ; it = jt
+     ELSE               ; it = 1
+     ENDIF
      dvol = 0.d0
      dsum = 0.d0
      zv   = 0.
@@ -263,7 +279,7 @@ PROGRAM cdfsum
         !    zmask(:,npjglo)=0.
 
         ! get e3 at level ik ( ps...)
-        e3(:,:) = getvar(cn_fzgr, cv_e3, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ldiom=.TRUE.)      
+        e3(:,:) = getvar(cf_e3, cv_e3, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl)      
         ! 
         IF (.NOT. lforcing) THEN
            dsurf  = SUM(DBLE(e1 * e2      * zmask))
@@ -309,6 +325,8 @@ PROGRAM cdfsum
     !! ** Purpose : Create netcdf output file  
     !!----------------------------------------------------------------------
     REAL(KIND=4), DIMENSION(1,1)              :: zdumlon, zdumlat    ! dummy latitude and longitude
+
+
     !!
     ! define new variables for output 
     zdumlon = 0. ; zdumlat = 0.
@@ -322,6 +340,7 @@ PROGRAM cdfsum
     stypvar%conline_operation = 'N/A'
 
     ipk(1) = nvpk  ! vertical profile
+    stypvar(1)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
     stypvar(1)%cname          = 'sum_'//TRIM(cv_in)
     stypvar(1)%cunits         = TRIM(clunits)//'.m2'
     stypvar(1)%clong_name     = 'sum'//TRIM(cllong_name)
@@ -329,14 +348,15 @@ PROGRAM cdfsum
     stypvar(1)%caxis          = 'ZT'
 
     ipk(2) = 1     ! 3D sum
+    stypvar(2)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
     stypvar(2)%cname          = 'sum_3D'//TRIM(cv_in)
     stypvar(2)%cunits         = TRIM(clunits)//'.m3'
     stypvar(2)%clong_name     = 'sum_3D'//TRIM(cllong_name)
     stypvar(2)%cshort_name    = 'sum_3D'//TRIM(clshort_name)
     stypvar(2)%caxis          = 'T'
 
-    ncout = create      (cf_out,     'none',  1,     1  ,   nvpk, cdep=cdep)
-    ierr  = createvar   (ncout,      stypvar, 2    , ipk,   id_varout      )
+    ncout = create      (cf_out,     'none',  1,     1  ,   nvpk, cdep=cdep , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,      stypvar, 2    , ipk,   id_varout       , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,      cf_in,   1,     1, npkk,              &
                     &  pnavlon=zdumlon, pnavlat=zdumlat,                   &
                     &  pdep=gdep(ikmin:ikmax),                             &
