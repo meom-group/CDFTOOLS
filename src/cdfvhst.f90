@@ -21,6 +21,7 @@ PROGRAM cdfvhst
   IMPLICIT NONE
 
   INTEGER(KIND=4)                            :: jk, jt          ! dummy loop index
+  INTEGER(KIND=4)                            :: it              ! time index for vvl
   INTEGER(KIND=4)                            :: ierr            ! working integer
   INTEGER(KIND=4)                            :: narg, iargc     ! command line 
   INTEGER(KIND=4)                            :: ijarg           ! argument counter
@@ -47,13 +48,16 @@ PROGRAM cdfvhst
   CHARACTER(LEN=256)                         :: cf_out='trp.nc' ! output file name
   CHARACTER(LEN=256)                         :: cldum           ! dummy char variable
 
-  LOGICAL                                    :: lfull=.FALSE.   ! flag for full step
+  LOGICAL                                    :: lfull   =.FALSE.! flag for full step
+  LOGICAL                                    :: lnc4    =.FALSE.! flag for netcdf4
+  LOGICAL                                    :: lchk    =.FALSE.! flag for checking files
+  LOGICAL                                    :: lchkvar =.FALSE.! flag for missing variables
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvhst  VTfile [-full ]'
+     PRINT *,' usage : cdfvhst  VTfile [-full] [-vvl] [-o OUT-file] [-nc4] '
      PRINT *,'     PURPOSE :'
      PRINT *,'         Computes the vertically integrated heat and salt transports '
      PRINT *,'         at each grid cell.'
@@ -64,12 +68,15 @@ PROGRAM cdfvhst
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'         [ -full ] : use full step computation (default is partial steps).'
+     PRINT *,'         [ -vvl  ] : use time-varying vertical metrics.'
+     PRINT *,'         [ -o OUT-file ] : specify output file name, instead of ', TRIM(cf_out)
+     PRINT *,'         [ -nc4  ] : use netcdf4 chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'         Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'         Netcdf file : ',TRIM(cf_out)
+     PRINT *,'         Netcdf file : ',TRIM(cf_out), ' unless -o option is used.'
      PRINT *,'         Variables : ', TRIM(cn_somevt),', ',TRIM(cn_somevs),', ',TRIM(cn_sozout),' and  ',TRIM(cn_sozous)
      STOP
   ENDIF
@@ -78,47 +85,31 @@ PROGRAM cdfvhst
   DO WHILE (ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg+1
      SELECT CASE (cldum )
-     CASE ( '-full' )
-        lfull = .TRUE.
-     CASE DEFAULT
-        cf_vtfil = cldum
+     CASE ( '-full' ) ;  lfull  = .TRUE.
+     CASE ( '-vvl'  ) ;  lg_vvl = .TRUE.
+     CASE ( '-nc4'  ) ;  lnc4   = .TRUE.
+     CASE ( '-o'    ) ;  CALL getarg(ijarg, cf_out) ; ijarg = ijarg+1
+     CASE DEFAULT     ;  cf_vtfil = cldum
      END SELECT
   END DO
 
-  IF ( chkfile(cf_vtfil) ) STOP ! missing file
+  lchk = lchk .AND. chkfile(cn_fhgr  )
+  lchk = lchk .AND. chkfile(cn_fzgr  )
+  lchk = lchk .AND. chkfile(cf_vtfil )
+
+  IF ( lchk  ) STOP ! missing file
+  IF ( lg_vvl) THEN 
+      cn_fe3u = cf_vtfil 
+      cn_fe3v = cf_vtfil 
+      lchkvar = lchkvar .AND.chkvar( cn_fe3u, cn_ve3u)
+      lchkvar = lchkvar .AND.chkvar( cn_fe3v, cn_ve3v)
+      IF ( lchkvar ) STOP 'no vertical metrics for vvl' ! missing e3 metrics in VT file 
+  ENDIF
 
   npiglo= getdim (cf_vtfil,cn_x )
   npjglo= getdim (cf_vtfil,cn_y )
   npk   = getdim (cf_vtfil,cn_z )
   npt   = getdim (cf_vtfil,cn_t )
-
-  ! define new variables for output 
-  ipk(:)                    = 1
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -100.
-  stypvar%valid_max         = 100.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TYX'
-
-  stypvar(1)%cname       = cn_somevt
-  stypvar(2)%cname       = cn_somevs
-  stypvar(3)%cname       = cn_sozout
-  stypvar(4)%cname       = cn_sozous
-
-  stypvar(1)%cunits      = 'W'
-  stypvar(2)%cunits      = 'kg.s-1'
-  stypvar(3)%cunits      = 'W'
-  stypvar(4)%cunits      = 'kg.s-1'
-
-  stypvar(1)%clong_name  = 'Meridional_heat_transport'
-  stypvar(2)%clong_name  = 'Meridional_salt_transport'
-  stypvar(3)%clong_name  = 'Zonal_heat_transport'
-  stypvar(4)%clong_name  = 'Zonal_salt_transport'
-
-  stypvar(1)%cshort_name = cn_somevt
-  stypvar(2)%cshort_name = cn_somevs
-  stypvar(3)%cshort_name = cn_sozout
-  stypvar(4)%cshort_name = cn_sozous
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -134,13 +125,7 @@ PROGRAM cdfvhst
   ALLOCATE ( dtrput(npiglo,npjglo), dtrpus(npiglo,npjglo))
   ALLOCATE ( tim(npt), e31d(npk) )
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_vtfil, npiglo, npjglo, 1         )
-  ierr  = createvar   (ncout,  stypvar,  4,      ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_vtfil, npiglo, npjglo, 1         )
-
-  tim   = getvar1d(cf_vtfil, cn_vtimec, npt     )
-  ierr  = putvar1d(ncout,    tim,       npt, 'T')
+  CALL CreateOutput
 
   ! read level independent metrics
   e1v(:,:) = getvar(cn_fhgr,   cn_ve1v, 1, npiglo, npjglo)
@@ -148,11 +133,11 @@ PROGRAM cdfvhst
   e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk              ) ! used only for full step
 
   DO jt=1, npt
+     IF ( lg_vvl ) THEN ; it =jt
+     ELSE               ; it = 1
+     ENDIF
      ! reset transport to 0
-     dtrpvt(:,:) = 0.d0
-     dtrpvs(:,:) = 0.d0
-     dtrput(:,:) = 0.d0
-     dtrpus(:,:) = 0.d0
+     dtrpvt(:,:) = 0.d0 ; dtrpvs(:,:) = 0.d0 ; dtrput(:,:) = 0.d0 ; dtrpus(:,:) = 0.d0
 
      DO jk = 1,npk
         PRINT *,'level ',jk, ' time ', jt
@@ -167,8 +152,8 @@ PROGRAM cdfvhst
            e3v(:,:) = e31d(jk) * e1v(:,:)
            e3u(:,:) = e31d(jk) * e2u(:,:)
         ELSE
-           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.) * e1v(:,:)
-           e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.) * e2u(:,:)
+           e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl) * e1v(:,:)
+           e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl) * e2u(:,:)
         ENDIF
 
         ! integrates vertically 
@@ -187,5 +172,62 @@ PROGRAM cdfvhst
   END DO  ! loop on time step
 
   ierr = closeout (ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define new variables for output 
+
+
+    ipk(:)                    = 1
+    stypvar%rmissing_value    = 0.
+    stypvar%valid_min         = -100.
+    stypvar%valid_max         = 100.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TYX'
+
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+
+    stypvar(1)%cname       = cn_somevt
+    stypvar(2)%cname       = cn_somevs
+    stypvar(3)%cname       = cn_sozout
+    stypvar(4)%cname       = cn_sozous
+
+    stypvar(1)%cunits      = 'W'
+    stypvar(2)%cunits      = 'kg.s-1'
+    stypvar(3)%cunits      = 'W'
+    stypvar(4)%cunits      = 'kg.s-1'
+
+    stypvar(1)%clong_name  = 'Meridional_heat_transport'
+    stypvar(2)%clong_name  = 'Meridional_salt_transport'
+    stypvar(3)%clong_name  = 'Zonal_heat_transport'
+    stypvar(4)%clong_name  = 'Zonal_salt_transport'
+
+    stypvar(1)%cshort_name = cn_somevt
+    stypvar(2)%cshort_name = cn_somevs
+    stypvar(3)%cshort_name = cn_sozout
+    stypvar(4)%cshort_name = cn_sozous
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_vtfil, npiglo, npjglo, 1        , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar,  4,      ipk,    id_varout, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_vtfil, npiglo, npjglo, 1         )
+
+    tim   = getvar1d(cf_vtfil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,    tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdfvhst
