@@ -24,13 +24,14 @@ PROGRAM cdfvT
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                           :: ji, jj, jk, jv, jtt  ! dummy loop index
+  INTEGER(KIND=4)                           :: ji, jj, jk, jv, jtt, jt  ! dummy loop index
   INTEGER(KIND=4)                           :: ierr                 ! working integer
   INTEGER(KIND=4)                           :: narg, iargc, n1      ! command line
-  INTEGER(KIND=4)                           :: ijarg, ixtra         ! command line
+  INTEGER(KIND=4)                           :: ijarg, ireq          ! command line
   INTEGER(KIND=4)                           :: npiglo,npjglo        ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                           :: ntframe              ! Cumul of time frame
+  INTEGER(KIND=4)                           :: ntags                ! number of tags in the list
   INTEGER(KIND=4)                           :: ncout                ! ncid of output file
   INTEGER(KIND=4), DIMENSION(4)             :: ipk, id_varout       ! level and varid's of output vars
 
@@ -38,6 +39,7 @@ PROGRAM cdfvT
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv               ! Velocity component
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zworku, zworkv       ! working arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmean                ! temporary mean value for netcdf write
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t, e3u, e3v        ! vertical metrics for vvl case
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter of individual files
   REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
 
@@ -53,6 +55,7 @@ PROGRAM cdfvT
   CHARACTER(LEN=256)                        :: config               ! configuration name
   CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
   CHARACTER(LEN=256)                        :: cldum                ! dummy character argument
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: ctaglist         ! dummy character argument
 
   TYPE (variable), DIMENSION(4)             :: stypvar              ! structure for attributes
 
@@ -64,7 +67,7 @@ PROGRAM cdfvT
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvT CONFIG-CASE [-o output_file ] [-nc4 ] ''list_of_tags'' '
+     PRINT *,' usage : cdfvT CONFIG-CASE [-o OUT_file ] [-nc4 ] [-vvl] ''list_of_tags'' '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order products ' 
      PRINT *,'       V.T, V.S, U.T and U.S used in heat and salt transport computation.'
@@ -75,6 +78,7 @@ PROGRAM cdfvT
      PRINT *,'            this config ( grid_T, grid_U and grid_V are also accepted).'
      PRINT *,'            Additionaly, if gridS or grid_S file is found, it will be taken'
      PRINT *,'            in place of gridT for the salinity variable.'
+     PRINT *,'       [-vvl ] use time varying vertical metrics.'
      PRINT *,'       [-nc4 ] use netcdf4 output with chunking and deflation 1'
      PRINT *,'       [-o output file ] default :',TRIM(cf_out),'  must be before tag list'
      PRINT *,'       list_of_tags : a list of time tags that will be used for time'
@@ -84,57 +88,40 @@ PROGRAM cdfvT
      PRINT *,'        none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option used.'
      PRINT *,'       variables : ',TRIM(cn_vozout),', ',TRIM(cn_vozous),', ',TRIM(cn_vomevt),' and ',TRIM(cn_vomevs)
      STOP
   ENDIF
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
-  ijarg = 1 ; n1 = 2 ; ixtra=1
+  ijarg = 1 ; n1 = 1 ; ireq=0 ; ntags=0
   DO WHILE ( ijarg <= narg ) 
     CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
     SELECT CASE ( cldum ) 
-    CASE ( '-o' )
-      CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-      n1 = n1 + 2
-    CASE ( '-nc4' )
-      lnc4 = .true.
-      n1 = n1 + 1
+    CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1 ; n1 = n1 + 2
+    CASE ( '-nc4' ) ;                                   lnc4 = .true. ; n1 = n1 + 1
     CASE DEFAULT
-      IF ( ixtra == 1 ) THEN   ! first argument w/o options is config
-         config=cldum ; ixtra = ixtra + 1
-      ELSE IF ( ixtra == 2 ) THEN ! all other extra arguments are tags. keep the first, now
-         ctag=cldum
-      ENDIF
-     END SELECT
+       ireq= ireq+1
+       SELECT CASE (ireq) 
+       CASE (1 ) ; config = cldum 
+       CASE DEFAULT ; ntags=ntags +1
+       END SELECT
+    END SELECT
+  ENDDO
+  PRINT *,' Find ', ntags, ' to process'
+
+  ! re-read tag list
+  ALLOCATE( ctaglist(ntag) )
+  DO jt=1,ntags
+    ijarg=n1+jt
+    CALL getarg( ijarg, ctaglist(jt) )
   ENDDO
 
-  cf_tfil = SetFileName( config, ctag, 'T')
+  cf_tfil = SetFileName( config, ctaglist(1), 'T')
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
-
-  ipk(:)= npk  ! all variables (input and output are 3D)
-  ! define output variables
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -100.
-  stypvar%valid_max         = 100.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TZYX'
-  DO jv = 1, 4
-     stypvar(jv)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
-  ENDDO
-
-  stypvar(1)%cname          = cn_vomevt       ; stypvar(1)%cunits        = 'm.DegC.s-1'
-  stypvar(2)%cname          = cn_vomevs       ; stypvar(2)%cunits        = 'm.PSU.s-1'
-  stypvar(3)%cname          = cn_vozout       ; stypvar(3)%cunits        = 'm.DegC.s-1'
-  stypvar(4)%cname          = cn_vozous       ; stypvar(4)%cunits        = 'm.PSU.s-1'
-
-  stypvar(1)%clong_name     = 'Meridional_VT' ; stypvar(1)%cshort_name   = cn_vomevt
-  stypvar(2)%clong_name     = 'Meridional_VS' ; stypvar(2)%cshort_name   = cn_vomevs
-  stypvar(3)%clong_name     = 'Zonal_UT'      ; stypvar(3)%cshort_name   = cn_vozout
-  stypvar(4)%clong_name     = 'Zonal_US'      ; stypvar(4)%cshort_name   = cn_vozous
 
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
@@ -146,11 +133,11 @@ PROGRAM cdfvT
   ALLOCATE( zworku(npiglo,npjglo),   zworkv(npiglo,npjglo) )
   ALLOCATE( ztemp(npiglo,npjglo),    zsal(npiglo,npjglo) )
   ALLOCATE( zmean(npiglo,npjglo))
+  IF (lg_vvl ) THEN
+    ALLOCATE( e3t(npiglo,npjglo), e3u(npiglo,npjglo), e3v(npiglo,npjglo))
+  ENDIF
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            , ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+  CALL CreateOutput
   
   lcaltmean=.TRUE.
   DO jk = 1, npk
@@ -158,25 +145,8 @@ PROGRAM cdfvT
      dcumulut(:,:) = 0.d0 ;  dcumulvt(:,:) = 0.d0 ; dtotal_time = 0.d0
      dcumulus(:,:) = 0.d0 ;  dcumulvs(:,:) = 0.d0 ; ntframe = 0
 
-     ijarg = 1 ; ixtra=1 ; ctag='none'
-     DO WHILE ( ijarg <= narg ) 
-          CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
-
-          SELECT CASE ( cldum ) 
-          CASE ( '-o' )
-            CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
-            CYCLE
-          CASE ( '-nc4' )
-             CYCLE
-          CASE DEFAULT
-             IF ( ixtra == 1 ) THEN   ! first argument w/o options is config
-                ixtra = ixtra + 1 
-                CYCLE
-             ELSE IF ( ixtra > 1 ) THEN ! all other extra arguments are tags. keep the first, now
-                ctag=cldum  ! process this tag !
-             ENDIF
-          END SELECT
-
+     DO jt = 1, ntags
+        ctag=ctaglist(jt) 
         cf_tfil = SetFileName( config, ctag, 'T', ld_stop=.TRUE. )
         cf_sfil = SetFileName( config, ctag, 'S', ld_stop=.FALSE.)      ! do not stop if gridS/grid_S not found !
         IF ( chkfile (cf_sfil, ld_verbose=.FALSE.) ) cf_sfil = cf_tfil  ! do not complain if not found
@@ -199,6 +169,19 @@ PROGRAM cdfvT
            zv(:,:)    = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jtt )
            ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jtt )
            zsal(:,:)  = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
+! JMM WIP 
+! JMM WIP 
+! JMM WIP 
+! JMM WIP  How to compute correctly the product VT or VS or UT, US in vvl ????
+           IF ( lg_vvl ) THEN
+             e3u(:,:) = getvar(cf_ufil, cn_ve3u, jk, npiglo, npjglo, ktime=jtt )
+             e3v(:,:) = getvar(cf_vfil, cn_ve3v, jk, npiglo, npjglo, ktime=jtt )
+             e3t(:,:) = getvar(cf_tfil, cn_ve3t, jk, npiglo, npjglo, ktime=jtt )
+           ENDIF
+! JMM WIP 
+! JMM WIP 
+! JMM WIP 
+! JMM WIP 
 
            ! temperature at u point, v points
            zworku(:,:) = 0. ; zworkv(:,:) = 0.
@@ -248,5 +231,46 @@ PROGRAM cdfvT
   END DO  ! loop to next level
 
   ierr = closeout(ncout)
+
+CONTAINS
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+! JMM WIP :  for vvl need to store vertical metrics as well ... (for the heat transport )
+
+  ipk(:)= npk  ! all variables (input and output are 3D)
+  ! define output variables
+  stypvar%rmissing_value    = 0.
+  stypvar%valid_min         = -100.
+  stypvar%valid_max         = 100.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TZYX'
+  DO jv = 1, 4
+     stypvar(jv)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
+  ENDDO
+
+  stypvar(1)%cname          = cn_vomevt       ; stypvar(1)%cunits        = 'm.DegC.s-1'
+  stypvar(2)%cname          = cn_vomevs       ; stypvar(2)%cunits        = 'm.PSU.s-1'
+  stypvar(3)%cname          = cn_vozout       ; stypvar(3)%cunits        = 'm.DegC.s-1'
+  stypvar(4)%cname          = cn_vozous       ; stypvar(4)%cunits        = 'm.PSU.s-1'
+
+  stypvar(1)%clong_name     = 'Meridional_VT' ; stypvar(1)%cshort_name   = cn_vomevt
+  stypvar(2)%clong_name     = 'Meridional_VS' ; stypvar(2)%cshort_name   = cn_vomevs
+  stypvar(3)%clong_name     = 'Zonal_UT'      ; stypvar(3)%cshort_name   = cn_vozout
+  stypvar(4)%clong_name     = 'Zonal_US'      ; stypvar(4)%cshort_name   = cn_vozous
+
+  ! create output fileset
+  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdfvT
