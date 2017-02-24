@@ -33,18 +33,20 @@ PROGRAM cdfvT
   INTEGER(KIND=4)                           :: ntframe              ! Cumul of time frame
   INTEGER(KIND=4)                           :: ntags                ! number of tags in the list
   INTEGER(KIND=4)                           :: ncout                ! ncid of output file
-  INTEGER(KIND=4), DIMENSION(4)             :: ipk, id_varout       ! level and varid's of output vars
+  INTEGER(KIND=4)                           :: nvaro                ! Number of output variables
+  INTEGER(KIND=4), DIMENSION(:),ALLOCATABLE :: ipk, id_varout       ! level and varid's of output vars
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp, zsal          ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv               ! Velocity component
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zworku, zworkv       ! working arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmean                ! temporary mean value for netcdf write
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t, e3u, e3v        ! vertical metrics for vvl case
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3u, e3v             ! vertical metrics for vvl case
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter of individual files
   REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
 
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulut, dcumulus   ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulvt, dcumulvs   ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumule3u, dcumule3v ! Arrays for cumulated vertical metrics (vvl case)
   REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
   CHARACTER(LEN=256)                        :: cf_tfil              ! T file name
@@ -57,7 +59,7 @@ PROGRAM cdfvT
   CHARACTER(LEN=256)                        :: cldum                ! dummy character argument
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: ctaglist         ! dummy character argument
 
-  TYPE (variable), DIMENSION(4)             :: stypvar              ! structure for attributes
+  TYPE (variable), DIMENSION(:), ALLOCATABLE    :: stypvar          ! structure for attributes
 
   LOGICAL                                   :: lcaltmean            ! flag for mean time computation
   LOGICAL                                   :: lnc4=.false.         ! flag for netcdf4 output with chunking and deflation
@@ -111,7 +113,7 @@ PROGRAM cdfvT
   PRINT *,' Find ', ntags, ' to process'
 
   ! re-read tag list
-  ALLOCATE( ctaglist(ntag) )
+  ALLOCATE( ctaglist(ntags) )
   DO jt=1,ntags
     ijarg=n1+jt
     CALL getarg( ijarg, ctaglist(jt) )
@@ -127,14 +129,22 @@ PROGRAM cdfvT
   PRINT *, 'npjglo =', npjglo
   PRINT *, 'npk    =', npk
 
+  IF ( lg_vvl ) THEN
+    nvaro = 6  ! UT US VT VS e3u, e3v
+  ELSE
+    nvaro = 4  ! UT US VT VS
+  ENDIF 
+
   ALLOCATE( dcumulut(npiglo,npjglo), dcumulus(npiglo,npjglo) )
   ALLOCATE( dcumulvt(npiglo,npjglo), dcumulvs(npiglo,npjglo) )
   ALLOCATE( zu(npiglo,npjglo),    zv(npiglo,npjglo) )
   ALLOCATE( zworku(npiglo,npjglo),   zworkv(npiglo,npjglo) )
   ALLOCATE( ztemp(npiglo,npjglo),    zsal(npiglo,npjglo) )
   ALLOCATE( zmean(npiglo,npjglo))
+  ALLOCATE( id_varout(nvaro), ipk(nvaro), stypvar(nvaro) )
   IF (lg_vvl ) THEN
-    ALLOCATE( e3t(npiglo,npjglo), e3u(npiglo,npjglo), e3v(npiglo,npjglo))
+    ALLOCATE(       e3u(npiglo,npjglo),       e3v(npiglo,npjglo))
+    ALLOCATE( dcumule3u(npiglo,npjglo), dcumule3v(npiglo,npjglo) )
   ENDIF
 
   CALL CreateOutput
@@ -144,6 +154,9 @@ PROGRAM cdfvT
      PRINT *,'level ',jk
      dcumulut(:,:) = 0.d0 ;  dcumulvt(:,:) = 0.d0 ; dtotal_time = 0.d0
      dcumulus(:,:) = 0.d0 ;  dcumulvs(:,:) = 0.d0 ; ntframe = 0
+     IF ( lg_vvl ) THEN
+         dcumule3u(:,:) = 0.d0 ;  dcumule3v(:,:) = 0.d0
+     ENDIF
 
      DO jt = 1, ntags
         ctag=ctaglist(jt) 
@@ -169,21 +182,14 @@ PROGRAM cdfvT
            zv(:,:)    = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jtt )
            ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jtt )
            zsal(:,:)  = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
-! JMM WIP 
-! JMM WIP 
-! JMM WIP 
-! JMM WIP  How to compute correctly the product VT or VS or UT, US in vvl ????
+
            IF ( lg_vvl ) THEN
              e3u(:,:) = getvar(cf_ufil, cn_ve3u, jk, npiglo, npjglo, ktime=jtt )
              e3v(:,:) = getvar(cf_vfil, cn_ve3v, jk, npiglo, npjglo, ktime=jtt )
-             e3t(:,:) = getvar(cf_tfil, cn_ve3t, jk, npiglo, npjglo, ktime=jtt )
            ENDIF
-! JMM WIP 
-! JMM WIP 
-! JMM WIP 
-! JMM WIP 
 
-           ! temperature at u point, v points
+           ! temperature at u point, v points ( As in NEMO, with or without  vvl Temp a U/V points is 
+           ! computed as follow ( second order) 
            zworku(:,:) = 0. ; zworkv(:,:) = 0.
            DO ji=1, npiglo-1
               DO jj = 1, npjglo -1
@@ -192,8 +198,15 @@ PROGRAM cdfvT
               END DO
            END DO
 
-           dcumulut(:,:) = dcumulut(:,:) + zworku(:,:) * zu(:,:)*1.d0
-           dcumulvt(:,:) = dcumulvt(:,:) + zworkv(:,:) * zv(:,:)*1.d0
+           IF (lg_vvl ) THEN
+             dcumulut(:,:) = dcumulut(:,:) + zworku(:,:) * e3u(:,:) * zu(:,:)*1.d0
+             dcumulvt(:,:) = dcumulvt(:,:) + zworkv(:,:) * e3v(:,:) * zv(:,:)*1.d0
+             dcumule3u(:,:) = dcumule3u(:,:) +  e3u(:,:) *1.d0
+             dcumule3v(:,:) = dcumule3v(:,:) +  e3v(:,:) *1.d0
+           ELSE
+             dcumulut(:,:) = dcumulut(:,:) + zworku(:,:) * zu(:,:)*1.d0
+             dcumulvt(:,:) = dcumulvt(:,:) + zworkv(:,:) * zv(:,:)*1.d0
+           ENDIF
 
            ! salinity at u points, v points
            zworku(:,:) = 0. ; zworkv(:,:) = 0.
@@ -204,23 +217,32 @@ PROGRAM cdfvT
               END DO
            END DO
 
-           dcumulus(:,:) = dcumulus(:,:) + zworku(:,:) * zu(:,:)*1.d0
-           dcumulvs(:,:) = dcumulvs(:,:) + zworkv(:,:) * zv(:,:)*1.d0
+           IF (lg_vvl ) THEN
+             dcumulus(:,:) = dcumulus(:,:) + zworku(:,:) * e3u(:,:) * zu(:,:)*1.d0
+             dcumulvs(:,:) = dcumulvs(:,:) + zworkv(:,:) * e3v(:,:) * zv(:,:)*1.d0
+           ELSE
+             dcumulus(:,:) = dcumulus(:,:) + zworku(:,:) * zu(:,:)*1.d0
+             dcumulvs(:,:) = dcumulvs(:,:) + zworkv(:,:) * zv(:,:)*1.d0
+           ENDIF
 
         END DO  !jtt
      END DO  ! arg list
      ! finish with level jk ; compute mean (assume spval is 0 )
-     zmean(:,:) = dcumulvt(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(1), zmean, jk,npiglo, npjglo, kwght=ntframe )
-
-     zmean(:,:) = dcumulvs(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(2), zmean, jk,npiglo, npjglo, kwght=ntframe )
-
-     zmean(:,:) = dcumulut(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(3), zmean, jk,npiglo, npjglo, kwght=ntframe )
-
-     zmean(:,:) = dcumulus(:,:)/ntframe
-     ierr = putvar(ncout, id_varout(4), zmean, jk,npiglo, npjglo, kwght=ntframe )
+     ! JMM In the following line multiplication by 1.e0 is a trick to write real*4 values.
+     IF ( lg_vvl) THEN
+        ierr = putvar(ncout, id_varout(1), dcumulvt(:,:)/dcumule3v(:,:)*1.e0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(2), dcumulvs(:,:)/dcumule3v(:,:)*1.e0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(3), dcumulut(:,:)/dcumule3u(:,:)*1.e0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(4), dcumulus(:,:)/dcumule3u(:,:)*1.e0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(5), dcumule3u(:,:)/ntframe      *1.e0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(6), dcumule3v(:,:)/ntframe      *1.e0, jk,npiglo, npjglo, kwght=ntframe )
+     ELSE
+        zmean(:,:) = dcumulvt(:,:)/ntframe
+        ierr = putvar(ncout, id_varout(1), dcumulvt(:,:)/ntframe*1.d0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(2), dcumulvs(:,:)/ntframe*1.d0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(3), dcumulut(:,:)/ntframe*1.d0, jk,npiglo, npjglo, kwght=ntframe )
+        ierr = putvar(ncout, id_varout(4), dcumulus(:,:)/ntframe*1.d0, jk,npiglo, npjglo, kwght=ntframe )
+     ENDIF
 
      IF (lcaltmean )  THEN
         timean(1) = dtotal_time/ntframe
@@ -242,33 +264,41 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-! JMM WIP :  for vvl need to store vertical metrics as well ... (for the heat transport )
 
-  ipk(:)= npk  ! all variables (input and output are 3D)
-  ! define output variables
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -100.
-  stypvar%valid_max         = 100.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TZYX'
-  DO jv = 1, 4
-     stypvar(jv)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
-  ENDDO
+    ipk(:)= npk  ! all variables (input and output are 3D)
+    ! define output variables
+    stypvar%rmissing_value    = 0.
+    stypvar%valid_min         = -100.
+    stypvar%valid_max         = 100.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TZYX'
 
-  stypvar(1)%cname          = cn_vomevt       ; stypvar(1)%cunits        = 'm.DegC.s-1'
-  stypvar(2)%cname          = cn_vomevs       ; stypvar(2)%cunits        = 'm.PSU.s-1'
-  stypvar(3)%cname          = cn_vozout       ; stypvar(3)%cunits        = 'm.DegC.s-1'
-  stypvar(4)%cname          = cn_vozous       ; stypvar(4)%cunits        = 'm.PSU.s-1'
+    DO jv = 1, nvaro
+       stypvar(jv)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
+    ENDDO
 
-  stypvar(1)%clong_name     = 'Meridional_VT' ; stypvar(1)%cshort_name   = cn_vomevt
-  stypvar(2)%clong_name     = 'Meridional_VS' ; stypvar(2)%cshort_name   = cn_vomevs
-  stypvar(3)%clong_name     = 'Zonal_UT'      ; stypvar(3)%cshort_name   = cn_vozout
-  stypvar(4)%clong_name     = 'Zonal_US'      ; stypvar(4)%cshort_name   = cn_vozous
+    stypvar(1)%cname          = cn_vomevt       ; stypvar(1)%cunits        = 'm.DegC.s-1'
+    stypvar(2)%cname          = cn_vomevs       ; stypvar(2)%cunits        = 'm.PSU.s-1'
+    stypvar(3)%cname          = cn_vozout       ; stypvar(3)%cunits        = 'm.DegC.s-1'
+    stypvar(4)%cname          = cn_vozous       ; stypvar(4)%cunits        = 'm.PSU.s-1'
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            , ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+    stypvar(1)%clong_name     = 'Meridional_VT' ; stypvar(1)%cshort_name   = cn_vomevt
+    stypvar(2)%clong_name     = 'Meridional_VS' ; stypvar(2)%cshort_name   = cn_vomevs
+    stypvar(3)%clong_name     = 'Zonal_UT'      ; stypvar(3)%cshort_name   = cn_vozout
+    stypvar(4)%clong_name     = 'Zonal_US'      ; stypvar(4)%cshort_name   = cn_vozous
+  
+    IF ( lg_vvl ) THEN
+       stypvar(5)%cname       = cn_ve3u         ; stypvar(5)%cunits        = 'm'
+       stypvar(6)%cname       = cn_ve3v         ; stypvar(6)%cunits        = 'm'
+
+       stypvar(5)%clong_name  = 'Mean_e3u'      ; stypvar(5)%cshort_name   = cn_ve3u
+       stypvar(6)%clong_name  = 'Mean_e3v'      ; stypvar(6)%cshort_name   = cn_ve3v
+    ENDIF
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout , stypvar, nvaro,      ipk,    id_varout        , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
 
   END SUBROUTINE CreateOutput
 
