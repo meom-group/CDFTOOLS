@@ -39,7 +39,6 @@ PROGRAM cdfvT
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp, zsal          ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv               ! Velocity component
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zworku, zworkv       ! working arrays
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmean                ! temporary mean value for netcdf write
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3u, e3v             ! vertical metrics for vvl case
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter of individual files
   REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
@@ -140,7 +139,6 @@ PROGRAM cdfvT
   ALLOCATE( zu(npiglo,npjglo),    zv(npiglo,npjglo) )
   ALLOCATE( zworku(npiglo,npjglo),   zworkv(npiglo,npjglo) )
   ALLOCATE( ztemp(npiglo,npjglo),    zsal(npiglo,npjglo) )
-  ALLOCATE( zmean(npiglo,npjglo))
   ALLOCATE( id_varout(nvaro), ipk(nvaro), stypvar(nvaro) )
   IF (lg_vvl ) THEN
     ALLOCATE(       e3u(npiglo,npjglo),       e3v(npiglo,npjglo))
@@ -237,7 +235,6 @@ PROGRAM cdfvT
         ierr = putvar(ncout, id_varout(5), dcumule3u(:,:)/ntframe      *1.e0, jk,npiglo, npjglo, kwght=ntframe )
         ierr = putvar(ncout, id_varout(6), dcumule3v(:,:)/ntframe      *1.e0, jk,npiglo, npjglo, kwght=ntframe )
      ELSE
-        zmean(:,:) = dcumulvt(:,:)/ntframe
         ierr = putvar(ncout, id_varout(1), dcumulvt(:,:)/ntframe*1.d0, jk,npiglo, npjglo, kwght=ntframe )
         ierr = putvar(ncout, id_varout(2), dcumulvs(:,:)/ntframe*1.d0, jk,npiglo, npjglo, kwght=ntframe )
         ierr = putvar(ncout, id_varout(3), dcumulut(:,:)/ntframe*1.d0, jk,npiglo, npjglo, kwght=ntframe )
