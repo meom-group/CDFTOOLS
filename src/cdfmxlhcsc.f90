@@ -37,8 +37,10 @@ PROGRAM cdfmxlhcsc
   IMPLICIT NONE
 
   INTEGER(KIND=4)                              :: ji, jj, jk, jt  ! dummy loop index
+  INTEGER(KIND=4)                              :: it              ! time index for vvl
   INTEGER(KIND=4)                              :: ik              ! level indirect index
   INTEGER(KIND=4)                              :: narg, iargc     ! browse line
+  INTEGER(KIND=4)                              :: ijarg           ! argument counter
   INTEGER(KIND=4)                              :: npiglo, npjglo  ! domain size
   INTEGER(KIND=4)                              :: npk, npt        ! domaine size
   INTEGER(KIND=4)                              :: ncout, ierr     ! ncid of output file an error status
@@ -74,34 +76,44 @@ PROGRAM cdfmxlhcsc
   CHARACTER(LEN=256)                           :: criteria        ! type of criteria used for mld
   CHARACTER(LEN=256)                           :: cldum           ! dummy string
 
-  LOGICAL                                      :: lchk          ! flag for missing files
-  LOGICAL                                      :: lfull=.FALSE. ! flag for full step
+  LOGICAL                                      :: lchk            ! flag for missing files
+  LOGICAL                                      :: lfull=.FALSE.   ! flag for full step
+  LOGICAL                                      :: lnc4 =.FALSE.   ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmxlhcsc T-file criteria value [hmin]'
+     PRINT *,' usage : cdfmxlhcsc -f T-file -C criteria -t THRESH-value [-hmin hmin] ...'
+     PRINT *,'                     ... [ -o OUT-file ] [-nc4 ] [ -vvl ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the mixed layer depth, the heat content and salt content.' 
+     PRINT *,'       Compute the MiXed Layer depth, the Heat Content and Salt Content.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file : netcdf input file for temperature and salinity (gridT).' 
-     PRINT *,'       criteria : one of temperature, t,  T for temperature criteria.'
-     PRINT *,'                  or density, d,  D  for density criteria.'
-     PRINT *,'       value  : value of the criteria (eg: 0.2 for temp, 0.01 or 0.03 for dens)'
+     PRINT *,'       -f T-file : netcdf input file for temperature and salinity (gridT).' 
+     PRINT *,'       -C criteria : Specify the type of criteria to use for MXL computation'
+     PRINT *,'                can be one of temperature, t,  T for temperature criteria.'
+     PRINT *,'                    or one of density, d,  D  for density criteria.'
+     PRINT *,'       -t THRESH-value : threshold value for the criteria.'
+     PRINT *,'                (eg: 0.2 for temp, 0.01 or 0.03 for dens)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ hmin ] : limit the vertical integral from hmin to mld. By default, ' 
+     PRINT *,'       [-hmin hmin ] : limit the vertical integral from hmin to mld. By default, ' 
      PRINT *,'                  hmin is set to 0 so that the integral is performed on the'
      PRINT *,'                  whole mixed layer.'
+     PRINT *,'       [-o OUT-file ] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-vvl ] : use time-varying vertical metrics'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),' ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
+     PRINT *,'        In case of full step configuration, ',TRIM(cn_fbathylev),' is also required.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used'
      PRINT *,'         variables : -  somxl010 (mld based on density criterium 0.01)'
      PRINT *,'          (2D)          or somxl030 (mld on density criterium 0.03)'
      PRINT *,'                        or somxlt02 (mld on temperature criterium -0.2)'
@@ -114,16 +126,29 @@ PROGRAM cdfmxlhcsc
      STOP
   ENDIF
 
-  CALL getarg (1, cf_tfil  )
-  CALL getarg (2, criteria )
-  CALL getarg (3, cldum    ) ;  READ(cldum,*) val
-  IF ( narg == 4 ) THEN ; CALL getarg (4, cldum) ;  READ(cldum,*) hmin ; ENDIF
+
+  ijarg = 1 
+  DO WHILE ( ijarg <= narg )
+    CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
+    SELECT CASE ( cldum )
+    CASE ( '-f '    ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1 
+    CASE ( '-C '    ) ; CALL getarg (ijarg, criteria ) ; ijarg = ijarg + 1 
+    CASE ( '-t '    ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1  ; READ(cldum,*) val
+    ! options
+    CASE ( '-hmin ' ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1  ; READ(cldum,*) hmin
+    CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1  
+    CASE ( '-nc4'   ) ; lnc4   = .TRUE.
+    CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
+    CASE DEFAULT  ; PRINT *, ' ERROR : Option ',TRIM(cldum),' unknown !' ; STOP
+    END SELECT
+  ENDDO
 
   lchk = chkfile (cn_fhgr)
   lchk = chkfile (cn_fzgr) .OR. lchk
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_tfil) .OR. lchk
   IF ( lchk ) STOP ! missing files
+  IF ( lg_vvl ) cn_fe3t = cf_tfil 
 
   ! read dimensions 
   npiglo = getdim (cf_tfil, cn_x)
@@ -131,39 +156,14 @@ PROGRAM cdfmxlhcsc
   npk    = getdim (cf_tfil, cn_z)
   npt    = getdim (cf_tfil, cn_t)
 
-  rdep(1) = 0.
-  ipk(:)  = 1 
 
   ! Variable Mixed Layer Depth
   SELECT CASE ( criteria)
-     !
-  CASE ( 'Temperature', 'temperature', 't', 'T' )
-     WRITE(cldum,'(a,i2.2)' ) 'somxlt', INT(ABS(val)*10)
-     !
-  CASE ( 'Density',     'density',     'd', 'D' )
-     WRITE(cldum,'(a,i3.3)' ) 'somxl', INT((val)*1000)
-     !
-  CASE DEFAULT
-     PRINT *,TRIM(criteria),' : criteria not understood'
-     STOP
+  CASE ( 'Temperature', 'temperature', 't', 'T' ) ; WRITE(cldum,'(a,i2.2)' ) 'somxlt', INT(ABS(val)*10)
+  CASE ( 'Density',     'density',     'd', 'D' ) ; WRITE(cldum,'(a,i3.3)' ) 'somxl' , INT((val)*1000)
+  CASE DEFAULT  ; PRINT *,'ERROR: ',TRIM(criteria),' : criteria not understood' ; STOP
   END SELECT
 
-  stypvar(1)%cname       = TRIM(cldum)
-  stypvar(1)%cshort_name = TRIM(cldum)
-  stypvar(1)%cunits      = 'm'
-  stypvar(1)%clong_name  = 'Mixed Layer Depth'
-
-  ! Variable Heat Content
-  stypvar(2)%cname       = 'somxlheatc'
-  stypvar(2)%cunits      = '10^9 J/m2'
-  stypvar(2)%clong_name  = 'Mixed_Layer_Heat_Content'
-  stypvar(2)%cshort_name = 'somxlheatc'
-
-  ! Variable Salt Content
-  stypvar(3)%cname       = 'somxlsaltc'
-  stypvar(3)%cunits      = '10^6 kg/m2'
-  stypvar(3)%clong_name  = 'Mixed_Layer_Salt_Content'
-  stypvar(3)%cshort_name = 'somxlsaltc'
 
   ! Allocate arrays
   ALLOCATE (rtem(npiglo,npjglo),rsal(npiglo,npjglo)          )
@@ -172,15 +172,14 @@ PROGRAM cdfmxlhcsc
   ALLOCATE (nmln(npiglo,npjglo),hmld(npiglo,npjglo)          )
   ALLOCATE (dmxlheatc(npiglo,npjglo),dmxlsaltc(npiglo,npjglo))
   ALLOCATE (e3(npiglo,npjglo)                                )
-  ALLOCATE (gdepw(0:npk), tim(npt)                             )
+  ALLOCATE (gdepw(0:npk), tim(npt)                           )
+
+  CALL CreateOutput
 
   ! read mbathy and gdepw use real rtem(:,:) as template (getvar is used for real only)
   INQUIRE (FILE=cn_fbathylev, EXIST=lfull)
-  IF ( lfull ) THEN
-     rtem(:,:) = getvar(cn_fbathylev, cn_bathylev, 1, npiglo, npjglo)
-     ALLOCATE ( e31d(npk) )
-  ELSE
-     rtem(:,:) = getvar(cn_fzgr,      'mbathy',    1, npiglo, npjglo)
+  IF ( lfull ) THEN ; rtem(:,:) = getvar(cn_fbathylev, cn_bathylev, 1, npiglo, npjglo) ; ALLOCATE ( e31d(npk) )
+  ELSE              ; rtem(:,:) = getvar(cn_fzgr,      cn_mbathy,   1, npiglo, npjglo)
   ENDIF
 
   mbathy(:,:)  = rtem(:,:)
@@ -188,23 +187,19 @@ PROGRAM cdfmxlhcsc
   gdepw(1:npk) = getvare3(cn_fzgr, cn_gdepw, npk) 
   IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t, npk )
 
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1           )
-  ierr  = createvar   (ncout,  stypvar, 3,      ipk,    id_varout   )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
-  tim   = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr  = putvar1d(ncout,  tim,       npt, 'T')
-
   DO jt = 1, npt   ! major time loop
+     IF (lg_vvl ) THEN ; it=jt
+     ELSE              ; it=1
+     ENDIF
      ! MXL computation
      !---------------
      ! Initialization to the number of w ocean point mbathy
      nmln(:,:) = mbathy(:,:)
 
      ! read surface tmask
-     tmask_surf(:,:) = getvar(cn_fmsk, 'tmask', 1, npiglo, npjglo)
+     tmask_surf(:,:) = getvar(cn_fmsk, cn_tmask, 1, npiglo, npjglo)
 
      SELECT CASE ( criteria )
-        !
      CASE ( 'temperature', 'Temperature', 'T', 't' ) ! Temperature criteria
         ! temp_surf
         IF (.NOT. ALLOCATED ( tem_surf) ) ALLOCATE (tem_surf(npiglo,npjglo))
@@ -216,7 +211,6 @@ PROGRAM cdfmxlhcsc
            rtem(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
            WHERE ( ABS(rtem - tem_surf) > ABS(val) ) nmln = jk
         ENDDO
-        !
      CASE ( 'density', 'Density', 'D', 'd' ) ! Density criteria
         ! compute rho_surf
         IF ( .NOT. ALLOCATED( rho_surf ) ) ALLOCATE (rho_surf(npiglo,npjglo) )
@@ -230,14 +224,10 @@ PROGRAM cdfmxlhcsc
         DO jk = npk-1, 2, -1
            rtem( :,:) = getvar(cf_tfil, cn_votemper,  jk ,npiglo, npjglo, ktime=jt)
            rsal( :,:) = getvar(cf_tfil, cn_vosaline,  jk ,npiglo, npjglo, ktime=jt)
-           tmask(:,:) = getvar(cn_fmsk, 'tmask',     jk, npiglo, npjglo          )
+           tmask(:,:) = getvar(cn_fmsk, cn_tmask,     jk, npiglo, npjglo          )
            rho(  :,:) = sigma0 (rtem, rsal, npiglo, npjglo ) * tmask(:,:)
            WHERE ( rho > rho_surf + val ) nmln = jk
         ENDDO
-        !
-     CASE DEFAULT
-        PRINT *,' ERROR: Criterium on ', TRIM(criteria),' not suported' ; STOP
-        !
      END SELECT
 
      !! Determine mixed layer depth
@@ -258,27 +248,27 @@ PROGRAM cdfmxlhcsc
         ! Get temperature and salinity at jk
         rtem(:,:)  = getvar(cf_tfil,  cn_votemper, jk, npiglo, npjglo, ktime=jt)
         rsal(:,:)  = getvar(cf_tfil,  cn_vosaline, jk, npiglo, npjglo, ktime=jt)
-        tmask(:,:) = getvar(cn_fmsk, 'tmask',     jk, npiglo, npjglo          )
+        tmask(:,:) = getvar(cn_fmsk,  cn_tmask ,   jk, npiglo, npjglo          )
 
         IF ( lfull ) THEN
            e3(:,:) = e31d(jk)
         ELSE
            ! Get e3 at level jk (ps...)
-           e3(:,:) = getvar(cn_fzgr, 'e3t_ps', jk ,npiglo, npjglo, ldiom=.TRUE.)
+           e3(:,:) = getvar(cn_fe3t, cn_ve3t, jk ,npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
         ENDIF
 
         ! e3 is used as a flag for the mixed layer; it is 0 outside the mixed layer
         e3(:,:) = MAX(0., MIN(e3, hmld-gdepw(jk) ) + MIN(e3, gdepw(jk)+ e3-hmin) - e3)
 
         ! Heat and salt contents
-        dmxlheatc(:,:) = dmxlheatc(:,:) + rtem * e3 * tmask *1.d0
-        dmxlsaltc(:,:) = dmxlsaltc(:,:) + rsal * e3 * tmask *1.d0
+        dmxlheatc(:,:) = dmxlheatc(:,:) + rtem(:,:) * e3(:,:) * tmask(:,:) *1.d0
+        dmxlsaltc(:,:) = dmxlsaltc(:,:) + rsal(:,:) * e3(:,:) * tmask(:,:) *1.d0
 
      END DO
 
      !! Heat and salt contents (10^9.J/m2 and 10^6.kg/m2)
-     dmxlheatc = dmxlheatc *rprho0 *rpcp * 1.d-9
-     dmxlsaltc = dmxlsaltc *rprho0       * 1.d-6
+     dmxlheatc(:,:) = dmxlheatc(:,:) *rprho0 *rpcp * 1.d-9
+     dmxlsaltc(:,:) = dmxlsaltc(:,:) *rprho0       * 1.d-6
 
      ierr = putvar(ncout, id_varout(1), hmld,            1, npiglo, npjglo, ktime=jt)
      ierr = putvar(ncout, id_varout(2), REAL(dmxlheatc), 1, npiglo, npjglo, ktime=jt)
@@ -287,6 +277,47 @@ PROGRAM cdfmxlhcsc
   END DO ! time loop
 
   ierr = closeout(ncout)
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+
+  rdep(1) = 0.
+  ipk(:)  = 1 
+  stypvar(1)%ichunk      = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(1)%cname       = TRIM(cldum)
+  stypvar(1)%cshort_name = TRIM(cldum)
+  stypvar(1)%cunits      = 'm'
+  stypvar(1)%clong_name  = 'Mixed Layer Depth'
+
+  ! Variable Heat Content
+  stypvar(2)%ichunk      = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(2)%cname       = 'somxlheatc'
+  stypvar(2)%cunits      = '10^9 J/m2'
+  stypvar(2)%clong_name  = 'Mixed_Layer_Heat_Content'
+  stypvar(2)%cshort_name = 'somxlheatc'
+
+  ! Variable Salt Content
+  stypvar(3)%ichunk      = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(3)%cname       = 'somxlsaltc'
+  stypvar(3)%cunits      = '10^6 kg/m2'
+  stypvar(3)%clong_name  = 'Mixed_Layer_Salt_Content'
+  stypvar(3)%cshort_name = 'somxlsaltc'
+
+  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1        , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvar, 3,      ipk,    id_varout, ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep           )
+  tim   = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr  = putvar1d(ncout,  tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 
 END PROGRAM cdfmxlhcsc
