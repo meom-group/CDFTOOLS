@@ -63,7 +63,7 @@ PROGRAM cdfmxlheatc
      PRINT *,' usage : cdfmxlheatc -f T-file [-full] [-o OUT-file] [-nc4] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computed the heat content in the mixed layer (Joules/m2).' 
+     PRINT *,'       Computes the heat content in the mixed layer (Joules/m2).' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f T-file : netcdf input file with temperature and mld (gridT).' 
@@ -145,7 +145,7 @@ PROGRAM cdfmxlheatc
      DO jk = 1, npk
         ! Get temperatures at jk
         zt(   :,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-        zmask(:,:) = getvar(cn_fmsk, 'tmask',     jk, npiglo, npjglo)
+        zmask(:,:) = getvar(cn_fmsk, cn_tmask,    jk, npiglo, npjglo)
 
         ! get e3 at level jk ( ps...)
         IF ( lfull ) THEN ; e3(:,:) = e31d(jk)
