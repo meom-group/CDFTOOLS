@@ -26,6 +26,7 @@ PROGRAM cdffwc
   IMPLICIT NONE
 
    INTEGER(KIND=4)                            :: jk, jvar, jvarin, jt ! dummy loop index
+   INTEGER(KIND=4)                            :: it                   ! time index for vvl
    INTEGER(KIND=4)                            :: ierr, ij, iko        ! working integer
    INTEGER(KIND=4)                            :: narg, iargc, ijarg   ! command line 
    INTEGER(KIND=4)                            :: npiglo, npjglo       ! size of the domain
@@ -35,17 +36,12 @@ PROGRAM cdffwc
    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout       ! levels and varid's of output vars
    INTEGER(KIND=4)                            :: ncout 
 
-   REAL(KIND=4), PARAMETER                    :: pprho0 = 1020.       ! water density (kg/m3)
-   REAL(KIND=4), PARAMETER                    :: ppcp   = 4000.       ! calorific capacity (J/kg/m3)
-   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: e3t,area,ssh         ! vertical metric
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: e3t, area, ssh       ! vertical metric
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: zt                   ! working input variable
    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: tmask                ! npiglo x npjglo
    REAL(KIND=4), DIMENSION(:),   ALLOCATABLE  :: tim                  ! time counter
    REAL(KIND=4), DIMENSION(:),   ALLOCATABLE  :: e31d                 ! vertical metrics in case of full step
    REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE  :: zmask              ! npiglo x npjglo
-   REAL(KIND=4)                               :: rdep1, rdep2         ! depth counters
-   REAL(KIND=4)                               :: tol  = 1.0           ! tolerance 
-   REAL(KIND=4)                               :: sclf = 1.0           ! scale factor
    REAL(KIND=4), PARAMETER                    :: ppspval= 9999.99     ! missing value
 
    REAL(KIND=8)                               :: ds0=34.7             ! reference salinity
@@ -56,16 +52,12 @@ PROGRAM cdffwc
    CHARACTER(LEN=256)                         :: cf_out='fwc.nc'      ! output file 
    CHARACTER(LEN=256)                         :: cldum                ! dummy string for command line browsing
    CHARACTER(LEN=256)                         :: cf_subbas='subbasins.nc'     ! subbasins file
-   CHARACTER(LEN=256)                         :: cv_cur               ! variable name
 
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names           ! name of input variables
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in              ! name of output variables
 
-
-
    LOGICAL                                    :: lfull  =.FALSE.      ! flag for full step computation
    LOGICAL                                    :: lchk   =.FALSE.      ! flag for missing files
-   LOGICAL                                    :: lsref  =.FALSE.      ! flag for user reference salinity
    LOGICAL                                    :: laccum =.FALSE.      ! flag for accumulated fwc
    LOGICAL                                    :: lssh   =.FALSE.      ! flag for using ssh for top layer thickness
 
@@ -88,13 +80,14 @@ PROGRAM cdffwc
       PRINT *,'        IN-file            : netcdf input file.' 
       PRINT *,'        BASIN-var1,var2,.. : Comma separated list of sub-basin variables'
       PRINT *,'                             to process.'
-      PRINT *,'        OUT-file           : use specified output file instead of <IN-var>.nc'
       PRINT *,'      '
       PRINT *,'     OPTIONS :'
       PRINT *,'        -full  : for full step computation ' 
       PRINT *,'        -accum : compute accumulated content from top to bottom' 
       PRINT *,'        -ssh   : take ssh into account for surface layer' 
       PRINT *,'        -sref  : reference salinity (= 34.7 by deafult)'
+      PRINT *,'        -vvl   : use time-varying vertical metrics'
+      PRINT *,'        -o OUT-file :  use specified output file instead of ', TRIM(cf_out)
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'       ', TRIM(cn_fzgr),', ',TRIM(cn_fhgr),' and ',TRIM(cf_subbas) ,' and ',TRIM(cn_fmsk)
@@ -107,7 +100,6 @@ PROGRAM cdffwc
       STOP
    ENDIF
 
-
    ! browse command line
    ijarg = 1   ; ij = 0
    DO WHILE ( ijarg <= narg ) 
@@ -115,9 +107,10 @@ PROGRAM cdffwc
       SELECT CASE ( cldum)
       CASE ( '-full' ) ; lfull  = .TRUE. 
       CASE ( '-o'    ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-      CASE ( '-sref' ) ; lsref  = .TRUE. ; CALL getarg (ijarg, cldum) ; READ(cldum,*) ds0; ijarg = ijarg + 1
+      CASE ( '-sref' ) ; CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ds0
       CASE ( '-accum') ; laccum = .TRUE. 
       CASE ( '-ssh'  ) ; lssh   = .TRUE. 
+      CASE ( '-vvl'  ) ; lg_vvl = .TRUE. 
       CASE DEFAULT     
          ij = ij + 1
          SELECT CASE ( ij)
@@ -136,7 +129,7 @@ PROGRAM cdffwc
    lchk = chkfile (cf_subbas) .OR. lchk
    IF ( lchk ) STOP ! missing files
 
-   sclf      = 1.
+   IF ( lg_vvl ) cn_fe3t = cf_in
 
    ! log information so far
    PRINT *,' OUTPUT FILE     : ' , TRIM(cf_out)
@@ -180,32 +173,6 @@ PROGRAM cdffwc
    ALLOCATE ( dl_vol2d(          npiglo,npjglo ) )
    IF ( lssh  ) ALLOCATE ( ssh(  npiglo,npjglo ) )
    IF ( lfull ) ALLOCATE ( e31d( npk ) )
-
-   ! prepare output variable
-   ipk(:)                       = npk
-   write(cldum, *) ds0
-
-
-   DO jvar=1, nvaro     !Go through sub-basins
-     DO jvarin=1,nvars
-        IF ( cv_in(jvar) == stypvarin(jvarin)%cname ) EXIT  ! cv_in match cv_varin.
-     END DO
-     stypvar(jvar)%cname             = 'fwc_'//TRIM(cv_in(jvar))
-     stypvar(jvar)%cunits            = 'km3'
-     stypvar(jvar)%rmissing_value    = ppspval
-     stypvar(jvar)%valid_min         = 0.0
-     stypvar(jvar)%valid_max         = 0.0
-     IF ( laccum ) THEN 
-        stypvar(jvar)%clong_name        = 'freshwater content accumulated from top to bottom for '//TRIM(cv_in(jvar))//' based on S0='//TRIM(cldum)
-     ELSE
-        stypvar(jvar)%clong_name        = 'freshwater content per layer for '//TRIM(cv_in(jvar))//' based on S0='//TRIM(cldum)
-     ENDIF
-     stypvar(jvar)%clong_name        = 'freshwater content for '//TRIM(cv_in(jvar))//' based on S0='//TRIM(cldum)
-     stypvar(jvar)%cshort_name       = 'fwc_'//TRIM(cv_in(jvar))
-     stypvar(jvar)%conline_operation = 'N/A'
-     stypvar(jvar)%caxis             = 'T'
-   END DO
-
  
    ! Read area field
    area(:,:)   = getvar(cn_fhgr  , cn_ve1t,  1, npiglo, npjglo)  ! Save memory: e1t is first read into area
@@ -219,24 +186,17 @@ PROGRAM cdffwc
    DO jvar = 1,nvaro          ! Loop through sub-basins
         zmask(jvar,:,:) = getvar(cf_subbas, cv_in(jvar) ,  1, npiglo, npjglo )
    END DO
-   
-   ! Initialize output file
-   ncout = create      (cf_out, 'none', 1, 1, npk, cdep=cn_vdepthw, ld_xycoo=.FALSE. )
-   ierr  = createvar   (ncout, stypvar, nvaro, ipk, id_varout)
-   ierr  = putheadervar(ncout, cf_in,   1, 1, npk,     ld_xycoo=.FALSE.)
-   
-   tim   = getvar1d    (cf_in, cn_vtimec, npt     )
-   ierr  = putvar1d    (ncout, tim,       npt, 'T')
 
-   
+   CALL CreateOutput
    
    PRINT *, 'Output files initialised ...'
 
-
    DO jt=1,npt
-        dl_vol2d(  :,:) = 0.d0
-        dl_vint1(  :,:) = 0.d0
-             dfwc(:,:,:) = 0.d0
+        IF ( lg_vvl ) THEN ; it=jt
+        ELSE               ; it=1
+        ENDIF
+
+        dl_vol2d(  :,:) = 0.d0 ; dl_vint1(  :,:) = 0.d0 ; dfwc(:,:,:) = 0.d0
         IF ( lssh ) ssh(:,:) = 0.e0
 
         DO jk = 1, npk
@@ -246,7 +206,7 @@ PROGRAM cdffwc
            
            ! get e3t at level jk ( ps...)
            IF ( lfull ) THEN ; e3t(:,:) = e31d(jk)
-           ELSE              ; e3t(:,:) = getvar(cn_fzgr, 'e3t_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+           ELSE              ; e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it,  ldiom=.NOT.lg_vvl)
            ENDIF
            
            IF ( jk == 1 .AND. lssh ) THEN
@@ -255,30 +215,66 @@ PROGRAM cdffwc
            ENDIF
            
            DO jvar = 1,nvaro          ! Loop through sub-basins
-            
-                dl_vol2d     = area * e3t * tmask * zmask(jvar,:,:) * 1.d0
-
+                dl_vol2d   = area * e3t * tmask * zmask(jvar,:,:) * 1.d0
                 dl_vint1   = ( ds0 - zt ) / ds0 * dl_vol2d
                 IF ( laccum ) THEN
                     dfwc(jvar,1,1)   = SUM( dl_vint1 ) + dfwc(jvar,1,1)
                 ELSE
                     dfwc(jvar,1,1)   = SUM( dl_vint1 )
                 ENDIF
-
                 ! Output to netcdf file 
                 ierr = putvar(ncout, id_varout(jvar), REAL(dfwc(jvar,:,:)), jk, 1, 1, ktime=jt)
-            
            END DO   ! jvar
-        
         END DO
-        
    END DO  ! loop on time
-
 
    ierr = closeout(ncout)
 
-  CONTAINS
-  
+CONTAINS
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+
+    ! prepare output variable
+    ipk(:)                       = npk
+    WRITE(cldum, *) ds0
+
+    DO jvar=1, nvaro     !Go through sub-basins
+       DO jvarin=1,nvars
+          IF ( cv_in(jvar) == stypvarin(jvarin)%cname ) EXIT  ! cv_in match cv_varin.
+       END DO
+       stypvar(jvar)%cname             = 'fwc_'//TRIM(cv_in(jvar))
+       stypvar(jvar)%cunits            = 'km3'
+       stypvar(jvar)%rmissing_value    = ppspval
+       stypvar(jvar)%valid_min         = 0.0
+       stypvar(jvar)%valid_max         = 0.0
+       IF ( laccum ) THEN 
+          stypvar(jvar)%clong_name     = 'freshwater content accumulated from top to bottom for '//TRIM(cv_in(jvar))//' based on S0='//TRIM(cldum)
+       ELSE
+        stypvar(jvar)%clong_name       = 'freshwater content per layer for '//TRIM(cv_in(jvar))//' based on S0='//TRIM(cldum)
+       ENDIF
+       stypvar(jvar)%clong_name        = 'freshwater content for '//TRIM(cv_in(jvar))//' based on S0='//TRIM(cldum)
+       stypvar(jvar)%cshort_name       = 'fwc_'//TRIM(cv_in(jvar))
+       stypvar(jvar)%conline_operation = 'N/A'
+       stypvar(jvar)%caxis             = 'T'
+    END DO
+
+    ! Initialize output file
+    ncout = create      (cf_out, 'none', 1, 1, npk, cdep=cn_vdepthw, ld_xycoo=.FALSE. )
+    ierr  = createvar   (ncout, stypvar, nvaro, ipk, id_varout)
+    ierr  = putheadervar(ncout, cf_in,   1, 1, npk,     ld_xycoo=.FALSE.)
+   
+    tim   = getvar1d    (cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d    (ncout, tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
   SUBROUTINE ParseVars (cdum)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE ParseVars  ***
@@ -314,6 +310,4 @@ PROGRAM cdffwc
        cv_in(ji) = cl_dum(ji)
     ENDDO
   END SUBROUTINE ParseVars
-
-
 END PROGRAM cdffwc
