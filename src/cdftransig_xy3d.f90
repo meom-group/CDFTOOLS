@@ -92,7 +92,7 @@ PROGRAM cdftransig_xy3d
      PRINT *,' usage : cdftransig_xy3d -c CONFCASE -l ''list_of_tags'' [-code code ] ...'
      PRINT *,'                    ... [-depref depref ] [ -nbins nbins ] ... ' 
      PRINT *,'                    ... [-sigmin smin s-scal] [-sigzoom sminr s-scalr ] ...'
-     PRINT *,'                    ... [-full ] [-v ] [-vvl W-file ] [-o OUT-file] [-nc4]'
+     PRINT *,'                    ... [-full ] [-v ] [-vvl ] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the time average volume transport at each grid cell in density'
