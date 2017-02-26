@@ -25,7 +25,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
        cdfsigtrp cdfsigtrp_broken cdftempvol-full\
-       cdfpsi cdfmoc  cdfmocsig cdfmean cdfdegrad cdfdegradt cdfdegradu cdfdegradv cdfdegradw \
+       cdfpsi cdfmoc  cdfmocsig cdfmean cdfdegrad \
        cdfheatc cdfzonalmean cdfzonalmeanvT cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfvint cdffwc\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
@@ -288,18 +288,6 @@ cdfmean: cdfio.o  cdfmean.f90
 
 cdfdegrad: cdfio.o  cdfdegrad.f90
 	$(F90) cdfdegrad.f90 -o $(BINDIR)/cdfdegrad cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfdegradt: cdfio.o  cdfdegradt.f90
-	$(F90) cdfdegradt.f90 -o $(BINDIR)/cdfdegradt cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfdegradu: cdfio.o  cdfdegradu.f90
-	$(F90) cdfdegradu.f90 -o $(BINDIR)/cdfdegradu cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfdegradv: cdfio.o  cdfdegradv.f90
-	$(F90) cdfdegradv.f90 -o $(BINDIR)/cdfdegradv cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfdegradw: cdfio.o  cdfdegradw.f90
-	$(F90) cdfdegradw.f90 -o $(BINDIR)/cdfdegradw cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfsum: cdfio.o  cdfsum.f90
 	$(F90) cdfsum.f90 -o $(BINDIR)/cdfsum cdfio.o modcdfnames.o $(FFLAGS)
