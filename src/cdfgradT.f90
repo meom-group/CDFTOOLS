@@ -25,7 +25,8 @@ PROGRAM cdfgradT
 
    INTEGER(KIND=4), PARAMETER                  :: jp_varout = 6     ! number of output variables
    INTEGER(KIND=4)                             :: jk, jt            ! dummy loop index
-   INTEGER(KIND=4)                             :: narg, iargc       ! command line
+   INTEGER(KIND=4)                             :: it                ! time index for vvl
+   INTEGER(KIND=4)                             :: narg, iargc, ijarg! command line
    INTEGER(KIND=4)                             :: npiglo, npjglo    ! size of the domain
    INTEGER(KIND=4)                             :: npk, npt          ! size of the domain
    INTEGER(KIND=4)                             :: ncout             ! ncid of output variable
@@ -42,19 +43,22 @@ PROGRAM cdfgradT
    REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgradt_x, dgradt_y, dgradt_z  ! Temperature gradient component
    REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgrads_x, dgrads_y, dgrads_z  ! Salinity gradient component
 
+   CHARACTER(LEN=256)                         :: cldum               ! dummy character variable
    CHARACTER(LEN=256)                         :: cf_tfil             ! input file name for T and S
    CHARACTER(LEN=256)                         :: cf_sfil             ! input file name for S (optional)
    CHARACTER(LEN=256)                         :: cf_out = 'gradT.nc' ! output file name
+   CHARACTER(LEN=256)                         :: cf_e3w              ! file with e3w metrics in case of vvl
 
    TYPE(variable), DIMENSION(jp_varout)       :: stypvar             ! output data structure
 
    LOGICAL                                    :: lchk = .FALSE.      ! flag for missing files
+   LOGICAL                                    :: lnc4 = .FALSE.      ! flag for netcdf4 output
    !!----------------------------------------------------------------------
    CALL ReadCdfNames()
 
    narg= iargc()
    IF ( narg == 0 ) THEN
-      PRINT *,' usage : cdfgradT T-file [S-file] '
+      PRINT *,' usage : cdfgradT -t T-file [-s S-file] [-o OUT-file] [-nc4] [-vvl W-file]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'        Compute horizontal and vertical gradient of temperature and salinity.'
@@ -62,11 +66,17 @@ PROGRAM cdfgradT
       PRINT *,'      gradient and W for vertical gradient.'
       PRINT *,'      '
       PRINT *,'     ARGUMENTS :'
-      PRINT *,'       T-file : File with ',TRIM(cn_votemper),' and ',TRIM(cn_vosaline),' variables' 
+      PRINT *,'       -t T-file : File with ',TRIM(cn_votemper),' and ',TRIM(cn_vosaline),' variables' 
       PRINT *,'           If ',TRIM(cn_vosaline),' not in T-file give a second name for S-file.'
       PRINT *,'      '
       PRINT *,'     OPTIONS :'
-      PRINT *,'       S-file : File with ',TRIM(cn_vosaline),' variable if not in T file'
+      PRINT *,'       [-s S-file  ] : File with ',TRIM(cn_vosaline),' variable if not in T file'
+      PRINT *,'       [-o OUT-file] : specify output file name, instead of ',TRIM(cf_out)
+      PRINT *,'       [-nc4 ]       : Use netcdf4 output with chunking and deflation level 1'
+      PRINT *,'                 This option is effective only if cdftools are compiled with'
+      PRINT *,'                 a netcdf library supporting chunking and deflation.'
+      PRINT *,'       [-vvl W-file ] : use time-varying vertical metrics. W-file is a file '
+      PRINT *,'                 where the time-varying vertical e3w metrics can be found.'
       PRINT *,'      '
       PRINT *,'     REQUIRED FILES :'
       PRINT *,'       ', TRIM(cn_fhgr),' ',TRIM(cn_fmsk),' and ',TRIM(cn_fzgr)
@@ -85,18 +95,30 @@ PROGRAM cdfgradT
       STOP
    ENDIF
 
-   CALL getarg (1, cf_tfil)
-   IF ( narg == 2 ) THEN
-      CALL getarg( 2, cf_sfil)
-   ELSE
-      cf_sfil = cf_tfil   ! ff only one file provided, they are identical
-   ENDIF
+   ijarg=1
+   DO WHILE ( ijarg <= narg )
+     CALL getarg (1, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-t'   ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
+     ! options
+     CASE ( '-s'   ) ; CALL getarg (1, cf_sfil ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-nc4' ) ; lnc4   = .TRUE.
+     CASE ( '-vvl' ) ; lg_vvl = .TRUE.
+                     ; CALL getarg (1, cf_e3w  ) ; ijarg=ijarg+1
+     CASE DEFAULT    ; PRINT *,'ERROR : ', TRIM(cldum),' : Option not known.'
+     END SELECT
+   ENDDO
+   
+   IF ( cf_sfil == '' ) cf_sfil = cf_tfil
+   IF ( lg_vvl        ) cn_fe3w = cf_e3w
 
    lchk = ( lchk .OR. chkfile(cf_tfil) )
    lchk = ( lchk .OR. chkfile(cf_sfil) )
    lchk = ( lchk .OR. chkfile(cn_fhgr) )
    lchk = ( lchk .OR. chkfile(cn_fzgr) )
    lchk = ( lchk .OR. chkfile(cn_fmsk) )
+   IF (lg_vvl ) lchk = ( lchk .OR. chkfile(cf_e3w) )
    IF (lchk ) STOP ! missing file
 
    npiglo = getdim (cf_tfil, cn_x)
@@ -119,13 +141,14 @@ PROGRAM cdfgradT
 
    CALL CreateOutput
 
-   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-   ierr = putvar1d(ncout,  tim,        npt, 'T')
-
    e1u =  getvar(cn_fhgr, cn_ve1u, 1, npiglo, npjglo)
    e2v =  getvar(cn_fhgr, cn_ve2v, 1, npiglo, npjglo)
 
    DO jt = 1,npt
+      IF ( lg_vvl ) THEN ; it=jt
+      ELSE               ; it=1
+      ENDIF
+
       DO jk = npk, 1, -1  !! Main loop : (2 levels of T are required : iup, icur)
 
          PRINT *,'level ',jk
@@ -142,23 +165,11 @@ PROGRAM cdfgradT
             zs(:,:,iup ) = getvar(cf_sfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
          ENDIF
 
-!        IF (jk == 1) THEN
-!           zt(:,:,iup ) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-!           zt(:,:,icur) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-!           zs(:,:,iup ) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
-!           zs(:,:,icur) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
-!        ELSE        
-!           zt(:,:,iup ) = getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jt)
-!           zt(:,:,icur) = getvar(cf_tfil, cn_votemper, jk,   npiglo, npjglo, ktime=jt)
-!           zs(:,:,iup ) = getvar(cf_sfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
-!           zs(:,:,icur) = getvar(cf_sfil, cn_vosaline, jk,   npiglo, npjglo, ktime=jt)
-!        END IF
+         e3w(:,:)   = getvar(cn_fe3w, cn_ve3w, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
 
-         e3w(:,:)   = getvar(cn_fzgr, 'e3w_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
-
-         umask(:,:) = getvar(cn_fmsk, 'umask' , jk, npiglo, npjglo )
-         vmask(:,:) = getvar(cn_fmsk, 'vmask' , jk, npiglo, npjglo )
-         wmask(:,:) = getvar(cn_fmsk, 'tmask' , jk, npiglo, npjglo )
+         umask(:,:) = getvar(cn_fmsk, cn_umask , jk, npiglo, npjglo )
+         vmask(:,:) = getvar(cn_fmsk, cn_vmask , jk, npiglo, npjglo )
+         wmask(:,:) = getvar(cn_fmsk, cn_tmask , jk, npiglo, npjglo )
 
          ! zonal grad located at U point at current level
          dgradt_x(:,:) = 0.d0
@@ -211,6 +222,7 @@ CONTAINS
       !!----------------------------------------------------------------------
       ipk(:) = npk  !  3D
 
+      stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
       stypvar(1)%cname             = 'vozogradt'
       stypvar(1)%cunits            = ''
       stypvar(1)%rmissing_value    = -1000.
@@ -221,6 +233,7 @@ CONTAINS
       stypvar(1)%conline_operation = 'N/A'
       stypvar(1)%caxis             = 'TZYX'
 
+      stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
       stypvar(2)%cname             = 'vomegradt'
       stypvar(2)%cunits            = ''
       stypvar(2)%rmissing_value    = -1000.
@@ -231,6 +244,7 @@ CONTAINS
       stypvar(2)%conline_operation = 'N/A'
       stypvar(2)%caxis             = 'TZYX'
 
+      stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
       stypvar(3)%cname             = 'vovegradt'
       stypvar(3)%cunits            = ''
       stypvar(3)%rmissing_value    = -1000.
@@ -241,6 +255,7 @@ CONTAINS
       stypvar(3)%conline_operation = 'N/A'
       stypvar(3)%caxis             = 'TZYX'
 
+      stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
       stypvar(4)%cname             = 'vozograds'
       stypvar(4)%cunits            = ''
       stypvar(4)%rmissing_value    = -1000.
@@ -251,6 +266,7 @@ CONTAINS
       stypvar(4)%conline_operation = 'N/A'
       stypvar(4)%caxis             = 'TZYX'
 
+      stypvar(5)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
       stypvar(5)%cname             = 'vomegrads'
       stypvar(5)%cunits            = ''
       stypvar(5)%rmissing_value    = -1000.
@@ -261,6 +277,7 @@ CONTAINS
       stypvar(5)%conline_operation = 'N/A'
       stypvar(5)%caxis             = 'TZYX'
 
+      stypvar(6)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
       stypvar(6)%cname             = 'vovegrads'
       stypvar(6)%cunits            = ''
       stypvar(6)%rmissing_value    = -1000.
@@ -271,9 +288,12 @@ CONTAINS
       stypvar(6)%conline_operation = 'N/A'
 
       ! create output fileset
-      ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
-      ierr  = createvar   (ncout,  stypvar, jp_varout, ipk, id_varout )
+      ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       , ld_nc4=lnc4 )
+      ierr  = createvar   (ncout,  stypvar, jp_varout, ipk, id_varout , ld_nc4=lnc4 )
       ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+
+      tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+      ierr = putvar1d(ncout,  tim,        npt, 'T')
 
    END SUBROUTINE CreateOutput
 
