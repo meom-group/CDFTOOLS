@@ -26,10 +26,11 @@ PROGRAM cdftransig_xy3d
 
   INTEGER(KIND=4)                              :: ji, jj, jk         ! dummy loop index
   INTEGER(KIND=4)                              :: jt, jtag           ! dummy loop index
+  INTEGER(KIND=4)                              :: it                 ! time index for vvl
   INTEGER(KIND=4)                              :: ijb   
   INTEGER(KIND=4)                              :: ierr               ! working integer
   INTEGER(KIND=4)                              :: narg, iargc        ! command line 
-  INTEGER(KIND=4)                              :: ijarg, ireq, istag
+  INTEGER(KIND=4)                              :: ijarg, icur, istag
   INTEGER(KIND=4)                              :: iset
   INTEGER(KIND=4)                              :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                              :: npk, npt           ! size of the domain
@@ -74,6 +75,7 @@ PROGRAM cdftransig_xy3d
   CHARACTER(LEN=80 )                           :: cldepcode='1000'
   CHARACTER(LEN=256)                           :: cglobal
   CHARACTER(LEN=7  )                           :: clsigma 
+  CHARACTER(LEN=80 ),DIMENSION(:), ALLOCATABLE :: ctag_lst
 
   TYPE (variable), DIMENSION(2)                :: stypvar     ! structure for attributes
 
@@ -82,29 +84,32 @@ PROGRAM cdftransig_xy3d
   LOGICAL                                      :: lnotset = .FALSE.
   LOGICAL                                      :: lchk    = .FALSE.  ! flag for missing files
   LOGICAL                                      :: lperio  = .FALSE.  ! flag for missing files
+  LOGICAL                                      :: lnc4    = .FALSE.  ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdftransig_xyz CONFCASE ''list_of_tags'' [-depref depcode ] ...'
+     PRINT *,' usage : cdftransig_xy3d -c CONFCASE -l ''list_of_tags'' [-code code ] ...'
      PRINT *,'                    ... [-depref depref ] [ -nbins nbins ] ... ' 
      PRINT *,'                    ... [-sigmin smin s-scal] [-sigzoom sminr s-scalr ] ...'
-     PRINT *,'                    ... [-full ] [-v ]'
+     PRINT *,'                    ... [-full ] [-v ] [-vvl W-file ] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the volume transport at each grid cell in density space ' 
+     PRINT *,'       Computes the time average volume transport at each grid cell in density'
+     PRINT *,'        space, for the list of tags given as arguments. Results must be '
+     PRINT *,'        condidered as intermediate for further integration.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       CONFCASE  : a DRAKKAR CONFIG-CASE name '
-     PRINT *,'       list_of_tags : a list of time tags to be processed'
+     PRINT *,'       -c CONFCASE  : a DRAKKAR CONFIG-CASE name '
+     PRINT *,'       -l list_of_tags : a blank separated list of time tags to be processed.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-depcode depcode ] : depcode corresponds to pre-defined parameter '
-     PRINT *,'              setting, in term of reference depths, density limits for '
-     PRINT *,'              binning, number of bins, deeper layer refinement.'
-     PRINT *,'          AVAILABLE depcode are :'
+     PRINT *,'       [-code code ] : code corresponds to pre-defined parameters settings '
+     PRINT *,'              in term of reference depths, density limits for  binning, number'
+     PRINT *,'               of bins, deeper layer refinement.'
+     PRINT *,'          AVAILABLE code are :'
      PRINT *,'              _______________________________________________________________'
-     PRINT *,'              depcode  |  depth_ref nbins   smin  s-scal  szoommin szoom-scal '
+     PRINT *,'              code     |  depth_ref nbins   smin  s-scal  szoommin szoom-scal '
      PRINT *,'              ---------------------------------------------------------------'
      PRINT *,'                0      |    0      101     23.0    0.05                      '
      PRINT *,'              1000     |   1000     93     24.2    0.10   32.3     0.05      ' 
@@ -112,7 +117,7 @@ PROGRAM cdftransig_xy3d
      PRINT *,'              2000     |   2000    174     29.0    0.05                      '
      PRINT *,'              none     |  parameters must be set individually                '
      PRINT *,'              ---------------------------------------------------------------'
-     PRINT *,'          DEFAULT depcode is : ',TRIM(cldepcode)
+     PRINT *,'          DEFAULT code is : ',TRIM(cldepcode)
      PRINT *,'              For other setting use the options to specify the settings'
      PRINT *,'              individually.'
      PRINT *,'       [-depref depref ] : give the depth reference for potential density'
@@ -123,26 +128,45 @@ PROGRAM cdftransig_xy3d
      PRINT *,'              s-scalr bin width.'
      PRINT *,'       [-full ] : indicate a full step configuration.'
      PRINT *,'       [-v ] : verbose mode : extra print are performed during execution.'
+     PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
+     PRINT *,'       [-o OUT-file ] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'               This option is effective only if cdftools are compiled with'
+     PRINT *,'               a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr) 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : ',TRIM(cv_outu),' and ', TRIM(cv_outv),' in m3/s.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      cdfrhoproj, cdfsigtrp' 
+     PRINT *,'      cdfrhoproj, cdfsigtrp ' 
      PRINT *,'      '
      STOP
   ENDIF
 
   ! browse command line according to options
-  ijarg = 1 ; ireq = 0 ; ntags = 0 ; iset = 0
+  ijarg = 1 ;  ntags = 0 ; iset = 0
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-depcode' ) ; CALL getarg(ijarg, cldepcode ) ; ijarg=ijarg+1
+     CASE ( '-c'       ) ; CALL getarg(ijarg, config    ) ; ijarg=ijarg+1
+     CASE ( '-l'       ) ; ! need to read a list of tags ( number unknow ) 
+                           ! loop on argument till a '-' is found as first char
+           icur=ijarg      ! save current position of argument number
+           DO ji = icur, narg  ! scan arguments till - found
+              CALL getarg ( ji, cldum ) 
+              IF ( cldum(1:1) /= '-' ) THEN ; ntags = ntags+1
+              ELSE                          ; EXIT
+              ENDIF
+           ENDDO
+           ALLOCATE (ctag_lst(ntags) )
+           DO ji = icur, icur + ntags -1
+              CALL getarg(ji, ctag_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+           ENDDO
+     CASE ( '-code'    ) ; CALL getarg(ijarg, cldepcode ) ; ijarg=ijarg+1                            
      CASE ( '-depref'  ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) pref       ; iset = iset+1
                            WRITE(clsigma,'("sigma_",I1)'), NINT(pref/1000.)
      CASE ( '-nbins'   ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; iset = iset+1
@@ -151,34 +175,27 @@ PROGRAM cdftransig_xy3d
                            CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1scalmin
      CASE ( '-full'    ) ; lfull  = .TRUE.
      CASE ( '-v'       ) ; lprint = .TRUE.
-     CASE DEFAULT    ! mandatory arguments 
-        ireq=ireq+1      
-        SELECT CASE (ireq)
-        CASE ( 1 ) ;  config=cldum
-        CASE DEFAULT
-         IF ( ntags == 0 ) istag = ijarg - 1 ! remember the argument number corresponding to 1rst tag
-         ntags=ntags + 1
-        END SELECT
+     CASE ( '-vvl'     ) ; lg_vvl = .TRUE. 
+     CASE ( '-o'       ) ; CALL getarg(ijarg, cf_out    ) ; ijarg=ijarg+1 
+     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
+     CASE DEFAULT        ; PRINT *,' ERROR : ', TRIM(cldum),' : unkown option.' ; STOP
      END SELECT
   ENDDO
 
   ! set parameters for pre-defined depcode
   SELECT CASE ( cldepcode )
   CASE ( '0'                    ) 
-      pref = 0.    ; nbins = 101 ; ds1min = 23.0 ; ds1scal = 0.03 ; ds1zoom = 999. ; ds1scalmin = 999. ; clsigma='sigma_0'
+      pref = 0.    ; nbins = 101 ; ds1min = 23.0d0 ; ds1scal = 0.03d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_0'
   CASE ( '1000'                 ) 
       pref = 1000. ; nbins =  93 ; ds1min = 24.2d0 ; ds1scal = 0.10d0 ; ds1zoom = 32.3d0 ; ds1scalmin = 0.05d0 ; clsigma='sigma_1'
   CASE ( '1000-acc', '1000-ACC' ) 
-      pref = 1000. ; nbins =  88 ; ds1min = 24.5 ; ds1scal = 0.10 ; ds1zoom = 999. ; ds1scalmin = 999. ; clsigma='sigma_1'
+      pref = 1000. ; nbins =  88 ; ds1min = 24.5d0 ; ds1scal = 0.10d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_1'
   CASE ( '2000'                 ) 
-      pref = 2000. ; nbins = 174 ; ds1min = 29.0 ; ds1scal = 0.05 ; ds1zoom = 999. ; ds1scalmin = 999. ; clsigma='sigma_2'
+      pref = 2000. ; nbins = 174 ; ds1min = 29.0d0 ; ds1scal = 0.05d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_2'
   CASE ( 'none'                 ) 
       ! in this case check that all parameters are set individually
-      IF ( iset /= 3  ) THEN 
-         PRINT *, ' You must set depref, nbins, sigmin  individually' ; STOP
-      ENDIF
-  CASE DEFAULT 
-      PRINT *, ' this depcode :',TRIM(cldepcode),' is not available.' ; STOP
+      IF ( iset /= 3  ) THEN  ; PRINT *, ' You must set depref, nbins, sigmin  individually'    ; STOP ; ENDIF
+  CASE DEFAULT                ; PRINT *, ' This depcode :',TRIM(cldepcode),' is not available.' ; STOP 
   END SELECT
 
   ds1scalmin = MIN ( ds1scalmin, ds1scal )
@@ -191,8 +208,9 @@ PROGRAM cdftransig_xy3d
      PRINT *,' SIGSTP R : ', ds1scalmin
   ENDIF
   ! use first tag to look for file dimension
-  CALL getarg (istag, ctag)
+  ctag=ctag_lst(1)
   cf_vfil = SetFileName (config, ctag, 'V' )
+
   IF ( chkfile(cf_vfil) ) STOP ! missing file
 
   npiglo = getdim (cf_vfil, cn_x)
@@ -242,17 +260,7 @@ PROGRAM cdftransig_xy3d
   ! define output variables
   CALL SetGlobalAtt(cglobal)
 
-  ipk(:)                    = nbins   ! output file has  nbins sigma values
-  stypvar%cunits            = 'm3/s'  ! transports
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -10.    ! seem to be small
-  stypvar%valid_max         = 10.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TSYX'
 
-  stypvar(1)%cname          = cv_outu                ;    stypvar(2)%cname       = cv_outv
-  stypvar(1)%clong_name     = 'Zonal_trsp_sig_coord' ;    stypvar(2)%clong_name  = 'Meridional_trsp_sig_coord'
-  stypvar(1)%cshort_name    = cv_outu                ;    stypvar(2)%cshort_name = cv_outv
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -285,11 +293,7 @@ PROGRAM cdftransig_xy3d
      e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk              )
   ENDIF
 
-  ! create output fileset
-  IF (lprint) PRINT *, ' ready to create file:',TRIM( cf_out), ' from reference:',TRIM(cf_vfil )
-  ncout = create      (cf_out, cf_vfil, npiglo, npjglo, nbins,    cdep=clsigma            )
-  ierr  = createvar   (ncout,  stypvar, 2,      ipk,    id_varout, cdglobal=TRIM(cglobal) )
-  ierr  = putheadervar(ncout,  cf_vfil, npiglo, npjglo, nbins,     pdep=REAL(dsigma)      )
+  CALL CreateOutput
 
   dtotal_time = 0.d0
 
@@ -299,27 +303,25 @@ PROGRAM cdftransig_xy3d
   ! 
   DO jk= 1, npk-1
      IF ( lprint ) PRINT *, ' working on depth jk=',jk
-     IF ( lfull ) THEN 
-       e3v(:,:) = e31d(jk)
-       e3u(:,:) = e31d(jk)
-     ELSE
-       e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo,npjglo )
-       e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo,npjglo )
-     ENDIF
 
-     ijarg = istag ; nframes = 0
+     nframes = 0
      DO jtag = 1, ntags
-
-        CALL getarg (ijarg, ctag) ; ijarg = ijarg + 1
+        ctag = ctag_lst(jtag)
         IF (lprint   ) PRINT *, ' working on  ctag=',TRIM(ctag)
         cf_tfil = SetFileName(config, ctag, 'T') 
         cf_ufil = SetFileName(config, ctag, 'U')
         cf_vfil = SetFileName(config, ctag, 'V')
 
+        IF ( lg_vvl ) THEN
+          cn_fe3u = cf_ufil
+          cn_fe3v = cf_vfil
+        ENDIF
+
         ! check existence of files
         lchk =           chkfile ( cf_tfil) 
         lchk = lchk .OR. chkfile ( cf_ufil) 
         lchk = lchk .OR. chkfile ( cf_vfil) 
+        IF ( lg_vvl ) lchk = lchk .OR. chkfile ( cf_vfil) 
         IF ( lchk ) STOP ! missing file
         
         IF (jk== 1 ) THEN
@@ -331,6 +333,18 @@ PROGRAM cdftransig_xy3d
         ENDIF
 
         DO jt = 1, npt
+           IF ( lg_vvl ) THEN ; it=jt
+           ELSE               ; it=1
+           ENDIF
+           IF ( it == jt ) THEN ! read e3 at each time step ( vvl case)
+             IF ( lfull ) THEN 
+               e3v(:,:) = e31d(jk)
+               e3u(:,:) = e31d(jk)
+             ELSE
+               e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo,npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+               e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo,npjglo ,ktime=it, ldiom=.NOT.lg_vvl)
+            ENDIF
+          ENDIF
            nframes = nframes + 1
            ! Get velocities u, v  and mask   if first time slot only 
            zv(:,:)= getvar ( cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
@@ -404,6 +418,41 @@ PROGRAM cdftransig_xy3d
      ierr = putvar (ncout, id_varout(2), zt, jk, npiglo, npjglo, kwght=nframes)
   ENDDO
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ipk(:)                    = nbins   ! output file has  nbins sigma values
+  stypvar%cunits            = 'm3/s'  ! transports
+  stypvar%rmissing_value    = 0.
+  stypvar%valid_min         = -10.    ! seem to be small
+  stypvar%valid_max         = 10.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TSYX'
+
+  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+
+  stypvar(1)%cname          = cv_outu                ;    stypvar(2)%cname       = cv_outv
+  stypvar(1)%clong_name     = 'Zonal_trsp_sig_coord' ;    stypvar(2)%clong_name  = 'Meridional_trsp_sig_coord'
+  stypvar(1)%cshort_name    = cv_outu                ;    stypvar(2)%cshort_name = cv_outv
+
+  ! create output fileset
+  IF (lprint) PRINT *, ' ready to create file:',TRIM( cf_out), ' from reference:',TRIM(cf_vfil )
+
+  ncout = create      (cf_out, cf_vfil, npiglo, npjglo, nbins,    cdep=clsigma           , ld_nc4=lnc4  )
+  ierr  = createvar   (ncout,  stypvar, 2,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4  )
+  ierr  = putheadervar(ncout,  cf_vfil, npiglo, npjglo, nbins,     pdep=REAL(dsigma)      )
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdftransig_xy3d
 
