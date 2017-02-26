@@ -30,6 +30,7 @@ PROGRAM cdfpsi
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: ji, jj, jk, jt  ! dummy loop index
+  INTEGER(KIND=4)                           :: it              ! time idex for vvl
   INTEGER(KIND=4)                           :: ierr            ! working integer
   INTEGER(KIND=4)                           :: narg, iargc     ! command line 
   INTEGER(KIND=4)                           :: ijarg, ireq     ! command line
@@ -87,7 +88,7 @@ PROGRAM cdfpsi
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfpsi U-file V-file [V] [-full ] [-mask ] [-mean] [-nc4 ] ...'
-     PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file]'
+     PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the barotropic stream function (a proxy ) as the integral of '
@@ -112,6 +113,7 @@ PROGRAM cdfpsi
      PRINT *,'       [ -ref iref jref ] : Set the reference point in i,j coordinates.'
      PRINT *,'                   BSF at reference point is arbitrarly set to zero.'
      PRINT *,'       [ -o  OUT-file ] : specify output file name instead of default ',TRIM(cf_out)
+     PRINT *,'       [ -vvl  ] : use time-varying vertical metrics'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),' and ', TRIM(cn_fzgr),'.'
@@ -145,6 +147,7 @@ PROGRAM cdfpsi
      CASE ('-ref') 
         CALL getarg( ijarg, cldum )   ; ijarg=ijarg + 1 ; READ(cldum,*) iiref
         CALL getarg( ijarg, cldum )   ; ijarg=ijarg + 1 ; READ(cldum,*) ijref
+     CASE ('-vvl')  ; lg_vvl = .TRUE.
 
      CASE DEFAULT
         ireq = ireq + 1
@@ -166,6 +169,10 @@ PROGRAM cdfpsi
   lchk = lchk .OR. chkfile( cf_vfil )
 
   IF ( lchk ) STOP ! missing file
+  IF ( lg_vvl ) THEN 
+     cn_fe3u = cf_ufil
+     cn_fe3v = cf_vfil
+  ENDIF
 
   npiglo = getdim (cf_ufil, cn_x)
   npjglo = getdim (cf_ufil, cn_y)
@@ -178,33 +185,7 @@ PROGRAM cdfpsi
   ENDIF
 
   ALLOCATE (stypvar(nvout), ipk(nvout), id_varout(nvout))
-  ! define new variables for output ( must update att.txt)
-  ipk(:) = 1  !  2D ( X, Y , T )
-  stypvar(:)%cunits            = 'm3/s'
-  stypvar(:)%valid_min         = -300.e6
-  stypvar(:)%valid_max         = 300.e6
-  stypvar(:)%conline_operation = 'N/A'
-  stypvar(:)%caxis             = 'TYX'
-  DO ji=1,nvout
-    stypvar(ji)%ichunk = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  ENDDO
 
-  stypvar(1)%cname             = cv_out
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%clong_name        = 'Barotropic_Stream_Function'
-  stypvar(1)%cshort_name       = cv_out
-
-  IF ( lssh ) THEN
-     stypvar(2)%cname             = cv_outssh
-     stypvar(2)%rmissing_value    = 0.
-     stypvar(2)%clong_name        = 'Barotropic_Stream_Function SSH contribution'
-     stypvar(2)%cshort_name       = cv_outssh
-
-     stypvar(3)%cname             = cv_outotal
-     stypvar(3)%rmissing_value    = 0.
-     stypvar(3)%clong_name        = 'Barotropic_Stream_Function SSH total'
-     stypvar(3)%cshort_name       = cv_outotal
-  ENDIF
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -219,6 +200,9 @@ PROGRAM cdfpsi
   PRINT *, '    -ref  :', iiref, ijref
   PRINT *, '  U-comp  :', ll_u
   PRINT *, '  V-comp  :', ll_v
+  PRINT *, '      -o  :', TRIM(cf_out)
+  PRINT *, '    -lnc4 :', lnc4
+  PRINT *, '    -vvl  :', lg_vvl
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo)                 )
@@ -228,6 +212,7 @@ PROGRAM cdfpsi
   ALLOCATE ( zv(npiglo,npjglo),dtrpv(npiglo,npjglo), dpsiv(npiglo,npjglo) )
   ALLOCATE ( glamf(npiglo,npjglo), gphif(npiglo,npjglo))
   ALLOCATE ( tim(npt))
+
   IF ( lfull ) ALLOCATE ( e31d(npk))
   IF ( lssh  ) ALLOCATE ( zssh(npiglo,npjglo), zsshu(npiglo,npjglo), zsshv(npiglo,npjglo))
   IF ( lssh  ) ALLOCATE ( dpsisshu(npiglo,npjglo), dpsisshv(npiglo,npjglo) )
@@ -236,14 +221,7 @@ PROGRAM cdfpsi
   glamf(:,:) = getvar(cn_fhgr, cn_glamf, 1, npiglo, npjglo)
   gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, 1                                , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout,  stypvar, nvout,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, 1, glamf, gphif)
-
-  tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
-
+  CALL CreateOutput
   e1v(:,:)   = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
   e2u(:,:)   = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
   IF ( lmask) THEN
@@ -255,20 +233,17 @@ PROGRAM cdfpsi
   ! get rid of the free-slip/no-slip condition
 
   DO jt = 1, npt
-     dtrpu(:,:)= 0.d0
-     dtrpv(:,:)= 0.d0
-     dpsiu(:,:)= 0.d0
-     dpsiv(:,:)= 0.d0
+     IF ( lg_vvl ) THEN ; it=jt
+     ELSE               ; it=1
+     ENDIF
+     dtrpu(:,:)= 0.d0 ; dtrpv(:,:)= 0.d0 ; dpsiu(:,:)= 0.d0 ; dpsiv(:,:)= 0.d0
      IF ( lssh ) THEN
-       zsshu(:,:) = 0.0
-       zsshv(:,:) = 0.0
-       dpsisshu(:,:) = 0.d0
-       dpsisshv(:,:) = 0.d0
-       dtrpsshu(:,:) = 0.d0
-       dtrpsshv(:,:) = 0.d0
-       zssh(:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
-       zsshu(1:npiglo-1,    :     ) = 0.5*( zssh(2:npiglo,:       ) + zssh(1:npiglo-1,:         ))
-       zsshv(   :      ,1:npjglo-1) = 0.5*( zssh(:       ,2:npjglo) + zssh(:         ,1:npjglo-1))
+        zsshu(:,:) = 0.0 ; zsshv(:,:) = 0.0
+        dpsisshu(:,:) = 0.d0 ; dpsisshv(:,:) = 0.d0 ; dtrpsshu(:,:) = 0.d0 ; dtrpsshv(:,:) = 0.d0
+
+        zssh(:          ,    :     ) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt   )
+        zsshu(1:npiglo-1,    :     ) = 0.5*( zssh(2:npiglo,:       ) + zssh(1:npiglo-1,:         ))
+        zsshv(   :      ,1:npjglo-1) = 0.5*( zssh(:       ,2:npjglo) + zssh(:         ,1:npjglo-1))
      ENDIF
 
 
@@ -276,22 +251,22 @@ PROGRAM cdfpsi
         IF ( ll_v ) THEN
            zv(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
            IF ( lfull ) THEN ; e3v(:,:) = e31d(jk)
-           ELSE              ; e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+           ELSE              ; e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF
            dtrpv(:,:) = dtrpv(:,:) + zv(:,:)*e1v(:,:)*e3v(:,:)*1.d0  ! meridional transport of each grid cell
            IF ( lssh .AND. (jk == 1 ) ) THEN
-             dtrpsshv(:,:) = dtrpsshv(:,:) + zv(:,:)*e1v(:,:)*zsshv(:,:)*1.d0  ! meridional transport of each grid cell
+              dtrpsshv(:,:) = dtrpsshv(:,:) + zv(:,:)*e1v(:,:)*zsshv(:,:)*1.d0  ! meridional transport of each grid cell
            ENDIF
         ENDIF
 
         IF ( ll_u) THEN
            zu(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jt )
            IF ( lfull ) THEN ; e3u(:,:) = e31d(jk)
-           ELSE              ; e3u(:,:) = getvar(cn_fzgr, 'e3u_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+           ELSE              ; e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF
            dtrpu(:,:) = dtrpu(:,:) + zu(:,:)*e2u(:,:)*e3u(:,:)*1.d0  ! zonal transport of each grid cell
            IF ( lssh .AND. (jk == 1 ) ) THEN
-             dtrpsshu(:,:) = dtrpsshu(:,:) + zv(:,:)*e2u(:,:)*zsshu(:,:)*1.d0  ! meridional transport of each grid cell
+              dtrpsshu(:,:) = dtrpsshu(:,:) + zv(:,:)*e2u(:,:)*zsshu(:,:)*1.d0  ! meridional transport of each grid cell
            ENDIF
         ENDIF
      END DO  ! loop to next level
@@ -302,16 +277,16 @@ PROGRAM cdfpsi
         ! in the true ocean. If it is on true land, it is not a problem. But it cannot be on
         ! arbitrary masked points....
         IF ( lssh ) THEN
-          dpsisshu(1,npjglo-2) = dtrpsshv(1, npjglo-2)
-          DO ji = 2, npiglo
-             dpsisshu(ji,npjglo-2) = dpsisshu(ji-1,npjglo-2) + dtrpsshv(ji,npjglo-2)
-          END DO
-          ! Then compute the transport with along U starting from this line
-          DO jj= npjglo-3,1,-1
-             DO ji = 1, npiglo
-                dpsisshu(ji,jj) = dpsisshu(ji,jj+1) + dtrpsshu(ji,jj+1)
-             END DO
-          END DO
+           dpsisshu(1,npjglo-2) = dtrpsshv(1, npjglo-2)
+           DO ji = 2, npiglo
+              dpsisshu(ji,npjglo-2) = dpsisshu(ji-1,npjglo-2) + dtrpsshv(ji,npjglo-2)
+           END DO
+           ! Then compute the transport with along U starting from this line
+           DO jj= npjglo-3,1,-1
+              DO ji = 1, npiglo
+                 dpsisshu(ji,jj) = dpsisshu(ji,jj+1) + dtrpsshu(ji,jj+1)
+              END DO
+           END DO
         ENDIF
 
         dpsiu(1,npjglo-2) = dtrpv(1, npjglo-2)
@@ -387,7 +362,7 @@ PROGRAM cdfpsi
               DO jj = 2, npjglo
                  dpsisshu(:,jj) = dpsisshu(:,jj-1) - dtrpsshu(:,jj)   ! psissh at f point
               END DO
-                 dpsissh => dpsisshu
+              dpsissh => dpsisshu
            ENDIF
         ENDIF
 
@@ -421,5 +396,53 @@ PROGRAM cdfpsi
   ENDDO
 
   ierr = closeout (ncout)
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define new variables for output ( must update att.txt)
+    ipk(:) = 1  !  2D ( X, Y , T )
+    stypvar(:)%cunits            = 'm3/s'
+    stypvar(:)%valid_min         = -300.e6
+    stypvar(:)%valid_max         = 300.e6
+    stypvar(:)%conline_operation = 'N/A'
+    stypvar(:)%caxis             = 'TYX'
+    DO ji=1,nvout
+       stypvar(ji)%ichunk = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    ENDDO
+
+    stypvar(1)%cname             = cv_out
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%clong_name        = 'Barotropic_Stream_Function'
+    stypvar(1)%cshort_name       = cv_out
+
+    IF ( lssh ) THEN
+       stypvar(2)%cname             = cv_outssh
+       stypvar(2)%rmissing_value    = 0.
+       stypvar(2)%clong_name        = 'Barotropic_Stream_Function SSH contribution'
+       stypvar(2)%cshort_name       = cv_outssh
+
+       stypvar(3)%cname             = cv_outotal
+       stypvar(3)%rmissing_value    = 0.
+       stypvar(3)%clong_name        = 'Barotropic_Stream_Function SSH total'
+       stypvar(3)%cshort_name       = cv_outotal
+    ENDIF
+    ! create output fileset
+    ncout = create      (cf_out, cf_ufil, npiglo, npjglo, 1                                , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar, nvout,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, 1, glamf, gphif)
+
+    tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdfpsi
