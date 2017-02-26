@@ -27,6 +27,7 @@ PROGRAM cdfrichardson
   IMPLICIT NONE
 
   INTEGER(KIND=4)                              :: ji, jj, jk, jt           ! dummy loop index
+  INTEGER(KIND=4)                              :: it                       ! time index for vvl
   INTEGER(KIND=4)                              :: ierr                     ! working integer
   INTEGER(KIND=4)                              :: narg, iargc, ijarg       ! 
   INTEGER(KIND=4)                              :: npiglo, npjglo, npk, npt ! size of the domain
@@ -34,7 +35,6 @@ PROGRAM cdfrichardson
   INTEGER(KIND=4)                              :: ncout                    ! ncid of output file
   INTEGER(KIND=4), DIMENSION(2)                :: ipk, id_varout           ! level and id of output variables
 
-  REAL(KIND=4)                                 :: zpi                      ! 3.14...
   REAL(KIND=4)                                 :: rspval=0.                ! missing_value
   REAL(KIND=4)                                 :: zcoef, zdku, zdkv, zzri  ! working real
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
@@ -49,21 +49,24 @@ PROGRAM cdfrichardson
   CHARACTER(LEN=256)                           :: cf_vfil                  ! input V file name
   CHARACTER(LEN=256)                           :: cf_out = 'richardson.nc' ! output file name
   CHARACTER(LEN=256)                           :: cglobal                  ! global attribute
-  CHARACTER(LEN=80)                            :: cv_e3w  = 'e3w_ps'       ! e3w variable name (partial step)
+  CHARACTER(LEN=80)                            :: cf_e3w                   ! file name for e3w in case of vvl
   CHARACTER(LEN=80)                            :: cv_ric  = 'voric'        ! cdf variable name for N2
   CHARACTER(LEN=80)                            :: cv_dep                   ! cdf variable name for depth
 
   TYPE(variable), DIMENSION(1)                 :: stypvar                  ! variable attribute
 
-  LOGICAL                                      :: l_w=.FALSE.              ! flag for vertical location of ric
-  LOGICAL                                      :: lchk=.TRUE.              ! check missing files
-  LOGICAL                                      :: lfull=.FALSE.            ! full step flag
+  LOGICAL                                      :: l_w    = .FALSE.         ! flag for vertical location of ric
+  LOGICAL                                      :: lchk                     ! check missing files
+  LOGICAL                                      :: lfull  = .FALSE.         ! full step flag
+  LOGICAL                                      :: lnc4   = .FALSE.         ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfrichardson  gridT gridU gridV [ W ] [-full]'
+     PRINT *,' usage : cdfrichardson  gridT gridU gridV [-W] [-full] [-o OUT-file] [-nc4] ..'
+     PRINT*,'                 ... [-vvl W-file] '
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Richardson Number (Ri) according to' 
      PRINT *,'       temperature, salinity and velocity components'
@@ -75,10 +78,16 @@ PROGRAM cdfrichardson
      PRINT *,'       gridV : input gridV file for meridional velocity component'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ W ] : keep N2 at W points. Default is to interpolate N2' 
+     PRINT *,'       [-W ] : keep N2 at W points. Default is to interpolate N2' 
      PRINT *,'             at T point on the vertical'
-     PRINT *,'       [ -full ] : indicate a full step configuration instead of'
+     PRINT *,'       [-full ] : indicate a full step configuration instead of'
      PRINT *,'                the default partial steps.'
+     PRINT *,'       [-o OUT-file ]: specify output file instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-vvl W-file ]: use time-varying vertical metrics. W-file holds the'
+     PRINT *,'                time-varying e3w vertical metrics.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fzgr),' is needed for this program.' 
@@ -99,8 +108,12 @@ PROGRAM cdfrichardson
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
-     CASE ('W','w') ; l_w   = .TRUE.
-     CASE ('-full') ; lfull = .TRUE. ; cglobal = 'full step computation'
+     CASE ('-W'    ) ; l_w   = .TRUE.
+     CASE ('-full' ) ; lfull = .TRUE. ; cglobal = 'full step computation'
+     CASE ( '-nc4' ) ; lnc4  = .TRUE.
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-vvl' ) ; lg_vvl= .TRUE.
+                     ; CALL getarg (ijarg, cf_e3w) ; ijarg = ijarg + 1
      CASE DEFAULT   ; PRINT *,' Option not understood :', TRIM(cldum) ; STOP
      END SELECT
   END DO
@@ -109,23 +122,17 @@ PROGRAM cdfrichardson
   lchk = lchk .OR. chkfile (cf_tfil  )
   lchk = lchk .OR. chkfile (cf_ufil  )
   lchk = lchk .OR. chkfile (cf_vfil  )
-  IF ( lchk  ) STOP  ! missing files 
+  IF ( lg_vvl ) THEN
+    lchk = lchk .OR. chkfile (cf_e3w  )
+  ENDIF
+  IF ( lchk   ) STOP  ! missing files  
+
+  IF ( lg_vvl ) cn_fe3w = cf_e3w
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
   npk    = getdim (cf_tfil, cn_z)
   npt    = getdim (cf_tfil, cn_t)
-
-  ipk(1)                       = npk  !  3D
-  stypvar(1)%cname             = cv_ric
-  stypvar(1)%cunits            = 'no'
-  stypvar(1)%rmissing_value    = rspval
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 50000.
-  stypvar(1)%clong_name        = 'Richardson Number'
-  stypvar(1)%cshort_name       = cv_ric
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
 
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
@@ -137,31 +144,25 @@ PROGRAM cdfrichardson
   ALLOCATE (zwk(npiglo,npjglo,2), zmask(npiglo,npjglo)    )
   ALLOCATE (zri(npiglo,npjglo), e3w(npiglo,npjglo)        )
   ALLOCATE (gdep(npk), tim(npt)               )
+  IF ( lfull ) ALLOCATE (e3w1d(npk) )
+
   zwk(:,:,:) = rspval
   zri(:,:)   = rspval
 
-  IF ( lfull ) ALLOCATE (e3w1d(npk) )
-
-  cv_dep=cn_gdept
-  IF (l_w) cv_dep=cn_gdepw
-
+           cv_dep = cn_gdept
+  IF (l_w) cv_dep = cn_gdepw
   gdep(:) = getvare3(cn_fzgr, cv_dep, npk) 
 
-  ! create output fileset
-  ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk)
-  ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal))
-  ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
-
-  zpi=ACOS(-1.)
-
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt   )
-  ierr = putvar1d(ncout,  tim,       npt,'T')
+  CALL CreateOutput
 
   IF ( lfull )  e3w1d(:) = getvare3(cn_fzgr, cn_ve3w, npk)
 
   gdep(:) = getvare3(cn_fzgr, cn_gdepw, npk)
 
   DO jt=1,npt
+     IF ( lg_vvl ) THEN ; it=jt
+     ELSE               ; it=1
+     ENDIF
      !  2 levels of T and S are required : iup,idown (with respect to W level)
      !  Compute from bottom to top (for vertical integration)
      ztemp(:,:,idown) = getvar(cf_tfil, cn_votemper,  npk-1, npiglo, npjglo, ktime=jt)
@@ -178,11 +179,8 @@ PROGRAM cdfrichardson
         zu( :,:,iup)  = getvar(cf_ufil, cn_vozocrtx, jk-1, npiglo, npjglo, ktime=jt)
         zv( :,:,iup)  = getvar(cf_vfil, cn_vomecrty, jk-1, npiglo, npjglo, ktime=jt)
 
-
-        IF ( lfull ) THEN
-           e3w(:,:) = e3w1d(jk)
-        ELSE
-           e3w(:,:) = getvar(cn_fzgr, cv_e3w  , jk, npiglo, npjglo, ldiom=.TRUE.)
+        IF ( lfull ) THEN ; e3w(:,:) = e3w1d(jk)
+        ELSE              ; e3w(:,:) = getvar(cn_fe3w, cn_ve3w  , jk, npiglo, npjglo,ktime=it, ldiom=.NOT.lg_vvl )
         ENDIF
 
         zwk(:,:,iup) = eosbn2(ztemp, zsal, gdep(jk), e3w, npiglo, npjglo ,iup, idown)* zmask(:,:)
@@ -203,10 +201,8 @@ PROGRAM cdfrichardson
 
         IF ( .NOT. l_w ) THEN
            ! now put zri at T level (k )
-           WHERE ( zwk(:,:,idown) == 0 ) 
-              zri(:,:) =  zwk(:,:,iup)
-           ELSEWHERE
-              zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
+           WHERE ( zwk(:,:,idown) == 0 )  ; zri(:,:) =  zwk(:,:,iup)
+           ELSEWHERE                      ; zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
            END WHERE
         ELSE
            zri(:,:) = zwk(:,:,iup)
@@ -220,5 +216,38 @@ PROGRAM cdfrichardson
   END DO
 
   ierr = closeout(ncout)
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ipk(1)                       = npk  !  3D
+  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(1)%cname             = cv_ric
+  stypvar(1)%cunits            = 'no'
+  stypvar(1)%rmissing_value    = rspval
+  stypvar(1)%valid_min         = 0.
+  stypvar(1)%valid_max         = 50000.
+  stypvar(1)%clong_name        = 'Richardson Number'
+  stypvar(1)%cshort_name       = cv_ric
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TZYX'
+
+  ! create output fileset
+  ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk                             , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
+
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt   )
+  ierr = putvar1d(ncout,  tim,       npt,'T')
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdfrichardson
