@@ -87,7 +87,8 @@ PROGRAM cdfzonalmean
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfzonalmean IN-file point_type [ BASIN-file] [-debug]...'
-     PRINT *,'       ...[-var var1,var2,..] [-max ] [-pdep | --positive_depths]'
+     PRINT *,'       ...[-var var1,var2,..] [-max ] [-pdep | --positive_depths] ...'
+     PRINT *,'       ...[-o OUT-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the zonal mean of all the variables available in the' 
@@ -98,8 +99,8 @@ PROGRAM cdfzonalmean
      PRINT *,'       Zonal mean is in fact the mean value computed along the I coordinate.'
      PRINT *,'       The result is a vertical slice, in the meridional direction.'
      PRINT *,'      '
-     PRINT *,'       REMARK : partial step are not handled properly (but probably '
-     PRINT *,'                minor impact on results).'
+     PRINT *,'       REMARK : partial step and vvl output are not handled properly (but '
+     PRINT *,'                probably minor impact on results), e3x not zonally constant.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       IN-file    : input netcdf file.' 
@@ -115,13 +116,14 @@ PROGRAM cdfzonalmean
      PRINT *,'                      Default behaviour is to have negative depths.'
      PRINT *,'       [-ndep_in ] : negative depths are used in the input file.'
      PRINT *,'                      Default behaviour is to have positive depths.'
-     PRINT *,'       [-debug   ] : add some print for debug'
+     PRINT *,'       [-debug   ] : add some print for debug.'
+     PRINT *,'       [-o OUT-file ] : specify output file name instead of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cn_fmsk)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out), ' unless option -o is used.' 
      PRINT *,'         variables : output variable names are built with the following'
      PRINT *,'                     convention: zoxxxx_bas'
      PRINT *,'                      where zo replace vo/so prefix of the input variable'
@@ -141,8 +143,9 @@ PROGRAM cdfzonalmean
     CASE ( '-debug'                      ) ; ldebug   =.TRUE.
     CASE ( '-max'                        ) ; lmax     =.TRUE. ; ncoef=3
     CASE ( '-var'                        ) ; lvar     =.TRUE.
-                                             CALL getarg( ijarg, cldum) ; ijarg=ijarg+1
+                                             CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
                                              CALL ParseVars(cldum) 
+    CASE ( '-o'                          ) ; CALL getarg( ijarg, cf_out) ; ijarg=ijarg+1
     CASE DEFAULT
       ireq=ireq+1
       SELECT CASE (ireq)
@@ -163,6 +166,7 @@ PROGRAM cdfzonalmean
      PRINT *,' Option -debug    ', ldebug
      PRINT *,' Option -max      ', lmax
      PRINT *,' Option -var      ', lvar
+     PRINT *,' Option -o        ', TRIM(cf_out)
      PRINT *,' NPBASINS       = ', npbasins
   ENDIF
 
@@ -178,23 +182,23 @@ PROGRAM cdfzonalmean
   CASE ('T', 't', 'S', 's')
      cv_e1   = cn_ve1t    ; cv_e2   = cn_ve2t
      cv_depi = cn_gdept   ; cv_depo = cn_vdeptht
-     cv_phi  = cn_gphit   ; cv_msk  = 'tmask'
+     cv_phi  = cn_gphit   ; cv_msk  = cn_tmask
   CASE ('U', 'u')
      cv_e1   = cn_ve1u    ; cv_e2   = cn_ve2u
      cv_depi = cn_gdept   ; cv_depo = cn_vdepthu
-     cv_phi  = cn_gphiu   ; cv_msk  = 'umask'
+     cv_phi  = cn_gphiu   ; cv_msk  = cn_umask
   CASE ('V', 'v')
      cv_e1   = cn_ve1v    ; cv_e2   = cn_ve2v
      cv_depi = cn_gdept   ; cv_depo = cn_vdepthv
-     cv_phi  = cn_gphiv   ; cv_msk  = 'vmask'
+     cv_phi  = cn_gphiv   ; cv_msk  = cn_vmask
   CASE ('F', 'f')
      cv_e1   = cn_ve1f    ; cv_e2   = cn_ve2f
      cv_depi = cn_gdept   ; cv_depo = cn_vdeptht
-     cv_phi  = cn_gphif   ; cv_msk  = 'fmask'
+     cv_phi  = cn_gphif   ; cv_msk  = cn_fmask
   CASE ('W', 'w')
      cv_e1   = cn_ve1t    ; cv_e2   = cn_ve2t
      cv_depi = cn_gdepw   ; cv_depo = cn_vdepthw
-     cv_phi  = cn_gphit   ; cv_msk  = 'tmask'
+     cv_phi  = cn_gphit   ; cv_msk  = cn_tmask
   CASE DEFAULT
      PRINT *, ' C grid:', TRIM(ctyp),' point not known!' ; STOP
   END SELECT
@@ -229,7 +233,175 @@ PROGRAM cdfzonalmean
      WHERE ( lbad ) ipki=0
      DEALLOCATE (lbad )
   ENDIF
+  npiglo = getdim (cf_in, cn_x)
+  npjglo = getdim (cf_in, cn_y)
+  npk    = getdim (cf_in, cn_z)
+  npt    = getdim (cf_in, cn_t)
 
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
+
+  ! if 2D fields, npk=0, assume 1
+  IF ( npk == 0 ) THEN
+     npk = 1 
+     l2d = .TRUE.
+     PRINT *,' It is a 2D field, assume npk=1 and gdep=0'
+  END IF
+  ! Allocate arrays
+  ALLOCATE ( zmask(npbasins,npiglo,npjglo)              )
+  ALLOCATE ( zv(npiglo,npjglo), zmaskvar(npiglo,npjglo) )
+  ALLOCATE ( e1(npiglo,npjglo), e2      (npiglo,npjglo) )
+  ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), tim(npt)   )
+  ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo)       )
+  IF ( lmax ) ALLOCATE ( rzomax(npjglo,npk)             )
+  IF ( lmax ) ALLOCATE ( rzomin(npjglo,npk)             )
+  ALLOCATE ( dzomean(npjglo,npk), darea(npjglo,npk)     )
+  ALLOCATE ( dl_surf(npiglo,npjglo)                     )
+
+  ! get the metrics
+  e1(:,:)   = getvar(cn_fhgr, cv_e1,  1, npiglo, npjglo) 
+  e2(:,:)   = getvar(cn_fhgr, cv_e2,  1, npiglo, npjglo) 
+  gphi(:,:) = getvar(cn_fhgr, cv_phi, 1, npiglo, npjglo)
+  
+  dl_surf(:,:) = 1.d0 * e1(:,:) * e2(:,:)
+
+  IF (l2d)  THEN 
+     gdep(:) = 0
+  ELSE
+     gdep(:) = getvare3(cn_fzgr, cv_depi ,npk)
+     IF (ldebug) PRINT *, 'getvare3 : ', TRIM(cn_fzgr), TRIM(cv_depi), npk
+     IF (ldebug) PRINT *, 'getvare3 : ', gdep
+  ENDIF
+
+  IF ( .NOT. lpdep ) gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
+
+  ! Look for the i-index that go through the North Pole
+  ijloc        = MAXLOC(gphi)
+  zdumlat(1,:) = gphi(ijloc(1),:)
+  zdumlon(:,:) = 0.              ! set the dummy longitude to 0
+
+  CALL CreateOutput
+
+  tim   = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr  = putvar1d(ncout, tim,       npt, 'T')
+
+  ! reading the surface masks
+  ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
+  ik=1
+  IF ( lndep_in ) ik = npk   ! some model are numbered from the bottom
+  zmask(1,:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo)
+  IF ( cf_basins /= 'none' ) THEN
+     zmask(2,:,:) = getvar(cf_basins, cn_tmaskatl, ik, npiglo, npjglo )
+     zmask(4,:,:) = getvar(cf_basins, cn_tmaskind, ik, npiglo, npjglo )
+     zmask(5,:,:) = getvar(cf_basins, cn_tmaskpac, ik, npiglo, npjglo )
+     zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
+     ! ensure that there are no overlapping on the masks
+     WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
+  ENDIF
+
+  ! main computing loop
+  ivar = 0
+  DO jvar = 1, nvar
+     ijvar = id_varin(jvar)
+     DO jt = 1,npt
+        IF (MOD(jt,100)==0) PRINT *, jt,'/',npt
+        DO jk = 1, ipki(ijvar)
+           IF (ldebug) PRINT *,TRIM(cv_namesi(ijvar)), ' level ',jk
+           ! Get variables and mask at level jk
+           zv(:,:)       = getvar(cf_in,   cv_namesi(ijvar),jk ,npiglo, npjglo, ktime=jt)
+           zmaskvar(:,:) = getvar(cn_fmsk, cv_msk ,         jk ,npiglo, npjglo          )
+           
+           ! For all basins 
+           DO jbasin = 1, npbasins
+              dzomean(:,:) = 0.d0
+              darea(:,:)   = 0.d0
+              ! integrates 'zonally' (along i-coordinate)
+              IF ( lmax) rzomax(:,jk) = -1.e20
+              IF ( lmax) rzomin(:,jk) =  1.e20
+
+              !$OMP PARALLEL DO SCHEDULE(RUNTIME) PRIVATE(dtmp)
+              DO jj=1,npjglo
+                  DO ji=1,npiglo
+                    dtmp = 1.d0 * zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
+                    dzomean(jj,jk) = dzomean(jj,jk) + dl_surf(ji,jj)* dtmp
+                    darea  (jj,jk) = darea  (jj,jk) + dl_surf(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
+           IF( lmax )                 rzomax (jj,jk) = MAX(rzomax (jj,jk), dtmp )
+           IF( lmax .AND. dtmp /= 0.) rzomin (jj,jk) = MIN(rzomin (jj,jk), dtmp )
+                 END DO
+              END DO
+              !$OMP  END  PARALLEL DO
+
+              ! compute the mean value if the darea is not 0, else assign spval
+              WHERE (darea /= 0 )  ; dzomean=dzomean/darea
+              ELSEWHERE            ; dzomean=zspval
+              ENDWHERE
+              IF (lmax)  THEN      
+                 WHERE (darea == 0 ) 
+                   rzomax=zspval ; rzomin=zspval 
+                 ENDWHERE
+              ENDIF
+
+              ivar = (jvar-1)*npbasins + jbasin
+              ierr = putvar (ncout, id_varout(ivar),   REAL(dzomean(:,jk)), jk, 1, npjglo, ktime=jt)
+   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+nvaro),   rzomax(:,jk),  jk, 1, npjglo, ktime=jt)
+   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+2*nvaro), rzomin(:,jk),  jk, 1, npjglo, ktime=jt)
+           END DO  !next basin
+        END DO  ! next k 
+     END DO ! next time
+  END DO ! next variable
+
+  ierr = closeout(ncout)
+CONTAINS 
+   SUBROUTINE ParseVars (cdum)
+      !!---------------------------------------------------------------------
+      !!                  ***  ROUTINE ParseVars  ***
+      !!
+      !! ** Purpose :  Decode -var option from command line
+      !!
+      !! ** Method  :  look for , in the argument string and set the number of
+      !!         variable (nvaro), allocate cv_fix array and fill it with the
+      !!         decoded  names.
+      !!
+      !!----------------------------------------------------------------------
+      CHARACTER(LEN=*), INTENT(in) :: cdum
+
+      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+      INTEGER  :: ji
+      INTEGER  :: inchar,  i1=1
+      !!----------------------------------------------------------------------
+
+      inchar= LEN(TRIM(cdum))
+      ! scan the input string and look for ',' as separator
+      DO ji=1,inchar
+         IF ( cdum(ji:ji) == ',' ) THEN
+            cl_dum(nvaro) = cdum(i1:ji-1)
+            i1=ji+1
+            nvaro=nvaro+1
+         ENDIF
+      ENDDO
+
+      ! last name of the list does not have a ','
+      cl_dum(nvaro) = cdum(i1:inchar)
+
+      ALLOCATE ( cv_fix(nvaro) )
+      IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
+      DO ji=1, nvaro
+         cv_fix(ji) = cl_dum(ji)
+         IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
+      ENDDO
+   END SUBROUTINE ParseVars
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
   ! buildt output filename
   nvar = 0  ! over all number of valid variables for zonal mean ( < nvarin)
   ivar = 0  ! over all variable counter ( nvar x basins)
@@ -289,169 +461,11 @@ PROGRAM cdfzonalmean
      ENDDO
   ENDIF
 
-  npiglo = getdim (cf_in, cn_x)
-  npjglo = getdim (cf_in, cn_y)
-  npk    = getdim (cf_in, cn_z)
-  npt    = getdim (cf_in, cn_t)
-
-  PRINT *, 'npiglo = ', npiglo
-  PRINT *, 'npjglo = ', npjglo
-  PRINT *, 'npk    = ', npk
-  PRINT *, 'npt    = ', npt
-
-  ! if 2D fields, npk=0, assume 1
-  IF ( npk == 0 ) THEN
-     npk = 1 
-     l2d = .TRUE.
-     PRINT *,' It is a 2D field, assume npk=1 and gdep=0'
-  END IF
-  ! Allocate arrays
-  ALLOCATE ( zmask(npbasins,npiglo,npjglo)              )
-  ALLOCATE ( zv(npiglo,npjglo), zmaskvar(npiglo,npjglo) )
-  ALLOCATE ( e1(npiglo,npjglo), e2      (npiglo,npjglo) )
-  ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), tim(npt)   )
-  ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo)       )
-  IF ( lmax ) ALLOCATE ( rzomax(npjglo,npk)             )
-  IF ( lmax ) ALLOCATE ( rzomin(npjglo,npk)             )
-  ALLOCATE ( dzomean(npjglo,npk), darea(npjglo,npk)     )
-  ALLOCATE ( dl_surf(npiglo,npjglo)                     )
-
-  ! get the metrics
-  e1(:,:)   = getvar(cn_fhgr, cv_e1,  1, npiglo, npjglo) 
-  e2(:,:)   = getvar(cn_fhgr, cv_e2,  1, npiglo, npjglo) 
-  gphi(:,:) = getvar(cn_fhgr, cv_phi, 1, npiglo, npjglo)
-  
-  dl_surf(:,:) = 1.d0 * e1(:,:) * e2(:,:)
-
-  IF (l2d)  THEN 
-     gdep(:) = 0
-  ELSE
-     gdep(:) = getvare3(cn_fzgr, cv_depi ,npk)
-     IF (ldebug) PRINT *, 'getvare3 : ', TRIM(cn_fzgr), TRIM(cv_depi), npk
-     IF (ldebug) PRINT *, 'getvare3 : ', gdep
-  ENDIF
-
-  IF ( .NOT. lpdep ) gdep(:)   = -1.*  gdep(:)     ! helps for plotting the results
-
-  ! Look for the i-index that go through the North Pole
-  ijloc        = MAXLOC(gphi)
-  zdumlat(1,:) = gphi(ijloc(1),:)
-  zdumlon(:,:) = 0.              ! set the dummy longitude to 0
-
   ! create output fileset
   ncout = create      (cf_out, cf_in,    1,           npjglo, npk,  cdep=cv_depo                                )
   ierr  = createvar   (ncout,  stypvaro, ncoef*nvaro, ipko,   id_varout                                         )
   ierr  = putheadervar(ncout,  cf_in,    1,           npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
 
-  tim   = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr  = putvar1d(ncout, tim,       npt, 'T')
-
-  ! reading the surface masks
-  ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
-  ik=1
-  IF ( lndep_in ) ik = npk   ! some model are numbered from the bottom
-  zmask(1,:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo)
-  IF ( cf_basins /= 'none' ) THEN
-     zmask(2,:,:) = getvar(cf_basins, 'tmaskatl', ik, npiglo, npjglo )
-     zmask(4,:,:) = getvar(cf_basins, 'tmaskind', ik, npiglo, npjglo )
-     zmask(5,:,:) = getvar(cf_basins, 'tmaskpac', ik, npiglo, npjglo )
-     zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
-     ! ensure that there are no overlapping on the masks
-     WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
-  ENDIF
-
-  ! main computing loop
-  ivar = 0
-  DO jvar = 1, nvar
-     ijvar = id_varin(jvar)
-     DO jt = 1,npt
-        IF (MOD(jt,100)==0) PRINT *, jt,'/',npt
-        DO jk = 1, ipki(ijvar)
-           IF (ldebug) PRINT *,TRIM(cv_namesi(ijvar)), ' level ',jk
-           ! Get variables and mask at level jk
-           zv(:,:)       = getvar(cf_in,   cv_namesi(ijvar),jk ,npiglo, npjglo, ktime=jt)
-           zmaskvar(:,:) = getvar(cn_fmsk, cv_msk ,         jk ,npiglo, npjglo          )
-           
-           ! For all basins 
-           DO jbasin = 1, npbasins
-              dzomean(:,:) = 0.d0
-              darea(:,:)   = 0.d0
-              ! integrates 'zonally' (along i-coordinate)
-              IF ( lmax) rzomax(:,jk) = -1.e20
-              IF ( lmax) rzomin(:,jk) =  1.e20
-
-              !$OMP PARALLEL DO SCHEDULE(RUNTIME) PRIVATE(dtmp)
-              DO jj=1,npjglo
-                  DO ji=1,npiglo
-                    dtmp = 1.d0 * zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
-                    dzomean(jj,jk) = dzomean(jj,jk) + dl_surf(ji,jj)* dtmp
-                    darea  (jj,jk) = darea  (jj,jk) + dl_surf(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
-           IF( lmax )                 rzomax (jj,jk) = MAX(rzomax (jj,jk), dtmp )
-           IF( lmax .AND. dtmp /= 0.) rzomin (jj,jk) = MIN(rzomin (jj,jk), dtmp )
-                 END DO
-              END DO
-              !$OMP  END  PARALLEL DO
-
-              ! compute the mean value if the darea is not 0, else assign spval
-              WHERE (darea /= 0 ) 
-                 dzomean=dzomean/darea
-              ELSEWHERE
-                 dzomean=zspval
-              ENDWHERE
-              IF (lmax)  THEN
-                 WHERE (darea == 0 ) 
-                   rzomax=zspval ; rzomin=zspval 
-                 ENDWHERE
-              ENDIF
-
-              ivar = (jvar-1)*npbasins + jbasin
-              ierr = putvar (ncout, id_varout(ivar),   REAL(dzomean(:,jk)), jk, 1, npjglo, ktime=jt)
-   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+nvaro),   rzomax(:,jk),  jk, 1, npjglo, ktime=jt)
-   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+2*nvaro), rzomin(:,jk),  jk, 1, npjglo, ktime=jt)
-           END DO  !next basin
-        END DO  ! next k 
-     END DO ! next time
-  END DO ! next variable
-
-  ierr = closeout(ncout)
-CONTAINS 
-   SUBROUTINE ParseVars (cdum)
-      !!---------------------------------------------------------------------
-      !!                  ***  ROUTINE ParseVars  ***
-      !!
-      !! ** Purpose :  Decode -var option from command line
-      !!
-      !! ** Method  :  look for , in the argument string and set the number of
-      !!         variable (nvaro), allocate cv_fix array and fill it with the
-      !!         decoded  names.
-      !!
-      !!----------------------------------------------------------------------
-      CHARACTER(LEN=*), INTENT(in) :: cdum
-
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
-      INTEGER  :: ji
-      INTEGER  :: inchar,  i1=1
-      !!----------------------------------------------------------------------
-
-      inchar= LEN(TRIM(cdum))
-      ! scan the input string and look for ',' as separator
-      DO ji=1,inchar
-         IF ( cdum(ji:ji) == ',' ) THEN
-            cl_dum(nvaro) = cdum(i1:ji-1)
-            i1=ji+1
-            nvaro=nvaro+1
-         ENDIF
-      ENDDO
-
-      ! last name of the list does not have a ','
-      cl_dum(nvaro) = cdum(i1:inchar)
-
-      ALLOCATE ( cv_fix(nvaro) )
-      IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
-      DO ji=1, nvaro
-         cv_fix(ji) = cl_dum(ji)
-         IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
-      ENDDO
-   END SUBROUTINE ParseVars
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfzonalmean
