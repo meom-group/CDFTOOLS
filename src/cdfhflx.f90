@@ -32,12 +32,12 @@ PROGRAM cdfhflx
   INTEGER(KIND=4)                             :: jbasin, ji, jj, jk, jt ! dummy loop index
   INTEGER(KIND=4)                             :: npbasins               ! number of subbasins
   INTEGER(KIND=4)                             :: ierr                   ! error status
-  INTEGER(KIND=4)                             :: narg, iargc            ! command line 
+  INTEGER(KIND=4)                             :: narg, iargc,ijarg      ! command line 
   INTEGER(KIND=4)                             :: npiglo, npjglo         ! size of the domain
   INTEGER(KIND=4)                             :: npk, npt               ! size of the domain
   INTEGER(KIND=4)                             :: ncout                  ! ncid of output file
   INTEGER(KIND=4)                             :: numout=10              ! logical unit of txt output file
-  INTEGER(KIND=4)                             :: ikx=1, iky=1           ! dims of netcdf output file
+  INTEGER(KIND=4)                             :: ikx=1                  ! dims of netcdf output file
   INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipk, id_varout         ! levels and varid's of output vars
   INTEGER(KIND=4), DIMENSION(2)               :: iloc                   ! used for maxloc
 
@@ -50,13 +50,14 @@ PROGRAM cdfhflx
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim                    ! time counter
 
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dmht                   ! cumulated heat trp
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: dhtrp                   ! MHT from fluxes
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: dhtrp                  ! MHT from fluxes
 
   TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar                ! attributes output
 
   CHARACTER(LEN=256)                          :: cf_tfil                ! input file
-  CHARACTER(LEN=256)                          :: cf_out='hflx.out'      ! output txt file
+  CHARACTER(LEN=256)                          :: cf_out  ='hflx.out'    ! output txt file
   CHARACTER(LEN=256)                          :: cf_outnc='cdfhflx.nc'  ! output nc file
+  CHARACTER(LEN=256)                          :: cldum                  ! working variable
 
   LOGICAL                                     :: lglo = .FALSE.         ! global or subbasin computation
   LOGICAL                                     :: lchk = .FALSE.         ! missing file flag
@@ -66,7 +67,7 @@ PROGRAM cdfhflx
   narg = iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfhflx  T-file '
+     PRINT *,' usage : cdfhflx  -f T-file [-o OUTNC-file ] [-ot OUTTXT-file] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the Meridional Heat Transport (MHT) from surface heat fluxes,' 
@@ -79,6 +80,12 @@ PROGRAM cdfhflx
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       T-file : a file with heat fluxes (gridT). '
      PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUTNC-file ]: specify the name of the netcdf output file, instead of'
+     PRINT *,'                    ', TRIM(cf_outnc) 
+     PRINT *,'       [-ot OUTTXT-file ]: specify the name of the text output file, instead of'
+     PRINT *,'                    ', TRIM(cf_out) 
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ', TRIM(cn_fhgr),', ',TRIM(cn_fbasins),' and ',TRIM(cn_fmsk),'.' 
      PRINT *,'       If ',TRIM(cn_fbasins),' is not available, only global MHT is computed.'
@@ -90,7 +97,17 @@ PROGRAM cdfhflx
      STOP
   ENDIF
 
-  CALL getarg (1, cf_tfil)
+  ijarg = 1
+  DO WHILE ( ijarg <= narg )
+    CALL getarg (1, cldum ) ; ijarg=ijarg+1
+    SELECT CASE ( cldum)
+    CASE ( '-f' ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
+    ! options
+    CASE ( '-o' ) ; CALL getarg (1, cf_outnc) ; ijarg=ijarg+1
+    CASE ( '-ot') ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
+    CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.'
+    END SELECT
+  ENDDO
 
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fmsk) .OR. lchk
@@ -110,10 +127,8 @@ PROGRAM cdfhflx
   !  Detects newmaskglo file 
   lglo = .NOT. ( chkfile(cn_fbasins) )
 
-  IF (lglo) THEN
-     npbasins = 5
-  ELSE
-     npbasins = 1
+  IF (lglo) THEN ; npbasins = 5
+  ELSE           ; npbasins = 1
   ENDIF
 
   ! Allocate arrays
@@ -127,33 +142,6 @@ PROGRAM cdfhflx
 
   ALLOCATE (stypvar(npbasins), ipk(npbasins), id_varout(npbasins))
 
-  ! define new variables for output 
-  ipk(:)                    = 1
-  stypvar%cunits            = 'PW'
-  stypvar%rmissing_value    = 99999.
-  stypvar%valid_min         = -1000.
-  stypvar%valid_max         = 1000.
-  stypvar%scale_factor      = 1.
-  stypvar%add_offset        = 0.
-  stypvar%savelog10         = 0.
-  stypvar%cunits            = 'PW' 
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'T'
-
-  stypvar(1)%cname          = 'hflx_glo'
-  stypvar(1)%clong_name     = 'Heat_Fluxes_Global'
-  stypvar(1)%cshort_name    = 'hflx_glo'
-
-  IF (lglo) THEN
-     stypvar(2)%cname       = 'hflx_atl'             ; stypvar(3)%cname       = 'hflx_inp'
-     stypvar(2)%clong_name  = 'Heat_Fluxes_Atlantic' ; stypvar(3)%clong_name  = 'Heat_Fluxes_Indo-Pacific'
-     stypvar(2)%cshort_name = 'hflx_atl'             ; stypvar(3)%cshort_name = 'hflx_inp'
-
-     stypvar(4)%cname       = 'hflx_ind'             ; stypvar(5)%cname       = 'hflx_pac'
-     stypvar(4)%clong_name  = 'Heat_Fluxes_Indian'   ; stypvar(5)%clong_name  = 'Heat_Fluxes_Pacific'
-     stypvar(4)%cshort_name = 'hflx_ind'             ; stypvar(5)%cshort_name = 'hflx_pac'
-  ENDIF
-
   e1t(  :,:) = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo) 
   e2t(  :,:) = getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo) 
   gphit(:,:) = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
@@ -162,25 +150,19 @@ PROGRAM cdfhflx
   rdumlat(1,:) = gphit(iloc(1),:)
   rdumlon(:,:) = 0.   ! set the dummy longitude to 0
 
-  ! create output fileset
-  ncout = create      (cf_outnc, 'none',  ikx,      npjglo, npk                                  )
-  ierr  = createvar   (ncout,    stypvar, npbasins, ipk,    id_varout                            )
-  ierr  = putheadervar(ncout,    cf_tfil, ikx,      npjglo, npk, pnavlon=rdumlon, pnavlat=rdumlat)
-
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
+  CALL CreateOutput
 
   OPEN(numout, FILE=cf_out, FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
   WRITE(numout,*)'! Zonal heat transport (integrated from surface fluxes) (in Pw)'
 
   ! reading the masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
-  zmask(1,:,:)= getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
+  zmask(1,:,:)= getvar(cn_fmsk, cn_vmask, 1, npiglo, npjglo)
 
   IF (lglo) THEN
-     zmask(2,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
-     zmask(4,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
-     zmask(5,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+     zmask(2,:,:) = getvar(cn_fbasins, cn_tmaskatl, 1, npiglo, npjglo)
+     zmask(4,:,:) = getvar(cn_fbasins, cn_tmaskind, 1, npiglo, npjglo)
+     zmask(5,:,:) = getvar(cn_fbasins, cn_tmaskpac, 1, npiglo, npjglo)
      zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
@@ -190,7 +172,7 @@ PROGRAM cdfhflx
   ENDIF
 
   DO jt = 1, npt
-  ! initialize dmht
+     ! initialize dmht
      dmht(:,:)  = 0.d0
      dhtrp(:,:) = 0.d0
      WRITE(numout,*)' TIME =', jt, tim(jt)/86400.,' days'
@@ -208,7 +190,7 @@ PROGRAM cdfhflx
 
      ! cumulates transport from north to south
      DO jj=npjglo-1,1,-1
-           dhtrp(:,jj) = dhtrp(:,jj+1) - dmht(:,jj)
+        dhtrp(:,jj) = dhtrp(:,jj+1) - dmht(:,jj)
      END DO
 
      ! transform to peta watt
@@ -236,5 +218,51 @@ PROGRAM cdfhflx
 
   ierr = closeout(ncout)
   CLOSE(numout)
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define new variables for output 
+    ipk(:)                    = 1
+    stypvar%cunits            = 'PW'
+    stypvar%rmissing_value    = 99999.
+    stypvar%valid_min         = -1000.
+    stypvar%valid_max         = 1000.
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+    stypvar%cunits            = 'PW' 
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'T'
+
+    stypvar(1)%cname          = 'hflx_glo'
+    stypvar(1)%clong_name     = 'Heat_Fluxes_Global'
+    stypvar(1)%cshort_name    = 'hflx_glo'
+
+    IF (lglo) THEN
+       stypvar(2)%cname       = 'hflx_atl'             ; stypvar(3)%cname       = 'hflx_inp'
+       stypvar(2)%clong_name  = 'Heat_Fluxes_Atlantic' ; stypvar(3)%clong_name  = 'Heat_Fluxes_Indo-Pacific'
+       stypvar(2)%cshort_name = 'hflx_atl'             ; stypvar(3)%cshort_name = 'hflx_inp'
+
+       stypvar(4)%cname       = 'hflx_ind'             ; stypvar(5)%cname       = 'hflx_pac'
+       stypvar(4)%clong_name  = 'Heat_Fluxes_Indian'   ; stypvar(5)%clong_name  = 'Heat_Fluxes_Pacific'
+       stypvar(4)%cshort_name = 'hflx_ind'             ; stypvar(5)%cshort_name = 'hflx_pac'
+    ENDIF
+    ! create output fileset
+    ncout = create      (cf_outnc, 'none',  ikx,      npjglo, npk                                  )
+    ierr  = createvar   (ncout,    stypvar, npbasins, ipk,    id_varout                            )
+    ierr  = putheadervar(ncout,    cf_tfil, ikx,      npjglo, npk, pnavlon=rdumlon, pnavlat=rdumlat)
+
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfhflx
