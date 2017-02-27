@@ -326,7 +326,7 @@ cdfzonalmeanvT2: cdfio.o  modutils.o  cdfzonalmeanvT2.f90
 	$(F90) cdfzonalmeanvT2.f90 -o $(BINDIR)/cdfzonalmeanvT2 cdfio.o modcdfnames.o modutils.o $(FFLAGS) 
 
 cdfzonalsum: cdfio.o  cdfzonalsum.f90
-	$(F90) cdfzonalsum.f90 -o $(BINDIR)/cdfzonalsum cdfio.o modcdfnames.o $(FFLAGS) 
+	$(F90) $(OMP) cdfzonalsum.f90 -o $(BINDIR)/cdfzonalsum cdfio.o modcdfnames.o $(FFLAGS) 
 
 cdfzonalout: cdfio.o  cdfzonalout.f90
 	$(F90) cdfzonalout.f90 -o $(BINDIR)/cdfzonalout cdfio.o modcdfnames.o $(FFLAGS) 
