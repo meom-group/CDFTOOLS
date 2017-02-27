@@ -51,7 +51,9 @@ PROGRAM cdfzonalsum
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zmaskvar            ! variable mask
   REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
 
+  REAL(KIND=8)                                  :: dtmp                ! temporary variable
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzosum              ! jpbasins x npjglo x npk
+  REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dl_surf             ! surface of cells
 
   CHARACTER(LEN=256)                            :: cf_in               ! input file name
   CHARACTER(LEN=256)                            :: cf_out='zonalsum.nc' ! output file name
@@ -85,7 +87,7 @@ PROGRAM cdfzonalsum
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfzonalsum IN-file point_type [ BASIN-file] ...'
      PRINT *,'                  ... [-var var1,var2,..] [-pdep | --positive_depths]'
-     PRINT *,'                  ... [-pdeg | --per_degree] [-debug]'
+     PRINT *,'                  ... [-pdeg | --per_degree] [-debug] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the zonal sum of all the variables available in the' 
@@ -96,8 +98,8 @@ PROGRAM cdfzonalsum
      PRINT *,'       Zonal sum is in fact the integral value computed along the I coordinate.'
      PRINT *,'       The result is a vertical slice, in the meridional direction.'
      PRINT *,'      '
-     PRINT *,'       REMARK : partial step are not handled properly (but probably '
-     PRINT *,'                minor impact on results).'
+     PRINT *,'       REMARK : partial step and vvl output are not handled properly (but '
+     PRINT *,'                probably minor impact on results), e3x not zonally constant.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       IN-file    : input netcdf file.' 
@@ -116,6 +118,7 @@ PROGRAM cdfzonalsum
      PRINT *,'                      in this one.'
      PRINT *,'                      Default behaviour is not to normalize.'
      PRINT *,'       [-debug ] : add some print for debug'
+     PRINT *,'       [-o OUT-file ] : specify output file name instead of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cn_fmsk)
@@ -134,26 +137,27 @@ PROGRAM cdfzonalsum
 
   ijarg = 1  ; ireq = 0
   DO WHILE ( ijarg <= narg ) 
-    CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
-    SELECT CASE (cldum)
-    CASE ( '-pdep' , '--positive_depths' ) ; lpdep  =.TRUE.
-    CASE ( '-pdeg' , '--per_degree'      ) ; lpdeg  =.TRUE.
-    CASE ( '-debug'                      ) ; ldebug =.TRUE.
-    CASE ( '-var'                        ) ; lvar   =.TRUE.
-                                             CALL getarg( ijarg, cldum) ; ijarg=ijarg+1
-                                             CALL ParseVars(cldum)
-    CASE DEFAULT
-      ireq=ireq+1
-      SELECT CASE (ireq)
-      CASE (1) ; cf_in      = cldum                 ! file name is the 1rst argument
-      CASE (2) ; ctyp       = cldum                 ! point type is the 2nd
-      CASE (3) ; cf_basins  = cldum                 ! sub basin file is the 3rd (optional)
-                 npbasins   = 5
-                 lchk       = chkfile (cf_basins)
-      CASE DEFAULT 
-        PRINT *,' Too many arguments ...' ; STOP
-      END SELECT
-    END SELECT
+     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE (cldum)
+     CASE ( '-pdep' , '--positive_depths' ) ; lpdep  =.TRUE.
+     CASE ( '-pdeg' , '--per_degree'      ) ; lpdeg  =.TRUE.
+     CASE ( '-debug'                      ) ; ldebug =.TRUE.
+     CASE ( '-var'                        ) ; lvar   =.TRUE.
+                                            ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1
+                                            ; CALL ParseVars(cldum)
+     CASE ( '-o'                          ) ; CALL getarg( ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE DEFAULT
+        ireq=ireq+1
+        SELECT CASE (ireq)
+        CASE (1) ; cf_in      = cldum                 ! file name is the 1rst argument
+        CASE (2) ; ctyp       = cldum                 ! point type is the 2nd
+        CASE (3) ; cf_basins  = cldum                 ! sub basin file is the 3rd (optional)
+           npbasins   = 5
+           lchk       = chkfile (cf_basins)
+        CASE DEFAULT 
+           PRINT *,' Too many arguments ...' ; STOP
+        END SELECT
+     END SELECT
   END DO
 
   IF ( ldebug ) THEN  ! additional print for debuging
@@ -161,6 +165,7 @@ PROGRAM cdfzonalsum
      PRINT *,' Option -pdeg     ', lpdeg
      PRINT *,' Option -debug    ', ldebug
      PRINT *,' Option -var      ', lvar
+     PRINT *,' Option -o        ', TRIM(cf_out)
      PRINT *,' NPBASINS       = ', npbasins
   ENDIF
 
@@ -176,30 +181,30 @@ PROGRAM cdfzonalsum
   CASE ('T', 't', 'S', 's')
      cv_e1   = cn_ve1t    ; cv_e2   = cn_ve2t
      cv_depi = cn_gdept   ; cv_depo = cn_vdeptht
-     cv_phi  = cn_gphit   ; cv_msk  = 'tmask'
+     cv_phi  = cn_gphit   ; cv_msk  = cn_tmask
   CASE ('U', 'u')
      cv_e1   = cn_ve1u    ; cv_e2   = cn_ve2u
      cv_depi = cn_gdept   ; cv_depo = cn_vdepthu
-     cv_phi  = cn_gphiu   ; cv_msk  = 'umask'
+     cv_phi  = cn_gphiu   ; cv_msk  = cn_umask
   CASE ('V', 'v')
      cv_e1   = cn_ve1v    ; cv_e2   = cn_ve2v
      cv_depi = cn_gdept   ; cv_depo = cn_vdepthv
-     cv_phi  = cn_gphiv   ; cv_msk  = 'vmask'
+     cv_phi  = cn_gphiv   ; cv_msk  = cn_vmask
   CASE ('F', 'f')
      cv_e1   = cn_ve1f    ; cv_e2   = cn_ve2f
      cv_depi = cn_gdept   ; cv_depo = cn_vdeptht
-     cv_phi  = cn_gphif   ; cv_msk  = 'fmask'
+     cv_phi  = cn_gphif   ; cv_msk  = cn_fmask
   CASE ('W', 'w')
      cv_e1   = cn_ve1t    ; cv_e2   = cn_ve2t
      cv_depi = cn_gdepw   ; cv_depo = cn_vdepthw
-     cv_phi  = cn_gphit   ; cv_msk  = 'tmask'
+     cv_phi  = cn_gphit   ; cv_msk  = cn_tmask
   CASE DEFAULT
      PRINT *, ' C grid:', TRIM(ctyp),' point not known!' ; STOP
   END SELECT
 
   nvarin  = getnvar(cf_in)   ! number of input variables
   IF ( .NOT. lvar ) THEN
-    nvaro = nvarin
+     nvaro = nvarin
   ENDIF
 
   nvarmx = npbasins * nvaro
@@ -219,68 +224,15 @@ PROGRAM cdfzonalsum
      ! tricks : in case of specified variables, set ipki to 0 all variables
      !          not choosen.
      DO ji = 1, nvaro
-       DO jvar = 1, nvarin
-         IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .false.
-       END DO
+        DO jvar = 1, nvarin
+           IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .false.
+        END DO
      END DO
      WHERE ( lbad ) ipki=0
      DEALLOCATE (lbad )
   ENDIF
 
-  ! buildt output filename
-  nvar = 0  ! over all number of valid variables for zonal sum ( < nvarin)
-  ivar = 0  ! over all variable counter ( nvar x basins)
-  DO jvar = 1,nvarin
-     ! skip variables such as nav_lon, nav_lat, time_counter deptht ...
-     IF (ipki(jvar) == 0 ) THEN
-        cv_namesi(jvar)='none'
-     ELSE
-        nvar           = nvar + 1 ! count for valid input variables
-        id_varin(nvar) = jvar     ! use indirect adressing for those variables
-        DO jbasin=1,npbasins
-           ivar=ivar + 1      ! count for output variables
-           cv_nameso(ivar)='zoi'//TRIM(cv_namesi(jvar)(3:))//TRIM(cbasin(jbasin) )
-           ! intercept case of duplicate zonal name
-           IF (cv_namesi(jvar) == 'iowaflup' ) cv_nameso(ivar)='zoiwaflio'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'cfc11'    ) cv_nameso(ivar)='zoicfc11'   // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'bombc14'  ) cv_nameso(ivar)='zoibc14'    // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'invcfc'   ) cv_nameso(ivar)='zoiinvcfc'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'invc14'   ) cv_nameso(ivar)='zoiinvc14'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qtrcfc'   ) cv_nameso(ivar)='zoiqtrcfc'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qtrc14'   ) cv_nameso(ivar)='zoiqtrc14'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qintcfc'  ) cv_nameso(ivar)='zoiqintcfc' // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qintc14'  ) cv_nameso(ivar)='zoiqintc14' // TRIM(cbasin(jbasin) )
 
-           stypvaro(ivar)%cname             = cv_nameso(ivar)
-           ! units can be build automatically: add .m2 at the end (not very nice ...)
-           !  a special function to parse the unit and build the proper one is to be done
-           !  this is tricky as many details are to be taken into account :
-           !  eg :  mol/m2, kg.m-2, W/m2
-           IF ( lpdeg ) THEN
-             cf_out = cf_pdeg
-             stypvaro(ivar)%cunits            = stypvari(jvar)%cunits//'.m2.degree-1'
-             stypvaro(ivar)%clong_name        = 'Zonal_Integral_per_pegree_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
-           ELSE
-             stypvaro(ivar)%cunits            = stypvari(jvar)%cunits//'.m2'
-             stypvaro(ivar)%clong_name        = 'Zonal_Integral_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
-           ENDIF
-           stypvaro(ivar)%rmissing_value    = stypvari(ivar)%rmissing_value
-           stypvaro(ivar)%valid_min         = stypvari(jvar)%valid_min
-           stypvaro(ivar)%valid_max         = stypvari(jvar)%valid_max
-           stypvaro(ivar)%cshort_name       = stypvaro(ivar)%cname
-           stypvaro(ivar)%conline_operation = '/N/A'
-
-           IF (ipki(jvar) == 1 ) THEN
-             stypvaro(ivar)%caxis           ='TY'
-           ELSE
-             stypvaro(ivar)%caxis           ='TZY'
-           ENDIF
-
-           ipko(ivar)=ipki(jvar)
-        END DO
-     ENDIF
-  END DO
- 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
   npk    = getdim (cf_in, cn_z)
@@ -304,12 +256,14 @@ PROGRAM cdfzonalsum
   ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), tim(npt)   )
   ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo)       )
   ALLOCATE ( dzosum(npjglo,npk), alpha(npjglo)          )
- 
+  ALLOCATE ( dl_surf(npiglo,npjglo)                     )
 
   ! get the metrics
   e1(:,:)   = getvar(cn_fhgr, cv_e1,  1, npiglo, npjglo) 
   e2(:,:)   = getvar(cn_fhgr, cv_e2,  1, npiglo, npjglo) 
   gphi(:,:) = getvar(cn_fhgr, cv_phi, 1, npiglo, npjglo)
+
+  dl_surf(:,:) = 1.d0 * e1(:,:) * e2(:,:)
 
   ! compute the size of the meridional mesh size in degree
   IF ( lpdeg ) THEN
@@ -332,21 +286,15 @@ PROGRAM cdfzonalsum
   zdumlat(1,:) = gphi(ijloc(1),:)
   zdumlon(:,:) = 0.              ! set the dummy longitude to 0
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_in,    1,    npjglo, npk,  cdep=cv_depo                                )
-  ierr  = createvar   (ncout,  stypvaro, ivar, ipko,   id_varout                                         )
-  ierr  = putheadervar(ncout,  cf_in,    1,    npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
-
-  tim   = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr  = putvar1d(ncout, tim,       npt, 'T')
+  CALL CreateOutput
 
   ! reading the surface masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
   zmask(1,:,:) = getvar(cn_fmsk, cv_msk, 1, npiglo, npjglo)
   IF ( cf_basins /= 'none' ) THEN
-     zmask(2,:,:) = getvar(cf_basins, 'tmaskatl', 1, npiglo, npjglo )
-     zmask(4,:,:) = getvar(cf_basins, 'tmaskind', 1, npiglo, npjglo )
-     zmask(5,:,:) = getvar(cf_basins, 'tmaskpac', 1, npiglo, npjglo )
+     zmask(2,:,:) = getvar(cf_basins, cn_tmaskatl, 1, npiglo, npjglo )
+     zmask(4,:,:) = getvar(cf_basins, cn_tmaskind, 1, npiglo, npjglo )
+     zmask(5,:,:) = getvar(cf_basins, cn_tmaskpac, 1, npiglo, npjglo )
      zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
@@ -363,16 +311,19 @@ PROGRAM cdfzonalsum
            ! Get variables and mask at level jk
            zv(:,:)       = getvar(cf_in,   cv_namesi(ijvar), jk ,npiglo, npjglo, ktime=jt)
            zmaskvar(:,:) = getvar(cn_fmsk, cv_msk,           jk ,npiglo, npjglo          )
-           
+
            ! For all basins 
            DO jbasin = 1, npbasins
               dzosum(:,:) = 0.d0
               ! integrates 'zonally' (along i-coordinate)
-              DO ji=1,npiglo
-                 DO jj=1,npjglo
-                    dzosum(jj,jk) = dzosum(jj,jk) + e1(ji,jj)*e2(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)*1.d0
+              !$OMP PARALLEL DO SCHEDULE(RUNTIME) PRIVATE(dtmp)
+              DO jj=1,npjglo
+                 DO ji=1,npiglo
+                    dtmp = zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)*1.d0
+                    dzosum(jj,jk) = dzosum(jj,jk) + dl_surf(ji,jj)* dtmp
                  END DO
               END DO
+              !$OMP  END  PARALLEL DO
               dzosum(:,jk) = dzosum(:,jk) / alpha(:)  ! eventual normalization per degree
               ivar = (jvar-1)*npbasins + jbasin
               ierr = putvar (ncout, id_varout(ivar), REAL(dzosum(:,jk)), jk, 1, npjglo, ktime=jt)
@@ -383,43 +334,116 @@ PROGRAM cdfzonalsum
 
   ierr = closeout(ncout)
 CONTAINS
-   SUBROUTINE ParseVars (cdum)
-      !!---------------------------------------------------------------------
-      !!                  ***  ROUTINE ParseVars  ***
-      !!
-      !! ** Purpose :  Decode -var option from command line
-      !!
-      !! ** Method  :  look for , in the argument string and set the number of
-      !!         variable (nvaro), allocate cv_fix array and fill it with the
-      !!         decoded  names.
-      !!
-      !!----------------------------------------------------------------------
-      CHARACTER(LEN=*), INTENT(in) :: cdum
+  SUBROUTINE ParseVars (cdum)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE ParseVars  ***
+    !!
+    !! ** Purpose :  Decode -var option from command line
+    !!
+    !! ** Method  :  look for , in the argument string and set the number of
+    !!         variable (nvaro), allocate cv_fix array and fill it with the
+    !!         decoded  names.
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdum
 
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
-      INTEGER  :: ji
-      INTEGER  :: inchar,  i1=1
-      !!----------------------------------------------------------------------
+    CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+    INTEGER  :: ji
+    INTEGER  :: inchar,  i1=1
+    !!----------------------------------------------------------------------
 
-      inchar= LEN(TRIM(cdum))
-      ! scan the input string and look for ',' as separator
-      DO ji=1,inchar
-         IF ( cdum(ji:ji) == ',' ) THEN
-            cl_dum(nvaro) = cdum(i1:ji-1)
-            i1=ji+1
-            nvaro=nvaro+1
-         ENDIF
-      ENDDO
+    inchar= LEN(TRIM(cdum))
+    ! scan the input string and look for ',' as separator
+    DO ji=1,inchar
+       IF ( cdum(ji:ji) == ',' ) THEN
+          cl_dum(nvaro) = cdum(i1:ji-1)
+          i1=ji+1
+          nvaro=nvaro+1
+       ENDIF
+    ENDDO
 
-      ! last name of the list does not have a ','
-      cl_dum(nvaro) = cdum(i1:inchar)
+    ! last name of the list does not have a ','
+    cl_dum(nvaro) = cdum(i1:inchar)
 
-      ALLOCATE ( cv_fix(nvaro) )
-      IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
-      DO ji=1, nvaro
-         cv_fix(ji) = cl_dum(ji)
-         IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
-      ENDDO
-   END SUBROUTINE ParseVars
+    ALLOCATE ( cv_fix(nvaro) )
+    IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
+    DO ji=1, nvaro
+       cv_fix(ji) = cl_dum(ji)
+       IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
+    ENDDO
+  END SUBROUTINE ParseVars
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! buildt output filename
+    nvar = 0  ! over all number of valid variables for zonal sum ( < nvarin)
+    ivar = 0  ! over all variable counter ( nvar x basins)
+    DO jvar = 1,nvarin
+       ! skip variables such as nav_lon, nav_lat, time_counter deptht ...
+       IF (ipki(jvar) == 0 ) THEN
+          cv_namesi(jvar)='none'
+       ELSE
+          nvar           = nvar + 1 ! count for valid input variables
+          id_varin(nvar) = jvar     ! use indirect adressing for those variables
+          DO jbasin=1,npbasins
+             ivar=ivar + 1      ! count for output variables
+             cv_nameso(ivar)='zoi'//TRIM(cv_namesi(jvar)(3:))//TRIM(cbasin(jbasin) )
+             ! intercept case of duplicate zonal name
+             IF (cv_namesi(jvar) == 'iowaflup' ) cv_nameso(ivar)='zoiwaflio'  // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'cfc11'    ) cv_nameso(ivar)='zoicfc11'   // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'bombc14'  ) cv_nameso(ivar)='zoibc14'    // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'invcfc'   ) cv_nameso(ivar)='zoiinvcfc'  // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'invc14'   ) cv_nameso(ivar)='zoiinvc14'  // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'qtrcfc'   ) cv_nameso(ivar)='zoiqtrcfc'  // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'qtrc14'   ) cv_nameso(ivar)='zoiqtrc14'  // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'qintcfc'  ) cv_nameso(ivar)='zoiqintcfc' // TRIM(cbasin(jbasin) )
+             IF (cv_namesi(jvar) == 'qintc14'  ) cv_nameso(ivar)='zoiqintc14' // TRIM(cbasin(jbasin) )
+
+             stypvaro(ivar)%cname             = cv_nameso(ivar)
+             ! units can be build automatically: add .m2 at the end (not very nice ...)
+             !  a special function to parse the unit and build the proper one is to be done
+             !  this is tricky as many details are to be taken into account :
+             !  eg :  mol/m2, kg.m-2, W/m2
+             IF ( lpdeg ) THEN
+                cf_out = cf_pdeg
+                stypvaro(ivar)%cunits            = stypvari(jvar)%cunits//'.m2.degree-1'
+                stypvaro(ivar)%clong_name        = 'Zonal_Integral_per_pegree_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
+             ELSE
+                stypvaro(ivar)%cunits            = stypvari(jvar)%cunits//'.m2'
+                stypvaro(ivar)%clong_name        = 'Zonal_Integral_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
+             ENDIF
+             stypvaro(ivar)%rmissing_value    = stypvari(ivar)%rmissing_value
+             stypvaro(ivar)%valid_min         = stypvari(jvar)%valid_min
+             stypvaro(ivar)%valid_max         = stypvari(jvar)%valid_max
+             stypvaro(ivar)%cshort_name       = stypvaro(ivar)%cname
+             stypvaro(ivar)%conline_operation = '/N/A'
+
+             IF (ipki(jvar) == 1 ) THEN
+                stypvaro(ivar)%caxis           ='TY'
+             ELSE
+                stypvaro(ivar)%caxis           ='TZY'
+             ENDIF
+
+             ipko(ivar)=ipki(jvar)
+          END DO
+       ENDIF
+    END DO
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_in,    1,    npjglo, npk,  cdep=cv_depo                                )
+    ierr  = createvar   (ncout,  stypvaro, ivar, ipko,   id_varout                                         )
+    ierr  = putheadervar(ncout,  cf_in,    1,    npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
+
+    tim   = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout, tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfzonalsum
