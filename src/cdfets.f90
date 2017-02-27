@@ -40,8 +40,9 @@ PROGRAM cdfets
   IMPLICIT NONE
 
   INTEGER(KIND=4)                             :: ji, jj, jk, jt            ! dummy loop index
+  INTEGER(KIND=4)                             :: it                        ! time index for vvl
   INTEGER(KIND=4)                             :: ierr                      ! working integer
-  INTEGER(KIND=4)                             :: narg, iargc               ! command line 
+  INTEGER(KIND=4)                             :: narg, iargc, ijarg        ! command line 
   INTEGER(KIND=4)                             :: npiglo, npjglo            ! size of the domain
   INTEGER(KIND=4)                             :: npk, npt                  ! size of the domain
   INTEGER(KIND=4)                             :: iup = 1, idown = 2, itmp  !
@@ -64,16 +65,18 @@ PROGRAM cdfets
 
   CHARACTER(LEN=256)                          :: cf_tfil                   ! out file names
   CHARACTER(LEN=256)                          :: cf_out = 'ets.nc'         ! in file names
+  CHARACTER(LEN=256)                          :: cldum                     ! working variable
 
   TYPE (variable), DIMENSION(2)               :: stypvar                   ! structure for attribute
 
   LOGICAL                                     :: lchk                      ! flag for missing files
+  LOGICAL                                     :: lnc4 = .FALSE.            ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfets  T-file '
+     PRINT *,' usage : cdfets -f T-file [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the eddy time scale, and a proxy for rossby radius.' 
@@ -84,18 +87,38 @@ PROGRAM cdfets
      PRINT *,'       gradient. B is the buoyancy computed as B=-g rho/rho0.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file : netcdf input file for temperature and salinity (gridT).'
+     PRINT *,'       -f T-file : netcdf input file for temperature and salinity (gridT).'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : specifiy the name of output file instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-vvl W-file] : use time varying vertical metrics. W-file holds the '
+     PRINT *,'                 time-varying e3w vertical metrics.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.' 
      PRINT *,'         variables : voets (days)  and sorosrad (m)'
      STOP
   ENDIF
-
-  CALL getarg (1, cf_tfil)
+  
+  ijarg = 1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg (1, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-f'   ) ; CALL getarg (1, cf_tfil) ; ijarg=ijarg+1
+     ! options
+     CASE ( '-o'   ) ; CALL getarg (1, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-nc4' ) ; lnc4   = .TRUE.
+     CASE ( '-vvl' ) ; lg_vvl = .TRUE.
+                     ; CALL getarg (1, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
+  ENDDO
   lchk = ( chkfile (cf_tfil) .OR. chkfile( cn_fhgr ) .OR. chkfile( cn_fzgr) )
   IF ( lchk )  STOP ! missing file
 
@@ -104,29 +127,6 @@ PROGRAM cdfets
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
 
-  ! define new variables for output 
-  stypvar(1)%cname             = 'voets'
-  stypvar(1)%cunits            = 'days'
-  stypvar(1)%rmissing_value    = -1000.
-  stypvar(1)%valid_min         = 0
-  stypvar(1)%valid_max         = 50000.
-  stypvar(1)%clong_name        = 'Eddy_Time_Scale'
-  stypvar(1)%cshort_name       = 'voets'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
-
-  stypvar(2)%cname             = 'sorosrad'
-  stypvar(2)%cunits            = 'm'
-  stypvar(2)%rmissing_value    = -1000.
-  stypvar(2)%valid_min         = 0.
-  stypvar(2)%valid_max         = 50000.
-  stypvar(2)%clong_name        = 'Rossby_Radius'
-  stypvar(2)%cshort_name       = 'sorosrad'
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TYX'
-
-  ipk(1) = npk  ! 3D
-  ipk(2) = 1    ! 2D
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -140,10 +140,7 @@ PROGRAM cdfets
   ALLOCATE (dbuoy(npiglo,npjglo), dM2(npiglo,npjglo),dets(npiglo,npjglo) ,ff(npiglo,npjglo) )
   ALLOCATE (gdepw(npk), tim(npt) )
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar , 2,      ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
+  CALL CreateOutput
 
   zpi=ACOS(-1.)
 
@@ -170,10 +167,10 @@ PROGRAM cdfets
   ff(:,1) = ff(:,2)
   ff(1,:) = ff(2,:)
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,  tim,       npt, 'T')
-
   DO jt = 1, npt
+     IF ( lg_vvl ) THEN ; it=jt
+     ELSE               ; it=1
+     ENDIF
      ! at level 1 and npk, dets is not defined
      dets(:,:) = spval
      ierr = putvar(ncout, id_varout(1) ,SNGL(dets), npk, npiglo, npjglo, ktime = jt)
@@ -196,7 +193,7 @@ PROGRAM cdfets
         WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
 
         ! get depthw and e3w at level jk
-        e3w(:,:)   = getvar(cn_fzgr, 'e3w_ps', jk,npiglo,npjglo,ldiom=.TRUE.)
+        e3w(:,:)   = getvar(cn_fe3w, cn_ve3w, jk,npiglo,npjglo, ktime=it, ldiom=.NOT.lg_vvl )
         WHERE(e3w == 0. ) e3w = 0.1     ! avoid 0's in e3w (land points anyway)
 
         ! zwk will hold N2 at W level
@@ -205,17 +202,13 @@ PROGRAM cdfets
         WHERE( zmask == 0 ) zwk(:,:,iup) = spval                            ! set to spval on land
 
         ! now put zn2 at T level (k )
-        WHERE ( zwk(:,:,idown) == spval ) 
-           zn2(:,:) =  zwk(:,:,iup)
-        ELSEWHERE
-           zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) 
+        WHERE ( zwk(:,:,idown) == spval )  ; zn2(:,:) =  zwk(:,:,iup)
+        ELSEWHERE                          ; zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) 
         END WHERE
 
         ! Only the square root is used in this program (work for ocean points only)
-        WHERE (zmask == 1 ) 
-           zn2=SQRT(zn2)
-        ELSEWHERE
-           zn2=spval
+        WHERE (zmask == 1 )  ; zn2=SQRT(zn2)
+        ELSEWHERE            ; zn2=spval
         END WHERE
 
         ! integrates vertically (ff is already ABS(ff) * pi
@@ -268,5 +261,51 @@ PROGRAM cdfets
   END DO  ! time loop
 
   ierr = closeout(ncout)
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ! define new variables for output 
+  ipk(1) = npk  ! 3D
+  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(1)%cname             = 'voets'
+  stypvar(1)%cunits            = 'days'
+  stypvar(1)%rmissing_value    = -1000.
+  stypvar(1)%valid_min         = 0
+  stypvar(1)%valid_max         = 50000.
+  stypvar(1)%clong_name        = 'Eddy_Time_Scale'
+  stypvar(1)%cshort_name       = 'voets'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TZYX'
+
+  ipk(2) = 1    ! 2D
+  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(2)%cname             = 'sorosrad'
+  stypvar(2)%cunits            = 'm'
+  stypvar(2)%rmissing_value    = -1000.
+  stypvar(2)%valid_min         = 0.
+  stypvar(2)%valid_max         = 50000.
+  stypvar(2)%clong_name        = 'Rossby_Radius'
+  stypvar(2)%cshort_name       = 'sorosrad'
+  stypvar(2)%conline_operation = 'N/A'
+  stypvar(2)%caxis             = 'TYX'
+
+  ! create output fileset
+  ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk       , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvar , 2,      ipk,    id_varout , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
+
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,  tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdfets
