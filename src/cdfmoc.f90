@@ -123,18 +123,18 @@ PROGRAM cdfmoc
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoc  V_file [-full] [-decomp ] [T_file] [S_file] [U_file] ...'
+     PRINT *,' usage : cdfmoc  V-file [-full] [-decomp ] [T-file] [S-file] [U-file] ...'
      PRINT *,'                [-o OUT-file] [-rapid] [-vvl ]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the MOC for oceanic sub basins as described '
      PRINT *,'       in ',TRIM(cn_fbasins)
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       V_file : file with meridional velocity component (mandatory).'
-     PRINT *,'       T_file : file with temperature and salinity'
+     PRINT *,'       V-file : file with meridional velocity component (mandatory).'
+     PRINT *,'       T-file : file with temperature and salinity'
      PRINT *,'               (required only for -decomp option).'
-     PRINT *,'       S_file  (required only for -rapid option, might be the same as T_file).'
-     PRINT *,'       U_file  (required only for -rapid option).'
+     PRINT *,'       S-file  (required only for -rapid option, might be the same as T_file).'
+     PRINT *,'       U-file  (required only for -rapid option).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full ] : use full step instead of default partial step' 
@@ -183,17 +183,11 @@ PROGRAM cdfmoc
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-full') 
-        lfull   = .TRUE.
-        cglobal = 'Full step computation'
-     CASE ('-decomp') 
-        ldec    = .TRUE.
-     CASE ('-rapid') 
-        lrap    = .TRUE.
-     CASE ('-vvl'  ) 
-        lg_vvl   = .TRUE.
-     CASE ('-o') 
-        CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1
+     CASE ('-full'  ) ; lfull  = .TRUE. ; cglobal = 'Full step computation'
+     CASE ('-decomp') ; ldec   = .TRUE.
+     CASE ('-rapid' ) ; lrap   = .TRUE.
+     CASE ('-vvl'   ) ; lg_vvl = .TRUE.
+     CASE ('-o'     ) ; CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1
      CASE DEFAULT
         ii=ii+1
         SELECT CASE (ii)
@@ -558,10 +552,8 @@ CONTAINS
     REAL(KIND=4), DIMENSION(npiglo,npjglo) :: get_e3v
 
     ivmask(:,:) = getvar(cn_fmsk, cn_vmask, jk, npiglo, npjglo)
-    IF ( lfull ) THEN
-       get_e3v(:,:) = e31d(jk)
-    ELSE
-       get_e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=kt, ldiom=.NOT.lg_vvl )
+    IF ( lfull ) THEN ; get_e3v(:,:) = e31d(jk)
+    ELSE              ; get_e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=kt, ldiom=.NOT.lg_vvl )
     ENDIF
     get_e3v(:,:) = get_e3v(:,:) * ivmask(:,:)
 
