@@ -1,3 +1,6 @@
+!!! JMM : This program is here for historical reason. Iy has never been ported to the 
+!!!       actual standards of CDFTOOLS. It requires some workk !
+
 PROGRAM cdfmht_gsop
   !!-------------------------------------------------------------------
   !!               ***  PROGRAM cdfmht_gsop  ***
@@ -16,7 +19,8 @@ PROGRAM cdfmht_gsop
   !! history ;
   !!  Original :  J.M. Molines (jul. 2005) 
   !!              G.C. Smith ( Sep 2007) Added MOC decomposition following :
-  !!                 Lee & Marotzke (1998), Baehr, Hirschi, Beismann, &  Marotzke (2004), Cabanes, Lee, & Fu (2007),  !!                  Koehl & Stammer (2007).
+  !!                 Lee & Marotzke (1998), Baehr, Hirschi, Beismann, &  Marotzke (2004), Cabanes, Lee, & Fu (2007),
+  !!                  Koehl & Stammer (2007).
   !!                 See also the powerpoint presentation by Tony Lee at the third CLIVAR-GSOP intercomparison
   !!    available at : http://www.clivar.org/organization/gsop/synthesis/mit/talks/lee_MOC_comparison.ppt
   !!
