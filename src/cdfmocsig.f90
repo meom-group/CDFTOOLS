@@ -40,6 +40,7 @@ PROGRAM cdfmocsig
 
   INTEGER(KIND=4)                                 :: jbasin, jj, jk       ! dummy loop index
   INTEGER(KIND=4)                                 :: ji, jt, jbin         ! dummy loop index
+  INTEGER(KIND=4)                                 :: it                   ! time index for vvl
   INTEGER(KIND=4)                                 :: nbins                ! number of  density  bins
   INTEGER(KIND=4)                                 :: npglo, npatl, npinp  ! basins index (mnemonics)
   INTEGER(KIND=4)                                 :: npind, nppac         !  "      "
@@ -103,8 +104,9 @@ PROGRAM cdfmocsig
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmocsig  V_file T_file depth_ref [-eiv] [-full]  ... '
-     PRINT *,'         ...  [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] [-v]'
+     PRINT *,' usage : cdfmocsig  -V V-file -T T-file -D depth_ref [-eiv] [-full]  ... '
+     PRINT *,'        ... [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] [-v]...'
+     PRINT *,'        ... [-o OUT-file] [-vvl] '
      PRINT *,'     PURPOSE : '
      PRINT *,'       Computes the MOC in density-latitude coordinates. The global value'
      PRINT *,'       is always computed. Values for oceanic sub-basins are calculated'
@@ -116,26 +118,29 @@ PROGRAM cdfmocsig
      PRINT *,'       with the options -sigmin, -sigstp, -nbins'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        V_file  : Netcdf gridV file'
-     PRINT *,'        T_file  : Netcdf gridT file'
-     PRINT *,'        depth_ref : reference depth for density '
-     PRINT *,'               for depth values of 0 1000 or 2000, pre-defined limits for'
+     PRINT *,'        -V V-file  : Netcdf gridV file.'
+     PRINT *,'        -T T-file  : Netcdf gridT file.'
+     PRINT *,'        -D ref-depth : reference depth for density. '
+     PRINT *,'               For depth values of 0 1000 or 2000, pre-defined limits for'
      PRINT *,'               minimum density, number of density bins and width of density'
      PRINT *,'               bins are provided. For other reference depth, you must use'
      PRINT *,'               -sigmin, -sigstp and -nbins options (see below).'
-     PRINT *,'               Keyword ''ntr'' can also be used in place of depth_ref in '
+     PRINT *,'               Keyword ''ntr'' can also be used in place of ref-depth in '
      PRINT *,'               order to use neutral density (no default bin defined so far).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-eiv ] : takes into account VEIV Meridional eddy induced velocity'
+     PRINT *,'       [-eiv ] : takes into account VEIV Meridional eddy induced velocity.'
      PRINT *,'                 -> To be used only if Gent and McWilliams parameterization '
-     PRINT *,'                    has been used '
-     PRINT *,'       [ -full ] : Works with full step instead of standard partial steps'
-     PRINT *,'       [ -sigmin ] : Specify minimum of density for bining'
-     PRINT *,'       [ -sigstp ] : Specify density step for bining'
-     PRINT *,'       [ -nbins ]  : Specify the number of density bins you want'
-     PRINT *,'       [ -isodep]  : Compute the zonal mean of isopycnal depths used for mocsig'
-     PRINT *,'       [ -v  ]     : Verbose option for more info during execution'
+     PRINT *,'                    has been used. '
+     PRINT *,'       [-full       ] : Works with full step instead of standard partial steps.'
+     PRINT *,'       [-sigmin     ] : Specify minimum of density for bining.'
+     PRINT *,'       [-sigstp     ] : Specify density step for bining.'
+     PRINT *,'       [-nbins      ] : Specify the number of density bins you want.'
+     PRINT *,'       [-isodep     ] : Compute the zonal mean of isopycnal depths used for '
+     PRINT *,'                        mocsig.'
+     PRINT *,'       [-o OUT-file ] : Specify output file name instead of ', TRIM(cf_moc)
+     PRINT *,'       [-vvl        ] : Use time-varying vertical metrics.'
+     PRINT *,'       [-v          ] : Verbose option for more info during execution.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        Files ', TRIM(cn_fzgr),', ',TRIM(cn_fhgr),', ', TRIM(cn_fmsk)
@@ -157,43 +162,33 @@ PROGRAM cdfmocsig
 
   cglobal = 'Partial step computation'
   lbin=(/.TRUE.,.TRUE.,.TRUE./)
-  ijarg = 1 ; ii = 0
+  ijarg = 1 ; ii = 0 ! ii is used to count mandatory arguments
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-full')
-        lfull   = .TRUE.
-        cglobal = 'Full step computation'
-     CASE ('-eiv')
-        leiv    = .TRUE.
-     CASE ('-sigmin')
-        CALL getarg (ijarg, cldum) ; ijarg=ijarg+1 ; READ(cldum,*) sigmin
-        lbin(1) = .FALSE.
-     CASE ('-nbins')
-        CALL getarg (ijarg, cldum) ; ijarg=ijarg+1 ; READ(cldum,*) nbins
-        lbin(2) = .FALSE.
-     CASE ('-sigstp')
-        CALL getarg (ijarg, cldum) ; ijarg=ijarg+1 ; READ(cldum,*) sigstp
-        lbin(3) = .FALSE.
-     CASE ('-isodep')
-        lisodep = .TRUE.
-     CASE ('-v')
-        lprint = .TRUE.
-     CASE DEFAULT
-        ii=ii+1
-        SELECT CASE (ii)
-        CASE ( 1 ) ; cf_vfil = cldum
-        CASE ( 2 ) ; cf_tfil = cldum
-        CASE ( 3 ) 
-             SELECT CASE ( cldum )
-             CASE ( 'ntr', 'NTR', 'Ntr' ) ; lntr = .TRUE.
-             CASE DEFAULT                 ; READ(cldum,*) pref
-             END SELECT
-        CASE DEFAULT
-           STOP 'ERROR : Too many arguments ...'
+     CASE ( '-V'    ) ;  CALL getarg (ijarg, cf_vfil) ; ijarg=ijarg+1 ; ii=ii+1
+     CASE ( '-T'    ) ;  CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1 ; ii=ii+1
+     CASE ( '-D'    ) ;  CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; ii=ii+1
+        SELECT CASE ( cldum )
+        CASE ( 'ntr', 'NTR', 'Ntr' ) ; lntr = .TRUE.   ! use Neutral Density
+        CASE DEFAULT                 ; READ(cldum,*) pref
         END SELECT
+        ! options
+     CASE ('-full'  ) ; lfull   = .TRUE. ; cglobal = 'Full step computation'
+     CASE ('-eiv'   ) ; leiv    = .TRUE.
+     CASE ('-sigmin') ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigmin ; lbin(1) = .FALSE.
+     CASE ('-nbins' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins  ; lbin(2) = .FALSE.
+     CASE ('-sigstp') ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigstp ; lbin(3) = .FALSE.
+     CASE ('-o'     ) ; CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1 
+     CASE ('-vvl'   ) ; lg_vvl  = .TRUE.
+     CASE ('-isodep') ; lisodep = .TRUE.
+     CASE ('-v'     ) ; lprint  = .TRUE.
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.'               ; STOP
      END SELECT
   END DO
+
+  IF ( ii /= 3 ) THEN ; PRINT *,' ERROR : mandatory arguments missing, see usage please !'  ; STOP
+  ENDIF
 
   ! check file existence
   lchk = lchk .OR. chkfile ( cn_fhgr )
@@ -202,6 +197,7 @@ PROGRAM cdfmocsig
   lchk = lchk .OR. chkfile ( cf_vfil )
   lchk = lchk .OR. chkfile ( cf_tfil )
   IF ( lchk ) STOP  ! missing file(s)
+  IF ( lg_vvl )  cn_fe3v = cf_vfil
 
   ! re-use lchk for binning control : TRUE if no particular binning specified
   lchk = lbin(1) .OR. lbin(2) .OR. lbin(3) 
@@ -222,16 +218,12 @@ PROGRAM cdfmocsig
   !  Detects newmaskglo file
   lbas = .NOT. chkfile (cn_fbasins )
 
-  IF (lbas) THEN
-     nbasins = 5
-  ELSE
-     nbasins = 1
+  IF (lbas) THEN ; nbasins = 5
+  ELSE           ; nbasins = 1
   ENDIF
 
-  IF ( lisodep ) THEN
-     nvaro = 2 * nbasins
-  ELSE
-     nvaro =     nbasins
+  IF ( lisodep ) THEN ; nvaro = 2 * nbasins
+  ELSE                ; nvaro =     nbasins
   ENDIF
 
   ALLOCATE ( stypvar(nvaro), ipk(nvaro), id_varout(nvaro) )
@@ -239,36 +231,34 @@ PROGRAM cdfmocsig
   IF ( lchk )  THEN  ! use default bins definition according to pref 
      ! Define density parameters
      IF ( lntr) THEN   ! to be confirmed ( note that sigmantr returns values > 1000 kg/m3)
-         nbins  = 52
-         sigmin = 1023.
-         sigstp = 0.1
+        nbins  = 52
+        sigmin = 1023.
+        sigstp = 0.1
      ELSE
-       SELECT CASE ( INT(pref) )
-       CASE ( 0 )
-          nbins  = 52
-          sigmin = 23.
-          sigstp = 0.1
-       CASE ( 1000 )
-          nbins  = 88
-          sigmin = 24.
-          sigstp = 0.1
-       CASE ( 2000)
-          nbins  = 158
-          sigmin = 30.
-          sigstp = 0.05
-       CASE DEFAULT
-          PRINT *,' This value of depth_ref (',pref,') is not implemented as standard'
-          PRINT *,' You must use the -sigmin, -sigstp and -nbins options to precise'
-          PRINT *,' the density bining you want to use.'
-          STOP
-       END SELECT
+        SELECT CASE ( INT(pref) )
+        CASE ( 0 )
+           nbins  = 52
+           sigmin = 23.
+           sigstp = 0.1
+        CASE ( 1000 )
+           nbins  = 88
+           sigmin = 24.
+           sigstp = 0.1
+        CASE ( 2000)
+           nbins  = 158
+           sigmin = 30.
+           sigstp = 0.05
+        CASE DEFAULT
+           PRINT *,' This value of depth_ref (',pref,') is not implemented as standard'
+           PRINT *,' You must use the -sigmin, -sigstp and -nbins options to precise'
+           PRINT *,' the density bining you want to use.'
+           STOP
+        END SELECT
      ENDIF
   ENDIF
 
-  IF (lntr ) THEN
-     PRINT '(a,f6.1,a)',           '  For Neutral density MOC'
-  ELSE
-     PRINT '(a,f6.1,a)',           '  For reference depth ', pref, ' m, '
+  IF (lntr ) THEN  ; PRINT '(a       )',           '  For Neutral density MOC'
+  ELSE             ; PRINT '(a,f6.1,a)',           '  For reference depth ', pref, ' m, '
   ENDIF
   PRINT '(a,f5.2,a,f5.2,a,i3)', '  You are using -sigmin ', sigmin,' -sigstp ', sigstp,' -nbins ', nbins
 
@@ -293,8 +283,8 @@ PROGRAM cdfmocsig
   ALLOCATE ( tim(npt), e31d(npk)  )
 
   IF ( lisodep) THEN 
-                ALLOCATE ( depi(nvaro, nbins, npjglo), gdep(npk))
-                ALLOCATE ( wdep(nvaro, nbins, npjglo)           )
+     ALLOCATE ( depi(nvaro, nbins, npjglo), gdep(npk))
+     ALLOCATE ( wdep(nvaro, nbins, npjglo)           )
   ENDIF
   IF ( leiv   ) ALLOCATE ( zveiv (npiglo,npjglo))
 
@@ -302,7 +292,7 @@ PROGRAM cdfmocsig
 
   IF ( lfull  ) e31d(:) = getvare3(cn_fzgr, cn_ve3t,  npk )
   IF ( lisodep) gdep(:) = -getvare3(cn_fzgr, cn_gdept, npk )  ! take negative value
-                                                              ! to be compliant with zonal mean
+  ! to be compliant with zonal mean
 
   IF ( npjglo > 1 ) THEN 
      gphiv(:,:)   = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
@@ -317,15 +307,15 @@ PROGRAM cdfmocsig
   !global   ; Atlantic  ; Indo-Pacif ; Indian  ; Pacif
   npglo= 1  ; npatl=2   ;  npinp=3   ; npind=4 ; nppac=5
 
-  CALL CreateOutputFiles
+  CALL CreateOutputFile
 
   ! reading the masks
-  ibmask(npglo,:,:) = getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
+  ibmask(npglo,:,:) = getvar(cn_fmsk, cn_vmask, 1, npiglo, npjglo)
 
   IF ( lbas ) THEN
-     ibmask(npatl,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
-     ibmask(npind,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
-     ibmask(nppac,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+     ibmask(npatl,:,:) = getvar(cn_fbasins, cn_tmaskatl, 1, npiglo, npjglo)
+     ibmask(npind,:,:) = getvar(cn_fbasins, cn_tmaskind, 1, npiglo, npjglo)
+     ibmask(nppac,:,:) = getvar(cn_fbasins, cn_tmaskpac, 1, npiglo, npjglo)
      ibmask(npinp,:,:) = ibmask(nppac,:,:) + ibmask(npind,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(ibmask(npinp,:,:) > 0 ) ibmask(npinp,:,:) = 1
@@ -335,10 +325,12 @@ PROGRAM cdfmocsig
   ENDIF
 
   DO jt=1, npt
+     IF ( lg_vvl ) THEN ; it=jt
+     ELSE               ; it=1
+     ENDIF
      ! initialize moc to 0
      dmoc(:,:,:) = 0.d0 
-     IF ( lisodep ) THEN 
-       depi(:,:,:) = 0.d0 ; wdep(:,:,:) = 0.d0
+     IF ( lisodep ) THEN ; depi(:,:,:) = 0.d0 ; wdep(:,:,:) = 0.d0
      ENDIF
 
      DO jk=1,npk-1
@@ -355,20 +347,16 @@ PROGRAM cdfmocsig
         zs(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
 
         ! get e3v at latitude jj
-        IF ( lfull ) THEN
-           e3v(:,:) = e31d(jk)
-        ELSE
-           e3v(:,:) = getvar(cn_fzgr, 'e3v_ps', jk, npiglo, npjglo, ldiom=.TRUE.)
+        IF ( lfull ) THEN ; e3v(:,:) = e31d(jk)
+        ELSE              ; e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
         ENDIF
         zarea(:,:) = e1v(:,:) * e3v(:,:)
         !
         !  finds density 
         itmask =  1
         WHERE ( zs == 0 ) itmask = 0
-        IF ( lntr ) THEN
-           dens  = sigmantr(zt, zs,     npiglo, npjglo)
-        ELSE
-           dens  = sigmai(zt, zs, pref, npiglo, npjglo)
+        IF ( lntr ) THEN ; dens  = sigmantr(zt, zs,       npiglo, npjglo)
+        ELSE             ; dens  = sigmai  (zt, zs, pref, npiglo, npjglo)
         ENDIF
 
         zttmp = dens* itmask ! convert to single precision 
@@ -377,13 +365,11 @@ PROGRAM cdfmocsig
         ibin(:,:) = MAX( ibin(:,:), 1    )
         ibin(:,:) = MIN( ibin(:,:), nbins)
 
-        IF ( npjglo > 1 ) THEN
-           ij1 = 2 ; ij2 = npjglo-1
-        ELSE
-           ij1 = 1 ; ij2 = 1 ! input file has only one j ( case of extracted broken lines) 
+        IF ( npjglo > 1 ) THEN ; ij1 = 2 ; ij2 = npjglo-1
+        ELSE                   ; ij1 = 1 ; ij2 = 1        ! input file has only one j ( case of extracted broken lines) 
         ENDIF
-!$OMP PARALLEL  PRIVATE(dmoc_tmp,depi_tmp,wdep_tmp, ib)
-                       ALLOCATE ( dmoc_tmp(nbins,npiglo) )
+        !$OMP PARALLEL  PRIVATE(dmoc_tmp,depi_tmp,wdep_tmp, ib)
+        ALLOCATE ( dmoc_tmp(nbins,npiglo) )
         IF ( lisodep ) ALLOCATE ( depi_tmp(nbins,npiglo) )
         IF ( lisodep ) ALLOCATE ( wdep_tmp(nbins,npiglo) )
         IF ( lprint ) PRINT *, ' Entering main J loop '
@@ -407,8 +393,8 @@ PROGRAM cdfmocsig
            ENDIF
            ! integrates 'zonally' (along i-coordinate) 
            ! add to dmoc the contributions from level jk  at all densities jbin
-           
-!          IF ( lprint ) PRINT *, ' Entering main bin loop ', jj,ij2
+
+           !          IF ( lprint ) PRINT *, ' Entering main bin loop ', jj,ij2
            DO jbasin= 1, nbasins
               DO jbin =1,nbins  
                  DO ji=2,npiglo-1
@@ -419,29 +405,29 @@ PROGRAM cdfmocsig
            END DO
 
            IF ( lisodep) THEN
-           DO jbasin= 1, nbasins
-              DO jbin =1,nbins
-                 DO ji=2,npiglo-1
+              DO jbasin= 1, nbasins
+                 DO jbin =1,nbins
+                    DO ji=2,npiglo-1
                        depi(jbasin,jbin,jj)=depi(jbasin,jbin,jj) + depi_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
                        wdep(jbasin,jbin,jj)=wdep(jbasin,jbin,jj) + wdep_tmp(jbin,ji) * ibmask(jbasin,ji,jj)
-                 ENDDO
+                    ENDDO
+                 END DO
               END DO
-           END DO
 
            ENDIF
         END DO  ! end of loop on latitude for filling dmoc
         !$OMP END DO
-                       DEALLOCATE (dmoc_tmp)
+        DEALLOCATE (dmoc_tmp)
         IF ( lisodep ) DEALLOCATE (depi_tmp)
         IF ( lisodep ) DEALLOCATE (wdep_tmp)
-!$OMP END PARALLEL
+        !$OMP END PARALLEL
      END DO     ! end of loop on depths for calculating transports     
 
      IF ( lisodep ) THEN
         WHERE ( wdep(:,:,:) /= 0.d0 ) 
-         depi(:,:,:) = depi(:,:,:) / wdep (:,:,:)
+           depi(:,:,:) = depi(:,:,:) / wdep (:,:,:)
         ELSEWHERE
-         depi(:,:,:) = rp_spval
+           depi(:,:,:) = rp_spval
         END WHERE
      ENDIF
 
@@ -454,7 +440,7 @@ PROGRAM cdfmocsig
      ! netcdf output  
      DO jbasin = 1, nbasins
         DO jbin = 1, nbins
-                         ierr = putvar (ncout, id_varout(jbasin        ), REAL(dmoc(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
+           ierr = putvar (ncout, id_varout(jbasin        ), REAL(dmoc(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
            IF (lisodep ) ierr = putvar (ncout, id_varout(jbasin+nbasins), REAL(depi(jbasin,jbin,:)), jbin, 1, npjglo, ktime = jt)
         END DO
      END DO
@@ -463,10 +449,10 @@ PROGRAM cdfmocsig
 
   ierr = closeout(ncout)
 
-  CONTAINS
-  SUBROUTINE CreateOutputFiles
+CONTAINS
+  SUBROUTINE CreateOutputFile
     !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE CreateOutputFiles ***
+    !!                  ***  ROUTINE CreateOutputFile ***
     !!
     !! ** Purpose :  Initialize and create output files 
     !!
@@ -474,89 +460,89 @@ PROGRAM cdfmocsig
     !!
     !!----------------------------------------------------------------------
 
-  ! Common to all variables :
-  stypvar%cunits            = 'Sverdrup'
-  stypvar%rmissing_value    = rp_spval
-  stypvar%valid_min         = -1000.
-  stypvar%valid_max         =  1000.
-  stypvar%scale_factor      = 1.
-  stypvar%add_offset        = 0.
-  stypvar%savelog10         = 0.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TZY'
+    ! Common to all variables :
+    stypvar%cunits            = 'Sverdrup'
+    stypvar%rmissing_value    = rp_spval
+    stypvar%valid_min         = -1000.
+    stypvar%valid_max         =  1000.
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TZY'
 
-  ipk(:) = nbins
+    ipk(:) = nbins
 
-  ! Global basin
-  stypvar(npglo)%cname       = cn_zomsfglo
-  stypvar(npglo)%clong_name  = 'Meridional_Overt.Cell_Global'
-  stypvar(npglo)%cshort_name = cn_zomsfglo
+    ! Global basin
+    stypvar(npglo)%cname       = cn_zomsfglo
+    stypvar(npglo)%clong_name  = 'Meridional_Overt.Cell_Global'
+    stypvar(npglo)%cshort_name = cn_zomsfglo
 
-  IF (lbas) THEN
-     stypvar(npatl)%cname       = cn_zomsfatl
-     stypvar(npatl)%clong_name  = 'Meridional_Overt.Cell_Atlantic'
-     stypvar(npatl)%cshort_name = cn_zomsfatl
+    IF (lbas) THEN
+       stypvar(npatl)%cname       = cn_zomsfatl
+       stypvar(npatl)%clong_name  = 'Meridional_Overt.Cell_Atlantic'
+       stypvar(npatl)%cshort_name = cn_zomsfatl
 
-     stypvar(npinp)%cname       = cn_zomsfinp
-     stypvar(npinp)%clong_name  = 'Meridional_Overt.Cell_IndoPacif'
-     stypvar(npinp)%cshort_name = cn_zomsfinp
+       stypvar(npinp)%cname       = cn_zomsfinp
+       stypvar(npinp)%clong_name  = 'Meridional_Overt.Cell_IndoPacif'
+       stypvar(npinp)%cshort_name = cn_zomsfinp
 
-     stypvar(npind)%cname       = cn_zomsfind
-     stypvar(npind)%clong_name  = 'Meridional_Overt.Cell_Indian'
-     stypvar(npind)%cshort_name = cn_zomsfind
+       stypvar(npind)%cname       = cn_zomsfind
+       stypvar(npind)%clong_name  = 'Meridional_Overt.Cell_Indian'
+       stypvar(npind)%cshort_name = cn_zomsfind
 
-     stypvar(nppac)%cname       = cn_zomsfpac
-     stypvar(nppac)%clong_name  = 'Meridional_Overt.Cell_pacif'
-     stypvar(nppac)%cshort_name = cn_zomsfpac
-  ENDIF
+       stypvar(nppac)%cname       = cn_zomsfpac
+       stypvar(nppac)%clong_name  = 'Meridional_Overt.Cell_pacif'
+       stypvar(nppac)%cshort_name = cn_zomsfpac
+    ENDIF
 
-  IF ( lisodep ) THEN
-     ! Global basin
-     stypvar(npglo+nbasins)%cunits      = 'm'
-     stypvar(npglo+nbasins)%cname       = cn_zoisoglo
-     stypvar(npglo+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Global'
-     stypvar(npglo+nbasins)%cshort_name = cn_zoisoglo
-     stypvar(npglo+nbasins)%valid_min   = 0.
-     stypvar(npglo+nbasins)%valid_max   = 8000.
-     IF ( lbas ) THEN
-        stypvar(npatl+nbasins)%cunits      = 'm'
-        stypvar(npatl+nbasins)%cname       = cn_zoisoatl
-        stypvar(npatl+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Atlantic'
-        stypvar(npatl+nbasins)%cshort_name = cn_zoisoatl
-        stypvar(npatl+nbasins)%valid_min   = 0.
-        stypvar(npatl+nbasins)%valid_max   = 8000.
+    IF ( lisodep ) THEN
+       ! Global basin
+       stypvar(npglo+nbasins)%cunits      = 'm'
+       stypvar(npglo+nbasins)%cname       = cn_zoisoglo
+       stypvar(npglo+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Global'
+       stypvar(npglo+nbasins)%cshort_name = cn_zoisoglo
+       stypvar(npglo+nbasins)%valid_min   = 0.
+       stypvar(npglo+nbasins)%valid_max   = 8000.
+       IF ( lbas ) THEN
+          stypvar(npatl+nbasins)%cunits      = 'm'
+          stypvar(npatl+nbasins)%cname       = cn_zoisoatl
+          stypvar(npatl+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Atlantic'
+          stypvar(npatl+nbasins)%cshort_name = cn_zoisoatl
+          stypvar(npatl+nbasins)%valid_min   = 0.
+          stypvar(npatl+nbasins)%valid_max   = 8000.
 
-        stypvar(npinp+nbasins)%cunits      = 'm'
-        stypvar(npinp+nbasins)%cname       = cn_zoisoinp
-        stypvar(npinp+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_IndoPacif'
-        stypvar(npinp+nbasins)%cshort_name = cn_zoisoinp
-        stypvar(npinp+nbasins)%valid_min   = 0.
-        stypvar(npinp+nbasins)%valid_max   = 8000.
+          stypvar(npinp+nbasins)%cunits      = 'm'
+          stypvar(npinp+nbasins)%cname       = cn_zoisoinp
+          stypvar(npinp+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_IndoPacif'
+          stypvar(npinp+nbasins)%cshort_name = cn_zoisoinp
+          stypvar(npinp+nbasins)%valid_min   = 0.
+          stypvar(npinp+nbasins)%valid_max   = 8000.
 
-        stypvar(npind+nbasins)%cunits      = 'm'
-        stypvar(npind+nbasins)%cname       = cn_zoisoind
-        stypvar(npind+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Indian'
-        stypvar(npind+nbasins)%cshort_name = cn_zoisoind
-        stypvar(npind+nbasins)%valid_min   = 0.
-        stypvar(npind+nbasins)%valid_max   = 8000.
+          stypvar(npind+nbasins)%cunits      = 'm'
+          stypvar(npind+nbasins)%cname       = cn_zoisoind
+          stypvar(npind+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_Indian'
+          stypvar(npind+nbasins)%cshort_name = cn_zoisoind
+          stypvar(npind+nbasins)%valid_min   = 0.
+          stypvar(npind+nbasins)%valid_max   = 8000.
 
-        stypvar(nppac+nbasins)%cunits      = 'm'
-        stypvar(nppac+nbasins)%cname       = cn_zoisopac
-        stypvar(nppac+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_pacif'
-        stypvar(nppac+nbasins)%cshort_name = cn_zoisopac
-        stypvar(nppac+nbasins)%valid_min   = 0.
-        stypvar(nppac+nbasins)%valid_max   = 8000.
-     ENDIF
-  ENDIF
+          stypvar(nppac+nbasins)%cunits      = 'm'
+          stypvar(nppac+nbasins)%cname       = cn_zoisopac
+          stypvar(nppac+nbasins)%clong_name  = 'Zonal_mean_isopycnal_depth_pacif'
+          stypvar(nppac+nbasins)%cshort_name = cn_zoisopac
+          stypvar(nppac+nbasins)%valid_min   = 0.
+          stypvar(nppac+nbasins)%valid_max   = 8000.
+       ENDIF
+    ENDIF
 
-  ncout = create      (cf_moc, 'none', 1,      npjglo, nbins,  cdep='sigma')
-  ierr  = createvar   (ncout,  stypvar, nvaro, ipk ,id_varout, cdglobal=cglobal)
-  ierr  = putheadervar(ncout,  cf_vfil, 1,     npjglo, nbins,  pnavlon=rdumlon, pnavlat=rdumlat, pdep=sigma)
+    ncout = create      (cf_moc, 'none', 1,      npjglo, nbins,  cdep='sigma')
+    ierr  = createvar   (ncout,  stypvar, nvaro, ipk ,id_varout, cdglobal=cglobal)
+    ierr  = putheadervar(ncout,  cf_vfil, 1,     npjglo, nbins,  pnavlon=rdumlon, pnavlat=rdumlat, pdep=sigma)
 
-  tim  = getvar1d(cf_vfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
+    tim  = getvar1d(cf_vfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   tim,       npt, 'T')
 
-  END SUBROUTINE CreateOutputFiles
+  END SUBROUTINE CreateOutputFile
 
 END PROGRAM cdfmocsig
    
