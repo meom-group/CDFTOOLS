@@ -25,9 +25,9 @@ PROGRAM cdfzonalmeanvT
    INTEGER(KIND=4)                              :: npbasins=1          ! number of subbasin
    INTEGER(KIND=4)                              :: ivar = 0            ! output variable counter
    INTEGER(KIND=4)                              :: narg, iargc         ! command line 
-   INTEGER(KIND=4)                              :: ijarg, ireq         ! command line 
+   INTEGER(KIND=4)                              :: ijarg, ireq, icur   ! command line 
    INTEGER(KIND=4)                              :: itag, ntag          ! arg index of 1rst tag, number of tags
-   INTEGER(KIND=4)                              :: ntframe                ! time frame counter
+   INTEGER(KIND=4)                              :: ntframe             ! time frame counter
    INTEGER(KIND=4)                              :: npiglo, npjglo      ! size of the domain
    INTEGER(KIND=4)                              :: npk, npt            ! size of the domain
    INTEGER(KIND=4)                              :: ncout               ! ncid of output file
@@ -57,6 +57,8 @@ PROGRAM cdfzonalmeanvT
    CHARACTER(LEN=256)                           :: cldum               ! dummy character variable
    CHARACTER(LEN=256)                           :: confcase            ! confcase name
    CHARACTER(LEN=4  ), DIMENSION(5)             :: cbasin=(/'_glo','_atl','_inp','_ind','_pac'/) ! sub basin suffixes
+   CHARACTER(LEN=80 ),DIMENSION(:), ALLOCATABLE :: ctag_lst
+
 
    TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for input variables
 
@@ -70,7 +72,8 @@ PROGRAM cdfzonalmeanvT
    narg= iargc()
    IF ( narg == 0 ) THEN
       PRINT *,' usage : cdfzonalmeanvT [-b BASIN-file] [-pdep |--positive_depths] ... '
-      PRINT *,'                   ...  [-ndep_in]   CONFIG-CASE  ''list_of_tags'' '
+      PRINT *,'                   ...  [-ndep_in]   -c CONFIG-CASE  -l ''list_of_tags'' '
+      PRINT *,'                   ...  [-o OUT-file ]'
       PRINT *,'      '
       PRINT *,'     PURPOSE :'
       PRINT *,'       Compute the mean product of zonal mean V by zonal mean of T and S.'
@@ -78,17 +81,20 @@ PROGRAM cdfzonalmeanvT
       PRINT *,'       Zonal mean is in fact the mean value computed along the I coordinate.'
       PRINT *,'       The result is a vertical slice, in the meridional direction.'
       PRINT *,'      '
-      PRINT *,'       REMARK : partial step are not handled properly (but probably '
-      PRINT *,'                minor impact on results).'
+      PRINT *,'       REMARKS: 1. Partial step are not handled properly (but probably '
+      PRINT *,'                minor impact on results) nor vvl case !.'
+      PRINT *,'                2. The interest of this program is to use it as a step'
+      PRINT *,'                for the determination of the v''T'' zonal fluxes.'
+      PRINT *,'                3. Use with caution !'
       PRINT *,'      '
       PRINT *,'     ARGUMENTS :'
-      PRINT *,'       CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)'
+      PRINT *,'       -c CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)'
       PRINT *,'            The program will look for gridT, gridU and gridV files for'
       PRINT *,'            this config ( grid_T, grid_U and grid_V are also accepted).'
       PRINT *,'            Additionaly, if gridS or grid_S file is found, it will be taken'
       PRINT *,'            in place of gridT for the salinity variable.'
-      PRINT *,'       list_of_tags : a list of time tags that will be used for time'
-      PRINT *,'            averaging. e.g. y2000m01d05 y2000m01d10 ...'
+      PRINT *,'       -l list_of_tags : a blank-separated list of time tags that will be used'
+      PRINT *,'            for time averaging. e.g. y2000m01d05 y2000m01d10 ...'
       PRINT *,'      '
       PRINT *,'     OPTIONS :'
       PRINT *,'       [-b BASIN-file] : netcdf file describing sub basins, similar to '
@@ -114,23 +120,31 @@ PROGRAM cdfzonalmeanvT
    ENDIF
 
    ! decode command line
-   ijarg = 1  ; ireq = 0
+   ijarg = 1  ; ireq = 0 ; ntag=0
    DO WHILE ( ijarg <= narg ) 
       CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
       SELECT CASE (cldum)
+      CASE ( '-c'                          ) ; CALL getarg( ijarg,confcase  ) ;  ijarg=ijarg+1  ; ireq=ireq+1
+      CASE ( '-l'                          ) ; ireq=ireq+1
+                                               ! need to read a list of tags ( number unknow ) 
+                                               ! loop on argument till a '-' is found as first char
+           icur=ijarg                          ! save current position of argument number
+           DO ji = icur, narg                  ! scan arguments till - found
+              CALL getarg ( ji, cldum )
+              IF ( cldum(1:1) /= '-' ) THEN ; ntag = ntag+1
+              ELSE                          ; EXIT
+              ENDIF
+           ENDDO
+           ALLOCATE (ctag_lst(ntag) )
+           DO ji = icur, icur + ntag -1
+              CALL getarg(ji, ctag_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+           ENDDO
       CASE ( '-pdep' , '--positive_depths' ) ; lpdep    =.TRUE.
       CASE ( '-ndep_in'                    ) ; lndep_in =.TRUE.
       CASE ( '-debug'                      ) ; ldebug   =.TRUE.
       CASE ( '-b'                          ) ; CALL getarg( ijarg,cf_basins ) ;  ijarg=ijarg+1 ;  npbasins   = 5
-      CASE DEFAULT
-         ireq=ireq+1
-         SELECT CASE (ireq)
-         CASE (1) ; confcase = cldum                 ! file name is the 1rst argument
-         CASE DEFAULT 
-            itag = ijarg -1
-            ntag = narg - itag + 1
-            EXIT             ! exit while loop after recording number of tags and arg number of 1rst tag
-         END SELECT
+      CASE ( '-o'                          ) ; CALL getarg( ijarg,cf_out    ) ;  ijarg=ijarg+1 
+      CASE DEFAULT                           ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
       END SELECT
    END DO
 
@@ -139,6 +153,7 @@ PROGRAM cdfzonalmeanvT
       PRINT *, ' NTAGS       = ', ntag
       PRINT *, ' 1rst tag    = ', TRIM(cldum)
       PRINT *, '  arg pos    = ', itag
+      PRINT *, '  -o         = ', TRIM(cf_out)
    ENDIF
 
    ! check  files existence
@@ -186,11 +201,11 @@ PROGRAM cdfzonalmeanvT
    IF ( ldebug ) PRINT *, 'done.'
 
    ! initialization of 2D time independant fields
-   zmask(1,:,:) = getvar(cn_fmsk, 'tmask', 1, npiglo, npjglo)
+   zmask(1,:,:) = getvar(cn_fmsk, cn_tmask, 1, npiglo, npjglo)
    IF ( cf_basins /= 'none' ) THEN
-      zmask(2,:,:) = getvar(cf_basins, 'tmaskatl', 1, npiglo, npjglo )
-      zmask(4,:,:) = getvar(cf_basins, 'tmaskind', 1, npiglo, npjglo )
-      zmask(5,:,:) = getvar(cf_basins, 'tmaskpac', 1, npiglo, npjglo )
+      zmask(2,:,:) = getvar(cf_basins, cn_tmaskatl, 1, npiglo, npjglo )
+      zmask(4,:,:) = getvar(cf_basins, cn_tmaskind, 1, npiglo, npjglo )
+      zmask(5,:,:) = getvar(cf_basins, cn_tmaskpac, 1, npiglo, npjglo )
       zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
       ! ensure that there are no overlapping on the masks
       WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
@@ -203,7 +218,7 @@ PROGRAM cdfzonalmeanvT
    ntframe  = 0  ! reset count index for time mean
 
    DO jtag = 1, ntag 
-      CALL getarg ( ijarg, cldum ) ; ijarg = ijarg + 1
+      cldum = ctag_lst(jtag)
       cf_tfil = SetFileName( confcase, cldum, 'T', ld_stop=.TRUE.  )
       cf_sfil = SetFileName( confcase, cldum, 'S', ld_stop=.FALSE. )
       cf_vfil = SetFileName( confcase, cldum, 'V'                  )
@@ -232,7 +247,7 @@ PROGRAM cdfzonalmeanvT
             ztem(:,:) = getvar(cf_tfil,  cn_votemper, jk, npiglo, npjglo, ktime=jt )
             zvel(:,:) = getvar(cf_vfil,  cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
             ! do not read e3 metrics at level jk ( to do as in cdfzonal mean ... JMM : to be improved !
-            zvmask(:,:) = getvar(cn_fmsk, 'vmask',    jk ,npiglo, npjglo          )
+            zvmask(:,:) = getvar(cn_fmsk, cn_vmask,    jk ,npiglo, npjglo          )
 
             ! put T and S at V points
             ztem(:,1:npjglo-1) = 0.5 * ( ztem(:,1:npjglo-1) + ztem(:,2:npjglo) ) * zvmask(:,1:npjglo-1)
