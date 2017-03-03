@@ -29,6 +29,7 @@ PROGRAM cdfsigintegr
   INTEGER(KIND=4)                               :: ji, jj, jk, jt   ! dummy loop index
   INTEGER(KIND=4)                               :: jiso, jfich      ! dummy loop index
   INTEGER(KIND=4)                               :: jvar             ! dummy loop index
+  INTEGER(KIND=4)                               :: it               ! time index for vvl
   INTEGER(KIND=4)                               :: npiglo, npjglo   ! domain size
   INTEGER(KIND=4)                               :: npk, npt         ! domain size
   INTEGER(KIND=4)                               :: npiso, nvars     ! number of isopycnals, variables
@@ -63,25 +64,28 @@ PROGRAM cdfsigintegr
   CHARACTER(LEN=256)                            :: cf_in            ! input file for data
   CHARACTER(LEN=256)                            :: cf_rho           ! input file for density
   CHARACTER(LEN=256)                            :: cf_out           ! output file
+  CHARACTER(LEN=256)                            :: cf_e3            ! e3 filename ( for vvl )
   CHARACTER(LEN=256)                            :: cv_in            ! name of input variable
   CHARACTER(LEN=256)                            :: cldum            ! dummy string variable
   CHARACTER(LEN=256)                            :: cluni            ! dummy string variable for variable units
   CHARACTER(LEN=256)                            :: cglobal          ! global attribute
   CHARACTER(LEN=256)                            :: ctype='T'        ! position of variable on C grid
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names         ! temporary arry for variable name in file
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_lst           ! list of input files
 
   TYPE(variable), DIMENSION(4)                  :: stypvar          ! structure for attributes
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypzvar         ! structure for attributes
 
   LOGICAL                                       :: lfull = .FALSE.  ! flag for full step
   LOGICAL                                       :: lchk  = .FALSE.  ! flag for missing files
+  LOGICAL                                       :: lnc4  = .FALSE.  ! flag for netcdf4 output
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg=iargc()
   IF ( narg < 3 ) THEN
-     PRINT *,' usage : cdfsigintegr IN-var RHO-file list_of_files [ VAR-type ] ...'
-     PRINT *,'              ... [ -sig sigma_name] [ -full ] '
+     PRINT *,' usage : cdfsigintegr -v IN-var -r RHO-file -l list_of_files [ -p VAR-type ] ...'
+     PRINT *,'              ... [ -sig sigma_name] [ -full ] [-nc4] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :' 
      PRINT *,'       Take a list of input files with specific IN-var variable, associated'
@@ -95,18 +99,23 @@ PROGRAM cdfsigintegr
      PRINT *,'       Then a list of the densities is given, one per line.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-var : input variable to be integrated' 
-     PRINT *,'       RHO-file : netcdf file with already computed density' 
-     PRINT *,'       list_of_files : a list of model netcdf files containing IN-var.'
+     PRINT *,'       -v IN-var : input variable to be integrated' 
+     PRINT *,'       -r RHO-file : netcdf file with already computed density' 
+     PRINT *,'       -l list_of_files : a blank separated list of model netcdf files '
+     PRINT *,'              containing IN-var.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ VAR-type ] : one of T U V F W which defined the position on' 
+     PRINT *,'       [-p  VAR-type ] : one of T U V F W which defined the position on' 
      PRINT *,'               IN-var in the model C-grid. Default is ', TRIM(ctype)
-     PRINT *,'       [ -sig sigma_name ] : give the name of sigma variable in RHO-file.'
+     PRINT *,'       [-sig sigma_name ] : give the name of sigma variable in RHO-file.'
      PRINT *,'               Default is ',TRIM(cn_vosigma0)
-     PRINT *,'       [ -full ] : indicate a full step configuration.'
-     PRINT *,'       [ -rholev  file] : indicates name of file defining the limits for '
+     PRINT *,'       [-full ] : indicate a full step configuration.'
+     PRINT *,'       [-rholev  file] : indicates name of file defining the limits for '
      PRINT *,'               integration. Default is ', TRIM(cf_rholev)
+     PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'               This option is effective only if cdftools are compiled with'
+     PRINT *,'               a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fzgr),' and ',TRIM(cf_rholev)
@@ -123,30 +132,26 @@ PROGRAM cdfsigintegr
      PRINT *,'      '
      STOP
   ENDIF
-
+  
   ijarg = 1 ; ireq = 0 ; nfiles = 0
   DO WHILE ( ijarg <= narg ) 
      CALL getarg( ijarg, cldum ) ; ijarg = ijarg+1
      SELECT CASE ( cldum )
-     CASE ( 'T','t','U','u','V','v','F','f','W','w' )
-        ctype=cldum
-     CASE ( '-sig '   ) 
-        CALL getarg( ijarg, cn_vosigma0) ; ijarg = ijarg+1
-     CASE ( '-rholev ') 
-        CALL getarg( ijarg, cf_rholev  ) ; ijarg = ijarg+1
-     CASE ( '-full '  ) 
-        lfull = .TRUE.
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE ( ireq )
-        CASE ( 1 ) ; cv_in  = cldum
-        CASE ( 2 ) ; cf_rho = cldum
-        CASE DEFAULT 
-           nfiles=nfiles+1
-           IF ( nfiles == 1 ) istrt_arg = ijarg - 1
-        END SELECT
+     CASE ( '-v'      ) ; CALL getarg( ijarg, cv_in      ) ; ijarg = ijarg+1 ; ireq=ireq+1
+     CASE ( '-r'      ) ; CALL getarg( ijarg, cf_rho     ) ; ijarg = ijarg+1 ; ireq=ireq+1
+     CASE ( '-l'      ) ; CALL GetFileList                                   ; ireq=ireq+1
+     ! options
+     CASE ( '-p'      ) ; CALL getarg( ijarg, ctype      ) ; ijarg = ijarg+1 
+     CASE ( '-sig'    ) ; CALL getarg( ijarg, cn_vosigma0) ; ijarg = ijarg+1 
+     CASE ( '-rholev ') ; CALL getarg( ijarg, cf_rholev  ) ; ijarg = ijarg+1
+     CASE ( '-full '  ) ; lfull  = .TRUE.
+     CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
+     CASE ( '-nc4'    ) ; lnc4   = .TRUE.
+     CASE DEFAULT       ; PRINT *, ' ERROR : ', TRIM(cldum), 'unknown option.' ; STOP
      END SELECT
-  END DO
+  ENDDO
+
+  IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP ; ENDIF
 
   CALL SetGlobalAtt( cglobal )
 
@@ -173,10 +178,10 @@ PROGRAM cdfsigintegr
 
   zspvalz=getspval(cf_rho, cn_vosigma0)
 
-  CALL getarg(istrt_arg, cf_in)
-  IF ( chkfile ( cf_in ) ) STOP ! missing file
+  cf_in =  cf_lst(1)
+  IF ( chkfile ( cf_in) ) STOP ! missing file
 
-  nvars=getnvar(cf_in)
+  nvars=getnvar(cf_in )
   ALLOCATE(cv_names(nvars), stypzvar(nvars))
 
   cv_names(:)=getvarname(cf_in,nvars,stypzvar)
@@ -229,70 +234,25 @@ PROGRAM cdfsigintegr
      END DO
   END DO
 
-  ! define header of all files
-  ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso ; ipk(4)=npiso-1
-
-  DO jvar=1,nvars
-     IF ( cv_in == stypzvar(jvar)%cname ) THEN 
-        stypvar(1)=stypzvar(jvar)
-        EXIT
-     ENDIF
-  END DO
-  ! save original long name for further process
-  cldum = TRIM(stypvar(1)%clong_name)
-  cluni = TRIM(stypvar(1)%cunits)
-
-  stypvar(1)%cname             = 'inv'//TRIM(cv_in)
-  stypvar(1)%clong_name        = TRIM(cldum)//' integrated on sigma bin'
-  stypvar(1)%cshort_name       = stypvar(1)%cname
-  stypvar(1)%cunits            = TRIM(cluni)//'.m'
-  stypvar(1)%rmissing_value    = zspval
-  stypvar(1)%caxis             = 'TRYX'
-
-  stypvar(2)%cname             = TRIM(cn_isothick)
-  stypvar(2)%cunits            = 'm'
-  stypvar(2)%rmissing_value    = zspval
-  stypvar(2)%valid_min         = 0.
-  stypvar(2)%valid_max         = 7000.
-  stypvar(2)%clong_name        = 'Thickness_of_Isopycnals'
-  stypvar(2)%cshort_name       = TRIM(cn_isothick)
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TRYX'
-
-  stypvar(3)%cname             = TRIM(cn_vodepiso)
-  stypvar(3)%cunits            = 'm'
-  stypvar(3)%rmissing_value    = zspval
-  stypvar(3)%valid_min         = 0.
-  stypvar(3)%valid_max         = 7000.
-  stypvar(3)%clong_name        = 'Depth_of_Isopycnals'
-  stypvar(3)%cshort_name       = TRIM(cn_vodepiso)
-  stypvar(3)%conline_operation = 'N/A'
-  stypvar(3)%caxis             = 'TRYX'
-
-  stypvar(4)%cname             = 'mean'//TRIM(cv_in)
-  stypvar(4)%cunits            = TRIM(cluni)
-  stypvar(4)%rmissing_value    = zspval
-  stypvar(4)%valid_min         = stypvar(1)%valid_min
-  stypvar(4)%valid_max         = stypvar(1)%valid_min
-  stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
-  stypvar(4)%cshort_name       = stypvar(4)%cname
-  stypvar(4)%conline_operation = 'N/A'
-  stypvar(4)%caxis             = 'TRYX'
-
+  ! Create output variables
+  CALL CreateOutputVar
 
   !! ** Loop on the scalar files to project on choosen isopycnics surfaces
   DO jfich=1, nfiles
-
-     CALL getarg(jfich+istrt_arg-1, cf_in)
+     cf_in = cf_lst( jfich)
      IF ( chkfile (cf_in) ) STOP ! missing file
      PRINT *,'working with ', TRIM(cf_in)
+     ! JMM : not obvious to find file wirh correct e3t
+     IF (lg_vvl ) cn_fe3t = cf_rho
 
      ! create output file
      cf_out=TRIM(cf_in)//'.integr'
 
-     ncout = create      (cf_out, cf_rho,  npiglo, npjglo, npiso                       )
-     ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout, cdglobal=cglobal )
-     ierr  = putheadervar(ncout,  cf_rho,  npiglo, npjglo, npiso, pdep=rho_lev         )
+     ! creation of output file is done within the file loop, but do not interfere with 
+     ! possible parameterization
+     ncout = create      (cf_out, cf_rho,  npiglo, npjglo, npiso                      , ld_nc4=lnc4 )
+     ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4 )
+     ierr  = putheadervar(ncout,  cf_rho,  npiglo, npjglo, npiso, pdep=rho_lev                      )
 
      ! copy time arrays in output file
      npt = getdim ( cf_in, cn_t)
@@ -302,12 +262,14 @@ PROGRAM cdfsigintegr
      DEALLOCATE ( tim )
 
      DO jt =1, npt
+        IF ( lg_vvl) THEN ; it=jt
+        ELSE              ; it=1
+        ENDIF
         DO jk=1,npk
            v2d(:,:) = getvar(cf_in, cv_in, jk, npiglo, npjglo, ktime = jt )
            SELECT CASE ( ctype )
-           CASE ('T', 't' )
-              v3d(:,:,jk) = v2d(:,:)
-           CASE ('U','u' )
+           CASE ('T', 't' ) ; v3d(:,:,jk) = v2d(:,:)
+           CASE ('U','u'  ) ; 
               DO jj=1,npjglo
                  DO ji=2, npiglo
                     v3d(ji,jj,jk)=0.5*( v2d(ji,jj) + v2d(ji-1,jj) )  ! put variable on T point
@@ -351,10 +313,8 @@ PROGRAM cdfsigintegr
 
            DO jk=1,npk-1
               ! get metrixs at level jk
-              IF ( lfull ) THEN 
-                 e3(:,:) = e31d(jk)
-              ELSE
-                 e3(:,:)=getvar(cn_fzgr,'e3t_ps',jk,npiglo,npjglo,ldiom=.TRUE.)
+              IF ( lfull ) THEN  ; e3(:,:) = e31d(jk)
+              ELSE               ; e3(:,:) = getvar(cn_fe3t, cn_ve3t, jk,npiglo,npjglo, ktime=it, ldiom=.NOT.lg_vvl )
               ENDIF
 
               DO ji=1,npiglo
@@ -382,13 +342,11 @@ PROGRAM cdfsigintegr
               zdum=zint  (:,:,1) - zint  (:,:,2) ; WHERE ((tmask == 0.)  .OR. (zdum < 0 ) ) zdum = zspval
               ierr = putvar(ncout, id_varout(2), zdum, jiso-1, npiglo, npjglo, ktime=jt)
 
-              WHERE ( zdum /= zspval .AND. zdum /= 0.) 
-                 zdum=(dv2dint(:,:,1) - dv2dint(:,:,2))/ zdum
-              ELSEWHERE
-                 zdum=zspval
+              WHERE ( zdum /= zspval .AND. zdum /= 0.)  ; zdum=(dv2dint(:,:,1) - dv2dint(:,:,2))/ zdum
+              ELSEWHERE                                 ; zdum=zspval
               ENDWHERE
-              ierr = putvar(ncout, id_varout(4), zdum, jiso-1, npiglo, npjglo, ktime=jt)
 
+              ierr = putvar(ncout, id_varout(4), zdum, jiso-1, npiglo, npjglo, ktime=jt)
            ENDIF
            dv2dint(:,:,2) = dv2dint(:,:,1)
            zint   (:,:,2) = zint   (:,:,1)
@@ -398,4 +356,100 @@ PROGRAM cdfsigintegr
      ierr = closeout(ncout)
   END DO  ! loop on scalar files
   PRINT *,' integral between isopycnals completed successfully'
+
+CONTAINS
+
+  SUBROUTINE CreateOutputVar
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutputVar  ***
+    !!
+    !! ** Purpose :  Create netcdf output  variables
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ! define header of all files
+  ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso ; ipk(4)=npiso-1
+
+  DO jvar=1,nvars
+     IF ( cv_in == stypzvar(jvar)%cname ) THEN 
+        stypvar(1)=stypzvar(jvar)
+        EXIT
+     ENDIF
+  END DO
+  ! save original long name for further process
+  cldum = TRIM(stypvar(1)%clong_name)
+  cluni = TRIM(stypvar(1)%cunits)
+
+  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(1)%cname             = 'inv'//TRIM(cv_in)
+  stypvar(1)%clong_name        = TRIM(cldum)//' integrated on sigma bin'
+  stypvar(1)%cshort_name       = stypvar(1)%cname
+  stypvar(1)%cunits            = TRIM(cluni)//'.m'
+  stypvar(1)%rmissing_value    = zspval
+  stypvar(1)%caxis             = 'TRYX'
+
+  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(2)%cname             = TRIM(cn_isothick)
+  stypvar(2)%cunits            = 'm'
+  stypvar(2)%rmissing_value    = zspval
+  stypvar(2)%valid_min         = 0.
+  stypvar(2)%valid_max         = 7000.
+  stypvar(2)%clong_name        = 'Thickness_of_Isopycnals'
+  stypvar(2)%cshort_name       = TRIM(cn_isothick)
+  stypvar(2)%conline_operation = 'N/A'
+  stypvar(2)%caxis             = 'TRYX'
+
+  stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(3)%cname             = TRIM(cn_vodepiso)
+  stypvar(3)%cunits            = 'm'
+  stypvar(3)%rmissing_value    = zspval
+  stypvar(3)%valid_min         = 0.
+  stypvar(3)%valid_max         = 7000.
+  stypvar(3)%clong_name        = 'Depth_of_Isopycnals'
+  stypvar(3)%cshort_name       = TRIM(cn_vodepiso)
+  stypvar(3)%conline_operation = 'N/A'
+  stypvar(3)%caxis             = 'TRYX'
+
+  stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(4)%cname             = 'mean'//TRIM(cv_in)
+  stypvar(4)%cunits            = TRIM(cluni)
+  stypvar(4)%rmissing_value    = zspval
+  stypvar(4)%valid_min         = stypvar(1)%valid_min
+  stypvar(4)%valid_max         = stypvar(1)%valid_min
+  stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
+  stypvar(4)%cshort_name       = stypvar(4)%cname
+  stypvar(4)%conline_operation = 'N/A'
+  stypvar(4)%caxis             = 'TRYX'
+
+  END SUBROUTINE CreateOutputVar
+
+  SUBROUTINE GetFileList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetFileList  ***
+    !!
+    !! ** Purpose :  Set up a file list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: icur 
+    !!----------------------------------------------------------------------
+    !!
+    nfiles=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+        CALL getarg ( ji, cldum )
+        IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
+        ELSE                          ; EXIT
+        ENDIF
+    ENDDO
+    ALLOCATE (cf_lst(nfiles) )
+    DO ji = icur, icur + nfiles -1
+        CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetFileList
+
 END  PROGRAM cdfsigintegr
