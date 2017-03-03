@@ -30,7 +30,7 @@ PROGRAM cdfcofdis
 
   INTEGER(KIND=4)                           :: jpi, jpj, jpk, npk
   INTEGER(KIND=4)                           :: jpim1, jpjm1, nperio=4
-  INTEGER(KIND=4)                           :: narg, iargc, iarg
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg
   INTEGER(KIND=4)                           :: ncout, ierr
   INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout
 
@@ -46,7 +46,7 @@ PROGRAM cdfcofdis
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, umask, vmask, fmask
   ! 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: pdct                       ! 2D only in this version
-                                                                          ! It is a 3D arg in original cofdis
+  ! It is a 3D arg in original cofdis
   CHARACTER(LEN=256)                        :: cf_out='dist.coast'
   CHARACTER(LEN=256)                        :: cf_tfil
   CHARACTER(LEN=256)                        :: cv_out='Tcoast'
@@ -55,62 +55,68 @@ PROGRAM cdfcofdis
   TYPE(variable), DIMENSION(1)              :: stypvar
 
   LOGICAL                                   :: lchk
-  LOGICAL                                   :: lsurf = .false.
+  LOGICAL                                   :: lsurf = .FALSE.
+  LOGICAL                                   :: lnc4  = .FALSE.     ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   !
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfcofdis mesh_hgr.nc mask.nc gridT.nc [-jperio jperio ] [-surf]'
+     PRINT *,' usage :  cdfcofdis -H HGR-file -M MSK-file -T gridT.nc [-jperio jperio ]...'
+     PRINT *,'               ... [-surf] [-o OUT-file[ [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the distance to the coast and create a file with the ',TRIM(cv_out)
-     PRINT *,'        variable, indicating the distance to the coast. This computation is done'
-     PRINT *,'        for every model level, unless -surf option is used.'
+     PRINT *,'        variable, indicating the distance to the coast. This computation is '
+     PRINT *,'        done for every model level, unless -surf option is used.'
+     PRINT *,'        This file is used in NEMO tradmp routine for fading out restoring'
+     PRINT *,'        in vicinity of the coast line.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       HGR-file : name of the mesh_hgr file '
-     PRINT *,'       MSK-file : name of the mask file '
-     PRINT *,'       T-file   : netcdf file at T point.'
+     PRINT *,'       -H HGR-file : name of the mesh_hgr file '
+     PRINT *,'       -M MSK-file : name of the mask file '
+     PRINT *,'       -T T-file   : netcdf file at T point ( used for looking at jpk)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -jperio jperio ] : define the NEMO jperio variable for north fold '
+     PRINT *,'       [-jperio jperio ] : define the NEMO jperio variable for north fold '
      PRINT *,'           condition. Default is  4.'
-     PRINT *,'       [ -surf ] : only compute  distance at the surface.'
+     PRINT *,'       [-surf ] : only compute  distance at the surface.'
+     PRINT *,'       [-o OUT-file ] : specify name of the output file instead of ', TRIM(cf_out)
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : ', TRIM(cv_out),' (m)'
      PRINT *,'      '
      PRINT *,'      '
      STOP
   ENDIF
- 
-  CALL getarg(1,cn_fhgr)  ! overwrite standard name eventually
-  CALL getarg(2,cn_fmsk)  !   ""                "" 
-  CALL getarg(3,cf_tfil )
+
+  ijarg = 1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-H'     ) ; CALL getarg(ijarg,cn_fhgr) ; ijarg=ijarg+1
+     CASE ( '-M'     ) ; CALL getarg(ijarg,cn_fmsk) ; ijarg=ijarg+1
+     CASE ( '-T'     ) ; CALL getarg(ijarg,cf_tfil) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-jperio') ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum, * ) nperio
+     CASE ( '-surf'  ) ; lsurf = .TRUE.
+     CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1 
+     CASE ( '-nc4'   ) ; lnc4  = .TRUE.
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.'
+     END SELECT
+  ENDDO
 
   lchk =           chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_tfil )
   IF ( lchk ) STOP ! missing files
-
-  iarg = 4 
-  DO WHILE ( iarg <= narg )
-    CALL getarg(iarg, cldum ) ; iarg = iarg + 1
-    SELECT CASE ( cldum )
-    CASE ( '-jperio' ) 
-       CALL getarg (iarg,cldum) ; READ(cldum, * ) nperio  ; iarg = iarg + 1
-    CASE ( '-surf' ) 
-       lsurf = .true.
-    CASE DEFAULT
-       PRINT *,' unknown option : ', TRIM(cldum)
-       STOP
-    END SELECT
-  END DO
 
   ! read domain dimensions in the mask file
   jpi = getdim(cf_tfil,cn_x)
@@ -118,11 +124,11 @@ PROGRAM cdfcofdis
   jpk = getdim(cf_tfil,cn_z)
 
   IF (jpk == 0 ) THEN
-    jpk = getdim(cf_tfil,'z')
-    IF ( jpk == 0 ) THEN
-      PRINT *,' ERROR in determining jpk form gridT file ....'
-      STOP
-    ENDIF
+     jpk = getdim(cf_tfil,'z')
+     IF ( jpk == 0 ) THEN
+        PRINT *,' ERROR in determining jpk form gridT file ....'
+        STOP
+     ENDIF
   ENDIF
 
   PRINT *, ' JPI = ', jpi
@@ -136,7 +142,7 @@ PROGRAM cdfcofdis
   ALLOCATE ( gphit(jpi,jpj), gphiu(jpi,jpj), gphiv(jpi,jpj), gphif(jpi,jpj) )
   ALLOCATE ( tmask(jpi,jpj), umask(jpi,jpj), vmask(jpi,jpj), fmask(jpi,jpj) )
   ALLOCATE ( pdct(jpi,jpj) )
-  
+
   PRINT *, 'ALLOCATION DONE.'
 
   ! read latitude an longitude
@@ -151,31 +157,15 @@ PROGRAM cdfcofdis
   gphif(:,:) = getvar(cn_fhgr,cn_gphif,1,jpi,jpj)
 
   ! prepare file output
-  IF ( lsurf ) THEN
-     npk                       = 1
-  ELSE
-     npk = jpk
+  IF ( lsurf ) THEN ; npk                       = 1
+  ELSE              ; npk = jpk
   ENDIF
-
-  ipk(1)                       = npk
-  stypvar(1)%cname             = cv_out
-  stypvar(1)%cunits            = 'm'
-  stypvar(1)%rmissing_value    = 0
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 1.
-  stypvar(1)%clong_name        = cv_out
-  stypvar(1)%cshort_name       = cv_out
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
-  stypvar(1)%cprecision        = 'r4'
-
-  ncout = create      (cf_out, cf_tfil, jpi, jpj, npk       )
-  ierr  = createvar   (ncout,  stypvar, 1,   ipk, id_varout )
-  ierr  = putheadervar(ncout,  cf_tfil, jpi, jpj, npk       )
+  
+  CALL CreateOutput
 
   CALL cofdis (npk)
-  
-  CONTAINS
+
+CONTAINS
 
   SUBROUTINE cofdis(kpk)
     !!----------------------------------------------------------------------
@@ -225,13 +215,7 @@ PROGRAM cdfcofdis
        !                                          ! ===============
        PRINT *,'WORKING for level ', jk, nperio
        pdct(:,:) = 0.e0
-       ! read the masks
-       !    temp(:,:) = getvar(cbathy,'Bathy_level',1, npiglo, npjglo)
-
-       tmask(:,:)=getvar(cn_fmsk,'tmask',jk,jpi,jpj)
-!      umask(:,:)=getvar(cn_fmsk,'umask',jk,jpi,jpj)
-!      vmask(:,:)=getvar(cn_fmsk,'vmask',jk,jpi,jpj)
-!      fmask(:,:)=getvar(cn_fmsk,'fmask',jk,jpi,jpj)
+       tmask(:,:)=getvar(cn_fmsk,cn_tmask,jk,jpi,jpj)
        DO jj = 1, jpjm1
           DO ji = 1, jpim1   ! vector loop
              umask(ji,jj) = tmask(ji,jj ) * tmask(ji+1,jj  )
@@ -239,7 +223,7 @@ PROGRAM cdfcofdis
           END DO
           DO ji = 1, jpim1      ! NO vector opt.
              fmask(ji,jj) = tmask(ji,jj  ) * tmask(ji+1,jj  )   &
-                &         * tmask(ji,jj+1) * tmask(ji+1,jj+1)
+                  &         * tmask(ji,jj+1) * tmask(ji+1,jj+1)
           END DO
        END DO
        umask(jpi,:)=umask(2,:)
@@ -353,7 +337,7 @@ PROGRAM cdfcofdis
 
        PRINT *,' START computing distance for T points', icoast
        DO jj = 1, jpj
-             print *, jj
+          PRINT *, jj
           DO ji = 1, jpi
              IF( tmask(ji,jj) == 0. ) THEN
                 pdct(ji,jj) = 0.
@@ -368,7 +352,7 @@ PROGRAM cdfcofdis
           END DO
        END DO
        PRINT *,' END computing distance for T points'
-       
+
        ierr=putvar(ncout,id_varout(1),pdct,jk,jpi,jpj)
        !                                                ! ===============
     END DO                                              !   End of slab
@@ -379,4 +363,32 @@ PROGRAM cdfcofdis
 
   END SUBROUTINE cofdis
 
-  END PROGRAM cdfcofdis
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1)                       = npk
+    stypvar(1)%ichunk            = (/jpi,MAX(1,jpj/30),1,1 /)
+    stypvar(1)%cname             = cv_out
+    stypvar(1)%cunits            = 'm'
+    stypvar(1)%rmissing_value    = 0
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 1.
+    stypvar(1)%clong_name        = cv_out
+    stypvar(1)%cshort_name       = cv_out
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
+    stypvar(1)%cprecision        = 'r4'
+
+    ncout = create      (cf_out, cf_tfil, jpi, jpj, npk       , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar, 1,   ipk, id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_tfil, jpi, jpj, npk       )
+
+  END SUBROUTINE CreateOutput
+
+END PROGRAM cdfcofdis
