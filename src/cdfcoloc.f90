@@ -181,84 +181,84 @@ PROGRAM cdfcoloc
         cf_weight = cf_weight_t
         cf_in     = cf_gridt
         cvar      = cn_votemper 
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = npk
         dscale    = 1.d0
      CASE ('S')          ! salinity, not used for Greg Holloway output
         cf_weight = cf_weight_t
         cf_in     = cf_gridt
         cvar      = cn_vosaline 
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = npk
         dscale    = 1.d0
      CASE ('SSH')        !  SSH, not used for Greg Holloway output
         cf_weight = cf_weight_t
         cf_in     = cf_gridt
         cvar      = cn_sossheig 
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 100.d0
      CASE ('CFCINV')     !  CFC inventory, not used for Greg Holloway output
         cf_weight = cf_weight_t
         cf_in     = cf_gridtrc
         cvar      = cn_invcfc
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1000000.d0
      CASE ('CFCCONC')     !  CFC inventory, not used for Greg Holloway output
         cf_weight = cf_weight_t
         cf_in     = cf_gridtrc
         cvar      = cn_cfc11
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1.d0
      CASE ('PENDEP')     !  CFC penetration depth
         cf_weight = cf_weight_t
         cf_in     = cf_diag
         cvar      = cn_pendep
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1.d0
      CASE ('MXL','MXL01' )  !  Mixed layer depth
         cf_weight = cf_weight_t
         cf_in     = cf_gridt
         cvar      = cn_somxl010
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1.d0
      CASE ('MXLT02' )  !  Mixed layer depth
         cf_weight = cf_weight_t
         cf_in     = cf_gridt
         cvar      = cn_somxlt02
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1.d0
      CASE ('ISOTHICK' )  !  Mixed layer depth
         cf_weight = cf_weight_t
         cf_in     = cf_diag
         cvar      = cn_isothick
-        cvmask    = 'tmask'
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1.d0
      CASE ('U')          ! Zonal component of velocity 
         cf_weight = cf_weight_u
         cf_in     = cf_gridu
         cvar      = cn_vozocrtx 
-        cvmask    = 'umask'
+        cvmask    = cn_umask
         npkv      = npk
         dscale    = 100.d0  ! to be cm/s in the output
      CASE ('V')             ! Meridional component of velocity
         cf_weight = cf_weight_v
         cf_in     = cf_gridv
         cvar      = cn_vomecrty 
-        cvmask    = 'vmask'
+        cvmask    = cn_vmask
         npkv      = npk
         dscale    = 100.d0  ! to be cm/s in the output
      CASE ('Sx')            ! Zonal component of bottom slope
         cf_weight = cf_weight_u
         cf_in     = 'none' 
         cvar      = 'none'
-        cvmask    = 'umask'
+        cvmask    = cn_umask
         npkv      = 1
         dscale    = 100.d0  ! to be in % in the output
         llchk = llchk .OR. chkfile(cn_fcoo    )
@@ -266,8 +266,8 @@ PROGRAM cdfcoloc
         IF ( llchk ) STOP 
         ! Sx is the i-slope of bottom topog: read adequate metric
         !   and compute it on v3d(:,:,1)
-        de(:,:)  = getvar(cn_fcoo, cn_ve1u, 1, npiglo, npjglo)     
-        d2d(:,:) = getvar(cn_fzgr, 'hdepw', 1, npiglo, npjglo)     
+        de(:,:)  = getvar(cn_fcoo, cn_ve1u,  1, npiglo, npjglo)     
+        d2d(:,:) = getvar(cn_fzgr, cn_hdepw, 1, npiglo, npjglo)     
         DO ji=2, npiglo-1
            v3d(ji,:,1) = (d2d(ji+1,:) - d2d(ji,:)) / de(ji,:)
         END DO
@@ -283,16 +283,16 @@ PROGRAM cdfcoloc
         IF ( llchk ) STOP 
         ! Sy is the j-slope of bottom topog: read adequate metric
         !   and compute it on v3d(:,:,1)
-        de(:,:)  = getvar(cn_fcoo, cn_ve2v, 1, npiglo, npjglo)
-        d2d(:,:) = getvar(cn_fzgr, 'hdepw', 1, npiglo, npjglo)
+        de(:,:)  = getvar(cn_fcoo, cn_ve2v,  1, npiglo, npjglo)
+        d2d(:,:) = getvar(cn_fzgr, cn_hdepw, 1, npiglo, npjglo)
         DO jj=2, npjglo-1
            v3d(:,jj,1) = (d2d(:,jj+1) - d2d(:,jj)) / de(:,jj)
         END DO
      CASE ('H')          ! Bottom topography
         cf_weight = cf_weight_t
         cf_in     = cn_fzgr
-        cvar      = 'hdepw' 
-        cvmask    = 'tmask'
+        cvar      = cn_hdepw 
+        cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1.d0
      CASE ('etopo')       ! Bottom topography from external file
