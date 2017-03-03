@@ -132,7 +132,7 @@ PROGRAM cdfsigintegr
      PRINT *,'      '
      STOP
   ENDIF
-  
+
   ijarg = 1 ; ireq = 0 ; nfiles = 0
   DO WHILE ( ijarg <= narg ) 
      CALL getarg( ijarg, cldum ) ; ijarg = ijarg+1
@@ -140,7 +140,7 @@ PROGRAM cdfsigintegr
      CASE ( '-v'      ) ; CALL getarg( ijarg, cv_in      ) ; ijarg = ijarg+1 ; ireq=ireq+1
      CASE ( '-r'      ) ; CALL getarg( ijarg, cf_rho     ) ; ijarg = ijarg+1 ; ireq=ireq+1
      CASE ( '-l'      ) ; CALL GetFileList                                   ; ireq=ireq+1
-     ! options
+        ! options
      CASE ( '-p'      ) ; CALL getarg( ijarg, ctype      ) ; ijarg = ijarg+1 
      CASE ( '-sig'    ) ; CALL getarg( ijarg, cn_vosigma0) ; ijarg = ijarg+1 
      CASE ( '-rholev ') ; CALL getarg( ijarg, cf_rholev  ) ; ijarg = ijarg+1
@@ -151,7 +151,7 @@ PROGRAM cdfsigintegr
      END SELECT
   ENDDO
 
-  IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP ; ENDIF
+  IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP;  ENDIF
 
   CALL SetGlobalAtt( cglobal )
 
@@ -343,113 +343,113 @@ PROGRAM cdfsigintegr
               ierr = putvar(ncout, id_varout(2), zdum, jiso-1, npiglo, npjglo, ktime=jt)
 
               WHERE ( zdum /= zspval .AND. zdum /= 0.)  ; zdum=(dv2dint(:,:,1) - dv2dint(:,:,2))/ zdum
-              ELSEWHERE                                 ; zdum=zspval
-              ENDWHERE
+           ELSEWHERE                                 ; zdum=zspval
+           ENDWHERE
 
-              ierr = putvar(ncout, id_varout(4), zdum, jiso-1, npiglo, npjglo, ktime=jt)
-           ENDIF
-           dv2dint(:,:,2) = dv2dint(:,:,1)
-           zint   (:,:,2) = zint   (:,:,1)
+           ierr = putvar(ncout, id_varout(4), zdum, jiso-1, npiglo, npjglo, ktime=jt)
+        ENDIF
+        dv2dint(:,:,2) = dv2dint(:,:,1)
+        zint   (:,:,2) = zint   (:,:,1)
 
-        END DO
      END DO
-     ierr = closeout(ncout)
-  END DO  ! loop on scalar files
-  PRINT *,' integral between isopycnals completed successfully'
+  END DO
+  ierr = closeout(ncout)
+END DO  ! loop on scalar files
+PRINT *,' integral between isopycnals completed successfully'
 
 CONTAINS
 
-  SUBROUTINE CreateOutputVar
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE CreateOutputVar  ***
-    !!
-    !! ** Purpose :  Create netcdf output  variables
-    !!
-    !! ** Method  :  Use stypvar global description of variables
-    !!
-    !!----------------------------------------------------------------------
+SUBROUTINE CreateOutputVar
+  !!---------------------------------------------------------------------
+  !!                  ***  ROUTINE CreateOutputVar  ***
+  !!
+  !! ** Purpose :  Create netcdf output  variables
+  !!
+  !! ** Method  :  Use stypvar global description of variables
+  !!
+  !!----------------------------------------------------------------------
   ! define header of all files
-  ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso ; ipk(4)=npiso-1
+ ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso ; ipk(4)=npiso-1
 
-  DO jvar=1,nvars
-     IF ( cv_in == stypzvar(jvar)%cname ) THEN 
-        stypvar(1)=stypzvar(jvar)
-        EXIT
-     ENDIF
-  END DO
-  ! save original long name for further process
-  cldum = TRIM(stypvar(1)%clong_name)
-  cluni = TRIM(stypvar(1)%cunits)
+ DO jvar=1,nvars
+    IF ( cv_in == stypzvar(jvar)%cname ) THEN 
+       stypvar(1)=stypzvar(jvar)
+       EXIT
+    ENDIF
+ END DO
+ ! save original long name for further process
+ cldum = TRIM(stypvar(1)%clong_name)
+ cluni = TRIM(stypvar(1)%cunits)
 
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = 'inv'//TRIM(cv_in)
-  stypvar(1)%clong_name        = TRIM(cldum)//' integrated on sigma bin'
-  stypvar(1)%cshort_name       = stypvar(1)%cname
-  stypvar(1)%cunits            = TRIM(cluni)//'.m'
-  stypvar(1)%rmissing_value    = zspval
-  stypvar(1)%caxis             = 'TRYX'
+ stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+ stypvar(1)%cname             = 'inv'//TRIM(cv_in)
+ stypvar(1)%clong_name        = TRIM(cldum)//' integrated on sigma bin'
+ stypvar(1)%cshort_name       = stypvar(1)%cname
+ stypvar(1)%cunits            = TRIM(cluni)//'.m'
+ stypvar(1)%rmissing_value    = zspval
+ stypvar(1)%caxis             = 'TRYX'
 
-  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(2)%cname             = TRIM(cn_isothick)
-  stypvar(2)%cunits            = 'm'
-  stypvar(2)%rmissing_value    = zspval
-  stypvar(2)%valid_min         = 0.
-  stypvar(2)%valid_max         = 7000.
-  stypvar(2)%clong_name        = 'Thickness_of_Isopycnals'
-  stypvar(2)%cshort_name       = TRIM(cn_isothick)
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TRYX'
+ stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+ stypvar(2)%cname             = TRIM(cn_isothick)
+ stypvar(2)%cunits            = 'm'
+ stypvar(2)%rmissing_value    = zspval
+ stypvar(2)%valid_min         = 0.
+ stypvar(2)%valid_max         = 7000.
+ stypvar(2)%clong_name        = 'Thickness_of_Isopycnals'
+ stypvar(2)%cshort_name       = TRIM(cn_isothick)
+ stypvar(2)%conline_operation = 'N/A'
+ stypvar(2)%caxis             = 'TRYX'
 
-  stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(3)%cname             = TRIM(cn_vodepiso)
-  stypvar(3)%cunits            = 'm'
-  stypvar(3)%rmissing_value    = zspval
-  stypvar(3)%valid_min         = 0.
-  stypvar(3)%valid_max         = 7000.
-  stypvar(3)%clong_name        = 'Depth_of_Isopycnals'
-  stypvar(3)%cshort_name       = TRIM(cn_vodepiso)
-  stypvar(3)%conline_operation = 'N/A'
-  stypvar(3)%caxis             = 'TRYX'
+ stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+ stypvar(3)%cname             = TRIM(cn_vodepiso)
+ stypvar(3)%cunits            = 'm'
+ stypvar(3)%rmissing_value    = zspval
+ stypvar(3)%valid_min         = 0.
+ stypvar(3)%valid_max         = 7000.
+ stypvar(3)%clong_name        = 'Depth_of_Isopycnals'
+ stypvar(3)%cshort_name       = TRIM(cn_vodepiso)
+ stypvar(3)%conline_operation = 'N/A'
+ stypvar(3)%caxis             = 'TRYX'
 
-  stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(4)%cname             = 'mean'//TRIM(cv_in)
-  stypvar(4)%cunits            = TRIM(cluni)
-  stypvar(4)%rmissing_value    = zspval
-  stypvar(4)%valid_min         = stypvar(1)%valid_min
-  stypvar(4)%valid_max         = stypvar(1)%valid_min
-  stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
-  stypvar(4)%cshort_name       = stypvar(4)%cname
-  stypvar(4)%conline_operation = 'N/A'
-  stypvar(4)%caxis             = 'TRYX'
+ stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+ stypvar(4)%cname             = 'mean'//TRIM(cv_in)
+ stypvar(4)%cunits            = TRIM(cluni)
+ stypvar(4)%rmissing_value    = zspval
+ stypvar(4)%valid_min         = stypvar(1)%valid_min
+ stypvar(4)%valid_max         = stypvar(1)%valid_min
+ stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
+ stypvar(4)%cshort_name       = stypvar(4)%cname
+ stypvar(4)%conline_operation = 'N/A'
+ stypvar(4)%caxis             = 'TRYX'
 
-  END SUBROUTINE CreateOutputVar
+END SUBROUTINE CreateOutputVar
 
-  SUBROUTINE GetFileList
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE GetFileList  ***
-    !!
-    !! ** Purpose :  Set up a file list given on the command line as 
-    !!               blank separated list
-    !!
-    !! ** Method  :  Scan the command line until a '-' is found
-    !!----------------------------------------------------------------------
-    INTEGER (KIND=4)  :: icur 
-    !!----------------------------------------------------------------------
-    !!
-    nfiles=0
-    ! need to read a list of file ( number unknow ) 
-    ! loop on argument till a '-' is found as first char
-    icur=ijarg                          ! save current position of argument number
-    DO ji = icur, narg                  ! scan arguments till - found
-        CALL getarg ( ji, cldum )
-        IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
-        ELSE                          ; EXIT
-        ENDIF
-    ENDDO
-    ALLOCATE (cf_lst(nfiles) )
-    DO ji = icur, icur + nfiles -1
-        CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
-    END DO
-  END SUBROUTINE GetFileList
+SUBROUTINE GetFileList
+  !!---------------------------------------------------------------------
+  !!                  ***  ROUTINE GetFileList  ***
+  !!
+  !! ** Purpose :  Set up a file list given on the command line as 
+  !!               blank separated list
+  !!
+  !! ** Method  :  Scan the command line until a '-' is found
+  !!----------------------------------------------------------------------
+ INTEGER (KIND=4)  :: icur 
+ !!----------------------------------------------------------------------
+ !!
+ nfiles=0
+ ! need to read a list of file ( number unknow ) 
+ ! loop on argument till a '-' is found as first char
+ icur=ijarg                          ! save current position of argument number
+ DO ji = icur, narg                  ! scan arguments till - found
+    CALL getarg ( ji, cldum )
+    IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
+    ELSE                          ; EXIT
+    ENDIF
+ ENDDO
+ ALLOCATE (cf_lst(nfiles) )
+ DO ji = icur, icur + nfiles -1
+    CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+ END DO
+END SUBROUTINE GetFileList
 
-END  PROGRAM cdfsigintegr
+END  PROGRAM
