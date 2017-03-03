@@ -26,6 +26,7 @@ PROGRAM cdfbottom
 
   INTEGER(KIND=4)                            :: jk , jv, jvar, jt        ! dummy loop index
   INTEGER(KIND=4)                            :: ierr                     ! working integer
+  INTEGER(KIND=4)                            :: idep, idep_max           ! possible depth index, maximum
   INTEGER(KIND=4)                            :: narg, iargc, ijarg       ! argument on line
   INTEGER(KIND=4)                            :: npiglo, npjglo, npk, npt ! size of the domain
   INTEGER(KIND=4)                            :: nvars                    ! number of variables in the input file
@@ -44,85 +45,94 @@ PROGRAM cdfbottom
   CHARACTER(LEN=5)                           :: cv_msk=' '               ! name of the mask variable
   CHARACTER(LEN=1)                           :: ctype=' '                ! point type (T U V ..)
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names              ! array of var name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep               ! array of possible depth name (or 3rd dimension)
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar                  ! structure for variable attribute
+
+  LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
   !!--------------------------------------------------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbottom  IN-file [ T | U | V | F]'
+     PRINT *,' usage : cdfbottom  -f IN-file [-p  T | U | V | F] [-o OUT-file] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create a 2D file with bottom most values for all the variables'
      PRINT *,'       which are in the input 3D file.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file : input netcdf 3D file.' 
+     PRINT *,'       -f IN-file : input netcdf 3D file.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ T | U | V | F] : specify the type of grid point on the C-grid' 
+     PRINT *,'       [-p  T | U | V | F] : specify the type of grid point on the C-grid' 
      PRINT *,'            if not given, assume that land points are values with 0.'
+     PRINT *,'       [-o OUT-file ]: specify output filename instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ]       : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fmsk),' file is required if the grid point is specified' 
      PRINT *,'                  or if the land value is not 0.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables :  same names than input file, long_name attribute is'
      PRINT *,'               prefixed by Bottom '
      STOP
   ENDIF
 
   ijarg = 1
-  CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
+     SELECT CASE (cldum )
+     CASE ( '-f'  ) ;  CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
+        ! options
+     CASE ( '-p'  ) ;  CALL getarg (ijarg, ctype) ; ijarg = ijarg + 1
+                       IF ( chkfile (cn_fmsk )) STOP  ! missing files
+         SELECT CASE ( ctype )
+         CASE ( 'T', 't', 'S', 's' ) ; cv_msk=cn_tmask
+         CASE ( 'U', 'u'           ) ; cv_msk=cn_umask
+         CASE ( 'V', 'v'           ) ; cv_msk=cn_vmask
+         CASE ( 'F', 'f'           ) ; cv_msk=cn_fmask
+                                     ; PRINT *, 'Be carefull with fmask (think of shlat)... !!!'
+         CASE DEFAULT                ; PRINT *, ' ERROR : This type of point ', TRIM(ctype),' is not known !' ; STOP
+         END SELECT
+      CASE ( '-o'  ) ;  CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+      CASE ( '-nc4') ;  lnc4 = .TRUE.
+      CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+      END SELECT
+  ENDDO
 
   IF ( chkfile(cf_in) ) STOP  ! missing files
 
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)
-  npk    = getdim (cf_in,cn_z, cdtrue=cv_dep, kstatus=ierr)  ! defautl cn_z is depth
 
-  IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_in,'z', cdtrue=cv_dep, kstatus=ierr)
-     IF (ierr /= 0 ) THEN
-       npk   = getdim (cf_in,'sigma', cdtrue=cv_dep, kstatus=ierr)
-        IF ( ierr /= 0 ) THEN
-          npk = getdim (cf_in,'nav_lev', cdtrue=cv_dep, kstatus=ierr)
-            IF ( ierr /= 0 ) THEN
-              PRINT *,' assume file with no depth'
-              npk=0
-            ENDIF
-        ENDIF
-     ENDIF
+  ! looking for npk among various possible name
+  idep_max=8
+  ALLOCATE ( clv_dep(idep_max) )
+  clv_dep(:) = (/cn_z,'z','sigma','nav_lev','levels','ncatice','icbcla','icbsect'/)
+  idep=1  ; ierr=1000
+  DO WHILE ( ierr /= 0 .AND. idep <= idep_max )
+     npk  = getdim (cf_in, clv_dep(idep), cdtrue=cv_dep, kstatus=ierr)
+     idep = idep + 1
+  ENDDO
+
+  IF ( ierr /= 0 ) THEN  ! none of the dim name was found
+      PRINT *,' assume file with no depth'
+      npk=0
   ENDIF
-  npt   = getdim (cf_in,cn_t)
 
+  PRINT *, 'npiglo = ', npiglo
+  PRINT *, 'npjglo = ', npjglo
+  PRINT *, 'npk    = ', npk , 'Dep name :' , TRIM(cv_dep)
+
+  npt   = getdim (cf_in,cn_t)
 
   ALLOCATE (zfield(npiglo,npjglo), zbot(npiglo,npjglo), zmask(npiglo,npjglo))
   ALLOCATE (tim(npt) )
-
-  DO WHILE ( ijarg <= narg )
-     CALL getarg (ijarg, ctype ) ; ijarg = ijarg + 1
-     IF ( chkfile (cn_fmsk ) ) STOP  ! missing mask file
-
-     SELECT CASE ( ctype )
-     CASE ( 'T', 't', 'S', 's' )
-        cv_msk='tmask'
-     CASE ( 'U', 'u' )
-        cv_msk='umask'
-     CASE ( 'V', 'v' )
-        cv_msk='vmask'
-     CASE ( 'F', 'f' )
-        cv_msk='fmask'
-        PRINT *, 'Be carefull with fmask ... !!!'
-     CASE DEFAULT
-        PRINT *, ' ERROR : This type of point ', ctype,' is not known !'
-        STOP
-     END SELECT
-
-  END DO
 
   ! look for the number of variables in the input file
   nvars = getnvar(cf_in)
@@ -132,25 +142,9 @@ PROGRAM cdfbottom
   ALLOCATE (id_var(nvars), ipk(nvars), id_varout(nvars), ipko(nvars) )
 
   cv_names(:)=getvarname(cf_in,nvars,stypvar)
-
   id_var(:)  = (/(jv, jv=1,nvars)/)
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk (cf_in,nvars,cdep=cv_dep)
-  ipko(:)    = 1  ! all variables output are 2D
 
-  WHERE( ipk <= 1 ) cv_names='none'
-  DO jvar=1,nvars
-    stypvar(jvar)%cname      = cv_names(jvar)
-    stypvar(jvar)%caxis      = 'TYX'
-    cldum=stypvar(jvar)%clong_name
-    stypvar(jvar)%clong_name = 'Bottom '//TRIM(cldum)
-  END DO
-  ! create output fileset
-  ! create output file taking the sizes in cf_in
-
-  ncout = create      (cf_out,   cf_in  , npiglo, npjglo, 1         ) ! 1 level file
-  ierr  = createvar   (ncout   , stypvar, nvars , ipko  , id_varout )
-  ierr  = putheadervar(ncout   , cf_in  , npiglo, npjglo, 1         )
+  CALL CreateOutput
 
   DO jvar = 1,nvars
      zfield = 0.
@@ -174,14 +168,45 @@ PROGRAM cdfbottom
                    zbot = zfield
                 END WHERE
              ENDIF
-          END DO
+          END DO ! level-loop
           ierr = putvar(ncout, id_varout(jvar), zbot, 1, npiglo, npjglo, ktime=jt)
-        ENDDO
+        ENDDO  ! time-loop
      ENDIF
-  END DO
+  END DO       ! variable-loop
 
+  ierr    = closeout(ncout)
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+  ipk(:)     = getipk (cf_in,nvars,cdep=cv_dep)
+  ipko(:)    = 1  ! all variables output are 2D
+
+  WHERE( ipk <= 1 ) cv_names='none'
+  DO jvar=1,nvars
+    stypvar(jvar)%ichunk     = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(jvar)%cname      = cv_names(jvar)
+    stypvar(jvar)%caxis      = 'TYX'
+    cldum=stypvar(jvar)%clong_name
+    stypvar(jvar)%clong_name = 'Bottom '//TRIM(cldum)
+  END DO
+  ! create output fileset
+  ! create output file taking the sizes in cf_in
+
+  ncout = create      (cf_out,   cf_in  , npiglo, npjglo, 1         , ld_nc4=lnc4 ) ! 1 level file
+  ierr  = createvar   (ncout   , stypvar, nvars , ipko  , id_varout , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout   , cf_in  , npiglo, npjglo, 1         )
   tim     = getvar1d(cf_in, cn_vtimec, npt     )
   ierr    = putvar1d(ncout, tim,       npt, 'T')
-  ierr    = closeout(ncout)
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfbottom
