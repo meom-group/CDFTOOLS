@@ -1,3 +1,4 @@
+! This program is not validated nor finished in the standards of CDFTOOLS
 PROGRAM cdfcofpoint
   !!-------------------------------------------------------------------
   !!               ***  PROGRAM cdfmean  ***
