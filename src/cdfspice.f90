@@ -81,7 +81,6 @@ PROGRAM cdfspice
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf file with temperature and salinity (gridT)' 
-     PRINT *,'           Single argument T-file can also be used, for backward compatibility'
      PRINT *,'     '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-sal SAL-name]  : name of salinity variable'
@@ -103,9 +102,11 @@ PROGRAM cdfspice
      STOP
   ENDIF
 
-  ijarg=1
+  ! default name for salinity and temperature
   cv_sal=cn_vosaline
   cv_tem=cn_votemper
+
+  ijarg=1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
@@ -114,13 +115,7 @@ PROGRAM cdfspice
      CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
      CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT
-      IF ( narg == 1 ) THEN
-         cf_tfil = cldum
-      ELSE
-         PRINT *,' option ',TRIM(cldum),' not understood'
-         STOP
-      ENDIF
+     CASE DEFAULT    ; PRINT *,'ERROR : ',TRIM(cldum),' : unknown option.'
      END SELECT
   ENDDO
 
@@ -134,18 +129,6 @@ PROGRAM cdfspice
   npkk=npk
   IF ( npk == 0 ) npkk=1
 
-  ipk(:)                       = npkk
-  stypvar(1)%cname             = 'vospice'
-  stypvar(1)%cunits            = 'kg/m3'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = -300.
-  stypvar(1)%valid_max         = 300.
-  stypvar(1)%clong_name        = 'spiciness'
-  stypvar(1)%cshort_name       = 'vospice'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
-  stypvar(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
-
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
@@ -157,14 +140,7 @@ PROGRAM cdfspice
   ALLOCATE (dsalref(npiglo,npjglo))
   ALLOCATE (tim(npt))
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk,       ld_nc4=lnc4     )
-  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, ld_nc4=lnc4     )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
-
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
-
+  CALL CreateOutput
   zspval = getspval( cf_tfil, cn_vosaline )
 
   ! Compute spiciness
@@ -186,5 +162,38 @@ PROGRAM cdfspice
   END DO  ! next time frame
 
   ierr = closeout(ncout)
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ipk(:)                       = npkk
+  stypvar(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
+  stypvar(1)%cname             = 'vospice'
+  stypvar(1)%cunits            = 'kg/m3'
+  stypvar(1)%rmissing_value    = 0.
+  stypvar(1)%valid_min         = -300.
+  stypvar(1)%valid_max         = 300.
+  stypvar(1)%clong_name        = 'spiciness'
+  stypvar(1)%cshort_name       = 'vospice'
+  stypvar(1)%conline_operation = 'N/A'
+  stypvar(1)%caxis             = 'TZYX'
+
+  ! create output fileset
+  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk,       ld_nc4=lnc4     )
+  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, ld_nc4=lnc4     )
+  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,   tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdfspice
