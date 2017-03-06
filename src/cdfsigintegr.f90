@@ -153,303 +153,303 @@ PROGRAM cdfsigintegr
 
   IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP;  ENDIF
 
-  CALL SetGlobalAtt( cglobal )
+     CALL SetGlobalAtt( cglobal )
 
-  ! check for files
-  lchk = lchk .OR. chkfile (cn_fzgr   )
-  lchk = lchk .OR. chkfile (cf_rholev )
-  lchk = lchk .OR. chkfile (cf_rho    )
-  IF ( lchk ) STOP ! missing file
+     ! check for files
+     lchk = lchk .OR. chkfile (cn_fzgr   )
+     lchk = lchk .OR. chkfile (cf_rholev )
+     lchk = lchk .OR. chkfile (cf_rho    )
+     IF ( lchk ) STOP ! missing file
 
-  ! Read rho level between which the integral is being performed
-  OPEN(numin,file=cf_rholev)
-  READ(numin,*) npiso
-  ALLOCATE (rho_lev(npiso) )
-  PRINT *,' Density limits read in ',TRIM(cf_rholev)
-  DO jiso=1,npiso
-     READ(numin,*) rho_lev(jiso)
-     PRINT *,rho_lev(jiso)
-  END DO
-  CLOSE(numin)
+     ! Read rho level between which the integral is being performed
+     OPEN(numin,file=cf_rholev)
+     READ(numin,*) npiso
+     ALLOCATE (rho_lev(npiso) )
+     PRINT *,' Density limits read in ',TRIM(cf_rholev)
+     DO jiso=1,npiso
+        READ(numin,*) rho_lev(jiso)
+        PRINT *,rho_lev(jiso)
+     END DO
+     CLOSE(numin)
 
-  npiglo = getdim(cf_rho, cn_x)
-  npjglo = getdim(cf_rho, cn_y)
-  npk    = getdim(cf_rho, cn_z)
+     npiglo = getdim(cf_rho, cn_x)
+     npjglo = getdim(cf_rho, cn_y)
+     npk    = getdim(cf_rho, cn_z)
 
-  zspvalz=getspval(cf_rho, cn_vosigma0)
+     zspvalz=getspval(cf_rho, cn_vosigma0)
 
-  cf_in =  cf_lst(1)
-  IF ( chkfile ( cf_in) ) STOP ! missing file
+     cf_in =  cf_lst(1)
+     IF ( chkfile ( cf_in) ) STOP ! missing file
 
-  nvars=getnvar(cf_in )
-  ALLOCATE(cv_names(nvars), stypzvar(nvars))
+     nvars=getnvar(cf_in )
+     ALLOCATE(cv_names(nvars), stypzvar(nvars))
 
-  cv_names(:)=getvarname(cf_in,nvars,stypzvar)
+     cv_names(:)=getvarname(cf_in,nvars,stypzvar)
 
-  ALLOCATE( v3d(npiglo,npjglo,npk), dalpha(npiglo,npjglo,npiso), e3(npiglo,npjglo) )
-  ALLOCATE( dv2dint(npiglo,npjglo,2), v2d(npiglo,npjglo), zint(npiglo,npjglo,2)  )
-  ALLOCATE( h1d(npk) ,gdepw(npk) ,tmask(npiglo,npjglo), zdum(npiglo,npjglo) )
-  IF ( lfull ) ALLOCATE ( e31d(npk) )
+     ALLOCATE( v3d(npiglo,npjglo,npk), dalpha(npiglo,npjglo,npiso), e3(npiglo,npjglo) )
+     ALLOCATE( dv2dint(npiglo,npjglo,2), v2d(npiglo,npjglo), zint(npiglo,npjglo,2)  )
+     ALLOCATE( h1d(npk) ,gdepw(npk) ,tmask(npiglo,npjglo), zdum(npiglo,npjglo) )
+     IF ( lfull ) ALLOCATE ( e31d(npk) )
 
-  gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+     gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
 
-  IF (lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
+     IF (lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
 
-  h1d(:) = getvar1d(cf_rho, cn_vdeptht, npk)
+     h1d(:) = getvar1d(cf_rho, cn_vdeptht, npk)
 
-  ! Note, if working with vertical slabs, one may avoid 3D array, but may be slow ...
-  tmask=1.
-  DO jk=1,npk
-     v3d(:,:,jk) = getvar(cf_rho, cn_vosigma0, jk, npiglo, npjglo)
-     IF ( jk == 1 ) THEN
-        WHERE (v3d(:,:,jk) == zspvalz ) tmask=0.
-     ENDIF
-  END DO
+     ! Note, if working with vertical slabs, one may avoid 3D array, but may be slow ...
+     tmask=1.
+     DO jk=1,npk
+        v3d(:,:,jk) = getvar(cf_rho, cn_vosigma0, jk, npiglo, npjglo)
+        IF ( jk == 1 ) THEN
+           WHERE (v3d(:,:,jk) == zspvalz ) tmask=0.
+        ENDIF
+     END DO
 
-  !! ** Compute interpolation coefficients as well as the level used
-  !!    to interpolate between
-  DO ji=1,npiglo
-     DO jj = 1, npjglo
-        ijk = 1
-        DO jiso=1,npiso
-           !  Assume that rho (z) is increasing downward (no inversion)
-           !     Caution with sigma0 at great depth !
-           DO WHILE (rho_lev(jiso) >=  v3d(ji,jj,ijk) .AND. ijk <= npk &
-                &                .AND. v3d(ji,jj,ijk) /=  zspvalz )
-              ijk = ijk+1
+     !! ** Compute interpolation coefficients as well as the level used
+     !!    to interpolate between
+     DO ji=1,npiglo
+        DO jj = 1, npjglo
+           ijk = 1
+           DO jiso=1,npiso
+              !  Assume that rho (z) is increasing downward (no inversion)
+              !     Caution with sigma0 at great depth !
+              DO WHILE (rho_lev(jiso) >=  v3d(ji,jj,ijk) .AND. ijk <= npk &
+                   &                .AND. v3d(ji,jj,ijk) /=  zspvalz )
+                 ijk = ijk+1
+              END DO
+              ijk = ijk-1
+              ik0 = ijk
+              IF (ijk == 0) THEN
+                 ijk = 1
+                 dalpha(ji,jj,jiso) = 0.d0
+              ELSE IF (v3d(ji,jj,ijk+1) == zspvalz ) THEN
+                 ik0 = 0
+                 dalpha(ji,jj,jiso) = 0.d0
+              ELSE 
+                 ! ... dalpha is always in [0,1]. Adding ik0 ( >=1 ) for saving space for ik0
+                 dalpha(ji,jj,jiso)= (rho_lev(jiso)-v3d(ji,jj,ijk))/(v3d(ji,jj,ijk+1)-v3d(ji,jj,ijk)) + ik0
+              ENDIF
            END DO
-           ijk = ijk-1
-           ik0 = ijk
-           IF (ijk == 0) THEN
-              ijk = 1
-              dalpha(ji,jj,jiso) = 0.d0
-           ELSE IF (v3d(ji,jj,ijk+1) == zspvalz ) THEN
-              ik0 = 0
-              dalpha(ji,jj,jiso) = 0.d0
-           ELSE 
-              ! ... dalpha is always in [0,1]. Adding ik0 ( >=1 ) for saving space for ik0
-              dalpha(ji,jj,jiso)= (rho_lev(jiso)-v3d(ji,jj,ijk))/(v3d(ji,jj,ijk+1)-v3d(ji,jj,ijk)) + ik0
-           ENDIF
         END DO
      END DO
-  END DO
 
-  ! Create output variables
-  CALL CreateOutputVar
+     ! Create output variables
+     CALL CreateOutputVar
 
-  !! ** Loop on the scalar files to project on choosen isopycnics surfaces
-  DO jfich=1, nfiles
-     cf_in = cf_lst( jfich)
-     IF ( chkfile (cf_in) ) STOP ! missing file
-     PRINT *,'working with ', TRIM(cf_in)
-     ! JMM : not obvious to find file wirh correct e3t
-     IF (lg_vvl ) cn_fe3t = cf_rho
+     !! ** Loop on the scalar files to project on choosen isopycnics surfaces
+     DO jfich=1, nfiles
+        cf_in = cf_lst( jfich)
+        IF ( chkfile (cf_in) ) STOP ! missing file
+        PRINT *,'working with ', TRIM(cf_in)
+        ! JMM : not obvious to find file wirh correct e3t
+        IF (lg_vvl ) cn_fe3t = cf_rho
 
-     ! create output file
-     cf_out=TRIM(cf_in)//'.integr'
+        ! create output file
+        cf_out=TRIM(cf_in)//'.integr'
 
-     ! creation of output file is done within the file loop, but do not interfere with 
-     ! possible parameterization
-     ncout = create      (cf_out, cf_rho,  npiglo, npjglo, npiso                      , ld_nc4=lnc4 )
-     ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4 )
-     ierr  = putheadervar(ncout,  cf_rho,  npiglo, npjglo, npiso, pdep=rho_lev                      )
+        ! creation of output file is done within the file loop, but do not interfere with 
+        ! possible parameterization
+        ncout = create      (cf_out, cf_rho,  npiglo, npjglo, npiso                      , ld_nc4=lnc4 )
+        ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4 )
+        ierr  = putheadervar(ncout,  cf_rho,  npiglo, npjglo, npiso, pdep=rho_lev                      )
 
-     ! copy time arrays in output file
-     npt = getdim ( cf_in, cn_t)
-     ALLOCATE ( tim(npt) )
-     tim(:) = getvar1d(cf_in, cn_vtimec, npt     )
-     ierr   = putvar1d(ncout, tim,       npt, 'T')
-     DEALLOCATE ( tim )
+        ! copy time arrays in output file
+        npt = getdim ( cf_in, cn_t)
+        ALLOCATE ( tim(npt) )
+        tim(:) = getvar1d(cf_in, cn_vtimec, npt     )
+        ierr   = putvar1d(ncout, tim,       npt, 'T')
+        DEALLOCATE ( tim )
 
-     DO jt =1, npt
-        IF ( lg_vvl) THEN ; it=jt
-        ELSE              ; it=1
-        ENDIF
-        DO jk=1,npk
-           v2d(:,:) = getvar(cf_in, cv_in, jk, npiglo, npjglo, ktime = jt )
-           SELECT CASE ( ctype )
-           CASE ('T', 't' ) ; v3d(:,:,jk) = v2d(:,:)
-           CASE ('U','u'  ) ; 
-              DO jj=1,npjglo
-                 DO ji=2, npiglo
-                    v3d(ji,jj,jk)=0.5*( v2d(ji,jj) + v2d(ji-1,jj) )  ! put variable on T point
+        DO jt =1, npt
+           IF ( lg_vvl) THEN ; it=jt
+           ELSE              ; it=1
+           ENDIF
+           DO jk=1,npk
+              v2d(:,:) = getvar(cf_in, cv_in, jk, npiglo, npjglo, ktime = jt )
+              SELECT CASE ( ctype )
+              CASE ('T', 't' ) ; v3d(:,:,jk) = v2d(:,:)
+              CASE ('U','u'  ) ; 
+                 DO jj=1,npjglo
+                    DO ji=2, npiglo
+                       v3d(ji,jj,jk)=0.5*( v2d(ji,jj) + v2d(ji-1,jj) )  ! put variable on T point
+                    END DO
                  END DO
-              END DO
-           CASE ('V','v' )
-              DO jj=2,npjglo
-                 DO ji=1, npiglo
-                    v3d(ji,jj,jk)=0.5*( v2d(ji,jj) + v2d(ji,jj-1) )  ! put variable on T point
+              CASE ('V','v' )
+                 DO jj=2,npjglo
+                    DO ji=1, npiglo
+                       v3d(ji,jj,jk)=0.5*( v2d(ji,jj) + v2d(ji,jj-1) )  ! put variable on T point
+                    END DO
                  END DO
-              END DO
-           CASE('W','w' )
-              v3d(:,:,jk) = v2d(:,:)
-              v2d(:,:) = getvar(cf_in, cv_in, jk+1, npiglo, npjglo, ktime = jt )
-              v3d(:,:,jk) = 0.5 * ( v3d(:,:,jk) + v2d(:,:) )
-           CASE('F','f' )
-              DO jj = 2, npjglo
-                 DO ji = 2, npiglo
-                    v3d(:,:,jk) = 0.25*( v2d(ji,jj) + v2d( ji, jj-1) + v2d (ji-1,jj-1) + v2d(ji-1, jj) )
+              CASE('W','w' )
+                 v3d(:,:,jk) = v2d(:,:)
+                 v2d(:,:) = getvar(cf_in, cv_in, jk+1, npiglo, npjglo, ktime = jt )
+                 v3d(:,:,jk) = 0.5 * ( v3d(:,:,jk) + v2d(:,:) )
+              CASE('F','f' )
+                 DO jj = 2, npjglo
+                    DO ji = 2, npiglo
+                       v3d(:,:,jk) = 0.25*( v2d(ji,jj) + v2d( ji, jj-1) + v2d (ji-1,jj-1) + v2d(ji-1, jj) )
+                    END DO
                  END DO
-              END DO
-           END SELECT
-        END DO
-
-        ! Compute integral from surface to isopycnal
-        DO jiso=1,npiso
-           ! determine isopycnal surface
-           DO ji=1,npiglo
-              DO jj=1,npjglo
-                 ! ik0 is retrieved from dalpha, taking the integer part.
-                 ik0=INT(dalpha(ji,jj,jiso)) ; dalpha(ji,jj,jiso) =  dalpha(ji,jj,jiso) - ik0
-                 IF (ik0 /= 0) THEN
-                    zint (ji,jj,1)=dalpha(ji,jj,jiso)*h1d(ik0+1) + (1.d0-dalpha(ji,jj,jiso))*h1d(ik0)
-                 ELSE 
-                    zint  (ji,jj,1)=0.  !zspval  
-                 ENDIF
-              END DO
+              END SELECT
            END DO
-           ! integrate from jk=1 to zint
-           dv2dint(:,:,1) = 0.d0
 
-           DO jk=1,npk-1
-              ! get metrixs at level jk
-              IF ( lfull ) THEN  ; e3(:,:) = e31d(jk)
-              ELSE               ; e3(:,:) = getvar(cn_fe3t, cn_ve3t, jk,npiglo,npjglo, ktime=it, ldiom=.NOT.lg_vvl )
-              ENDIF
-
+           ! Compute integral from surface to isopycnal
+           DO jiso=1,npiso
+              ! determine isopycnal surface
               DO ji=1,npiglo
                  DO jj=1,npjglo
-                    IF ( gdepw(jk)+e3(ji,jj) < zint(ji,jj,1) ) THEN  ! full cell
-                       dv2dint(ji,jj,1)=dv2dint(ji,jj,1) + e3(ji,jj)* v3d(ji,jj,jk)
-                    ELSE IF (( zint(ji,jj,1) <= gdepw(jk)+e3(ji,jj) ) .AND. (zint(ji,jj,1) > gdepw(jk)) ) THEN
-                       dv2dint(ji,jj,1)=dv2dint(ji,jj,1)+ (zint(ji,jj,1) - gdepw(jk) )* v3d(ji,jj,jk)
-                    ELSE   ! below the isopycnal 
-                       ! do nothing for this i j point
+                    ! ik0 is retrieved from dalpha, taking the integer part.
+                    ik0=INT(dalpha(ji,jj,jiso)) ; dalpha(ji,jj,jiso) =  dalpha(ji,jj,jiso) - ik0
+                    IF (ik0 /= 0) THEN
+                       zint (ji,jj,1)=dalpha(ji,jj,jiso)*h1d(ik0+1) + (1.d0-dalpha(ji,jj,jiso))*h1d(ik0)
+                    ELSE 
+                       zint  (ji,jj,1)=0.  !zspval  
                     ENDIF
                  END DO
               END DO
-           END DO   ! end on vertical integral for isopynal jiso
+              ! integrate from jk=1 to zint
+              dv2dint(:,:,1) = 0.d0
 
-           zdum=zint(:,:,1)
+              DO jk=1,npk-1
+                 ! get metrixs at level jk
+                 IF ( lfull ) THEN  ; e3(:,:) = e31d(jk)
+                 ELSE               ; e3(:,:) = getvar(cn_fe3t, cn_ve3t, jk,npiglo,npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+                 ENDIF
 
-           WHERE (tmask == 0. ) zdum=zspval
-           ierr = putvar(ncout,id_varout(3), zdum, jiso, npiglo, npjglo, ktime=jt )
+                 DO ji=1,npiglo
+                    DO jj=1,npjglo
+                       IF ( gdepw(jk)+e3(ji,jj) < zint(ji,jj,1) ) THEN  ! full cell
+                          dv2dint(ji,jj,1)=dv2dint(ji,jj,1) + e3(ji,jj)* v3d(ji,jj,jk)
+                       ELSE IF (( zint(ji,jj,1) <= gdepw(jk)+e3(ji,jj) ) .AND. (zint(ji,jj,1) > gdepw(jk)) ) THEN
+                          dv2dint(ji,jj,1)=dv2dint(ji,jj,1)+ (zint(ji,jj,1) - gdepw(jk) )* v3d(ji,jj,jk)
+                       ELSE   ! below the isopycnal 
+                          ! do nothing for this i j point
+                       ENDIF
+                    END DO
+                 END DO
+              END DO   ! end on vertical integral for isopynal jiso
 
-           IF (jiso > 1  ) THEN  ! compute the difference ie the inventory in the layer between 2 isopycnals
-              zdum=dv2dint(:,:,1) - dv2dint(:,:,2) ; WHERE ((tmask == 0.)  .OR. (zdum < 0 ) ) zdum = zspval
-              ierr = putvar(ncout, id_varout(1), zdum, jiso-1, npiglo, npjglo, ktime=jt)
+              zdum=zint(:,:,1)
 
-              zdum=zint  (:,:,1) - zint  (:,:,2) ; WHERE ((tmask == 0.)  .OR. (zdum < 0 ) ) zdum = zspval
-              ierr = putvar(ncout, id_varout(2), zdum, jiso-1, npiglo, npjglo, ktime=jt)
+              WHERE (tmask == 0. ) zdum=zspval
+              ierr = putvar(ncout,id_varout(3), zdum, jiso, npiglo, npjglo, ktime=jt )
 
-              WHERE ( zdum /= zspval .AND. zdum /= 0.)  ; zdum=(dv2dint(:,:,1) - dv2dint(:,:,2))/ zdum
-           ELSEWHERE                                 ; zdum=zspval
-           ENDWHERE
+              IF (jiso > 1  ) THEN  ! compute the difference ie the inventory in the layer between 2 isopycnals
+                 zdum=dv2dint(:,:,1) - dv2dint(:,:,2) ; WHERE ((tmask == 0.)  .OR. (zdum < 0 ) ) zdum = zspval
+                 ierr = putvar(ncout, id_varout(1), zdum, jiso-1, npiglo, npjglo, ktime=jt)
 
-           ierr = putvar(ncout, id_varout(4), zdum, jiso-1, npiglo, npjglo, ktime=jt)
-        ENDIF
-        dv2dint(:,:,2) = dv2dint(:,:,1)
-        zint   (:,:,2) = zint   (:,:,1)
+                 zdum=zint  (:,:,1) - zint  (:,:,2) ; WHERE ((tmask == 0.)  .OR. (zdum < 0 ) ) zdum = zspval
+                 ierr = putvar(ncout, id_varout(2), zdum, jiso-1, npiglo, npjglo, ktime=jt)
 
+                 WHERE ( zdum /= zspval .AND. zdum /= 0.)  ; zdum=(dv2dint(:,:,1) - dv2dint(:,:,2))/ zdum
+              ELSEWHERE                                 ; zdum=zspval
+              ENDWHERE
+
+              ierr = putvar(ncout, id_varout(4), zdum, jiso-1, npiglo, npjglo, ktime=jt)
+           ENDIF
+           dv2dint(:,:,2) = dv2dint(:,:,1)
+           zint   (:,:,2) = zint   (:,:,1)
+
+        END DO
      END DO
-  END DO
-  ierr = closeout(ncout)
-END DO  ! loop on scalar files
-PRINT *,' integral between isopycnals completed successfully'
+     ierr = closeout(ncout)
+  END DO  ! loop on scalar files
+  PRINT *,' integral between isopycnals completed successfully'
 
 CONTAINS
 
-SUBROUTINE CreateOutputVar
-  !!---------------------------------------------------------------------
-  !!                  ***  ROUTINE CreateOutputVar  ***
-  !!
-  !! ** Purpose :  Create netcdf output  variables
-  !!
-  !! ** Method  :  Use stypvar global description of variables
-  !!
-  !!----------------------------------------------------------------------
-  ! define header of all files
- ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso ; ipk(4)=npiso-1
+  SUBROUTINE CreateOutputVar
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutputVar  ***
+    !!
+    !! ** Purpose :  Create netcdf output  variables
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define header of all files
+    ipk(1)=npiso-1 ; ipk(2)=npiso-1 ; ipk(3)=npiso ; ipk(4)=npiso-1
 
- DO jvar=1,nvars
-    IF ( cv_in == stypzvar(jvar)%cname ) THEN 
-       stypvar(1)=stypzvar(jvar)
-       EXIT
-    ENDIF
- END DO
- ! save original long name for further process
- cldum = TRIM(stypvar(1)%clong_name)
- cluni = TRIM(stypvar(1)%cunits)
+    DO jvar=1,nvars
+       IF ( cv_in == stypzvar(jvar)%cname ) THEN 
+          stypvar(1)=stypzvar(jvar)
+          EXIT
+       ENDIF
+    END DO
+    ! save original long name for further process
+    cldum = TRIM(stypvar(1)%clong_name)
+    cluni = TRIM(stypvar(1)%cunits)
 
- stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
- stypvar(1)%cname             = 'inv'//TRIM(cv_in)
- stypvar(1)%clong_name        = TRIM(cldum)//' integrated on sigma bin'
- stypvar(1)%cshort_name       = stypvar(1)%cname
- stypvar(1)%cunits            = TRIM(cluni)//'.m'
- stypvar(1)%rmissing_value    = zspval
- stypvar(1)%caxis             = 'TRYX'
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'inv'//TRIM(cv_in)
+    stypvar(1)%clong_name        = TRIM(cldum)//' integrated on sigma bin'
+    stypvar(1)%cshort_name       = stypvar(1)%cname
+    stypvar(1)%cunits            = TRIM(cluni)//'.m'
+    stypvar(1)%rmissing_value    = zspval
+    stypvar(1)%caxis             = 'TRYX'
 
- stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
- stypvar(2)%cname             = TRIM(cn_isothick)
- stypvar(2)%cunits            = 'm'
- stypvar(2)%rmissing_value    = zspval
- stypvar(2)%valid_min         = 0.
- stypvar(2)%valid_max         = 7000.
- stypvar(2)%clong_name        = 'Thickness_of_Isopycnals'
- stypvar(2)%cshort_name       = TRIM(cn_isothick)
- stypvar(2)%conline_operation = 'N/A'
- stypvar(2)%caxis             = 'TRYX'
+    stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%cname             = TRIM(cn_isothick)
+    stypvar(2)%cunits            = 'm'
+    stypvar(2)%rmissing_value    = zspval
+    stypvar(2)%valid_min         = 0.
+    stypvar(2)%valid_max         = 7000.
+    stypvar(2)%clong_name        = 'Thickness_of_Isopycnals'
+    stypvar(2)%cshort_name       = TRIM(cn_isothick)
+    stypvar(2)%conline_operation = 'N/A'
+    stypvar(2)%caxis             = 'TRYX'
 
- stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
- stypvar(3)%cname             = TRIM(cn_vodepiso)
- stypvar(3)%cunits            = 'm'
- stypvar(3)%rmissing_value    = zspval
- stypvar(3)%valid_min         = 0.
- stypvar(3)%valid_max         = 7000.
- stypvar(3)%clong_name        = 'Depth_of_Isopycnals'
- stypvar(3)%cshort_name       = TRIM(cn_vodepiso)
- stypvar(3)%conline_operation = 'N/A'
- stypvar(3)%caxis             = 'TRYX'
+    stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(3)%cname             = TRIM(cn_vodepiso)
+    stypvar(3)%cunits            = 'm'
+    stypvar(3)%rmissing_value    = zspval
+    stypvar(3)%valid_min         = 0.
+    stypvar(3)%valid_max         = 7000.
+    stypvar(3)%clong_name        = 'Depth_of_Isopycnals'
+    stypvar(3)%cshort_name       = TRIM(cn_vodepiso)
+    stypvar(3)%conline_operation = 'N/A'
+    stypvar(3)%caxis             = 'TRYX'
 
- stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
- stypvar(4)%cname             = 'mean'//TRIM(cv_in)
- stypvar(4)%cunits            = TRIM(cluni)
- stypvar(4)%rmissing_value    = zspval
- stypvar(4)%valid_min         = stypvar(1)%valid_min
- stypvar(4)%valid_max         = stypvar(1)%valid_min
- stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
- stypvar(4)%cshort_name       = stypvar(4)%cname
- stypvar(4)%conline_operation = 'N/A'
- stypvar(4)%caxis             = 'TRYX'
+    stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(4)%cname             = 'mean'//TRIM(cv_in)
+    stypvar(4)%cunits            = TRIM(cluni)
+    stypvar(4)%rmissing_value    = zspval
+    stypvar(4)%valid_min         = stypvar(1)%valid_min
+    stypvar(4)%valid_max         = stypvar(1)%valid_min
+    stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
+    stypvar(4)%cshort_name       = stypvar(4)%cname
+    stypvar(4)%conline_operation = 'N/A'
+    stypvar(4)%caxis             = 'TRYX'
 
-END SUBROUTINE CreateOutputVar
+  END SUBROUTINE CreateOutputVar
 
-SUBROUTINE GetFileList
-  !!---------------------------------------------------------------------
-  !!                  ***  ROUTINE GetFileList  ***
-  !!
-  !! ** Purpose :  Set up a file list given on the command line as 
-  !!               blank separated list
-  !!
-  !! ** Method  :  Scan the command line until a '-' is found
-  !!----------------------------------------------------------------------
- INTEGER (KIND=4)  :: icur 
- !!----------------------------------------------------------------------
- !!
- nfiles=0
- ! need to read a list of file ( number unknow ) 
- ! loop on argument till a '-' is found as first char
- icur=ijarg                          ! save current position of argument number
- DO ji = icur, narg                  ! scan arguments till - found
-    CALL getarg ( ji, cldum )
-    IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
-    ELSE                          ; EXIT
-    ENDIF
- ENDDO
- ALLOCATE (cf_lst(nfiles) )
- DO ji = icur, icur + nfiles -1
-    CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
- END DO
-END SUBROUTINE GetFileList
+  SUBROUTINE GetFileList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetFileList  ***
+    !!
+    !! ** Purpose :  Set up a file list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: icur 
+    !!----------------------------------------------------------------------
+    !!
+    nfiles=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (cf_lst(nfiles) )
+    DO ji = icur, icur + nfiles -1
+       CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetFileList
 
-END  PROGRAM
+END  PROGRAM cdfsigintegr
