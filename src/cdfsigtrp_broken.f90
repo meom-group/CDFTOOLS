@@ -34,6 +34,7 @@ PROGRAM cdfsigtrp_broken
   !! $Id: cdfsigtrp.f90 699 2013-06-24 14:17:21Z molines $
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -42,7 +43,7 @@ PROGRAM cdfsigtrp_broken
   INTEGER(KIND=4)                               :: nbins                ! number of density classes
   INTEGER(KIND=4)                               :: ipos                 ! working variable
   INTEGER(KIND=4)                               :: narg, iargc          ! command line 
-  INTEGER(KIND=4)                               :: ijarg, ireq          ! command line
+  INTEGER(KIND=4)                               :: ijarg                ! command line
   INTEGER(KIND=4)                               :: npk, nk              ! vertical size, number of wet layers
   INTEGER(KIND=4)                               :: numout=11            ! ascii output
   INTEGER(KIND=4)                               :: nsection             ! number of sections (overall)
@@ -116,7 +117,7 @@ PROGRAM cdfsigtrp_broken
 
   narg= iargc()
   IF ( narg < 4 ) THEN
-     PRINT *,' usage :  cdfsigtrp_broken TSV-file sigma_min sigma_max nbins ...'
+     PRINT *,' usage :  cdfsigtrp_broken -f BRK-file -bin sigma_min sigma_max nbins ...'
      PRINT *,'              ... [-print ] [-full ] [ -refdep ref_depth] ...'
      PRINT *,'              ... [-neutral ] [-section file ] [-temp ]'
      PRINT *,'      '
@@ -141,26 +142,28 @@ PROGRAM cdfsigtrp_broken
      PRINT *,'       sigma_min, sigma_max as temperatures.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       TSV-file : netcdf_broken_line file with temperature, salinity' 
-     PRINT *,'       and the normal velocity through the section'
-     PRINT *,'       sigma_min : minimum density for binning'
-     PRINT *,'       sigma_max : maximum density for binning'
-     PRINT *,'       nbins : number of bins. This will fix the bin ''width'' '
+     PRINT *,'       -f BRK-file : netcdf_broken_line file with temperature, salinity' 
+     PRINT *,'                   and the normal velocity through the section + some '
+     PRINT *,'                   usefull metrics.'
+     PRINT *,'       -bin  sigma_min sigma_max nbins : 3 values follow -bin switch :'
+     PRINT *,'               sigma_min : minimum density for binning'
+     PRINT *,'               sigma_max : maximum density for binning'
+     PRINT *,'               nbins : number of bins. This will fix the bin ''width'' '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -full ] : for full step configuration' 
-     PRINT *,'       [ -ncdf ] : produce extra netcdf output file which shows the details'
+     PRINT *,'       [-full ] : for full step configuration' 
+     PRINT *,'       [-ncdf ] : produce extra netcdf output file which shows the details'
      PRINT *,'               of the sections (normal velocity, density, temperature, '
      PRINT *,'               salinity, transports, isopycnal depths. '
-     PRINT *,'       [ -print ]: write the binned transports on standard output, for each'
+     PRINT *,'       [-print ]: write the binned transports on standard output, for each'
      PRINT *,'               sections.'
-     PRINT *,'       [ -refdep ref_depth ]: give a reference depths for the computation of'
+     PRINT *,'       [-refdep ref_depth ]: give a reference depths for the computation of'
      PRINT *,'               potential density. Sigma_min, sigma_max must be adapted '
      PRINT *,'               accordingly.'
-     PRINT *,'       [ -neutral ]: use neutral density instead of potential density '
-     PRINT *,'       [ -section file] : give the name of section file.'
+     PRINT *,'       [-neutral ]: use neutral density instead of potential density '
+     PRINT *,'       [-section file] : give the name of section file.'
      PRINT *,'               Default is ', TRIM(cf_section)
-     PRINT *,'       [ -temp ] : use temperature instead of density for binning'
+     PRINT *,'       [-temp ] : use temperature instead of density for binning'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fzgr),' and ', TRIM(cf_section)
@@ -183,10 +186,15 @@ PROGRAM cdfsigtrp_broken
   ENDIF
 
   ! browse command line
-  ijarg = 1 ; ireq = 0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-f'      ) ; CALL getarg(ijarg, cf_brfi    ) ; ijarg=ijarg+1 
+     CASE ( '-bin'    ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) dsigma_min 
+                        ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) dsigma_max
+                        ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins
+     ! options
      CASE ( '-full'   ) ; lfull  = .TRUE.
      CASE ( '-ncdf'   ) ; lncdf  = .TRUE.
      CASE ( '-print'  ) ; lprint = .TRUE.
@@ -194,18 +202,10 @@ PROGRAM cdfsigtrp_broken
      CASE ( '-refdep' ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) refdep
      CASE ( '-section') ; CALL getarg(ijarg, cf_section ) ; ijarg=ijarg+1 
      CASE ( '-neutral') ; lneutral = .TRUE.
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE ( ireq)
-        CASE ( 1 ) ; cf_brfi = cldum
-        CASE ( 2 ) ; READ(cldum,*) dsigma_min
-        CASE ( 3 ) ; READ(cldum,*) dsigma_max
-        CASE ( 4 ) ; READ(cldum,*) nbins
-        CASE DEFAULT 
-           PRINT *,' Too many arguments ' ; STOP
-        END SELECT
+     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP
      END SELECT
   END DO
+
   ! check for file existence
   lchk = lchk .OR. chkfile( cn_fzgr    )
   lchk = lchk .OR. chkfile( cf_section )
@@ -793,8 +793,6 @@ CONTAINS
     DO  jbin =1, nbins
        PRINT  cfmt_9003, dsigma_lev(jbin),(dwtrpbin(ji,jbin)/1.d6,ji=1,npts), dtrpbin(ksec,jbin)/1.d6
     END DO
-
-
 
   END SUBROUTINE print_out
 

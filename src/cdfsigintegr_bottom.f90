@@ -25,6 +25,7 @@ PROGRAM cdfsigintegr_bottom
   !! $Id: cdfsigintegr.f90 657 2013-05-21 16:36:14Z molines $
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class integration
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
