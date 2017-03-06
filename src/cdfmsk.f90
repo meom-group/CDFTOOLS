@@ -14,6 +14,7 @@ PROGRAM cdfmsk
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_informations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -47,10 +48,6 @@ PROGRAM cdfmsk
      PRINT *,'       Standard output'
      STOP
   ENDIF
-  IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmsk  maskfile '
-     STOP
-  ENDIF
   
   CALL getarg (1, cf_msk)
 
@@ -64,7 +61,7 @@ PROGRAM cdfmsk
 
   npoint = 0
   DO jk=1, npk
-     zmask(:,:) = getvar(cf_msk, 'tmask', jk ,npiglo, npjglo)
+     zmask(:,:) = getvar(cf_msk, cn_tmask, jk ,npiglo, npjglo)
      zss        = SUM(zmask)
      npoint     = npoint + zss
   END DO  

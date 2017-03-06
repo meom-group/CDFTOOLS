@@ -20,6 +20,7 @@ PROGRAM cdfmppini
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_informations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   ! REM : some of the doctor rules are not followed because we want to use

@@ -105,7 +105,7 @@ PROGRAM cdfhflx
     ! options
     CASE ( '-o' ) ; CALL getarg (1, cf_outnc) ; ijarg=ijarg+1
     CASE ( '-ot') ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
-    CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.'
+    CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.' ; STOP
     END SELECT
   ENDDO
 

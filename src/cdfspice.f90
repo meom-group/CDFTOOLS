@@ -31,6 +31,7 @@ PROGRAM cdfspice
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class Equation_of_state
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -115,7 +116,7 @@ PROGRAM cdfspice
      CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
      CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,'ERROR : ',TRIM(cldum),' : unknown option.'
+     CASE DEFAULT    ; PRINT *,'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -154,7 +155,7 @@ PROGRAM cdfspice
         zsal( :,:) = getvar(cf_tfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
 
         WHERE(zsal == zspval ) zmask = 0.e0
-     
+
         dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo )
         ierr      = putvar( ncout, id_varout(1), REAL(dspi*zmask), jk, npiglo, npjglo, ktime=jt)
 
@@ -173,25 +174,25 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-  ipk(:)                       = npkk
-  stypvar(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
-  stypvar(1)%cname             = 'vospice'
-  stypvar(1)%cunits            = 'kg/m3'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = -300.
-  stypvar(1)%valid_max         = 300.
-  stypvar(1)%clong_name        = 'spiciness'
-  stypvar(1)%cshort_name       = 'vospice'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
+    ipk(:)                       = npkk
+    stypvar(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
+    stypvar(1)%cname             = 'vospice'
+    stypvar(1)%cunits            = 'kg/m3'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = -300.
+    stypvar(1)%valid_max         = 300.
+    stypvar(1)%clong_name        = 'spiciness'
+    stypvar(1)%cshort_name       = 'vospice'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk,       ld_nc4=lnc4     )
-  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, ld_nc4=lnc4     )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+    ! create output fileset
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk,       ld_nc4=lnc4     )
+    ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, ld_nc4=lnc4     )
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

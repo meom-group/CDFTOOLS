@@ -19,6 +19,7 @@ PROGRAM cdfsiginsitu
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class Equation_of_state
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   INTEGER(KIND=4)                           :: jk, jt             ! dummy loop index
@@ -60,8 +61,6 @@ PROGRAM cdfsiginsitu
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf file with temperature and salinity.' 
-     PRINT *,'         (for backward compatibility, -t can be ommited when T-file is the only'
-     PRINT *,'         argument.)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-sal SAL-name] : name of salinity variable'
@@ -74,7 +73,7 @@ PROGRAM cdfsiginsitu
      PRINT *,'        none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) ,'or the file name specified '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' or the file name specified '
      PRINT *,'                   with -o option'
      PRINT *,'         variables : vosigmainsitu (kg/m3 -1000 )'
      PRINT *,'      '
@@ -84,9 +83,9 @@ PROGRAM cdfsiginsitu
      STOP
   ENDIF
 
-  ijarg=1
   cv_sal=cn_vosaline
   cv_tem=cn_votemper
+  ijarg=1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
@@ -96,13 +95,7 @@ PROGRAM cdfsiginsitu
      CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
      CASE ( '-dep' ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) dep 
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT
-      IF ( narg == 1 ) THEN
-         cf_tfil = cldum
-      ELSE
-         PRINT *,' option ',TRIM(cldum),' not understood'
-         STOP
-      ENDIF
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -112,24 +105,10 @@ PROGRAM cdfsiginsitu
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
-  
 
-  IF ( npk == 0 ) THEN
-   npkk = 1
-  ELSE
-   npkk = npk  ! all variables (input and output are 3D)
+  IF ( npk == 0 ) THEN ; npkk = 1
+  ELSE                 ; npkk = npk  ! all variables (input and output are 3D)
   ENDIF
-  ipk(:) = npkk
-  stypvar(1)%cname             = 'vosigmainsitu'
-  stypvar(1)%cunits            = 'kg/m3'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = 0.001
-  stypvar(1)%valid_max         = 45.
-  stypvar(1)%clong_name        = 'in situ density'
-  stypvar(1)%cshort_name       = 'vosigmainsitu'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
-  stypvar(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -140,20 +119,12 @@ PROGRAM cdfsiginsitu
   ALLOCATE (zsigi(npiglo,npjglo), zmask(npiglo,npjglo) )
   ALLOCATE (gdept(npkk), tim(npt)                       )
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk,       ld_nc4=lnc4 )
-  ierr  = createvar   (ncout,  stypvar,  1,      ipk,    id_varout, ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
-
+  CALL CreateOutput
   zspval = getatt(cf_tfil, cv_sal, 'missing_value')
 
-  IF ( npk == 0 ) THEN
-    gdept(:)= dep
-  ELSE
-    gdept = getvar1d(cf_tfil, cn_vdeptht, npk    )
+  IF ( npk == 0 ) THEN ; gdept(:)= dep
+  ELSE                 ; gdept = getvar1d(cf_tfil, cn_vdeptht, npk    )
   ENDIF
-  tim   = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr  = putvar1d(ncout,  tim,        npt, 'T')
 
   DO jt = 1, npt
      PRINT *,'time: ',jt
@@ -173,5 +144,38 @@ PROGRAM cdfsiginsitu
   END DO  ! loop on time
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(:) = npkk
+    stypvar(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
+    stypvar(1)%cname             = 'vosigmainsitu'
+    stypvar(1)%cunits            = 'kg/m3'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = 0.001
+    stypvar(1)%valid_max         = 45.
+    stypvar(1)%clong_name        = 'in situ density'
+    stypvar(1)%cshort_name       = 'vosigmainsitu'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk,       ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar,  1,      ipk,    id_varout, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
+
+    tim   = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,  tim,        npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfsiginsitu

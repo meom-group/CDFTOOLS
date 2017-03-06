@@ -19,6 +19,7 @@ PROGRAM cdfisf_forcing
   !! $Id$
   !! Copyright (c) 2010, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class ice_shelf_processing
   !!-----------------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -56,7 +57,7 @@ PROGRAM cdfisf_forcing
   CHARACTER(LEN=256)                            :: cv_pat='sowflisf'  ! pattern variable name
   CHARACTER(LEN=256)                            :: cv_pool='isfpoolmask'! pattern variable name
   CHARACTER(LEN=256)                            :: cv_fill            ! isf index variable in cf_fill
-  CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
+  CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 
@@ -108,8 +109,8 @@ PROGRAM cdfisf_forcing
 
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-     CALL getarg(ijarg, cdum ) ; ijarg = ijarg + 1
-     SELECT CASE ( cdum)
+     CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
+     SELECT CASE ( cldum)
      CASE ( '-f' ) ; CALL getarg(ijarg, cf_fill    ) ; ijarg = ijarg + 1
      CASE ( '-v' ) ; CALL getarg(ijarg, cv_fill    ) ; ijarg = ijarg + 1
      CASE ( '-l' ) ; CALL getarg(ijarg, cf_isflist ) ; ijarg = ijarg + 1
@@ -118,10 +119,8 @@ PROGRAM cdfisf_forcing
      CASE ( '-vp') ; CALL getarg(ijarg, cv_pat     ) ; ijarg = ijarg + 1
      CASE ( '-m' ) ; CALL getarg(ijarg, cf_pool    ) ; ijarg = ijarg + 1
      CASE ( '-vm') ; CALL getarg(ijarg, cv_pool    ) ; ijarg = ijarg + 1
-     CASE ('-nc4') ; lnc4=.TRUE.
-     CASE DEFAULT
-        PRINT *, ' Option ', TRIM(cdum),' not understood'
-        STOP
+     CASE ('-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -161,9 +160,9 @@ PROGRAM cdfisf_forcing
   OPEN(unit=iunit, file=cf_isflist, form='formatted', status='old')
   ! get number of isf
   nisf = 0
-  cdum='XXX'
-  DO WHILE ( TRIM(cdum) /= 'EOF')
-     READ(iunit,*) cdum
+  cldum='XXX'
+  DO WHILE ( TRIM(cldum) /= 'EOF')
+     READ(iunit,*) cldum
      nisf=nisf+1
   END DO
   REWIND(iunit)
@@ -188,7 +187,7 @@ PROGRAM cdfisf_forcing
      isfindex_wk = isfindex_wk * ipoolmsk
 
      ! read ice shelf data
-     READ(iunit,*) ifill,cdum,rlon, rlat, iiseed, ijseed ,rdraftmin, rdraftmax, dfwf
+     READ(iunit,*) ifill,cldum,rlon, rlat, iiseed, ijseed ,rdraftmin, rdraftmax, dfwf
 
      ! convertion of total ice shelf melting from Gt/y -> kg/s
      dl_fwf = dfwf * 1.d9 * 1.d3 / 86400.d0 / 365.d0
@@ -230,6 +229,7 @@ CONTAINS
     !! ** Method  :  Use global variables, defined in mail 
     !!----------------------------------------------------------------------
     ! define new variables for output
+    ipk(1) = 1  !  2D
     stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
     stypvar(1)%cname             = 'sofwfisf'
     stypvar(1)%cunits            = 'kg/s'
@@ -241,7 +241,6 @@ CONTAINS
     stypvar(1)%conline_operation = 'N/A'
     stypvar(1)%caxis             = 'TYX'
     stypvar(1)%cprecision        = 'r8'
-    ipk(1) = 1  !  2D
 
     ! create output file taking the sizes in cf_fill
     ncout  = create      (cf_out, cf_fill, npiglo, npjglo, npk,   ld_nc4=lnc4 )

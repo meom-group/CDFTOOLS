@@ -52,7 +52,8 @@ PROGRAM cdftransport
    !! CDFTOOLS_3.0 , MEOM 2011
    !! $Id$
    !! Copyright (c) 2011, J.-M. Molines
-   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)  
+   !! @class transport
    !!----------------------------------------------------------------------
    IMPLICIT NONE
 

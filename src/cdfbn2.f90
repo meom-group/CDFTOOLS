@@ -23,6 +23,7 @@ PROGRAM cdfbn2
   !! $Id$
   !! Copyright (c) 2010, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class Equation_of_state
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -57,13 +58,13 @@ PROGRAM cdfbn2
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbn2  -f T-file [-W] [-full] [-o OUT-file] [-nc4] [-vvl]'
+     PRINT *,' usage : cdfbn2  -t T-file [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Brunt-Vaissala frequency (N2) according to' 
      PRINT *,'       temperature and salinity given in the input file.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f T-file : netcdf input gridT file for temperature and salinity.' 
+     PRINT *,'       -t T-file : netcdf input gridT file for temperature and salinity.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-W ] : keep N2 at W points. Default is to interpolate N2' 
@@ -83,6 +84,9 @@ PROGRAM cdfbn2
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option specified'
      PRINT *,'         variables : ', TRIM(cv_bn2)
+     PRINT *,'      '
+     PRINT *,'    SEE ALSO :'
+     PRINT *,'       cdfsig0, cdfsigi, cdfsiginsitu, cdfsigntr '
      STOP
   ENDIF
 
@@ -92,14 +96,15 @@ PROGRAM cdfbn2
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
-     CASE ( '-f'    ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-t'    ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
+     ! options
      CASE ( '-W'    ) ; l_w     = .TRUE.
      CASE ( '-full' ) ; lfull   = .TRUE. ; cglobal = 'full step computation'
      CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE ( '-nc4'  ) ; lnc4    = .TRUE.
      CASE ( '-vvl'  ) ; lg_vvl  = .TRUE. 
-                        CALL getarg(ijarg, cf_e3w ) ; ijarg = ijarg + 1
-     CASE DEFAULT   ; PRINT *,' Option not understood :', TRIM(cldum) ; STOP
+                      ; CALL getarg(ijarg, cf_e3w ) ; ijarg = ijarg + 1
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
@@ -161,10 +166,8 @@ PROGRAM cdfbn2
 
         IF ( .NOT. l_w ) THEN
            ! now put zn2 at T level (k )
-           WHERE ( zwk(:,:,idown) == 0 ) 
-              zn2(:,:) =  zwk(:,:,iup)
-           ELSEWHERE
-              zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
+           WHERE ( zwk(:,:,idown) == 0 ) ; zn2(:,:) =  zwk(:,:,iup)
+           ELSEWHERE                     ; zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
            END WHERE
         ELSE
            zn2(:,:) = zwk(:,:,iup)

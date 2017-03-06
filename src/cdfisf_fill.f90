@@ -18,11 +18,13 @@ PROGRAM cdfisf_fill
   !! $Id$
   !! Copyright (c) 2010, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class ice_shelf_processing
   !!-----------------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER(KIND=4)                               :: jisf               ! dummy loop integer 
   INTEGER(KIND=4)                               :: ierr, ipos         ! working integer
+  INTEGER(KIND=4)                               :: idep, idep_max     ! possible depth index, maximum
   INTEGER(KIND=4)                               :: narg, iargc, ijarg ! browsing command line
   INTEGER(KIND=4)                               :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt, nisf     ! size of the domain
@@ -45,7 +47,8 @@ PROGRAM cdfisf_fill
   CHARACTER(LEN=256)                            :: cf_out='fill.nc'   ! output file for average
   CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
   CHARACTER(LEN=256)                            :: cv_in              ! depth dimension name
-  CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
+  CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep            ! array of possible depth name (or 3rd dimension)
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
   LOGICAL                                       :: lnc4 = .FALSE.     ! flag for netcdf4 chunk and deflation
@@ -98,44 +101,39 @@ PROGRAM cdfisf_fill
 
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-     CALL getarg(ijarg, cdum ) ; ijarg = ijarg + 1 
-     SELECT CASE ( cdum)
+     CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 
+     SELECT CASE ( cldum)
      CASE ( '-f' ) ; CALL getarg(ijarg, cf_in      ) ; ijarg = ijarg + 1
      CASE ( '-v' ) ; CALL getarg(ijarg, cv_in      ) ; ijarg = ijarg + 1
      CASE ( '-l' ) ; CALL getarg(ijarg, cf_isflist ) ; ijarg = ijarg + 1
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out     ) ; ijarg = ijarg + 1
-     CASE ('-nc4') ; lnc4=.TRUE.
-     CASE DEFAULT
-        PRINT *, ' Option ', TRIM(cdum),' not understood'
-        STOP
+     CASE ('-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.'; STOP
      END SELECT
   ENDDO
 
   IF ( chkfile (cf_in) .OR. chkfile (cf_isflist)  ) STOP ! missing file
 
   ipos = INDEX(cf_isflist,'.')
-  cdum=cf_isflist(ipos+1:)
-  cf_isflistup=cf_isflist(1:ipos-1)//'_zmin_zmax.'//TRIM(cdum)
+  cldum=cf_isflist(ipos+1:)
+  cf_isflistup=cf_isflist(1:ipos-1)//'_zmin_zmax.'//TRIM(cldum)
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
-  npk    = getdim (cf_in, cn_z, cdtrue=cv_dep, kstatus=ierr)
 
-  IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_in, 'z',cdtrue=cv_dep,kstatus=ierr)
-     IF (ierr /= 0 ) THEN
-        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
-        IF ( ierr /= 0 ) THEN 
-           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-           IF ( ierr /= 0 ) THEN 
-              npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
-              IF ( ierr /= 0 ) THEN 
-                 PRINT *,' assume file with no depth'
-                 npk=0
-              ENDIF
-           ENDIF
-        ENDIF
-     ENDIF
+  ! looking for npk among various possible name
+  idep_max=4
+  ALLOCATE ( clv_dep(idep_max) )
+  clv_dep(:) = (/cn_z,'z','nav_lev','levels'/)
+  idep=1  ; ierr=1000
+  DO WHILE ( ierr /= 0 .AND. idep <= idep_max )
+     npk  = getdim (cf_in, clv_dep(idep), cdtrue=cv_dep, kstatus=ierr)
+     idep = idep + 1
+  ENDDO
+
+  IF ( ierr /= 0 ) THEN  ! none of the dim name was found
+      PRINT *,' assume file with no depth'
+      npk=0
   ENDIF
 
   PRINT *, 'NPIGLO = ', npiglo
@@ -163,9 +161,9 @@ PROGRAM cdfisf_fill
   OPEN(unit=iunitu, file=cf_isflistup, form='formatted'              )
   ! get total number of isf
   nisf = 0
-  cdum='XXX'
-  DO WHILE ( TRIM(cdum) /= 'EOF')
-     READ(iunit,*) cdum
+  cldum='XXX'
+  DO WHILE ( TRIM(cldum) /= 'EOF')
+     READ(iunit,*) cldum
      nisf=nisf+1
   END DO
   REWIND(iunit)
@@ -176,9 +174,9 @@ PROGRAM cdfisf_fill
   ! loop over each ice shelf
   DO jisf=1,nisf
      ! get iiseed, ijseed, ice shelf number ifill
-     READ(iunit,*) ifill, cdum, rlon, rlat, iiseed, ijseed
+     READ(iunit,*) ifill, cldum, rlon, rlat, iiseed, ijseed
      IF (dtab(iiseed, ijseed) < 0 ) THEN
-        PRINT *,'  ==> WARNING: Likely a problem with ',TRIM(cdum)
+        PRINT *,'  ==> WARNING: Likely a problem with ',TRIM(cldum)
         PRINT *,'               check separation with neighbours'
      ENDIF
      CALL FillPool2D(iiseed, ijseed,itab, -ifill)
@@ -186,13 +184,13 @@ PROGRAM cdfisf_fill
      rdraftmax=MAXVAL(dtab, (itab == -ifill) )
      rdraftmin=MINVAL(dtab, (itab == -ifill) )
 
-     PRINT *,'Iceshelf : ', TRIM(cdum)
+     PRINT *,'Iceshelf : ', TRIM(cldum)
      PRINT *,'  index  : ', ifill
      PRINT *,'  code   : ', INT(dtab(iiseed, ijseed ) )
      PRINT *,'  depmin : ', rdraftmin
      PRINT *,'  depmax : ', rdraftmax
      PRINT *,'   '
-     WRITE(iunitu,'(i4,1x,a20,2f9.4,2i5,2f8.1)') jisf,ADJUSTL(cdum),rlon, rlat, iiseed, ijseed,rdraftmin,rdraftmax
+     WRITE(iunitu,'(i4,1x,a20,2f9.4,2i5,2f8.1)') jisf,ADJUSTL(cldum),rlon, rlat, iiseed, ijseed,rdraftmin,rdraftmax
   END DO
   WRITE(iunitu,'(a)') 'EOF  '
   WRITE(iunitu,'(a5,a20,2a9,2a5,2a8,a)' ) 'No ','NAME                           ',' X',' Y',' I ',' J ',' Zmin',' Zmax',' FWF'
@@ -220,24 +218,24 @@ CONTAINS
     !!
     !! ** Method  :  Use global variables, defined in mail 
     !!----------------------------------------------------------------------
-  ! define new variables for output
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = 'sofillvar'
-  stypvar(1)%cunits            = 'N/A'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = -1000.
-  stypvar(1)%valid_max         =  1000.
-  stypvar(1)%clong_name        = 'Fill var'
-  stypvar(1)%cshort_name       = 'sofillvar'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-  stypvar(1)%cprecision        = 'i2'
-  ipk(1) = 1  !  2D
+    ! define new variables for output
+    ipk(1) = 1  !  2D
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'sofillvar'
+    stypvar(1)%cunits            = 'N/A'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = -1000.
+    stypvar(1)%valid_max         =  1000.
+    stypvar(1)%clong_name        = 'Fill var'
+    stypvar(1)%cshort_name       = 'sofillvar'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+    stypvar(1)%cprecision        = 'i2'
 
-  ! create output file taking the sizes in cf_in
-  ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
-  ierr   = createvar   (ncout ,  stypvar,  1,  ipk,    id_varout           , ld_nc4=lnc4)
-  ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep             )
+    ! create output file taking the sizes in cf_in
+    ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
+    ierr   = createvar   (ncout ,  stypvar,  1,  ipk,    id_varout           , ld_nc4=lnc4)
+    ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep             )
 
   END SUBROUTINE CreateOutput
 

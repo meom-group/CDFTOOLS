@@ -14,13 +14,14 @@ PROGRAM cdfscale
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_operations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER(KIND=4)                               :: jk, jvar, jt           ! dummy loop index
   INTEGER(KIND=4)                               :: ivar                   ! index of working variable
-  INTEGER(KIND=4)                               :: ierr                   ! working integer
-  INTEGER(KIND=4)                               :: narg, iargc            ! browse line
+  INTEGER(KIND=4)                               :: ierr, ireq             ! working integer
+  INTEGER(KIND=4)                               :: narg, iargc, ijarg     ! browse line
   INTEGER(KIND=4)                               :: ncid                   ! ncid of input file for rewrite
   INTEGER(KIND=4)                               :: npiglo, npjglo         ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt               ! size of the domain
@@ -44,15 +45,20 @@ PROGRAM cdfscale
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfscale INOUT-file IN-var scale '
+     PRINT *,' usage : cdfscale -f INOUT-file -v IN-var -s SCAL-factor '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Replace IN-var in INOUT-file by its values x scale.'
+     PRINT *,'       Replace IN-var in INOUT-file by its values x SCAL-factor.'
+     PRINT *,'      '
+     PRINT *,'     CAUTION :'
+     PRINT *,'      #############################'
+     PRINT *,'      # INPUT FILE IS OVERWRITTEN #'
+     PRINT *,'      #############################'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       INOUT-file : netcdf input file (!overwritten!).'
-     PRINT *,'       IN-var : netcdf variable to be scaled.'
-     PRINT *,'       scale : Scale value to be used (multiplication factor).'
+     PRINT *,'       -f INOUT-file : netcdf input file (!overwritten!).'
+     PRINT *,'       -v IN-var : netcdf variable to be scaled.'
+     PRINT *,'       -s SCAL-factor : Scale value to be used (multiplication factor).'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : input file is rewritten ' 
@@ -60,9 +66,18 @@ PROGRAM cdfscale
      STOP
   ENDIF
 
-  CALL getarg(1, cf_inout) 
-  CALL getarg(2, cv_inout) 
-  CALL getarg(3, cldum)  ; READ(cldum,*) vscale
+  ijarg=1 ; ireq=0
+  DO WHILE ( ijarg <= narg )
+      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
+      SELECT CASE ( cldum )
+      CASE ( '-f'   ) ; CALL getarg(ijarg, cf_inout ) ; ijarg=ijarg+1  ; ireq=ireq+1
+      CASE ( '-v'   ) ; CALL getarg(ijarg, cv_inout ) ; ijarg=ijarg+1  ; ireq=ireq+1
+      CASE ( '-s'   ) ; CALL getarg(ijarg, cldum    ) ; ijarg=ijarg+1  ; ireq=ireq+1 ;  READ(cldum,*) vscale
+      CASE DEFAULT    ; PRINT *,' ERROR :', TRIM(cldum),' : unknown option.' ; STOP
+      END SELECT
+  ENDDO
+  ! 3 arguments are mandatory : here ijarg must be 4
+  IF ( ireq /= 3 ) THEN ; PRINT *,' ERROR : need at least 3 arguments !' ; STOP ; ENDIF
 
   IF ( chkfile (cf_inout) )  STOP ! missing file
 
@@ -97,14 +112,12 @@ PROGRAM cdfscale
 
   ! look for cv_inout in the list of variables
   DO jvar = 1, nvars
-    IF ( cv_inout == cv_names(jvar) ) THEN
-      ivar = jvar
-    ENDIF
+    IF ( cv_inout == cv_names(jvar) ) ivar = jvar
   ENDDO
+
   PRINT *,' Working with ',TRIM(cv_inout),' variable number ', ivar
   PRINT *,'    IPK   : ', ipk(ivar)
   PRINT *,'    scale : ', vscale
-
 
   ! work only for ivar
   DO jt=1,npt

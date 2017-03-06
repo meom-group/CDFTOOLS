@@ -23,35 +23,38 @@ PROGRAM cdfisf_poolchk
   !! $Id$
   !! Copyright (c) 2012, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class ice_shelf_processing
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4) :: ji, jj, jk
-  INTEGER(KIND=4) :: ierr, ncout
-  INTEGER(KIND=4) :: npiglo, npjglo, npk
-  INTEGER(KIND=4) :: iiseed, ijseed, ikseed, ijmax
-  INTEGER(KIND=4) :: ifill = 2
-  INTEGER(KIND=4) :: narg, ijarg
-  INTEGER(KIND=4) :: ncid, id
-  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                ! arrays of vertical level for each var
-  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
+  INTEGER(KIND=4)                               :: ji, jj, jk        ! dummy loop index
+  INTEGER(KIND=4)                               :: narg, ijarg       ! command line
+  INTEGER(KIND=4)                               :: npiglo, npjglo    ! domain dimension
+  INTEGER(KIND=4)                               :: npk               ! domain dimension
+  INTEGER(KIND=4)                               :: iiseed, ijseed    ! working seeds
+  INTEGER(KIND=4)                               :: ikseed, ijmax     ! working seeds
+  INTEGER(KIND=4)                               :: ifill = 2
+  INTEGER(KIND=4)                               :: ncid, id          ! netcdf stuff
+  INTEGER(KIND=4)                               :: ierr, ncout       ! netcdf stuff
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk               ! arrays of vertical level for each var
+  INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout         ! varid's of average vars
 
-  INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: itab
-  INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: itab3d, itmask
+  INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: itab             ! 2D working array
+  INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: itab3d, itmask   ! 3D working array
 
-  REAL(KIND=4), DIMENSION(:),        ALLOCATABLE :: rsum              ! iceshelf draft
-  REAL(KIND=4), DIMENSION(:,:),      ALLOCATABLE :: rdraft            ! iceshelf draft
+  REAL(KIND=4), DIMENSION(:),        ALLOCATABLE :: rsum             ! iceshelf draft
+  REAL(KIND=4), DIMENSION(:,:),      ALLOCATABLE :: rdraft           ! iceshelf draft
 
-  CHARACTER(LEN=255) :: cf_in
-  CHARACTER(LEN=255) :: cf_out='poolmask.nc'
-  CHARACTER(LEN=255) :: cf_isfdr='isf_draft.nc'
-  CHARACTER(LEN=255) :: cv_isfdr='isf_draft'
-  CHARACTER(LEN=255) :: cdum
+  CHARACTER(LEN=255)                             :: cf_in            ! input filename
+  CHARACTER(LEN=255)                             :: cf_out='poolmask.nc' !default output filename
+  CHARACTER(LEN=255)                             :: cf_isfdr='isf_draft.nc' ! filename for isf_draft
+  CHARACTER(LEN=255)                             :: cv_isfdr='isf_draft' ! name of isf_draft variable
+  CHARACTER(LEN=255)                             :: cldum            ! working char variable
 
-  TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
+  TYPE (variable), DIMENSION(:),    ALLOCATABLE  :: stypvar          ! attributes for average values
 
-  LOGICAL            :: lchk=.FALSE.
-  LOGICAL            :: lnc4=.FALSE.
+  LOGICAL                                        :: lchk=.FALSE.     ! missing files flag
+  LOGICAL                                        :: lnc4=.FALSE.     ! netcdf4 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   ! input file is a mask file, then :
@@ -92,19 +95,17 @@ PROGRAM cdfisf_poolchk
      PRINT *,'      '
      STOP
   ENDIF
-  
+
   ijarg=1
   DO WHILE ( ijarg <= narg )
-     CALL getarg(ijarg, cdum) ; ijarg = ijarg+1
-     SELECT CASE ( cdum )
+     CALL getarg(ijarg, cldum) ; ijarg = ijarg+1
+     SELECT CASE ( cldum )
      CASE ( '-m'  ) ; CALL getarg(ijarg, cf_in   ) ; ijarg = ijarg+1
      CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg+1
      CASE ( '-d'  ) ; CALL getarg(ijarg, cf_isfdr) ; ijarg = ijarg+1
      CASE ( '-v'  ) ; CALL getarg(ijarg, cv_isfdr) ; ijarg = ijarg+1
-     CASE ( '-nc4') ; lnc4=.TRUE.
-     CASE DEFAULT 
-        PRINT *,' Unknown option : ', TRIM(cdum)
-        STOP
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ,' TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -132,7 +133,7 @@ PROGRAM cdfisf_poolchk
   ijmax=2
   DO jj=1, npjglo-1
      IF ( rsum(jj) /= 0. ) THEN
-       ijmax=jj
+        ijmax=jj
      ENDIF
   ENDDO
   ijmax = MIN ( npjglo, ijmax+10 )
@@ -158,11 +159,11 @@ PROGRAM cdfisf_poolchk
   itab(:,1:ijmax-2) = SUM(itab3d(:,1:ijmax-2,:), dim=3) 
   WHERE (itab(:,1:ijmax-2) > 0 ) itab(:,1:ijmax-2)=0
   WHERE (itab(:,1:ijmax-2) < 0 ) itab(:,1:ijmax-2)=1
-  
+
   ierr = putvar( ncout, id_varout(1), itab(:,:), 1, npiglo, npjglo)
 
   DO jk = 1, npk 
-    ierr = putvar( ncout, id_varout(2), itab3d(:,:,jk), jk, npiglo, npjglo)
+     ierr = putvar( ncout, id_varout(2), itab3d(:,:,jk), jk, npiglo, npjglo)
   ENDDO
 
   ierr = closeout(ncout)
@@ -177,36 +178,35 @@ CONTAINS
     !!
     !! ** Method  :  Use global variables, defined in mail 
     !!----------------------------------------------------------------------
-  ! define new variables for output
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = 'tmask_pool2d'
-  stypvar(1)%rmissing_value    =  -99.
-  stypvar(1)%valid_min         =  0.
-  stypvar(1)%valid_max         =  1.
-  stypvar(1)%clong_name        = '2d isf pool mask'
-  stypvar(1)%cshort_name       = 'tmask_pool2d'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-  stypvar(1)%cprecision        = 'by'
-  ipk(1) = 1  !  2D
-  ! define new variables for output
-  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(2)%cname             = 'tmask_pool3d'
-  stypvar(2)%rmissing_value    =  -99.
-  stypvar(2)%valid_min         =  0.
-  stypvar(2)%valid_max         =  1
-  stypvar(2)%clong_name        = '3d isf pool mask'
-  stypvar(2)%cshort_name       = 'tmask_pool3d'
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TZYX'
-  stypvar(2)%cprecision        = 'by'
-  ipk(2) = npk  !  3D
+    ! define new variables for output
+    ipk(1) = 1  !  2D
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'tmask_pool2d'
+    stypvar(1)%rmissing_value    =  -99.
+    stypvar(1)%valid_min         =  0.
+    stypvar(1)%valid_max         =  1.
+    stypvar(1)%clong_name        = '2d isf pool mask'
+    stypvar(1)%cshort_name       = 'tmask_pool2d'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+    stypvar(1)%cprecision        = 'by'
+    ! define new variables for output
+    ipk(2) = npk  !  3D
+    stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%cname             = 'tmask_pool3d'
+    stypvar(2)%rmissing_value    =  -99.
+    stypvar(2)%valid_min         =  0.
+    stypvar(2)%valid_max         =  1
+    stypvar(2)%clong_name        = '3d isf pool mask'
+    stypvar(2)%cshort_name       = 'tmask_pool3d'
+    stypvar(2)%conline_operation = 'N/A'
+    stypvar(2)%caxis             = 'TZYX'
+    stypvar(2)%cprecision        = 'by'
 
-  ! create output file taking the sizes in cf_fill
-  ncout  = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdepvar=cn_vdeptht, ld_nc4=lnc4)
-  ierr   = createvar   (ncout,  stypvar, 2,   ipk, id_varout,                     ld_nc4=lnc4)
-  ierr   = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk              )
-
+    ! create output file taking the sizes in cf_fill
+    ncout  = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdepvar=cn_vdeptht, ld_nc4=lnc4 )
+    ierr   = createvar   (ncout,  stypvar, 2,   ipk, id_varout,                     ld_nc4=lnc4 )
+    ierr   = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk                                  )
 
   END SUBROUTINE CreateOutput
 

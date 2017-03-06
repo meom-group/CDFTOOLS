@@ -17,6 +17,7 @@ PROGRAM cdfisf_rnf
   !! $Id: cdfisf_rnf.f90 668 2013-05-30 12:54:00Z molines $
   !! Copyright (c) 2016, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class ice_shelf_processing
   !!-----------------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -58,7 +59,7 @@ PROGRAM cdfisf_rnf
   CHARACTER(LEN=256)                            :: cv_fill            ! fill var name
   CHARACTER(LEN=256)                            :: cv_bathy='Bathymetry' ! bathymetry name
   CHARACTER(LEN=256)                            :: cv_isfdr='isf_draft'  ! ice shelf draft name
-  CHARACTER(LEN=256)                            :: cdum               ! dummy string argument
+  CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
   
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 
@@ -117,13 +118,12 @@ PROGRAM cdfisf_rnf
 
   ijarg=1
   DO WHILE ( ijarg <= narg )
-    CALL getarg(ijarg,cdum) ; ijarg=ijarg+1
-    SELECT CASE (cdum)
+    CALL getarg(ijarg,cldum) ; ijarg=ijarg+1
+    SELECT CASE (cldum)
     CASE ('-f' ) ; CALL getarg(ijarg,cf_fill   ) ; ijarg=ijarg+1
     CASE ('-v' ) ; CALL getarg(ijarg,cv_fill   ) ; ijarg=ijarg+1
     CASE ('-l' ) ; CALL getarg(ijarg,cf_isflist) ; ijarg=ijarg+1
-    CASE ('-w' ) ; CALL getarg(ijarg,cdum      ) ; ijarg=ijarg+1
-                   READ(cdum,*) nwidth
+    CASE ('-w' ) ; CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) nwidth
     CASE ('-b' ) ; CALL getarg(ijarg,cf_bathy  ) ; ijarg=ijarg+1
     CASE ('-vb') ; CALL getarg(ijarg,cv_bathy  ) ; ijarg=ijarg+1
     CASE ('-i' ) ; CALL getarg(ijarg,cf_isfdr  ) ; ijarg=ijarg+1
@@ -131,9 +131,7 @@ PROGRAM cdfisf_rnf
 
     CASE ('-nc4'); lnc4 = .TRUE.
     CASE ('-o' ) ; CALL getarg(ijarg,cf_out    ) ; ijarg=ijarg+1
-    CASE DEFAULT 
-        PRINT *,' Option ',TRIM(cdum),' not understood'
-        STOP
+    CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
     END SELECT
   ENDDO
 
@@ -178,9 +176,9 @@ PROGRAM cdfisf_rnf
   OPEN(unit=iunit, file=cf_isflist, form='formatted', status='old')
   ! get number of isf
   nisf = 0
-  cdum='XXX'
-  DO WHILE ( TRIM(cdum) /= 'EOF')
-     READ(iunit,*) cdum
+  cldum='XXX'
+  DO WHILE ( TRIM(cldum) /= 'EOF')
+     READ(iunit,*) cldum
      nisf=nisf+1
   END DO
   REWIND(iunit)
@@ -193,7 +191,7 @@ PROGRAM cdfisf_rnf
      isfindex_wk(:,:) = isfindex(:,:)
 
      ! read ice shelf data for jsf
-     READ(iunit,*) ifill,cdum,rlon, rlat, iiseed, ijseed ,rdraftmin, rdraftmax, dfwf
+     READ(iunit,*) ifill,cldum,rlon, rlat, iiseed, ijseed ,rdraftmin, rdraftmax, dfwf
 
      dl_fwf = dfwf * 1.d9 * 1.d3 / 86400.d0 / 365.d0  ! convert GT/yr to kg/m2/s
      isfmask    (:,:) = 0

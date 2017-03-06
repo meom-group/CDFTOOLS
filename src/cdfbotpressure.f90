@@ -116,7 +116,7 @@ PROGRAM cdfbotpressure
      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
      CASE ( '-o'    ) ; CALL getarg( ijarg,cf_out) ; ijarg = ijarg + 1
      CASE ( '-nc4'  ) ; lnc4  = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.' 
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.'  ; STOP
      END SELECT
   END DO
 

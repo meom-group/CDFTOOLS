@@ -26,6 +26,7 @@ PROGRAM cdfmhst
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -265,6 +266,7 @@ PROGRAM cdfmhst
   ALLOCATE(stypvar(nbasinso*npvar),  cvarname(nbasinso*npvar) )
   ALLOCATE(    ipk(nbasinso*npvar), id_varout(nbasinso*npvar) )
 
+  CALL CreateOutput
 
   OPEN(numouth,FILE=cf_outh,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort
   OPEN(numouts,FILE=cf_outs,FORM='FORMATTED', RECL=256)  ! to avoid wrapped line with ifort

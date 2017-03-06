@@ -18,6 +18,7 @@ PROGRAM cdfpdf
   !! $Id$
   !! Copyright (c) 2015, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class statistics
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -49,8 +50,8 @@ PROGRAM cdfpdf
   TYPE(variable), DIMENSION(1)              :: stypvar           ! output data structure
 
   LOGICAL                                   :: lchk
-  LOGICAL                                   :: l_nozoom=.true.
-  LOGICAL                                   :: l_norange=.true.
+  LOGICAL                                   :: l_nozoom  =.TRUE.
+  LOGICAL                                   :: l_norange =.TRUE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -96,7 +97,7 @@ PROGRAM cdfpdf
 
   ijarg = 1
   ilev  = 1
-  l_nozoom = .true.
+  l_nozoom = .TRUE.
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
@@ -104,19 +105,19 @@ PROGRAM cdfpdf
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-a'   ) ; CALL getarg(ijarg, cf_asc ) ; ijarg=ijarg+1
      CASE ( '-v'   ) ; CALL getarg(ijarg, cv_nam ) ; ijarg=ijarg+1
-     CASE ( '-zoom') ; l_nozoom = .false.
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imin
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imax
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmin
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmax
+     CASE ( '-zoom') ; l_nozoom = .FALSE.
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imin
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imax
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmin
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmax
      CASE ( '-lev') 
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
-     CASE ( '-range') ; l_norange = .false.
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmin
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmax
-             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbin
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
+     CASE ( '-range') ; l_norange = .FALSE.
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmin
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmax
+        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbin
      CASE DEFAULT
-             PRINT *,' option ',TRIM(cldum),' not understood'
+        PRINT *,' option ',TRIM(cldum),' not understood'
      END SELECT
   ENDDO
 
@@ -132,11 +133,11 @@ PROGRAM cdfpdf
   PRINT *, 'npjglo =', npjglo
   PRINT *, 'npk    =', npk
   PRINT *, 'npt    =', npt
-  
+
   ! if no zoom specified, take the full domain
   IF ( l_nozoom ) THEN
-    imin=1 ; imax=npiglo
-    jmin=1 ; jmax=npjglo
+     imin=1 ; imax=npiglo
+     jmin=1 ; jmax=npjglo
   ENDIF
 
   npi=imax - imin + 1
@@ -145,17 +146,17 @@ PROGRAM cdfpdf
 
   ! takle the case when no range specified for binning
   IF ( l_norange ) THEN
-    nbin =100
-    spval = getspval( cf_ifil, cv_nam) 
-    ! scan the file for min and max
+     nbin =100
+     spval = getspval( cf_ifil, cv_nam) 
+     ! scan the file for min and max
      vmin=1.e10
      vmax=-1.e10
-    DO jt=1,npt
-      zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj, ktime=jt, kimin=imin, kjmin=jmin )
-      zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj,  ktime=jt, kimin=imin, kjmin=jmin )
-      vmin=MIN(vmin, MINVAL(zvar, (zvar /= spval) ) )
-      vmax=MAX(vmax, MAXVAL(zvar, (zvar /= spval) ) )
-    ENDDO
+     DO jt=1,npt
+        zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj, ktime=jt, kimin=imin, kjmin=jmin )
+        zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj,  ktime=jt, kimin=imin, kjmin=jmin )
+        vmin=MIN(vmin, MINVAL(zvar, (zvar /= spval) ) )
+        vmax=MAX(vmax, MAXVAL(zvar, (zvar /= spval) ) )
+     ENDDO
   ENDIF
 
   bin_siz=(vmax - vmin ) / nbin
@@ -189,22 +190,22 @@ PROGRAM cdfpdf
 
   ! convert in time in days since the begining of the file
   ! this will be the dummy 'latitude' for the output file
- 
+
   DO jt=1, npt
-    ztimed(:,jt) = (ztimes(jt) - ztimes(1) ) / 86400.
+     ztimed(:,jt) = (ztimes(jt) - ztimes(1) ) / 86400.
   ENDDO
 
- ! dummy longitude for the output file in the mean value of the bin
+  ! dummy longitude for the output file in the mean value of the bin
   DO ji = 1, nbin
-    zlon(ji,:) =  (vlim(ji) + vlim(ji+1)) /2.
+     zlon(ji,:) =  (vlim(ji) + vlim(ji+1)) /2.
   ENDDO
 
   CALL CreateOutput 
 
   DO jt = 1, npt
-      zcount(:,jt) = 0. ; below=0. ; above=0.
-      zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj,  ktime=jt, kimin=imin, kjmin=jmin )
-      DO jj=1,npj
+     zcount(:,jt) = 0. ; below=0. ; above=0.
+     zvar(:,:) = getvar( cf_ifil, cv_nam, ilev, npi, npj,  ktime=jt, kimin=imin, kjmin=jmin )
+     DO jj=1,npj
         DO ji=1,npi
            ibin=INT((zvar(ji,jj)-vmin)/bin_siz) +1
            IF ( ibin < 1 ) THEN 
@@ -215,48 +216,47 @@ PROGRAM cdfpdf
               zcount(ibin,jt) = zcount(ibin,jt) + 1
            ENDIF
         ENDDO
-      ENDDO
+     ENDDO
 
-      WRITE(numout,*) 
-      WRITE(numout,*) vlim(1),  below
-      DO ji=1, nbin
-         WRITE(numout,*)  (vlim(ji) + vlim(ji+1)) /2.,  zcount (ji,jt )
-      ENDDO
-      WRITE(numout,*)  vlim(nlim),  above
+     WRITE(numout,*) 
+     WRITE(numout,*) vlim(1),  below
+     DO ji=1, nbin
+        WRITE(numout,*)  (vlim(ji) + vlim(ji+1)) /2.,  zcount (ji,jt )
+     ENDDO
+     WRITE(numout,*)  vlim(nlim),  above
   ENDDO
-   ierr = putvar( ncout, id_varout(1), zcount, 1, nbin, npt)
-   ierr = closeout(ncout)
+  ierr = putvar( ncout, id_varout(1), zcount, 1, nbin, npt)
+  ierr = closeout(ncout)
   CLOSE(numout)
 
 CONTAINS
   SUBROUTINE CreateOutput
-      !!---------------------------------------------------------------------
-      !!                  ***  ROUTINE CreateOutput  ***
-      !!
-      !! ** Purpose :  Set up all things required for the output file, create
-      !!               the file and write the header part. 
-      !!
-      !! ** Method  :  Use global module variables 
-      !!
-      !!----------------------------------------------------------------------
-      ipk(:) = 1
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Set up all things required for the output file, create
+    !!               the file and write the header part. 
+    !!
+    !! ** Method  :  Use global module variables 
+    !!
+    !!----------------------------------------------------------------------
+    ipk(:) = 1
 
-      stypvar(1)%cname             = 'pdf_'//TRIM(cv_nam)
-      stypvar(1)%cunits            = 'N/A'
-      stypvar(1)%rmissing_value    = -1000.
-      stypvar(1)%valid_min         = 0.
-      stypvar(1)%valid_max         = npi*npj
-      stypvar(1)%clong_name        = 'PDF of '//TRIM(cv_nam)
-      stypvar(1)%cshort_name       = 'pdf_'//TRIM(cv_nam)
-      stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%cname             = 'pdf_'//TRIM(cv_nam)
+    stypvar(1)%cunits            = 'N/A'
+    stypvar(1)%rmissing_value    = -1000.
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = npi*npj
+    stypvar(1)%clong_name        = 'PDF of '//TRIM(cv_nam)
+    stypvar(1)%cshort_name       = 'pdf_'//TRIM(cv_nam)
+    stypvar(1)%conline_operation = 'N/A'
 
-      CALL SetGlobalAtt (cglobal)
+    CALL SetGlobalAtt (cglobal)
 
-      ! create output fileset
-      ncout = create      (cf_out, 'none', nbin, npt, 0      )
-      ierr  = createvar   (ncout,  stypvar, 1, ipk, id_varout , cdglobal=cglobal        )
-      ierr  = putheadervar(ncout,  cf_ifil, nbin, npt, 0 , pnavlon=zlon, pnavlat=ztimed )
-      
+    ! create output fileset
+    ncout = create      (cf_out, 'none', nbin, npt, 0      )
+    ierr  = createvar   (ncout,  stypvar, 1, ipk, id_varout , cdglobal=cglobal        )
+    ierr  = putheadervar(ncout,  cf_ifil, nbin, npt, 0 , pnavlon=zlon, pnavlat=ztimed )
 
   END SUBROUTINE CreateOutput
 END PROGRAM cdfpdf

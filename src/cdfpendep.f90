@@ -19,6 +19,7 @@ PROGRAM cdfpendep
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class passive_tracer
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -42,7 +43,9 @@ PROGRAM cdfpendep
   CHARACTER(LEN=256)                        :: cglobal              ! global attribute
   CHARACTER(LEN=256)                        :: cldum                ! dummy string
 
-  TYPE(variable), DIMENSION(1)              :: typvar               ! structure for attributes
+  TYPE(variable), DIMENSION(1)              :: stypvar              ! structure for attributes
+
+  LOGICAL                                   :: lnc4 = .FALSE.       ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -50,8 +53,8 @@ PROGRAM cdfpendep
   cv_trc = cn_cfc11
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfpendep TRC-file INV-file  ... '
-     PRINT *,'                    ... [-inv inventory_name -trc trc_name ]'
+     PRINT *,' usage :  cdfpendep -trc TRC-file -i INV-file [-o OUT-file] [-nc4] ...'
+     PRINT *,'              ... [-vinv inventory_name -vtrc trc_name ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the penetration depth for passive tracers. It is the'
@@ -59,14 +62,18 @@ PROGRAM cdfpendep
      PRINT *,'        the tracer.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       TRC-file : netcdf file with tracer concentration.' 
-     PRINT *,'       INV-file : netcdf file with inventory of the tracer.'
+     PRINT *,'       -trc TRC-file : netcdf file with tracer concentration.' 
+     PRINT *,'       -i INV-file   : netcdf file with inventory of the tracer.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-inv inventory_name ] : specify netcdf variable name for inventory.' 
+     PRINT *,'       [-vinv inventory_name ] : specify netcdf variable name for inventory.' 
      PRINT *,'                                Default is ', TRIM(cv_inv)
-     PRINT *,'       [-trc tracer_name ]    : specify netcdf variable name for tracer.' 
+     PRINT *,'       [-vtrc trc_name   ]    : specify netcdf variable name for tracer.' 
      PRINT *,'                                Default is ', TRIM(cv_trc)
+     PRINT *,'       [-o OUT-file ] : specify output file name instead of ', TRIM(cf_out)
+     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -78,36 +85,26 @@ PROGRAM cdfpendep
   ENDIF
 
   ijarg = 1
-  CALL getarg (ijarg, cf_trcfil) ; ijarg = ijarg + 1 
-  CALL getarg (ijarg, cf_inv   ) ; ijarg = ijarg + 1
-
-  IF ( chkfile(cf_trcfil) .OR. chkfile(cf_inv) ) STOP ! missing file
-
   DO WHILE ( ijarg <= narg)
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 
      SELECT CASE ( cldum )
-     CASE ('-inv') ;  CALL getarg(ijarg, cv_inv) ; ijarg=ijarg+1
-     CASE ('-trc') ;  CALL getarg(ijarg, cv_trc) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *, 'option ', TRIM(cldum),' not understood' ; STOP
+     CASE ('-trc' ) ;  CALL getarg(ijarg, cf_trcfil) ; ijarg=ijarg+1
+     CASE ('-i'   ) ;  CALL getarg(ijarg, cf_inv   ) ; ijarg=ijarg+1
+        ! options
+     CASE ('-o'   ) ;  CALL getarg(ijarg, cf_out   ) ; ijarg=ijarg+1
+     CASE ('-vinv') ;  CALL getarg(ijarg, cv_inv   ) ; ijarg=ijarg+1
+     CASE ('-vtrc') ;  CALL getarg(ijarg, cv_trc   ) ; ijarg=ijarg+1
+     CASE ('-nc4' ) ;  lnc4 = .TRUE.
+     CASE DEFAULT  ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
+
+  IF ( chkfile(cf_trcfil) .OR. chkfile(cf_inv) ) STOP ! missing file
 
   npiglo = getdim (cf_trcfil,cn_x)
   npjglo = getdim (cf_trcfil,cn_y)
   npk    = getdim (cf_trcfil,cn_z)
   npt    = getdim (cf_trcfil,cn_t)
-
-  ipk(1)                      = 1
-  typvar(1)%cname             = cn_pendep
-  typvar(1)%cunits            = 'm'
-  typvar(1)%rmissing_value    = 0.
-  typvar(1)%valid_min         = 0.
-  typvar(1)%valid_max         = 10000.
-  typvar(1)%clong_name        = 'Penetration depth'
-  typvar(1)%cshort_name       = cn_pendep
-  typvar(1)%conline_operation = 'N/A'
-  typvar(1)%caxis             = 'TYX'
-
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -120,9 +117,7 @@ PROGRAM cdfpendep
   WRITE(cglobal,9000) TRIM(cf_trcfil), TRIM(cf_inv), TRIM(cv_inv), TRIM(cv_trc)
 9000 FORMAT('cdfpendep ',a,' ',a,' -inv ',a,' -trc ',a )
 
-  ncout = create      (cf_out, cf_trcfil, npiglo, npjglo, 1)
-  ierr  = createvar   (ncout,  typvar,    1,      ipk,    id_varout, cdglobal=cglobal )
-  ierr  = putheadervar(ncout,  cf_trcfil, npiglo, npjglo, 1)
+  CALL CreateOutput
 
   DO jt = 1,npt
      rpendep(:,:) = 0.
@@ -133,8 +128,38 @@ PROGRAM cdfpendep
      ierr=putvar(ncout, id_varout(1), rpendep, 1, npiglo, npjglo, ktime=jt)
   END DO
 
-  tim  = getvar1d(cf_trcfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,     tim,       npt, 'T')
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1)                       = 1
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = cn_pendep
+    stypvar(1)%cunits            = 'm'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 10000.
+    stypvar(1)%clong_name        = 'Penetration depth'
+    stypvar(1)%cshort_name       = cn_pendep
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+
+    ncout = create      (cf_out, cf_trcfil, npiglo, npjglo, 1                          , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar,   1,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_trcfil, npiglo, npjglo, 1                                        )
+
+    tim  = getvar1d(cf_trcfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,     tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfpendep
