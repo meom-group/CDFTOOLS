@@ -814,12 +814,12 @@ CONTAINS
       ivar = ivar + 1
 
       np_e3v = ivar
-      stypvar(ivar)%cname       = cn_e3v
+      stypvar(ivar)%cname       = cn_ve3v
       stypvar(ivar)%cunits      = 'm'
       stypvar(ivar)%valid_min   = 0.
       stypvar(ivar)%valid_max   = 100000000.
       stypvar(ivar)%clong_name  = 'Local vert. resolution along '//TRIM(csection(ksec))//' section'
-      stypvar(ivar)%cshort_name = cn_e3v
+      stypvar(ivar)%cshort_name = cn_ve3v
       stypvar(ivar)%caxis       = 'TZX'
       ipk(ivar)                 =  npk
       ivar = ivar + 1
