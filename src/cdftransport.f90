@@ -324,10 +324,6 @@ PROGRAM cdftransport
        cn_fhgr = cf_vfil
        cn_fe3u = cf_vfil
        cn_fe3v = cf_vfil
-       ! in broken line the metrics is saved as e3._ps 
-       ! this is to be changed but take care of backward compatibility
-       cn_ve3u = cn_ve3u
-       cn_ve3v = cn_ve3v
    ENDIF
 
    ! checking if all required files are available
