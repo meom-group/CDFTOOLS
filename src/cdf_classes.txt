@@ -1,3 +1,11 @@
+#!/bin/bash
+ for line in $( cat $0 | grep -v '^#' | grep -v '^ ' | awk '{print $0}' ) ; do
+   echo $line
+      grep -e "@class $line" *90
+   echo ====
+ done
+ exit
+
 Equation_of_state
 ice_shelf_processing
 file_informations
