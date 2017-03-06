@@ -3,22 +3,15 @@ PROGRAM cdfsigtrp_broken
   !!                     ***  PROGRAM  cdfsigtrp_broken  ***
   !!======================================================================
   !!  ** Purpose : Compute density class Mass transport across a section.
-  !!               prviously extracted with cdf_xtrac_broken_line
+  !!               previously extracted with cdf_xtrac_broken_line
   !!           
-  !!  ** Method  :- The begining and end point of the section are given in 
-  !!                term of f-points index.
-  !!              - The program works for zonal or meridional sections.
-  !!              - The section definitions are given in an ASCII FILE 
-  !!                dens_section.dat:
-  !!                 foreach sections, 2 lines :
-  !!                       (i) : section name (String, no blank)
-  !!                      (ii) : imin imax jmin jmax for the section
-  !!              - Only vertical slices corrsponding to the sections are
-  !!                read in the files.
+  !!  ** Method  : 
+  !!              - The program works for sections extracted with cdf_xtrac_brokenline
+  !!              - Hence it is considered as a pseudo zonal section with 
+  !!                normal velocity seen as V
   !!              - read metrics, depth, etc
-  !!              - read normal velocity (either vozocrtx oy vomecrty )
-  !!              - read 2 rows of T and S ( i i+1  or j j+1 )
-  !!              - compute the mean value at velocity point
+  !!              - read normal velocity 
+  !!              - read T and S already interpolated at V point
   !!              - compute sigma0 (can be easily modified for sigmai )
   !!              - compute the depths of isopyncal surfaces
   !!              - compute the transport from surface to the isopycn
@@ -31,7 +24,6 @@ PROGRAM cdfsigtrp_broken
   !!   routines      : description
   !!  section_init   : initialize section names and positions
   !!  print_out      : routine which performs standard output if required
-  !!  bimg_writ      : routine which performs bimg output if required
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos          ! for sigma0, sigmai
@@ -52,7 +44,6 @@ PROGRAM cdfsigtrp_broken
   INTEGER(KIND=4)                               :: narg, iargc          ! command line 
   INTEGER(KIND=4)                               :: ijarg, ireq          ! command line
   INTEGER(KIND=4)                               :: npk, nk              ! vertical size, number of wet layers
-  INTEGER(KIND=4)                               :: numbimg=10           ! optional bimg logical unit
   INTEGER(KIND=4)                               :: numout=11            ! ascii output
   INTEGER(KIND=4)                               :: nsection             ! number of sections (overall)
   INTEGER(KIND=4)                               :: iimin, iimax         ! working section limits
@@ -94,10 +85,9 @@ PROGRAM cdfsigtrp_broken
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar              ! structure of output
 
   CHARACTER(LEN=256)                            :: cf_brfi              ! temperature salinity velocity file 
-  !(from cdf_xtrac_brokenline)
+                                                                        !(from cdf_xtrac_brokenline)
   CHARACTER(LEN=256)                            :: cf_section='dens_section.dat'  ! input section file
   CHARACTER(LEN=256)                            :: cf_out='trpsig.txt'  ! output  ascii file
-  CHARACTER(LEN=256)                            :: cf_bimg              ! output bimg file (2d)
   CHARACTER(LEN=256)                            :: cf_nc                ! output netcdf file (2d)
   CHARACTER(LEN=256)                            :: cf_outnc             ! output netcdf file (1d, 0d))
   CHARACTER(LEN=256)                            :: cv_dep               ! depth variable
@@ -117,7 +107,6 @@ PROGRAM cdfsigtrp_broken
 
   LOGICAL                                       :: ltemp  =.FALSE.      ! flag for use of temperature
   LOGICAL                                       :: lprint =.FALSE.      ! flag for extra print
-  LOGICAL                                       :: lbimg  =.FALSE.      ! flag for bimg output
   LOGICAL                                       :: lncdf  =.FALSE.      ! flag for extra netcdf output
   LOGICAL                                       :: lfull  =.FALSE.      ! flag for full step 
   LOGICAL                                       :: lneutral  =.FALSE.   ! flag for neutral density
@@ -128,7 +117,7 @@ PROGRAM cdfsigtrp_broken
   narg= iargc()
   IF ( narg < 4 ) THEN
      PRINT *,' usage :  cdfsigtrp_broken TSV-file sigma_min sigma_max nbins ...'
-     PRINT *,'              ... [-print ] [-bimg ] [-full ] [ -refdep ref_depth] ...'
+     PRINT *,'              ... [-print ] [-full ] [ -refdep ref_depth] ...'
      PRINT *,'              ... [-neutral ] [-section file ] [-temp ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -160,10 +149,6 @@ PROGRAM cdfsigtrp_broken
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [ -full ] : for full step configuration' 
-     PRINT *,'       [ -bimg ] : produce extra bimg output file which shows the details'
-     PRINT *,'               of the sections (normal velocity, density, temperature, '
-     PRINT *,'               salinity, transports, isopycnal depths. (to be change to '
-     PRINT *,'               netcdf files for more common use.'
      PRINT *,'       [ -ncdf ] : produce extra netcdf output file which shows the details'
      PRINT *,'               of the sections (normal velocity, density, temperature, '
      PRINT *,'               salinity, transports, isopycnal depths. '
@@ -188,10 +173,6 @@ PROGRAM cdfsigtrp_broken
      PRINT *,'      '
      PRINT *,'       ascii file  : ', TRIM(cf_out) 
      PRINT *,'      '
-     PRINT *,'       bimg  file  :  There are 2 bimg files whose name is build from section'
-     PRINT *,'         name : section_name_trpdep.bimg and section_name_trpsig.bimg.'
-     PRINT *,'         This file is written only if -bimg option is used.'
-     PRINT *,'      '
      PRINT *,'      Standard output : the results are written on standard output only if '
      PRINT *,'         the -print option is used.'
      PRINT *,'      '
@@ -206,11 +187,10 @@ PROGRAM cdfsigtrp_broken
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-full' ) ; lfull  = .TRUE.
-     CASE ( '-bimg' ) ; lbimg  = .TRUE.
-     CASE ( '-ncdf' ) ; lncdf  = .TRUE.
-     CASE ( '-print') ; lprint = .TRUE.
-     CASE ( '-temp')  ; ltemp  = .TRUE. 
+     CASE ( '-full'   ) ; lfull  = .TRUE.
+     CASE ( '-ncdf'   ) ; lncdf  = .TRUE.
+     CASE ( '-print'  ) ; lprint = .TRUE.
+     CASE ( '-temp'   ) ; ltemp  = .TRUE. 
      CASE ( '-refdep' ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) refdep
      CASE ( '-section') ; CALL getarg(ijarg, cf_section ) ; ijarg=ijarg+1 
      CASE ( '-neutral') ; lneutral = .TRUE.
@@ -231,6 +211,7 @@ PROGRAM cdfsigtrp_broken
   lchk = lchk .OR. chkfile( cf_section )
   lchk = lchk .OR. chkfile( cf_brfi    )
   IF ( lchk ) STOP ! missing file
+
   IF ( ltemp)  THEN  ! temperature decrease downward. Change sign and swap min/max
      refdep = -10. ! flag value
      dltsig     = dsigma_max  ! use dltsig as dummy variable for swapping
@@ -310,7 +291,6 @@ PROGRAM cdfsigtrp_broken
      ALLOCATE ( tmpm(1,npts,2), tmpz(npts,1,2)                              )
      ALLOCATE ( dwtrp(npts, nbins+1), dhiso(npts,nbins+1), dwtrpbin(npts,nbins) )
      ALLOCATE ( rlonlat(npts,1) )
-
 
      ! zonal section at j=ijmin=ijmax
      tmpz(:,:,1)  = getvar(cf_brfi, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
@@ -420,7 +400,6 @@ PROGRAM cdfsigtrp_broken
 
      ! output of the code for 1 section
      IF (lprint) CALL print_out(jsec)
-     IF (lbimg ) CALL bimg_writ(jsec)
      IF (lncdf ) CALL cdf_writ(jsec)
      PRINT *,' Total transport in all bins :',TRIM(csection(jsec)),' ',SUM(dtrpbin(jsec,:) )/1.d6
 
@@ -600,67 +579,6 @@ CONTAINS
     CLOSE(inum)
 
   END SUBROUTINE section_init
-
-  SUBROUTINE bimg_writ( ksec)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE bimg_writ  ***
-    !!
-    !! ** Purpose :  Write output bimg files if required 
-    !!
-    !! ** Method  :  Most of the variables are global 
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4), INTENT(in) :: ksec  ! number of the section
-
-    INTEGER(KIND=4)             :: ji, jk
-    !!----------------------------------------------------------------------
-    ! (along section, depth ) 2D variables
-    cf_bimg=TRIM(csection(ksec))//'_trpdep.bimg'
-    OPEN(numbimg,FILE=cf_bimg,FORM='UNFORMATTED')
-    cldum=' 4 dimensions in this isopycnal file '
-    WRITE(numbimg) cldum
-
-    cldum=' 1: T ;  2: S ; 3: sigma ; 4: Velocity '
-    WRITE(numbimg) cldum
-
-    WRITE(cldum,'(a,4i5.4)') ' from '//TRIM(csection(ksec)), iimin,iimax,ijmin,ijmax
-    WRITE(numbimg) cldum
-
-    cldum=' file '//TRIM(cf_brfi)
-    WRITE(numbimg) cldum
-
-    WRITE(numbimg) npts,nk,1,1,4,0
-    WRITE(numbimg) 1.,-float(nk),1.,1., 0.
-    WRITE(numbimg) 0.
-    WRITE(numbimg) 0.
-
-    WRITE(numbimg) (( REAL(zt(ji,jk)  ), ji=1,npts), jk=nk,1,-1 ) ! temperature 
-    WRITE(numbimg) (( REAL(zs(ji,jk)  ), ji=1,npts), jk=nk,1,-1 ) ! salinity
-    WRITE(numbimg) (( REAL(dsig(ji,jk)), ji=1,npts), jk=nk,1,-1 ) ! density
-    WRITE(numbimg) (( REAL(zu(ji,jk)  ), ji=1,npts), jk=nk,1,-1 ) ! normal velocity
-    CLOSE(numbimg)
-
-    ! (along section, sigma ) 2D variables
-    cf_bimg=TRIM(csection(ksec))//'_trpsig.bimg'
-    OPEN(numbimg,FILE=cf_bimg,FORM='UNFORMATTED')
-    cldum=' 3 dimensions in this isopycnal file '
-    WRITE(numbimg) cldum
-    cldum=' 1: hiso ;  2: bin trp ; 3: cumulated  trp '
-    WRITE(numbimg) cldum
-    WRITE(cldum,'(a,4i5.4)') ' from '//TRIM(csection(ksec)), iimin,iimax,ijmin,ijmax
-    WRITE(numbimg) cldum
-    cldum=' file '//TRIM(cf_brfi)
-    WRITE(numbimg) cldum
-    WRITE(numbimg) npts,nbins,1,1,3,0
-    WRITE(numbimg) 1.,-REAL(dsigma_lev(nbins)),1.,REAL(dltsig), 0.
-    WRITE(numbimg) 0.
-    WRITE(numbimg) 0.
-    WRITE(numbimg) (( REAL(dhiso(ji,jiso)   ),      ji=1,npts), jiso=nbins,1,-1) ! isopyc depth
-    WRITE(numbimg) (( REAL(dwtrpbin(ji,jiso))/1.e6, ji=1,npts), jiso=nbins,1,-1) ! binned transport
-    WRITE(numbimg) (( REAL(dwtrp(ji,jiso)   )/1.e6, ji=1,npts), jiso=nbins,1,-1) ! cumulated transport
-    CLOSE(numbimg)
-
-  END SUBROUTINE bimg_writ
 
   SUBROUTINE cdf_writ( ksec)
     !!---------------------------------------------------------------------
