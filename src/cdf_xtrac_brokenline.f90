@@ -27,6 +27,7 @@ PROGRAM cdf_xtract_brokenline
    !! $Id$
    !! Copyright (c) 2011, J.-M. Molines
    !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+   !! @class transport
    !!----------------------------------------------------------------------
    IMPLICIT NONE
 
@@ -141,7 +142,7 @@ PROGRAM cdf_xtract_brokenline
       PRINT *,'        This tool provides a netcdf file similar to a model file, but with a '
       PRINT *,'      degenerated y dimension (1). In order to be able to use standard CDFTOOLS'
       PRINT *,'      relevant metric variables are saved into the output file, such as pseudo'
-      PRINT *,'      e1v and e3v_ps and vmask. Therefore the output file can be considered as'
+      PRINT *,'      e1v and e3v and vmask. Therefore the output file can be considered as'
       PRINT *,'      a mesh_hgr, mesh_zgr and mask file for any ''meridional'' computation.'
       PRINT *,'        This tools works with temperatures, salinities and normal velocities.'
       PRINT *,'      The broken line is approximated in the model, by a succession of segments'
@@ -813,12 +814,12 @@ CONTAINS
       ivar = ivar + 1
 
       np_e3v = ivar
-      stypvar(ivar)%cname       = 'e3v_ps'
+      stypvar(ivar)%cname       = cn_e3v
       stypvar(ivar)%cunits      = 'm'
       stypvar(ivar)%valid_min   = 0.
       stypvar(ivar)%valid_max   = 100000000.
       stypvar(ivar)%clong_name  = 'Local vert. resolution along '//TRIM(csection(ksec))//' section'
-      stypvar(ivar)%cshort_name = 'e3v_ps'
+      stypvar(ivar)%cshort_name = cn_e3v
       stypvar(ivar)%caxis       = 'TZX'
       ipk(ivar)                 =  npk
       ivar = ivar + 1
