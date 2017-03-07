@@ -35,6 +35,7 @@ PROGRAM cdfbathy
   !! $Id$
   !! Copyright (c) 2010, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   !
@@ -93,7 +94,7 @@ PROGRAM cdfbathy
      PRINT *,'       Keep a log.f90 file of the modifications for automatic reprocessing'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file : original input file. The program works on a copy of the'
+     PRINT *,'       -f IN-file : original input file. The program works on a copy of the'
      PRINT *,'                original file (default)' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
@@ -143,77 +144,38 @@ PROGRAM cdfbathy
   DO  WHILE (ijarg <=  narg)
      CALL getarg(ijarg, cldum) ;  ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     !
-     CASE ( '-file' , '-f' )     ! name of input file
-        CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1 
-        lchk = ( lchk .OR. chkfile (cf_in) )
-     !
-     CASE ( '-var' , '-v' )      ! name of netcdf variable
-        CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
-     !
-     CASE ( '-lev' , '-k' )      ! level to work with
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iklev
-     !
-     CASE ( '-time' , '-t' )     ! time frame to work with
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itime
-     !
-     CASE ( '-scale'      )      ! dividing scale factor
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) scale_factor
-     !
-     CASE ( '-zoom' , '-z' )     ! specify zoomed area
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+     CASE ( '-file' , '-f') ; CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1 
+                            ; lchk = ( lchk .OR. chkfile (cf_in) )
+     CASE ( '-var' , '-v' ) ; CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
+     CASE ( '-lev' , '-k' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iklev
+     CASE ( '-time' , '-t') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itime
+     CASE ( '-scale'      ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) scale_factor
+     CASE ( '-zoom' , '-z') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+                            ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+                            ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+                            ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
     
-     CASE ( '-fillzone' , '-fz' )  ! Fill the area specified with zoom 
-                                   ! with 0 till a coast is encountered in the East
-        lfill=.TRUE. ; lmodif=.TRUE.
-     !
-     CASE ( '-raz_zone' , '-raz' ) ! Set a zoomed area to 0
-        lraz=.TRUE. ; lmodif=.TRUE.
-     !
-     CASE ( '-raz_below' , '-rb' ) ! Area below this value are set to 0
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
-        lrazb=.TRUE. ; lmodif=.TRUE.
-     !
-     CASE ( '-set_below' , '-sb' ) ! Area below this value are set to values
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
-        lsetb=.TRUE. ; lmodif=.TRUE.
-     !
-     CASE ( '-fullstep' , '-fs' ) ! Create a full-step like bathy in zoomed area
-        lfullstep=.TRUE. ; lmodif=.TRUE.
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepmin
-     !
-     CASE ( '-append' , '-a' )    ! Append modification to the f90 log file
-        lappend=.TRUE.
-     !
-     CASE ( '-overwrite' , '-o' ) ! Overwrite modifications in f90 log file
-        loverwrite=.TRUE.
-     !
-     CASE ( '-fillpool' , '-fp' ) ! Overwrite modifications in f90 log file
-        lfillpool=.TRUE. ; lmodif=.TRUE.
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) icrit
-     !
-     CASE ( '-replace' , '-r' )   ! Replace zoomed area by values in ascii file
-        lreplace=.TRUE. ; lmodif=.TRUE.
-        CALL getarg(ijarg, cf_replace) ; ijarg = ijarg +1
-        lchk = ( lchk .OR. chkfile (cf_replace) )
-     !
-     CASE ( '-log'            )  !  log file name
-        CALL getarg(ijarg, cf_log) ; ijarg = ijarg +1
-     !
-     CASE ( '-dumpzone' , '-d' )  ! output the zoomed area in a formatted file
-        ldump=.TRUE.
-        CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
-     !
-     CASE ( '-nicedumpzone' , '-nd' )  ! idem dumpzone above but with nicer format
-        ldumpn=.TRUE.
-        CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
-     !
-     CASE DEFAULT
-        PRINT *, cldum,' : unknown option '
-        STOP
+     CASE ('-fillzone','-fz' ) ; lfill =.TRUE. ; lmodif =.TRUE.
+     CASE ('-raz_zone','-raz') ; lraz  =.TRUE. ; lmodif =.TRUE.
+     CASE ('-raz_below','-rb') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
+                               ; lrazb =.TRUE. ; lmodif =.TRUE.
+     CASE ('-set_below','-sb') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
+                               ; lsetb =.TRUE. ; lmodif =.TRUE.
+     CASE ('-fullstep','-fs' ) ; lfullstep =.TRUE. ; lmodif=.TRUE.
+                               ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepmin
+     CASE ('-append' , '-a'  ) ; lappend=.TRUE.
+     CASE ('-overwrite' ,'-o') ; loverwrite=.TRUE.
+     CASE ('-fillpool','-fp' ) ; lfillpool =.TRUE. ; lmodif =.TRUE.
+                               ; CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) icrit
+     CASE ('-replace','-r'   ) ; lreplace =.TRUE. ; lmodif =.TRUE.
+                               ; CALL getarg(ijarg, cf_replace) ; ijarg = ijarg +1
+                               ; lchk = ( lchk .OR. chkfile (cf_replace) )
+     CASE ( '-log'           ) ; CALL getarg(ijarg, cf_log) ; ijarg = ijarg +1
+     CASE ( '-dumpzone','-d' ) ; ldump =.TRUE.
+                               ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
+     CASE ('-nicedumpzone','-nd'); ldumpn =.TRUE.
+                                 ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
+     CASE DEFAULT              ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
   
@@ -291,7 +253,6 @@ PROGRAM cdfbathy
   ENDIF
 
 CONTAINS 
-
 
   SUBROUTINE zgr_zps ( kimin, kimax ,kjmin, kjmax )
     !!---------------------------------------------------------------------

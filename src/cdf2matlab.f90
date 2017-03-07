@@ -17,11 +17,12 @@ PROGRAM cdf2matlab
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: ji, jj              ! dummy loop index
-  INTEGER(KIND=4)                           :: narg, iargc         ! 
+  INTEGER(KIND=4)                           :: narg, iargc,ijarg   ! 
   INTEGER(KIND=4)                           :: npiglo, npjglo, npk ! size of the domain
   INTEGER(KIND=4)                           :: npiglox2            ! new model size in x
   INTEGER(KIND=4)                           :: ilev, iindex, itmp
@@ -41,21 +42,29 @@ PROGRAM cdf2matlab
   CHARACTER(LEN=256)                        :: cldum               !  dummy character variable
 
   TYPE(variable), DIMENSION(3)              :: stypvar             ! structure for attribute
+
+  LOGICAL                                   :: lnc4 = .FALSE.      ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg /= 3 ) THEN
-     PRINT *,' usage : cdf2matlab IN-file IN-var level '
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdf2matlab -f IN-file -v IN-var -k level [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Convert global nemo input file (ORCA configurations) into' 
      PRINT *,'       a file with monotonically increasing longitudes.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file : input model file.' 
-     PRINT *,'       IN-var  : netcdf variable name to process.'
-     PRINT *,'       level   : level to process.'
+     PRINT *,'       -f IN-file : input model file.' 
+     PRINT *,'       -v IN-var  : netcdf variable name to process.'
+     PRINT *,'       -k level   : level to process.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'        [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'        [-nc4 ]: Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -66,56 +75,34 @@ PROGRAM cdf2matlab
      STOP
   ENDIF
   !!
-  !! Initialisation from 1st file (all file are assume to have the same geometry)
-  CALL getarg (1, cf_in)
-  CALL getarg (2, cv_in)
-  CALL getarg (3, cldum) ; READ(cldum,*) ilev
-
+  ijarg=1
+  DO WHILE (ijarg <= narg )
+     CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-f'  ) ; CALL getarg (ijarg, cf_in ) ; ijarg=ijarg+1
+     CASE ( '-v'  ) ; CALL getarg (ijarg, cv_in ) ; ijarg=ijarg+1
+     CASE ( '-k'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
+        ! options
+     CASE ( '-o'  ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
+  ENDDO
   IF ( chkfile (cf_in) ) STOP  ! missing file
 
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)
   npk    = getdim (cf_in,cn_z)
 
-  ipk(:)                       = 1
-  stypvar(1)%cname             = 'lon'
-  stypvar(1)%cunits            = 'degrees'
-  stypvar(1)%valid_min         = -180.
-  stypvar(1)%valid_max         = 540.
-  stypvar(1)%clong_name        = 'longitude'
-  stypvar(1)%cshort_name       = 'lon'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'YX'
-
-  stypvar(2)%cname             = 'lat'
-  stypvar(2)%cunits            = 'degrees'
-  stypvar(2)%rmissing_value    = 0.
-  stypvar(2)%valid_min         = -90.
-  stypvar(2)%valid_max         = 90.
-  stypvar(2)%clong_name        = 'latitude'
-  stypvar(2)%cshort_name       = 'lat'
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'YX'
-
-  stypvar(3)%cname             = cv_in
-  stypvar(3)%cunits            = ''
-  stypvar(3)%rmissing_value    = 0.
-  stypvar(3)%clong_name        = ''
-  stypvar(3)%cshort_name       = cv_in
-  stypvar(3)%conline_operation = 'N/A'
-  stypvar(3)%caxis             = 'TYX'
-
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
-
   npiglox2 = 2 * npiglo
 
   ALLOCATE( zvar(npiglo,npjglo), zlon(npiglo,npjglo), zlat(npiglo,npjglo) )
   ALLOCATE( zvarout(npiglox2,npjglo), zlonout(npiglox2,npjglo), zlatout(npiglox2,npjglo) )
 
-  ncout = create    (cf_out,   cf_in,   npiglox2, npjglo, 1         )
-  ierr  = createvar (ncout,    stypvar, 3,        ipk,    id_varout )
+  CALL CreateOutput
 
   zlon(:,:) = getvar(cf_in, cn_vlon2d, 1,    npiglo, npjglo)
   zlat(:,:) = getvar(cf_in, cn_vlat2d, 1,    npiglo, npjglo)
@@ -165,15 +152,64 @@ PROGRAM cdf2matlab
      zvarout(:,:) = zvarwork(:,:)
 
   ENDIF
- 
+
   ierr = putvar(ncout,id_varout(1), zlonout, 1, npiglox2, npjglo)
   ierr = putvar(ncout,id_varout(2), zlatout, 1, npiglox2, npjglo)
   ierr = putvar(ncout,id_varout(3), zvarout, 1, npiglox2, npjglo)
 
-  tim  = getvar1d(cf_in, cn_vtimec, 1     )
-  ierr = putvar1d(ncout, tim,       1, 'T')
   ierr = closeout(ncout)
 
   PRINT *, 'Tip : in matlab, do not plot the last line (e.g. maximum northern latitude) '
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(:)                       = 1
+    stypvar(1)%ichunk            = (/npiglox2,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'lon'
+    stypvar(1)%cunits            = 'degrees'
+    stypvar(1)%valid_min         = -180.
+    stypvar(1)%valid_max         = 540.
+    stypvar(1)%clong_name        = 'longitude'
+    stypvar(1)%cshort_name       = 'lon'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'YX'
+
+    stypvar(2)%ichunk            = (/npiglox2,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%cname             = 'lat'
+    stypvar(2)%cunits            = 'degrees'
+    stypvar(2)%rmissing_value    = 0.
+    stypvar(2)%valid_min         = -90.
+    stypvar(2)%valid_max         = 90.
+    stypvar(2)%clong_name        = 'latitude'
+    stypvar(2)%cshort_name       = 'lat'
+    stypvar(2)%conline_operation = 'N/A'
+    stypvar(2)%caxis             = 'YX'
+
+    stypvar(3)%ichunk            = (/npiglox2,MAX(1,npjglo/30),1,1 /)
+    stypvar(3)%cname             = cv_in
+    stypvar(3)%cunits            = ''
+    stypvar(3)%rmissing_value    = 0.
+    stypvar(3)%clong_name        = ''
+    stypvar(3)%cshort_name       = cv_in
+    stypvar(3)%conline_operation = 'N/A'
+    stypvar(3)%caxis             = 'TYX'
+
+    ncout = create    (cf_out,   cf_in,   npiglox2, npjglo, 1         , ld_nc4=lnc4 )
+    ierr  = createvar (ncout,    stypvar, 3,        ipk,    id_varout , ld_nc4=lnc4 )
+
+    tim  = getvar1d(cf_in, cn_vtimec, 1     )
+    ierr = putvar1d(ncout, tim,       1, 'T')
+
+  END SUBROUTINE CreateOutput
+
 
 END PROGRAM cdf2matlab
