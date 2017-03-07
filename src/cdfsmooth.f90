@@ -38,6 +38,7 @@ PROGRAM cdfsmooth
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   !
@@ -79,8 +80,8 @@ PROGRAM cdfsmooth
   CHARACTER(LEN=256)                            :: ctyp              ! filter type
   CHARACTER(LEN=256)                            :: cldum             ! dummy character variable
   CHARACTER(LEN=256)                            :: clklist           ! ciphered k-list of level
- 
-  LOGICAL                                       :: lnc4 = .false.    ! flag for netcdf4 output with chinking and deflation
+
+  LOGICAL                                       :: lnc4 = .FALSE.    ! flag for netcdf4 output with chinking and deflation
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -102,15 +103,15 @@ PROGRAM cdfsmooth
      PRINT *,'                    of iteration of the Shapiro filter.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -t filter_type : Lanczos      , L, l  (default)'
-     PRINT *,'                        Hanning      , H, h'
-     PRINT *,'                        Shapiro      , S, s'
-     PRINT *,'                        Box          , B, b'
-     PRINT *,'       -a aniso       : anisotropic ratio for Box car '
-     PRINT *,'       -k level_list  : levels to be filtered (default = all levels)'
+     PRINT *,'       [-t filter_type] : Lanczos      , L, l  (default)'
+     PRINT *,'                          Hanning      , H, h'
+     PRINT *,'                          Shapiro      , S, s'
+     PRINT *,'                          Box          , B, b'
+     PRINT *,'       [-a aniso      ] : anisotropic ratio for Box car '
+     PRINT *,'       [-k level_list ] : levels to be filtered (default = all levels)'
      PRINT *,'               level_list is a comma-separated list of levels.'
      PRINT *,'                  the syntax 1-3,6,9-12 will select 1 2 3 6 9 10 11 12'
-     PRINT *,'       -nc4 : produce netcdf4 output file with chunking and deflation.'
+     PRINT *,'       [-nc4] : produce netcdf4 output file with chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Output file name is build from input file name with indication'
@@ -128,13 +129,14 @@ PROGRAM cdfsmooth
   DO WHILE (ijarg <= narg )
      CALL getarg ( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE (cldum)
-     CASE ( '-f' ) ; CALL getarg ( ijarg, cf_in   ) ; ijarg=ijarg+1
-     CASE ( '-c' ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ncut
-     CASE ( '-t' ) ; CALL getarg ( ijarg, ctyp    ) ; ijarg=ijarg+1 
-     CASE ( '-k' ) ; CALL getarg ( ijarg, clklist ) ; ijarg=ijarg+1 
-          CALL GetList (clklist, iklist, ilev )
+     CASE ( '-f'  ) ; CALL getarg ( ijarg, cf_in   ) ; ijarg=ijarg+1
+     CASE ( '-c'  ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ncut
+     CASE ( '-t'  ) ; CALL getarg ( ijarg, ctyp    ) ; ijarg=ijarg+1 
+     CASE ( '-k'  ) ; CALL getarg ( ijarg, clklist ) ; ijarg=ijarg+1 
+                    ; CALL GetList (clklist, iklist, ilev )
      CASE ( '-a'  ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
-     CASE ( '-nc4') ;  lnc4=.true.
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR :' ,TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -150,31 +152,31 @@ PROGRAM cdfsmooth
 
   WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'L',ncut   ! default name
 
-     SELECT CASE ( ctyp)
-     CASE ( 'Lanczos','L','l') 
-        nfilter=jp_lanc
-        WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'L',ncut
-        PRINT *,' Working with Lanczos filter'
-     CASE ( 'Hanning','H','h')
-        nfilter=jp_hann
-        ALLOCATE ( dec2d(0:2,0:2) )
-        WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'H',ncut
-        PRINT *,' Working with Hanning filter'
-     CASE ( 'Shapiro','S','s')
-        nfilter=jp_shap
-        WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'S',ncut
-        PRINT *,' Working with Shapiro filter'
-     CASE ( 'Box','B','b')
-        nfilter=jp_boxc
-        WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'B',ncut
-        IF ( ranis /=1. ) THEN
-          PRINT *, 'Anisotropic box car with ratio Lx = ', ranis, 'x Ly'
-        ELSE
-          PRINT *,' Working with Box filter'
-        ENDIF
-     CASE DEFAULT
-        PRINT *, TRIM(ctyp),' : undefined filter ' ; STOP
-     END SELECT
+  SELECT CASE ( ctyp)
+  CASE ( 'Lanczos','L','l') 
+     nfilter=jp_lanc
+     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'L',ncut
+     PRINT *,' Working with Lanczos filter'
+  CASE ( 'Hanning','H','h')
+     nfilter=jp_hann
+     ALLOCATE ( dec2d(0:2,0:2) )
+     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'H',ncut
+     PRINT *,' Working with Hanning filter'
+  CASE ( 'Shapiro','S','s')
+     nfilter=jp_shap
+     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'S',ncut
+     PRINT *,' Working with Shapiro filter'
+  CASE ( 'Box','B','b')
+     nfilter=jp_boxc
+     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'B',ncut
+     IF ( ranis /=1. ) THEN
+        PRINT *, 'Anisotropic box car with ratio Lx = ', ranis, 'x Ly'
+     ELSE
+        PRINT *,' Working with Box filter'
+     ENDIF
+  CASE DEFAULT
+     PRINT *, TRIM(ctyp),' : undefined filter ' ; STOP
+  END SELECT
 
   CALL filterinit (nfilter, fn, nband)
   ! Look for input file and create outputfile
@@ -209,12 +211,10 @@ PROGRAM cdfsmooth
   ALLOCATE (stypvar(nvars) )
   ALLOCATE (id_var(nvars),ipk(nvars),id_varout(nvars) )
 
-    ALLOCATE ( gdeptmp(npk)  )
-    IF (npkf /= 0 ) THEN 
-       gdeptmp(:) = getvar1d(cf_in, cv_dep, npk )  
-    ELSE
-       gdeptmp(:)=0.  ! dummy value
-    ENDIF
+  ALLOCATE ( gdeptmp(npk)  )
+  IF (npkf /= 0 ) THEN ; gdeptmp(:) = getvar1d(cf_in, cv_dep, npk )  
+  ELSE                 ; gdeptmp(:) = 0.  ! dummy value
+  ENDIF
 
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:) = getvarname(cf_in, nvars, stypvar)
@@ -287,18 +287,13 @@ CONTAINS
     INTEGER(KIND=4), INTENT(in) :: kband    ! filter bandwidth
     !!----------------------------------------------------------------------
     SELECT CASE ( kfilter)
-    CASE ( jp_lanc )
-       CALL initlanc (pfn, kband)
-    CASE ( jp_hann )
-       CALL inithann (pfn, kband)
-    CASE ( jp_shap )
-       CALL initshap (pfn, kband)
-    CASE ( jp_boxc )
-       CALL initbox  (pfn, kband)
+    CASE ( jp_lanc ) ; CALL initlanc (pfn, kband)
+    CASE ( jp_hann ) ; CALL inithann (pfn, kband)
+    CASE ( jp_shap ) ; CALL initshap (pfn, kband)
+    CASE ( jp_boxc ) ; CALL initbox  (pfn, kband)
     END SELECT
 
   END SUBROUTINE filterinit
-
 
   SUBROUTINE filter (kfilter, px, kpx, py)
     !!---------------------------------------------------------------------
@@ -313,18 +308,13 @@ CONTAINS
     REAL(KIND=4), DIMENSION(:,:),   INTENT(out) :: py      ! output data
     !!----------------------------------------------------------------------
     SELECT CASE ( kfilter)
-    CASE ( jp_lanc )
-       CALL lislanczos2d (px, kpx, py, npiglo, npjglo, fn, nband)
-    CASE ( jp_hann )
-       CALL lishan2d     (px, kpx, py, ncut, npiglo, npjglo)
-    CASE ( jp_shap )
-       CALL lisshapiro1d (px, kpx, py, ncut, npiglo, npjglo)
-    CASE ( jp_boxc )
-       CALL lisbox       (px, kpx, py, npiglo, npjglo, fn, nband, ranis)
+    CASE ( jp_lanc ) ; CALL lislanczos2d (px, kpx, py, npiglo, npjglo, fn, nband)
+    CASE ( jp_hann ) ; CALL lishan2d     (px, kpx, py, ncut, npiglo, npjglo)
+    CASE ( jp_shap ) ; CALL lisshapiro1d (px, kpx, py, ncut, npiglo, npjglo)
+    CASE ( jp_boxc ) ; CALL lisbox       (px, kpx, py, npiglo, npjglo, fn, nband, ranis)
     END SELECT
 
   END SUBROUTINE filter
-
 
   SUBROUTINE initlanc(pfn, knj)
     !!---------------------------------------------------------------------
@@ -355,7 +345,6 @@ CONTAINS
 
   END SUBROUTINE initlanc
 
-
   SUBROUTINE inithann(pfn, knj)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE inithann  ***
@@ -382,7 +371,6 @@ CONTAINS
 
   END SUBROUTINE inithann
 
-
   SUBROUTINE initshap(pfn, knj)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE initshap  ***
@@ -396,7 +384,6 @@ CONTAINS
     !   nothing to do 
 
   END SUBROUTINE initshap
-
 
   SUBROUTINE initbox(pfn, knj)
     !!---------------------------------------------------------------------
@@ -623,7 +610,6 @@ CONTAINS
     ENDIF
 
   END SUBROUTINE lisshapiro1d
-
 
   SUBROUTINE lisbox(px, kiw, py, kpi, kpj, pfn, knj,anis)
     !!---------------------------------------------------------------------

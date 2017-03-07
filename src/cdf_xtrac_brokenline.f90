@@ -127,7 +127,7 @@ PROGRAM cdf_xtract_brokenline
 
    ! check argument number and show usage if necessary
    narg = iargc()
-   IF ( narg < 3 ) THEN
+   IF ( narg == 0 ) THEN
       PRINT *,' usage :  cdf_xtrac_brokenline T-file U-file V-file [ice-file] ....'
       PRINT *,'    [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice] '
       PRINT *,'    [-vt] [-vvl] [-o ROOT_name]'
@@ -210,8 +210,8 @@ PROGRAM cdf_xtract_brokenline
       CASE ( '-ice'     ) ; lice    =.TRUE.  ; nvar = nvar + 2  !
       CASE ( '-vt '     ) ; lvt     =.TRUE.  ; nvar = nvar + 2  !
       CASE ( '-vvl '    ) ; lg_vvl  =.TRUE.                     !
-      CASE ( '-o '      ) ;  CALL getarg(ijarg, cf_root) ; ijarg = ijarg + 1  !
-      CASE ( '-f' )       ;  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
+      CASE ( '-o '      ) ; CALL getarg(ijarg, cf_root) ; ijarg = ijarg + 1
+      CASE ( '-f'       ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
          CALL ParseFiles(cldum)        ! many section files can be given separated with comma
       CASE DEFAULT 
          ifree = ifree + 1

@@ -17,6 +17,7 @@ PROGRAM cdfvhst
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -57,20 +58,21 @@ PROGRAM cdfvhst
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvhst  VTfile [-full] [-vvl] [-o OUT-file] [-nc4] '
+     PRINT *,' usage : cdfvhst  -f VT-file [-full] [-vvl] [-o OUT-file] [-nc4] '
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'         Computes the vertically integrated heat and salt transports '
      PRINT *,'         at each grid cell.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'         VTfile : file which contains UT, VT, US, VS quantities'
+     PRINT *,'         -f VT-file : file which contains UT, VT, US, VS quantities'
      PRINT *,'              (produced by cdfvT.f90)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'         [ -full ] : use full step computation (default is partial steps).'
-     PRINT *,'         [ -vvl  ] : use time-varying vertical metrics.'
-     PRINT *,'         [ -o OUT-file ] : specify output file name, instead of ', TRIM(cf_out)
-     PRINT *,'         [ -nc4  ] : use netcdf4 chunking and deflation.'
+     PRINT *,'         [-full ] : use full step computation (default is partial steps).'
+     PRINT *,'         [-vvl  ] : use time-varying vertical metrics.'
+     PRINT *,'         [-o OUT-file ] : specify output file name, instead of ', TRIM(cf_out)
+     PRINT *,'         [-nc4  ] : use netcdf4 chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'         Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr)
@@ -85,11 +87,13 @@ PROGRAM cdfvhst
   DO WHILE (ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg+1
      SELECT CASE (cldum )
+     CASE ( '-f'    ) ;  CALL getarg(ijarg, cf_vtfil) ; ijarg = ijarg+1
+     ! options
      CASE ( '-full' ) ;  lfull  = .TRUE.
      CASE ( '-vvl'  ) ;  lg_vvl = .TRUE.
      CASE ( '-nc4'  ) ;  lnc4   = .TRUE.
-     CASE ( '-o'    ) ;  CALL getarg(ijarg, cf_out) ; ijarg = ijarg+1
-     CASE DEFAULT     ;  cf_vtfil = cldum
+     CASE ( '-o'    ) ;  CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg+1
+     CASE DEFAULT     ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.'  ; STOP
      END SELECT
   END DO
 
@@ -184,9 +188,6 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-    ! define new variables for output 
-
-
     ipk(:)                    = 1
     stypvar%rmissing_value    = 0.
     stypvar%valid_min         = -100.
@@ -228,6 +229,5 @@ CONTAINS
     ierr  = putvar1d(ncout,    tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
-
 
 END PROGRAM cdfvhst

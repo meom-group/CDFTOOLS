@@ -23,6 +23,7 @@ PROGRAM cdfmxl
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class mixed_layer
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -89,7 +90,7 @@ PROGRAM cdfmxl
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmxl T-file [S-file] [-nc4] [-o output file]'
+     PRINT *,' usage : cdfmxl -t T-file [-s S-file] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute 7 estimates of the mixed layer depth from temperature'
@@ -106,13 +107,13 @@ PROGRAM cdfmxl
      PRINT *,'       7- Density criterium (0.125 kg/m3 difference between rho at 10m and MLD) '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file   : input netcdf file (gridT)' 
-     PRINT *,'       [S-file] : input netcdf file (gridS) Optional if vosaline not in T-file' 
+     PRINT *,'       -t T-file   : input netcdf file (gridT)' 
+     PRINT *,'       [-s S-file] : input netcdf file (gridS), if vosaline not in T-file' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-nc4] : use netcdf4 chunking and deflation on output '
-     PRINT *,'       [-o output file] : specify the name of output file instead of '
+     PRINT *,'       [-o OUT-file] : specify the name of output file instead of '
      PRINT *,'                default name ',TRIM(cf_out)
+     PRINT *,'       [-nc4] : use netcdf4 chunking and deflation on output '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fzgr)
@@ -130,23 +131,21 @@ PROGRAM cdfmxl
      STOP
   ENDIF
 
-  ijarg = 1 ; ixtra = 0
+  ijarg = 1  ; cf_sfil='none'
+
   DO WHILE ( ijarg <= narg )
-    CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
-    SELECT CASE (cldum )
-    CASE ( '-nc4' ) ; lnc4 = .TRUE.
-    CASE ( '-o'   ) ; CALL getarg (ijarg,cf_out )   ; ijarg = ijarg + 1
-    CASE DEFAULT
-      ixtra = ixtra + 1
-      SELECT CASE (ixtra )
-      CASE ( 1 ) ; cf_tfil = cldum ; cf_sfil = cf_tfil  ! first free name is a gridT file name
-      CASE ( 2 ) ; cf_sfil = cldum                      ! second free name ( if any) is a gridS file name
-      CASE DEFAULT 
-        PRINT *, ' +++ ERROR : Too many files in input !'
-        STOP
-      END SELECT
-    END SELECT
+     CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
+     SELECT CASE (cldum )
+     CASE ( '-t'   ) ; CALL getarg (ijarg,cf_tfil ) ; ijarg = ijarg + 1
+     CASE ( '-s'   ) ; CALL getarg (ijarg,cf_sfil ) ; ijarg = ijarg + 1
+        ! options
+     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE ( '-o'   ) ; CALL getarg (ijarg,cf_out  ) ; ijarg = ijarg + 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum) ,' unknown option.' ; STOP
+     END SELECT
   ENDDO
+
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
   IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cf_sfil)  ) STOP ! missing file
 
@@ -155,41 +154,6 @@ PROGRAM cdfmxl
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
-
-  rdep(1) = 0.
-
-  DO ji = 1, jp_varout
-     stypvar(ji)%ichunk = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
-  ENDDO
-
-  ipk(:)                    = 1
-  stypvar(1)%cname          = 'somxl010'
-  stypvar(2)%cname          = 'somxl030'
-  stypvar(3)%cname          = 'somxlt02'
-  stypvar(4)%cname          = 'somxlt02z10' 
-  stypvar(5)%cname          = 'somxlt05z10'
-  stypvar(6)%cname          = 'somxl030z10'
-  stypvar(7)%cname          = 'somxl125z10'
-  stypvar%cunits            = 'm'
-  stypvar%rmissing_value    = rmisval  ! to be compliant with Mercator standards
-  stypvar%valid_min         = 0.
-  stypvar%valid_max         = 7000.
-  stypvar(1)%clong_name     = 'Mixed_Layer_Depth_on_0.01_rho_crit'
-  stypvar(2)%clong_name     = 'Mixed_Layer_Depth_on_0.03_rho_crit'
-  stypvar(3)%clong_name     = 'Mixed_Layer_Depth_on_-0.2_temp_crit'
-  stypvar(4)%clong_name     = 'Mixed_Layer_Depth_on_-0.2_temp_crit ref. 10m'
-  stypvar(5)%clong_name     = 'Mixed_Layer_Depth_on_-0.5_temp_crit ref. 10m'
-  stypvar(6)%clong_name     = 'Mixed_Layer_Depth_on_0.03_rho_crit ref. 10m'
-  stypvar(7)%clong_name     = 'Mixed_Layer_Depth_on_0.125_rho_crit ref. 10m'
-  stypvar(1)%cshort_name    = 'somxl010'
-  stypvar(2)%cshort_name    = 'somxl030'
-  stypvar(3)%cshort_name    = 'somxlt02'
-  stypvar(4)%cshort_name    = 'ILD02z10'
-  stypvar(5)%cshort_name    = 'ILD05z10'
-  stypvar(6)%cshort_name    = 'MLD030z10'
-  stypvar(7)%cshort_name    = 'MLD125z10'
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TYX'
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -210,7 +174,6 @@ PROGRAM cdfmxl
   ALLOCATE (tmask(npiglo,npjglo), tmask_surf(npiglo,npjglo), tmask_10(npiglo,npjglo))
   ALLOCATE (rho_surf(npiglo,npjglo), tem_surf(npiglo,npjglo)                )
   ALLOCATE (mbathy(npiglo,npjglo)                                           )
-
   ALLOCATE (gdepw(0:npk), gdept(npk), tim(npt)                              )
 
   ! read mbathy and gdepw use real rtem(:,:) as template (getvar is used for real only)
@@ -236,12 +199,7 @@ PROGRAM cdfmxl
   ! find W levels for later computation
   nkref10 = MINLOC(gdepw(1:npk),gdepw(1:npk)>=10)-1 ;  IF ( nkref10(1) < 1 ) nkref10(1)=1
 
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1             , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout,  stypvar, jp_varout,      ipk, id_varout, ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
-
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
+  CALL CreateOutput
 
   DO jt=1,npt
 
@@ -355,5 +313,60 @@ PROGRAM cdfmxl
   END DO ! time loop
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    rdep(1) = 0.
+
+    DO ji = 1, jp_varout
+       stypvar(ji)%ichunk = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
+    ENDDO
+
+    ipk(:)                    = 1
+    stypvar(1)%cname          = 'somxl010'
+    stypvar(2)%cname          = 'somxl030'
+    stypvar(3)%cname          = 'somxlt02'
+    stypvar(4)%cname          = 'somxlt02z10' 
+    stypvar(5)%cname          = 'somxlt05z10'
+    stypvar(6)%cname          = 'somxl030z10'
+    stypvar(7)%cname          = 'somxl125z10'
+    stypvar%cunits            = 'm'
+    stypvar%rmissing_value    = rmisval  ! to be compliant with Mercator standards
+    stypvar%valid_min         = 0.
+    stypvar%valid_max         = 7000.
+    stypvar(1)%clong_name     = 'Mixed_Layer_Depth_on_0.01_rho_crit'
+    stypvar(2)%clong_name     = 'Mixed_Layer_Depth_on_0.03_rho_crit'
+    stypvar(3)%clong_name     = 'Mixed_Layer_Depth_on_-0.2_temp_crit'
+    stypvar(4)%clong_name     = 'Mixed_Layer_Depth_on_-0.2_temp_crit ref. 10m'
+    stypvar(5)%clong_name     = 'Mixed_Layer_Depth_on_-0.5_temp_crit ref. 10m'
+    stypvar(6)%clong_name     = 'Mixed_Layer_Depth_on_0.03_rho_crit ref. 10m'
+    stypvar(7)%clong_name     = 'Mixed_Layer_Depth_on_0.125_rho_crit ref. 10m'
+    stypvar(1)%cshort_name    = 'somxl010'
+    stypvar(2)%cshort_name    = 'somxl030'
+    stypvar(3)%cshort_name    = 'somxlt02'
+    stypvar(4)%cshort_name    = 'ILD02z10'
+    stypvar(5)%cshort_name    = 'ILD05z10'
+    stypvar(6)%cshort_name    = 'MLD030z10'
+    stypvar(7)%cshort_name    = 'MLD125z10'
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TYX'
+
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1             , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar, jp_varout,      ipk, id_varout, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
+
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfmxl

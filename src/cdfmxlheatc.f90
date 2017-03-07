@@ -19,6 +19,7 @@ PROGRAM cdfmxlheatc
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class mixed_layer
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -100,7 +101,7 @@ PROGRAM cdfmxlheatc
     CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
     CASE ( '-vvl'     ) ; lg_vvl = .TRUE.
-    CASE DEFAULT  ; PRINT *, 'ERROR: ', TRIM(cldum),' : unknown option' ; STOP
+    CASE DEFAULT  ; PRINT *, 'ERROR: ', TRIM(cldum),' : unknown option.' ; STOP
     END SELECT
   END DO
 

@@ -85,7 +85,7 @@ PROGRAM cdf2levitusgrid2d
   CALL ReadCdfNames()
 
   narg = iargc()
-  IF ( narg < 3 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdf2levitusgrid2d -f IN-file -o OUT-file -v VAR-name2D'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'

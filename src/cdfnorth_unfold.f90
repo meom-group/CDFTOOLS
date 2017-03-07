@@ -23,12 +23,14 @@ PROGRAM cdfnorth_unfold
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER(KIND=4)                               :: jk, jt, jvar, jv         ! dummy loop index
   INTEGER(KIND=4)                               :: ierr                     ! working integer
-  INTEGER(KIND=4)                               :: narg, iargc              ! browse line
+  INTEGER(KIND=4)                               :: idep, idep_max           ! possible depth index, maximum
+  INTEGER(KIND=4)                               :: narg, iargc, ijarg       ! browse line
   INTEGER(KIND=4)                               :: npiglo, npjglo, npk, npt ! size of the domain
   INTEGER(KIND=4)                               :: nvars                    ! Number of variables in a file
   INTEGER(KIND=4)                               :: ijatl, ijpacif           ! j starting position in atl and pacif
@@ -52,16 +54,19 @@ PROGRAM cdfnorth_unfold
   CHARACTER(LEN=256)                            :: cglobal                  ! variable position
   CHARACTER(LEN=256)                            :: cldum                    ! dummy string
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep                  ! array of possible depth name (or 3rd dimension)
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar                  ! output var attribute
 
-  LOGICAL                                       :: lchk=.false.             ! flag for consistency check
+  LOGICAL                                       :: lchk = .false.           ! flag for consistency check
+  LOGICAL                                       :: lnc4 = .FALSE.           ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
-  IF ( narg /=5 ) THEN
-     PRINT *,' usage : cdfnorth_unfold IN-file jatl jpacif pivot Cgrid_point'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfnorth_unfold -f IN-file -jatl jatl -jpacif jpacif -p pivot ...'
+     PRINT *,'              ... -typ TYP-Cgrid [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Unfold the Artic Ocean in an ORCA configuration. Produce a netcdf' 
@@ -69,29 +74,46 @@ PROGRAM cdfnorth_unfold
      PRINT *,'       both Atlantic and Pacific sides.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file     : netcdf file to be unfolded.' 
-     PRINT *,'       jatl        : J index to start the unfold process in the Atlantic.'
-     PRINT *,'       jpacif      : J index to start the unfold process in the Pacific.'
-     PRINT *,'       pivot       : type of pivot for the north fold condition ( T or F )'
-     PRINT *,'       Cgrid_point : grid point where the variables in the input file are'
-     PRINT *,'                     located. If all variables in a single file are not on'
-     PRINT *,'                     the same C-grid location, there might be a problem ...'
+     PRINT *,'       -f IN-file     : Input netcdf file to be unfolded.' 
+     PRINT *,'       -jatl jatl     : J index to start the unfold process in the Atlantic.'
+     PRINT *,'       -jpacif jpacif : J index to start the unfold process in the Pacific.'
+     PRINT *,'       -p pivot       : type of pivot for the north fold condition ( T or F )'
+     PRINT *,'       -typ TYP-Cgrid : one of T|U|V|W|F , indicating the grid point where the'
+     PRINT *,'                   variables in the input file are located. If all variables in'
+     PRINT *,'                   a single file are not on the same C-grid location, there '
+     PRINT *,'                   might be a problem ...'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ]       : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : same name and units than in the input file.'
      STOP
   ENDIF
-
-  CALL getarg (1, cf_in )
-  CALL getarg (2, cldum ) ; READ(cldum,*) ijatl
-  CALL getarg (3, cldum ) ; READ(cldum,*) ijpacif
-  CALL getarg (4, cpivot) 
-  CALL getarg (5, ctype )
   
+  ijarg=1
+  DO WHILE ( ijarg <= narg )
+      CALL getarg (2, cldum )
+      SELECT CASE ( cldum )
+      CASE ( '-f'     ) ; CALL getarg (ijarg, cf_in ) ; ijarg=ijarg+1
+      CASE ( '-jatl'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijatl
+      CASE ( '-jpacif') ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijpacif
+      CASE ( '-p'     ) ; CALL getarg (ijarg, cpivot) ; ijarg=ijarg+1
+      CASE ( '-typ'   ) ; CALL getarg (ijarg, ctype ) ; ijarg=ijarg+1
+      ! options
+      CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
+      CASE ( '-nc4'   ) ; lnc4 = .TRUE.
+      CASE DEFAULt      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+      END SELECT
+  ENDDO
+
   IF ( chkfile(cf_in) ) STOP ! missing file
 
   WRITE(cglobal,9000) 'cdfnorth_unfold ',TRIM(cf_in), ijatl, ijpacif, TRIM(cpivot), TRIM(ctype)
@@ -100,20 +122,20 @@ PROGRAM cdfnorth_unfold
   npiglo = getdim (cf_in, cn_x                             )
   npjglo = getdim (cf_in, cn_y                             )
   npt    = getdim (cf_in, cn_t                             )
-  npk    = getdim (cf_in, cn_z, cdtrue=cv_dep, kstatus=ierr)
 
-  IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_in,'z',cdtrue=cv_dep,kstatus=ierr)
-     IF (ierr /= 0 ) THEN
-        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
-        IF ( ierr /= 0 ) THEN
-           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-           IF ( ierr /= 0 ) THEN
-              PRINT *,' assume file with no depth'
-              npk=0
-           ENDIF
-        ENDIF
-     ENDIF
+  ! looking for npk among various possible name
+  idep_max=8
+  ALLOCATE ( clv_dep(idep_max) )
+  clv_dep(:) = (/cn_z,'z','sigma','nav_lev','levels','ncatice','icbcla','icbsect'/)
+  idep=1  ; ierr=1000
+  DO WHILE ( ierr /= 0 .AND. idep <= idep_max )
+     npk  = getdim (cf_in, clv_dep(idep), cdtrue=cv_dep, kstatus=ierr)
+     idep = idep + 1
+  ENDDO
+
+  IF ( ierr /= 0 ) THEN  ! none of the dim name was found
+      PRINT *,' assume file with no depth'
+      npk=0
   ENDIF
 
   ! to be improved
@@ -127,8 +149,8 @@ PROGRAM cdfnorth_unfold
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
-  PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
+  PRINT *, 'npk    = ', npk , 'Dep name :' , TRIM(cv_dep)
 
   ALLOCATE( tab(npiarctic, npjarctic),  v2d(npiglo,npjglo), tim(npt)   )
   ALLOCATE( tablon(npiarctic, npjarctic), tablat(npiarctic, npjarctic) )
@@ -142,27 +164,9 @@ PROGRAM cdfnorth_unfold
 
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:) = getvarname(cf_in, nvars, stypvar)
-
   id_var(:)  = (/(jv, jv=1,nvars)/)
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk (cf_in, nvars, cdep=cv_dep)
 
-  WHERE( ipk == 0 ) cv_names = 'none'
-  stypvar(:)%cname = cv_names
-
-  v2d=getvar(cf_in, cn_vlon2d, 1, npiglo, npjglo)
-  CALL unfold(v2d ,tablon, ijatl, ijpacif, cpivot, ctype, 1)
-
-  v2d=getvar(cf_in, cn_vlat2d, 1, npiglo, npjglo)
-  CALL unfold(v2d ,tablat, ijatl, ijpacif, cpivot, ctype, 1)
-
-  ! create output file taking the sizes in cf_in
-  ncout = create      (cf_out, cf_in,   npiarctic, npjarctic, npk,                                 cdep=cv_dep)
-  ierr  = createvar   (ncout,  stypvar, nvars,     ipk,       id_varout, cdglobal=TRIM(cglobal)               )
-  ierr  = putheadervar(ncout,  cf_in,   npiarctic, npjarctic, npk, pnavlon=tablon, pnavlat=tablat, cdep=cv_dep)
-
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
+  CALL CreateOutput
 
   ! default value
   isig =  1
@@ -189,7 +193,6 @@ PROGRAM cdfnorth_unfold
   ierr = closeout(ncout)
 
 CONTAINS
-
  
   INTEGER(KIND=4) FUNCTION chkisig (cdpivot, cdtype, ptab, ldchk)
     !!---------------------------------------------------------------------
@@ -266,7 +269,6 @@ CONTAINS
 
   END FUNCTION chkisig
 
-
   SUBROUTINE unfold( ptabin, ptabout, kjatl, kjpacif, cdpivot, cdtype, ksig)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE unfold  ***
@@ -328,5 +330,40 @@ CONTAINS
     END SELECT
 
   END SUBROUTINE unfold
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+  ipk(:)     = getipk (cf_in, nvars, cdep=cv_dep)
+
+  WHERE( ipk == 0 ) cv_names = 'none'
+  stypvar(:)%cname = cv_names
+
+  DO jvar = 1, nvars
+     stypvar(jvar)%ichunk = (/npiarctic,MAX(1,npjarctic/30),1,1 /)
+  ENDDO
+
+  v2d=getvar(cf_in, cn_vlon2d, 1, npiglo, npjglo)
+  CALL unfold(v2d ,tablon, ijatl, ijpacif, cpivot, ctype, 1)
+
+  v2d=getvar(cf_in, cn_vlat2d, 1, npiglo, npjglo)
+  CALL unfold(v2d ,tablat, ijatl, ijpacif, cpivot, ctype, 1)
+
+  ! create output file taking the sizes in cf_in
+  ncout = create      (cf_out, cf_in,   npiarctic, npjarctic, npk,                                 cdep=cv_dep, ld_nc4=lnc4)
+  ierr  = createvar   (ncout,  stypvar, nvars,     ipk,       id_varout, cdglobal=TRIM(cglobal)               , ld_nc4=lnc4)
+  ierr  = putheadervar(ncout,  cf_in,   npiarctic, npjarctic, npk, pnavlon=tablon, pnavlat=tablat, cdep=cv_dep)
+
+  tim  = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfnorth_unfold

@@ -21,13 +21,14 @@ PROGRAM cdfvFWov
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                            :: narg, iargc         ! arguments on command line
+  INTEGER(KIND=4)                            :: ji, jk, jt          ! dummy loop index
+  INTEGER(KIND=4)                            :: narg, iargc, ijarg  ! arguments on command line
   INTEGER(KIND=4)                            :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                            :: npk, npt            ! size of the domain
-  INTEGER(KIND=4)                            :: ji, jk, jt          ! dummy loop index
   INTEGER(KIND=4)                            :: ierr                ! error status of I/O
   INTEGER(KIND=4)                            :: ncout               ! ncid of output file
   INTEGER(KIND=4)                            :: ikx=1, iky=1, ikz=1 ! dims of netcdf output file
@@ -61,6 +62,7 @@ PROGRAM cdfvFWov
   CHARACTER(LEN=256)                         :: cv_totvFW = 'totvFW'    ! output variable 2
   CHARACTER(LEN=256)                         :: cv_ovFW   = 'ovFW'      ! output variable 3
   CHARACTER(LEN=256)                         :: cglobal             ! Global attribute for output file
+  CHARACTER(LEN=256)                         :: cldum               ! working char variable
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar             ! I/O data structure
 
@@ -71,7 +73,9 @@ PROGRAM cdfvFWov
   !!  Read command line 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvFWov V-secfile S-secfile ZGR-secfile HGR-secfile MSK-secfile'
+     PRINT *,' usage : cdfvFWov -v V-secfile -s S-secfile -zgr ZGR-secfile -hgr HGR-secfile '
+     PRINT *,'                  ... -msk MSK-secfile [-vvl] [-o OUT-file]'
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the fresh water transport and its overturning component through'
      PRINT *,'        a section specified by the input files (data and metrics).'
@@ -79,17 +83,21 @@ PROGRAM cdfvFWov
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        All arguments are ''section files'', which are assumed to be files with'
      PRINT *,'        2 zonal lines of data ( j and j+1 ): '
-     PRINT *,'         - V_secfile : meridional velocity section file.'
-     PRINT *,'         - S_secfile : salinity section file.'
-     PRINT *,'         - ZGR_secfile : mesh_zgr section file '
-     PRINT *,'         - HGR_secfile : mesh_hgr section file '
-     PRINT *,'         - MSK_secfile : mask section file '
+     PRINT *,'       -v V_secfile   : meridional velocity section file.'
+     PRINT *,'       -s S_secfile   : salinity section file.'
+     PRINT *,'       -zgr ZGR_secfile : mesh_zgr section file '
+     PRINT *,'       -hgr HGR_secfile : mesh_hgr section file '
+     PRINT *,'       -msk MSK_secfile : mask section file '
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-vvl] : use time-varying vertical metrics.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out)
+     PRINT *,'       netcdf file : ', TRIM(cf_out),' unless option -o is used.'
      PRINT *,'       variables : ',TRIM(cv_netvFW),', ',TRIM(cv_totvFW),', ',TRIM(cv_ovFW)
      PRINT *,'       Output file only has time relevant dimension. Other dims are set to 1.'
      PRINT *,'       Degenerated dimensions can be removed with :'
@@ -97,12 +105,20 @@ PROGRAM cdfvFWov
      STOP
   ENDIF
 
-  !! get arguments
-  CALL getarg (1, cf_vfil)
-  CALL getarg (2, cf_sfil)
-  CALL getarg (3, cf_zgr )
-  CALL getarg (4, cf_hgr )
-  CALL getarg (5, cf_mask)
+  ijarg=1
+  DO WHILE ( ijarg <= narg) 
+     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-v'   ) ; CALL getarg( ijarg, cf_vfil ) ; ijarg=ijarg+1
+     CASE ( '-s'   ) ; CALL getarg( ijarg, cf_sfil ) ; ijarg=ijarg+1
+     CASE ( '-zgr' ) ; CALL getarg( ijarg, cf_zgr  ) ; ijarg=ijarg+1
+     CASE ( '-hgr' ) ; CALL getarg( ijarg, cf_hgr  ) ; ijarg=ijarg+1
+     CASE ( '-msk' ) ; CALL getarg( ijarg, cf_mask ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg( ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-vvl' ) ; lg_vvl = .TRUE.
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
+  ENDDO
 
   lchk = lchk .OR. chkfile ( cf_vfil )
   lchk = lchk .OR. chkfile ( cf_sfil )
@@ -111,6 +127,7 @@ PROGRAM cdfvFWov
   lchk = lchk .OR. chkfile ( cf_mask )
 
   IF ( lchk ) STOP ! missing files
+  IF ( lg_vvl ) cn_fe3v = cf_vfil
 
   !! get dimensions of input file containing data
   npiglo = getdim(cf_vfil, cn_x)
@@ -140,51 +157,14 @@ PROGRAM cdfvFWov
   rdumlon(:,:) = 0.e0  ! dummy longitude
   rdumlat(:,:) = 0.e0  ! dummy latitude
 
-  !! load data
-  dtime = getvar1d(cf_vfil, cn_vtimec, npt)
+  CALL CreateOutput
 
-  !! define output variables
-  ipk(:) = 1
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -1000.
-  stypvar%valid_max         = 1000.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'T'
-  stypvar%scale_factor      = 1.
-  stypvar%add_offset        = 0.
-  stypvar%savelog10         = 0.
-
-  stypvar(1)%cname          = TRIM(cv_netvFW )
-  stypvar(2)%cname          = TRIM(cv_totvFW )
-  stypvar(3)%cname          = TRIM(cv_ovFW   )
-
-  stypvar(1)%cunits         ='Sv'
-  stypvar(2)%cunits         ='Sv'
-  stypvar(3)%cunits         ='Sv'
-
-  stypvar(1)%clong_name     = 'Net transport of freshwater across section'
-  stypvar(2)%clong_name     = 'Transport of freshwater across section when net mass transport equals 0'
-  stypvar(3)%clong_name     = 'Overturning component of freshwater transport across section'
-
-  stypvar(1)%cshort_name    = TRIM(cv_netvFW )
-  stypvar(2)%cshort_name    = TRIM(cv_totvFW )
-  stypvar(3)%cshort_name    = TRIM(cv_ovFW   )
-
-  WRITE(cglobal,'(a,f5.1,a)' ) 'comment : Reference salinity ', dp_rsal,' transport is positive northward'
-  
-  !! prepare output file
-  ncout = create      (cf_out, 'none',  ikx,      iky, ikz,       cdep='depthw'                    )
-  ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout, cdglobal=TRIM(cglobal)           )
-  ierr  = putheadervar(ncout,  cf_vfil, ikx,      iky, ikz,       pnavlon=rdumlon, pnavlat=rdumlat )
-
-  ierr  = putvar1d(ncout,   REAL(dtime),      npt, 'T')
-
-  !! load scale factors 
-  rmasks(:,:) = getvarxz(cf_mask, 'tmask', kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
-  rmaskn(:,:) = getvarxz(cf_mask, 'tmask', kj=2,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
-  rmaskv(:,:) = getvarxz(cf_mask, 'vmask', kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
-  de1v(:,:)   = getvar  (cf_hgr, cn_ve1v,  klev=1, kpi=npiglo, kpj=npjglo, kimin=1, kjmin=1)
-  de3v(:,:)   = getvarxz(cf_zgr, 'e3v',    kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
+  !! load scale factors  as vertical slice for 3D fields
+  rmasks(:,:) = getvarxz(cf_mask, cn_tmask, kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
+  rmaskn(:,:) = getvarxz(cf_mask, cn_tmask, kj=2,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
+  rmaskv(:,:) = getvarxz(cf_mask, cn_vmask, kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
+  de1v(:,:)   = getvar  (cf_hgr,  cn_ve1v,  klev=1, kpi=npiglo, kpj=npjglo, kimin=1, kjmin=1)
+  de3v(:,:)   = getvarxz(cn_fe3v, cn_ve3v,  kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
 
   WHERE ( rmasks /= 0. ) rmasks = 1.
   WHERE ( rmaskn /= 0. ) rmaskn = 1.
@@ -192,6 +172,10 @@ PROGRAM cdfvFWov
 
   !! do calculation for each time step
   DO jt=1,npt
+     IF ( lg_vvl ) THEN 
+        ! read e3v at each jt
+        de3v(:,:) = getvarxz(cn_fe3v, cn_ve3v,  kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1, ktime=jt )
+     ENDIF
      PRINT *,'jt =',jt
      ! reset cumulative arrays to 0
      zFWv(:,:)   = 0.e0
@@ -246,13 +230,63 @@ PROGRAM cdfvFWov
      PRINT *,'netvFW = ', dnetvFW(jt), ' Sv'
      PRINT *,'totvFW = ', dtotvFW(jt), ' Sv'
      PRINT *,'ovFW   = ', dovFW(jt),   ' Sv'
-     
+
      ierr = putvar0d( ncout, id_varout(1), REAL(dnetvFW(jt)), ktime = jt )
      ierr = putvar0d( ncout, id_varout(2), REAL(dtotvFW(jt)), ktime = jt )
      ierr = putvar0d( ncout, id_varout(3), REAL(dovFW(jt))  , ktime = jt )
 
   END DO  !jt
-  
+
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    !! define output variables
+    ipk(:) = 1
+    stypvar%rmissing_value    = 0.
+    stypvar%valid_min         = -1000.
+    stypvar%valid_max         = 1000.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'T'
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+
+    stypvar(1)%cname          = TRIM(cv_netvFW )
+    stypvar(2)%cname          = TRIM(cv_totvFW )
+    stypvar(3)%cname          = TRIM(cv_ovFW   )
+
+    stypvar(1)%cunits         ='Sv'
+    stypvar(2)%cunits         ='Sv'
+    stypvar(3)%cunits         ='Sv'
+
+    stypvar(1)%clong_name     = 'Net transport of freshwater across section'
+    stypvar(2)%clong_name     = 'Transport of freshwater across section when net mass transport equals 0'
+    stypvar(3)%clong_name     = 'Overturning component of freshwater transport across section'
+
+    stypvar(1)%cshort_name    = TRIM(cv_netvFW )
+    stypvar(2)%cshort_name    = TRIM(cv_totvFW )
+    stypvar(3)%cshort_name    = TRIM(cv_ovFW   )
+
+    WRITE(cglobal,'(a,f5.1,a)' ) 'comment : Reference salinity ', dp_rsal,' transport is positive northward'
+
+    !! prepare output file
+    ncout = create      (cf_out, 'none',  ikx,      iky, ikz,       cdep='depthw'                    )
+    ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout, cdglobal=TRIM(cglobal)           )
+    ierr  = putheadervar(ncout,  cf_vfil, ikx,      iky, ikz,       pnavlon=rdumlon, pnavlat=rdumlat )
+
+    dtime = getvar1d(cf_vfil, cn_vtimec, npt)
+    ierr  = putvar1d(ncout,   REAL(dtime),      npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfvFWov

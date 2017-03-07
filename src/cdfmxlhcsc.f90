@@ -33,6 +33,7 @@ PROGRAM cdfmxlhcsc
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class mixed_layer
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -156,14 +157,12 @@ PROGRAM cdfmxlhcsc
   npk    = getdim (cf_tfil, cn_z)
   npt    = getdim (cf_tfil, cn_t)
 
-
   ! Variable Mixed Layer Depth
   SELECT CASE ( criteria)
   CASE ( 'Temperature', 'temperature', 't', 'T' ) ; WRITE(cldum,'(a,i2.2)' ) 'somxlt', INT(ABS(val)*10)
   CASE ( 'Density',     'density',     'd', 'D' ) ; WRITE(cldum,'(a,i3.3)' ) 'somxl' , INT((val)*1000)
   CASE DEFAULT  ; PRINT *,'ERROR: ',TRIM(criteria),' : criteria not understood' ; STOP
   END SELECT
-
 
   ! Allocate arrays
   ALLOCATE (rtem(npiglo,npjglo),rsal(npiglo,npjglo)          )

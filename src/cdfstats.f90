@@ -19,6 +19,7 @@ PROGRAM cdfstats
    !! $Id$
    !! Copyright (c) 2012, J.-M. Molines
    !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+   !! @class statistics
    !!----------------------------------------------------------------------
    IMPLICIT NONE
 

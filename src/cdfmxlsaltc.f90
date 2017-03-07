@@ -19,6 +19,7 @@ PROGRAM cdfmxlsaltc
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class mixed_layer
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -101,7 +102,7 @@ PROGRAM cdfmxlsaltc
     CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
     CASE ( '-vvl'     ) ; lg_vvl = .TRUE.
-    CASE DEFAULT  ; PRINT *, 'ERROR: ', TRIM(cldum),' : unknown option' ; STOP
+    CASE DEFAULT  ; PRINT *, 'ERROR: ', TRIM(cldum),' : unknown option.' ; STOP
     END SELECT
   END DO
 
@@ -168,15 +169,12 @@ PROGRAM cdfmxlsaltc
            !   no more layer below !
            EXIT   ! get out of the jk loop
         ENDIF
-
      END DO
-
 
      ! Output to netcdf file : Kg/m2
      dmxlsaltc = rprho0*dmxlsaltc
      ierr = putvar(ncout, id_varout(1), REAL(dmxlsaltc), 1, npiglo, npjglo, ktime=jt)
   END DO
-
 
   ierr = closeout(ncout)
 CONTAINS
@@ -213,6 +211,5 @@ CONTAINS
   ierr = putvar1d(ncout,   tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
-
 
 END PROGRAM cdfmxlsaltc

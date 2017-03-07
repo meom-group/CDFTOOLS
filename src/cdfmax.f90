@@ -16,6 +16,7 @@ PROGRAM cdfmax
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_informations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -53,9 +54,9 @@ PROGRAM cdfmax
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmax -f file -var cdfvar ...'
-     PRINT *,'      ... [-lev kmin kmax ] [-zoom imin imax jmin jmax] ...'
-     PRINT *,'      ... [-time tmin tmax ] [-fact multfact]  [-xy ]'
+     PRINT *,' usage : cdfmax -f IN-file -v IN-var [-lev kmin kmax ] ...'
+     PRINT *,'      ... [-zoom imin imax jmin jmax] [-time tmin tmax ] ...'
+     PRINT *,'      ... [-fact multfact] [-xy ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Find minimum and maximum of a file as well as their '
@@ -64,8 +65,8 @@ PROGRAM cdfmax
      PRINT *,'        also deal with vertical slabs in a domain.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f file  : input file '
-     PRINT *,'       -var cdfvar : input variable'
+     PRINT *,'       -f IN-file : input file '
+     PRINT *,'       -v IN-var  : input variable'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-lev kmin kmax ] : restrict to level between kmin and kmax. '
@@ -90,28 +91,19 @@ PROGRAM cdfmax
   DO  WHILE (ijarg <=  narg)
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum )
-     CASE ( '-f'    )
-        CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
-     CASE ( '-lev'  )
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
-     CASE ( '-fact'   )
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rfact
-     CASE ( '-zoom' )
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-     CASE ( '-time' )
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
-     CASE ( '-var'  )
-        CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
-     CASE ( '-xy'   )
-        lforcexy = .TRUE.
-     CASE DEFAULT
-        PRINT *, cldum,' : unknown option '
-        STOP
+     CASE ( '-f'    ) ; CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
+     CASE ( '-v'    ) ; CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
+     CASE ( '-lev'  ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ( '-fact' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rfact
+     CASE ( '-zoom' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+     CASE ( '-time' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
+                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
+     CASE ( '-xy'   ) ; lforcexy = .TRUE.
+     CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
@@ -158,7 +150,6 @@ PROGRAM cdfmax
         PRINT *,' No time or step dim found ' 
      ENDIF
   ENDIF
-
 
   ! fix the size of the zoomed area, or the whole domain if no zoom
   niz = iimax - iimin + 1
@@ -291,7 +282,7 @@ PROGRAM cdfmax
 9003 FORMAT(I5, x,i5,1x,f7.2,5x,i5,f8.2, i5, f7.2, e14.5, 5x,i5,f8.2, i5, f7.2, e14.5)
 
 CONTAINS
-   LOGICAL FUNCTION lchkflag()
+  LOGICAL FUNCTION lchkflag()
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION lchkflag  ***
     !!
@@ -304,14 +295,14 @@ CONTAINS
     !!               REM: the return value is T or F, btw not used in the code.
     !!----------------------------------------------------------------------
 
-    lflag=.false.
-    IF ( ii1 == 0 ) THEN ; ii1=1 ; lflag=.true. ; ENDIF
-    IF ( ii2 == 0 ) THEN ; ii2=1 ; lflag=.true. ; ENDIF
-    IF ( ij1 == 0 ) THEN ; ij1=1 ; lflag=.true. ; ENDIF
-    IF ( ij2 == 0 ) THEN ; ij2=2 ; lflag=.true. ; ENDIF
+    lflag=.FALSE.
+    IF ( ii1 == 0 ) THEN ; ii1=1 ; lflag=.TRUE. ; ENDIF
+    IF ( ii2 == 0 ) THEN ; ii2=1 ; lflag=.TRUE. ; ENDIF
+    IF ( ij1 == 0 ) THEN ; ij1=1 ; lflag=.TRUE. ; ENDIF
+    IF ( ij2 == 0 ) THEN ; ij2=2 ; lflag=.TRUE. ; ENDIF
     IF ( lflag ) v2d(ii1,ij1)=-999999999.999
     IF ( lflag ) v2d(ii2,ij2)=+999999999.999
     lchkflag = lflag
-   END FUNCTION lchkflag
+  END FUNCTION lchkflag
 
 END PROGRAM cdfmax
