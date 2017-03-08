@@ -21,7 +21,7 @@ PROGRAM cdfstatcoord
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                           :: narg, iargc          ! browse lines
+  INTEGER(KIND=4)                           :: narg, iargc,ijarg    ! browse lines
   INTEGER(KIND=4)                           :: npiglo, npjglo       ! size of the domain
   INTEGER(KIND=4)                           :: ngood                ! point counter
 
@@ -35,6 +35,7 @@ PROGRAM cdfstatcoord
 
   CHARACTER(LEN=256)                        :: cf_coo, cf_msk       ! file names
   CHARACTER(LEN=256)                        :: cv_msk               ! mask variable name
+  CHARACTER(LEN=256)                        :: cldum                ! mask variable name
 
   LOGICAL, DIMENSION(:,:), ALLOCATABLE      :: lgood                ! flag for point selection
   !!----------------------------------------------------------------------
