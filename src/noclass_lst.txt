@@ -1,97 +1,95 @@
-cdf16bit.f90 no class
-cdf2levitusgrid3d.f90 no class
-cdfbci.f90 no class
-cdfbotpressure.f90 no class
-cdfbottom.f90 no class
-cdfbottomsig.f90 no class
-cdfbti.f90 no class
-cdfbuoyflx.f90 no class
-cdfcensus.f90 no class
-cdfchgrid.f90 no class  --> file_operations
-cdfclip.f90 no class    --> file_operations
-cdfcmp.f90 no class     --> file_operations
-cdfcoastline.f90 no class  --> wip
-cdfcofdis.f90 no class
-cdfcoloc.f90 no class
-cdfconvert.f90 no class
-cdfcurl.f90 no class
+cdf16bit.f90 no class           --> data_transformation
+cdf2levitusgrid3d.f90 no class  --> data_transformation
+cdfbci.f90 no class             --> energy_diagnostics
+cdfbotpressure.f90 no class  --> bottom
+cdfbottom.f90 no class       --> bottom
+cdfbottomsig.f90 no class    --> bottom
+cdfbti.f90 no class             --> energy_diagnostics
+cdfbuoyflx.f90 no class      --> forcing
+cdfcensus.f90 no class       --> file_informations
+cdfchgrid.f90 no class       --> file_operations
+cdfclip.f90 no class         --> file_operations
+cdfcmp.f90 no class          --> file_operations
+cdfcoastline.f90 no class    --> wip
+cdfcofdis.f90 no class       --> preprocessing 
+cdfcoloc.f90 no class        --> data_transformation
+cdfconvert.f90 no class      --> forcing
+cdfcurl.f90 no class         --> derived_fields
 cdfdegrad.f90 no class  -->  file_operations
-cdfdiv.f90 no class
-cdfeddyscale.f90 no class
-cdfeddyscale_pass1.f90 no class
-cdfeke.f90 no class
-cdfets.f90 no class
+cdfdiv.f90 no class          --> derived_fields
+cdfeddyscale.f90 no class    --> energy_diagnostics
+cdfeddyscale_pass1.f90 no class --> energy_diagnostics
+cdfeke.f90 no class          --> derived_fields
+cdfets.f90 no class         --> energy_diagnostics
 cdffindij.f90 no class  --> file_informations
-cdffixtime.f90 no class
-cdfflxconv.f90 no class
-cdfgeo-uv.f90 no class
-cdfgeostrophy.f90 no class
-cdfgradT.f90 no class
-cdfhdy.f90 no class
-cdfhdy3d.f90 no class
-cdfheatc.f90 no class
-cdfhflx.f90 no class
-cdfhgradb.f90 no class
+cdffixtime.f90 no class   --> data_transformation
+cdfflxconv.f90 no classA   --> forcing
+cdfgeo-uv.f90 no class       --> derived_fields
+cdfgeostrophy.f90 no class   --> derived_fields
+cdfgradT.f90 no class        --> derived_fields
+cdfhdy.f90 no class          --> derived_fields
+cdfhdy3d.f90 no class        --> derived_fields
+cdfheatc.f90 no class      --> integration
+cdfhflx.f90 no class       --> forcing
+cdfhgradb.f90 no class        --> derived_fields
 cdficb_clim.f90 no class  --> iceberg_processing
 cdficb_diags.f90 no class  --> iceberg_processing
 cdficediags.f90 no class   --> ice_diagnostics
-cdfimprovechk.f90 no class  --> 
-cdfio.F90 no class
-cdfisopsi.f90 no class
-cdfkempemekeepe.f90 no class
-cdflap.f90 no class
+cdfimprovechk.f90 no class  -->  miscellaneous
+cdfisopsi.f90 no class      --> transport
+cdfkempemekeepe.f90 no class  --> energy_diagnostics
+cdflap.f90 no class          --> derived_fields
 cdfmaxmoc.f90 no class   --> transport
-cdfmean.f90 no class
-cdfmht_gsop.f90 no class
+cdfmean.f90 no class     --> integration
+cdfmht_gsop.f90 no class  --> transport
 cdfmoc.f90 no classA        --> transport
 cdfmocsig.f90 no classA     --> transport
-cdfmoy.f90 no class
-cdfmoy_freq.f90 no class
-cdfmoy_weighted.f90 no class
-cdfmoyt.f90 no class
-cdfmoyuvwt.f90 no class
-cdfnamelist.f90 no class
-cdfnrjcomp.f90 no class
-cdfokubo-w.f90 no class
+cdfmoy.f90 no class        --> derived_fields
+cdfmoy_freq.f90 no class   --> derived_fields
+cdfmoy_weighted.f90 no class --> derived_fields
+cdfmoyt.f90 no class         --> derived_fields        
+cdfmoyuvwt.f90 no class      --> second_order_moments
+cdfnamelist.f90 no class     --> file_informations
+cdfnrjcomp.f90 no class    --> energy_diagnostics
+cdfokubo-w.f90 no class    --> energy_diagnostics
 cdfovide.f90 no class    --> obsolete
-cdfpsi.f90 no class
-cdfpsi_level.f90 no class
-cdfpvor.f90 no class
-cdfrhoproj.f90 no class
-cdfrichardson.f90 no class
-cdfrmsssh.f90 no class
-cdfsections.f90 no class
-cdfsigtrp.f90 no class
-cdfspeed.f90 no class
-cdfsstconv.f90 no class
-cdfstatcoord.f90 no class
-cdfstd.f90 no class
-cdfstdevts.f90 no class
-cdfstdevw.f90 no class
-cdfstrconv.f90 no class
-cdfsum.f90 no class
+cdfpsi.f90 no class        --> transport
+cdfpsi_level.f90 no class  --> transport
+cdfpvor.f90 no class       --> derived_fields
+cdfrhoproj.f90 no class    -->  derived_fields
+cdfrichardson.f90 no class  --> derived_fields
+cdfrmsssh.f90 no class     -->  derived_fields
+cdfsections.f90 no class   --> obsolete
+cdfsigtrp.f90 no class     --> transport
+cdfspeed.f90 no class      --> derived_fields
+cdfsstconv.f90 no class    --> forcing
+cdfstatcoord.f90 no class  --> statistics
+cdfstd.f90 no class        --> statistics
+cdfstdevts.f90 no class    --> statistics
+cdfstdevw.f90 no class     --> statistics
+cdfstrconv.f90 no class    --> forcing
+cdfsum.f90 no class        --> integration
 cdftempvol-full.f90 no class  --> obsolete
-cdftools.f90 no class
-cdftransig_xy3d.f90 no class
-cdfuv.f90 no class
-cdfvT.f90 no class
-cdfvertmean.f90 no class
-cdfvint.f90 no class
-cdfvita-geo.f90 no class
-cdfvita.f90 no class
-cdfvsig.f90 no class
-cdfvtrp.f90 no class
-cdfw.f90 no class
-cdfweight.f90 no class
-cdfwflx.f90 no class
-cdfwhereij.f90 no class
-cdfzisot.f90 no class
-cdfzonalmean.f90 no class
-cdfzonalmeanvT.f90 no class
-cdfzonalout.f90 no class
+cdftransig_xy3d.f90 no class --> transport
+cdfuv.f90 no class          --> second_order_moments
+cdfvT.f90 no class          --> second_order_moments
+cdfvertmean.f90 no class    --> integration
+cdfvint.f90 no class        --> integration
+cdfvita-geo.f90 no class    --> derived_fields
+cdfvita.f90 no class        --> derived_fields
+cdfvsig.f90 no class        --> second_order_moments
+cdfvtrp.f90 no class        --> transport
+cdfw.f90 no class       --> derived_fields
+cdfweight.f90 no class  --> data_transformation  
+cdfwflx.f90 no class    --> forcing
+cdfwhereij.f90 no class  -->  file_informations
+cdfzisot.f90 no class    --> derived_fields
+cdfzonalmean.f90 no class   --> integration
+cdfzonalmeanvT.f90 no class --> integration
 cdfzonalsum.f90 no class  --> integration
-
-eos.f90 no class
-modcdfnames.f90 no class
-modpoly.f90 no class
-modutils.f90 no class
+cdftools.f90 no class  --> system
+cdfio.F90 no class  --> system
+eos.f90 no class  --> system
+modcdfnames.f90 no class  --> system
+modpoly.f90 no class  --> system
+modutils.f90 no class  --> system

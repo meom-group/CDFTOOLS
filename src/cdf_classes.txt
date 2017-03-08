@@ -18,3 +18,14 @@ transport
 integration
 mixed_layer
 mask
+bottom
+derived_fields
+energy_diagnostics
+forcing
+ice_diagnostics
+iceberg_processing
+miscellaneous
+obsolete
+preprocessing
+second_order_moments
+wip
