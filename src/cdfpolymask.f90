@@ -25,6 +25,7 @@ PROGRAM cdfpolymask
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class mask
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -49,7 +50,7 @@ PROGRAM cdfpolymask
   CALL ReadCdfNames()
 
   narg = iargc()
-  IF ( narg < 2 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfpolymask -p POLY-file -ref REF-file [ -r] [-o OUT_file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -80,7 +81,7 @@ PROGRAM cdfpolymask
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'         variables : polymask'
+     PRINT *,'         variables : ', TRIM(cn_polymask)
      STOP
   ENDIF
 
@@ -93,9 +94,7 @@ PROGRAM cdfpolymask
      CASE ( '-ref' ) ; CALL getarg (ijarg, cf_ref  ) ; ijarg = ijarg + 1
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out  ) ; ijarg = ijarg + 1
      CASE ( '-r'   ) ; lreverse = .TRUE.
-     CASE DEFAULT
-        PRINT *,' unknown optional argument (', TRIM(cldum),' )'
-        STOP
+     CASE DEFAULT    ; PRINT *,' unknown optional argument (', TRIM(cldum),' )' ; STOP
      END SELECT
   END DO
 
@@ -105,36 +104,46 @@ PROGRAM cdfpolymask
   npjglo = getdim (cf_ref, cn_y)
   npk    = 1
 
-  ipk(1)                       = 1
-  stypvar(1)%cname             = 'polymask'
-  stypvar(1)%cunits            = '1/0'
-  stypvar(1)%rmissing_value    = 999.
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 1.
-  stypvar(1)%clong_name        = 'Polymask'
-  stypvar(1)%cshort_name       = 'polymask'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
 
   ALLOCATE( rpmask(npiglo,npjglo) )
 
-  ncout = create      (cf_out, cf_ref,  npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_ref,  npiglo, npjglo, npk       )
-
   CALL polymask(cf_poly, rpmask) 
 
   ierr   = putvar(ncout, id_varout(1), rpmask, 1, npiglo, npjglo)
-  tim(:) = 0.
-  ierr   = putvar1d(ncout, tim, 1, 'T')
-
   ierr   = closeout(ncout)
 
 CONTAINS
 
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1)                       = 1
+    stypvar(1)%cname             = cn_polymask
+    stypvar(1)%cunits            = '1/0'
+    stypvar(1)%rmissing_value    = 999.
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 1.
+    stypvar(1)%clong_name        = 'Polymask'
+    stypvar(1)%cshort_name       = 'polymask'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+
+
+    ncout = create      (cf_out, cf_ref,  npiglo, npjglo, npk       )
+    ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
+    ierr  = putheadervar(ncout,  cf_ref,  npiglo, npjglo, npk       )
+    tim(:) = 0.
+    ierr   = putvar1d(ncout, tim, 1, 'T')
+
+  END SUBROUTINE CreateOutput
 
   SUBROUTINE polymask( cdpoly, pmask)
     !!---------------------------------------------------------------------

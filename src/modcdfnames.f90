@@ -51,6 +51,7 @@ MODULE modCdfNames
   ! Mask variables
   CHARACTER(LEN=256) :: cn_tmask='tmask', cn_umask='umask'   !:  tmask, umask
   CHARACTER(LEN=256) :: cn_vmask='vmask', cn_fmask='fmask'   !:  vmask, fmask
+  CHARACTER(LEN=256) :: cn_polymask='polymask'               !:  polymask
   CHARACTER(LEN=256) :: cn_tmaskatl='tmaskatl'               !:  atlantic mask in cn_fbasins
   CHARACTER(LEN=256) :: cn_tmaskpac='tmaskpac'               !:  pacific mask in cn_fbasins
   CHARACTER(LEN=256) :: cn_tmaskind='tmaskind'               !:  indian mask in cn_fbasins
@@ -192,7 +193,7 @@ MODULE modCdfNames
     NAMELIST/nammetrics/ cn_glamt, cn_glamu, cn_glamv, cn_glamf
     NAMELIST/nammetrics/ cn_gphit, cn_gphiu, cn_gphiv, cn_gphif
     ! mask variables
-    NAMELIST/nammask/ cn_tmask, cn_umask, cn_vmask, cn_fmask
+    NAMELIST/nammask/ cn_tmask, cn_umask, cn_vmask, cn_fmask, cn_polymask
     NAMELIST/nammask/ cn_tmaskatl, cn_tmaskpac, cn_tmaskind, cn_tmaskant, cn_tmaskmed
     !        mesh_zgr
     NAMELIST/nammetrics/ cn_gdept, cn_gdepw

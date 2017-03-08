@@ -5,6 +5,8 @@ PROGRAM cdfmeshmask
   !!  ** Purpose : build mesh mask file from bathymetry
   !!
   !!  ** Method  : use nemo3.6 simplified zgr_xxx routines for zps
+  !!               In this tools, for similarities with NEMO, NF90
+  !!               functions are used in this program.
   !!
   !! History : 3.0  : 10/2014  : J.M. Molines 
   !!----------------------------------------------------------------------
@@ -19,6 +21,7 @@ PROGRAM cdfmeshmask
   !! $Id$
   !! Copyright (c) 2014, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class mask
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   INTEGER, PARAMETER :: wp=8
@@ -121,19 +124,19 @@ PROGRAM cdfmeshmask
   narg=iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfmeshmask -n namelist -b bathymetry_file  -c coordinates ...'
+     PRINT *,' usage :  cdfmeshmask -n NAMELIST-file -b BATHY-file  -c COORD-file ...'
      PRINT *,'         ... [-njbloc nbloc] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create mesh_mask from bathymetry and namdom information (namelist)' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -n namelist : name of the namelist file' 
-     PRINT *,'       -b bathymetry : name of bathymetry (meters)'
-     PRINT *,'       -c coordinates : name of coordinates file'
+     PRINT *,'       -n NAMELIST-file : name of the namelist file (with NEMO namdom block)' 
+     PRINT *,'       -b BATHY-file : name of bathymetry (meters)'
+     PRINT *,'       -c COORD-file : name of coordinates file'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -njbloc nbloc : number of j-bloc of rows to treat together. Increasing'
+     PRINT *,'       [-njbloc nbloc]: number of j-bloc of rows to treat together. Increasing'
      PRINT *,'             nbloc decreases memory usage but increases writing time.'
      PRINT *,'            default : nbloc = npjglo (worst condition) '
      PRINT *,'      '
@@ -153,15 +156,11 @@ PROGRAM cdfmeshmask
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cdum) ; ijarg=ijarg+1
      SELECT CASE ( cdum )
-     CASE ('-n ')
-        CALL getarg(ijarg,cf_nam) ; ijarg=ijarg+1
-     CASE ('-b ')
-        CALL getarg(ijarg,cf_bat) ; ijarg=ijarg+1
-     CASE ('-c ')
-        CALL getarg(ijarg,cf_coo) ; ijarg=ijarg+1
-     CASE ('-njbloc ')
-        CALL getarg(ijarg,cdum) ; ijarg=ijarg+1
-        READ(cdum,*) nbloc
+     CASE ('-n '    ) ; CALL getarg(ijarg,cf_nam) ; ijarg=ijarg+1
+     CASE ('-b '    ) ; CALL getarg(ijarg,cf_bat) ; ijarg=ijarg+1
+     CASE ('-c '    ) ; CALL getarg(ijarg,cf_coo) ; ijarg=ijarg+1
+     CASE ('-njbloc') ; CALL getarg(ijarg,cdum  ) ; ijarg=ijarg+1 ; READ(cdum,*) nbloc
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
   lchk = lchk .OR. chkfile(cf_nam) 
@@ -183,29 +182,24 @@ PROGRAM cdfmeshmask
      njbloct(ji) = njbloct(ji-1) + nbloc_szt(ji-1)
   ENDDO
 
-
   ALLOCATE (bathy(npiglo, npjglo ), rlon(npiglo, npjglo )  , rlat(npiglo, npjglo )  ) 
   ALLOCATE (mbathy(npiglo, npjglo )) 
 
   CALL zgr_z
   bathy(:,:) = getvar(cf_bat, cn_bathymet, 1, npiglo, npjglo)
   ! set minimum value here :
-  IF( rn_hmin < 0._wp ) THEN       
-     nkmax = - INT( rn_hmin )                                       ! from a nb of level
-  ELSE 
-     nkmax = MINLOC( gdepw_1d, mask = gdepw_1d > rn_hmin, dim = 1 ) ! from a depth
+  IF( rn_hmin < 0._wp ) THEN ; nkmax = - INT( rn_hmin )                                       ! from a nb of level
+  ELSE                       ; nkmax = MINLOC( gdepw_1d, mask = gdepw_1d > rn_hmin, dim = 1 ) ! from a depth
   ENDIF
-  rhmin = gdepw_1d(nkmax+1)                                        ! minimum depth = ik+1 w-levels
 
-  WHERE( bathy(:,:) <= 0._wp )   
-     bathy(:,:) = 0._wp                         ! min=0     over the lands
-  ELSE WHERE                     
-     bathy(:,:) = MAX(  rhmin , bathy(:,:)  )   ! min=rhmin over the oceans
+  rhmin = gdepw_1d(nkmax+1)                                        ! minimum depth = ik+1 w-levels
+  WHERE( bathy(:,:) <= 0._wp ) ; bathy(:,:) = 0._wp                         ! min=0     over the lands
+  ELSE WHERE                   ; bathy(:,:) = MAX(  rhmin , bathy(:,:)  )   ! min=rhmin over the oceans
   END WHERE
+
   PRINT *,  'Minimum ocean depth: ', rhmin, ' minimum number of ocean levels : ', nkmax
 
   CALL zgr_zps
-
 
 CONTAINS
   SUBROUTINE zgr_z

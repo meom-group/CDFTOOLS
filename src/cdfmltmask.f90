@@ -17,6 +17,7 @@ PROGRAM cdfmltmask
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class mask
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -92,27 +93,16 @@ PROGRAM cdfmltmask
   DO WHILE (ijarg <= narg)
     CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
     SELECT CASE ( cldum)
-    CASE ( '-f' )
-        CALL getarg(ijarg, cf_in )   ; ijarg = ijarg + 1
-    CASE ( '-m' )
-        CALL getarg(ijarg, cf_msk)   ; ijarg = ijarg + 1
-    CASE ( '-M' )
-        CALL getarg(ijarg, cv_msk)   ; ijarg = ijarg + 1
-    CASE ( '-v' )
-        CALL getarg(ijarg, cldum)    ; ijarg = ijarg + 1
-        CALL ParseVars ( cldum )
-    CASE ( '-p' )
-        CALL getarg(ijarg, cvartype) ; ijarg = ijarg + 1
-    CASE ( '-s' )
-        CALL getarg(ijarg, cldum)    ; ijarg = ijarg + 1 
-        READ(cldum,*) zspv0
-    CASE ( '-nc4' )
-         lnc4 = .false.
-         PRINT *,' Option -nc4 actually ignored, sorry !, proceed ...'
-    CASE ( '-o' )
-        CALL getarg(ijarg, cf_out )  ; ijarg = ijarg + 1 ; lout=.TRUE.
-    CASE DEFAULT
-        PRINT *, TRIM(cldum), ' : unknown option'
+    CASE ( '-f'  ) ; CALL getarg(ijarg, cf_in )   ; ijarg = ijarg + 1
+    CASE ( '-m'  ) ; CALL getarg(ijarg, cf_msk)   ; ijarg = ijarg + 1
+    CASE ( '-M'  ) ; CALL getarg(ijarg, cv_msk)   ; ijarg = ijarg + 1
+    CASE ( '-v'  ) ; CALL getarg(ijarg, cldum )   ; ijarg = ijarg + 1
+                   ; CALL ParseVars ( cldum   )
+    CASE ( '-p'  ) ; CALL getarg(ijarg, cvartype) ; ijarg = ijarg + 1
+    CASE ( '-s'  ) ; CALL getarg(ijarg, cldum )   ; ijarg = ijarg + 1  ; READ(cldum,*) zspv0
+    CASE ( '-nc4') ; lnc4 = .false. ; PRINT *,' Option -nc4 actually ignored, sorry !, proceed ...'
+    CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out )  ; ijarg = ijarg + 1 ; lout=.TRUE.
+    CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
     END SELECT
   ENDDO
 
@@ -186,21 +176,13 @@ PROGRAM cdfmltmask
 
   IF ( cv_msk == 'none' ) THEN  ! means cv_msk was not defined by -M option
   SELECT CASE (TRIM(cvartype))
-  CASE ( 'T' )
-     cv_msk='tmask'
-  CASE ( 'U' )
-     cv_msk='umask'
-  CASE ( 'V' )
-     cv_msk='vmask'
-  CASE ( 'F' )
-     cv_msk='fmask'
-  CASE ( 'W' )
-     cv_msk='tmask'
-  CASE ( 'P' )   ! for polymask 
-     cv_msk='polymask'
-  CASE DEFAULT
-     PRINT *, 'this type of variable is not known :', TRIM(cvartype)
-     STOP
+  CASE ( 'T' ) ; cv_msk = cn_tmask
+  CASE ( 'U' ) ; cv_msk = cn_umask
+  CASE ( 'V' ) ; cv_msk = cn_vmask
+  CASE ( 'F' ) ; cv_msk = cn_fmask
+  CASE ( 'W' ) ; cv_msk = cn_tmask
+  CASE ( 'P' ) ; cv_msk = cn_polymask  ! for polymask
+  CASE DEFAULT ; PRINT *, 'this type of variable is not known :', TRIM(cvartype) ; STOP
   END SELECT
   ENDIF
 
@@ -221,10 +203,8 @@ PROGRAM cdfmltmask
           zv(:,:) = getvar(cf_in, cv_in(jvar), jk, npiglo, npjglo, ktime=jt)
           ! Multiplication of cv_in by mask at level jk
 !         zvmask = zv * zmask
-          WHERE ( zmask == 0 ) 
-           zvmask = zspv0
-          ELSEWHERE
-           zvmask = zv
+          WHERE ( zmask == 0 ) ; zvmask = zspv0
+          ELSEWHERE            ; zvmask = zv
           ENDWHERE
           ! Writing  on the copy of original file                 
           ierr = putvar(cf_out, cv_in(jvar), jk, npiglo, npjglo, 1, 1, ktime=jt, ptab=zvmask)
