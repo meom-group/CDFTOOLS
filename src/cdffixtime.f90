@@ -30,6 +30,7 @@ PROGRAM cdffixtime
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -61,9 +62,9 @@ PROGRAM cdffixtime
   CHARACTER(LEN=80)          :: ctim_origin     ! attribute value for time_counter time_origin
   CHARACTER(LEN=3)           :: cmm             ! month in character
 
-  LOGICAL                    :: lnoleap=.true.  ! flag for noleap years
-  LOGICAL                    :: lagrif=.false.  ! flag for agrif files
-  LOGICAL                    :: lkeep=.false.  ! flag for agrif files
+  LOGICAL                    :: lnoleap=.TRUE.  ! flag for noleap years
+  LOGICAL                    :: lagrif=.FALSE.  ! flag for agrif files
+  LOGICAL                    :: lkeep=.FALSE.  ! flag for agrif files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -87,13 +88,13 @@ PROGRAM cdffixtime
      PRINT *,'                   yyyy-mm-dd hh:mm:ss ( eg: 1956-05-16 04:30:00 )'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -t tag ]  : supply a time tag corresponding to the file. If not'
-     PRINT *,'                     supplied, tag is taken from the name of the input file'
-     PRINT *,'                     assuming DRAKKAR convention ( CONFIG-CASE_tag_xxxx.nc )'
-     PRINT *,'       [ -dt freq] : number of days between model output [ 5d ]'
-     PRINT *,'       [-leap ]    : assume a calendar with leap years'
-     PRINT *,'       [-noleap ]  : assume a calendar without leap years (default)'
-     PRINT *,'       [-keep ]    : keep the actual value of time_counter, adjust time_counter'
+     PRINT *,'       [-t tag ]  : supply a time tag corresponding to the file. If not'
+     PRINT *,'                    supplied, tag is taken from the name of the input file'
+     PRINT *,'                    assuming DRAKKAR convention ( CONFIG-CASE_tag_xxxx.nc )'
+     PRINT *,'       [-dt freq] : number of days between model output [ 5d ]'
+     PRINT *,'       [-leap ]   : assume a calendar with leap years'
+     PRINT *,'       [-noleap ] : assume a calendar without leap years (default)'
+     PRINT *,'       [-keep ]   : keep the actual value of time_counter, adjust time_counter'
      PRINT *,'                    attributes only;'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -105,69 +106,59 @@ PROGRAM cdffixtime
      STOP
   ENDIF
 
-  ! browse line option
+  ! parse command line 
   ijarg=1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum) ; ijarg=ijarg + 1 
      SELECT CASE (cldum)
-     CASE ( '-f' )
-        CALL getarg(ijarg,cf_in) ;ijarg=ijarg +1
-     CASE ( '-t' )
-        CALL getarg(ijarg,ctag) ; ijarg=ijarg +1
-     CASE ( '-dt' )
-        CALL getarg(ijarg,cldum) ; ijarg=ijarg +1
-        READ(cldum,*) rdt_obs
-     CASE ( '-i' )
-        CALL getarg(ijarg,cldate) ; ijarg=ijarg +1
-        CALL getarg(ijarg,ctim)  ; ijarg=ijarg +1
-     CASE ( '-leap' )
-        rpp_one_year=365.2425
-        lnoleap=.false.
-     CASE ( '-noleap' )
-        rpp_one_year=365
-        lnoleap=.true.
-     CASE ( '-keep' )
-        lkeep=.true.
-     CASE DEFAULT 
-         PRINT *,' Option ',TRIM(cldum),' unknown'
-         STOP
+     CASE ( '-f'      ) ; CALL getarg(ijarg,cf_in ) ; ijarg=ijarg +1
+     CASE ( '-t'      ) ; CALL getarg(ijarg,ctag  ) ; ijarg=ijarg +1
+     CASE ( '-dt'     ) ; CALL getarg(ijarg,cldum ) ; ijarg=ijarg +1 ; READ(cldum,*) rdt_obs
+     CASE ( '-i'      ) ; CALL getarg(ijarg,cldate) ; ijarg=ijarg +1
+                        ; CALL getarg(ijarg,ctim  ) ; ijarg=ijarg +1
+     CASE ( '-leap'   ) ; rpp_one_year = 365.2425
+                        ; lnoleap      = .FALSE.
+     CASE ( '-noleap' ) ; rpp_one_year = 365
+                        ; lnoleap      = .TRUE.
+     CASE ( '-keep'   ) ; lkeep        = .TRUE.
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' :  unknown options.' ; STOP
      END SELECT
   END DO
-  
+
   IF ( chkfile(cf_in) ) STOP ! missing file
   PRINT *,' Changing time on file :', TRIM(cf_in)
 
   ! if ctag = none, try to find it from the file name.
   IF ( TRIM(ctag) == 'none' ) THEN  ! no tag given as arguments
-    is = INDEX(cf_in,'_')
-    IF ( is == 2 ) THEN 
-      PRINT *,' ASSUME AGRIF file for ', TRIM(cf_in)
-      lagrif = .TRUE.
-    ENDIF
+     is = INDEX(cf_in,'_')
+     IF ( is == 2 ) THEN 
+        PRINT *,' ASSUME AGRIF file for ', TRIM(cf_in)
+        lagrif = .TRUE.
+     ENDIF
 
-    IF (lagrif) THEN
-     is=INDEX(cf_in(3:),'_' )+2
-     ie=INDEX(cf_in(is+1:),'_' )
-     ctag=cf_in(is+1:is+ie-1) 
-    ELSE
-     is=INDEX(cf_in,'_')
-     ie=INDEX(cf_in(is+1:),'_' )
-     ctag=cf_in(is+1:is+ie-1) 
-    ENDIF
+     IF (lagrif) THEN
+        is=INDEX(cf_in(3:),'_' )+2
+        ie=INDEX(cf_in(is+1:),'_' )
+        ctag=cf_in(is+1:is+ie-1) 
+     ELSE
+        is=INDEX(cf_in,'_')
+        ie=INDEX(cf_in(is+1:),'_' )
+        ctag=cf_in(is+1:is+ie-1) 
+     ENDIF
 
-    is=INDEX(ctag,'d')
-    IF ( is == 0 ) THEN ! not a model output but a mean value
-      is=INDEX(ctag,'m') 
-      IF ( is == 0 ) THEN ! annual mean set pseudo date to 01/07
-        ctag=ctag(1:5)//"m07d01"
-      ELSE  ! monthly mean set pseudo date to the 15 of month
-        ctag=ctag(1:8)//"d15"
-      ENDIF
-    ENDIF
+     is=INDEX(ctag,'d')
+     IF ( is == 0 ) THEN ! not a model output but a mean value
+        is=INDEX(ctag,'m') 
+        IF ( is == 0 ) THEN ! annual mean set pseudo date to 01/07
+           ctag=ctag(1:5)//"m07d01"
+        ELSE  ! monthly mean set pseudo date to the 15 of month
+           ctag=ctag(1:8)//"d15"
+        ENDIF
+     ENDIF
   ENDIF
 
   PRINT *,'            Using tag = ', TRIM(ctag)
- 
+
   ! interpret ctim and cldate
   READ(cldate,'(i4,1x,i2,1x,i2)'            ) iyr_init, imm_init, idd_init
   READ(ctim,  '(i2,1x,i2,1x,i2)'            ) ihr_init, imn_init, isec_init
@@ -211,7 +202,7 @@ PROGRAM cdffixtime
 
   ! Modify cdfile !! CAUTION : Original file will be modified  !!
   IF ( .NOT. lkeep )  THEN
-    ierr = putvar1d( cf_in, cn_vtimec, rseconds, 1 )
+     ierr = putvar1d( cf_in, cn_vtimec, rseconds, 1 )
   ENDIF
   ierr = atted   ( cf_in, cn_vtimec, 'units',       ctim_unit  )
   ierr = atted   ( cf_in, cn_vtimec, 'time_origin', ctim_origin)
@@ -313,7 +304,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     REAL(KIND=4),       INTENT(in) :: pjcnes
     INTEGER(KIND=4),   INTENT(out) :: ky, km, kd, kh, kmn, ksec
-  
+
     INTEGER(KIND=4)                :: jd, jm      ! dummy loop index
     INTEGER(KIND=4)                :: isec, idays
     INTEGER(KIND=4), DIMENSION(12) :: indays=(/31,28,31,30,31,30,31,31,30,31,30,31/)
@@ -322,33 +313,33 @@ CONTAINS
     ! initialize the cumulated time
     icumul(1)    = indays(1)
     DO jm=2,12
-      icumul(jm) = icumul(jm-1) + indays(jm)
+       icumul(jm) = icumul(jm-1) + indays(jm)
     ENDDO
-    
+
     ! look for time part of pjcnes
     isec = (pjcnes-INT(pjcnes) ) * 86400.
     kh   = isec/3600
     kmn  = (isec - kh * 3600 )/60
     ksec =  isec - kh * 3600 - kmn * 60
-  
+
     ! number of years since 1950
     IF ( lnoleap ) THEN ! no leap years
-      ky=1950 + INT(pjcnes)/365
-      idays= ( INT(pjcnes)/ 365. - INT(pjcnes)/365 )* 365 
-      km=1 ; kd=0
-      DO jd=1, idays
-       IF ( jd > icumul(km) ) THEN
-         km=km+1
-         kd=1
-       ELSE
-         kd=kd+1
-       ENDIF
-      ENDDO
+       ky=1950 + INT(pjcnes)/365
+       idays= ( INT(pjcnes)/ 365. - INT(pjcnes)/365 )* 365 
+       km=1 ; kd=0
+       DO jd=1, idays
+          IF ( jd > icumul(km) ) THEN
+             km=km+1
+             kd=1
+          ELSE
+             kd=kd+1
+          ENDIF
+       ENDDO
     ELSE
-      ! use caldat from Numerical Recipe
-      CALL caldat_nr ( pjcnes, ky, km, kd, kh, kmn, ksec )
+       ! use caldat from Numerical Recipe
+       CALL caldat_nr ( pjcnes, ky, km, kd, kh, kmn, ksec )
     ENDIF
-    END SUBROUTINE caldatjm
+  END SUBROUTINE caldatjm
 
   SUBROUTINE caldat_nr( pjcnes, kiyyy, kmm, kid, kh, kmn, ksec ) 
     !!---------------------------------------------------------------------
@@ -384,7 +375,7 @@ CONTAINS
     ksec =  isec - kh * 3600 - kmn * 60
     zjul1950 = julday_nr( 01, 01, 1950)
     ijulian  = INT(pjcnes + zjul1950)
-   !
+    !
     IF ( ijulian >= jpgreg) THEN
        ialpha = INT ((( ijulian - 1867216) - 0.25)/36524.25 )
        ia     = ijulian +1 + ialpha -INT (0.25*ialpha)
@@ -418,11 +409,11 @@ CONTAINS
     !! ** Method:  This routine comes directly from the Numerical Recipe Book,
     !!
     !!----------------------------------------------------------------------
-   INTEGER, INTENT(in) :: kiyyy
-   INTEGER, INTENT(in) :: kmm, kid
-   !  * Local
-   INTEGER, PARAMETER ::jpgreg=15+31*(10+12*1582)
-   INTEGER  ::ky, iy, im, ia
+    INTEGER, INTENT(in) :: kiyyy
+    INTEGER, INTENT(in) :: kmm, kid
+    !  * Local
+    INTEGER, PARAMETER ::jpgreg=15+31*(10+12*1582)
+    INTEGER  ::ky, iy, im, ia
     !!----------------------------------------------------------------------
     ky = kiyyy
     ! ... Year 0 never existed ...
@@ -444,5 +435,4 @@ CONTAINS
     END IF
   END FUNCTION julday_nr
 
-  
 END PROGRAM cdffixtime

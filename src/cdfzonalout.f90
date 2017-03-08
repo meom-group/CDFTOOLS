@@ -17,12 +17,14 @@ PROGRAM cdfzonalout
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_informations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER(KIND=4)                               :: jj, jvar, jt  ! dummy loop index
   INTEGER(KIND=4)                               :: ivar          ! variable counter
   INTEGER(KIND=4)                               :: narg, iargc   ! command line 
+  INTEGER(KIND=4)                               :: ijarg         ! command line 
   INTEGER(KIND=4)                               :: npjglo, npt   ! size of the domain
   INTEGER(KIND=4)                               :: nvarin, nvar  ! variables count
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipki          ! input ipk variables
@@ -35,6 +37,7 @@ PROGRAM cdfzonalout
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar       ! dummy structure
 
   CHARACTER(LEN=256)                            :: cf_zonal      ! input file name
+  CHARACTER(LEN=256)                            :: cldum         ! working char variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names      ! input variable names
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -42,7 +45,7 @@ PROGRAM cdfzonalout
   narg= iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfzonalout ZONAL-file'
+     PRINT *,' usage :  cdfzonalout -f ZONAL-file'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        This is a formatting program for zonal files, either mean or integral.'
@@ -51,7 +54,7 @@ PROGRAM cdfzonalout
      PRINT *,'        cannot be easily displayed !'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        ZONAL-file : input netcdf zonal file produced by one of the zonal'
+     PRINT *,'        -f ZONAL-file : input netcdf zonal file produced by one of the zonal'
      PRINT *,'                     tools.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -60,10 +63,23 @@ PROGRAM cdfzonalout
      PRINT *,'     OUTPUT : '
      PRINT *,'        - Standard output,  structured in columns:'
      PRINT *,'             J  LAT  ( zonal mean, var = 1--> nvar) '
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'         cdfzonalmean, cdfzonalmeanvT, cdfzonalsum'
+     PRINT *,'      '
+
      STOP
   ENDIF
 
-  CALL getarg (1, cf_zonal)
+  ijarg=1
+  DO WHILE ( ijarg <= narg)
+     CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum)
+     CASE ( 'f' ) ; CALL getarg (ijarg, cf_zonal) ; ijarg=ijarg+1
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
+  ENDDO
+
   IF ( chkfile(cf_zonal) ) STOP ! missing file
 
   nvarin  = getnvar(cf_zonal)
