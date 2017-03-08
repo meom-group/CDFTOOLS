@@ -17,6 +17,7 @@ PROGRAM cdfstatcoord
   !! $Id$
   !! Copyright (c) 2011, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class statistics
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -33,26 +34,27 @@ PROGRAM cdfstatcoord
   REAL(KIND=8)                              :: de1mean, de2mean     ! mean value of horiz metrics
 
   CHARACTER(LEN=256)                        :: cf_coo, cf_msk       ! file names
-  CHARACTER(LEN=256)                        :: cv_msk='tmask'       ! mask variable name
+  CHARACTER(LEN=256)                        :: cv_msk               ! mask variable name
 
   LOGICAL, DIMENSION(:,:), ALLOCATABLE      :: lgood                ! flag for point selection
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  cv_msk = cn_tmask
 
   narg = iargc()
-  IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfstatcoord COOR-file MSK-file [ MSK-var ]'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfstatcoord -c COOR-file -m MSK-file [-v MSK-var ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes and displays statistics about grid metrics vs latitude.'
      PRINT *,'       Bins e1 and e2 by latitude bins, and compute the mean of each bin.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       COOR-file : coordinates file with e1 e2 metrics' 
-     PRINT *,'       MSK-file  : mask file '
+     PRINT *,'       -c COOR-file : coordinates file with e1 e2 metrics' 
+     PRINT *,'       -m MSK-file  : mask file '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [MSK-var] : mask variable name. Default is ', TRIM(cv_msk) 
+     PRINT *,'       [-v MSK-var] : mask variable name. Default is ', TRIM(cv_msk) 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none apart those requested on command line.' 
@@ -62,9 +64,16 @@ PROGRAM cdfstatcoord
      STOP
   ENDIF
 
-  CALL getarg (1, cf_coo)
-  CALL getarg (2, cf_msk)
-  IF ( narg == 3 ) CALL getarg(3, cv_msk)
+  ijarg=1
+  DO WHILE (ijarg <= narg )
+     CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum ) 
+     CASE ( '-c' ) ; CALL getarg (ijarg, cf_coo) ; ijarg=ijarg+1
+     CASE ( '-m' ) ; CALL getarg (ijarg, cf_msk) ; ijarg=ijarg+1
+     CASE ( '-v' ) ; CALL getarg (ijarg, cv_msk) ; ijarg=ijarg+1
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
+  ENDDO
   
   IF ( chkfile(cf_coo) .OR. chkfile(cf_msk) ) STOP ! missing files
 
@@ -90,7 +99,7 @@ PROGRAM cdfstatcoord
      lgood = .FALSE.
      WHERE ( rlat1 <= gphi .AND. gphi < rlat2  .AND. zmask /= 0 )  lgood=.TRUE.
      ngood = COUNT(lgood)
-     IF ( ngood /= 0 ) THEN
+     IF ( ngood /= 0 ) THEN 
         de1mean = SUM( e1, mask=lgood) / ngood  
         de2mean = SUM( e2, mask=lgood) / ngood
      ELSE
