@@ -9,8 +9,10 @@ NCDF= -I/usr/local/pub/netcdf/netcdf-3.5.0/include -L/usr/local/pub/netcdf/netcd
 
 F90=xlf90
 MPF90=mpxlf90_r
-#FFLAGS= -O4  -qsuffix=f=f90   $(NCDF)  -q64 -qsave
-FFLAGS= -O4  -qsuffix=f=f90   $(NCDF)  -q64 
+OMP=
+#OMP= qsmp=omp
+#FFLAGS= -O4  -qsuffix=f=f90   $(NCDF)  -q64 -qsave $(OMP)
+FFLAGS= -O4  -qsuffix=f=f90   $(NCDF)  -q64  $(OMP)
 
 INSTALL=./
  

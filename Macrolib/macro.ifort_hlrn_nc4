@@ -29,8 +29,10 @@ LIBS = -L/sw/dataformats/szip/2.1/smp1/intel/lib/ -lhdf5 -lhdf5_fortran -lnetcdf
 #F90=gfortran -v
 F90=ftn
 MPF90=
+#OMP=-mp=nonuma
+OMP=
 #FFLAGS= -O  $(NCDF)  -fno-second-underscore -ffree-line-length-256
-FFLAGS= -O3  -fpp $(NCDF) $(LIBS) -Dkey_netcdf4
+FFLAGS= -O3  -fpp $(NCDF) $(LIBS) -Dkey_netcdf4 $(OMP)
 LMPI=-lmpich
 
 INSTALL=../../../bin/

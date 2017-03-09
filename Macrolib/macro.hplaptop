@@ -8,8 +8,10 @@ NCDF = -I/opt/netcdf/4.2-intel/include -L/opt/netcdf/4.2-intel/lib -lnetcdf -lne
  
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
-#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian 
+OMP=
+#OMP=-openmp
+FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv $(OMP)
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian  $(OMP)
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin

@@ -8,7 +8,9 @@ NCDF = -I$(NETCDF_BASE)/include/Intel -L$(NETCDF_BASE)/lib/Intel -lnetcdf -lnetc
  
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian 
+OMP=
+#OMP=-openmp
+FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian  $(OMP)
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin

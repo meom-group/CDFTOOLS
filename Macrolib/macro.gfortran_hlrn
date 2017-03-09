@@ -4,7 +4,8 @@ INCS = $(NETCDF_INC) $(HDF5_INC)
 LIBS = $(NETCDF_F90_LIB) $(HDF5_F90_LIB)
  
 F90=gfortran
-
-FFLAGS= -O $(INCS) $(LIBS) -fno-second-underscore -ffree-line-length-256
+OMP=
+#OMP=-fopenmp
+FFLAGS= -O $(INCS) $(LIBS) -fno-second-underscore -ffree-line-length-256 $(OMP)
 
 INSTALL=$(HOME)/local/bin

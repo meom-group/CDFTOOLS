@@ -8,6 +8,9 @@ NCDF = -lnetcdf
  
 F90=pgf90
 MPF90=pgf90
-FFLAGS = -fast $(NCDF) -byteswapio
+OMP=
+#OMP=-mp
+
+FFLAGS = -fast $(NCDF) -byteswapio $(OMP)
 
 INSTALL=/usr/local/bin

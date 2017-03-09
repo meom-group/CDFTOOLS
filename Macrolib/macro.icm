@@ -7,7 +7,9 @@ NCDF =  -I/home/nhoareau/netcdf-ifort/include -L/home/nhoareau/netcdf-ifort/lib 
  
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian 
+OMP=
+#OMP=-openmp
+FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian  $(OMP)
 LMPI=
 
 INSTALL=$(HOME)/bin

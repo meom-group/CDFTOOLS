@@ -11,7 +11,9 @@ NCDF= -I /usr/local/g95/include /usr/local/g95/lib/libnetcdf.a
 
 F90=g95
 MPF90=mpif90
-FFLAGS= -O  $(NCDF) -fno-second-underscore -fendian=big -ffixed-line-length-132 
+OMP=
+#OMP=-fopenmp
+FFLAGS= -O  $(NCDF) -fno-second-underscore -fendian=big -ffixed-line-length-132 $(OMP)
 LMPI=-lmpich
 
 #INSTALL=$(HOME)/bin

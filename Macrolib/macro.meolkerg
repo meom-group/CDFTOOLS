@@ -17,7 +17,9 @@ NC4 = -Dkey_netcdf4
  
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O   -fp-model precise $(NCDF) $(NC4)  $(HDF5) $(ZLIB)  -fp-model precise
+OMP=
+#OMP=-openmp
+FFLAGS= -O   -fp-model precise $(NCDF) $(NC4)  $(HDF5) $(ZLIB)  -fp-model precise $(OMP)
 #FFLAGS= -O   -fpe0 -CB -traceback -g -ftrapuv -fp-model precise $(NCDF) $(NC4) $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
 #FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) $(HDF5) $(ZLIB)
 #FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) -assume byterecl -convert big_endian 

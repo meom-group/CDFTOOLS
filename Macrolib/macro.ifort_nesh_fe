@@ -13,4 +13,6 @@ LIBS = \
   -L/lib64 -limf -lm -lz 
 
 F90 = ifort
-FFLAGS = -O -assume byterecl -convert big_endian $(LIBS) 
+OMP=
+#OMP=-openmp
+FFLAGS = -O -assume byterecl -convert big_endian $(LIBS)  $(OMP)

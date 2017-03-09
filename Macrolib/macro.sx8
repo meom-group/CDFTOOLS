@@ -10,8 +10,10 @@ F90 = sxf90
 
 #-
 NCDF = -I/SXlocal/pub/netCDF/netCDF-3.6.1/include -L/SXlocal/pub/netCDF/netCDF-3.6.1/lib -lnetcdf
+OMP=
+#OMP= -P openmp
 
-FFLAGS=$(NCDF) -dW -sx8 -C vopt  -Wf"-P nh" -Wf,-pvctl noassume loopcnt=10000 -L transform
+FFLAGS=$(NCDF) -dW -sx8 -C vopt  -Wf"-P nh" -Wf,-pvctl noassume loopcnt=10000 -L transform $(OMP)
 
 INSTALL=./
 

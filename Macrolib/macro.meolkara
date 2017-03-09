@@ -17,7 +17,9 @@ NCDF = -I$(NCDF_ROOT)/include -L $(NCDF_ROOT)/lib/  \
 
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O   $(NCDF)  -assume byterecl -convert big_endian 
+OMP=
+#OMP=-openmp
+FFLAGS= -O   $(NCDF)  -assume byterecl -convert big_endian  $(OMP)
 #FFLAGS= -O   $(NCDF) $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
 
 LMPI=-lmpich

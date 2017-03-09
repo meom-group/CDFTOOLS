@@ -4,4 +4,6 @@ NCDF = -I/usr/local/Cluster-Apps/netcdf/pgi/3.6.1/include -L/usr/local/Cluster-A
 INCDIR = -I/usr/local/Cluster-Apps/netcdf/pgi/3.6.1/include
  
 F90=pgf90
-FFLAGS = -fast $(NCDF) -byteswapio
+#OMP=-mp
+OMP=
+FFLAGS = -fast $(NCDF) -byteswapio $(OMP)

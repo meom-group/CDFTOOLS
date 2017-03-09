@@ -8,7 +8,9 @@ NCDF = -I/usr/local/pub/netcdf-3.6.1/include -L/usr/local/pub/netcdf-3.6.1/lib -
 
 F90=f90
 MPF90=f90
-FFLAGS= -O2  -mips4 -bytereclen $(NCDF) -bytereclen
+
+OMP=
+FFLAGS= -O2  -mips4 -bytereclen $(NCDF) -bytereclen $(OMP)
 
 INSTALL=$(HOME_BIS)/CDFTOOLS-2.1/
  
