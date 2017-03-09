@@ -51,10 +51,10 @@ PROGRAM cdficediag
   !!               hemisphere with sign of the coriolis parameter.
   !!
   !! History : 2.1  : 01/2006  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!         : 2.1  : 07/2009  : R. Dussin    : Add Ncdf output
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
   !! Modified: 3.0  : 08/2011  : P.   Mathiot : Add LIM3 option
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

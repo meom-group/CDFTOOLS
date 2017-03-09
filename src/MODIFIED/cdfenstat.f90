@@ -12,7 +12,7 @@ PROGRAM cdfenstat
   !!  ** Reference : Accuracy of floating point arithmetic.
   !!
   !! History  3.0  : 07/2015  : J.M. Molines : from cdfmoyt
-  !!         :  4.0  : 03/2017  : J.M. Molines  
+  !!        : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description

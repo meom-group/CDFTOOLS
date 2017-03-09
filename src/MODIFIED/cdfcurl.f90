@@ -8,9 +8,9 @@ PROGRAM cdfcurl
   !!  ** Method  : Use the same algorithm than NEMO
   !!
   !! History : 2.1  : 05/2005  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!         : 2.1  : 06/2007  : P. Mathiot   : for use with forcing fields
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -203,10 +203,10 @@ PROGRAM cdfcurl
   END IF
   ! 
   DO jk = 1, nlev
-   IF (nilev(jk) >= npk ) THEN
-     nlev=jk
-     EXIT
-   ENDIF
+     IF (nilev(jk) >= npk ) THEN
+        nlev=jk
+        EXIT
+     ENDIF
   ENDDO
   PRINT *, 'NLEV', nlev
 
@@ -236,15 +236,15 @@ PROGRAM cdfcurl
      dl_omega = 2* dl_pi/86400.d0
      dl_ff = 2* dl_omega* sin ( zvn*dl_pi/180.d0 ) 
   ENDIF
-  
+
   ! fills in gdep
   IF ( lforcing .OR. lsurf ) THEN
      gdep(1)=0.
   ELSE
-    zdep(:) = getvar1d(cf_ufil, cn_vdepthu, npk )
-    DO jk=1,nlev
-      gdep(jk) = zdep( nilev(jk) )
-    ENDDO
+     zdep(:) = getvar1d(cf_ufil, cn_vdepthu, npk )
+     DO jk=1,nlev
+        gdep(jk) = zdep( nilev(jk) )
+     ENDDO
   ENDIF
 
 

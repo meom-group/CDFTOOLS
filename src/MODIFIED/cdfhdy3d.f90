@@ -11,8 +11,8 @@ PROGRAM cdfhdy3d
   !!               10e4 factor is conversion decibar/pascal
   !!
   !! History : 2.1  : 05/2010  : R. Dussin    : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos, ONLY : sigmai
@@ -86,7 +86,7 @@ PROGRAM cdfhdy3d
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
-  
+
   IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP ! missing files
 
   ipk(:)                       = npk

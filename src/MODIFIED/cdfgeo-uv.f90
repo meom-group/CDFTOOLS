@@ -13,8 +13,8 @@ PROGRAM cdfgeo_uv
   !!
   !!
   !! History : 2.1  : 02/2008  : J. Juanno    : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic. and bug fix
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -112,29 +112,29 @@ PROGRAM cdfgeo_uv
   cl_global=' (Ugeo, Vgeo ) are on ( V, U ) points of the C-grid'
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-    CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
-    SELECT CASE ( cl_dum )
-    CASE ('-f' ) 
-       CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 
-    CASE ('-o' ) 
-       CALL getarg(ijarg, cf_uout ) ; ijarg = ijarg + 1
-       CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
-    CASE ('-C' ) 
-       CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
-       READ(cl_dum, * ) ioption
-       IF ( ioption == 1 ) THEN
-         PRINT *,'  *** Use SSH interpolation ***'
-         cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (SSH interp)'
-       ELSEIF ( ioption == 2 ) THEN
-         PRINT *,'  *** Use Ugeo Vgeo interpolation ***'
-         cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (velocity interp)'
-       ELSE
-         PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++'
-         STOP
-       ENDIF
-    CASE DEFAULT
-       PRINT *, '  +++ ERROR: Argument ',TRIM(cl_dum),' not supported. +++'
-    END SELECT
+     CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
+     SELECT CASE ( cl_dum )
+     CASE ('-f' ) 
+        CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 
+     CASE ('-o' ) 
+        CALL getarg(ijarg, cf_uout ) ; ijarg = ijarg + 1
+        CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
+     CASE ('-C' ) 
+        CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
+        READ(cl_dum, * ) ioption
+        IF ( ioption == 1 ) THEN
+           PRINT *,'  *** Use SSH interpolation ***'
+           cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (SSH interp)'
+        ELSEIF ( ioption == 2 ) THEN
+           PRINT *,'  *** Use Ugeo Vgeo interpolation ***'
+           cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (velocity interp)'
+        ELSE
+           PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++'
+           STOP
+        ENDIF
+     CASE DEFAULT
+        PRINT *, '  +++ ERROR: Argument ',TRIM(cl_dum),' not supported. +++'
+     END SELECT
   ENDDO
 
   lchk = chkfile(cn_fhgr)
@@ -147,10 +147,10 @@ PROGRAM cdfgeo_uv
   npk    = getdim(cf_tfil, cn_z) 
   npt    = getdim(cf_tfil, cn_t) 
 
- PRINT *, ' NPIGLO= ', npiglo
- PRINT *, ' NPJGLO= ', npjglo
- PRINT *, ' NPK   = ', npk
- PRINT *, ' NPT   = ', npt
+  PRINT *, ' NPIGLO= ', npiglo
+  PRINT *, ' NPJGLO= ', npjglo
+  PRINT *, ' NPK   = ', npk
+  PRINT *, ' NPT   = ', npt
 
   ipk(1)                        = 1
   stypvaru(1)%cname             = TRIM(cn_vozocrtx)
@@ -201,12 +201,12 @@ PROGRAM cdfgeo_uv
   ncoutu = create      (cf_uout, cf_tfil,  npiglo, npjglo, 0                              )
   ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu, cdglobal=cl_global )
   IF ( ioption == 0 ) THEN
-    ! U geo  ! @ V-point !
+     ! U geo  ! @ V-point !
      ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
   ELSE
      ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
   ENDIF
-  
+
   tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
   ierr = putvar1d(ncoutu,  tim,       npt, 'T')
 
@@ -214,7 +214,7 @@ PROGRAM cdfgeo_uv
   ncoutv = create      (cf_vout, cf_tfil,  npiglo, npjglo, 0                              )
   ierr   = createvar   (ncoutv,  stypvarv, 1,      ipk,    id_varoutv, cdglobal=cl_global )
   IF ( ioption == 0 ) THEN
-    ! V geo  ! @ U-point !
+     ! V geo  ! @ U-point !
      ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
   ELSE
      ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
@@ -228,12 +228,12 @@ PROGRAM cdfgeo_uv
      zwrk(:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
      IF ( ioption == 1 ) THEN
         PRINT *, ' *** interpolation of SSH ...'
-       DO jj=1, npjglo -1
-         DO ji=1, npiglo -1
-            zsshn(ji,jj) = 0.25*( zwrk (ji,jj  ) +  zwrk (ji+1,jj  ) + &
-               &                  zwrk (ji,jj+1) +  zwrk (ji+1,jj+1) )
-         ENDDO
-       ENDDO
+        DO jj=1, npjglo -1
+           DO ji=1, npiglo -1
+              zsshn(ji,jj) = 0.25*( zwrk (ji,jj  ) +  zwrk (ji+1,jj  ) + &
+                   &                  zwrk (ji,jj+1) +  zwrk (ji+1,jj+1) )
+           ENDDO
+        ENDDO
      ELSE
         zsshn(:,:) = zwrk(:,:) 
      ENDIF
@@ -257,44 +257,44 @@ PROGRAM cdfgeo_uv
         ! e1u and e1v are modified to simplify the computation below
         ! note that geostrophy is not available near the equator ( f=0)
         IF ( ioption == 0 .OR. ioption == 2 ) THEN  ! SSH at T point
-        DO jj=2, npjglo - 1
-           DO ji=2, npiglo - 1
-              ffu = ff(ji,jj) + ff(ji,  jj-1)
-              IF ( ffu /= 0. ) THEN 
-                e1u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e1u(ji,jj)
-              ELSE
-                e1u(ji,jj)= 0.  ! spvalue
-              ENDIF
+           DO jj=2, npjglo - 1
+              DO ji=2, npiglo - 1
+                 ffu = ff(ji,jj) + ff(ji,  jj-1)
+                 IF ( ffu /= 0. ) THEN 
+                    e1u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e1u(ji,jj)
+                 ELSE
+                    e1u(ji,jj)= 0.  ! spvalue
+                 ENDIF
 
-              ffv = ff(ji,jj) + ff(ji-1,jj  )
-              IF ( ffv /= 0. ) THEN 
-                e2v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e2v(ji,jj)
-              ELSE
-                e2v(ji,jj)= 0.  ! spvalue
-              ENDIF
+                 ffv = ff(ji,jj) + ff(ji-1,jj  )
+                 IF ( ffv /= 0. ) THEN 
+                    e2v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e2v(ji,jj)
+                 ELSE
+                    e2v(ji,jj)= 0.  ! spvalue
+                 ENDIF
+              END DO
            END DO
-        END DO
         ELSE    ! SSH at F point
-        DO jj=2, npjglo - 1
-           DO ji=2, npiglo - 1
-              ffu = ff(ji,jj) + ff(ji,  jj-1)
-              IF ( ffu /= 0. ) THEN
-                e2u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e2u(ji,jj)
-              ELSE
-                e2u(ji,jj)= 0.  ! spvalue
-              ENDIF
+           DO jj=2, npjglo - 1
+              DO ji=2, npiglo - 1
+                 ffu = ff(ji,jj) + ff(ji,  jj-1)
+                 IF ( ffu /= 0. ) THEN
+                    e2u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e2u(ji,jj)
+                 ELSE
+                    e2u(ji,jj)= 0.  ! spvalue
+                 ENDIF
 
-              ffv = ff(ji,jj) + ff(ji-1,jj  )
-              IF ( ffv /= 0. ) THEN
-                e1v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e1v(ji,jj)
-              ELSE
-                e1v(ji,jj)= 0.  ! spvalue
-              ENDIF
-           END DO
-        ENDDO
+                 ffv = ff(ji,jj) + ff(ji-1,jj  )
+                 IF ( ffv /= 0. ) THEN
+                    e1v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e1v(ji,jj)
+                 ELSE
+                    e1v(ji,jj)= 0.  ! spvalue
+                 ENDIF
+              END DO
+           ENDDO
 
         ENDIF
-       
+
      END IF
 
      ! Calculation of geostrophic velocity :
@@ -302,28 +302,28 @@ PROGRAM cdfgeo_uv
      vn(:,:) = 0.
 
      IF ( ioption == 0 .OR. ioption == 2 ) THEN
-     DO jj = 1,npjglo - 1
-        DO ji = 1,npiglo -1
-           vn(ji,jj) =   e1u(ji,jj) * ( zsshn(ji+1,jj  ) - zsshn(ji,jj) ) 
-           un(ji,jj) = - e2v(ji,jj) * ( zsshn(ji  ,jj+1) - zsshn(ji,jj) ) 
+        DO jj = 1,npjglo - 1
+           DO ji = 1,npiglo -1
+              vn(ji,jj) =   e1u(ji,jj) * ( zsshn(ji+1,jj  ) - zsshn(ji,jj) ) 
+              un(ji,jj) = - e2v(ji,jj) * ( zsshn(ji  ,jj+1) - zsshn(ji,jj) ) 
+           END DO
         END DO
-     END DO
      ELSE    ! SSH at F point
-     DO jj = 2,npjglo 
-        DO ji = 2,npiglo 
-           vn(ji,jj) =   e1v(ji,jj) * ( zsshn(ji,jj) - zsshn(ji-1,jj) ) 
-           un(ji,jj) = - e2u(ji,jj) * ( zsshn(ji,jj) - zsshn(ji,jj-1) ) 
+        DO jj = 2,npjglo 
+           DO ji = 2,npiglo 
+              vn(ji,jj) =   e1v(ji,jj) * ( zsshn(ji,jj) - zsshn(ji-1,jj) ) 
+              un(ji,jj) = - e2u(ji,jj) * ( zsshn(ji,jj) - zsshn(ji,jj-1) ) 
+           END DO
         END DO
-     END DO
      ENDIF
 
      IF ( ioption == 2 ) THEN ! interpolate ugeo, vgeo on (U,V) point
         PRINT *, ' *** interpolation of velocities ...'
         DO jj=2,npjglo -1
-         DO ji=2, npiglo -1
-            zun(ji,jj) = 0.25*( un(ji,jj) + un(ji, jj-1) + un(ji+1,jj) + un (ji+1, jj-1) )
-            zvn(ji,jj) = 0.25*( vn(ji,jj) + vn(ji-1, jj) + vn(ji,jj+1) + vn (ji-1, jj+1) )
-         ENDDO
+           DO ji=2, npiglo -1
+              zun(ji,jj) = 0.25*( un(ji,jj) + un(ji, jj-1) + un(ji+1,jj) + un (ji+1, jj-1) )
+              zvn(ji,jj) = 0.25*( vn(ji,jj) + vn(ji-1, jj) + vn(ji,jj+1) + vn (ji-1, jj+1) )
+           ENDDO
         ENDDO
         un(:,:) = zun(:,:)
         vn(:,:) = zvn(:,:)

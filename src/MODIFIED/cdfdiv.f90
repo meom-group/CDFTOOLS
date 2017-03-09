@@ -9,8 +9,8 @@ PROGRAM cdfdiv
   !!               vertical velocities
   !!
   !! History :  3.0  : 10/2011  : P. Mathiot : first version, based on cdfw.f90
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!                 : 05/2015  : J.M. Molines : revised version similar to cdfcurl
+  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!
   !!----------------------------------------------------------------------
 
@@ -126,7 +126,7 @@ PROGRAM cdfdiv
      CASE ('-nc4'  ) ; lnc4   = .TRUE.
      CASE ('-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ('-vvl'  ) ; lg_vvl = .TRUE.
-                       CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1 
+        CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1 
      CASE DEFAULT
         PRINT *,  TRIM(cldum), ' : unknown option '
      END SELECT
@@ -139,9 +139,9 @@ PROGRAM cdfdiv
   IF ( lchk ) STOP ! missing files
 
   IF ( lg_vvl ) THEN
-    cn_fe3u = cf_ufil
-    cn_fe3v = cf_vfil
-    cn_fe3t = cf_tfil
+     cn_fe3u = cf_ufil
+     cn_fe3v = cf_vfil
+     cn_fe3t = cf_tfil
   ENDIF
 
   npiglo = getdim(cf_ufil,cn_x)
@@ -186,10 +186,10 @@ PROGRAM cdfdiv
   END IF
   ! 
   DO jk = 1, nlev
-   IF (nilev(jk) >= npk ) THEN
-     nlev=jk
-     EXIT
-   ENDIF
+     IF (nilev(jk) >= npk ) THEN
+        nlev=jk
+        EXIT
+     ENDIF
   ENDDO
   PRINT *, 'NLEV', nlev
 
@@ -220,15 +220,15 @@ PROGRAM cdfdiv
      dl_omega = 2* dl_pi/86400.d0
      dl_ff = 2* dl_omega* sin ( zvn*dl_pi/180.d0 ) 
   ENDIF
-  
+
   ! fills in gdep
   IF ( lforcing .OR. lsurf ) THEN
      gdep(1)=0.
   ELSE
-    zdep(:) = getvar1d(cf_ufil, cn_vdeptht, npk )
-    DO jk=1,nlev
-      gdep(jk) = zdep( nilev(jk) )
-    ENDDO
+     zdep(:) = getvar1d(cf_ufil, cn_vdeptht, npk )
+     DO jk=1,nlev
+        gdep(jk) = zdep( nilev(jk) )
+     ENDDO
   ENDIF
   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
 
@@ -278,11 +278,11 @@ PROGRAM cdfdiv
         DO jj = 2, npjglo -1
            DO ji = 2, npiglo -1
               dhdivn(ji,jj) =   &
-                &  (  e2u(ji,  jj  )*e3u(ji  ,jj  ) * un(ji  ,jj  )*1.d0 - &
-                &     e2u(ji-1,jj  )*e3u(ji-1,jj  ) * un(ji-1,jj  )*1.d0   &
-                &   + e1v(ji  ,jj  )*e3v(ji  ,jj  ) * vn(ji  ,jj  )*1.d0 - &
-                &     e1v(ji  ,jj-1)*e3v(ji  ,jj-1) * vn(ji  ,jj-1)*1.d0  )&
-                & / ( e1t(ji,jj)*e2t(ji,jj) * e3t(ji,jj) )
+                   &  (  e2u(ji,  jj  )*e3u(ji  ,jj  ) * un(ji  ,jj  )*1.d0 - &
+                   &     e2u(ji-1,jj  )*e3u(ji-1,jj  ) * un(ji-1,jj  )*1.d0   &
+                   &   + e1v(ji  ,jj  )*e3v(ji  ,jj  ) * vn(ji  ,jj  )*1.d0 - &
+                   &     e1v(ji  ,jj-1)*e3v(ji  ,jj-1) * vn(ji  ,jj-1)*1.d0  )&
+                   & / ( e1t(ji,jj)*e2t(ji,jj) * e3t(ji,jj) )
            END DO
         END DO
 

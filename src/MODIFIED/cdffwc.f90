@@ -13,7 +13,7 @@ PROGRAM cdffwc
   !!               based on cdfvertmean routine
   !!
   !! History : 0.1  : 09/2016  : M. Scheinert : First adaption
-  !!         :  4.0  : 03/2017  : J.M. Molines  
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -110,7 +110,7 @@ PROGRAM cdffwc
      SELECT CASE ( cldum)
      CASE ( '-f'    ) ; CALL getarg (ijarg, cf_in    ) ; ijarg = ijarg + 1
      CASE ( '-bv'   ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; CALL ParseVars(cldum)
-     ! options
+        ! options
      CASE ( '-full' ) ; lfull  = .TRUE. 
      CASE ( '-o'    ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ( '-sref' ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; READ(cldum,*) ds0

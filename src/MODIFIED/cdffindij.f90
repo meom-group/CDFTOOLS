@@ -13,9 +13,9 @@ PROGRAM cdffindij
   !!               line as well as the name of the coordinate/mesh hgr file.
   !!
   !! History : 2.1  : 11/2005  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 02/2016  : J.M. Molines : add -f, -d, -o options
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE cdftools
@@ -46,8 +46,8 @@ PROGRAM cdffindij
   CHARACTER(LEN=256) :: cf_list                    ! list_file name
   CHARACTER(LEN=256) :: cf_out                     ! output file name
   CHARACTER(LEN=256) :: cldes='XY'                 ! descriptor for input file
-  CHARACTER(LEN=50), DIMENSION(:), ALLOCATABLE  :: cfields ! string array to receive
-                                                   ! fields of the list_file
+  CHARACTER(LEN=50), DIMENSION(:), ALLOCATABLE :: cfields ! string array to receive
+  ! fields of the list_file
 
   LOGICAL            :: l_file_in=.false.          ! flag for input file
   LOGICAL            :: l_file_ou=.false.          ! flag for output file
@@ -104,26 +104,26 @@ PROGRAM cdffindij
 
   ijarg = 1 ; ireq = 0
   DO WHILE ( ijarg <= narg ) 
-    CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
-    SELECT CASE ( cldum )
-    CASE ( '-c' ) ; CALL getarg(ijarg, clcoo  ) ; ijarg=ijarg+1
-    CASE ( '-p' ) ; CALL getarg(ijarg, cltype ) ; ijarg=ijarg+1
-    CASE ( '-f' ) ; CALL getarg(ijarg, cf_list) ; ijarg=ijarg+1 ;  l_file_in=.true.
-    CASE ( '-d' ) ; CALL getarg(ijarg, cldes  ) ; ijarg=ijarg+1
-    CASE ( '-o' ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1 ;  l_file_ou=.true.
-    CASE ( '-a' ) ;                                                l_append =.true.
-    CASE ( '-l' ) ;                                                l_lonlat =.true.
-    CASE DEFAULT
-       ireq=ireq+1
-       SELECT CASE (ireq)
-       CASE ( 1 ) ; READ(cldum,*) xmin
-       CASE ( 2 ) ; READ(cldum,*) xmax
-       CASE ( 3 ) ; READ(cldum,*) ymin
-       CASE ( 4 ) ; READ(cldum,*) ymax
-       CASE DEFAULT 
-         PRINT *,' Too many arguments !' ; STOP
-       END SELECT
-    END SELECT
+     CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-c' ) ; CALL getarg(ijarg, clcoo  ) ; ijarg=ijarg+1
+     CASE ( '-p' ) ; CALL getarg(ijarg, cltype ) ; ijarg=ijarg+1
+     CASE ( '-f' ) ; CALL getarg(ijarg, cf_list) ; ijarg=ijarg+1 ;  l_file_in=.true.
+     CASE ( '-d' ) ; CALL getarg(ijarg, cldes  ) ; ijarg=ijarg+1
+     CASE ( '-o' ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1 ;  l_file_ou=.true.
+     CASE ( '-a' ) ;                                                l_append =.true.
+     CASE ( '-l' ) ;                                                l_lonlat =.true.
+     CASE DEFAULT
+        ireq=ireq+1
+        SELECT CASE (ireq)
+        CASE ( 1 ) ; READ(cldum,*) xmin
+        CASE ( 2 ) ; READ(cldum,*) xmax
+        CASE ( 3 ) ; READ(cldum,*) ymin
+        CASE ( 4 ) ; READ(cldum,*) ymax
+        CASE DEFAULT 
+           PRINT *,' Too many arguments !' ; STOP
+        END SELECT
+     END SELECT
   END DO
   IF ( l_file_in) THEN
      ! interpret descriptor
@@ -135,27 +135,27 @@ PROGRAM cdffindij
      OPEN(inum, FILE=cf_list)
      IF ( l_file_ou ) OPEN(iout, FILE=cf_out)
      DO 
-       READ(inum,*,END=999) cfields
-       READ(cfields(ipx),*) xmin
-       READ(cfields(ipy),*) ymin
-       CALL cdf_findij ( xmin, xmin, ymin, ymin, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, & 
-           &cd_point=cltype, cd_verbose='n', plonmin=zlon, platmin=zlat)
-       IF ( l_append ) THEN
-         DO ji = 1, nfields
-           WRITE(iout,'(a,x)',advance="no") TRIM(cfields(ji))
-         ENDDO
-       ENDIF
-       IF ( l_lonlat ) THEN
+        READ(inum,*,END=999) cfields
+        READ(cfields(ipx),*) xmin
+        READ(cfields(ipy),*) ymin
+        CALL cdf_findij ( xmin, xmin, ymin, ymin, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, & 
+             &cd_point=cltype, cd_verbose='n', plonmin=zlon, platmin=zlat)
+        IF ( l_append ) THEN
+           DO ji = 1, nfields
+              WRITE(iout,'(a,x)',advance="no") TRIM(cfields(ji))
+           ENDDO
+        ENDIF
+        IF ( l_lonlat ) THEN
            WRITE(iout,'(g20.9,x)',advance="no")  zlon
            WRITE(iout,'(g20.9,x)',advance="no")  zlat
-       ENDIF
-         WRITE(iout,'(i10,x)',advance="no") iimin
-         WRITE(iout,'(i10,x)'             ) ijmin
+        ENDIF
+        WRITE(iout,'(i10,x)',advance="no") iimin
+        WRITE(iout,'(i10,x)'             ) ijmin
      ENDDO
- 999 CONTINUE
+999  CONTINUE
 
   ELSE
-    CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, cd_point=cltype, cd_verbose='y')
+     CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, cd_coord=clcoo, cd_point=cltype, cd_verbose='y')
   ENDIF
 
 END PROGRAM cdffindij

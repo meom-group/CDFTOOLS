@@ -9,7 +9,7 @@ PROGRAM cdficb_diags
   !!               hemisphere with sign of the coriolis parameter.
   !!
   !! History : 3.0  : 01/2016  : N. Merino : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
+  !!         : 4.0  : 03/2017  : J.M. Molines  
 
   !!----------------------------------------------------------------------
   USE cdfio
@@ -165,7 +165,7 @@ PROGRAM cdficb_diags
   !
   DO jt = 1, npt
      IF (TRIM(cn_iicbmass) /= 'missing') ricbmass(:,:) = getvar(cf_ifil, cn_iicbmass, 1, npiglo, npjglo, ktime=jt)
-                                         ricbmelt(:,:) = getvar(cf_ifil, cn_iicbmelt, 1, npiglo, npjglo, ktime=jt)
+     ricbmelt(:,:) = getvar(cf_ifil, cn_iicbmelt, 1, npiglo, npjglo, ktime=jt)
 
      ! North : ff > 0 
      dmassn    = SUM( ricbmass (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff > 0 ) )

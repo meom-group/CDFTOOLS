@@ -10,8 +10,8 @@ PROGRAM cdfhdy
   !!               10e4 factor is conversion decibar/pascal
   !!
   !! History : 2.1  : 05/2010  : R. Dussin    : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos, ONLY : sigmai
@@ -94,7 +94,7 @@ PROGRAM cdfhdy
      SELECT CASE ( cldum )
      CASE ( '-f'     ) ;  CALL getarg( ijarg, cf_tfil) ; ijarg=ijarg+1
      CASE ( '-limit' ) ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev1
-        ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev2
+                       ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev2
         ! options
      CASE ( '-o'     ) ;  CALL getarg( ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ;  lnc4 = .TRUE.

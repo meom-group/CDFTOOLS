@@ -32,7 +32,6 @@ PROGRAM cdffixtime
   !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class data_transformation
-  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
