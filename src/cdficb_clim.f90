@@ -6,10 +6,17 @@ PROGRAM cdficb_clim
   !!
   !!  ** Method  : Use the icb files for input and determine the
   !!
+  !! History :  3.0  : 06/2016  : N. Merino         : Original code
+  !!         :  4.0  : 03/2017  : J.-M. Molines
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
+  !! CDFTOOLS_4.0 , MEOM 2017
+  !! $Id$
+  !! Copyright (c) 2012, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class iceberg_processing
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -62,14 +69,14 @@ PROGRAM cdficb_clim
 
   CALL getarg(1,cldum)
   READ(cldum,*) numFiles
-  
+
   IF (numFiles < 12) STOP
 
   ALLOCATE(cf_icb(numFiles))
 
   DO ji= 1, numFiles
-        CALL getarg(ji+1,cf_icb(ji))
-        lchk = lchk .OR. chkfile(cf_icb(ji))
+     CALL getarg(ji+1,cf_icb(ji))
+     lchk = lchk .OR. chkfile(cf_icb(ji))
   END DO
 
 
@@ -89,7 +96,7 @@ PROGRAM cdficb_clim
   ALLOCATE ( ricbmelt(npiglo,npjglo) )
   ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo) )
   ALLOCATE ( tim(npt),itimeVar(npt) )
- 
+
   itimeVar = (/(ji,ji=1,12)/)  
 
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
@@ -152,8 +159,8 @@ PROGRAM cdficb_clim
      IF (TRIM(cn_iicbmass) /= 'missing') ricbmass(:,:) = getvar(cf_icb(jt), cn_iicbmass, 1, npiglo, npjglo, ktime=1)
      ricbmelt(:,:) = getvar(cf_icb(jt), cn_iicbmelt, 1, npiglo, npjglo, ktime=1)
 
-    IF ( jt == 1 ) THEN
-         ! create output fileset
+     IF ( jt == 1 ) THEN
+        ! create output fileset
         ncout = create      (cf_out, 'none',  ikx,      iky, ikz,     cdep='depthw'                   )
         ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout                                )
         ierr  = putheadervar(ncout,  cf_icb(1), ikx,      iky, ikz)

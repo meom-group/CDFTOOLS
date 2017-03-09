@@ -7,6 +7,7 @@
   !!               : 2009  : R. Dussin      : add putvar_0d function
   !!           3.0 : 12/2010 : J.M. Molines : Doctor + Licence     
   !! Modified: 3.0 : 08/2011 : P.   Mathiot : Add chkvar function           
+  !!         : 4.0 : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
 
   !!----------------------------------------------------------------------
@@ -176,10 +177,11 @@
 
 
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class system
   !!----------------------------------------------------------------------
 
 CONTAINS

@@ -13,14 +13,16 @@ PROGRAM cdfmaxmoc
   !! History : 2.1  : 07/2005  : J.M. Molines : Original code
   !!                : 11/2009  : R. Dussin    : Netcdf output
   !!           3.0  : 03/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   !
@@ -56,7 +58,7 @@ PROGRAM cdfmaxmoc
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   narg=iargc()
-  
+
   IF ( narg /= 6 ) THEN
      PRINT *,' usage : cdfmaxmoc OVT-file basin_name latmin latmax depmin depmax'
      PRINT *,'      '
@@ -93,7 +95,7 @@ PROGRAM cdfmaxmoc
   CALL getarg(4, cldum ) ; READ(cldum,*) rlatmax  ! searching window : latmax
   CALL getarg(5, cldum ) ; READ(cldum,*) rdepmin  ! searching window : depth min
   CALL getarg(6, cldum ) ; READ(cldum,*) rdepmax  ! searching window : depth max
-  
+
   IF ( chkfile(cf_moc) ) STOP ! missing file
 
   npjglo = getdim(cf_moc, cn_y)
@@ -190,8 +192,8 @@ PROGRAM cdfmaxmoc
   ierr  = createvar   (ncout,    stypvar, nvarout, ipk, id_varout                )
 
   ierr  = putheadervar(ncout,    cf_moc,  nx,      ny,  nz,      &
-                        pnavlon=rdumlon, pnavlat=rdumlat,   pdep=gdepw           )
-               
+       pnavlon=rdumlon, pnavlat=rdumlat,   pdep=gdepw           )
+
   tim  = getvar1d(cf_moc,cn_vtimec, 1     )
   ierr = putvar1d(ncout, tim,       1, 'T')
 

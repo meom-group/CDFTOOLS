@@ -11,14 +11,15 @@ PROGRAM cdfmaskdmp
   !!
   !! History : 2.1  : 09/2010  : R. Dussin    : Original code from JLS Py version
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class mask
   !!----------------------------------------------------------------------
@@ -122,7 +123,7 @@ PROGRAM cdfmaskdmp
      CALL getarg (9, cldum) ; READ(cldum,*) rlatwidth
   ENDIF
   WRITE(cglobal,'(a,a,1x,a,7f9.3)') 'cdfmaskdmp ', TRIM(cf_tfil), TRIM(cf_sfil), ref_dep, zsnmin, &
-           &                      zswidth, hmin, hwidth, rlatmax, rlatwidth
+       &                      zswidth, hmin, hwidth, rlatmax, rlatwidth
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)

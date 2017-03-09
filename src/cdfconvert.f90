@@ -11,6 +11,7 @@ PROGRAM cdfconvert
   !!
   !! History : 2.1  : 01/2007  : J.M. Molines : Original code
   !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -21,10 +22,11 @@ PROGRAM cdfconvert
   USE cdfio 
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class forcing
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -131,15 +133,15 @@ PROGRAM cdfconvert
   irecl=isdirect(cf_dimgt ) ; OPEN( numt,  FILE=cf_dimgt,  FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
   irecl=isdirect(cf_dimgs ) ; OPEN( nums,  FILE=cf_dimgs,  FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
   irecl=isdirect(cf_dimg2d) ; OPEN( num2d, FILE=cf_dimg2d, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-  
+
   READ(numt,REC=1) cver, cheader, ii, npiglo, npjglo, npk, npt
 
   ALLOCATE (v2d(npiglo, npjglo), glam(npiglo,npjglo), gphi(npiglo,npjglo), zdep(npk), tim(npt) )
 
   READ(numt,REC=1) cver, cheader, ii, npiglo, npjglo, npk, npt, ndim, &
-                   &      x1,y1,dx,dy,zspval, &
-                   &    ( zdep(jk),jk=1,npk), &
-                        ( tim(jt), jt=1,npt)
+       &      x1,y1,dx,dy,zspval, &
+       &    ( zdep(jk),jk=1,npk), &
+       ( tim(jt), jt=1,npt)
 
   ! transform Clipper days to drakkar seconds ...
   tim(:)=tim(:)*86400.
@@ -150,11 +152,11 @@ PROGRAM cdfconvert
   ! Build gridT file with votemper, vosaline, sossheig, ... fluxes ...
   INQUIRE(FILE=cf_dimgssh, EXIST=lexist)
   IF ( lexist ) THEN
-    irecl = isdirect(cf_dimgssh) 
-    OPEN( numssh,FILE=cf_dimgssh, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-    nvar = 10 
+     irecl = isdirect(cf_dimgssh) 
+     OPEN( numssh,FILE=cf_dimgssh, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+     nvar = 10 
   ELSE
-    nvar = 9
+     nvar = 9
   ENDIF
 
   ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
@@ -184,17 +186,17 @@ PROGRAM cdfconvert
   jvar=jvar+1
 
   IF ( lexist ) THEN
-  ipk(jvar)                       = 1
-  stypvar(jvar)%cname             = cn_sossheig
-  stypvar(jvar)%cunits            = 'm'
-  stypvar(jvar)%rmissing_value    = 0.
-  stypvar(jvar)%valid_min         = -10.
-  stypvar(jvar)%valid_max         = 10.
-  stypvar(jvar)%clong_name        = 'Sea_Surface_height'
-  stypvar(jvar)%cshort_name       = cn_sossheig
-  stypvar(jvar)%conline_operation = 'N/A'
-  stypvar(jvar)%caxis             = 'TYX'
-  jvar=jvar+1
+     ipk(jvar)                       = 1
+     stypvar(jvar)%cname             = cn_sossheig
+     stypvar(jvar)%cunits            = 'm'
+     stypvar(jvar)%rmissing_value    = 0.
+     stypvar(jvar)%valid_min         = -10.
+     stypvar(jvar)%valid_max         = 10.
+     stypvar(jvar)%clong_name        = 'Sea_Surface_height'
+     stypvar(jvar)%cshort_name       = cn_sossheig
+     stypvar(jvar)%conline_operation = 'N/A'
+     stypvar(jvar)%caxis             = 'TYX'
+     jvar=jvar+1
   ENDIF
 
   ipk(jvar)                       = 1
@@ -291,26 +293,26 @@ PROGRAM cdfconvert
   jvar=1
   ! T
   DO jk=1, npk
-   READ(numt,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
+     READ(numt,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+     ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
   jvar  = jvar+1
   PRINT *, 'Done for T'
 
   ! S
   DO jk=1, npk
-   READ(nums,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
+     READ(nums,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+     ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
   jvar  = jvar+1
   PRINT *, 'Done for S'
 
   IF ( lexist ) THEN
-  ! SSH
-  READ(numssh,REC=2) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-  ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
-  jvar = jvar+1
-  PRINT *, 'Done for SSH'
+     ! SSH
+     READ(numssh,REC=2) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+     ierr = putvar(ncout, id_varout(jvar), v2d, 1, npiglo, npjglo)
+     jvar = jvar+1
+     PRINT *, 'Done for SSH'
   ENDIF
 
   ! MXL
@@ -368,15 +370,15 @@ PROGRAM cdfconvert
   ! Build gridU file with vozocrtx, sozotaux
   INQUIRE(FILE=cf_dimguu, EXIST=lexist)
   IF ( lexist ) THEN
-    irecl = isdirect(cf_dimguu)
-    OPEN( numuu, FILE=cf_dimguu, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-    nvar=3 
+     irecl = isdirect(cf_dimguu)
+     OPEN( numuu, FILE=cf_dimguu, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+     nvar=3 
   ELSE
-    nvar=2
+     nvar=2
   ENDIF
 
   ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
-  
+
   jvar = 1
   ipk(jvar)                       = npk
   stypvar(jvar)%cname             = cn_vozocrtx
@@ -403,16 +405,16 @@ PROGRAM cdfconvert
   jvar = jvar+1
 
   IF ( lexist ) THEN
-  ipk(jvar)      = npk
-  stypvar(jvar)%cname             = TRIM(cn_vozocrtx)//'_sqd'
-  stypvar(jvar)%cunits            = 'm2/s2'
-  stypvar(jvar)%rmissing_value    = 0.
-  stypvar(jvar)%valid_min         = 0.
-  stypvar(jvar)%valid_max         = 100.
-  stypvar(jvar)%clong_name        = 'MS_Zonal_Velocity'
-  stypvar(jvar)%cshort_name       = TRIM(cn_vozocrtx)//'_sqd'
-  stypvar(jvar)%conline_operation = 'N/A'
-  stypvar(jvar)%caxis             = 'TZYX'
+     ipk(jvar)      = npk
+     stypvar(jvar)%cname             = TRIM(cn_vozocrtx)//'_sqd'
+     stypvar(jvar)%cunits            = 'm2/s2'
+     stypvar(jvar)%rmissing_value    = 0.
+     stypvar(jvar)%valid_min         = 0.
+     stypvar(jvar)%valid_max         = 100.
+     stypvar(jvar)%clong_name        = 'MS_Zonal_Velocity'
+     stypvar(jvar)%cshort_name       = TRIM(cn_vozocrtx)//'_sqd'
+     stypvar(jvar)%conline_operation = 'N/A'
+     stypvar(jvar)%caxis             = 'TZYX'
   ENDIF
 
   glam = getvar  (cn_fhgr, cn_glamu, 1, npiglo, npjglo)
@@ -425,8 +427,8 @@ PROGRAM cdfconvert
 
   jvar=1
   DO jk=1, npk
-   READ(numu,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
+     READ(numu,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+     ierr = putvar(ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
   jvar  = jvar+1
   PRINT *, 'Done for U'
@@ -437,11 +439,11 @@ PROGRAM cdfconvert
   PRINT *, 'Done for TAUX'
 
   IF ( lexist ) THEN
-  DO jk=1, npk
-   READ(numuu,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   ierr = putvar(ncout, id_varout(jvar), v2d, jk,  npiglo, npjglo)
-  END DO
-  PRINT *, 'Done for UU'
+     DO jk=1, npk
+        READ(numuu,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+        ierr = putvar(ncout, id_varout(jvar), v2d, jk,  npiglo, npjglo)
+     END DO
+     PRINT *, 'Done for UU'
   ENDIF
 
   ierr = putvar1d(ncout, tim, npt, 'T')
@@ -455,11 +457,11 @@ PROGRAM cdfconvert
   ! Build gridV file with vomecrty, sometauy
   INQUIRE(FILE=cf_dimgvv, EXIST=lexist)
   IF ( lexist ) THEN
-    irecl = isdirect(cf_dimgvv)
-    OPEN( numvv, FILE=cf_dimgvv, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
-    nvar=3 
+     irecl = isdirect(cf_dimgvv)
+     OPEN( numvv, FILE=cf_dimgvv, FORM='UNFORMATTED', ACCESS='DIRECT', RECL=irecl )
+     nvar=3 
   ELSE
-    nvar=2
+     nvar=2
   ENDIF
   ALLOCATE ( stypvar(nvar), ipk(nvar), id_varout(nvar) )
 
@@ -489,31 +491,31 @@ PROGRAM cdfconvert
   jvar=jvar+1
 
   IF ( lexist ) THEN
-  ipk(jvar)                       = npk
-  stypvar(jvar)%cname             = TRIM(cn_vomecrty)//'_sqd'
-  stypvar(jvar)%cunits            = 'm2/s2'
-  stypvar(jvar)%rmissing_value    = 0.
-  stypvar(jvar)%valid_min         = 0.
-  stypvar(jvar)%valid_max         = 100.
-  stypvar(jvar)%clong_name        = 'MS_Meridional_Velocity'
-  stypvar(jvar)%cshort_name       = TRIM(cn_vomecrty)//'_sqd'
-  stypvar(jvar)%conline_operation = 'N/A'
-  stypvar(jvar)%caxis             = 'TZYX'
+     ipk(jvar)                       = npk
+     stypvar(jvar)%cname             = TRIM(cn_vomecrty)//'_sqd'
+     stypvar(jvar)%cunits            = 'm2/s2'
+     stypvar(jvar)%rmissing_value    = 0.
+     stypvar(jvar)%valid_min         = 0.
+     stypvar(jvar)%valid_max         = 100.
+     stypvar(jvar)%clong_name        = 'MS_Meridional_Velocity'
+     stypvar(jvar)%cshort_name       = TRIM(cn_vomecrty)//'_sqd'
+     stypvar(jvar)%conline_operation = 'N/A'
+     stypvar(jvar)%caxis             = 'TZYX'
   ENDIF
 
 
   glam = getvar  (cn_fhgr, cn_glamv, 1,  npiglo, npjglo)
   gphi = getvar  (cn_fhgr, cn_gphiv, 1,  npiglo, npjglo)
   zdep = getvare3(cn_fzgr, cn_gdept, npk               )
-  
+
   ncout = create      (cf_vfil, 'none',  npiglo, npjglo, npk, cdep=cn_vdepthv                       )
   ierr  = createvar   (ncout,   stypvar, nvar,   ipk,    id_varout                                  )
   ierr  = putheadervar(ncout,   'none',  npiglo, npjglo, npk, pnavlon=glam, pnavlat=gphi, pdep=zdep )
 
   jvar = 1
   DO jk=1, npk
-   READ(numv,REC=jk+1)  (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   ierr = putvar (ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
+     READ(numv,REC=jk+1)  (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+     ierr = putvar (ncout, id_varout(jvar), v2d, jk, npiglo, npjglo)
   END DO
   jvar  = jvar+1
   PRINT *, 'Done for V'
@@ -524,11 +526,11 @@ PROGRAM cdfconvert
   PRINT *, 'Done for TAUY'
 
   IF ( lexist ) THEN
-  DO jk=1, npk
-   READ(numvv,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
-   ierr = putvar(ncout, id_varout(jvar), v2d, jk,  npiglo, npjglo)
-  END DO
-  PRINT *, 'Done for VV'
+     DO jk=1, npk
+        READ(numvv,REC=jk+1) (( v2d(ji,jj), ji=1, npiglo), jj=1,npjglo)
+        ierr = putvar(ncout, id_varout(jvar), v2d, jk,  npiglo, npjglo)
+     END DO
+     PRINT *, 'Done for VV'
   ENDIF
 
   ierr = putvar1d(ncout, tim, npt, 'T')
@@ -556,7 +558,7 @@ PROGRAM cdfconvert
   glam = getvar  (cn_fhgr, cn_glamf, 1, npiglo, npjglo)
   gphi = getvar  (cn_fhgr, cn_gphif, 1, npiglo, npjglo)
   zdep = getvare3(cn_fzgr, cn_gdept, 1                )
-  
+
   ncout = create      (cf_bsfil, 'none',  npiglo, npjglo, 1, cdep=cn_vdepthu                       )
   ierr  = createvar   (ncout,    stypvar, nvar,   ipk,    id_varout                                )
   ierr  = putheadervar(ncout,    'none',  npiglo, npjglo, 1, pnavlon=glam, pnavlat=gphi, pdep=zdep )
@@ -573,7 +575,7 @@ PROGRAM cdfconvert
 
 CONTAINS
 
-    INTEGER(KIND=4) FUNCTION isdirect(cdname)
+  INTEGER(KIND=4) FUNCTION isdirect(cdname)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION isdirect  ***
     !!
@@ -593,16 +595,16 @@ CONTAINS
     CHARACTER(LEN=80)            :: clheader
     !!----------------------------------------------------------------------
 
-!
-      OPEN(inum,FILE=cdname, FORM = 'UNFORMATTED', ACCESS = 'DIRECT', RECL = 88)
-      READ(inum,REC=1) clver ,clheader, irecl
-      CLOSE(inum)
-!
-      IF (clver ==  '@!01' ) THEN
-         isdirect = irecl
-      ELSE
-         isdirect = 0
-      END IF
-!
-      END FUNCTION isdirect
+    !
+    OPEN(inum,FILE=cdname, FORM = 'UNFORMATTED', ACCESS = 'DIRECT', RECL = 88)
+    READ(inum,REC=1) clver ,clheader, irecl
+    CLOSE(inum)
+    !
+    IF (clver ==  '@!01' ) THEN
+       isdirect = irecl
+    ELSE
+       isdirect = 0
+    END IF
+    !
+  END FUNCTION isdirect
 END PROGRAM cdfconvert

@@ -9,13 +9,14 @@ PROGRAM cdfstatcoord
   !!
   !! History : 2.1  : 07/2007  : J.M. Molines : Original code (T. Penduff idea)
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class statistics
   !!----------------------------------------------------------------------
@@ -75,7 +76,7 @@ PROGRAM cdfstatcoord
      CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
-  
+
   IF ( chkfile(cf_coo) .OR. chkfile(cf_msk) ) STOP ! missing files
 
   npiglo= getdim (cf_coo, cn_x)

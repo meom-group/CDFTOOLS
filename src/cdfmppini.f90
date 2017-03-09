@@ -8,6 +8,7 @@ PROGRAM cdfmppini
   !!
   !! History : 2.1  : 05/2010  : J.M. Molines : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -16,9 +17,9 @@ PROGRAM cdfmppini
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class file_informations
   !!----------------------------------------------------------------------
@@ -174,6 +175,7 @@ CONTAINS
       !!                    nono      : number for local neighboring processor
       !!
       !! History :
+  !!         :  4.0  : 03/2017  : J.M. Molines  
       !!        !  94-11  (M. Guyon)  Original code
       !!        !  95-04  (J. Escobar, M. Imbard)
       !!        !  98-02  (M. Guyon)  FETI method

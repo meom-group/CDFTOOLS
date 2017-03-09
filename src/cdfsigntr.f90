@@ -8,14 +8,15 @@ PROGRAM cdfsigntr
   !!  ** Method  : Use Mc Dougall Jackett EOS (2005)
   !!
   !! History : 3.0  : 06/2013  : J.M. Molines from G. Madec idl code
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class Equation_of_state
   !!----------------------------------------------------------------------

@@ -10,6 +10,7 @@ PROGRAM cdf16bit
   !!
   !! History : 2.1 !  11/2006    J.M. Molines   : Original code
   !!           3.0 !  12/2010    J.M. Molines   : Full Doctor form + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -19,10 +20,11 @@ PROGRAM cdf16bit
   USE cdfio 
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -53,8 +55,8 @@ PROGRAM cdf16bit
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! Type variable is defined in cdfio.
 
-  LOGICAL                                       :: l_chk=.false.      ! logical flags to save line options
-  LOGICAL                                       :: l_verbose=.false.  ! logical flags to save line options
+  LOGICAL                                       :: l_chk=.FALSE.      ! logical flags to save line options
+  LOGICAL                                       :: l_verbose=.FALSE.  ! logical flags to save line options
   LOGICAL, DIMENSION(:,:),          ALLOCATABLE :: lmask              ! 2D logical land/sea mask (true on ocean)
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -93,9 +95,9 @@ PROGRAM cdf16bit
 
      SELECT CASE (  cldum  )   ! Analyse option
      CASE ( '-check'   )          ! control if the scale factors are OK
-        l_chk=.true.
+        l_chk=.TRUE.
      CASE ( '-verbose' )          ! information will be given level by level
-        l_chk=.true. ; l_verbose=.true.
+        l_chk=.TRUE. ; l_verbose=.TRUE.
      CASE DEFAULT
         PRINT *,' OPTION ',TRIM(cldum),' not supported.' ; STOP
      END SELECT
@@ -167,7 +169,7 @@ PROGRAM cdf16bit
                  ! write FLOATS
                  IF ( stypvar(jvar)%savelog10 == 1 ) THEN
                     WHERE ( v2d /= spval )
-                       v2d(:,:)= log10(v2d)
+                       v2d(:,:)= LOG10(v2d)
                     ELSEWHERE
                        v2d = 0.
                     END WHERE
@@ -185,7 +187,7 @@ PROGRAM cdf16bit
                  END WHERE
               ELSE  ! store log10  ao and sf refer to the log10 of the variable
                  WHERE( v2d /= spval ) 
-                    i2d(:,:)=NINT((log10(v2d(:,:))-ao)/sf)
+                    i2d(:,:)=NINT((LOG10(v2d(:,:))-ao)/sf)
                  ELSEWHERE
                     i2d(:,:)=0
                  END WHERE
@@ -499,7 +501,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     IF ( l_chk ) THEN  ! with this option, check if the max value of the field  can be
        !mapped on I2 with actual values of Scale_factor and Add_offset
-       lmask=.true. ; WHERE (v2d == spval ) lmask=.false.
+       lmask=.TRUE. ; WHERE (v2d == spval ) lmask=.FALSE.
        ! Works with log10 of v2d in case of savelog10=1
        IF (stypvar(jvar)%savelog10 == 1 ) THEN
           WHERE( v2d /= 0. ) v2d=LOG10(v2d)

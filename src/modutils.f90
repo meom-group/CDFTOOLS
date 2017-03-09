@@ -5,6 +5,7 @@ MODULE modutils
   !!=====================================================================
   !! History : 3.0  : 04/2011  : J.M. Molines : Original code
   !!                : 10/2012  : N. Ferry, E. Durand, F. Hernandez : add shapiro
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -13,10 +14,11 @@ MODULE modutils
   !!   shapiro_fill_smooth : shapiro smoother or filler
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class system
   !!----------------------------------------------------------------------
   USE cdfio
 

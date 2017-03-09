@@ -8,15 +8,17 @@ PROGRAM cdflap
   !!               Gradient along the coasline are set to 0
   !!
   !! History :  3.0  : 09/2014  : J.M. Molines 
+  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!          
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

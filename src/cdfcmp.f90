@@ -11,14 +11,16 @@ PROGRAM cdfcmp
   !!               Spatial sub-area restriction can be defined
   !!
   !! History : 3.0 !  08/2012    A. Lecointre   : Original code + Full Doctor form + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_operations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

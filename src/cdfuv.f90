@@ -11,15 +11,17 @@ PROGRAM cdfuv
   !!           2.1  : 02/2010  : J.M. Molines : handle multiframes input files.
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
   !!                : 10/2012  : M. Balmaseda : Split T and S file eventually
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   USE modutils       ! SetFileName function
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class second_order_moments
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -95,7 +97,7 @@ PROGRAM cdfuv
   cf_tfil = SetFileName( config, ctag, 'T')
   cf_ufil = SetFileName( config, ctag, 'U')
 
-   
+
 
   npiglo = getdim (cf_ufil,cn_x)
   npjglo = getdim (cf_ufil,cn_y)
@@ -139,7 +141,7 @@ PROGRAM cdfuv
   ALLOCATE( zmean(npiglo,npjglo))
   ALLOCATE( zlon(npiglo,npjglo))
 
-   ! check for E_W periodicity
+  ! check for E_W periodicity
 
   zlon(:,:) = getvar(cf_tfil, cn_vlon2d, 1, npiglo, npjglo )
   IF ( zlon(1,1) ==  zlon(npiglo-1,1) ) THEN
@@ -151,7 +153,7 @@ PROGRAM cdfuv
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
   ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout            )
   ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
-  
+
   lcaltmean=.TRUE.
   DO jk = 1, npk
      PRINT *,'level ',jk

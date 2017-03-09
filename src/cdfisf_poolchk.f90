@@ -11,6 +11,7 @@ PROGRAM cdfisf_poolchk
   !!               and may be very memory consuming for big domains.
   !!
   !! History :   3.0  : 11/2016  : J.M. Molines. P. Mathiot (original code)
+  !!         :   4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!   routines                                         : description
   !!----------------------------------------------------------------------
@@ -19,9 +20,9 @@ PROGRAM cdfisf_poolchk
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2012
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2012, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class ice_shelf_processing
   !!----------------------------------------------------------------------

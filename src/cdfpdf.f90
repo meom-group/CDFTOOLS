@@ -9,14 +9,15 @@ PROGRAM cdfpdf
   !!               value, maximum value, and number of bins
   !!
   !! History : 3.0  : 10/2015  : J.M. Molines : Original code
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2015
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2015, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class statistics
   !!----------------------------------------------------------------------

@@ -23,16 +23,18 @@ PROGRAM cdfmocsig
   !!           3.0  : 04/2011  : J.M. Molines  : Doctor norm + Lic.
   !!           3.0  : 06/2013  : J.M. Molines  : add neutral density
   !!           3.0  : 06/2013  : J.M. Molines  : add bin mean depth calculation and OpenMp directives
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
   INTEGER(KIND=2), DIMENSION (:,:,:), ALLOCATABLE ::  ibmask              ! nbasins x npiglo x npjglo

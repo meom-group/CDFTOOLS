@@ -17,6 +17,7 @@ PROGRAM cdfweight
   !! History : 2.0  : 11/2005  : J.M. Molines : Original code
   !!                : 05/2007  : J.M. Molines : for weight
   !!           3.0  : 03/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -28,10 +29,11 @@ PROGRAM cdfweight
   USE cdftools       ! cdf_find_ij
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -45,7 +47,7 @@ PROGRAM cdfweight
   INTEGER(KIND=4)                           :: numgreg=10              ! logical unit of ASCII input file
   INTEGER(KIND=4)                           :: numbin=20               ! logical unit of BINARY weight file
   INTEGER(KIND=4)                           :: ios                     ! iostat variable
-                                                                       ! Greg Holloway input data  ( 5 variables)
+  ! Greg Holloway input data  ( 5 variables)
   INTEGER(KIND=4)                           :: id                      ! station ID
   REAL(KIND=4)                              :: xmin, ymin, rdep        ! longitude, latitude, depth
 
@@ -58,7 +60,7 @@ PROGRAM cdfweight
   REAL(KIND=8)                              :: dl_lamS, dl_phiS, dl_hS ! grid point South of NP, true heading from NP
   REAL(KIND=8)                              :: dl_lamW, dl_phiW, dl_hW ! grid point West of NP, true heading from NP
   REAL(KIND=8), DIMENSION(0:4)              :: dl_lami, dl_phii        ! the 4 grid points around target (1-4)
-                                                                       !  + the target (0)
+  !  + the target (0)
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_lam, dl_phi          ! grid layout and metrics
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dl_dept                 ! vertical depth
   REAL(KIND=8)                              :: dl_hP                   ! true heading of target point from NP

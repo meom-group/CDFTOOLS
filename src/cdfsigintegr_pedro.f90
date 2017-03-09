@@ -14,14 +14,15 @@ PROGRAM cdfsigintegr_pedro
   !!
   !! History : 2.1  : 12/2007  : J.M. Molines : Original code
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id: cdfsigintegr.f90 657 2013-05-21 16:36:14Z molines $
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class integration
   !!----------------------------------------------------------------------

@@ -13,14 +13,15 @@ PROGRAM cdffwc
   !!               based on cdfvertmean routine
   !!
   !! History : 0.1  : 09/2016  : M. Scheinert : First adaption
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2016
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2016, J.-M. Molines & Markus Scheinert (GEOMAR)
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class integration
   !!----------------------------------------------------------------------
@@ -109,7 +110,7 @@ PROGRAM cdffwc
      SELECT CASE ( cldum)
      CASE ( '-f'    ) ; CALL getarg (ijarg, cf_in    ) ; ijarg = ijarg + 1
      CASE ( '-bv'   ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; CALL ParseVars(cldum)
-     ! options
+        ! options
      CASE ( '-full' ) ; lfull  = .TRUE. 
      CASE ( '-o'    ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ( '-sref' ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; READ(cldum,*) ds0

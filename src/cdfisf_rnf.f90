@@ -8,14 +8,15 @@ PROGRAM cdfisf_rnf
   !!  ** Method  : 
   !!
   !! History : 3.0  : 04/2014  : P.Mathiot 
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2016
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id: cdfisf_rnf.f90 668 2013-05-30 12:54:00Z molines $
-  !! Copyright (c) 2016, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class ice_shelf_processing
   !!-----------------------------------------------------------------------------
@@ -60,11 +61,11 @@ PROGRAM cdfisf_rnf
   CHARACTER(LEN=256)                            :: cv_bathy='Bathymetry' ! bathymetry name
   CHARACTER(LEN=256)                            :: cv_isfdr='isf_draft'  ! ice shelf draft name
   CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
-  
+
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! attributes for average values
 
-  LOGICAL                                       :: lchk    = .false.  ! flag for missing files
-  LOGICAL                                       :: lnc4    = .false.  ! flag for netcdf4 chunking and deflation
+  LOGICAL                                       :: lchk    = .FALSE.  ! flag for missing files
+  LOGICAL                                       :: lnc4    = .FALSE.  ! flag for netcdf4 chunking and deflation
   !!----------------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -118,21 +119,21 @@ PROGRAM cdfisf_rnf
 
   ijarg=1
   DO WHILE ( ijarg <= narg )
-    CALL getarg(ijarg,cldum) ; ijarg=ijarg+1
-    SELECT CASE (cldum)
-    CASE ('-f' ) ; CALL getarg(ijarg,cf_fill   ) ; ijarg=ijarg+1
-    CASE ('-v' ) ; CALL getarg(ijarg,cv_fill   ) ; ijarg=ijarg+1
-    CASE ('-l' ) ; CALL getarg(ijarg,cf_isflist) ; ijarg=ijarg+1
-    CASE ('-w' ) ; CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) nwidth
-    CASE ('-b' ) ; CALL getarg(ijarg,cf_bathy  ) ; ijarg=ijarg+1
-    CASE ('-vb') ; CALL getarg(ijarg,cv_bathy  ) ; ijarg=ijarg+1
-    CASE ('-i' ) ; CALL getarg(ijarg,cf_isfdr  ) ; ijarg=ijarg+1
-    CASE ('-vi') ; CALL getarg(ijarg,cv_isfdr  ) ; ijarg=ijarg+1
+     CALL getarg(ijarg,cldum) ; ijarg=ijarg+1
+     SELECT CASE (cldum)
+     CASE ('-f' ) ; CALL getarg(ijarg,cf_fill   ) ; ijarg=ijarg+1
+     CASE ('-v' ) ; CALL getarg(ijarg,cv_fill   ) ; ijarg=ijarg+1
+     CASE ('-l' ) ; CALL getarg(ijarg,cf_isflist) ; ijarg=ijarg+1
+     CASE ('-w' ) ; CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) nwidth
+     CASE ('-b' ) ; CALL getarg(ijarg,cf_bathy  ) ; ijarg=ijarg+1
+     CASE ('-vb') ; CALL getarg(ijarg,cv_bathy  ) ; ijarg=ijarg+1
+     CASE ('-i' ) ; CALL getarg(ijarg,cf_isfdr  ) ; ijarg=ijarg+1
+     CASE ('-vi') ; CALL getarg(ijarg,cv_isfdr  ) ; ijarg=ijarg+1
 
-    CASE ('-nc4'); lnc4 = .TRUE.
-    CASE ('-o' ) ; CALL getarg(ijarg,cf_out    ) ; ijarg=ijarg+1
-    CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
-    END SELECT
+     CASE ('-nc4'); lnc4 = .TRUE.
+     CASE ('-o' ) ; CALL getarg(ijarg,cf_out    ) ; ijarg=ijarg+1
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
   ENDDO
 
   lchk = lchk .OR. chkfile (cf_fill   )
@@ -164,7 +165,7 @@ PROGRAM cdfisf_rnf
   ALLOCATE (ipk(3),id_varout(3))
 
   CALL CreateOutput
-  
+
   ! define variable
   ! read ice shelf draft data
   isfindex(:,:) = getvar(cf_fill,  cv_fill,  1 ,npiglo, npjglo )  ! fill index
@@ -208,12 +209,12 @@ PROGRAM cdfisf_rnf
      ijmin = npjglo ; ijmax=2
      DO jj=ijseed, 2, -1
         IF ( isum(jj) /= 0 ) THEN
-          ijmin=jj
+           ijmin=jj
         ENDIF
      ENDDO
      DO jj=ijseed, npjglo-1
         IF ( isum(jj) /= 0 ) THEN
-          ijmax=jj
+           ijmax=jj
         ENDIF
      ENDDO
 
@@ -221,15 +222,15 @@ PROGRAM cdfisf_rnf
         DO ji=2,npiglo-1
            DO jj = ijmin, ijmax
               IF ( zdrft(ji,jj) == 0 .AND.  &    ! not under ice_shelf
-              &    bathy(ji,jj) /= 0 .AND.  &    ! but in the ocean
-              &    MINVAL(isfindex_wk(ji-1:ji+1 , jj-1:jj+1)) == -ifill  .AND. &  ! 
-              &    isfindex_wk(ji,jj) == 0 ) THEN
+                   &    bathy(ji,jj) /= 0 .AND.  &    ! but in the ocean
+                   &    MINVAL(isfindex_wk(ji-1:ji+1 , jj-1:jj+1)) == -ifill  .AND. &  ! 
+                   &    isfindex_wk(ji,jj) == 0 ) THEN
                  ! compute dfwf in mm/s  ???
                  isfmask(ji,jj)  = isfmask(ji,jj) + jw 
                  ! use an empirical ocean ward fading function, in order to distribute the
                  ! runoff on nwidth points along the coast. iwscale can be adapted for
                  ! sharper (decrease) or flatter (increase) fading function. Default = 75
-                 dl_fwfisf2d(ji,jj) = exp(-((isfmask(ji,jj)-1.)/iwscale)**2)  
+                 dl_fwfisf2d(ji,jj) = EXP(-((isfmask(ji,jj)-1.)/iwscale)**2)  
               END IF
            END DO
         END DO
@@ -239,7 +240,7 @@ PROGRAM cdfisf_rnf
      dsumcoef=SUM(dl_fwfisf2d)
      PRINT *, SUM(dl_fwfisf2d), dsumcoef, SUM(dl_fwfisf2d / dsumcoef), dl_fwf, dfwf
      WHERE (isfmask >= 1)
-       dl_fwfisf2d = dl_fwfisf2d / dsumcoef * dl_fwf / de12t
+        dl_fwfisf2d = dl_fwfisf2d / dsumcoef * dl_fwf / de12t
      END WHERE
      dfwfisf2d = dfwfisf2d + dl_fwfisf2d
   END DO
@@ -269,45 +270,45 @@ CONTAINS
     !! ** Method  :  Use global variables to know about the file to be created
     !!           
     !!----------------------------------------------------------------------
-  ! define new variables for output
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = 'sozisfmax'
-  stypvar(1)%rmissing_value    =  -99.
-  stypvar(1)%valid_min         =  0.
-  stypvar(1)%valid_max         =  2000.
-  stypvar(1)%clong_name        = 'max depth of isf'
-  stypvar(1)%cshort_name       = 'sozisfmax'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-  ipk(1) = 1  !  2D
-  ! define new variables for output
-  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(2)%cname             = 'sozisfmin'
-  stypvar(2)%rmissing_value    =  -99.
-  stypvar(2)%valid_min         =  0.
-  stypvar(2)%valid_max         =  2000.
-  stypvar(2)%clong_name        = 'min depth of isf'
-  stypvar(2)%cshort_name       = 'sozisfmin'
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TYX'
-  ipk(2) = 1  !  2D
-  ! define new variables for output
-  stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(3)%cname             = 'sofwfisf'
-  stypvar(3)%rmissing_value    =  -99.d0
-  stypvar(3)%valid_min         =  0.
-  stypvar(3)%valid_max         =  2000.
-  stypvar(3)%clong_name        = 'fwfisf'
-  stypvar(3)%cshort_name       = 'sofwfisf'
-  stypvar(3)%conline_operation = 'N/A'
-  stypvar(3)%caxis             = 'TYX'
-  stypvar(3)%cprecision        = 'r8'
-  ipk(3) = 1  !  2D
+    ! define new variables for output
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'sozisfmax'
+    stypvar(1)%rmissing_value    =  -99.
+    stypvar(1)%valid_min         =  0.
+    stypvar(1)%valid_max         =  2000.
+    stypvar(1)%clong_name        = 'max depth of isf'
+    stypvar(1)%cshort_name       = 'sozisfmax'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+    ipk(1) = 1  !  2D
+    ! define new variables for output
+    stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%cname             = 'sozisfmin'
+    stypvar(2)%rmissing_value    =  -99.
+    stypvar(2)%valid_min         =  0.
+    stypvar(2)%valid_max         =  2000.
+    stypvar(2)%clong_name        = 'min depth of isf'
+    stypvar(2)%cshort_name       = 'sozisfmin'
+    stypvar(2)%conline_operation = 'N/A'
+    stypvar(2)%caxis             = 'TYX'
+    ipk(2) = 1  !  2D
+    ! define new variables for output
+    stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(3)%cname             = 'sofwfisf'
+    stypvar(3)%rmissing_value    =  -99.d0
+    stypvar(3)%valid_min         =  0.
+    stypvar(3)%valid_max         =  2000.
+    stypvar(3)%clong_name        = 'fwfisf'
+    stypvar(3)%cshort_name       = 'sofwfisf'
+    stypvar(3)%conline_operation = 'N/A'
+    stypvar(3)%caxis             = 'TYX'
+    stypvar(3)%cprecision        = 'r8'
+    ipk(3) = 1  !  2D
 
-  ! create output file taking the sizes in cf_fill
-  ncout  = create      (cf_out, cf_fill,   npiglo, npjglo, npk,  ld_nc4=lnc4)
-  ierr   = createvar   (ncout,  stypvar, 3,   ipk, id_varout  ,  ld_nc4=lnc4)
-  ierr   = putheadervar(ncout,  cf_fill,   npiglo, npjglo, npk              )
+    ! create output file taking the sizes in cf_fill
+    ncout  = create      (cf_out, cf_fill,   npiglo, npjglo, npk,  ld_nc4=lnc4)
+    ierr   = createvar   (ncout,  stypvar, 3,   ipk, id_varout  ,  ld_nc4=lnc4)
+    ierr   = putheadervar(ncout,  cf_fill,   npiglo, npjglo, npk              )
 
   END SUBROUTINE CreateOutput
 

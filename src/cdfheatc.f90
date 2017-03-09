@@ -8,14 +8,16 @@ PROGRAM cdfheatc
   !!
   !! History : 2.1  : 03/2006  : J.M. Molines : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class integration
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -152,8 +154,8 @@ PROGRAM cdfheatc
 
   npkk=npk
 
-  IF (iimin /= 0 ) THEN ; npiglo = iimax - iimin + 1;  ELSE ; iimin=1 ; ENDIF
-  IF (ijmin /= 0 ) THEN ; npjglo = ijmax - ijmin + 1;  ELSE ; ijmin=1 ; ENDIF
+  IF (iimin /= 0 ) THEN ; npiglo = iimax - iimin + 1;  ELSE ; iimin=1             ; ENDIF
+  IF (ijmin /= 0 ) THEN ; npjglo = ijmax - ijmin + 1;  ELSE ; ijmin=1             ; ENDIF
   IF (ikmin /= 0 ) THEN ; npkk   = ikmax - ikmin + 1;  ELSE ; ikmin=1 ; ikmax=npk ; ENDIF
 
   nvpk   = getvdim(cf_tfil,cn_votemper)
@@ -175,8 +177,8 @@ PROGRAM cdfheatc
   ALLOCATE ( e1t  (npiglo,npjglo), e2t(npiglo,npjglo), e3t(npiglo,npjglo))
 
   IF (mxloption /= 0) THEN
-      PRINT *, 'Allocate rmxldep'
-      ALLOCATE ( rmxldep(npiglo,npjglo))
+     PRINT *, 'Allocate rmxldep'
+     ALLOCATE ( rmxldep(npiglo,npjglo))
   ENDIF
 
   PRINT *, 'Allocate gdepw'
@@ -187,7 +189,7 @@ PROGRAM cdfheatc
   e2t(:,:) = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw,  npk)
   tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
-  
+
   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
 
   CALL CreateOutput
@@ -213,13 +215,13 @@ PROGRAM cdfheatc
         ELSE
            e3t(:,:) = getvar(cn_fe3t, cn_ve3t, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl)
         ENDIF
-        
+
         SELECT CASE ( mxloption ) 
-         CASE ( 1 ) 
-            e3t(:,:) = MAX ( 0., MIN( e3t,rmxldep-gdepw(ik) ) )
-         CASE ( -1 )
-            e3t(:,:) = MIN ( e3t, MAX( 0.,gdepw(ik)+e3t(:,:)-rmxldep ) )
-         END SELECT
+        CASE ( 1 ) 
+           e3t(:,:) = MAX ( 0., MIN( e3t,rmxldep-gdepw(ik) ) )
+        CASE ( -1 )
+           e3t(:,:) = MIN ( e3t, MAX( 0.,gdepw(ik)+e3t(:,:)-rmxldep ) )
+        END SELECT
 
         dsurf  = sum(e1t * e2t       * tmask)
         dvol2d = sum(e1t * e2t * e3t * tmask)
@@ -237,7 +239,7 @@ PROGRAM cdfheatc
         ierr = putvar(ncout, id_varout(jp_hc2d), dl_dum(:,:),jk, 1, 1, ktime=jt )
 
      END DO
-     
+
      PRINT * ,' Total Heat content        : ', pprho0*ppcp*dsum ,' Joules'
      PRINT * ,' Total Heat content/volume : ', pprho0*ppcp*dsum/dvol ,' Joules/m3 '
      dl_dum(1,1)=pprho0*ppcp*dsum
@@ -293,13 +295,13 @@ CONTAINS
     ncout =  create     (cf_out, 'none',  1,      1, npkk,   cdep='depthw' )
     ierr  = createvar   (ncout,  stypvar, ivar, ipk, id_varout             )
     ierr  = putheadervar(ncout,  cf_tfil, 1,      1, npkk,                 &
-                  &         pnavlon=zdumlon, pnavlat=zdumlat,              &
-                  &         pdep=gdepw(ikmin:ikmax),                       &
-                  &         cdep='depthw'                                  )
+         &         pnavlon=zdumlon, pnavlat=zdumlat,              &
+         &         pdep=gdepw(ikmin:ikmax),                       &
+         &         cdep='depthw'                                  )
     tim(:)= putvar1d(ncout,  tim,       npt, 'T')
 
     DEALLOCATE( zdumlon, zdumlat)
-    
+
   END SUBROUTINE CreateOutput
 
 END PROGRAM cdfheatc

@@ -14,15 +14,17 @@ PROGRAM cdfrichardson
   !! History : 2.0  : 11/2004  : J.M. Molines : Original code
   !!           2.1  : 04/2005  : J.M. Molines : use cdfio
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames   ! for cdf variable names
   USE eos
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

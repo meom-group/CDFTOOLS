@@ -6,6 +6,7 @@ MODULE modpoly
   !!=====================================================================
   !! History :  2.1  : 03/2006  : J.M. Molines : Port from trigrid
   !!            3.0  : 12/2010  : J.M. Molines : Doctor norm + Licence
+  !!            4.0  : 03/2017  : J.M. Molines  
   !!
   !!          Use algorithms developped in the late 80's for a finite element
   !!          mesh generator (TRIGRID) by R. Walters, C. Werner et Al.
@@ -43,10 +44,11 @@ MODULE modpoly
   PRIVATE :: PointSlope
 
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class system
   !!----------------------------------------------------------------------
 
 CONTAINS 

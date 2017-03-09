@@ -9,16 +9,18 @@ PROGRAM cdfdegrad
   !!               preserve the mass fluxes ( U,V,W)
   !!
   !! History : 1.0 : 11/2011  : X. Meunier : Original code
-  !!           4.0 : 02/2017  : J.-M. Molines : merge of all cdfdegradx tools
+  !!           3.0 : 02/2017  : J.-M. Molines : merge of all cdfdegradx tools
   !!                            debuging but still not completed
+  !!         : 4.0 : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, 
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_operations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -215,8 +217,7 @@ PROGRAM cdfdegrad
   npt    = getdim (cf_in  , cn_t   )
   nvpk   = getvdim(cf_in  , cv_nam )
 
-  IF (npk   == 0 ) THEN ; npk = 1;
-  ENDIF ! no depth dimension ==> 1 level
+  IF (npk   == 0 ) THEN ; npk = 1; ENDIF ! no depth dimension ==> 1 level
   ! retail horizontal fine resolution sizes to be multiple of the coarsening ratio
 
   SELECT CASE ( ctyp )

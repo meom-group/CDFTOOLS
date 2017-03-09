@@ -11,15 +11,17 @@ PROGRAM cdfhdy
   !!
   !! History : 2.1  : 05/2010  : R. Dussin    : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos, ONLY : sigmai
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -92,7 +94,7 @@ PROGRAM cdfhdy
      SELECT CASE ( cldum )
      CASE ( '-f'     ) ;  CALL getarg( ijarg, cf_tfil) ; ijarg=ijarg+1
      CASE ( '-limit' ) ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev1
-        ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev2
+                       ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev2
         ! options
      CASE ( '-o'     ) ;  CALL getarg( ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ;  lnc4 = .TRUE.

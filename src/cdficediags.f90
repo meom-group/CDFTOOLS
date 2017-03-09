@@ -54,15 +54,17 @@ PROGRAM cdficediag
   !!         : 2.1  : 07/2009  : R. Dussin    : Add Ncdf output
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
   !! Modified: 3.0  : 08/2011  : P.   Mathiot : Add LIM3 option
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   USE icediag
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class ice_diagnostics
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

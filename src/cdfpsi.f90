@@ -17,15 +17,17 @@ PROGRAM cdfpsi
   !!
   !! History : 2.1  : 05/2005  : J.M. Molines : Original code
   !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -140,13 +142,12 @@ PROGRAM cdfpsi
      CASE ('-mask') ; lmask = .TRUE.
      CASE ('-mean') ; lmean = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
      CASE ('-ssh' ) ; lssh  = .TRUE.  ; nvout=3
-        CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg + 1 
+                    ;  CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg + 1 
      CASE ('-nc4' ) ; lnc4  = .TRUE. 
      CASE ('-open') ; lopen = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
-     CASE ('-o'   ) ; CALL getarg( ijarg, cf_out )   ; ijarg=ijarg + 1 
-     CASE ('-ref') 
-        CALL getarg( ijarg, cldum )   ; ijarg=ijarg + 1 ; READ(cldum,*) iiref
-        CALL getarg( ijarg, cldum )   ; ijarg=ijarg + 1 ; READ(cldum,*) ijref
+     CASE ('-o'   ) ; CALL getarg( ijarg, cf_out ) ; ijarg=ijarg + 1 
+     CASE ('-ref')  ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg + 1 ; READ(cldum,*) iiref
+                    ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg + 1 ; READ(cldum,*) ijref
      CASE ('-vvl')  ; lg_vvl = .TRUE.
 
      CASE DEFAULT
@@ -185,7 +186,6 @@ PROGRAM cdfpsi
   ENDIF
 
   ALLOCATE (stypvar(nvout), ipk(nvout), id_varout(nvout))
-
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -443,6 +443,5 @@ CONTAINS
     ierr = putvar1d(ncout,   tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
-
 
 END PROGRAM cdfpsi

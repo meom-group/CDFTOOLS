@@ -12,14 +12,16 @@ PROGRAM cdfbottom
   !!
   !! History : 2.1  : 11/2005  : J.M. Molines : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class bottom
   !!----------------------------------------------------------------------
 
   IMPLICIT NONE
@@ -90,19 +92,19 @@ PROGRAM cdfbottom
      CASE ( '-f'  ) ;  CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
         ! options
      CASE ( '-p'  ) ;  CALL getarg (ijarg, ctype) ; ijarg = ijarg + 1
-                       IF ( chkfile (cn_fmsk )) STOP  ! missing files
-         SELECT CASE ( ctype )
-         CASE ( 'T', 't', 'S', 's' ) ; cv_msk=cn_tmask
-         CASE ( 'U', 'u'           ) ; cv_msk=cn_umask
-         CASE ( 'V', 'v'           ) ; cv_msk=cn_vmask
-         CASE ( 'F', 'f'           ) ; cv_msk=cn_fmask
-                                     ; PRINT *, 'Be carefull with fmask (think of shlat)... !!!'
-         CASE DEFAULT                ; PRINT *, ' ERROR : This type of point ', TRIM(ctype),' is not known !' ; STOP
-         END SELECT
-      CASE ( '-o'  ) ;  CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-      CASE ( '-nc4') ;  lnc4 = .TRUE.
-      CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
-      END SELECT
+        IF ( chkfile (cn_fmsk )) STOP  ! missing files
+        SELECT CASE ( ctype )
+        CASE ( 'T', 't', 'S', 's' ) ; cv_msk=cn_tmask
+        CASE ( 'U', 'u'           ) ; cv_msk=cn_umask
+        CASE ( 'V', 'v'           ) ; cv_msk=cn_vmask
+        CASE ( 'F', 'f'           ) ; cv_msk=cn_fmask
+           ; PRINT *, 'Be carefull with fmask (think of shlat)... !!!'
+        CASE DEFAULT                ; PRINT *, ' ERROR : This type of point ', TRIM(ctype),' is not known !' ; STOP
+        END SELECT
+     CASE ( '-o'  ) ;  CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-nc4') ;  lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
   ENDDO
 
   IF ( chkfile(cf_in) ) STOP  ! missing files
@@ -121,8 +123,8 @@ PROGRAM cdfbottom
   ENDDO
 
   IF ( ierr /= 0 ) THEN  ! none of the dim name was found
-      PRINT *,' assume file with no depth'
-      npk=0
+     PRINT *,' assume file with no depth'
+     npk=0
   ENDIF
 
   PRINT *, 'npiglo = ', npiglo
@@ -155,21 +157,21 @@ PROGRAM cdfbottom
      ELSE
         PRINT *, ' WORKING with ', TRIM( cv_names(jvar) ), ipk(jvar)
         DO jt = 1, npt
-          DO jk = 1, ipk(jvar)
-             zmask = 1.
-             zfield(:,:) = getvar(cf_in, cv_names(jvar),  jk, npiglo, npjglo, ktime=jt)
-             IF ( cv_msk == ' ' ) THEN
-                WHERE ( zfield /= 0 )
-                   zbot = zfield
-                END WHERE
-             ELSE
-                zmask(:,:) = getvar(cn_fmsk, cv_msk, jk, npiglo, npjglo)
-                WHERE ( zmask /= 0 )
-                   zbot = zfield
-                END WHERE
-             ENDIF
-          END DO ! level-loop
-          ierr = putvar(ncout, id_varout(jvar), zbot, 1, npiglo, npjglo, ktime=jt)
+           DO jk = 1, ipk(jvar)
+              zmask = 1.
+              zfield(:,:) = getvar(cf_in, cv_names(jvar),  jk, npiglo, npjglo, ktime=jt)
+              IF ( cv_msk == ' ' ) THEN
+                 WHERE ( zfield /= 0 )
+                    zbot = zfield
+                 END WHERE
+              ELSE
+                 zmask(:,:) = getvar(cn_fmsk, cv_msk, jk, npiglo, npjglo)
+                 WHERE ( zmask /= 0 )
+                    zbot = zfield
+                 END WHERE
+              ENDIF
+           END DO ! level-loop
+           ierr = putvar(ncout, id_varout(jvar), zbot, 1, npiglo, npjglo, ktime=jt)
         ENDDO  ! time-loop
      ENDIF
   END DO       ! variable-loop
@@ -186,26 +188,26 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk (cf_in,nvars,cdep=cv_dep)
-  ipko(:)    = 1  ! all variables output are 2D
+    ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+    ipk(:)     = getipk (cf_in,nvars,cdep=cv_dep)
+    ipko(:)    = 1  ! all variables output are 2D
 
-  WHERE( ipk <= 1 ) cv_names='none'
-  DO jvar=1,nvars
-    stypvar(jvar)%ichunk     = (/npiglo,MAX(1,npjglo/30),1,1 /)
-    stypvar(jvar)%cname      = cv_names(jvar)
-    stypvar(jvar)%caxis      = 'TYX'
-    cldum=stypvar(jvar)%clong_name
-    stypvar(jvar)%clong_name = 'Bottom '//TRIM(cldum)
-  END DO
-  ! create output fileset
-  ! create output file taking the sizes in cf_in
+    WHERE( ipk <= 1 ) cv_names='none'
+    DO jvar=1,nvars
+       stypvar(jvar)%ichunk     = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(jvar)%cname      = cv_names(jvar)
+       stypvar(jvar)%caxis      = 'TYX'
+       cldum=stypvar(jvar)%clong_name
+       stypvar(jvar)%clong_name = 'Bottom '//TRIM(cldum)
+    END DO
+    ! create output fileset
+    ! create output file taking the sizes in cf_in
 
-  ncout = create      (cf_out,   cf_in  , npiglo, npjglo, 1         , ld_nc4=lnc4 ) ! 1 level file
-  ierr  = createvar   (ncout   , stypvar, nvars , ipko  , id_varout , ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout   , cf_in  , npiglo, npjglo, 1         )
-  tim     = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr    = putvar1d(ncout, tim,       npt, 'T')
+    ncout = create      (cf_out,   cf_in  , npiglo, npjglo, 1         , ld_nc4=lnc4 ) ! 1 level file
+    ierr  = createvar   (ncout   , stypvar, nvars , ipko  , id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout   , cf_in  , npiglo, npjglo, 1         )
+    tim     = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr    = putvar1d(ncout, tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

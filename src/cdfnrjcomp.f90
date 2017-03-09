@@ -8,15 +8,17 @@ PROGRAM cdfnrjcomp
   !!               compute : tbar, ubar, vbar, anotsqrt, anousqrt, anovsqrt
   !!
   !! History : 2.1  : 02/2008  : A. Melet     : Original code
-  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic. 
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class energy_diagnostics
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -81,7 +83,7 @@ PROGRAM cdfnrjcomp
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
- 
+
   ! define new variables for output 
   ipk(:)                 = npk  
   stypvar(1)%cname       = 'tbar'
@@ -91,11 +93,11 @@ PROGRAM cdfnrjcomp
   stypvar(2)%cname       = 'ubar'
   stypvar(2)%clong_name  = 'temporal mean of the zonal velocity on T point'
   stypvar(2)%cshort_name = 'ubar'
- 
+
   stypvar(3)%cname       = 'vbar'
   stypvar(3)%clong_name  = 'temporal mean of the meridional velocity on T point'
   stypvar(3)%cshort_name = 'vbar'
-  
+
   stypvar(4)%cname       = 'anotsqrt'
   stypvar(4)%clong_name  = 'temporal mean of the square of the temperature anomaly on T point (*1000)'
   stypvar(4)%cshort_name = 'anotsqrt'
@@ -114,7 +116,7 @@ PROGRAM cdfnrjcomp
   stypvar%valid_max         = 1000.
   stypvar%conline_operation = 'N/A'
   stypvar%caxis             = 'TZYX'
-  
+
   ! create output fileset
   ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk       )
   ierr  = createvar   (ncout,  stypvar, 6,      ipk,    id_varout )
@@ -130,13 +132,13 @@ PROGRAM cdfnrjcomp
 
   tim  = getvar1d(cf_in,cn_vtimec, npt     )
   ierr = putvar1d(ncout, tim,      npt, 'T')
-     
+
   DO jk=1, npk
      PRINT *,'            level ',jk
      anousqrt(:,:) = 0.0
      anovsqrt(:,:) = 0.0      
      anotsqrt(:,:) = 0.0
-     
+
      un(:,:)  = getvar(cf_in, 'ubar',  jk, npiglo, npjglo, ktime=1)
      vn(:,:)  = getvar(cf_in, 'vbar',  jk, npiglo, npjglo, ktime=1)
      u2n(:,:) = getvar(cf_in, 'u2bar', jk, npiglo, npjglo, ktime=1)
@@ -161,7 +163,7 @@ PROGRAM cdfnrjcomp
            anotsqrt(ji,jj) = 1000. * ( t2n(ji,jj) - tn(ji,jj) * tn(ji,jj) )
            anousqrt(ji,jj) = 1000./2. * umask(ji,jj)*( ( u2n(ji,jj) - un(ji,jj)*un(ji,jj) ) &
                 &                     + ( u2n(ji-1,jj) - un(ji-1,jj)*un(ji-1,jj) ) )       
-                
+
            anovsqrt(ji,jj) = 1000./2. * vmask(ji,jj)*( ( v2n(ji,jj) - vn(ji,jj)*vn(ji,jj) ) &
                 &                     + ( v2n(ji,jj-1) - vn(ji,jj)*vn(ji,jj-1) ) ) 
         END DO

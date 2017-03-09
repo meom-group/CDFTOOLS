@@ -11,6 +11,7 @@ PROGRAM cdfcoloc
   !!
   !! History : 2.1  : 05/2007  : J.M. Molines : Original code
   !!           3.0  : 03/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !! subroutine  rotation    : perform vector rotation to get geographical
@@ -22,10 +23,11 @@ PROGRAM cdfcoloc
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class data_transformation
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -53,7 +55,7 @@ PROGRAM cdfcoloc
   INTEGER(KIND=4)                                :: nSx, nSy      ! index of the Sx and Sy for rotation
   INTEGER(KIND=4)                                :: nU, nV        ! index of the U and V for rotation
   INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: mask          ! 3D working mask
-  
+
   REAL(KIND=4)                                   :: xmin, ymin, rdep
   REAL(KIND=4)                                   :: vup, vdo, wup, wdo  ! Working variables
   REAL(KIND=4), DIMENSION(:,:,:),    ALLOCATABLE :: v3d           ! 3D  ! working variable (unavoidable)
@@ -93,8 +95,8 @@ PROGRAM cdfcoloc
 
   ! exhaustive list of supported field     
   ctype    = (/'T       ','S       ','SSH     ','CFCINV  ','CFCCONC ','PENDEP  ',   &
-     &        'MXL     ','MXL01   ','MXLT02  ','ISOTHICK','U       ','V       ', &
-     &        'Sx      ','Sy      ','H       ','etopo   '/)
+       &        'MXL     ','MXL01   ','MXLT02  ','ISOTHICK','U       ','V       ', &
+       &        'Sx      ','Sy      ','H       ','etopo   '/)
   ctmplst0 = 'U,V,Sx,Sy,H'                 ! default list
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
@@ -153,17 +155,17 @@ PROGRAM cdfcoloc
   llchk = .FALSE.
 
   IF ( cf_bathy /= 'none' ) THEN ! dealing with special case of etopo file
-    llchk = llchk .OR. chkfile(cf_bathy    )
-    IF (llchk ) STOP ! missing files
-    npiglo = getdim (cf_bathy,'lon')
-    npjglo = getdim (cf_bathy,'lat')
-    npk    = 1
+     llchk = llchk .OR. chkfile(cf_bathy    )
+     IF (llchk ) STOP ! missing files
+     npiglo = getdim (cf_bathy,'lon')
+     npjglo = getdim (cf_bathy,'lat')
+     npk    = 1
   ELSE
-    llchk = llchk .OR. chkfile(cn_fmsk    )
-    IF (llchk ) STOP ! missing files
-    npiglo = getdim (cn_fmsk,cn_x)
-    npjglo = getdim (cn_fmsk,cn_y)
-    npk    = getdim (cn_fmsk,cn_z)
+     llchk = llchk .OR. chkfile(cn_fmsk    )
+     IF (llchk ) STOP ! missing files
+     npiglo = getdim (cn_fmsk,cn_x)
+     npjglo = getdim (cn_fmsk,cn_y)
+     npk    = getdim (cn_fmsk,cn_z)
   ENDIF
 
   ALLOCATE (v3d(npiglo, npjglo, npk), mask(npiglo, npjglo, npk) )
@@ -334,16 +336,16 @@ PROGRAM cdfcoloc
 
      ! read corresponding mask
      IF ( cvmask == 'none' ) THEN   ! special case of etopo files ( valid values are < 0 ) 
-          mask = 1
-          WHERE ( v3d >= 0 ) mask = 0
+        mask = 1
+        WHERE ( v3d >= 0 ) mask = 0
      ELSE
         DO jk=1, npkv
-          mask(:,:,jk)=getvar(cn_fmsk,cvmask,jk, npiglo,npjglo)
+           mask(:,:,jk)=getvar(cn_fmsk,cvmask,jk, npiglo,npjglo)
         END DO
      ENDIF
 
      DO jid=1,nid
-!       READ(numbin) id, dymin, dxmin, idep ,nimin, njmin, nkmin, nquadran, dhN, dalpha, dbeta, dgama
+        !       READ(numbin) id, dymin, dxmin, idep ,nimin, njmin, nkmin, nquadran, dhN, dalpha, dbeta, dgama
         READ(numbin) id, ymin, xmin, rdep ,nimin, njmin, nkmin, nquadran, dhN, dalpha, dbeta, dgama
         dinterp(jid,jtyp)=interp()
         ! do not scale dummy values
@@ -367,10 +369,10 @@ PROGRAM cdfcoloc
      IF ( dlmin > -99990.d0 ) THEN
         ! apply vector rotation to have results on the geographic reference system (N-S, E-W )
         IF ( nSx > 0 ) THEN   ! (Sx, Sy pair )
-          CALL rotation( dinterp(jid,nSx), dinterp(jid,nSy), dhN)  
+           CALL rotation( dinterp(jid,nSx), dinterp(jid,nSy), dhN)  
         ENDIF
         IF ( nU > 0 ) THEN    ! (U, V pair)
-          CALL rotation( dinterp(jid,nU), dinterp(jid,nV), dhN)  
+           CALL rotation( dinterp(jid,nU), dinterp(jid,nV), dhN)  
         ENDIF
         WRITE(numout, cformat) id, rdep, (dinterp(jid,jtyp),jtyp=1,ntyp)
      ELSE
@@ -510,7 +512,7 @@ CONTAINS
     INTEGER(KIND=4)    :: jt
     CHARACTER(LEN=256) :: cltmplst
     !!----------------------------------------------------------------------
-    
+
     cltmplst = ctmplst0
     ntyp = 1
     idum = INDEX(cltmplst,',')
@@ -544,15 +546,15 @@ CONTAINS
           STOP
        ENDIF
     ENDDO
-    
+
     ! locate pairing for vector variables
     nSx = -1 ; nSy = -1
     nU  = -1 ; nV  = -1
     DO jtyp = 1, ntyp
-      IF (  cltype(jtyp) == 'Sx' ) nSx = jtyp
-      IF (  cltype(jtyp) == 'Sy' ) nSy = jtyp
-      IF (  cltype(jtyp) == 'U'  ) nU  = jtyp
-      IF (  cltype(jtyp) == 'V'  ) nV  = jtyp
+       IF (  cltype(jtyp) == 'Sx' ) nSx = jtyp
+       IF (  cltype(jtyp) == 'Sy' ) nSy = jtyp
+       IF (  cltype(jtyp) == 'U'  ) nU  = jtyp
+       IF (  cltype(jtyp) == 'V'  ) nV  = jtyp
     END DO
 
     IF ( nSx * nSy < 0 ) THEN 
@@ -572,7 +574,7 @@ CONTAINS
        cf_out=TRIM(cf_out)//'_'//TRIM(cltype(jtyp))
     ENDDO
     cf_out=TRIM(cf_out)//'.txt'
-    
+
     ! Build output format
     WRITE(cformat,'(a,i2,a)') '(I5,  I6,',ntyp,'e14.6)'
 
@@ -592,44 +594,44 @@ CONTAINS
     PRINT *,' List of available field to process:' 
     PRINT *,'field name  comments                input files'
 
-    
+
     ! ctype    = (/'T','S','SSH','CFCINV','CFCCONC','PENDEP','MXL','MXL01',
     !              'MXLT02','ISOTHICK','U ','V ','Sx','Sy','H ','etopo'/)
     comments = (/' Potential temperature  ', &
-          &      ' Salinity               ', &
-          &      ' Sea Surface height     ', &
-          &      ' CFC inventory          ', &
-          &      ' CFC concentration      ', &
-          &      ' Penetration depth      ', &
-          &      ' Mixed layer depth s0.01', &
-          &      ' Mixed layer depth s0.01', &
-          &      ' Mixed layer depth t0.2 ', &
-          &      ' Isopycnal thickness    ', &
-          &      ' Zonal velocity         ', &
-          &      ' Meridional velocity    ', &
-          &      ' Zonal bottom slope     ', &
-          &      ' Meridional bottom slope', &
-          &      ' Local model bathymetry ', &
-          &      ' etopo like bathymetry  ' /)
+         &      ' Salinity               ', &
+         &      ' Sea Surface height     ', &
+         &      ' CFC inventory          ', &
+         &      ' CFC concentration      ', &
+         &      ' Penetration depth      ', &
+         &      ' Mixed layer depth s0.01', &
+         &      ' Mixed layer depth s0.01', &
+         &      ' Mixed layer depth t0.2 ', &
+         &      ' Isopycnal thickness    ', &
+         &      ' Zonal velocity         ', &
+         &      ' Meridional velocity    ', &
+         &      ' Zonal bottom slope     ', &
+         &      ' Meridional bottom slope', &
+         &      ' Local model bathymetry ', &
+         &      ' etopo like bathymetry  ' /)
     crequired = (/' -t gridT ',   &
-          &       ' -t gridT ',   &
-          &       ' -t gridT ',   &
-          &       ' -trc TRC ',   &
-          &       ' -trc TRC ',   &
-          &       ' -d  diag ',   &
-          &       ' -t gridT ',   &
-          &       ' -t gridT ',   &
-          &       ' -t gridT ',   &
-          &       ' -d  diag ',   &
-          &       ' -u gridU ',   &
-          &       ' -v gridV ',   &
-          &       ' zgr coord',   &
-          &       ' zgr coord',   &
-          &       ' zgr      ',   &
-          &       ' -b etopo ' /)
+         &       ' -t gridT ',   &
+         &       ' -t gridT ',   &
+         &       ' -trc TRC ',   &
+         &       ' -trc TRC ',   &
+         &       ' -d  diag ',   &
+         &       ' -t gridT ',   &
+         &       ' -t gridT ',   &
+         &       ' -t gridT ',   &
+         &       ' -d  diag ',   &
+         &       ' -u gridU ',   &
+         &       ' -v gridV ',   &
+         &       ' zgr coord',   &
+         &       ' zgr coord',   &
+         &       ' zgr      ',   &
+         &       ' -b etopo ' /)
 
     DO jtyp=1, jptyp
-      PRINT '( 12a,x,24a,x,10a)', TRIM(ctype(jtyp)), comments(jtyp), crequired(jtyp)
+       PRINT '( 12a,x,24a,x,10a)', TRIM(ctype(jtyp)), comments(jtyp), crequired(jtyp)
     ENDDO
     STOP
 

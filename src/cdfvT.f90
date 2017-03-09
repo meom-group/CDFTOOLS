@@ -12,15 +12,17 @@ PROGRAM cdfvT
   !!           2.1  : 02/2010  : J.M. Molines : handle multiframes input files.
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
   !!                : 10/2012  : M. Balmaseda : Split T and S file eventually
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   USE modutils       ! SetFileName function
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class second_order_moments
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

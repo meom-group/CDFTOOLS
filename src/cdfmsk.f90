@@ -6,13 +6,14 @@ PROGRAM cdfmsk
   !!
   !! History : 2.1  : 05/2005  : J.M. Molines : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class file_informations
   !!----------------------------------------------------------------------
@@ -48,7 +49,7 @@ PROGRAM cdfmsk
      PRINT *,'       Standard output'
      STOP
   ENDIF
-  
+
   CALL getarg (1, cf_msk)
 
   IF ( chkfile(cf_msk) ) STOP ! missing file
@@ -64,7 +65,7 @@ PROGRAM cdfmsk
      zmask(:,:) = getvar(cf_msk, cn_tmask, jk ,npiglo, npjglo)
      zss        = SUM(zmask)
      npoint     = npoint + zss
-  END DO  
+  END DO
 
   PRINT *, ' Number of Ocean points :', npoint ,'  ',(1.*npoint )/npiglo/npjglo/npk*100,' %'
   PRINT *, ' Number of Land points :', npiglo*npjglo*npk - npoint ,'  ',(npiglo*npjglo*npk -1.*npoint )/npiglo/npjglo/npk*100,' %'

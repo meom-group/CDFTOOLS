@@ -8,14 +8,16 @@ PROGRAM cdfspeed
   !!
   !! History : 2.1  : 11/2007  : P. Mathiot   : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -85,25 +87,25 @@ PROGRAM cdfspeed
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
      CASE ( '-lev' ) 
-       nlev = narg -ijarg + 1
-       ALLOCATE ( nklevel(nlev) )
-       DO jlev = 1, nlev 
-          CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ( cldum,*) nklevel(jlev)
-       END DO
+        nlev = narg -ijarg + 1
+        ALLOCATE ( nklevel(nlev) )
+        DO jlev = 1, nlev 
+           CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ( cldum,*) nklevel(jlev)
+        END DO
      CASE ( '-t' ) 
-       CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1
-       IF ( chkfile (cf_tfil) ) STOP ! missing file
+        CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1
+        IF ( chkfile (cf_tfil) ) STOP ! missing file
      CASE ( '-nc4' ) 
-       lnc4=.true.
+        lnc4=.true.
      CASE ( '-o' ) 
-       CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
+        CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE DEFAULT
-       cf_ufil = cldum
-       CALL getarg(ijarg, cf_vfil ) ; ijarg = ijarg + 1
-       IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) ) STOP ! missing file
-       CALL getarg(ijarg, cv_u ) ; ijarg = ijarg + 1
-       CALL getarg(ijarg, cv_v ) ; ijarg = ijarg + 1
-     END SELECT 
+        cf_ufil = cldum
+        CALL getarg(ijarg, cf_vfil ) ; ijarg = ijarg + 1
+        IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) ) STOP ! missing file
+        CALL getarg(ijarg, cv_u ) ; ijarg = ijarg + 1
+        CALL getarg(ijarg, cv_v ) ; ijarg = ijarg + 1
+     END SELECT
   ENDDO
 
   npiglo = getdim (cf_vfil,cn_x)
@@ -119,18 +121,18 @@ PROGRAM cdfspeed
   ELSE
      lforcing=.FALSE.
      IF ( TRIM(cf_tfil) == 'none' ) THEN
-       PRINT *,'  ERROR: you must specify a griT file as fifth argument '
-       PRINT *,'     This is for the proper header of output file '
-       STOP
+        PRINT *,'  ERROR: you must specify a griT file as fifth argument '
+        PRINT *,'     This is for the proper header of output file '
+        STOP
      ENDIF
   END IF
 
   IF ( nlev == 0 ) THEN 
-    nlev = npk 
-    ALLOCATE ( nklevel(nlev) )
-    DO jlev =1, nlev
-      nklevel(jlev) = jlev
-    ENDDO
+     nlev = npk 
+     ALLOCATE ( nklevel(nlev) )
+     DO jlev =1, nlev
+        nklevel(jlev) = jlev
+     ENDDO
   ENDIF
 
   IF (nvpk == 2 ) nvpk = 1
@@ -174,7 +176,7 @@ PROGRAM cdfspeed
      ALLOCATE ( gdept(nlev), gdeptall(npk) )
      gdeptall = getvar1d ( cf_tfil, cn_vdeptht, npk )
      DO jlev = 1, nlev
-       gdept(jlev) = gdeptall( nklevel(jlev) )
+        gdept(jlev) = gdeptall( nklevel(jlev) )
      END DO
      ipk(1) = nlev
      ncout  = create      (cf_out, cf_tfil, npiglo, npjglo, nlev      , ld_nc4=lnc4   )
@@ -193,25 +195,25 @@ PROGRAM cdfspeed
 
   DO jt = 1,npt
      DO jlev = 1, nlev
-           ik = nklevel(jlev)
+        ik = nklevel(jlev)
         ! Get velocities v at jk
-           zu(:,:) = getvar(cf_ufil, cv_u, ik, npiglo, npjglo, ktime=jt)
-           zv(:,:) = getvar(cf_vfil, cv_v, ik, npiglo, npjglo, ktime=jt)
+        zu(:,:) = getvar(cf_ufil, cv_u, ik, npiglo, npjglo, ktime=jt)
+        zv(:,:) = getvar(cf_vfil, cv_v, ik, npiglo, npjglo, ktime=jt)
         IF ( lforcing ) THEN
            ! u and v are already on the T grid points
         ELSE
            ! in this case we are on the C-grid and the speed must be computed 
            ! on the A-grid. We use reverse loop in order to use only one array
            DO ji=npiglo,2,-1
-             DO jj=1,npjglo
-               zu(ji,jj) = 0.5*(zu(ji-1,jj)+zu(ji,jj))
-             ENDDO
+              DO jj=1,npjglo
+                 zu(ji,jj) = 0.5*(zu(ji-1,jj)+zu(ji,jj))
+              ENDDO
            ENDDO
 
            DO ji=1,npiglo 
-             DO jj=npjglo,2,-1
-               zv(ji,jj) = 0.5*(zv(ji,jj-1)+zv(ji,jj))
-             ENDDO
+              DO jj=npjglo,2,-1
+                 zv(ji,jj) = 0.5*(zv(ji,jj-1)+zv(ji,jj))
+              ENDDO
            ENDDO
         END IF
         zspeed    = SQRT(zv*zv+zu*zu)

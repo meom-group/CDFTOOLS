@@ -10,14 +10,16 @@ PROGRAM cdfbci
   !!
   !! History : 2.1  : 02/2008  : A. Melet     : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class energy_diagnostics
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -93,11 +95,11 @@ PROGRAM cdfbci
   stypvar(2)%cname       = 'dTdy'
   stypvar(2)%clong_name  = 'meridional derivate of Tbar on T point (*1000)'
   stypvar(2)%cshort_name = 'dTdy'
- 
+
   stypvar(3)%cname       = 'uT'
   stypvar(3)%clong_name  = 'anomaly of u times anomaly of T on T point'
   stypvar(3)%cshort_name = 'uT'
-  
+
   stypvar(4)%cname       = 'vT'
   stypvar(4)%clong_name  = 'anomaly of v times anomaly of T on T point'
   stypvar(4)%cshort_name = 'vT'
@@ -114,7 +116,7 @@ PROGRAM cdfbci
   stypvar%caxis             = 'TYX'
 
   ipk(:) = npk  
-  
+
   !test if lev exists
   IF ((npk==0) .AND. (ilev > 0) ) THEN
      PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
@@ -142,13 +144,13 @@ PROGRAM cdfbci
 
   tim  = getvar1d(cf_in, cn_vtimec, npt)
   ierr = putvar1d(ncout, tim, npt, 'T')
-     
+
   DO jk=1, npk
      PRINT *,'            level ',jk
-           
+
      rdtdx(:,:) = 0.0
      rdtdy(:,:) = 0.0
-        
+
      anovt(:,:) = 0.0      
      anout(:,:) = 0.0
 

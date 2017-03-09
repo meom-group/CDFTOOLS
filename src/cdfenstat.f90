@@ -12,6 +12,7 @@ PROGRAM cdfenstat
   !!  ** Reference : Accuracy of floating point arithmetic.
   !!
   !! History  3.0  : 07/2015  : J.M. Molines : from cdfmoyt
+  !!        : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -19,9 +20,9 @@ PROGRAM cdfenstat
   USE cdfio 
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id: cdfenstat.f90 550 2011-09-19 16:07:45Z molines $
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class ensemble_processing
   !!-----------------------------------------------------------------------------

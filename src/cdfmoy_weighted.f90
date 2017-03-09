@@ -9,6 +9,7 @@
   !!
   !! History : 2.1  : 11/2009  : J.M. Molines : Original code
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!      function       : comments
   !!  setweight   : return weight for given variable and file
@@ -16,10 +17,11 @@
   USE cdfio 
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

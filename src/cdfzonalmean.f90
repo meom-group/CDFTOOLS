@@ -10,14 +10,16 @@ PROGRAM cdfzonalmean
   !! History : 2.1  : 11/2005  : J.M. Molines : Original code
   !!                : 06/2007  : P. Mathiot   : adaptation for 2D files
   !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class integration
   !!----------------------------------------------------------------------
   !! * Local variables
   IMPLICIT NONE
@@ -136,28 +138,28 @@ PROGRAM cdfzonalmean
 
   ijarg = 1  ; ireq = 0
   DO WHILE ( ijarg <= narg ) 
-    CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
-    SELECT CASE (cldum)
-    CASE ( '-pdep' , '--positive_depths' ) ; lpdep    =.TRUE.
-    CASE ( '-ndep_in'                    ) ; lndep_in =.TRUE.
-    CASE ( '-debug'                      ) ; ldebug   =.TRUE.
-    CASE ( '-max'                        ) ; lmax     =.TRUE. ; ncoef=3
-    CASE ( '-var'                        ) ; lvar     =.TRUE.
-                                             CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
-                                             CALL ParseVars(cldum) 
-    CASE ( '-o'                          ) ; CALL getarg( ijarg, cf_out) ; ijarg=ijarg+1
-    CASE DEFAULT
-      ireq=ireq+1
-      SELECT CASE (ireq)
-      CASE (1) ; cf_in      = cldum                 ! file name is the 1rst argument
-      CASE (2) ; ctyp       = cldum                 ! point type is the 2nd
-      CASE (3) ; cf_basins  = cldum                 ! sub basin file is the 3rd (optional)
-                 npbasins   = 5
-                 lchk       = chkfile (cf_basins)
-      CASE DEFAULT 
-        PRINT *,' Too many arguments ...' ; STOP
-      END SELECT
-    END SELECT
+     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE (cldum)
+     CASE ( '-pdep' , '--positive_depths' ) ; lpdep    =.TRUE.
+     CASE ( '-ndep_in'                    ) ; lndep_in =.TRUE.
+     CASE ( '-debug'                      ) ; ldebug   =.TRUE.
+     CASE ( '-max'                        ) ; lmax     =.TRUE. ; ncoef=3
+     CASE ( '-var'                        ) ; lvar     =.TRUE.
+        CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
+        CALL ParseVars(cldum) 
+     CASE ( '-o'                          ) ; CALL getarg( ijarg, cf_out) ; ijarg=ijarg+1
+     CASE DEFAULT
+        ireq=ireq+1
+        SELECT CASE (ireq)
+        CASE (1) ; cf_in      = cldum                 ! file name is the 1rst argument
+        CASE (2) ; ctyp       = cldum                 ! point type is the 2nd
+        CASE (3) ; cf_basins  = cldum                 ! sub basin file is the 3rd (optional)
+           npbasins   = 5
+           lchk       = chkfile (cf_basins)
+        CASE DEFAULT 
+           PRINT *,' Too many arguments ...' ; STOP
+        END SELECT
+     END SELECT
   END DO
 
   IF ( ldebug ) THEN  ! additional print for debuging
@@ -205,7 +207,7 @@ PROGRAM cdfzonalmean
 
   nvarin  = getnvar(cf_in)   ! number of input variables in file
   IF ( .NOT. lvar ) THEN
-    nvaro = nvarin
+     nvaro = nvarin
   ENDIF
 
   nvarmx = ncoef * npbasins * nvaro
@@ -219,16 +221,16 @@ PROGRAM cdfzonalmean
 
   cv_namesi(1:nvarin) = getvarname(cf_in, nvarin, stypvari )
   ipki     (1:nvarin) = getipk    (cf_in, nvarin           )
- 
+
   IF ( lvar )  THEN 
      ALLOCATE ( lbad(nvarin) ) 
      lbad(:) = .true.  ! 
      ! tricks : in case of specified variables, set ipki to 0 all variables
      !          not choosen.
      DO ji = 1, nvaro
-       DO jvar = 1, nvarin
-         IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .false.
-       END DO
+        DO jvar = 1, nvarin
+           IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .false.
+        END DO
      END DO
      WHERE ( lbad ) ipki=0
      DEALLOCATE (lbad )
@@ -264,7 +266,7 @@ PROGRAM cdfzonalmean
   e1(:,:)   = getvar(cn_fhgr, cv_e1,  1, npiglo, npjglo) 
   e2(:,:)   = getvar(cn_fhgr, cv_e2,  1, npiglo, npjglo) 
   gphi(:,:) = getvar(cn_fhgr, cv_phi, 1, npiglo, npjglo)
-  
+
   dl_surf(:,:) = 1.d0 * e1(:,:) * e2(:,:)
 
   IF (l2d)  THEN 
@@ -312,7 +314,7 @@ PROGRAM cdfzonalmean
            ! Get variables and mask at level jk
            zv(:,:)       = getvar(cf_in,   cv_namesi(ijvar),jk ,npiglo, npjglo, ktime=jt)
            zmaskvar(:,:) = getvar(cn_fmsk, cv_msk ,         jk ,npiglo, npjglo          )
-           
+
            ! For all basins 
            DO jbasin = 1, npbasins
               dzomean(:,:) = 0.d0
@@ -323,132 +325,132 @@ PROGRAM cdfzonalmean
 
               !$OMP PARALLEL DO SCHEDULE(RUNTIME) PRIVATE(dtmp)
               DO jj=1,npjglo
-                  DO ji=1,npiglo
+                 DO ji=1,npiglo
                     dtmp = 1.d0 * zmask(jbasin,ji,jj)*zmaskvar(ji,jj)*zv(ji,jj)
                     dzomean(jj,jk) = dzomean(jj,jk) + dl_surf(ji,jj)* dtmp
                     darea  (jj,jk) = darea  (jj,jk) + dl_surf(ji,jj)* zmask(jbasin,ji,jj)*zmaskvar(ji,jj)
-           IF( lmax )                 rzomax (jj,jk) = MAX(rzomax (jj,jk), dtmp )
-           IF( lmax .AND. dtmp /= 0.) rzomin (jj,jk) = MIN(rzomin (jj,jk), dtmp )
+                    IF( lmax )                 rzomax (jj,jk) = MAX(rzomax (jj,jk), dtmp )
+                    IF( lmax .AND. dtmp /= 0.) rzomin (jj,jk) = MIN(rzomin (jj,jk), dtmp )
                  END DO
               END DO
               !$OMP  END  PARALLEL DO
 
               ! compute the mean value if the darea is not 0, else assign spval
               WHERE (darea /= 0 )  ; dzomean=dzomean/darea
-              ELSEWHERE            ; dzomean=zspval
+           ELSEWHERE            ; dzomean=zspval
+           ENDWHERE
+           IF (lmax)  THEN      
+              WHERE (darea == 0 ) 
+                 rzomax=zspval ; rzomin=zspval 
               ENDWHERE
-              IF (lmax)  THEN      
-                 WHERE (darea == 0 ) 
-                   rzomax=zspval ; rzomin=zspval 
-                 ENDWHERE
-              ENDIF
-
-              ivar = (jvar-1)*npbasins + jbasin
-              ierr = putvar (ncout, id_varout(ivar),   REAL(dzomean(:,jk)), jk, 1, npjglo, ktime=jt)
-   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+nvaro),   rzomax(:,jk),  jk, 1, npjglo, ktime=jt)
-   IF ( lmax) ierr = putvar (ncout, id_varout(ivar+2*nvaro), rzomin(:,jk),  jk, 1, npjglo, ktime=jt)
-           END DO  !next basin
-        END DO  ! next k 
-     END DO ! next time
-  END DO ! next variable
-
-  ierr = closeout(ncout)
-CONTAINS 
-   SUBROUTINE ParseVars (cdum)
-      !!---------------------------------------------------------------------
-      !!                  ***  ROUTINE ParseVars  ***
-      !!
-      !! ** Purpose :  Decode -var option from command line
-      !!
-      !! ** Method  :  look for , in the argument string and set the number of
-      !!         variable (nvaro), allocate cv_fix array and fill it with the
-      !!         decoded  names.
-      !!
-      !!----------------------------------------------------------------------
-      CHARACTER(LEN=*), INTENT(in) :: cdum
-
-      CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
-      INTEGER  :: ji
-      INTEGER  :: inchar,  i1=1
-      !!----------------------------------------------------------------------
-
-      inchar= LEN(TRIM(cdum))
-      ! scan the input string and look for ',' as separator
-      DO ji=1,inchar
-         IF ( cdum(ji:ji) == ',' ) THEN
-            cl_dum(nvaro) = cdum(i1:ji-1)
-            i1=ji+1
-            nvaro=nvaro+1
-         ENDIF
-      ENDDO
-
-      ! last name of the list does not have a ','
-      cl_dum(nvaro) = cdum(i1:inchar)
-
-      ALLOCATE ( cv_fix(nvaro) )
-      IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
-      DO ji=1, nvaro
-         cv_fix(ji) = cl_dum(ji)
-         IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
-      ENDDO
-   END SUBROUTINE ParseVars
-
-  SUBROUTINE CreateOutput
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE CreateOutput  ***
-    !!
-    !! ** Purpose :  Create netcdf output file(s) 
-    !!
-    !! ** Method  :  Use stypvar global description of variables
-    !!
-    !!----------------------------------------------------------------------
-  ! buildt output filename
-  nvar = 0  ! over all number of valid variables for zonal mean ( < nvarin)
-  ivar = 0  ! over all variable counter ( nvar x basins)
-  DO jvar = 1,nvarin
-     ! skip variables such as nav_lon, nav_lat, time_counter deptht ...
-     IF (ipki(jvar) == 0 ) THEN
-        cv_namesi(jvar)='none'
-     ELSE
-        nvar           = nvar + 1 ! count for valid input variables
-        id_varin(nvar) = jvar     ! use indirect adressing for those variables
-        DO jbasin=1,npbasins
-           ivar=ivar + 1      ! count for output variables
-           cv_nameso(ivar)='zo'//TRIM(cv_namesi(jvar)(3:))//TRIM(cbasin(jbasin) )
-           ! intercept case of duplicate zonal name
-           IF (cv_namesi(jvar) == 'iowaflup' ) cv_nameso(ivar)='zowaflio'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'cfc11'    ) cv_nameso(ivar)='zocfc11'   // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'bombc14'  ) cv_nameso(ivar)='zobc14'    // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'invcfc'   ) cv_nameso(ivar)='zoinvcfc'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'invc14'   ) cv_nameso(ivar)='zoinvc14'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qtrcfc'   ) cv_nameso(ivar)='zoqtrcfc'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qtrc14'   ) cv_nameso(ivar)='zoqtrc14'  // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qintcfc'  ) cv_nameso(ivar)='zoqintcfc' // TRIM(cbasin(jbasin) )
-           IF (cv_namesi(jvar) == 'qintc14'  ) cv_nameso(ivar)='zoqintc14' // TRIM(cbasin(jbasin) )
-
-           stypvaro(ivar)%cname             = cv_nameso(ivar)
-           stypvaro(ivar)%cunits            = stypvari(jvar)%cunits
-           stypvaro(ivar)%rmissing_value    = zspval
-           stypvaro(ivar)%valid_min         = stypvari(jvar)%valid_min
-           stypvaro(ivar)%valid_max         = stypvari(jvar)%valid_max
-           stypvaro(ivar)%clong_name        = 'Zonal_Mean_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
-           stypvaro(ivar)%cshort_name       = stypvaro(ivar)%cname
-           stypvaro(ivar)%conline_operation = '/N/A'
-
-           IF (ipki(jvar) == 1 ) THEN
-             stypvaro(ivar)%caxis           ='TY'
-           ELSE
-             stypvaro(ivar)%caxis           ='TZY'
            ENDIF
 
-           ipko(ivar)=ipki(jvar)
-        END DO
-     ENDIF
-  END DO
+           ivar = (jvar-1)*npbasins + jbasin
+           ierr = putvar (ncout, id_varout(ivar),   REAL(dzomean(:,jk)), jk, 1, npjglo, ktime=jt)
+           IF ( lmax) ierr = putvar (ncout, id_varout(ivar+nvaro),   rzomax(:,jk),  jk, 1, npjglo, ktime=jt)
+           IF ( lmax) ierr = putvar (ncout, id_varout(ivar+2*nvaro), rzomin(:,jk),  jk, 1, npjglo, ktime=jt)
+        END DO  !next basin
+     END DO  ! next k 
+  END DO ! next time
+END DO ! next variable
 
-  nvaro = ivar  ! total number of output variables
-  IF ( lmax ) THEN  ! create variable and entry for zonal max
-     DO jvar = 1,nvaro
+ierr = closeout(ncout)
+CONTAINS 
+SUBROUTINE ParseVars (cdum)
+  !!---------------------------------------------------------------------
+  !!                  ***  ROUTINE ParseVars  ***
+  !!
+  !! ** Purpose :  Decode -var option from command line
+  !!
+  !! ** Method  :  look for , in the argument string and set the number of
+  !!         variable (nvaro), allocate cv_fix array and fill it with the
+  !!         decoded  names.
+  !!
+  !!----------------------------------------------------------------------
+ CHARACTER(LEN=*), INTENT(in) :: cdum
+
+ CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+ INTEGER  :: ji
+ INTEGER  :: inchar,  i1=1
+ !!----------------------------------------------------------------------
+
+ inchar= LEN(TRIM(cdum))
+ ! scan the input string and look for ',' as separator
+ DO ji=1,inchar
+    IF ( cdum(ji:ji) == ',' ) THEN
+       cl_dum(nvaro) = cdum(i1:ji-1)
+       i1=ji+1
+       nvaro=nvaro+1
+    ENDIF
+ ENDDO
+
+ ! last name of the list does not have a ','
+ cl_dum(nvaro) = cdum(i1:inchar)
+
+ ALLOCATE ( cv_fix(nvaro) )
+ IF ( ldebug) PRINT *,' SELECTED VARIABLES :'
+ DO ji=1, nvaro
+    cv_fix(ji) = cl_dum(ji)
+    IF ( ldebug) PRINT *, "    ",TRIM(cv_fix(ji))
+ ENDDO
+END SUBROUTINE ParseVars
+
+SUBROUTINE CreateOutput
+  !!---------------------------------------------------------------------
+  !!                  ***  ROUTINE CreateOutput  ***
+  !!
+  !! ** Purpose :  Create netcdf output file(s) 
+  !!
+  !! ** Method  :  Use stypvar global description of variables
+  !!
+  !!----------------------------------------------------------------------
+  ! buildt output filename
+ nvar = 0  ! over all number of valid variables for zonal mean ( < nvarin)
+ ivar = 0  ! over all variable counter ( nvar x basins)
+ DO jvar = 1,nvarin
+    ! skip variables such as nav_lon, nav_lat, time_counter deptht ...
+    IF (ipki(jvar) == 0 ) THEN
+       cv_namesi(jvar)='none'
+    ELSE
+       nvar           = nvar + 1 ! count for valid input variables
+       id_varin(nvar) = jvar     ! use indirect adressing for those variables
+       DO jbasin=1,npbasins
+          ivar=ivar + 1      ! count for output variables
+          cv_nameso(ivar)='zo'//TRIM(cv_namesi(jvar)(3:))//TRIM(cbasin(jbasin) )
+          ! intercept case of duplicate zonal name
+          IF (cv_namesi(jvar) == 'iowaflup' ) cv_nameso(ivar)='zowaflio'  // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'cfc11'    ) cv_nameso(ivar)='zocfc11'   // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'bombc14'  ) cv_nameso(ivar)='zobc14'    // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'invcfc'   ) cv_nameso(ivar)='zoinvcfc'  // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'invc14'   ) cv_nameso(ivar)='zoinvc14'  // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'qtrcfc'   ) cv_nameso(ivar)='zoqtrcfc'  // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'qtrc14'   ) cv_nameso(ivar)='zoqtrc14'  // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'qintcfc'  ) cv_nameso(ivar)='zoqintcfc' // TRIM(cbasin(jbasin) )
+          IF (cv_namesi(jvar) == 'qintc14'  ) cv_nameso(ivar)='zoqintc14' // TRIM(cbasin(jbasin) )
+
+          stypvaro(ivar)%cname             = cv_nameso(ivar)
+          stypvaro(ivar)%cunits            = stypvari(jvar)%cunits
+          stypvaro(ivar)%rmissing_value    = zspval
+          stypvaro(ivar)%valid_min         = stypvari(jvar)%valid_min
+          stypvaro(ivar)%valid_max         = stypvari(jvar)%valid_max
+          stypvaro(ivar)%clong_name        = 'Zonal_Mean_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
+          stypvaro(ivar)%cshort_name       = stypvaro(ivar)%cname
+          stypvaro(ivar)%conline_operation = '/N/A'
+
+          IF (ipki(jvar) == 1 ) THEN
+             stypvaro(ivar)%caxis           ='TY'
+          ELSE
+             stypvaro(ivar)%caxis           ='TZY'
+          ENDIF
+
+          ipko(ivar)=ipki(jvar)
+       END DO
+    ENDIF
+ END DO
+
+ nvaro = ivar  ! total number of output variables
+ IF ( lmax ) THEN  ! create variable and entry for zonal max
+    DO jvar = 1,nvaro
        stypvaro(jvar+nvaro) = stypvaro(jvar)  ! copy all var attributes 
        ipko    (jvar+nvaro) = ipko    (jvar)
        stypvaro(jvar+nvaro)%cname      = TRIM(stypvaro (jvar)%cname)//'_max'
@@ -458,14 +460,14 @@ CONTAINS
        ipko    (jvar+2*nvaro) = ipko    (jvar)
        stypvaro(jvar+2*nvaro)%cname      = TRIM(stypvaro (jvar)%cname)//'_min'
        stypvaro(jvar+2*nvaro)%clong_name = 'Zonal_Min_'//TRIM(stypvaro (jvar)%clong_name(12:))
-     ENDDO
-  ENDIF
+    ENDDO
+ ENDIF
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_in,    1,           npjglo, npk,  cdep=cv_depo                                )
-  ierr  = createvar   (ncout,  stypvaro, ncoef*nvaro, ipko,   id_varout                                         )
-  ierr  = putheadervar(ncout,  cf_in,    1,           npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
+ ! create output fileset
+ ncout = create      (cf_out, cf_in,    1,           npjglo, npk,  cdep=cv_depo                                )
+ ierr  = createvar   (ncout,  stypvaro, ncoef*nvaro, ipko,   id_varout                                         )
+ ierr  = putheadervar(ncout,  cf_in,    1,           npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
 
-  END SUBROUTINE CreateOutput
+END SUBROUTINE CreateOutput
 
-END PROGRAM cdfzonalmean
+END PROGRAM

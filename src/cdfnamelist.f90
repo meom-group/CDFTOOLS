@@ -4,20 +4,22 @@ PROGRAM cdfnamelist
   !!=====================================================================
   !!  ** Purpose : Give informations on the namelist mechanism implemented
   !!               in CDFTOOLS_3. 
-  !!               Write a template namelist for CDFTOOLS_3.0, usefull
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !!               to change default file names, variable  or dimension
   !!               names.
   !!
   !!  ** Method  : 
   !!
   !! History :  3.0  : 01/2011  : J.M. Molines : Original code
+  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_informations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -73,7 +75,7 @@ CONTAINS
     !!                  ***  ROUTINE InfoUseNamelist  ***
     !!
     !! ** Purpose :  Print detailed info on the use of namelist in
-    !!               CDFTOOLS_3.0 
+  !! CDFTOOLS_4.0 , MEOM 2017 
     !!
     !!----------------------------------------------------------------------
     PRINT *,'   In CDFTOOLS_3 the variable names, dimension names, mesh_mask'

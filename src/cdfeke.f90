@@ -12,14 +12,16 @@ PROGRAM cdfeke
   !! History : pre  : 11/2004  : J.M. Molines : Original code
   !!           2.1  : 04/2005  : J.M. Molines : use modules
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -108,23 +110,23 @@ PROGRAM cdfeke
      CALL getarg(ijarg, cdum ) ; ijarg = ijarg + 1
      SELECT CASE ( cdum )
      CASE ( '-mke' )
-         lmke = .true.
+        lmke = .TRUE.
      CASE ( '-nc4' )
-         lnc4 = .true.
+        lnc4 = .TRUE.
      CASE ( '-o'   )
-         CALL getarg( ijarg, cf_out) ; ijarg = ijarg + 1
+        CALL getarg( ijarg, cf_out) ; ijarg = ijarg + 1
      CASE DEFAULT
-       ! count xtra arguments ( ie those without key )
-       ixtra = ixtra + 1
+        ! count xtra arguments ( ie those without key )
+        ixtra = ixtra + 1
      END SELECT
   ENDDO
   nfree = ixtra
   ijarg = 1 ; ixtra = 0  ! reset ijarg for second step
 
   IF ( nfree /= 3 .AND. nfree /= 5 ) THEN
-    PRINT *, ' +++ ERROR : not the correct number of free arguments'
-    PRINT *, '            Likely a wrong option or missing file name'
-    STOP
+     PRINT *, ' +++ ERROR : not the correct number of free arguments'
+     PRINT *, '            Likely a wrong option or missing file name'
+     STOP
   ENDIF
 
   ! ( 2 )
@@ -134,23 +136,23 @@ PROGRAM cdfeke
      CASE ( '-mke' )
      CASE ( '-nc4' )
      CASE ( '-o'   )
-         ijarg = ijarg + 1
+        ijarg = ijarg + 1
      CASE DEFAULT
-       ixtra = ixtra + 1 
-       SELECT CASE ( nfree )
-       CASE ( 3 )
-          IF ( ixtra == 1 ) cf_ufil = cdum
-          IF ( ixtra == 2 ) cf_vfil = cdum
-          IF ( ixtra == 3 ) cf_tfil = cdum
-          lmke = .true.
-          leke = .false.
-       CASE ( 5 )
-          IF ( ixtra == 1 ) cf_ufil  = cdum
-          IF ( ixtra == 2 ) cf_u2fil = cdum
-          IF ( ixtra == 3 ) cf_vfil  = cdum
-          IF ( ixtra == 4 ) cf_v2fil = cdum
-          IF ( ixtra == 5 ) cf_tfil  = cdum
-       END SELECT
+        ixtra = ixtra + 1 
+        SELECT CASE ( nfree )
+        CASE ( 3 )
+           IF ( ixtra == 1 ) cf_ufil = cdum
+           IF ( ixtra == 2 ) cf_vfil = cdum
+           IF ( ixtra == 3 ) cf_tfil = cdum
+           lmke = .TRUE.
+           leke = .FALSE.
+        CASE ( 5 )
+           IF ( ixtra == 1 ) cf_ufil  = cdum
+           IF ( ixtra == 2 ) cf_u2fil = cdum
+           IF ( ixtra == 3 ) cf_vfil  = cdum
+           IF ( ixtra == 4 ) cf_v2fil = cdum
+           IF ( ixtra == 5 ) cf_tfil  = cdum
+        END SELECT
      END SELECT
   ENDDO
 
@@ -158,8 +160,8 @@ PROGRAM cdfeke
   lchk = lchk .OR. chkfile (cf_vfil )
   lchk = lchk .OR. chkfile (cf_tfil )
   IF (  leke ) THEN
-    lchk = lchk .OR. chkfile (cf_u2fil)
-    lchk = lchk .OR. chkfile (cf_v2fil)
+     lchk = lchk .OR. chkfile (cf_u2fil)
+     lchk = lchk .OR. chkfile (cf_v2fil)
   ENDIF
 
   IF ( lchk ) STOP ! missing files
@@ -173,35 +175,35 @@ PROGRAM cdfeke
 
   stypvar(1)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
   stypvar(2)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
-  
+
   ivar = 1
   IF ( leke ) THEN 
-    ip_eke=ivar
-    ipk(ip_eke)                       = npk
-    stypvar(ip_eke)%cname             = 'voeke'
-    stypvar(ip_eke)%cunits            = 'm2/s2'
-    stypvar(ip_eke)%rmissing_value    = 0.
-    stypvar(ip_eke)%valid_min         = 0.
-    stypvar(ip_eke)%valid_max         = 10000.
-    stypvar(ip_eke)%clong_name        = 'Eddy_Kinetic_Energy'
-    stypvar(ip_eke)%cshort_name       = 'voeke'
-    stypvar(ip_eke)%conline_operation = 'N/A'
-    stypvar(ip_eke)%caxis             = 'TZYX'
-    ivar = ivar + 1
+     ip_eke=ivar
+     ipk(ip_eke)                       = npk
+     stypvar(ip_eke)%cname             = 'voeke'
+     stypvar(ip_eke)%cunits            = 'm2/s2'
+     stypvar(ip_eke)%rmissing_value    = 0.
+     stypvar(ip_eke)%valid_min         = 0.
+     stypvar(ip_eke)%valid_max         = 10000.
+     stypvar(ip_eke)%clong_name        = 'Eddy_Kinetic_Energy'
+     stypvar(ip_eke)%cshort_name       = 'voeke'
+     stypvar(ip_eke)%conline_operation = 'N/A'
+     stypvar(ip_eke)%caxis             = 'TZYX'
+     ivar = ivar + 1
   ENDIF
 
   IF ( lmke ) THEN
-    ip_mke=ivar
-    ipk(ip_mke)                       = npk
-    stypvar(ip_mke)%cname             = 'vomke'
-    stypvar(ip_mke)%cunits            = 'm2/s2'
-    stypvar(ip_mke)%rmissing_value    = 0.
-    stypvar(ip_mke)%valid_min         = 0.
-    stypvar(ip_mke)%valid_max         = 10000.
-    stypvar(ip_mke)%clong_name        = 'Mean_Kinetic_Energy'
-    stypvar(ip_mke)%cshort_name       = 'vomke'
-    stypvar(ip_mke)%conline_operation = 'N/A'
-    stypvar(ip_mke)%caxis             = 'TZYX'
+     ip_mke=ivar
+     ipk(ip_mke)                       = npk
+     stypvar(ip_mke)%cname             = 'vomke'
+     stypvar(ip_mke)%cunits            = 'm2/s2'
+     stypvar(ip_mke)%rmissing_value    = 0.
+     stypvar(ip_mke)%valid_min         = 0.
+     stypvar(ip_mke)%valid_max         = 10000.
+     stypvar(ip_mke)%clong_name        = 'Mean_Kinetic_Energy'
+     stypvar(ip_mke)%cshort_name       = 'vomke'
+     stypvar(ip_mke)%conline_operation = 'N/A'
+     stypvar(ip_mke)%caxis             = 'TZYX'
   ENDIF
 
   ivar = MAX( ip_mke, ip_eke) ! set ivar to the effective number of variables to be output
@@ -215,13 +217,13 @@ PROGRAM cdfeke
   ALLOCATE( tim(npt) )
 
   IF ( leke ) THEN
-    ALLOCATE( eke(npiglo,npjglo)  )
-    ALLOCATE( u2(npiglo,npjglo), v2(npiglo,npjglo) )
-    eke(:,:) = 0.e0
+     ALLOCATE( eke(npiglo,npjglo)  )
+     ALLOCATE( u2(npiglo,npjglo), v2(npiglo,npjglo) )
+     eke(:,:) = 0.e0
   ENDIF
   IF (lmke ) THEN
-    ALLOCATE( rmke(npiglo,npjglo)  )
-    rmke(:,:) = 0.e0
+     ALLOCATE( rmke(npiglo,npjglo)  )
+     rmke(:,:) = 0.e0
   ENDIF
 
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       , ld_nc4=lnc4 )
@@ -236,44 +238,44 @@ PROGRAM cdfeke
   ENDIF
 
   DO jt = 1, npt  ! input file is likely to contain only one time frame but who knows ...
-    DO jk = 1, npk
-      uc(:,:) = getvar(cf_ufil,  cn_vozocrtx,               jk, npiglo, npjglo, ktime=jt )
-      vc(:,:) = getvar(cf_vfil,  cn_vomecrty,               jk, npiglo, npjglo, ktime=jt )
-      IF ( leke ) THEN
-        u2(:,:) = getvar(cf_u2fil, TRIM(cn_vozocrtx)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
-        v2(:,:) = getvar(cf_v2fil, TRIM(cn_vomecrty)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
-      ENDIF
+     DO jk = 1, npk
+        uc(:,:) = getvar(cf_ufil,  cn_vozocrtx,               jk, npiglo, npjglo, ktime=jt )
+        vc(:,:) = getvar(cf_vfil,  cn_vomecrty,               jk, npiglo, npjglo, ktime=jt )
+        IF ( leke ) THEN
+           u2(:,:) = getvar(cf_u2fil, TRIM(cn_vozocrtx)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
+           v2(:,:) = getvar(cf_v2fil, TRIM(cn_vomecrty)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
+        ENDIF
 
-      ua = 0. ; va = 0. ; eke(:,:) = 0.
-      IF ( leke ) THEN
-        DO ji=2, npiglo
-          DO jj=2,npjglo
-              ua = 0.5* ((u2(ji,jj)-uc(ji,jj)*uc(ji,jj))+ (u2(ji-1,jj)-uc(ji-1,jj)*uc(ji-1,jj)))
-              va = 0.5* ((v2(ji,jj)-vc(ji,jj)*vc(ji,jj))+ (v2(ji,jj-1)-vc(ji,jj-1)*vc(ji,jj-1)))
-              eke(ji,jj) = 0.5 * ( ua + va )
-          END DO
-        END DO
-      ENDIF
+        ua = 0. ; va = 0. ; eke(:,:) = 0.
+        IF ( leke ) THEN
+           DO ji=2, npiglo
+              DO jj=2,npjglo
+                 ua = 0.5* ((u2(ji,jj)-uc(ji,jj)*uc(ji,jj))+ (u2(ji-1,jj)-uc(ji-1,jj)*uc(ji-1,jj)))
+                 va = 0.5* ((v2(ji,jj)-vc(ji,jj)*vc(ji,jj))+ (v2(ji,jj-1)-vc(ji,jj-1)*vc(ji,jj-1)))
+                 eke(ji,jj) = 0.5 * ( ua + va )
+              END DO
+           END DO
+        ENDIF
 
-      IF ( lmke ) THEN
-        DO ji=2, npiglo
-          DO jj=2,npjglo
-              rmke(ji,jj)=  0.5* (0.5*( uc(ji,jj)*uc(ji,jj) + uc(ji-1,jj)*uc(ji-1,jj)) + &
-              &                   0.5*( vc(ji,jj)*vc(ji,jj) + vc(ji,jj-1)*vc(ji,jj-1)) )
-          END DO
-        END DO
-      ENDIF
+        IF ( lmke ) THEN
+           DO ji=2, npiglo
+              DO jj=2,npjglo
+                 rmke(ji,jj)=  0.5* (0.5*( uc(ji,jj)*uc(ji,jj) + uc(ji-1,jj)*uc(ji-1,jj)) + &
+                      &                   0.5*( vc(ji,jj)*vc(ji,jj) + vc(ji,jj-1)*vc(ji,jj-1)) )
+              END DO
+           END DO
+        ENDIF
 
-      IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
-      IF ( leke ) THEN 
-         IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
-         ierr=putvar(ncout,id_varout(ip_eke), eke,  jk ,npiglo, npjglo, ktime=jt )
-      ENDIF
-      IF ( lmke ) THEN 
-         IF ( lperio ) rmke(1,:) = rmke(npiglo-1,:)
-         ierr=putvar(ncout,id_varout(ip_mke), rmke, jk ,npiglo, npjglo, ktime=jt )
-      ENDIF
-    END DO
+        IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
+        IF ( leke ) THEN 
+           IF ( lperio ) eke(1,:) = eke(npiglo-1,:)
+           ierr=putvar(ncout,id_varout(ip_eke), eke,  jk ,npiglo, npjglo, ktime=jt )
+        ENDIF
+        IF ( lmke ) THEN 
+           IF ( lperio ) rmke(1,:) = rmke(npiglo-1,:)
+           ierr=putvar(ncout,id_varout(ip_mke), rmke, jk ,npiglo, npjglo, ktime=jt )
+        ENDIF
+     END DO
   END DO ! time loop
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt     )

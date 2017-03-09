@@ -22,10 +22,11 @@ PROGRAM cdfeddyscale
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2013
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2013, C. Q. C. AKUETEVI & J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence
+  !! @class energy_diagnostics
   !! (Licence/CDFTOOLSCeCILL.txt)
   !!----------------------------------------------------------------------
   IMPLICIT NONE
@@ -166,62 +167,62 @@ PROGRAM cdfeddyscale
 
   CONTAINS
 
-  SUBROUTINE CreateOutputFile
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE CreateOutputFile  ***
-    !!
-    !! ** Purpose :  Create Output file 
-    !!
-    !! ** Method  :  Use global variable 
-    !!
-    !!----------------------------------------------------------------------
+    SUBROUTINE CreateOutputFile
+      !!---------------------------------------------------------------------
+      !!                  ***  ROUTINE CreateOutputFile  ***
+      !!
+      !! ** Purpose :  Create Output file 
+      !!
+      !! ** Method  :  Use global variable 
+      !!
+      !!----------------------------------------------------------------------
 
-  ! define new variables for output
-  ! Taylor or large scale eddy F point
-  ipk(1)                       = 1   !2D
-  stypvar(1)%cname             = 'solambda1'
-  stypvar(1)%cunits            = 'm'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         =  100000.
-  stypvar(1)%clong_name        = 'Taylor_large_eddy_scale (lambda1)'
-  stypvar(1)%cshort_name       = 'solambda1'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-  
-  ! Small scale eddy F point
-  ipk(2)                       = 1   !2D
-  stypvar(2)%cname             = 'solambda2'
-  stypvar(2)%cunits            = 'm'
-  stypvar(2)%rmissing_value    = 0.
-  stypvar(2)%valid_min         = 0.
-  stypvar(2)%valid_max         =  100000.
-  stypvar(2)%clong_name        = 'Small scale eddy (lambda2)'
-  stypvar(2)%cshort_name       = 'solambda2'
-  stypvar(2)%conline_operation = 'N/A'
-  stypvar(2)%caxis             = 'TYX'
+      ! define new variables for output
+      ! Taylor or large scale eddy F point
+      ipk(1)                       = 1   !2D
+      stypvar(1)%cname             = 'solambda1'
+      stypvar(1)%cunits            = 'm'
+      stypvar(1)%rmissing_value    = 0.
+      stypvar(1)%valid_min         = 0.
+      stypvar(1)%valid_max         =  100000.
+      stypvar(1)%clong_name        = 'Taylor_large_eddy_scale (lambda1)'
+      stypvar(1)%cshort_name       = 'solambda1'
+      stypvar(1)%conline_operation = 'N/A'
+      stypvar(1)%caxis             = 'TYX'
 
-  ! Inertial Range F point
-  ipk(3)                       = 1   !2D
-  stypvar(3)%cname             = 'soscar'
-  stypvar(3)%cunits            = ''
-  stypvar(3)%rmissing_value    = 0.
-  stypvar(3)%valid_min         = 0.
-  stypvar(3)%valid_max         =  20.
-  stypvar(3)%clong_name        = 'Inertial range (scar)'
-  stypvar(3)%cshort_name       = 'soscar'
-  stypvar(3)%conline_operation = 'N/A'
-  stypvar(3)%caxis             = 'TYX'
+      ! Small scale eddy F point
+      ipk(2)                       = 1   !2D
+      stypvar(2)%cname             = 'solambda2'
+      stypvar(2)%cunits            = 'm'
+      stypvar(2)%rmissing_value    = 0.
+      stypvar(2)%valid_min         = 0.
+      stypvar(2)%valid_max         =  100000.
+      stypvar(2)%clong_name        = 'Small scale eddy (lambda2)'
+      stypvar(2)%cshort_name       = 'solambda2'
+      stypvar(2)%conline_operation = 'N/A'
+      stypvar(2)%caxis             = 'TYX'
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_meanfil, npiglo, npjglo, 0)
-  ierr  = createvar   (ncout , stypvar, 3,      ipk,    id_varout)
-  ierr  = putheadervar(ncout,  cf_meanfil, npiglo, npjglo, 0 )
+      ! Inertial Range F point
+      ipk(3)                       = 1   !2D
+      stypvar(3)%cname             = 'soscar'
+      stypvar(3)%cunits            = ''
+      stypvar(3)%rmissing_value    = 0.
+      stypvar(3)%valid_min         = 0.
+      stypvar(3)%valid_max         =  20.
+      stypvar(3)%clong_name        = 'Inertial range (scar)'
+      stypvar(3)%cshort_name       = 'soscar'
+      stypvar(3)%conline_operation = 'N/A'
+      stypvar(3)%caxis             = 'TYX'
 
-  tim  = getvar1d(cf_meanfil, cn_vtimec, 1      )
-  ierr = putvar1d(ncout,      tim,       1,  'T')
+      ! create output fileset
+      ncout = create      (cf_out, cf_meanfil, npiglo, npjglo, 0)
+      ierr  = createvar   (ncout , stypvar, 3,      ipk,    id_varout)
+      ierr  = putheadervar(ncout,  cf_meanfil, npiglo, npjglo, 0 )
 
-  END SUBROUTINE CreateOutputFile
+      tim  = getvar1d(cf_meanfil, cn_vtimec, 1      )
+      ierr = putvar1d(ncout,      tim,       1,  'T')
+
+    END SUBROUTINE CreateOutputFile
 
 END PROGRAM cdfeddyscale
 

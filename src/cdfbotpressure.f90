@@ -8,16 +8,18 @@ PROGRAM cdfbotpressure
   !!               eventually takes into account the SSH, and full step
   !!
   !! History : 3.0  : 01/2013  : J.M. Molines   : Original code from cdfvint
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2012
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2012, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class bottom
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

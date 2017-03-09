@@ -13,6 +13,7 @@ PROGRAM cdfchgrid
   !!                    This tool is only adapted for drowned field
   !!
   !! History : 3.0 !  08/2012    A. Lecointre   : Original code with Full Doctor form + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -22,10 +23,11 @@ PROGRAM cdfchgrid
   USE modutils
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id: cdfchgrid.f90 XXX YYYY-MM-DD MM:MM:SSZ molines $
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_operations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -137,9 +139,9 @@ PROGRAM cdfchgrid
   ENDIF
 
   IF ( npk == 0 ) THEN
-    npkk = 1
+     npkk = 1
   ELSE
-    npkk = npk
+     npkk = npk
   ENDIF
 
 
@@ -202,7 +204,7 @@ PROGRAM cdfchgrid
 
   ! get time and write time and get deptht and write deptht
   tim=getvar1d(cf_in,cn_t,npt)    ; ierr=putvar1d(ncout,tim,npt,'T')
-                                    ierr=putvar1d(ncout,rdep,npk,'D')
+  ierr=putvar1d(ncout,rdep,npk,'D')
 
   PRINT *,' Working with ', TRIM(cv_in), npk
   DO jt = 1, npt
@@ -344,22 +346,22 @@ CONTAINS
        ENDIF
     ENDDO
     IF ( ldbg ) THEN
-      PRINT *,'   Matching points : '
-      PRINT *,'      coarse : ', kicomc, kjcomc
-      PRINT *,'      fine   : ', kicomf, kjcomf
-   ENDIF
+       PRINT *,'   Matching points : '
+       PRINT *,'      coarse : ', kicomc, kjcomc
+       PRINT *,'      fine   : ', kicomf, kjcomf
+    ENDIF
     ! now do crop zwvar to fit poutvar  iiff,ijff are the index of SW most common point in zwvar
     iiff = kscal * kicomc - kscal/2 
     ijff = kscal * kjcomc - kscal/2 
 
-!   ii0=iiff-kicomf +1 ; ii1=MIN(npigloout , ii0+npigloout-1) ; ipi=ii1-ii0+1
-!   ij0=ijff-kjcomf +1 ; ij1=MIN(npjgloout , ij0+npjgloout-1) ; ipj=ij1-ij0+1
+    !   ii0=iiff-kicomf +1 ; ii1=MIN(npigloout , ii0+npigloout-1) ; ipi=ii1-ii0+1
+    !   ij0=ijff-kjcomf +1 ; ij1=MIN(npjgloout , ij0+npjgloout-1) ; ipj=ij1-ij0+1
     ii0=iiff-kicomf +1 ; ii1=MIN(iiglof , ii0+npigloout-1) ; ipi=ii1-ii0+1
     ij0=ijff-kjcomf +1 ; ij1=MIN(ijglof , ij0+npjgloout-1) ; ipj=ij1-ij0+1
     IF ( ldbg) THEN
-      PRINT *,'  Index limit to crop the array'
-      PRINT *,'     ', ii0,ii1,ij0,ij1
-      PRINT *,'   crop size : ', ipi,ipj
+       PRINT *,'  Index limit to crop the array'
+       PRINT *,'     ', ii0,ii1,ij0,ij1
+       PRINT *,'   crop size : ', ipi,ipj
     ENDIF
 
     poutvar(:,:) = 999.

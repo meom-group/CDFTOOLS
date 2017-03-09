@@ -14,14 +14,15 @@ PROGRAM cdfbn2
   !! History : 2.0  : 11/2004  : J.M. Molines : Original code
   !!           2.1  : 04/2005  : J.M. Molines : use cdfio
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames   ! for cdf variable names
   USE eos
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class Equation_of_state
   !!----------------------------------------------------------------------
@@ -49,10 +50,10 @@ PROGRAM cdfbn2
 
   TYPE(variable), DIMENSION(1)                 :: stypvar                  ! variable attribute
 
-  LOGICAL                                      :: l_w   =.false.           ! flag for vertical location of bn2
+  LOGICAL                                      :: l_w   =.FALSE.           ! flag for vertical location of bn2
   LOGICAL                                      :: lchk                     ! check missing files
-  LOGICAL                                      :: lfull =.false.           ! full step flag
-  LOGICAL                                      :: lnc4  =.false.           ! full step flag
+  LOGICAL                                      :: lfull =.FALSE.           ! full step flag
+  LOGICAL                                      :: lnc4  =.FALSE.           ! full step flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -97,13 +98,13 @@ PROGRAM cdfbn2
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
      CASE ( '-t'    ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
-     ! options
+        ! options
      CASE ( '-W'    ) ; l_w     = .TRUE.
      CASE ( '-full' ) ; lfull   = .TRUE. ; cglobal = 'full step computation'
      CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE ( '-nc4'  ) ; lnc4    = .TRUE.
      CASE ( '-vvl'  ) ; lg_vvl  = .TRUE. 
-                      ; CALL getarg(ijarg, cf_e3w ) ; ijarg = ijarg + 1
+        ; CALL getarg(ijarg, cf_e3w ) ; ijarg = ijarg + 1
      CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
@@ -170,7 +171,7 @@ PROGRAM cdfbn2
            ELSEWHERE                     ; zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
            END WHERE
         ELSE
-           zn2(:,:) = zwk(:,:,iup)
+          zn2(:,:) = zwk(:,:,iup)
         ENDIF
 
         WHERE ( zn2 == 0 ) zn2 = -1000.
@@ -178,9 +179,9 @@ PROGRAM cdfbn2
         itmp = idown ; idown = iup ; iup = itmp
 
      END DO  ! loop to next level
-  END DO
+   END DO
 
-  ierr = closeout(ncout)
+   ierr = closeout(ncout)
 
 CONTAINS
 
@@ -193,26 +194,26 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-  ipk(1)                       = npk  !  3D
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = cv_bn2
-  stypvar(1)%cunits            = 's-1'
-  stypvar(1)%rmissing_value    = -1000.
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 50000.
-  stypvar(1)%clong_name        = 'Brunt_Vaissala_Frequency'
-  stypvar(1)%cshort_name       = cv_bn2
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
+    ipk(1)                       = npk  !  3D
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = cv_bn2
+    stypvar(1)%cunits            = 's-1'
+    stypvar(1)%rmissing_value    = -1000.
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 50000.
+    stypvar(1)%clong_name        = 'Brunt_Vaissala_Frequency'
+    stypvar(1)%cshort_name       = cv_bn2
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
 
-  ! create output fileset
-  ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk,                               ld_nc4=lnc4 )
-  ierr  = createvar   (ncout ,   stypvar,  1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
+    ! create output fileset
+    ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk,                               ld_nc4=lnc4 )
+    ierr  = createvar   (ncout ,   stypvar,  1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt    )
-  ierr = putvar1d(ncout,  tim,        npt,'T')
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt    )
+    ierr = putvar1d(ncout,  tim,        npt,'T')
 
   END SUBROUTINE CreateOutput
 
-END PROGRAM cdfbn2
+END PROGRAM

@@ -11,15 +11,17 @@ PROGRAM cdfbottomsig
   !!
   !! History : 2.1  : 11/2005  : J.M. Molines : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class bottom
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -91,17 +93,17 @@ PROGRAM cdfbottomsig
 
   IF ( narg == 2 ) THEN
      CALL getarg (2, cldum) 
-      SELECT CASE ( cldum )
-      CASE ('NTR', 'ntr', 'Ntr' ) ! Neutral density will be used
-         lsigntr = .TRUE.
-         cv_sig = 'sobotsigntr'
-         WRITE(cref,'("_Neutral")')
-      CASE DEFAULT                ! Argument is a depth for sig-i
-         lsigi = .TRUE.
-         READ(cldum,*) zref
-         cv_sig = 'sobotsigi'
-         WRITE(cref,'("_refered_to_",i4.4,"_m")') NINT(zref)
-      END SELECT
+     SELECT CASE ( cldum )
+     CASE ('NTR', 'ntr', 'Ntr' ) ! Neutral density will be used
+        lsigntr = .TRUE.
+        cv_sig = 'sobotsigntr'
+        WRITE(cref,'("_Neutral")')
+     CASE DEFAULT                ! Argument is a depth for sig-i
+        lsigi = .TRUE.
+        READ(cldum,*) zref
+        cv_sig = 'sobotsigi'
+        WRITE(cref,'("_refered_to_",i4.4,"_m")') NINT(zref)
+     END SELECT
   ENDIF
 
   npiglo = getdim (cf_tfil,cn_x)
@@ -149,10 +151,10 @@ PROGRAM cdfbottomsig
            WHERE( zsal0 == 0. ) zmask=0.
         END IF
         WHERE ( zsal0 /= 0 )
-          zsal=zsal0 ; ztemp=ztemp0
+           zsal=zsal0 ; ztemp=ztemp0
         END WHERE
      ENDDO
-     
+
      IF (lsigi ) THEN
         zsig(:,:) = sigmai ( ztemp, zsal, zref, npiglo, npjglo ) * zmask(:,:)
      ELSE IF (lsigntr ) THEN

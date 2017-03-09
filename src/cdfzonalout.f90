@@ -8,14 +8,15 @@ PROGRAM cdfzonalout
   !!               and dump them on the standard output.
   !!
   !! History : 2.1  : 02/2006  : J.M. Molines : Original code
+  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class file_informations
   !!----------------------------------------------------------------------

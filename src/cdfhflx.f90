@@ -18,14 +18,16 @@ PROGRAM cdfhflx
   !!           2.1  : 04/2006  : A.M. Treguier : adaptation to NATL4 case
   !!           2.1  : 07/2009  : R. Dussin     : Netcdf output
   !!           3.0  : 01/2011  : J.M. Molines  : Doctor norm + Lic. + generalization
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class forcing
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -99,14 +101,14 @@ PROGRAM cdfhflx
 
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-    CALL getarg (1, cldum ) ; ijarg=ijarg+1
-    SELECT CASE ( cldum)
-    CASE ( '-f' ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
-    ! options
-    CASE ( '-o' ) ; CALL getarg (1, cf_outnc) ; ijarg=ijarg+1
-    CASE ( '-ot') ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
-    CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.' ; STOP
-    END SELECT
+     CALL getarg (1, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum)
+     CASE ( '-f' ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-o' ) ; CALL getarg (1, cf_outnc) ; ijarg=ijarg+1
+     CASE ( '-ot') ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
+     CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.' ; STOP
+     END SELECT
   ENDDO
 
   lchk = chkfile(cn_fhgr)

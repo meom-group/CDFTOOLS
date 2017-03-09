@@ -39,15 +39,17 @@ PROGRAM cdfbuoyflx
   !!           3.0  : 09/2015  : J.M. Molines : add nc4 capabilities, optional output file
   !!                                            short output,
   !!                                            different management of read fluxes (XIOS ...)
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class forcing
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -84,9 +86,9 @@ PROGRAM cdfbuoyflx
 
   TYPE(variable), ALLOCATABLE, DIMENSION(:) :: stypvar                           ! structure for attributes
 
-  LOGICAL                                   :: lchk =.false.                     ! flag for missing files
-  LOGICAL                                   :: lnc4 =.false.                     ! flag for netcdf4 output
-  LOGICAL                                   :: lsho =.false.                     ! flag for short output
+  LOGICAL                                   :: lchk =.FALSE.                     ! flag for missing files
+  LOGICAL                                   :: lnc4 =.FALSE.                     ! flag for netcdf4 output
+  LOGICAL                                   :: lsho =.FALSE.                     ! flag for short output
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -157,11 +159,11 @@ PROGRAM cdfbuoyflx
      CASE ( '-sst' )     ! specify  runoff files
         CALL getarg (ijarg, cv_sst) ; ijarg = ijarg + 1
      CASE ( '-nc4' )   !  allow chunking and deflation on output
-        lnc4 = .true.
+        lnc4 = .TRUE.
      CASE ( '-o' )     ! specify  output files
         CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE ( '-short' ) ! use short output ( only buoyancy fluxes )
-        lsho = .true. ; np_varout = 1
+        lsho = .TRUE. ; np_varout = 1
      CASE DEFAULT
         PRINT *, " Option ", TRIM(cldum)," not supported "
         STOP
@@ -170,11 +172,11 @@ PROGRAM cdfbuoyflx
   IF (lchk ) STOP ! missing files
 
   IF ( cf_flxfil == 'none' ) THEN
-    cf_flxfil = cf_tfil
+     cf_flxfil = cf_tfil
   ENDIF
   ! If no runoff file specified, assume that run off are in flx file [ which must be read by the way ... ]
   IF ( cf_rnfil == 'none' ) THEN
-    cf_rnfil = cf_flxfil
+     cf_rnfil = cf_flxfil
   ENDIF
 
   npiglo = getdim (cf_tfil,cn_x)
@@ -195,11 +197,11 @@ PROGRAM cdfbuoyflx
 
   ! allocated only for full output
   IF ( .NOT. lsho ) THEN
-  ALLOCATE ( evap(npiglo,npjglo), precip(npiglo,npjglo), runoff(npiglo,npjglo), wdmp(npiglo,npjglo) )
-  ALLOCATE ( wice(npiglo,npjglo), precip_runoff(npiglo,npjglo) )
-  ALLOCATE ( qlat(npiglo,npjglo), qsb(npiglo,npjglo), qlw(npiglo,npjglo), qsw(npiglo,npjglo) )
-  ALLOCATE ( b_evap(npiglo,npjglo), b_precip(npiglo,npjglo), b_runoff(npiglo,npjglo), b_wdmp(npiglo,npjglo) ) 
-  ALLOCATE ( b_qlat(npiglo,npjglo), b_qsb(npiglo,npjglo),    b_qlw(npiglo,npjglo),    b_qsw(npiglo,npjglo)  )
+     ALLOCATE ( evap(npiglo,npjglo), precip(npiglo,npjglo), runoff(npiglo,npjglo), wdmp(npiglo,npjglo) )
+     ALLOCATE ( wice(npiglo,npjglo), precip_runoff(npiglo,npjglo) )
+     ALLOCATE ( qlat(npiglo,npjglo), qsb(npiglo,npjglo), qlw(npiglo,npjglo), qsw(npiglo,npjglo) )
+     ALLOCATE ( b_evap(npiglo,npjglo), b_precip(npiglo,npjglo), b_runoff(npiglo,npjglo), b_wdmp(npiglo,npjglo) ) 
+     ALLOCATE ( b_qlat(npiglo,npjglo), b_qsb(npiglo,npjglo),    b_qlw(npiglo,npjglo),    b_qsw(npiglo,npjglo)  )
   ENDIF
 
   DO jt = 1, npt
@@ -226,47 +228,47 @@ PROGRAM cdfbuoyflx
      END WHERE
 
      IF ( .NOT. lsho ) THEN
-     ! Evap : 
-     qlat(:,:)= getvar(cf_flxfil, cn_solhflup, 1, npiglo, npjglo, ktime=jt) *zmask(:,:)    ! W/m2 
-     evap(:,:)= -1.* qlat(:,:) /Lv*86400. *zmask(:,:)                                    ! mm/days
+        ! Evap : 
+        qlat(:,:)= getvar(cf_flxfil, cn_solhflup, 1, npiglo, npjglo, ktime=jt) *zmask(:,:)    ! W/m2 
+        evap(:,:)= -1.* qlat(:,:) /Lv*86400. *zmask(:,:)                                    ! mm/days
 
-     ! Wdmp
-     wdmp(:,:)= getvar(cf_flxfil, cn_sowafldp, 1, npiglo, npjglo, ktime=jt)*86400.*zmask(:,:) ! mm/days
+        ! Wdmp
+        wdmp(:,:)= getvar(cf_flxfil, cn_sowafldp, 1, npiglo, npjglo, ktime=jt)*86400.*zmask(:,:) ! mm/days
 
-     ! Runoff  ! take care : not a model output (time_counter may disagree ... jmm
-     runoff(:,:)= getvar(cf_rnfil, 'sorunoff', 1, npiglo, npjglo)*86400.*zmask(:,:)         ! mm/days
+        ! Runoff  ! take care : not a model output (time_counter may disagree ... jmm
+        runoff(:,:)= getvar(cf_rnfil, 'sorunoff', 1, npiglo, npjglo)*86400.*zmask(:,:)         ! mm/days
 
-     ! fsalt = contribution of ice freezing and melting to salinity ( + = freezing, - = melting )Q
-     wice(:,:) = getvar(cf_flxfil, cn_iowaflup, 1, npiglo, npjglo, ktime=jt )*86400.*zmask(:,:)          ! mm/days
+        ! fsalt = contribution of ice freezing and melting to salinity ( + = freezing, - = melting )Q
+        wice(:,:) = getvar(cf_flxfil, cn_iowaflup, 1, npiglo, npjglo, ktime=jt )*86400.*zmask(:,:)          ! mm/days
 
-     ! Precip:
-     precip(:,:)= evap(:,:)-runoff(:,:)+wdmp(:,:)-wnet(:,:)+wice(:,:)                     ! mm/day
+        ! Precip:
+        precip(:,:)= evap(:,:)-runoff(:,:)+wdmp(:,:)-wnet(:,:)+wice(:,:)                     ! mm/day
 
-     ! Precip+runoff : (as a whole ) (interpolated on line)
-     precip_runoff(:,:)= evap(:,:)+wdmp(:,:)-wnet(:,:)+wice(:,:)                          ! mm/day
+        ! Precip+runoff : (as a whole ) (interpolated on line)
+        precip_runoff(:,:)= evap(:,:)+wdmp(:,:)-wnet(:,:)+wice(:,:)                          ! mm/day
 
-     ! other heat fluxes
-     qsb(:,:)= getvar(cf_flxfil, cn_sosbhfup,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
-     qlw(:,:)= getvar(cf_flxfil, cn_solwfldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
-     qsw(:,:)= getvar(cf_flxfil, cn_soshfldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
+        ! other heat fluxes
+        qsb(:,:)= getvar(cf_flxfil, cn_sosbhfup,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
+        qlw(:,:)= getvar(cf_flxfil, cn_solwfldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
+        qsw(:,:)= getvar(cf_flxfil, cn_soshfldo,  1, npiglo, npjglo, ktime = jt )*zmask(:,:)    ! W/m2 
 
 
-     b_qlat=0.  ; b_qlw=0.    ; b_qsw=0.   ; b_qsb=0.
-     b_evap=0.  ; b_precip=0. ; b_wdmp=0.  ; b_runoff=0.
+        b_qlat=0.  ; b_qlw=0.    ; b_qsw=0.   ; b_qsb=0.
+        b_evap=0.  ; b_precip=0. ; b_wdmp=0.  ; b_runoff=0.
 
-     WHERE (zsss /= 0 ) 
-        b_qlat(:,:)= zcoefq * qlat
-        b_qlw (:,:)= zcoefq * qlw
-        b_qsw (:,:)= zcoefq * qsw
-        b_qsb (:,:)= zcoefq * qsb
+        WHERE (zsss /= 0 ) 
+           b_qlat(:,:)= zcoefq * qlat
+           b_qlw (:,:)= zcoefq * qlw
+           b_qsw (:,:)= zcoefq * qsw
+           b_qsb (:,:)= zcoefq * qsb
 
-        b_evap(:,:)= zcoefw * evap
-        b_precip(:,:)= -zcoefw * precip
-        b_runoff(:,:)= -zcoefw * runoff
-        b_wdmp(:,:)= zcoefw * wdmp
+           b_evap(:,:)= zcoefw * evap
+           b_precip(:,:)= -zcoefw * precip
+           b_runoff(:,:)= -zcoefw * runoff
+           b_wdmp(:,:)= zcoefw * wdmp
 
-        !    buoyancy_fl(:,:) = zcoefq * qnet +zcoefw * wnet
-     END WHERE
+           !    buoyancy_fl(:,:) = zcoefq * qnet +zcoefw * wnet
+        END WHERE
      ENDIF
 
      ! Write output file

@@ -8,15 +8,17 @@ PROGRAM cdfzisot
   !!               - initialize depths and model levels number
   !!
   !! History : 3.0  : 07/2012  : F.Hernandez: Original code
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!           
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2012, F. Hernandez
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -168,7 +170,7 @@ PROGRAM cdfzisot
 
         ! read temperature on x-z slab
         rtemxz(:,:) = getvarxz(cf_tfil, cn_votemper, jj, npiglo, npk, kimin=1, kkmin=1, ktime=jt )
-        
+
 
         ! loop on X axis
         DO ji = 1, npiglo
@@ -216,7 +218,7 @@ PROGRAM cdfzisot
                          & gdept(jref+1)*( rtref-rtemxz(ji,jref) ) ) / &
                          & ( rtemxz(ji,jref+1)-rtemxz(ji,jref) )
                  ENDIF
- 
+
               ENDIF  ! COUNT( rtemxz(ji,:)>=rtref
            ENDIF  ! tmask(ji,jj) == 1
 

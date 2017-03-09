@@ -12,8 +12,9 @@ NC4= -D key_netcdf4
 F90=ifort
 MPF90=mpif90
 OMP=-openmp
+#OMP=
 FFLAGS= -O  $(NCDF) $(NC4) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv $(OMP)
-#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian 
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian  $(OMP)
 LMPI=-lmpich
 
 

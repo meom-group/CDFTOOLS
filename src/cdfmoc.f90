@@ -22,6 +22,7 @@ PROGRAM cdfmoc
   !!                : 01/2008  : A. Lecointre  : MOC decomposition adaptation 
   !!           3.0  : 03/2011  : J.M. Molines  : Merge all MOC prog, Doctor norm + Lic.
   !!                : 10/2012  : M.A. Balmaseda: it adds basin INP0=GLOBAL-ATL, different from INP.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!         
   !!
   !! References :  For MOC decomposition : Lee & Marotzke (1998), 
@@ -37,10 +38,11 @@ PROGRAM cdfmoc
   USE modcdfnames
   USE eos
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

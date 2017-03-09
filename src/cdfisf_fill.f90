@@ -8,15 +8,16 @@ PROGRAM cdfisf_fill
   !!  ** Method  : flood filling algorithm
   !!               
   !! History : 3.0  : 04/2014  : Pierre Mathiot 
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2014
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class ice_shelf_processing
   !!-----------------------------------------------------------------------------
@@ -132,8 +133,8 @@ PROGRAM cdfisf_fill
   ENDDO
 
   IF ( ierr /= 0 ) THEN  ! none of the dim name was found
-      PRINT *,' assume file with no depth'
-      npk=0
+     PRINT *,' assume file with no depth'
+     npk=0
   ENDIF
 
   PRINT *, 'NPIGLO = ', npiglo

@@ -16,6 +16,7 @@ PROGRAM cdfsmooth
   !!         : 2.1  : 05/2010  : R. Dussin    : Add shapiro filter
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 07/2011  : R. Dussin    : Add anisotropic box 
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -34,9 +35,9 @@ PROGRAM cdfsmooth
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class data_transformation
   !!----------------------------------------------------------------------

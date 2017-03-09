@@ -14,6 +14,7 @@ PROGRAM cdfbathy
   !! History : 2.1  : 11/2007  : J.M. Molines : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
   !!                : 04/1014  : P. Mathiot   : add fill_pool option
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -31,9 +32,9 @@ PROGRAM cdfbathy
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class data_transformation
   !!----------------------------------------------------------------------
@@ -145,40 +146,40 @@ PROGRAM cdfbathy
      CALL getarg(ijarg, cldum) ;  ijarg = ijarg + 1
      SELECT CASE ( cldum )
      CASE ( '-file' , '-f') ; CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1 
-                            ; lchk = ( lchk .OR. chkfile (cf_in) )
+        ; lchk = ( lchk .OR. chkfile (cf_in) )
      CASE ( '-var' , '-v' ) ; CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
      CASE ( '-lev' , '-k' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iklev
      CASE ( '-time' , '-t') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itime
      CASE ( '-scale'      ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) scale_factor
      CASE ( '-zoom' , '-z') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-                            ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-                            ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-                            ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-    
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+
      CASE ('-fillzone','-fz' ) ; lfill =.TRUE. ; lmodif =.TRUE.
      CASE ('-raz_zone','-raz') ; lraz  =.TRUE. ; lmodif =.TRUE.
      CASE ('-raz_below','-rb') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
-                               ; lrazb =.TRUE. ; lmodif =.TRUE.
+        ; lrazb =.TRUE. ; lmodif =.TRUE.
      CASE ('-set_below','-sb') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
-                               ; lsetb =.TRUE. ; lmodif =.TRUE.
+        ; lsetb =.TRUE. ; lmodif =.TRUE.
      CASE ('-fullstep','-fs' ) ; lfullstep =.TRUE. ; lmodif=.TRUE.
-                               ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepmin
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepmin
      CASE ('-append' , '-a'  ) ; lappend=.TRUE.
      CASE ('-overwrite' ,'-o') ; loverwrite=.TRUE.
      CASE ('-fillpool','-fp' ) ; lfillpool =.TRUE. ; lmodif =.TRUE.
-                               ; CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) icrit
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) icrit
      CASE ('-replace','-r'   ) ; lreplace =.TRUE. ; lmodif =.TRUE.
-                               ; CALL getarg(ijarg, cf_replace) ; ijarg = ijarg +1
-                               ; lchk = ( lchk .OR. chkfile (cf_replace) )
+        ; CALL getarg(ijarg, cf_replace) ; ijarg = ijarg +1
+        ; lchk = ( lchk .OR. chkfile (cf_replace) )
      CASE ( '-log'           ) ; CALL getarg(ijarg, cf_log) ; ijarg = ijarg +1
      CASE ( '-dumpzone','-d' ) ; ldump =.TRUE.
-                               ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
+        ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
      CASE ('-nicedumpzone','-nd'); ldumpn =.TRUE.
-                                 ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
+        ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
      CASE DEFAULT              ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
-  
+
   IF ( lchk ) STOP  ! missing files
 
   IF ( lmodif .AND. .NOT. loverwrite) THEN
@@ -212,11 +213,11 @@ PROGRAM cdfbathy
   IF (npt == 0 ) npt = 1
 
   IF ( iklev > npk ) THEN
-    PRINT *,' ERROR : not enough levels in input file ', TRIM(cwkc)
+     PRINT *,' ERROR : not enough levels in input file ', TRIM(cwkc)
   ENDIF
 
   IF ( itime > npt ) THEN
-    PRINT *,' ERROR : not enough times in input file ', TRIM(cwkc)
+     PRINT *,' ERROR : not enough times in input file ', TRIM(cwkc)
   ENDIF
 
   IF ( iimin == -10 ) THEN  ! no zoom option passed
@@ -237,412 +238,412 @@ PROGRAM cdfbathy
   bathyin    = bathy  ! save original 
 
   IF (lfullstep ) THEN ;CALL zgr_read ; CALL zgr_zps(iimin, iimax, ijmin, ijmax) ; ENDIF
-  IF (lfill     )       CALL fillzone  (iimin, iimax, ijmin, ijmax)
-  IF (lraz      )       CALL raz_zone  (iimin, iimax, ijmin, ijmax)
-  IF (lrazb     )       CALL raz_below (iimin, iimax, ijmin, ijmax, rdepfill)
-  IF (lsetb     )       CALL set_below (iimin, iimax, ijmin, ijmax, rdepfill)
-  IF (ldump     )       CALL dumpzone     (cf_dump, iimin, iimax, ijmin, ijmax)
-  IF (ldumpn    )       CALL nicedumpzone (cf_dump, iimin, iimax, ijmin, ijmax)
-  IF (lreplace  )       CALL replacezone  (cf_replace)
-  IF (lfillpool )       CALL fillpool  (icrit, iimin, iimax, ijmin, ijmax)
+     IF (lfill     )       CALL fillzone  (iimin, iimax, ijmin, ijmax)
+     IF (lraz      )       CALL raz_zone  (iimin, iimax, ijmin, ijmax)
+     IF (lrazb     )       CALL raz_below (iimin, iimax, ijmin, ijmax, rdepfill)
+     IF (lsetb     )       CALL set_below (iimin, iimax, ijmin, ijmax, rdepfill)
+     IF (ldump     )       CALL dumpzone     (cf_dump, iimin, iimax, ijmin, ijmax)
+     IF (ldumpn    )       CALL nicedumpzone (cf_dump, iimin, iimax, ijmin, ijmax)
+     IF (lreplace  )       CALL replacezone  (cf_replace)
+     IF (lfillpool )       CALL fillpool  (icrit, iimin, iimax, ijmin, ijmax)
 
-  IF (lmodif ) THEN   ! save log 
-     CALL prlog(bathyin, bathy, npiglo, npjglo, lappend)
-     ierr = putvar(cwkc, cv_in, iklev, iimax-iimin+1, ijmax-ijmin+1, kimin=iimin, kjmin=ijmin, &
-      &            ptab=bathy(iimin:iimax,ijmin:ijmax)*scale_factor, ktime=itime)
-  ENDIF
+     IF (lmodif ) THEN   ! save log 
+        CALL prlog(bathyin, bathy, npiglo, npjglo, lappend)
+        ierr = putvar(cwkc, cv_in, iklev, iimax-iimin+1, ijmax-ijmin+1, kimin=iimin, kjmin=ijmin, &
+             &            ptab=bathy(iimin:iimax,ijmin:ijmax)*scale_factor, ktime=itime)
+     ENDIF
 
-CONTAINS 
+   CONTAINS 
 
-  SUBROUTINE zgr_zps ( kimin, kimax ,kjmin, kjmax )
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE zgr_zps  ***
-    !!
-    !! ** Purpose :   Build the partial steps
-    !!
-    !! ** Method  :  Use NEMO routine
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4) ,INTENT(in) :: kimin, kimax, kjmin, kjmax
-    !! * Local declarations
-    INTEGER(KIND=4)  ::   ji, jj, jk        ! dummy loop indices
-    INTEGER(KIND=4)  ::   ik, it            ! temporary integers
-    INTEGER(KIND=4), PARAMETER :: wp=4      ! working precision is 4 in the CDFTOOLS
+     SUBROUTINE zgr_zps ( kimin, kimax ,kjmin, kjmax )
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE zgr_zps  ***
+       !!
+       !! ** Purpose :   Build the partial steps
+       !!
+       !! ** Method  :  Use NEMO routine
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER(KIND=4) ,INTENT(in) :: kimin, kimax, kjmin, kjmax
+       !! * Local declarations
+       INTEGER(KIND=4)  ::   ji, jj, jk        ! dummy loop indices
+       INTEGER(KIND=4)  ::   ik, it            ! temporary integers
+       INTEGER(KIND=4), PARAMETER :: wp=4      ! working precision is 4 in the CDFTOOLS
 
-    REAL(wp)           :: ze3tp, ze3wp  ! Last ocean level thickness at T- and W-points
-    REAL(wp)           :: zdepwp        ! Ajusted ocean depth to avoid too small e3t
-    REAL(wp)           :: zdepth        !    "         "
-    REAL(wp)           :: zmax, zmin    ! Maximum and minimum depth
-    REAL(wp)           :: zdiff         ! temporary scalar
-    !!----------------------------------------------------------------------
-    ! Initialization of constant
-    zmax = gdepw(npk) + e3t(npk)
-    zmin = gdepw(4)
+       REAL(wp)           :: ze3tp, ze3wp  ! Last ocean level thickness at T- and W-points
+       REAL(wp)           :: zdepwp        ! Ajusted ocean depth to avoid too small e3t
+       REAL(wp)           :: zdepth        !    "         "
+       REAL(wp)           :: zmax, zmin    ! Maximum and minimum depth
+       REAL(wp)           :: zdiff         ! temporary scalar
+       !!----------------------------------------------------------------------
+       ! Initialization of constant
+       zmax = gdepw(npk) + e3t(npk)
+       zmin = gdepw(4)
 
-    ! initialize mbathy to the maximum ocean level available
-    mbathy(kimin:kimax,kjmin:kjmax) = npk-1
+       ! initialize mbathy to the maximum ocean level available
+       mbathy(kimin:kimax,kjmin:kjmax) = npk-1
 
-    ! storage of land and island's number (zero and negative values) in mbathy
-    WHERE (bathy(kimin:kimax,kjmin:kjmax) <= 0. ) mbathy(kimin:kimax,kjmin:kjmax)=INT( bathy(kimin:kimax,kjmin:kjmax) )
+       ! storage of land and island's number (zero and negative values) in mbathy
+       WHERE (bathy(kimin:kimax,kjmin:kjmax) <= 0. ) mbathy(kimin:kimax,kjmin:kjmax)=INT( bathy(kimin:kimax,kjmin:kjmax) )
 
-    ! bounded value of bathy
-    ! minimum depth == 3 levels
-    ! maximum depth == gdepw(jpk)+e3t(jpk) 
-    ! i.e. the last ocean level thickness cannot exceed e3t(jpkm1)+e3t(jpk)
-    WHERE (bathy(kimin:kimax,kjmin:kjmax) <= 0 ) 
-       bathy(kimin:kimax,kjmin:kjmax)=0.
-    ELSEWHERE (bathy(kimin:kimax,kjmin:kjmax) < zmin ) 
-       bathy(kimin:kimax,kjmin:kjmax) = zmin
-    ELSEWHERE (bathy(kimin:kimax,kjmin:kjmax) >= zmax )
-       bathy(kimin:kimax,kjmin:kjmax) = zmax
-    END WHERE
-
-    ! Compute mbathy for ocean points (i.e. the number of ocean levels)
-    ! find the number of ocean levels such that the last level thickness
-    ! is larger than the minimum of e3zps_min and e3zps_rat * e3t (where
-    ! e3t is the reference level thickness
-    DO jk = npk-1, 1, -1
-!      zdepth = gdepw(jk) + MIN( e3zps_min, e3t(jk)*e3zps_rat )
-       zdepth = gdept(jk)
-       WHERE ( bathy(kimin:kimax,kjmin:kjmax) > 0. .AND. bathy (kimin:kimax,kjmin:kjmax) <= zdepth )  
-          mbathy(kimin:kimax,kjmin:kjmax)=jk-1
-          e3_bot(kimin:kimax,kjmin:kjmax)= bathy(kimin:kimax,kjmin:kjmax) - gdepw(jk-1)
+       ! bounded value of bathy
+       ! minimum depth == 3 levels
+       ! maximum depth == gdepw(jpk)+e3t(jpk) 
+       ! i.e. the last ocean level thickness cannot exceed e3t(jpkm1)+e3t(jpk)
+       WHERE (bathy(kimin:kimax,kjmin:kjmax) <= 0 ) 
+          bathy(kimin:kimax,kjmin:kjmax)=0.
+       ELSEWHERE (bathy(kimin:kimax,kjmin:kjmax) < zmin ) 
+          bathy(kimin:kimax,kjmin:kjmax) = zmin
+       ELSEWHERE (bathy(kimin:kimax,kjmin:kjmax) >= zmax )
+          bathy(kimin:kimax,kjmin:kjmax) = zmax
        END WHERE
-    END DO
 
-    DO ji=kimin,kimax
-      DO jj=kjmin,kjmax
-        jk=mbathy(ji,jj)
-        IF (jk /= 0 ) THEN 
-           IF (gdepw(jk+1) > rdepmin ) bathy(ji,jj)=gdepw(jk+1)-0.1
-        ENDIF
-      ENDDO
-    END DO
-  END SUBROUTINE zgr_zps
-
-
-  SUBROUTINE zgr_read()
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE zgr_read  ***
-    !!
-    !! ** Purpose :  Read zgrbat.txt file (cf_batfile) to set the gdep[tw]_0
-    !!               and e3[tw] 
-    !!
-    !! ** Method  :  Read the ocean output format ( ie, cf_batfile is just 
-    !!               a copy of the ocean.output concerning zgrbat 
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4) :: inumzgr = 10, il, iostat, idum, ifoo
-    CHARACTER(LEN=256) :: cline, clfile
-    !!----------------------------------------------------------------------
-    clfile = cf_batfile       ! defined in the main program
-    il=0
-    OPEN(inumzgr, FILE=clfile,IOSTAT=iostat)
-
-    DO WHILE ( iostat == 0 )
-       READ(inumzgr,'(a)',IOSTAT=iostat) cline
-       READ(cline,*,IOSTAT=idum )il
-       IF ( idum == 0 ) npk=il
-    END DO
-
-    ALLOCATE ( gdept(npk), gdepw(npk), e3t(npk), e3w(npk) )
-    REWIND(inumzgr)
-
-    il=0 ; iostat=0
-    DO WHILE ( iostat == 0 )
-       READ(inumzgr,'(a)', IOSTAT=iostat) cline
-       READ(cline,*,IOSTAT=idum) il
-       IF ( idum == 0  ) READ(cline,*) ifoo, gdept(il), gdepw(il), &
-            &             e3t(il), e3w(il)
-    END DO
-  END SUBROUTINE zgr_read
-
-
-  SUBROUTINE prlog (ptabold, ptab ,kpi, kpj, ldapp)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE prlog  ***
-    !!
-    !! ** Purpose :   Print a fortran 90 log file describing the modifications
-    !!              done to the bathymetry
-    !!
-    !! ** Method  :  File is append instead of created if ldapp true
-    !!
-    !!----------------------------------------------------------------------
-    REAL(KIND=4), DIMENSION(:,:), INTENT(in) :: ptabold  ! original array
-    REAL(KIND=4), DIMENSION(:,:), INTENT(in) :: ptab     ! modified array
-    INTEGER(KIND=4),              INTENT(in) :: kpi, kpj ! size of the array
-    LOGICAL,                      INTENT(in) :: ldapp    ! append flag
-
-    INTEGER(KIND=4)        :: ji, jj
-    INTEGER(KIND=4)        :: inumlog=10
-    CHARACTER(LEN=80)      :: clfile
-    !!----------------------------------------------------------------------
-    clfile = cf_log
-
-    IF (ldapp ) THEN 
-       OPEN (inumlog, FILE=clfile, POSITION='append')
-    ELSE
-       OPEN (inumlog, FILE=clfile)
-    ENDIF
-
-    WRITE(inumlog,'(a,a)') '! modification from original file : ', TRIM(cf_in)
-    WRITE(inumlog,'(a,a)') '! written to : ', TRIM(cwkc)
-    DO ji=1,kpi
-       DO jj=1,kpj
-          IF ( ABS( ptabold(ji,jj) - ptab(ji,jj)) > 0.02  ) THEN    ! allow a 2 cm tolerance for rounding purposes
-             WRITE(inumlog,'(a,i4,a,i4,a,f8.2,a,f8.2)') ' bathy(',ji,',',jj,')=',ptab(ji,jj)*scale_factor,  &
-                    & ' ! instead of ',ptabold(ji,jj)*scale_factor
-          END IF
+       ! Compute mbathy for ocean points (i.e. the number of ocean levels)
+       ! find the number of ocean levels such that the last level thickness
+       ! is larger than the minimum of e3zps_min and e3zps_rat * e3t (where
+       ! e3t is the reference level thickness
+       DO jk = npk-1, 1, -1
+          !      zdepth = gdepw(jk) + MIN( e3zps_min, e3t(jk)*e3zps_rat )
+          zdepth = gdept(jk)
+          WHERE ( bathy(kimin:kimax,kjmin:kjmax) > 0. .AND. bathy (kimin:kimax,kjmin:kjmax) <= zdepth )  
+             mbathy(kimin:kimax,kjmin:kjmax)=jk-1
+             e3_bot(kimin:kimax,kjmin:kjmax)= bathy(kimin:kimax,kjmin:kjmax) - gdepw(jk-1)
+          END WHERE
        END DO
-    END DO
 
-    CLOSE(inumlog)
-  END SUBROUTINE prlog
+       DO ji=kimin,kimax
+          DO jj=kjmin,kjmax
+             jk=mbathy(ji,jj)
+             IF (jk /= 0 ) THEN 
+                IF (gdepw(jk+1) > rdepmin ) bathy(ji,jj)=gdepw(jk+1)-0.1
+             ENDIF
+          ENDDO
+       END DO
+     END SUBROUTINE zgr_zps
 
 
-  SUBROUTINE fillzone(kimin, kimax, kjmin, kjmax)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE fillzone  ***
-    !!
-    !! ** Purpose :  Fill a subarea with 0 up to encounter a coast on the East
-    !!
-    !! ** Method  :  Assume that first point is sea point. Mask it and do so with
-    !!               all points to the east (j=cst) up to a land point. 
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+     SUBROUTINE zgr_read()
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE zgr_read  ***
+       !!
+       !! ** Purpose :  Read zgrbat.txt file (cf_batfile) to set the gdep[tw]_0
+       !!               and e3[tw] 
+       !!
+       !! ** Method  :  Read the ocean output format ( ie, cf_batfile is just 
+       !!               a copy of the ocean.output concerning zgrbat 
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER(KIND=4) :: inumzgr = 10, il, iostat, idum, ifoo
+       CHARACTER(LEN=256) :: cline, clfile
+       !!----------------------------------------------------------------------
+       clfile = cf_batfile       ! defined in the main program
+       il=0
+       OPEN(inumzgr, FILE=clfile,IOSTAT=iostat)
 
-    INTEGER(KIND=4) :: jj 
-    INTEGER(KIND=4) :: ii
-    !!----------------------------------------------------------------------
-    DO jj=kjmin,kjmax
-       ii=kimin
-       IF ( bathy(ii,jj)  /= 0 ) THEN
-          DO WHILE ( bathy(ii,jj)  /= 0 .AND. ii <= kimax )
-             bathy(ii,jj) = 0.
-             ii=ii+1
+       DO WHILE ( iostat == 0 )
+          READ(inumzgr,'(a)',IOSTAT=iostat) cline
+          READ(cline,*,IOSTAT=idum )il
+          IF ( idum == 0 ) npk=il
+       END DO
+
+       ALLOCATE ( gdept(npk), gdepw(npk), e3t(npk), e3w(npk) )
+       REWIND(inumzgr)
+
+       il=0 ; iostat=0
+       DO WHILE ( iostat == 0 )
+          READ(inumzgr,'(a)', IOSTAT=iostat) cline
+          READ(cline,*,IOSTAT=idum) il
+          IF ( idum == 0  ) READ(cline,*) ifoo, gdept(il), gdepw(il), &
+               &             e3t(il), e3w(il)
+       END DO
+     END SUBROUTINE zgr_read
+
+
+     SUBROUTINE prlog (ptabold, ptab ,kpi, kpj, ldapp)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE prlog  ***
+       !!
+       !! ** Purpose :   Print a fortran 90 log file describing the modifications
+       !!              done to the bathymetry
+       !!
+       !! ** Method  :  File is append instead of created if ldapp true
+       !!
+       !!----------------------------------------------------------------------
+       REAL(KIND=4), DIMENSION(:,:), INTENT(in) :: ptabold  ! original array
+       REAL(KIND=4), DIMENSION(:,:), INTENT(in) :: ptab     ! modified array
+       INTEGER(KIND=4),              INTENT(in) :: kpi, kpj ! size of the array
+       LOGICAL,                      INTENT(in) :: ldapp    ! append flag
+
+       INTEGER(KIND=4)        :: ji, jj
+       INTEGER(KIND=4)        :: inumlog=10
+       CHARACTER(LEN=80)      :: clfile
+       !!----------------------------------------------------------------------
+       clfile = cf_log
+
+       IF (ldapp ) THEN 
+          OPEN (inumlog, FILE=clfile, POSITION='append')
+       ELSE
+          OPEN (inumlog, FILE=clfile)
+       ENDIF
+
+       WRITE(inumlog,'(a,a)') '! modification from original file : ', TRIM(cf_in)
+       WRITE(inumlog,'(a,a)') '! written to : ', TRIM(cwkc)
+       DO ji=1,kpi
+          DO jj=1,kpj
+             IF ( ABS( ptabold(ji,jj) - ptab(ji,jj)) > 0.02  ) THEN    ! allow a 2 cm tolerance for rounding purposes
+                WRITE(inumlog,'(a,i4,a,i4,a,f8.2,a,f8.2)') ' bathy(',ji,',',jj,')=',ptab(ji,jj)*scale_factor,  &
+                     & ' ! instead of ',ptabold(ji,jj)*scale_factor
+             END IF
           END DO
-       END IF
-    END DO
-  END SUBROUTINE fillzone
+       END DO
+
+       CLOSE(inumlog)
+     END SUBROUTINE prlog
 
 
-  SUBROUTINE raz_zone(kimin, kimax, kjmin, kjmax)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE raz_zone  ***
-    !!
-    !! ** Purpose :  Fill a sub area of a bathy file with 0 
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
-    !!----------------------------------------------------------------------
-    bathy(kimin:kimax, kjmin:kjmax) = 0.
+     SUBROUTINE fillzone(kimin, kimax, kjmin, kjmax)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE fillzone  ***
+       !!
+       !! ** Purpose :  Fill a subarea with 0 up to encounter a coast on the East
+       !!
+       !! ** Method  :  Assume that first point is sea point. Mask it and do so with
+       !!               all points to the east (j=cst) up to a land point. 
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
 
-  END SUBROUTINE raz_zone
-
-
-  SUBROUTINE raz_below(kimin, kimax, kjmin, kjmax, pdepmin)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE raz_below  ***
-    !!
-    !! ** Purpose : Fill point (set to 0) that are below pdepmin
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
-    REAL(KIND=4),    INTENT(in) :: pdepmin                    ! threshold bathy value
-    !!----------------------------------------------------------------------
-   WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin)  bathy(kimin:kimax, kjmin:kjmax) = 0.
-
-  END SUBROUTINE raz_below
-
-
-  SUBROUTINE set_below(kimin, kimax, kjmin, kjmax, pdepmin)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE set_below  ***
-    !!
-    !! ** Purpose : Set bathy points to pdepmin if less than pdepmin in the
-    !!              original bathy
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
-    REAL(KIND=4),    INTENT(in) :: pdepmin                    ! threshold bathy value
-    !!----------------------------------------------------------------------
-   WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin .AND. bathy(kimin:kimax, kjmin:kjmax) > 0 ) &
-        &                 bathy(kimin:kimax, kjmin:kjmax) = pdepmin
-
-  END SUBROUTINE set_below
-
-
-  SUBROUTINE dumpzone(cdumpf, kimin, kimax, kjmin, kjmax)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE dumpzone  ***
-    !!
-    !! ** Purpose :  Print subarea to cdumpf ascii file 
-    !!
-    !!----------------------------------------------------------------------
-    CHARACTER(LEN=*), INTENT(in) :: cdumpf                     ! name of the dump file
-    INTEGER(KIND=4),  INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
-
-    INTEGER(KIND=4)    :: ji, jj
-    INTEGER(KIND=4)    :: inumdmp=20 , ini
-    CHARACTER(LEN=256) :: cl_fmtr, cl_fmti
-    !!----------------------------------------------------------------------
-    ini = kimax - kimin + 1
-    WRITE(cl_fmtr,99) ini
-    WRITE(cl_fmti,98) ini
-    OPEN(inumdmp,FILE=cdumpf)
-    WRITE(inumdmp,*) kimin, kimax, kjmin, kjmax, TRIM(cl_fmtr)
-99  FORMAT('(I5,',i4.4,'f8.2)')
-98  FORMAT('(5x,',i4.4,'I8)')
-    WRITE(inumdmp,cl_fmti)(ji,ji=kimin,kimax)
-    DO jj= kjmax,kjmin,-1
-       WRITE(inumdmp,cl_fmtr) jj, bathy(kimin:kimax,jj)
-    ENDDO
-    CLOSE(inumdmp)
-
-  END SUBROUTINE dumpzone
-
-
-  SUBROUTINE nicedumpzone(cdumpf, kimin, kimax, kjmin, kjmax)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE nicedumpzone  ***
-    !!
-    !! ** Purpose : Print subarea to cdumpf ascii file with a nice format  
-    !!
-    !!----------------------------------------------------------------------
-    CHARACTER(LEN=*), INTENT(in) :: cdumpf                     ! name of the dump file
-    INTEGER(KIND=4),  INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
-
-    INTEGER(KIND=4)    :: ji, jj
-    INTEGER(KIND=4)    :: inumdmp=20 , ini
-    CHARACTER(LEN=256) :: cl_fmtr, cl_fmti
-    !!----------------------------------------------------------------------
-    ini=kimax-kimin+1
-    WRITE(cl_fmtr,99) ini
-    WRITE(cl_fmti,98) ini
-    OPEN(inumdmp,FILE=cdumpf)
-    WRITE(inumdmp,*) kimin,kimax,kjmin,kjmax, TRIM(cl_fmtr)
-99  FORMAT('(I5,',i4.4,'I5)')
-98  FORMAT('(5x,',i4.4,'I5)')
-    WRITE(inumdmp,cl_fmti)(ji,ji=kimin,kimax)
-    DO jj= kjmax,kjmin,-1
-       WRITE(inumdmp,cl_fmtr) jj, INT(bathy(kimin:kimax,jj))
-       WRITE(inumdmp,*)
-       WRITE(inumdmp,*)
-    ENDDO
-    CLOSE(inumdmp)
-
-  END SUBROUTINE nicedumpzone
-
-
-  SUBROUTINE replacezone(cdreplace)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE replacezone  ***
-    !!
-    !! ** Purpose :  Replace a bathy area by data read from an ascii input file
-    !!               formely generated by -dump option (and manualy modified) 
-    !!
-    !! ** Method  :  Read format in the header part of the file 
-    !!
-    !!----------------------------------------------------------------------
-    CHARACTER(LEN=*), INTENT(in) :: cdreplace
-
-    INTEGER(KIND=4) :: jj
-    INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax
-    INTEGER(KIND=4) :: inumrep=20, idum
-    !!----------------------------------------------------------------------
-    OPEN(inumrep,FILE=cdreplace)
-    READ(inumrep,*) iimin, iimax, ijmin, ijmax
-    READ(inumrep,*)  ! skip 1 line
-    DO jj=ijmax,ijmin,-1
-       READ(inumrep,*) idum, bathy(iimin:iimax,jj)
-    END DO
-    CLOSE(inumrep)
-
-  END SUBROUTINE replacezone
-  
-
-  SUBROUTINE fillpool(kcrit, kimin, kimax, kjmin, kjmax) 
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE replacezone  ***
-    !!
-    !! ** Purpose :  Replace all area surrounding by mask value by mask value
-    !!
-    !! ** Method  :  flood fill algorithm
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER, INTENT(in) :: kcrit        ! maximal allowed pool 
-    INTEGER(KIND=4),  INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
-
-    INTEGER :: ik                       ! number of point change
-    INTEGER :: ip                       ! size of the pile
-    INTEGER :: ji, jj                   ! loop index
-    INTEGER :: iip1, iim1, ii, ij       ! working integer
-    INTEGER, DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
-    INTEGER, DIMENSION(:,:), ALLOCATABLE :: ioptm    ! matrix to check already tested value 
-
-    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zbathy   ! new bathymetry
-    !!----------------------------------------------------------------------
-    PRINT *, 'WARNING North fold case not coded'
-    ! allocate variable
-    ALLOCATE(ipile(((kimax-kimin)+1)*((kjmax-kjmin)+1),2))
-    ALLOCATE(zbathy(npiglo,npjglo), ioptm(npiglo,npjglo))
-
-    ioptm = bathy
-    WHERE (ioptm /=  0)
-       ioptm = 1
-    END WHERE
-
-    PRINT *, 'Filling area in progress ... (it can take a while)'    
-
-    DO ji=kimin,kimax
-       IF (mod(ji,100) == 0) PRINT *, ji,'/',npiglo
+       INTEGER(KIND=4) :: jj 
+       INTEGER(KIND=4) :: ii
+       !!----------------------------------------------------------------------
        DO jj=kjmin,kjmax
-          ! modify something only if seed point is a non 0 cell
-          IF (ioptm(ji,jj) == 1) THEN
-             ! initialise variables
-             zbathy=bathy
-             ipile(:,:)=0
-             ipile(1,:)=[ji,jj]
-             ip=1; ik=0
-         
-             ! loop until the pile size is 0 or if the pool is larger than the critical size
-             DO WHILE ( ip /= 0 .AND. ik < kcrit);
-                ik=ik+1 
-                ii=ipile(ip,1); ij=ipile(ip,2)
-               
-                ! update bathy and update pile size
-                zbathy(ii,ij)=0.0 
-                ipile(ip,:)  =[0,0]; ip=ip-1
-                
-                ! check neighbour cells and update pile
-                iip1=ii+1; IF ( iip1 == npiglo+1 ) iip1=2
-                iim1=ii-1; IF ( iim1 == 0        ) iim1=npiglo-1
-                IF (zbathy(ii, ij+1) /=  0.0) THEN
-                    ip=ip+1; ipile(ip,:)=[ii  ,ij+1] 
-                    ioptm (ii, ij+1) = 0
-                END IF
-                IF (zbathy(ii, ij-1) /= 0.0) THEN
-                    ip=ip+1; ipile(ip,:)=[ii  ,ij-1]
-                    ioptm(ii, ij-1) = 0
-                END IF
-                IF (zbathy(iip1, ij) /=  0.0) THEN
-                    ip=ip+1; ipile(ip,:)=[iip1,ij  ]
-                    ioptm(iip1, ij) = 0
-                END IF
-                IF (zbathy(iim1, ij) /=  0.0) THEN
-                    ip=ip+1; ipile(ip,:)=[iim1,ij  ]
-                    ioptm(iim1, ij) = 0
-                END IF
+          ii=kimin
+          IF ( bathy(ii,jj)  /= 0 ) THEN
+             DO WHILE ( bathy(ii,jj)  /= 0 .AND. ii <= kimax )
+                bathy(ii,jj) = 0.
+                ii=ii+1
              END DO
-             IF (ik < kcrit) bathy=zbathy;
           END IF
        END DO
-    END DO
- 
-    DEALLOCATE(ipile); DEALLOCATE(zbathy, ioptm)
-
-  END SUBROUTINE
+     END SUBROUTINE fillzone
 
 
-END PROGRAM cdfbathy
+     SUBROUTINE raz_zone(kimin, kimax, kjmin, kjmax)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE raz_zone  ***
+       !!
+       !! ** Purpose :  Fill a sub area of a bathy file with 0 
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+       !!----------------------------------------------------------------------
+       bathy(kimin:kimax, kjmin:kjmax) = 0.
+
+     END SUBROUTINE raz_zone
+
+
+     SUBROUTINE raz_below(kimin, kimax, kjmin, kjmax, pdepmin)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE raz_below  ***
+       !!
+       !! ** Purpose : Fill point (set to 0) that are below pdepmin
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+       REAL(KIND=4),    INTENT(in) :: pdepmin                    ! threshold bathy value
+       !!----------------------------------------------------------------------
+       WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin)  bathy(kimin:kimax, kjmin:kjmax) = 0.
+
+     END SUBROUTINE raz_below
+
+
+     SUBROUTINE set_below(kimin, kimax, kjmin, kjmax, pdepmin)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE set_below  ***
+       !!
+       !! ** Purpose : Set bathy points to pdepmin if less than pdepmin in the
+       !!              original bathy
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+       REAL(KIND=4),    INTENT(in) :: pdepmin                    ! threshold bathy value
+       !!----------------------------------------------------------------------
+       WHERE ( bathy(kimin:kimax, kjmin:kjmax) <= pdepmin .AND. bathy(kimin:kimax, kjmin:kjmax) > 0 ) &
+            &                 bathy(kimin:kimax, kjmin:kjmax) = pdepmin
+
+     END SUBROUTINE set_below
+
+
+     SUBROUTINE dumpzone(cdumpf, kimin, kimax, kjmin, kjmax)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE dumpzone  ***
+       !!
+       !! ** Purpose :  Print subarea to cdumpf ascii file 
+       !!
+       !!----------------------------------------------------------------------
+       CHARACTER(LEN=*), INTENT(in) :: cdumpf                     ! name of the dump file
+       INTEGER(KIND=4),  INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+
+       INTEGER(KIND=4)    :: ji, jj
+       INTEGER(KIND=4)    :: inumdmp=20 , ini
+       CHARACTER(LEN=256) :: cl_fmtr, cl_fmti
+       !!----------------------------------------------------------------------
+       ini = kimax - kimin + 1
+       WRITE(cl_fmtr,99) ini
+       WRITE(cl_fmti,98) ini
+       OPEN(inumdmp,FILE=cdumpf)
+       WRITE(inumdmp,*) kimin, kimax, kjmin, kjmax, TRIM(cl_fmtr)
+99     FORMAT('(I5,',i4.4,'f8.2)')
+98     FORMAT('(5x,',i4.4,'I8)')
+       WRITE(inumdmp,cl_fmti)(ji,ji=kimin,kimax)
+       DO jj= kjmax,kjmin,-1
+          WRITE(inumdmp,cl_fmtr) jj, bathy(kimin:kimax,jj)
+       ENDDO
+       CLOSE(inumdmp)
+
+     END SUBROUTINE dumpzone
+
+
+     SUBROUTINE nicedumpzone(cdumpf, kimin, kimax, kjmin, kjmax)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE nicedumpzone  ***
+       !!
+       !! ** Purpose : Print subarea to cdumpf ascii file with a nice format  
+       !!
+       !!----------------------------------------------------------------------
+       CHARACTER(LEN=*), INTENT(in) :: cdumpf                     ! name of the dump file
+       INTEGER(KIND=4),  INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+
+       INTEGER(KIND=4)    :: ji, jj
+       INTEGER(KIND=4)    :: inumdmp=20 , ini
+       CHARACTER(LEN=256) :: cl_fmtr, cl_fmti
+       !!----------------------------------------------------------------------
+       ini=kimax-kimin+1
+       WRITE(cl_fmtr,99) ini
+       WRITE(cl_fmti,98) ini
+       OPEN(inumdmp,FILE=cdumpf)
+       WRITE(inumdmp,*) kimin,kimax,kjmin,kjmax, TRIM(cl_fmtr)
+99     FORMAT('(I5,',i4.4,'I5)')
+98     FORMAT('(5x,',i4.4,'I5)')
+       WRITE(inumdmp,cl_fmti)(ji,ji=kimin,kimax)
+       DO jj= kjmax,kjmin,-1
+          WRITE(inumdmp,cl_fmtr) jj, INT(bathy(kimin:kimax,jj))
+          WRITE(inumdmp,*)
+          WRITE(inumdmp,*)
+       ENDDO
+       CLOSE(inumdmp)
+
+     END SUBROUTINE nicedumpzone
+
+
+     SUBROUTINE replacezone(cdreplace)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE replacezone  ***
+       !!
+       !! ** Purpose :  Replace a bathy area by data read from an ascii input file
+       !!               formely generated by -dump option (and manualy modified) 
+       !!
+       !! ** Method  :  Read format in the header part of the file 
+       !!
+       !!----------------------------------------------------------------------
+       CHARACTER(LEN=*), INTENT(in) :: cdreplace
+
+       INTEGER(KIND=4) :: jj
+       INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax
+       INTEGER(KIND=4) :: inumrep=20, idum
+       !!----------------------------------------------------------------------
+       OPEN(inumrep,FILE=cdreplace)
+       READ(inumrep,*) iimin, iimax, ijmin, ijmax
+       READ(inumrep,*)  ! skip 1 line
+       DO jj=ijmax,ijmin,-1
+          READ(inumrep,*) idum, bathy(iimin:iimax,jj)
+       END DO
+       CLOSE(inumrep)
+
+     END SUBROUTINE replacezone
+
+
+     SUBROUTINE fillpool(kcrit, kimin, kimax, kjmin, kjmax) 
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE replacezone  ***
+       !!
+       !! ** Purpose :  Replace all area surrounding by mask value by mask value
+       !!
+       !! ** Method  :  flood fill algorithm
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER, INTENT(in) :: kcrit        ! maximal allowed pool 
+       INTEGER(KIND=4),  INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+
+       INTEGER :: ik                       ! number of point change
+       INTEGER :: ip                       ! size of the pile
+       INTEGER :: ji, jj                   ! loop index
+       INTEGER :: iip1, iim1, ii, ij       ! working integer
+       INTEGER, DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
+       INTEGER, DIMENSION(:,:), ALLOCATABLE :: ioptm    ! matrix to check already tested value 
+
+       REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zbathy   ! new bathymetry
+       !!----------------------------------------------------------------------
+       PRINT *, 'WARNING North fold case not coded'
+       ! allocate variable
+       ALLOCATE(ipile(((kimax-kimin)+1)*((kjmax-kjmin)+1),2))
+       ALLOCATE(zbathy(npiglo,npjglo), ioptm(npiglo,npjglo))
+
+       ioptm = bathy
+       WHERE (ioptm /=  0)
+          ioptm = 1
+       END WHERE
+
+       PRINT *, 'Filling area in progress ... (it can take a while)'    
+
+       DO ji=kimin,kimax
+          IF (MOD(ji,100) == 0) PRINT *, ji,'/',npiglo
+          DO jj=kjmin,kjmax
+             ! modify something only if seed point is a non 0 cell
+             IF (ioptm(ji,jj) == 1) THEN
+                ! initialise variables
+                zbathy=bathy
+                ipile(:,:)=0
+                ipile(1,:)=[ji,jj]
+                ip=1; ik=0
+
+                ! loop until the pile size is 0 or if the pool is larger than the critical size
+                DO WHILE ( ip /= 0 .AND. ik < kcrit);
+                   ik=ik+1 
+                   ii=ipile(ip,1); ij=ipile(ip,2)
+
+                   ! update bathy and update pile size
+                   zbathy(ii,ij)=0.0 
+                   ipile(ip,:)  =[0,0]; ip=ip-1
+
+                   ! check neighbour cells and update pile
+                   iip1=ii+1; IF ( iip1 == npiglo+1 ) iip1=2
+                   iim1=ii-1; IF ( iim1 == 0        ) iim1=npiglo-1
+                   IF (zbathy(ii, ij+1) /=  0.0) THEN
+                      ip=ip+1; ipile(ip,:)=[ii  ,ij+1] 
+                      ioptm (ii, ij+1) = 0
+                   END IF
+                   IF (zbathy(ii, ij-1) /= 0.0) THEN
+                      ip=ip+1; ipile(ip,:)=[ii  ,ij-1]
+                      ioptm(ii, ij-1) = 0
+                   END IF
+                   IF (zbathy(iip1, ij) /=  0.0) THEN
+                      ip=ip+1; ipile(ip,:)=[iip1,ij  ]
+                      ioptm(iip1, ij) = 0
+                   END IF
+                   IF (zbathy(iim1, ij) /=  0.0) THEN
+                      ip=ip+1; ipile(ip,:)=[iim1,ij  ]
+                      ioptm(iim1, ij) = 0
+                   END IF
+                END DO
+                IF (ik < kcrit) bathy=zbathy;
+             END IF
+          END DO
+       END DO
+
+       DEALLOCATE(ipile); DEALLOCATE(zbathy, ioptm)
+
+     END SUBROUTINE fillpool
+
+
+   END PROGRAM cdfbathy

@@ -62,15 +62,17 @@ PROGRAM cdfgeostrophy
   !!
   !!
   !! History : 3.0  : 01/2011  : R.Dussin : original code
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class derived_fields
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -257,76 +259,76 @@ PROGRAM cdfgeostrophy
 
      DO jk=1,npk
 
-         tmask = getvar(cn_fmsk, 'tmask',  jk, npiglo, npjglo)
-         umask = getvar(cn_fmsk, 'umask',  jk, npiglo, npjglo)
-         vmask = getvar(cn_fmsk, 'vmask',  jk, npiglo, npjglo)
+        tmask = getvar(cn_fmsk, 'tmask',  jk, npiglo, npjglo)
+        umask = getvar(cn_fmsk, 'umask',  jk, npiglo, npjglo)
+        vmask = getvar(cn_fmsk, 'vmask',  jk, npiglo, npjglo)
 
-         PRINT *,'Working on level ', jk
-         !! 1. First we compute integrated pressure from the surface to current level
+        PRINT *,'Working on level ', jk
+        !! 1. First we compute integrated pressure from the surface to current level
 
-         ! Thickness
-         e3  = getvar(cn_fzgr, cn_ve3t, jk, npiglo, npjglo)
-         ! MAXVAL is used to avoid partial steps
-         zhlevel     = MAXVAL(e3)
-         zhhalflevel = 0.5 * MAXVAL(e3)
-         ! 
-         !PRINT *,' At level ', jk, ' thickness is ', zhlevel
-         ! Read temperature and salinity at current level
-         zt   = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-         zsal = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
-         ! Compute density of this level
-         zsiglevel(:,:) = 1000. + sigmai ( zt,zsal,deptht(jk),npiglo,npjglo )
-         ! Compute the pressure at T-point 
-         zphalflevel(:,:) = zsiglevel * grav * zhhalflevel
-         ! Compute the pressure at bottom W-point
-         zplevel(:,:) =  zsiglevel * grav * zhlevel
-         ! Compute the total pression -> This one is used in the geostrophic balance !
-         zptot(:,:) = zpsurf(:,:) + zpupper(:,:) + zphalflevel(:,:)
-         ! update zpupper for next level
-         zpupper(:,:) = zpupper(:,:) + zplevel(:,:)
+        ! Thickness
+        e3  = getvar(cn_fzgr, cn_ve3t, jk, npiglo, npjglo)
+        ! MAXVAL is used to avoid partial steps
+        zhlevel     = MAXVAL(e3)
+        zhhalflevel = 0.5 * MAXVAL(e3)
+        ! 
+        !PRINT *,' At level ', jk, ' thickness is ', zhlevel
+        ! Read temperature and salinity at current level
+        zt   = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
+        zsal = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        ! Compute density of this level
+        zsiglevel(:,:) = 1000. + sigmai ( zt,zsal,deptht(jk),npiglo,npjglo )
+        ! Compute the pressure at T-point 
+        zphalflevel(:,:) = zsiglevel * grav * zhhalflevel
+        ! Compute the pressure at bottom W-point
+        zplevel(:,:) =  zsiglevel * grav * zhlevel
+        ! Compute the total pression -> This one is used in the geostrophic balance !
+        zptot(:,:) = zpsurf(:,:) + zpupper(:,:) + zphalflevel(:,:)
+        ! update zpupper for next level
+        zpupper(:,:) = zpupper(:,:) + zplevel(:,:)
 
-         !! 2. We compute the velocities from geostrophic balance
+        !! 2. We compute the velocities from geostrophic balance
 
-         un(:,:) = 0.d0
-         vn(:,:) = 0.d0
+        un(:,:) = 0.d0
+        vn(:,:) = 0.d0
 
-         DO jj=2,npjglo-1
-            DO ji=2,npiglo-1
+        DO jj=2,npjglo-1
+           DO ji=2,npiglo-1
 
-               ! local coriolis parameter
-               zffu = 0.5 * ( ff(ji,jj) + ff(ji,jj-1) )
-               zffv = 0.5 * ( ff(ji,jj) + ff(ji-1,jj) )
+              ! local coriolis parameter
+              zffu = 0.5 * ( ff(ji,jj) + ff(ji,jj-1) )
+              zffv = 0.5 * ( ff(ji,jj) + ff(ji-1,jj) )
 
-               ! interp on F points 
-               zp1 = 0.5 * ( zptot(ji-1,jj) + zptot(ji,jj+1) ) 
-               zp2 = 0.5 * ( zptot(ji+1,jj) + zptot(ji,jj+1) )
-               zp3 = 0.5 * ( zptot(ji,jj-1) + zptot(ji+1,jj) )
+              ! interp on F points 
+              zp1 = 0.5 * ( zptot(ji-1,jj) + zptot(ji,jj+1) ) 
+              zp2 = 0.5 * ( zptot(ji+1,jj) + zptot(ji,jj+1) )
+              zp3 = 0.5 * ( zptot(ji,jj-1) + zptot(ji+1,jj) )
 
-               zumask = tmask(ji,jj-1) * tmask(ji+1,jj) * tmask(ji,jj+1)
-               zvmask = tmask(ji-1,jj) * tmask(ji,jj+1) * tmask(ji+1,jj)
+              zumask = tmask(ji,jj-1) * tmask(ji+1,jj) * tmask(ji,jj+1)
+              zvmask = tmask(ji-1,jj) * tmask(ji,jj+1) * tmask(ji+1,jj)
 
-               ! geostrophic balance
-               vn(ji,jj) = +1 * ( zohr0 / zffv ) * ( zp2 - zp1 ) / e1v(ji,jj)
-               un(ji,jj) = -1 * ( zohr0 / zffu ) * ( zp2 - zp3 ) / e2u(ji,jj)
+              ! geostrophic balance
+              vn(ji,jj) = +1 * ( zohr0 / zffv ) * ( zp2 - zp1 ) / e1v(ji,jj)
+              un(ji,jj) = -1 * ( zohr0 / zffu ) * ( zp2 - zp3 ) / e2u(ji,jj)
 
-               vn(ji,jj) = vn(ji,jj) * zvmask
-               un(ji,jj) = un(ji,jj) * zumask
+              vn(ji,jj) = vn(ji,jj) * zvmask
+              un(ji,jj) = un(ji,jj) * zumask
 
-            ENDDO
-         ENDDO
+           ENDDO
+        ENDDO
 
-     WHERE ( ABS(ff) < 1.e-5 ) un(:,:) = 0.d0
-     WHERE ( ABS(ff) < 1.e-5 ) vn(:,:) = 0.d0
- 
-     un(:,:) = un(:,:) * umask(:,:)
-     vn(:,:) = vn(:,:) * vmask(:,:)
+        WHERE ( ABS(ff) < 1.e-5 ) un(:,:) = 0.d0
+        WHERE ( ABS(ff) < 1.e-5 ) vn(:,:) = 0.d0
 
-     ! write un and vn  ...
-     ierr = putvar(ncoutu, id_varoutu(1), un(:,:), jk, npiglo, npjglo, ktime=jt)
-     ierr = putvar(ncoutv, id_varoutv(1), vn(:,:), jk, npiglo, npjglo, ktime=jt)
+        un(:,:) = un(:,:) * umask(:,:)
+        vn(:,:) = vn(:,:) * vmask(:,:)
+
+        ! write un and vn  ...
+        ierr = putvar(ncoutu, id_varoutu(1), un(:,:), jk, npiglo, npjglo, ktime=jt)
+        ierr = putvar(ncoutv, id_varoutv(1), vn(:,:), jk, npiglo, npjglo, ktime=jt)
 
 
-    ENDDO ! vertical loop
+     ENDDO ! vertical loop
 
   END DO  ! time loop
 

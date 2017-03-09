@@ -31,15 +31,17 @@ PROGRAM cdfcensus
   !!           2.0  : 03/2006  : J.M. Molines : integration in CDFTOOLS
   !!           2.1  : 12/2006  : J.M. Molines : add sigma-2 and sigma-4 O
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class file_informations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -162,8 +164,8 @@ PROGRAM cdfcensus
         CASE (1 ) ; cf_tfil = cldum
         CASE (2 ) ; READ(cldum,*) nlog
         CASE DEFAULT 
-          PRINT *, ' ERROR : too many ''free'' arguments ..'
-          STOP
+           PRINT *, ' ERROR : too many ''free'' arguments ..'
+           STOP
         END SELECT
      END SELECT
   END DO
@@ -207,7 +209,7 @@ PROGRAM cdfcensus
   ii1 = MAX(ii1,1) ; ii2 = MIN(ii2,npiglo)
   ij1 = MAX(ij1,1) ; ij2 = MIN(ij2,npjglo)
   ik1 = MAX(ik1,1) ; ik2 = MIN(ik2,npk   )
- 
+
   IF ( lg_vvl ) cn_fe3t=cf_tfil
 
   PRINT '(a,6i5)','indices:',ii1, ii2, ij1, ij2, ik1, ik2
@@ -231,7 +233,7 @@ PROGRAM cdfcensus
         zty(ji,jj) = ztmin + (jj-1)*zdt
      END DO
   END DO
-  
+
   rsigma0 = sigma0(zty, zsx,        ns, nt)
   rsigma2 = sigmai(zty, zsx, 2000., ns, nt)
   rsigma4 = sigmai(zty, zsx, 4000., ns, nt)
@@ -303,14 +305,14 @@ PROGRAM cdfcensus
      ierr = putvar(ncout, id_varout(4), rsigma4,     1, ns, nt, ktime=jt)
   ENDDO  ! time loop
 
-     tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-     ierr = putvar1d(ncout,   tim,       npt, 'T')
-     ierr = closeout(ncout)
+  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,   tim,       npt, 'T')
+  ierr = closeout(ncout)
 
   PRINT *,' Done.'
 CONTAINS
 
- SUBROUTINE CreateOutput
+  SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***
     !!
@@ -351,6 +353,6 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar,  4,  ipk, id_varout, cdglobal=cglobal                 )
     ierr  = putheadervar(ncout,  cf_tfil,  ns, nt,  1,   pnavlon=zsx, pnavlat=zty, pdep=zdumdep )
 
- END SUBROUTINE CreateOutput
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfcensus

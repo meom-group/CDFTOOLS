@@ -24,18 +24,18 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfbottom cdfets cdfokubo-w cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfvhst cdfvtrp cdftransport cdfvFWov \
-       cdfsigtrp cdfsigtrp_broken cdftempvol-full\
+       cdfsigtrp cdfsigtrp_broken \
        cdfpsi cdfmoc  cdfmocsig cdfmean cdfdegrad \
        cdfheatc cdfzonalmean cdfzonalmeanvT cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfvint cdffwc\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
-       cdf16bit cdfvita cdfvita-geo cdfconvert cdfflxconv cdfclip cdfsstconv cdfstrconv cdfbathy cdfvar \
+       cdf16bit cdfvita cdfvita-geo cdfconvert cdfclip  cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk \
        cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
-       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfsections cdfnorth_unfold cdfovide cdfmppini\
+       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2levitusgrid3d\
        cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp 
@@ -99,7 +99,7 @@ cdfuv: cdfio.o  modutils.o cdfuv.f90
 	$(F90) cdfuv.f90 -o $(BINDIR)/cdfuv cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfvsig: cdfio.o eos.o modutils.o  cdfvsig.f90
-	$(F90) $(OMP) cdfvsig.f90 -o $(BINDIR)/cdfvsig cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
+	$(F90)  cdfvsig.f90 -o $(BINDIR)/cdfvsig cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfspeed: cdfio.o  cdfspeed.f90
 	$(F90) cdfspeed.f90 -o $(BINDIR)/cdfspeed cdfio.o modcdfnames.o $(FFLAGS)
@@ -118,37 +118,37 @@ cdflinreg: cdfio.o  cdflinreg.f90
 
 ## Derived quantities programs
 cdfbn2: cdfio.o  eos.o  cdfbn2.f90
-	$(F90) $(OMP) cdfbn2.f90 -o $(BINDIR)/cdfbn2 cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfbn2.f90 -o $(BINDIR)/cdfbn2 cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfrichardson: cdfio.o  eos.o  cdfrichardson.f90
-	$(F90) $(OMP) cdfrichardson.f90 -o $(BINDIR)/cdfrichardson cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfrichardson.f90 -o $(BINDIR)/cdfrichardson cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfsig0: cdfio.o  eos.o  cdfsig0.f90
-	$(F90) $(OMP) cdfsig0.f90 -o $(BINDIR)/cdfsig0 cdfio.o eos.o modcdfnames.o  $(FFLAGS)
+	$(F90)  cdfsig0.f90 -o $(BINDIR)/cdfsig0 cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 cdfsigntr: cdfio.o  eos.o  cdfsigntr.f90
-	$(F90) $(OMP) cdfsigntr.f90 -o $(BINDIR)/cdfsigntr cdfio.o eos.o modcdfnames.o  $(FFLAGS)
+	$(F90)  cdfsigntr.f90 -o $(BINDIR)/cdfsigntr cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 cdfspice: cdfio.o  eos.o  cdfspice.f90
-	$(F90) $(OMP) cdfspice.f90 -o $(BINDIR)/cdfspice cdfio.o eos.o modcdfnames.o  $(FFLAGS)
+	$(F90)  cdfspice.f90 -o $(BINDIR)/cdfspice cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 cdfsigi: cdfio.o  eos.o  cdfsigi.f90
-	$(F90) $(OMP) cdfsigi.f90 -o $(BINDIR)/cdfsigi cdfio.o eos.o  modcdfnames.o $(FFLAGS)
+	$(F90)  cdfsigi.f90 -o $(BINDIR)/cdfsigi cdfio.o eos.o  modcdfnames.o $(FFLAGS)
 
 cdfsiginsitu: cdfio.o  eos.o  cdfsiginsitu.f90
-	$(F90) $(OMP) cdfsiginsitu.f90 -o $(BINDIR)/cdfsiginsitu cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfsiginsitu.f90 -o $(BINDIR)/cdfsiginsitu cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfbottomsig: cdfio.o  eos.o  cdfbottomsig.f90
-	$(F90) $(OMP) cdfbottomsig.f90 -o $(BINDIR)/cdfbottomsig cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfbottomsig.f90 -o $(BINDIR)/cdfbottomsig cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfbotpressure: cdfio.o  eos.o modutils.o  cdfbotpressure.f90
-	$(F90) $(OMP) cdfbotpressure.f90 -o $(BINDIR)/cdfbotpressure cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
+	$(F90)  cdfbotpressure.f90 -o $(BINDIR)/cdfbotpressure cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfbottom: cdfio.o    cdfbottom.f90
 	$(F90) cdfbottom.f90 -o $(BINDIR)/cdfbottom cdfio.o  modcdfnames.o $(FFLAGS)
 
 cdfets: cdfio.o  eos.o  cdfets.f90
-	$(F90) $(OMP) cdfets.f90 -o $(BINDIR)/cdfets cdfio.o eos.o modcdfnames.o  $(FFLAGS)
+	$(F90)  cdfets.f90 -o $(BINDIR)/cdfets cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 cdfokubo-w: cdfio.o  cdfokubo-w.f90
 	$(F90) cdfokubo-w.f90 -o $(BINDIR)/cdfokubo-w cdfio.o modcdfnames.o $(FFLAGS)
@@ -190,13 +190,13 @@ cdfgeo-uv: cdfio.o  cdfgeo-uv.f90
 	$(F90) cdfgeo-uv.f90 -o $(BINDIR)/cdfgeo-uv cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfgeostrophy: cdfio.o eos.o cdfgeostrophy.f90
-	$(F90) $(OMP) cdfgeostrophy.f90 -o $(BINDIR)/cdfgeostrophy cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfgeostrophy.f90 -o $(BINDIR)/cdfgeostrophy cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfmxl: cdfio.o eos.o  cdfmxl.f90
-	$(F90) $(OMP) cdfmxl.f90 -o $(BINDIR)/cdfmxl cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfmxl.f90 -o $(BINDIR)/cdfmxl cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfrhoproj: cdfio.o  cdfrhoproj.f90
-	$(F90) $(OMP) cdfrhoproj.f90 -o $(BINDIR)/cdfrhoproj cdfio.o modcdfnames.o  $(FFLAGS) 
+	$(F90)  cdfrhoproj.f90 -o $(BINDIR)/cdfrhoproj cdfio.o modcdfnames.o  $(FFLAGS) 
 
 cdfzisot: cdfio.o  cdfzisot.f90
 	$(F90) cdfzisot.f90 -o $(BINDIR)/cdfzisot cdfio.o modcdfnames.o  $(FFLAGS) 
@@ -205,10 +205,10 @@ cdfsigintegr: cdfio.o  modutils.o cdfsigintegr.f90
 	$(F90) cdfsigintegr.f90 -o $(BINDIR)/cdfsigintegr cdfio.o modcdfnames.o modutils.o  $(FFLAGS) 
 
 cdfisopsi: cdfio.o eos.o cdfisopsi.f90
-	$(F90) $(OMP) cdfisopsi.f90 -o $(BINDIR)/cdfisopsi cdfio.o eos.o modcdfnames.o  $(FFLAGS) 
+	$(F90)  cdfisopsi.f90 -o $(BINDIR)/cdfisopsi cdfio.o eos.o modcdfnames.o  $(FFLAGS) 
 
 cdfpvor: eos.o cdfio.o  cdfpvor.f90
-	$(F90) $(OMP) cdfpvor.f90 -o $(BINDIR)/cdfpvor cdfio.o eos.o modcdfnames.o  $(FFLAGS) 
+	$(F90)  cdfpvor.f90 -o $(BINDIR)/cdfpvor cdfio.o eos.o modcdfnames.o  $(FFLAGS) 
 
 cdfgradT: cdfio.o  cdfgradT.f90
 	$(F90) cdfgradT.f90 -o $(BINDIR)/cdfgradT cdfio.o  modcdfnames.o  $(FFLAGS) 
@@ -229,13 +229,13 @@ cdfnrjcomp: cdfio.o  cdfnrjcomp.f90
 	$(F90) cdfnrjcomp.f90 -o $(BINDIR)/cdfnrjcomp cdfio.o modcdfnames.o $(FFLAGS) 
 
 cdfhdy: cdfio.o  eos.o  cdfhdy.f90
-	$(F90) $(OMP) cdfhdy.f90 -o $(BINDIR)/cdfhdy cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfhdy.f90 -o $(BINDIR)/cdfhdy cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfhdy3d: cdfio.o  eos.o  cdfhdy3d.f90
-	$(F90) $(OMP) cdfhdy3d.f90 -o $(BINDIR)/cdfhdy3d cdfio.o eos.o  modcdfnames.o $(FFLAGS)
+	$(F90)  cdfhdy3d.f90 -o $(BINDIR)/cdfhdy3d cdfio.o eos.o  modcdfnames.o $(FFLAGS)
 
 cdfmaskdmp: cdfio.o  eos.o  cdfmaskdmp.f90
-	$(F90) $(OMP) cdfmaskdmp.f90 -o $(BINDIR)/cdfmaskdmp cdfio.o eos.o modcdfnames.o  $(FFLAGS)
+	$(F90)  cdfmaskdmp.f90 -o $(BINDIR)/cdfmaskdmp cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 ## Transport programs
 cdfmhst: cdfio.o  cdfmhst.f90
@@ -260,28 +260,25 @@ cdfvFWov: cdfio.o  modutils.o cdfvFWov.f90
 	$(F90) cdfvFWov.f90 -o $(BINDIR)/cdfvFWov cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfsigtrp: cdfio.o eos.o  modutils.o cdfsigtrp.f90 
-	$(F90)  $(OMP) cdfsigtrp.f90 -o $(BINDIR)/cdfsigtrp cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
+	$(F90)   cdfsigtrp.f90 -o $(BINDIR)/cdfsigtrp cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
 
 cdfsigtrp_broken: cdfio.o eos.o  modutils.o cdfsigtrp_broken.f90 
-	$(F90)  $(OMP) cdfsigtrp_broken.f90 -o $(BINDIR)/cdfsigtrp_broken cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
+	$(F90)   cdfsigtrp_broken.f90 -o $(BINDIR)/cdfsigtrp_broken cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
 
 cdftransig_xy3d: cdfio.o eos.o  modutils.o cdftransig_xy3d.f90
-	$(F90)  $(OMP) cdftransig_xy3d.f90 -o $(BINDIR)/cdftransig_xy3d cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
-
-cdftempvol-full: cdfio.o  cdftempvol-full.f90
-	$(F90) cdftempvol-full.f90 -o $(BINDIR)/cdftempvol-full cdfio.o modcdfnames.o  $(FFLAGS)
+	$(F90)   cdftransig_xy3d.f90 -o $(BINDIR)/cdftransig_xy3d cdfio.o eos.o modcdfnames.o modutils.o  $(FFLAGS)
 
 cdfmoc: cdfio.o  eos.o cdftools.o cdfmoc.f90
-	$(F90) $(OMP) cdfmoc.f90 -o $(BINDIR)/cdfmoc cdfio.o eos.o modcdfnames.o cdftools.o $(FFLAGS)
+	$(F90)  cdfmoc.f90 -o $(BINDIR)/cdfmoc cdfio.o eos.o modcdfnames.o cdftools.o $(FFLAGS)
 
 cdfmht_gsop: cdfio.o eos.o  cdfmht_gsop.f90
-	$(F90) $(OMP) cdfmht_gsop.f90 -o $(BINDIR)/cdfmht_gsop cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfmht_gsop.f90 -o $(BINDIR)/cdfmht_gsop cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfmoc_rapid_26N_r8_ORCA025: cdfio.o eos.o  cdfmoc_rapid_26N_r8_ORCA025.f90
-	$(F90) $(OMP) cdfmoc_rapid_26N_r8_ORCA025.f90 -o $(BINDIR)/cdfmoc_rapid_26N_r8_ORCA025 cdfio.o eos.o $(FFLAGS)
+	$(F90)  cdfmoc_rapid_26N_r8_ORCA025.f90 -o $(BINDIR)/cdfmoc_rapid_26N_r8_ORCA025 cdfio.o eos.o $(FFLAGS)
 
 cdfmocsig: cdfio.o eos.o modutils.o  cdfmocsig.f90 
-	$(F90) $(OMP) cdfmocsig.f90 -o $(BINDIR)/cdfmocsig cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
+	$(F90)  cdfmocsig.f90 -o $(BINDIR)/cdfmocsig cdfio.o eos.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfmean: cdfio.o  cdfmean.f90
 	$(F90) cdfmean.f90 -o $(BINDIR)/cdfmean cdfio.o modcdfnames.o $(FFLAGS)
@@ -311,13 +308,13 @@ cdfmxlsaltc: cdfio.o  modutils.o cdfmxlsaltc.f90
 	$(F90) cdfmxlsaltc.f90 -o $(BINDIR)/cdfmxlsaltc cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 cdfmxlhcsc: cdfio.o  eos.o cdfmxlhcsc.f90
-	$(F90) $(OMP) cdfmxlhcsc.f90 -o $(BINDIR)/cdfmxlhcsc cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfmxlhcsc.f90 -o $(BINDIR)/cdfmxlhcsc cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdficediags: cdfio.o  cdficediags.f90
 	$(F90) cdficediags.f90 -o $(BINDIR)/cdficediags cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfzonalmean: cdfio.o  cdfzonalmean.f90
-	$(F90) $(OMP) cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 
+	$(F90)  cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 
 
 cdfzonalmeanvT: cdfio.o  modutils.o  cdfzonalmeanvT.f90
 	$(F90) cdfzonalmeanvT.f90 -o $(BINDIR)/cdfzonalmeanvT cdfio.o modcdfnames.o modutils.o $(FFLAGS) 
@@ -326,7 +323,7 @@ cdfzonalmeanvT2: cdfio.o  modutils.o  cdfzonalmeanvT2.f90
 	$(F90) cdfzonalmeanvT2.f90 -o $(BINDIR)/cdfzonalmeanvT2 cdfio.o modcdfnames.o modutils.o $(FFLAGS) 
 
 cdfzonalsum: cdfio.o  cdfzonalsum.f90
-	$(F90) $(OMP) cdfzonalsum.f90 -o $(BINDIR)/cdfzonalsum cdfio.o modcdfnames.o $(FFLAGS) 
+	$(F90)  cdfzonalsum.f90 -o $(BINDIR)/cdfzonalsum cdfio.o modcdfnames.o $(FFLAGS) 
 
 cdfzonalout: cdfio.o  cdfzonalout.f90
 	$(F90) cdfzonalout.f90 -o $(BINDIR)/cdfzonalout cdfio.o modcdfnames.o $(FFLAGS) 
@@ -338,7 +335,7 @@ cdfwflx: cdfio.o  cdfwflx.f90
 	$(F90) cdfwflx.f90 -o $(BINDIR)/cdfwflx cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfbuoyflx: cdfio.o  eos.o cdfbuoyflx.f90
-	$(F90) $(OMP) cdfbuoyflx.f90 -o $(BINDIR)/cdfbuoyflx cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfbuoyflx.f90 -o $(BINDIR)/cdfbuoyflx cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 ## Extracting tools, information tools
 cdfprofile: cdfio.o  cdfprofile.f90
@@ -393,7 +390,7 @@ cdfmaxmoc: cdfio.o cdfmaxmoc.f90
 	$(F90) cdfmaxmoc.f90  -o $(BINDIR)/cdfmaxmoc cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfcensus: cdfio.o eos.o cdfcensus.f90
-	$(F90) $(OMP) cdfcensus.f90  -o $(BINDIR)/cdfcensus cdfio.o eos.o modcdfnames.o $(FFLAGS)
+	$(F90)  cdfcensus.f90  -o $(BINDIR)/cdfcensus cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfzoom: cdfio.o  cdfzoom.f90
 	$(F90) cdfzoom.f90  -o $(BINDIR)/cdfzoom cdfio.o modcdfnames.o $(FFLAGS)
@@ -438,23 +435,11 @@ cdfvita-geo: cdfio.o cdfvita-geo.f90
 cdfconvert: cdfio.o cdfconvert.f90
 	$(F90)  cdfconvert.f90  -o $(BINDIR)/cdfconvert cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfflxconv: cdfio.o cdfflxconv.f90
-	$(F90)   cdfflxconv.f90  -o $(BINDIR)/cdfflxconv cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfsstconv: cdfio.o cdfsstconv.f90
-	$(F90)   cdfsstconv.f90  -o $(BINDIR)/cdfsstconv cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfstrconv: cdfio.o cdfstrconv.f90
-	$(F90)   cdfstrconv.f90  -o $(BINDIR)/cdfstrconv cdfio.o modcdfnames.o $(FFLAGS)
-
 cdfbathy: cdfio.o cdfbathy.f90
 	$(F90)   cdfbathy.f90  -o $(BINDIR)/cdfbathy cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfcofdis: cdfio.o cdfcofdis.f90
 	$(F90)    cdfcofdis.f90  -o $(BINDIR)/cdfcofdis cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfcoastline: cdfio.o cdfcoastline.f90
-	$(F90)    cdfcoastline.f90  -o $(BINDIR)/cdfcoastline cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfvar: cdfbathy
 	ln -sf  cdfbathy $(BINDIR)/cdfvar 
@@ -492,9 +477,6 @@ cdficb_clim: cdfio.o  cdficb_clim.f90
 cdficb_diags: cdfio.o  cdficb_diags.f90
 	$(F90) cdficb_diags.f90 -o $(BINDIR)/cdficb_diags cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfovide: cdfio.o  cdfovide.f90
-	$(F90) cdfovide.f90  -o $(BINDIR)/cdfovide cdfio.o modcdfnames.o $(FFLAGS)
-
 cdf_xtrac_brokenline: cdfio.o  modcdfnames.o cdftools.o  cdf_xtrac_brokenline.f90
 	$(F90)  cdf_xtrac_brokenline.f90  -o $(BINDIR)/cdf_xtrac_brokenline cdfio.o cdftools.o modcdfnames.o $(FFLAGS)
 
@@ -513,16 +495,13 @@ cdfchgrid: cdfio.o modutils.o cdfchgrid.f90
 cdfcmp: cdfio.o cdfcmp.f90
 	$(F90) cdfcmp.f90  -o $(BINDIR)/cdfcmp cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfsections: eos.o cdfsections.f90
-	$(F90) $(OMP) cdfsections.f90  -o $(BINDIR)/cdfsections eos.o modcdfnames.o $(FFLAGS)
-
 ## Modules
 
 cdfio.o: cdfio.F90 modcdfnames.o
 	$(F90) -c  cdfio.F90 $(FFLAGS)
 
 eos.o: eos.f90
-	$(F90) $(OMP) -c eos.f90 $(FFLAGS)
+	$(F90)  -c eos.f90 $(FFLAGS)
 
 cdftools.o: cdfio.o cdftools.f90
 	$(F90) -c cdftools.f90 $(FFLAGS)

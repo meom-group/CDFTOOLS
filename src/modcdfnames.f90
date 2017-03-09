@@ -6,6 +6,7 @@ MODULE modCdfNames
   !!=====================================================================
   !! History : 3.0  !  12/2010 ! J.M. Molines : Original code
   !! Modified: 3.0  !  08/2010 ! P.   Mathiot : Add LIM3 variables
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -228,10 +229,11 @@ MODULE modCdfNames
     ! Bathymetry
     NAMELIST/nambathy/ cn_fbathymet, cn_fbathylev, cn_bathymet, cn_bathylev, cn_mbathy
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2010, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class system
   !!----------------------------------------------------------------------
 
 CONTAINS

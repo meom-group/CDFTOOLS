@@ -19,6 +19,7 @@ PROGRAM cdfsigtrp_broken
   !!              - compute the total transport (for information)
   !!
   !! History : 3.0  : 12/2014  : P. Colombo   : from cdfsigtrp 
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -30,9 +31,9 @@ PROGRAM cdfsigtrp_broken
   USE modcdfnames  ! for ReadCdfNames
   USE modutils     ! for SetGlobalAtt
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id: cdfsigtrp.f90 699 2013-06-24 14:17:21Z molines $
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class transport
   !!----------------------------------------------------------------------

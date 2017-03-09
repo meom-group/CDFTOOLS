@@ -13,14 +13,16 @@ PROGRAM cdfmoyuvwt
   !!
   !! History : 2.1  : 02/2008  : A. Melet     : Original code
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class second_order_moments
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

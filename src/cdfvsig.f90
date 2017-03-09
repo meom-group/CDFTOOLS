@@ -12,16 +12,18 @@ PROGRAM cdfvsig
   !! History : 2.1  : 11/2004  : J.M. Molines : Original code
   !!           2.1  : 02/2010  : J.M. Molines : handle multiframes input files.
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
   USE modcdfnames
   USE modutils
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2011
+  !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
-  !! Copyright (c) 2011, J.-M. Molines
+  !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class second_order_moments
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
@@ -216,11 +218,15 @@ PROGRAM cdfvsig
      PRINT *,'level ',jk
      dcumulus(:,:,:) = 0.d0 ;  dcumulvs(:,:,:) = 0.d0 
      IF ( lwo   ) dcumulws(:,:,:) = 0.d0
-     IF ( lsigo ) THEN  ; dcumulsu(:,:,:) = 0.d0 ;  dcumulsv(:,:,:) = 0.d0  ;  ENDIF
+     IF ( lsigo ) THEN  ; dcumulsu(:,:,:) = 0.d0 ;  dcumulsv(:,:,:) = 0.d0  ;
+     ENDIF
      IF ( lsigo .AND. lwo ) dcumulsw(:,:,:) = 0.d0
-     IF ( luvo  ) THEN   ; dcumulu(:,:)    = 0.d0  ;  dcumulv(:,:)   = 0.d0 ;  ENDIF
-     IF ( luvo  ) THEN   ; dcumulu2(:,:)   = 0.d0  ;  dcumulv2(:,:)  = 0.d0 ;  ENDIF
-     IF (luvo .AND. lwo ) THEN ; dcumulw(:,:) = 0.d0 ; dcumulw2(:,:) = 0.d0 ;  ENDIF
+     IF ( luvo  ) THEN   ; dcumulu(:,:)    = 0.d0  ;  dcumulv(:,:)   = 0.d0 ;
+     ENDIF
+     IF ( luvo  ) THEN   ; dcumulu2(:,:)   = 0.d0  ;  dcumulv2(:,:)  = 0.d0 ;
+     ENDIF
+     IF (luvo .AND. lwo ) THEN ; dcumulw(:,:) = 0.d0 ; dcumulw2(:,:) = 0.d0 ;
+     ENDIF
      dtotal_time   = 0.d0 ;  ntframe     = 0
 
      umask(:,:) = getvar(cn_fmsk, 'umask' , jk, npiglo, npjglo )
@@ -574,6 +580,5 @@ CONTAINS
     ENDDO
     PRINT *, refdep
   END SUBROUTINE ParseRefDep
-
 
 END PROGRAM cdfvsig
