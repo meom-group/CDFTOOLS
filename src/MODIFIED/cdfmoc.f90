@@ -17,12 +17,12 @@ PROGRAM cdfmoc
   !!               respectively zomsfglo, zomsfatl, zomsfinp, zomsfind, zomsfpac, zomsinp0
   !!
   !! History : 2.1  : 07/2005  : J.M. Molines  : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!                : 04/2006  : A.M. Treguier : Adaptation to NATL4 case
   !!                : 09/2007  : G. Smith      : MOC decomposition
   !!                : 01/2008  : A. Lecointre  : MOC decomposition adaptation 
   !!           3.0  : 03/2011  : J.M. Molines  : Merge all MOC prog, Doctor norm + Lic.
   !!                : 10/2012  : M.A. Balmaseda: it adds basin INP0=GLOBAL-ATL, different from INP.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!         
   !!
   !! References :  For MOC decomposition : Lee & Marotzke (1998), 

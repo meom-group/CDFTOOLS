@@ -5,8 +5,8 @@ MODULE cdftools
   !! For example cdf_findij is the subroutine equivalent to cdffindij 
   !!=====================================================================
   !! History : 2.1  !  05/2010  : J.M. Molines, A. Melet : Original
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  !  12/2010  : J.M. Molines : Doctor + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -71,7 +71,7 @@ CONTAINS
     CHARACTER(LEN=256)                        :: cl_type='F'
     CHARACTER(LEN=256)                        :: clcoo
 
-    LOGICAL                                   :: ll_again, ll_bnd, ll_verbose=.false.
+    LOGICAL                                   :: ll_again, ll_bnd, ll_verbose=.FALSE.
     !!--------------------------------------------------------------------------
     CALL ReadCdfNames()
     imin = 0 ; jmin = 0
@@ -86,56 +86,56 @@ CONTAINS
     IF ( PRESENT( cd_coord)  ) clcoo  = cd_coord
     IF ( PRESENT( cd_point)  ) cl_type= cd_point
     IF ( PRESENT( cd_verbose))   THEN
-       IF ( cd_verbose(1:1) == 'Y' .OR. cd_verbose(1:1) == 'y' ) ll_verbose=.true.
+       IF ( cd_verbose(1:1) == 'Y' .OR. cd_verbose(1:1) == 'y' ) ll_verbose=.TRUE.
     ENDIF
 
     IF ( .NOT. ALLOCATED (dl_glam) ) THEN 
 
-    IF (chkfile (clcoo) ) STOP ! missing file
+       IF (chkfile (clcoo) ) STOP ! missing file
 
-    ipiglo= getdim (clcoo, cn_x)
-    ipjglo= getdim (clcoo, cn_y)
+       ipiglo= getdim (clcoo, cn_x)
+       ipjglo= getdim (clcoo, cn_y)
 
-    ALLOCATE (dl_glam(ipiglo,ipjglo), dl_gphi(ipiglo,ipjglo) )
-    ALLOCATE (dl_e1  (ipiglo,ipjglo), dl_e2  (ipiglo,ipjglo) )
+       ALLOCATE (dl_glam(ipiglo,ipjglo), dl_gphi(ipiglo,ipjglo) )
+       ALLOCATE (dl_e1  (ipiglo,ipjglo), dl_e2  (ipiglo,ipjglo) )
 
-    SELECT CASE ( cl_type )
-    CASE ('T' , 't' )
-       dl_glam(:,:) = getvar(clcoo, cn_glamt, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(clcoo, cn_gphit, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(clcoo, cn_ve1t,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(clcoo, cn_ve2t,  1, ipiglo, ipjglo)
-    CASE ('U','u' )
-       dl_glam(:,:) = getvar(clcoo, cn_glamu, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(clcoo, cn_gphiu, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(clcoo, cn_ve1u,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(clcoo, cn_ve2u,  1, ipiglo, ipjglo)
-    CASE ('V','v' )
-       dl_glam(:,:) = getvar(clcoo, cn_glamv, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(clcoo, cn_gphiv, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(clcoo, cn_ve1v,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(clcoo, cn_ve2v,  1, ipiglo, ipjglo)
-    CASE ('F','f' )
-       dl_glam(:,:) = getvar(clcoo, cn_glamf, 1, ipiglo, ipjglo)
-       dl_gphi(:,:) = getvar(clcoo, cn_gphif, 1, ipiglo, ipjglo)
-       dl_e1  (:,:) = getvar(clcoo, cn_ve1f,  1, ipiglo, ipjglo)
-       dl_e2  (:,:) = getvar(clcoo, cn_ve2f,  1, ipiglo, ipjglo)
-    CASE DEFAULT
-       PRINT *,' ERROR : type of point not known: ', TRIM(cl_type)
-    END SELECT
+       SELECT CASE ( cl_type )
+       CASE ('T' , 't' )
+          dl_glam(:,:) = getvar(clcoo, cn_glamt, 1, ipiglo, ipjglo)
+          dl_gphi(:,:) = getvar(clcoo, cn_gphit, 1, ipiglo, ipjglo)
+          dl_e1  (:,:) = getvar(clcoo, cn_ve1t,  1, ipiglo, ipjglo)
+          dl_e2  (:,:) = getvar(clcoo, cn_ve2t,  1, ipiglo, ipjglo)
+       CASE ('U','u' )
+          dl_glam(:,:) = getvar(clcoo, cn_glamu, 1, ipiglo, ipjglo)
+          dl_gphi(:,:) = getvar(clcoo, cn_gphiu, 1, ipiglo, ipjglo)
+          dl_e1  (:,:) = getvar(clcoo, cn_ve1u,  1, ipiglo, ipjglo)
+          dl_e2  (:,:) = getvar(clcoo, cn_ve2u,  1, ipiglo, ipjglo)
+       CASE ('V','v' )
+          dl_glam(:,:) = getvar(clcoo, cn_glamv, 1, ipiglo, ipjglo)
+          dl_gphi(:,:) = getvar(clcoo, cn_gphiv, 1, ipiglo, ipjglo)
+          dl_e1  (:,:) = getvar(clcoo, cn_ve1v,  1, ipiglo, ipjglo)
+          dl_e2  (:,:) = getvar(clcoo, cn_ve2v,  1, ipiglo, ipjglo)
+       CASE ('F','f' )
+          dl_glam(:,:) = getvar(clcoo, cn_glamf, 1, ipiglo, ipjglo)
+          dl_gphi(:,:) = getvar(clcoo, cn_gphif, 1, ipiglo, ipjglo)
+          dl_e1  (:,:) = getvar(clcoo, cn_ve1f,  1, ipiglo, ipjglo)
+          dl_e2  (:,:) = getvar(clcoo, cn_ve2f,  1, ipiglo, ipjglo)
+       CASE DEFAULT
+          PRINT *,' ERROR : type of point not known: ', TRIM(cl_type)
+       END SELECT
 
-    ! work with longitude between 0 and 360 to avoid  the date line.
-    WHERE( dl_glam < 0 ) dl_glam = dl_glam + 360.d0
+       ! work with longitude between 0 and 360 to avoid  the date line.
+       WHERE( dl_glam < 0 ) dl_glam = dl_glam + 360.d0
 
-    ! For Orca grid, the longitude of ji=1 is about 70 E
-    dl_glam0 = dl_glam(1, ipjglo/2)
-    WHERE( dl_glam < dl_glam0 ) dl_glam =dl_glam + 360.d0
+       ! For Orca grid, the longitude of ji=1 is about 70 E
+       dl_glam0 = dl_glam(1, ipjglo/2)
+       WHERE( dl_glam < dl_glam0 ) dl_glam =dl_glam + 360.d0
 
-    IF (dl_xmin < 0.) dl_xmin = dl_xmin + 360.d0
-    IF (dl_xmax < 0.) dl_xmax = dl_xmax + 360.d0
+       IF (dl_xmin < 0.) dl_xmin = dl_xmin + 360.d0
+       IF (dl_xmax < 0.) dl_xmax = dl_xmax + 360.d0
 
-    IF (dl_xmin < dl_glam0) dl_xmin = dl_xmin + 360.d0
-    IF (dl_xmax < dl_glam0) dl_xmax = dl_xmax + 360.d0
+       IF (dl_xmin < dl_glam0) dl_xmin = dl_xmin + 360.d0
+       IF (dl_xmax < dl_glam0) dl_xmax = dl_xmax + 360.d0
     ENDIF  ! 
 
 
@@ -156,11 +156,11 @@ CONTAINS
        IF (dl_dis  > dl_emax ) THEN
           zglamfound = dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound - 360.
 
-!         PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc) , iloc, jloc 
-!         PRINT *,' Algorithm does''nt converge ', dl_dis
+          !         PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc) , iloc, jloc 
+          !         PRINT *,' Algorithm does''nt converge ', dl_dis
 
           IF ( initer >= jp_itermax ) THEN
-!            PRINT *, ' no convergence after ', jp_itermax,' iterations'
+             !            PRINT *, ' no convergence after ', jp_itermax,' iterations'
              iloc     = -1000
              jloc     = -1000
              ll_again = .FALSE.
@@ -207,11 +207,11 @@ CONTAINS
           IF (dl_dis >  dl_emax ) THEN
              zglamfound=dl_glam(iloc,jloc) ; IF (zglamfound > 180.)  zglamfound=zglamfound -360.
 
-!            PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc), iloc, jloc
-!            PRINT *,' Algorithm does''nt converge ', dl_dis
+             !            PRINT 9000, 'Long= ',zglamfound,' Lat = ',dl_gphi(iloc,jloc), iloc, jloc
+             !            PRINT *,' Algorithm does''nt converge ', dl_dis
 
              IF ( initer >= jp_itermax ) THEN
-!               PRINT *, ' no convergence after ', jp_itermax,' iterations'
+                !               PRINT *, ' no convergence after ', jp_itermax,' iterations'
                 iloc     = -1000
                 jloc     = -1000
                 ll_again = .FALSE.
@@ -239,13 +239,13 @@ CONTAINS
     IF (ll_verbose) PRINT 9001, imin, imax, jmin, jmax
 
     kimin   = imin ; kimax = imax ; kjmin   = jmin ; kjmax = jmax
-   IF ( ll_bnd .OR. imin < 0 ) THEN
-     zglamin= -9999. ; zglamax = -9999
-     zgphmin= -9999. ; zgphmax = -9999
-   ELSE
-    zglamin = dl_glam(imin,jmin)  ; zglamax = dl_glam(imax,jmax)
-    zgphmin = dl_gphi(imin,jmin)  ; zgphmax = dl_gphi(imax,jmax)
-   ENDIF
+    IF ( ll_bnd .OR. imin < 0 ) THEN
+       zglamin= -9999. ; zglamax = -9999
+       zgphmin= -9999. ; zgphmax = -9999
+    ELSE
+       zglamin = dl_glam(imin,jmin)  ; zglamax = dl_glam(imax,jmax)
+       zgphmin = dl_gphi(imin,jmin)  ; zgphmax = dl_gphi(imax,jmax)
+    ENDIF
 
     IF ( zglamin > 180 ) zglamin=zglamin-360.
     IF ( zglamax > 180 ) zglamax=zglamax-360.
@@ -412,7 +412,7 @@ CONTAINS
 
   END SUBROUTINE broken_line
 
-! Private subroutines and functions
+  ! Private subroutines and functions
   SUBROUTINE NearestPoint(ddlon, ddlat, kpi, kpj, ddlam, ddphi, kpiloc, kpjloc, ld_bnd)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE NearestPoint  ***

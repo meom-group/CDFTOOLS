@@ -8,8 +8,8 @@
   !!               when computing the time average. 
   !!
   !! History : 2.1  : 11/2009  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!      function       : comments
   !!  setweight   : return weight for given variable and file

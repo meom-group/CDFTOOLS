@@ -11,7 +11,7 @@ PROGRAM cdfisf_poolchk
   !!               and may be very memory consuming for big domains.
   !!
   !! History :   3.0  : 11/2016  : J.M. Molines. P. Mathiot (original code)
-  !!         :  4.0  : 03/2017  : J.M. Molines  
+  !!         :   4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!   routines                                         : description
   !!----------------------------------------------------------------------

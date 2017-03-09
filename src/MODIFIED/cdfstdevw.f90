@@ -7,8 +7,8 @@ PROGRAM cdfstdevw
   !!  ** Method  : Read gridW and gridW2 and compute rms
   !!
   !! History : 2.1  : 11/2004  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

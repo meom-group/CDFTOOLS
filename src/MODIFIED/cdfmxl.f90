@@ -11,10 +11,10 @@ PROGRAM cdfmxl
   !!                 where rho_c is a density criteria given as argument
   !!
   !! History : 2.1  : 10/2005  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 07/2012  : F. Hernandez: Optional S-FILE input
   !!           3.0  : 07/2012  : F. Hernandez: Add new MLD computation for GSOP/GODAE
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos

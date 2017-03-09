@@ -10,8 +10,8 @@ PROGRAM cdfw
   !!               ( Use the same routines than in the NEMO code )
   !!
   !! History : 2.1  : 06/2005  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

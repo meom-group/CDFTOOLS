@@ -10,7 +10,6 @@ PROGRAM cdficb_diags
   !!
   !! History : 3.0  : 01/2016  : N. Merino : Original code
   !!         : 4.0  : 03/2017  : J.M. Molines  
-
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

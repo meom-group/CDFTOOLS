@@ -12,8 +12,8 @@ PROGRAM cdfpolymask
   !!               (used only for size and header )
   !!
   !! History : 2.1  : 07/2007  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description

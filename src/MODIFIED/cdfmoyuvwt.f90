@@ -12,8 +12,8 @@ PROGRAM cdfmoyuvwt
   !!  ** Method  : take care of double precision on product
   !!
   !! History : 2.1  : 02/2008  : A. Melet     : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

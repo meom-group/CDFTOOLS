@@ -19,7 +19,7 @@ PROGRAM cdfsigtrp_broken
   !!              - compute the total transport (for information)
   !!
   !! History : 3.0  : 12/2014  : P. Colombo   : from cdfsigtrp 
-  !!         :  4.0  : 03/2017  : J.M. Molines  
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description

@@ -23,8 +23,8 @@ PROGRAM cdfmxlhcsc
   !!                 MLD
   !!
   !! History : 2.1  : 04/2007  : M. Juza      : Merging of the programs
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos

@@ -5,8 +5,7 @@
   !!
   !!  ** Method  :
   !!
-  !! History : 2.1  : 11/2006  : J.M. Molines : Original code
-  !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !! History :  4.0  : 03/2017  : J.M. Molines : 
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
@@ -14,7 +13,7 @@
 
 
   !!----------------------------------------------------------------------
-  !! CDFTOOLS_3.0 , MEOM 2012
+  !! CDFTOOLS_4.0 , MEOM 2017
   !! $Id$
   !! Copyright (c) 2012, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)

@@ -9,9 +9,9 @@ PROGRAM cdfpendep
   !!  ** Method  : takes TRC files as input
   !!
   !! History : 2.1  : 02/2008  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!         : 2.1  : 09/2010  : C. Dufour    : Adapation to TOP evolution
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames

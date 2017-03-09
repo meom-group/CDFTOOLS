@@ -19,10 +19,10 @@ PROGRAM cdfspice
   !!              Progress in Oceanography Volume 54, 2002, Pages 493-501.
   !!
   !! History : 2.1  : 03/2010  : C.O. Dufour  : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 06/2013  : J.M. Molines : Transfert spice in eos
   !!                                            Add OMP directive
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos

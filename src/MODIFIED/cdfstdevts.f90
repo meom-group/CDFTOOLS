@@ -7,8 +7,8 @@ PROGRAM cdfstdevts
   !!  ** Method  : Read gridT and gridT2 and compute rms
   !!
   !! History : 2.1  : 11/2004  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -136,18 +136,18 @@ PROGRAM cdfstdevts
   ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
   DO jvar = 1, 2
-  cv_in  = cv_namesi(jvar)
-  cv_in2 = TRIM(cv_in)//'_sqd'
-  DO jt = 1, npt
-     DO jk = 1, npk
-        zvbar(:,:) = getvar(cf_in,  cv_in,  jk, npiglo, npjglo, ktime=jt)
-        zvba2(:,:) = getvar(cf_in2, cv_in2, jk, npiglo, npjglo, ktime=jt)
+     cv_in  = cv_namesi(jvar)
+     cv_in2 = TRIM(cv_in)//'_sqd'
+     DO jt = 1, npt
+        DO jk = 1, npk
+           zvbar(:,:) = getvar(cf_in,  cv_in,  jk, npiglo, npjglo, ktime=jt)
+           zvba2(:,:) = getvar(cf_in2, cv_in2, jk, npiglo, npjglo, ktime=jt)
 
-        dsdev(:,:) = SQRT ( DBLE(zvba2(:,:) - zvbar(:,:)*zvbar(:,:)) )
+           dsdev(:,:) = SQRT ( DBLE(zvba2(:,:) - zvbar(:,:)*zvbar(:,:)) )
 
-        ierr = putvar(ncout, id_varout(jvar), REAL(dsdev), jk, npiglo, npjglo, ktime=jt)
+           ierr = putvar(ncout, id_varout(jvar), REAL(dsdev), jk, npiglo, npjglo, ktime=jt)
+        END DO
      END DO
-  END DO
   END DO
 
   tim  = getvar1d(cf_in, cn_vtimec, npt     )

@@ -9,10 +9,10 @@ PROGRAM cdfvT
   !!  ** Method  : pass the CONFIG name and a series of tags as arguments.
   !!
   !! History : 2.1  : 11/2004  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           2.1  : 02/2010  : J.M. Molines : handle multiframes input files.
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
   !!                : 10/2012  : M. Balmaseda : Split T and S file eventually
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

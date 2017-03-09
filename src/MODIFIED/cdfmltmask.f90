@@ -5,11 +5,11 @@ PROGRAM cdfmltmask
   !!  ** Purpose : multiplication of file by a mask (0,1)
   !!
   !! History : 2.1  : 06/2007  : M. Juza      : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!         : 2.1  : 06/2007  : P. Mathiot   : add forcing capabilities
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 06/2013  : J.M. Molines : add multi variable capability
   !!           3.0  : 11/2016  : J.M. Molines : use keys for arguments
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

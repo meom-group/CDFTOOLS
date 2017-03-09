@@ -15,8 +15,8 @@ PROGRAM cdfsigintegr_bottom
   !!               to make computation from the bottom 19/02/2015
   !!
   !! History : 2.1  : 12/2007  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

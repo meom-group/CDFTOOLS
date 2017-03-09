@@ -12,13 +12,13 @@ PROGRAM cdfmhst
   !!               Meridional H/S transports at different depths
   !!
   !! History : 2.1  : 01/2005  : J.M. Molines  : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!                : 04/2005  : A.M. Treguier : adaptation to regional config
   !!                : 04/2007  : J.M. Molines  : add netcdf output
   !!           3.0  : 05/2011  : J.M. Molines  : Doctor norm + Lic.
   !!                  10/2012  : M.A. Balmaseda: opt separate V,T,S infiles
   !!                                             opt z dimension 
   !!                                             add inp0
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

@@ -13,10 +13,10 @@ PROGRAM cdfmoy
   !!               computed.
   !!
   !! History : 2.0  : 11/2004  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!         : 2.1  : 06/2007  : P. Mathiot   : Modif for forcing fields
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
   !!                  04/2015  : S. Leroux    : add nomissincl option
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description

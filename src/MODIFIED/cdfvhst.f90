@@ -8,8 +8,8 @@ PROGRAM cdfvhst
   !!               vertically to produce a 2D file
   !!
   !! History : 2.1  : 01/2005  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -89,7 +89,7 @@ PROGRAM cdfvhst
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg+1
      SELECT CASE (cldum )
      CASE ( '-f'    ) ;  CALL getarg(ijarg, cf_vtfil) ; ijarg = ijarg+1
-     ! options
+        ! options
      CASE ( '-full' ) ;  lfull  = .TRUE.
      CASE ( '-vvl'  ) ;  lg_vvl = .TRUE.
      CASE ( '-nc4'  ) ;  lnc4   = .TRUE.
@@ -104,11 +104,11 @@ PROGRAM cdfvhst
 
   IF ( lchk  ) STOP ! missing file
   IF ( lg_vvl) THEN 
-      cn_fe3u = cf_vtfil 
-      cn_fe3v = cf_vtfil 
-      lchkvar = lchkvar .AND.chkvar( cn_fe3u, cn_ve3u)
-      lchkvar = lchkvar .AND.chkvar( cn_fe3v, cn_ve3v)
-      IF ( lchkvar ) STOP 'no vertical metrics for vvl' ! missing e3 metrics in VT file 
+     cn_fe3u = cf_vtfil 
+     cn_fe3v = cf_vtfil 
+     lchkvar = lchkvar .AND.chkvar( cn_fe3u, cn_ve3u)
+     lchkvar = lchkvar .AND.chkvar( cn_fe3v, cn_ve3v)
+     IF ( lchkvar ) STOP 'no vertical metrics for vvl' ! missing e3 metrics in VT file 
   ENDIF
 
   npiglo= getdim (cf_vtfil,cn_x )

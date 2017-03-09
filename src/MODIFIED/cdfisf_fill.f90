@@ -8,7 +8,7 @@ PROGRAM cdfisf_fill
   !!  ** Method  : flood filling algorithm
   !!               
   !! History : 3.0  : 04/2014  : Pierre Mathiot 
-  !!         :  4.0  : 03/2017  : J.M. Molines  
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   USE cdfio 
@@ -133,8 +133,8 @@ PROGRAM cdfisf_fill
   ENDDO
 
   IF ( ierr /= 0 ) THEN  ! none of the dim name was found
-      PRINT *,' assume file with no depth'
-      npk=0
+     PRINT *,' assume file with no depth'
+     npk=0
   ENDIF
 
   PRINT *, 'NPIGLO = ', npiglo

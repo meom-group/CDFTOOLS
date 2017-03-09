@@ -12,11 +12,11 @@ PROGRAM cdfsmooth
   !!               filter, then y direction filter
   !!
   !! History : --   : 1995     : J.M. Molines : Original code for spem
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!         : 2.1  : 07/2007  : J.M. Molines : port in cdftools
   !!         : 2.1  : 05/2010  : R. Dussin    : Add shapiro filter
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 07/2011  : R. Dussin    : Add anisotropic box 
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description

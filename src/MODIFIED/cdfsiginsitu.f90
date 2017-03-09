@@ -9,8 +9,8 @@ PROGRAM cdfsiginsitu
   !!              using depth taken from input T file
 
   !! History : 2.0  : 11/2004  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos

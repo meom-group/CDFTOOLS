@@ -18,12 +18,12 @@ PROGRAM cdfmocsig
 
   !!
   !! History : 2.1  : 11/2005  : A.M. Treguier : Original code from cdfmoc
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!                : 03/2010  : C. Dufour     : Choice of depth reference
   !!                                             improvements 
   !!           3.0  : 04/2011  : J.M. Molines  : Doctor norm + Lic.
   !!           3.0  : 06/2013  : J.M. Molines  : add neutral density
   !!           3.0  : 06/2013  : J.M. Molines  : add bin mean depth calculation and OpenMp directives
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos

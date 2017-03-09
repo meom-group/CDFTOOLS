@@ -1,21 +1,23 @@
-  PROGRAM cdfokubow
-  !!---------------------------------------------------------------------------
-  !!         ***  PROGRAM  cdfokubow ***
+PROGRAM cdfokubow
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfokubow  ***
+  !!=====================================================================
+  !!  ** Purpose :  Compute the okubow weiss parameter on F-points for 
+  !!                given gridU gridV files and variables (like cdfcurl
+  !!                routine)
   !!
-  !!  **  Purpose: Compute the okubow weiss parameter on F-points for given gridU gridV files and variables (like cdfcurl routine)
+  !!  ** Method  :  ?
   !!
-  !! history :
-  !!   Original :  B. Djath (August 2012)
-  !!---------------------------------------------------------------------
-  !!  $Rev: 256 $
-  !!  $Date: 2012-08-31 19:49:27 +0200 (ven. 31 aout 2012) $
-  !! 
-  !!--------------------------------------------------------------
+  !! History :  3.0  : 08/2012  : N. Djath     : original code
+  !!         :  4.0  : 03/2017  : J.M. Molines : 
+  !!----------------------------------------------------------------------
   !! * Modules used
   USE cdfio
   USE modcdfnames
   !!----------------------------------------------------------------------
-  !! Copyright (c) 2017, J.-M. Molines 
+  !! CDFTOOLS_4.0 , MEOM 2017
+  !! $Id$
+  !! Copyright (c) 2012, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class energy_diagnostics
   !!----------------------------------------------------------------------
@@ -165,13 +167,13 @@
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
   ierr = putvar1d(ncout,   tim,       npt,  'T')
-  
+
   DO jt=1,npt
      IF (MOD(jt,100)==0 ) PRINT *, jt,'/',npt
-        ! if files are forcing fields
-        zun(:,:) =  getvar(cf_ufil, cv_u, ilev ,npiglo,npjglo, ktime=jt)
-        zvn(:,:) =  getvar(cf_vfil, cv_v, ilev ,npiglo,npjglo, ktime=jt)
-        tmask(:,:) = getvar(cn_fmsk, 'tmask', ilev , npiglo, npjglo)
+     ! if files are forcing fields
+     zun(:,:) =  getvar(cf_ufil, cv_u, ilev ,npiglo,npjglo, ktime=jt)
+     zvn(:,:) =  getvar(cf_vfil, cv_v, ilev ,npiglo,npjglo, ktime=jt)
+     tmask(:,:) = getvar(cn_fmsk, 'tmask', ilev , npiglo, npjglo)
 
      IF ( lforcing ) THEN ! for forcing file u and v are on the A grid
         DO ji=1, npiglo-1
@@ -183,8 +185,8 @@
         END DO
         ! end compute u and v on U and V point
      ELSE
-       un(:,:) = zun(:,:)
-       vn(:,:) = zvn(:,:)
+        un(:,:) = zun(:,:)
+        vn(:,:) = zvn(:,:)
      END IF
 
      ! compute the mask
@@ -198,7 +200,7 @@
         ENDDO
      END IF
 
-      rotn(:,:) = 0. ; cisah1(:,:) = 0. ; cisah2t(:,:) = 0. ; cisah2(:,:) = 0. ;okubow(:,:) = 0.
+     rotn(:,:) = 0. ; cisah1(:,:) = 0. ; cisah2t(:,:) = 0. ; cisah2(:,:) = 0. ;okubow(:,:) = 0.
      DO jj = 1, npjglo -1 
         DO ji = 1, npiglo -1   ! vector opt.
            rotn(ji,jj) = (  e2v(ji+1,jj  ) * vn(ji+1,jj  ) - e2v(ji,jj) * vn(ji,jj)    &
@@ -212,12 +214,12 @@
            cisah2t(ji,jj) = (  e1u(ji+1,jj  ) * un(ji+1,jj  ) - e1u(ji,jj) * un(ji,jj)    &
                 &         - e2v(ji  ,jj+1) * vn(ji  ,jj+1) + e2v(ji,jj) * vn(ji,jj)  )    &
                 &         * tmask(ji,jj) / ( e1t(ji,jj) * e2t(ji,jj) )      ! quantity on T grid
- 
+
            cisah2(ji,jj)  = 0.25 * fmask(ji,jj) * ( cisah2t(ji,jj) * cisah2t(ji,jj)        &
                 &         + cisah2t(ji+1,jj) * cisah2t(ji+1,jj) +  cisah2t(ji,jj+1)        &
                 &         * cisah2t(ji,jj+1)  + cisah2t(ji+1,jj+1) * cisah2t(ji+1,jj+1) )       ! quantity computed on f grid
 
-               okubow(ji,jj) = cisah1(ji,jj) * cisah1(ji,jj) + cisah2(ji,jj) - rotn(ji,jj)*rotn(ji,jj)
+           okubow(ji,jj) = cisah1(ji,jj) * cisah1(ji,jj) + cisah2(ji,jj) - rotn(ji,jj)*rotn(ji,jj)
 
         END DO
      END DO

@@ -13,9 +13,9 @@ PROGRAM cdfmkmask
   !!               area.
   !!
   !! History : 2.1  : 11/2005  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
-  !! Modified : 3.0 : 08/2011  : P.   Mathiot : Add zoomij, zoombat, zoomvar and time option
+  !! Modified  3.0  : 08/2011  : P.   Mathiot : Add zoomij, zoombat, zoomvar and time option
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

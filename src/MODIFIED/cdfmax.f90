@@ -7,8 +7,8 @@ PROGRAM cdfmax
   !!               and/or vertically.
   !!
   !! History : 2.1  : 11/2006  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -95,14 +95,14 @@ PROGRAM cdfmax
      CASE ( '-f'    ) ; CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
      CASE ( '-v'    ) ; CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
      CASE ( '-lev'  ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
      CASE ( '-fact' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rfact
      CASE ( '-zoom' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
      CASE ( '-time' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
-                      ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
      CASE ( '-xy'   ) ; lforcexy = .TRUE.
      CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT

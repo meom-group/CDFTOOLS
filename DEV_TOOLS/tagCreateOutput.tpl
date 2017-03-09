@@ -1,3 +1,5 @@
+CONTAINS
+
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***

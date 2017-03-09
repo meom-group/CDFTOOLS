@@ -9,8 +9,8 @@ PROGRAM cdfnorth_unfold
   !!              the type of pivot to use and the C-grid point of variables
   !!
   !! History : 2.1  : 04/2010  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   !!
   !!   unfold     unfold the north pole of orca grid

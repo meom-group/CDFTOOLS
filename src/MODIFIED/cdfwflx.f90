@@ -18,8 +18,8 @@ PROGRAM cdfwflx
   !!               the input precip file.
   !!
   !! History : 2.1  : 01/2008  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -50,7 +50,7 @@ PROGRAM cdfwflx
   CHARACTER(LEN=256)                         :: cf_out='wflx.nc' ! output file
 
   TYPE(variable), DIMENSION(jpvarout)        :: stypvar          ! structure for attributes
-  
+
   LOGICAL                                    :: lchk             ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -110,39 +110,39 @@ PROGRAM cdfwflx
   ALLOCATE ( zmask(npiglo,npjglo), zwk(npiglo,npjglo))
   ALLOCATE ( evap(npiglo,npjglo), precip(npiglo,npjglo), runoff(npiglo,npjglo), wdmp(npiglo,npjglo) )
 
- ! read vosaline for masking purpose
-     zwk(:,:) =  getvar(cf_tfil, cn_vosaline,  1 ,npiglo,npjglo)
-     zmask    = 1. ; WHERE ( zwk == 0 ) zmask = 0.
- ! Evap : 
-     evap(:,:) = -1.* getvar(cf_tfil, cn_solhflup, 1 ,npiglo, npjglo)/Lv*86400. *zmask(:,:)  ! mm/days
-      print *,'Evap done'
- ! Wdmp
-     wdmp(:,:)   = getvar(cf_tfil, cn_sowafldp, 1 ,npiglo, npjglo) * 86400. * zmask(:,:)     ! mm/days
-      print *,'Damping done'
- ! Runoff
-     runoff(:,:) = getvar(cf_rnf,  'sorunoff',  1 ,npiglo, npjglo) * 86400. * zmask(:,:)     ! mm/days
-      print *,'Runoff done'
- ! total water flux
-     zwk(:,:)    = getvar(cf_tfil, cn_sowaflup, 1 ,npiglo, npjglo) * 86400. *zmask(:,:)      ! mm/days
-      print *,'Total water flux done'
- ! Precip:
-     precip(:,:)= evap(:,:) - runoff(:,:) + wdmp(:,:) - zwk(:,:)                            ! mm/day
-      print *,'Precip done'
+  ! read vosaline for masking purpose
+  zwk(:,:) =  getvar(cf_tfil, cn_vosaline,  1 ,npiglo,npjglo)
+  zmask    = 1. ; WHERE ( zwk == 0 ) zmask = 0.
+  ! Evap : 
+  evap(:,:) = -1.* getvar(cf_tfil, cn_solhflup, 1 ,npiglo, npjglo)/Lv*86400. *zmask(:,:)  ! mm/days
+  print *,'Evap done'
+  ! Wdmp
+  wdmp(:,:)   = getvar(cf_tfil, cn_sowafldp, 1 ,npiglo, npjglo) * 86400. * zmask(:,:)     ! mm/days
+  print *,'Damping done'
+  ! Runoff
+  runoff(:,:) = getvar(cf_rnf,  'sorunoff',  1 ,npiglo, npjglo) * 86400. * zmask(:,:)     ! mm/days
+  print *,'Runoff done'
+  ! total water flux
+  zwk(:,:)    = getvar(cf_tfil, cn_sowaflup, 1 ,npiglo, npjglo) * 86400. *zmask(:,:)      ! mm/days
+  print *,'Total water flux done'
+  ! Precip:
+  precip(:,:)= evap(:,:) - runoff(:,:) + wdmp(:,:) - zwk(:,:)                            ! mm/day
+  print *,'Precip done'
 
- ! Write output file
- ncout = create      (cf_out, cf_tfil, npiglo,   npjglo, 1          )
- ierr  = createvar   (ncout,  stypvar, jpvarout, ipk,    id_varout  )
- ierr  = putheadervar(ncout,  cf_tfil, npiglo,   npjglo, 1, pdep=dep)
+  ! Write output file
+  ncout = create      (cf_out, cf_tfil, npiglo,   npjglo, 1          )
+  ierr  = createvar   (ncout,  stypvar, jpvarout, ipk,    id_varout  )
+  ierr  = putheadervar(ncout,  cf_tfil, npiglo,   npjglo, 1, pdep=dep)
 
- ierr = putvar(ncout, id_varout(1), evap,   1, npiglo, npjglo)
- ierr = putvar(ncout, id_varout(2), precip, 1, npiglo, npjglo)
- ierr = putvar(ncout, id_varout(3), runoff, 1, npiglo, npjglo)
- ierr = putvar(ncout, id_varout(4), wdmp,   1, npiglo, npjglo)
- ierr = putvar(ncout, id_varout(5), zwk,    1, npiglo, npjglo)
+  ierr = putvar(ncout, id_varout(1), evap,   1, npiglo, npjglo)
+  ierr = putvar(ncout, id_varout(2), precip, 1, npiglo, npjglo)
+  ierr = putvar(ncout, id_varout(3), runoff, 1, npiglo, npjglo)
+  ierr = putvar(ncout, id_varout(4), wdmp,   1, npiglo, npjglo)
+  ierr = putvar(ncout, id_varout(5), zwk,    1, npiglo, npjglo)
 
- tim   = getvar1d(cf_tfil, cn_vtimec, 1     )
- ierr  = putvar1d(ncout,   tim,       1, 'T')
+  tim   = getvar1d(cf_tfil, cn_vtimec, 1     )
+  ierr  = putvar1d(ncout,   tim,       1, 'T')
 
- ierr=closeout(ncout)
+  ierr=closeout(ncout)
 
 END PROGRAM cdfwflx

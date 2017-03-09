@@ -8,7 +8,7 @@ PROGRAM cdfsigntr
   !!  ** Method  : Use Mc Dougall Jackett EOS (2005)
   !!
   !! History : 3.0  : 06/2013  : J.M. Molines from G. Madec idl code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos

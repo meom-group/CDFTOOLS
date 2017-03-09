@@ -6,8 +6,8 @@ PROGRAM cdfnan
   !!               given in argument
   !!
   !! History : 2.1  : 05/2010  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames

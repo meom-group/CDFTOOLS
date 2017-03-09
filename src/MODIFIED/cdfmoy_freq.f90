@@ -9,11 +9,11 @@ PROGRAM cdfmoy_freq
   !!               number of fields in the file.
   !!
   !! History : 2.1  : 06/2007  : P. Mathiot   : Original code from cdfmoy
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 10/2011  : P. Mathiot   : Add seasonal option and 
   !!                                            allow file with 73 time steps
   !!                : 05/2015  : J.M. Molines : Rewrite to be compliant with XIOS
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames

@@ -7,8 +7,8 @@ PROGRAM cdfkempemekeepe
   !!               potential energy to eddy kinetic energy (T3)
   !!
   !! History : 2.1  : 03/2008  : A. Melet     : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

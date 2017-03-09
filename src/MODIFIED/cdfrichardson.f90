@@ -12,9 +12,9 @@ PROGRAM cdfrichardson
   !!              dz(ub)*dz(ub) + dz(vb)*dz(vb)
   !!
   !! History : 2.0  : 11/2004  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           2.1  : 04/2005  : J.M. Molines : use cdfio
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames   ! for cdf variable names

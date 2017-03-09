@@ -12,8 +12,8 @@ PROGRAM cdfsum
   !!              model field. Need clarification ( JMM)
   !!
   !! History : 2.1  : 11/2008  : P. Mathiot   : Original code (from cdfmean)
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

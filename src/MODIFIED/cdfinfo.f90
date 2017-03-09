@@ -7,8 +7,8 @@ PROGRAM cdfinfo
   !!  ** Method  : to be improved
   !!
   !! History : 2.1  : 09/2010  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio 
   USE modcdfnames
@@ -35,9 +35,9 @@ PROGRAM cdfinfo
   CHARACTER(LEN=256)                            :: cv_dep                   ! depth name
   CHARACTER(LEN=256)                            :: cl_dum                   ! dummy input variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
-  
+
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar                  ! variable attributes
-  
+
   LOGICAL                                       :: ldep                     ! flag for depth control
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -68,11 +68,11 @@ PROGRAM cdfinfo
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cl_dum) ; ijarg = ijarg+1
      SELECT CASE ( cl_dum)
-     CASE ('-dep' ) ; CALL getarg( ijarg, cl_dum); ijarg = ijarg+1; ; READ(cl_dum,*) zdep ; ldep =.true.
+     CASE ('-dep' ) ; CALL getarg( ijarg, cl_dum); ijarg = ijarg+1; ; READ(cl_dum,*) zdep ; ldep =.TRUE.
      CASE DEFAULT   ; PRINT *, 'Option ',TRIM(cl_dum),' ignored ...'
      END SELECT
   ENDDO
-        
+
   IF ( chkfile(cf_in) ) STOP ! missing file
 
   npiglo = getdim (cf_in,cn_x)
@@ -82,16 +82,16 @@ PROGRAM cdfinfo
   IF (ierr /= 0 ) THEN
      npk   = getdim (cf_in,'z',cdtrue=cv_dep,kstatus=ierr)
      IF (ierr /= 0 ) THEN
-       npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
+        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
         IF ( ierr /= 0 ) THEN 
-          npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-            IF ( ierr /= 0 ) THEN 
+           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
+           IF ( ierr /= 0 ) THEN 
               npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
               IF ( ierr /= 0 ) THEN 
-                PRINT *,' assume file with no depth'
-                npk=0
+                 PRINT *,' assume file with no depth'
+                 npk=0
               ENDIF
-            ENDIF
+           ENDIF
         ENDIF
      ENDIF
   ENDIF
@@ -119,10 +119,10 @@ PROGRAM cdfinfo
   END DO
 
   IF ( ldep ) THEN
-      ALLOCATE(zdept(npk) )
-      zdept = getdimvar (cf_in,  npk)
-      ikloc= MINLOC( ABS(zdept - zdep) )
-      PRINT * ,' NEAREST_K ',ikloc(1)
+     ALLOCATE(zdept(npk) )
+     zdept = getdimvar (cf_in,  npk)
+     ikloc= MINLOC( ABS(zdept - zdep) )
+     PRINT * ,' NEAREST_K ',ikloc(1)
   ENDIF
 
 END PROGRAM cdfinfo

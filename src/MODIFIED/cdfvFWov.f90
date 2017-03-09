@@ -12,8 +12,8 @@ PROGRAM cdfvFWov
   !!               compute total freshwater transport and overturning component
   !!
   !! History : 2.1  : 12/2011  : J. Deshayes  : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 12/2011  : J.M. Molines : Port to 3.0
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

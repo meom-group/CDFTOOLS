@@ -8,10 +8,10 @@ PROGRAM cdfvtrp
   !!               averaged transport at each grid cell ( velocity location).
   !!
   !! History : 2.1  : 01/2005  : J.M. Molines : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!                : 01/2008  : P. Mathiot for -lbathy option
   !!           3.0  : 05/2011  : J.M. Molines : Doctor norm + Lic., merge
   !!                             with cdftrp_bathy
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames

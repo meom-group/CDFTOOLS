@@ -11,8 +11,8 @@ PROGRAM cdfisopsi
   !!              integrates it.
   !!
   !! History : 2.1  : 12/2010  : R. Dussin 
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           3.0  : 03/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos

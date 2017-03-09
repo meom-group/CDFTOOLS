@@ -8,10 +8,10 @@ PROGRAM cdftransig_xy3d
   !!  ** Method  : allow two 3D arrays for more efficient reading
   !!
   !! History : 2.1  : 02/2006  : A.M. Treguier : Original code
-  !!         :  4.0  : 03/2017  : J.M. Molines  
   !!           2.1  : 02/2011  : A.M. Treguier : Allow increased resolution in density
   !!                                             in deeper layers
   !!           3.0  : 06/2011  : J.M. Molines : Doctor norm + Lic.
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos
