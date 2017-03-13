@@ -25,7 +25,7 @@ PROGRAM cdf2levitusgrid2d
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                              :: ji, jj, jk, jt     ! dummy loop index
+  INTEGER(KIND=4)                              :: ji, jj, jk, jvar,jt! dummy loop index
   INTEGER(KIND=4)                              :: jilev,jjlev        ! dummy loop index
   INTEGER(KIND=4)                              :: jvar, numvar0      ! dummy loop index
   INTEGER(KIND=4)                              :: ii, ij             ! array index (not loop)
@@ -39,14 +39,10 @@ PROGRAM cdf2levitusgrid2d
   INTEGER(KIND=4)                              :: ierr               ! error status
   INTEGER(KIND=4)                              :: nvars              ! number of variables in the input file
   INTEGER(KIND=4)                              :: nvarsout           ! number of variables in the output file
-  INTEGER(KIND=4)                              :: iimin, iimax       ! IJ coordinates of the closest points
-  INTEGER(KIND=4)                              :: ijmin, ijmax       ! "      "            "
-  INTEGER(KIND=4)                              :: imethod=1          ! interpolation method
   INTEGER(KIND=4)                              :: iter_shap=3        ! number of Shapiro iteration
   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ipk, id_var        ! levels and varid's of input vars
   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ipkout, id_varout  ! levels and varid's of output vars
 
-  REAL(KIND=4)                                 :: zradius=120.       ! Distance (km) for the search bubble (FHZ)
   REAL(KIND=4)                                 :: rlon1, rlon2, rlat1, rlat2, rpos
   REAL(KIND=4)                                 :: gphitmin
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1t, e2t           ! horizontal T metrics
@@ -74,8 +70,8 @@ PROGRAM cdf2levitusgrid2d
   CHARACTER(LEN=256)                           :: ctunits            ! time attributes
   CHARACTER(LEN=256)                           :: cttime_origin      ! time attributes
 
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
-  CHARACTER(LEN=6)                              :: ctyp              ! 'fill' or 'smooth' for shapiro
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE:: cv_names          ! array of var name
+  CHARACTER(LEN=6)                             :: ctyp              ! 'fill' or 'smooth' for shapiro
 
   TYPE(variable), DIMENSION(:),   ALLOCATABLE  :: stypvar            ! input attributes
   TYPE(variable), DIMENSION(:),   ALLOCATABLE  :: stypvarout         ! output attributes
@@ -200,213 +196,21 @@ PROGRAM cdf2levitusgrid2d
      IF ( COUNT( d_out == stypvarout(1)%rmissing_value .AND. tmasklev == 1. ) /=  0. ) THEN
         ALLOCATE ( z_fill(npilev,npjlev) )
         z_fill(:,:) = 0.
-        !
-        imethod = 1
-        SELECT CASE (imethod)
-        CASE ( 1 ) ! Method 1: fill missing data with shapiro
-           ctyp='fill'
-           iter_shap = 3  ! number of shapiro iteration
-           CALL shapiro_fill_smooth ( REAL(d_out), npilev, npjlev, iter_shap, ctyp,         &
-                stypvarout(1)%rmissing_value, INT(tmasklev), z_fill )
+        ctyp='fill'
+        iter_shap = 3  ! number of shapiro iteration
+        CALL shapiro_fill_smooth ( REAL(d_out), npilev, npjlev, iter_shap, ctyp,       &
+           &                       stypvarout(1)%rmissing_value, INT(tmasklev), z_fill )
 
-           DO jjlev = 1 , npjlev
-              DO jilev = 1 , npilev
-                 IF ( z_fill(jilev,jjlev) /=   stypvarout(1)%rmissing_value  &
-                      &                  .AND. tmasklev(jilev,jjlev) == 1    &
-                      &                  .AND. d_out(jilev,jjlev) == stypvarout(1)%rmissing_value ) &
-                      &  d_out(jilev,jjlev) = z_fill(jilev,jjlev)
-              ENDDO
-           ENDDO
-
-           !JMM imethod = 2 is never used nor has been tested.
-           !    I keep it for eventual reference or use for other
-           !  opportunity.
-        CASE ( 2 ) ! Method 2: compute with influence bubble
-           ! For each point of Levitus grid, a data screening is performed 
-           ! in a influence bubble of radius zradius, centered on Levitus point
-           ! and the weighted average of the data in the bubble is computed
-           z_fill(:,:) = 0.
-           DO jjlev = 1 , npjlev-1
-              DO jilev = 1 , npilev
-                 ierr = 0
-                 IF (  tmasklev(jilev,jjlev) == 1 .AND. d_out(jilev,jjlev) == stypvarout(1)%rmissing_value ) THEN 
-                    ! for the South pole, no treatment performed if data too far from southern most orca points
-                    CALL btoe(rlonlev(jilev,jjlev),rlatlev(jilev,jjlev),rlon1,rlat1,-1.2*zradius,-1.2*zradius)
-                    IF ( rlat1 > gphitmin ) THEN
-                       ! Search the closest point of ORCA grid for this Levitus point
-                       CALL cdf_findij (rlonlev(jilev,jjlev), rlonlev(jilev,jjlev), rlatlev(jilev,jjlev), rlatlev(jilev,jjlev), &
-                            &         iimin, iimax, ijmin, ijmax,cd_coord=cn_fhgr,cd_point='T',  cd_verbose='N')
-
-                       ! Next valid grid point going northward on ORCA grid
-                       ltest = .TRUE. ; ij = ijmin ; ii =  iimin
-                       DO WHILE ( ij <= npjglo .AND. ltest .AND. &
-                            & etobd(rlonlev(jilev,jjlev),rlatlev(jilev,jjlev),glamt(ii,ij), gphit(ii,ij)) <= zradius )
-                          IF ( tmask(ii,ij) == 1 ) THEN
-                             ltest = .FALSE.
-                             z_fill(jilev,jjlev) = z_fill(jilev,jjlev) + &
-                                  &(z_in(ii,ij)*tmask(ii,ij))*zbt(ii,ij)*tmasklev(jilev,jjlev)
-                             d_n  (jilev,jjlev) = d_n (jilev,jjlev)  + &
-                                  & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,jjlev)
-                             ierr = ierr + 1
-                          ENDIF
-                          ij = ij + 1
-                       END DO
-                       ! Next valid grid point going southward on ORCA grid
-                       ltest = .TRUE. ; ij = ijmin-1 ; ii =  iimin
-                       DO WHILE ( ij >= 1 .AND. ltest .AND. &
-                            & etobd(rlonlev(jilev,jjlev),rlatlev(jilev,jjlev),glamt(ii,ij), gphit(ii,ij)) <= zradius ) 
-                          IF ( tmask(ii,ij) == 1 ) THEN
-                             ltest = .FALSE.
-                             z_fill(jilev,jjlev) = z_fill(jilev,jjlev) + &
-                                  & (z_in(ii,ij)*tmask(ii,ij))*zbt(ii,ij)*tmasklev(jilev,jjlev)
-                             d_n  (jilev,jjlev) = d_n (jilev,jjlev)  +  &
-                                  & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,jjlev)
-                             ierr = ierr + 1
-                          ENDIF
-                          ij = ij - 1
-                       END DO
-                       ! Next valid grid point going westward on ORCA grid
-                       ltest = .TRUE. ; ij = ijmin ; ii =  iimin+1 ; IF ( ii > npiglo ) ii = ii - npiglo
-                       DO WHILE ( ltest .AND. &
-                            & etobd(rlonlev(jilev,jjlev),rlatlev(jilev,jjlev),glamt(ii,ij), gphit(ii,ij)) <= zradius ) 
-                          IF ( tmask(ii,ij) == 1 ) THEN
-                             ltest = .FALSE.
-                             z_fill(jilev,jjlev) = z_fill(jilev,jjlev) + &
-                                  & (z_in(ii,ij)*tmask(ii,ij))*zbt(ii,ij)*tmasklev(jilev,jjlev) 
-                             d_n  (jilev,jjlev) = d_n (jilev,jjlev)  + &
-                                  & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,jjlev)
-                             ierr = ierr + 1
-                          ENDIF
-                          ii = ii + 1
-                          IF ( ii > npiglo ) ii = ii - npiglo
-                       END DO
-                       ! Next valid grid point going eastward on ORCA grid
-                       ltest = .TRUE. ; ij = ijmin ; ii =  iimin-1 ; IF ( ii < 1) ii = ii + npiglo
-                       DO WHILE ( ltest .AND. &
-                            & etobd(rlonlev(jilev,jjlev),rlatlev(jilev,jjlev),glamt(ii,ij), gphit(ii,ij)) <= zradius ) 
-                          IF ( tmask(ii,ij) == 1 ) THEN
-                             ltest = .FALSE.
-                             z_fill(jilev,jjlev) = z_fill(jilev,jjlev) + &
-                                  & (z_in(ii,ij)*tmask(ii,ij))*zbt(ii,ij)*tmasklev(jilev,jjlev) 
-                             d_n  (jilev,jjlev) = d_n (jilev,jjlev)  + &
-                                  & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,jjlev)
-                             ierr = ierr + 1
-                          ENDIF
-                          ii = ii - 1
-                          IF ( ii < 1 ) ii = ii + npiglo
-                       END DO
-
-                       ! computing d_out value
-                       IF ( z_fill(jilev,jjlev) .NE. stypvarout(1)%rmissing_value &
-                            & .AND. d_n(jilev,jjlev) > 0 &
-                            & .AND. d_out(jilev,jjlev) == stypvarout(1)%rmissing_value ) &
-                            &  d_out(jilev,jjlev) = z_fill(jilev,jjlev) / d_n(jilev,jjlev)
-
-                    ENDIF ! rlat1 > gphitmin
-
-                 ENDIF ! tmasklev(jilev,jjlev) == 1 .AND. d_out(jilev,jjlev) == stypvarout(1)%rmissing_value
-
-              ENDDO
-           ENDDO
-
-           ! Case of the North Pole
-           ijlev = npjlev
+        DO jjlev = 1 , npjlev
            DO jilev = 1 , npilev
-              ierr = 0
-
-              IF (  tmasklev(jilev,ijlev) == 1 .AND. d_out(jilev,ijlev) == stypvarout(1)%rmissing_value ) THEN
-
-                 ! Search the closest point of ORCA grid for this Levitus point
-                 CALL cdf_findij (rlonlev(jilev,ijlev), rlonlev(jilev,ijlev), rlatlev(jilev,ijlev), rlatlev(jilev,ijlev), &
-                      & iimin, iimax, ijmin, ijmax,cd_coord=cn_fhgr,cd_point='T', cd_verbose='N')
-
-                 ! Next valid grid point going southward on ORCA grid
-                 ltest = .TRUE. ; ij = ijmin ; ii =  iimin
-                 DO WHILE ( ij >= 1 .AND. ltest .AND. &
-                      & etobd(rlonlev(jilev,ijlev),rlatlev(jilev,ijlev),glamt(ii,ij), gphit(ii,ij)) <= zradius ) 
-                    IF ( tmask(ii,ij) == 1 ) THEN
-                       ltest = .FALSE.
-                       z_fill(jilev,ijlev) = z_fill(jilev,ijlev) + &
-                            & (z_in(ii,ij)*tmask(ii,ij))*zbt(ii,ij)*tmasklev(jilev,ijlev) 
-                       d_n  (jilev,ijlev) = d_n (jilev,ijlev)  +  &
-                            & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,ijlev)
-                       ierr = ierr + 1
-                    ENDIF
-                    ij = ij - 1
-                 END DO
-                 ! Next valid grid point going westward on ORCA grid
-                 ltest = .TRUE. ; ij = ijmin ; ii =  iimin+1 ; IF ( ii > npiglo) ii = ii - npiglo
-                 DO WHILE ( ltest .AND. &
-                      & etobd(rlonlev(jilev,ijlev),rlatlev(jilev,ijlev),glamt(ii,ij), gphit(ii,ij)) <= zradius ) 
-                    IF ( tmask(ii,ij) == 1 ) THEN
-                       ltest = .FALSE.
-                       z_fill(jilev,ijlev) = z_fill(jilev,ijlev) + &
-                            & (z_in(ii,ij)*tmask(ii,ij))*zbt(ii,ij)*tmasklev(jilev,ijlev) 
-                       d_n  (jilev,ijlev) = d_n (jilev,ijlev)  + &
-                            & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,ijlev)
-                       ierr = ierr + 1
-                    ENDIF
-                    ii = ii + 1
-                    IF ( ii > npiglo ) ii = ii - npiglo
-                 END DO
-                 ! Next valid grid point going eastward on ORCA grid
-                 ltest = .TRUE. ; ij = ijmin ; ii =  iimin-1 ; IF ( ii < 1 ) ii = ii + npiglo
-                 DO WHILE ( ltest .AND. &
-                      & etobd(rlonlev(jilev,ijlev),rlatlev(jilev,ijlev),glamt(ii,ij), gphit(ii,ij)) <= zradius ) 
-                    IF ( tmask(ii,ij) == 1 ) THEN
-                       ltest = .FALSE.
-                       z_fill(jilev,ijlev) = z_fill(jilev,ijlev) + &
-                            & (z_in(ii,ij)*tmask(ji,ij))*zbt(ii,ij)*tmasklev(jilev,ijlev) 
-                       d_n  (jilev,ijlev) = d_n (jilev,ijlev)  + &
-                            & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,ijlev)
-                       ierr = ierr + 1
-                    ENDIF
-                    ii = ii - 1 ;  IF ( ii < 1 ) ii = ii + npiglo
-                 END DO
-                 ! Going "northward" and crossing the pole
-                 ltest = .TRUE.
-                 rpos = 1.
-                 ij = ijmin + 1 * rpos ; ii =  iimin
-                 IF ( ij > npjglo ) THEN
-                    ii = ii + npiglo/2 ; IF ( ii > npiglo ) ii = ii - npiglo
-                    rpos = -1.
-                    ij = ij + 1 * rpos
-                 ENDIF
-                 DO WHILE ( ij >= 1 .AND. ltest .AND. &
-                      & etobd(rlonlev(jilev,ijlev),rlatlev(jilev,ijlev),glamt(ii,ij), gphit(ii,ij)) <= zradius )
-                    IF ( tmask(ii,ij) == 1 ) THEN
-                       ltest = .FALSE.
-                       z_fill(jilev,ijlev) = z_fill(jilev,ijlev) + &
-                            &(z_in(ii,ij)*tmask(ii,ij))*zbt(ii,ij)*tmasklev(jilev,ijlev) 
-                       d_n  (jilev,ijlev) = d_n (jilev,ijlev)  + &
-                            & tmask(ii,ij) *zbt(ii,ij)*tmasklev(jilev,ijlev)
-                       ierr = ierr + 1
-                    ENDIF
-                    ij = ij + 1 * rpos
-                    IF ( ij > npjglo ) THEN
-                       ii = ii + npiglo/2 ; IF ( ii > npiglo ) ii = ii - npiglo
-                       rpos = -1.
-                       ij = ij + 1 * rpos
-                    ENDIF
-                 END DO
-
-                 ! computing d_out value
-                 IF ( z_fill(jilev,ijlev) .NE. stypvarout(1)%rmissing_value  &
-                      & .AND. d_n(jilev,ijlev) > 0  ) &
-                      &  d_out(jilev,ijlev) = z_fill(jilev,ijlev) / d_n(jilev,ijlev)
-
-              ENDIF
-
+             IF (       z_fill(jilev,jjlev)   /=   stypvarout(1)%rmissing_value  &
+                & .AND. tmasklev(jilev,jjlev) == 1                               &
+                & .AND. d_out(jilev,jjlev)    == stypvarout(1)%rmissing_value )  THEN
+                d_out(jilev,jjlev) = z_fill(jilev,jjlev)
+             ENDIF
            ENDDO
-
-
-        CASE DEFAULT 
-           PRINT *, ' METHOD ', imethod ,'is not recognized in this program'
-           STOP
-
-        END SELECT  ! imethod
+        ENDDO
         IF ( ALLOCATED(z_fill) ) DEALLOCATE( z_fill )
-
      ENDIF !  filling points
      ! ----------------------------------------------------------------------------------------
      ! write 
@@ -417,80 +221,6 @@ PROGRAM cdf2levitusgrid2d
   ierr = closeout(ncout)
 
 CONTAINS
-
-  REAL(KIND=4) FUNCTION etobd(plonr, platr, plon, plat)
-    !!---------------------------------------------------------------------
-    !!                  ***  FUNCTION etobd  ***
-    !!
-    !! ** Purpose :
-    !!           Compute the beta plane distance between two lon/lat values 
-    !!
-    !! ** Method  : 
-    !!           Return the distance (km) between 2 points given in the
-    !!           arguments with their latitudes and longitudes
-    !!----------------------------------------------------------------------
-    REAL(KIND=4), INTENT(in) :: plonr, platr, plon, plat  ! lon/lat of the 2 input points
-
-    REAL(KIND=8), PARAMETER  :: dp_p1 = 1.745329D-02  ! radians per degree
-    REAL(KIND=8), PARAMETER  :: dp_p2 = 111.1940D0    ! dp_p1 * earth radius in km (6370.949)
-
-    REAL(KIND=8)             :: dl_rx, dl_ry          ! working double prec variables
-    REAL(KIND=8)             :: dl_r0
-    REAL(KIND=8)             :: dl_r1, dl_r2
-    !!----------------------------------------------------------------------
-    dl_r0 = DBLE(plonr) ; IF ( dl_r0 < 0.d0 ) dl_r0 = dl_r0 + 360.d0
-    dl_r1 = DBLE(plon ) ; IF ( dl_r1 < 0.d0 ) dl_r1 = dl_r1 + 360.d0
-
-    dl_rx = dl_r1 - dl_r0
-    IF ( dl_rx > 180. ) THEN
-       dl_rx = dl_rx - 360.d0
-    ELSE IF ( dl_rx < -180.d0 ) THEN
-       dl_rx = dl_rx + 360.d0
-    ELSE IF ( ABS(dl_rx) == 180.d0 ) THEN
-       dl_rx = 180.d0
-    ENDIF
-    dl_r2 = DBLE(plat) - DBLE(platr)
-
-    dl_rx = dp_p2 * dl_rx * COS(dp_p1*platr)
-    dl_ry = dp_p2 * dl_r2
-
-    etobd = REAL(SQRT(dl_rx*dl_rx + dl_ry*dl_ry))
-
-  END FUNCTION etobd
-
-
-  SUBROUTINE btoe(plonr, platr, plon, plat, plx, ply)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE btoe  ***
-    !!
-    !! ** Purpose :  Return position (lon/lat) of a point located at
-    !!               a given distance from the original point
-    !!
-    !! ** Method  :  Trigo ... 
-    !!
-    !!----------------------------------------------------------------------
-    REAL(KIND=4), INTENT(in)  :: plonr, platr, plx, ply
-    REAL(KIND=4), INTENT(out) :: plon, plat
-
-    REAL(KIND=8), PARAMETER   :: dp_p1= 1.745329D-02  ! radians per degree
-    REAL(KIND=8), PARAMETER   :: dp_p2= 111.1940D0    ! dp_p1 * earth radius in km (6370.949)
-    REAL(KIND=8)              :: dl_rx, dl_ry
-    REAL(KIND=8)              :: dl_r0
-    REAL(KIND=8)              :: dl_r1, dl_r2, dl_r3
-    !!----------------------------------------------------------------------
-    dl_r0 = DBLE(plonr) ; IF ( dl_r0 < 0.d0 ) dl_r0 = dl_r0 + 360.d0
-    dl_rx = DBLE(plx  )
-    dl_r2 = DBLE(platr)
-    dl_r1 = dl_r0 + dl_rx / ( dp_p2 * COS(dp_p1*dl_r2) )
-    dl_r3 = dl_r2 + ply   / dp_p2
-    plon  = REAL(dl_r1)
-    IF ( plon <    0. ) plon = plon + 360.
-    IF ( plon >= 360. ) plon = plon - 360.
-    plat = REAL(dl_r3)
-    IF ( plat >  90. ) plat =  90.
-    IF ( plat < -90. ) plat = -90.
-
-  END SUBROUTINE btoe
 
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
@@ -512,14 +242,14 @@ CONTAINS
 
     ! select variable to output: (only one passed as argument)
     ii=1
-    DO jk=1,nvars
-       IF ( TRIM(cv_names(jk)) == TRIM(cv_nam) ) THEN
-          ipkout(ii)     = ipk(jk)
-          stypvarout(ii) = stypvar(jk)
+    DO jvar=1,nvars
+       IF ( TRIM(cv_names(jvar)) == TRIM(cv_nam) ) THEN
+          ipkout(ii)     = ipk(jvar)
+          stypvarout(ii) = stypvar(jvar)
           stypvarout(ii)%rmissing_value=getspval ( cf_in, TRIM(cv_nam) )
           PRINT*, 'rmissing_value = ', stypvarout(ii)%rmissing_value
           nvarsout = ii
-          numvar0 = jk
+          numvar0 = jvar
           EXIT ! found !
        ENDIF
     ENDDO
