@@ -333,16 +333,31 @@ CONTAINS
   END SUBROUTINE PrintCdfNames
 
   SUBROUTINE chkenv
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE chkenv  ***
+    !!
+    !! ** Purpose :  Check CDFT_xxx environment variables for the name of
+    !!               mesh, mask files 
+    !!
+    !! ** Method  :  Use getenv function 
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=255) :: cldum
+    !!----------------------------------------------------------------------
 
-  CHARACTER(LEN=255) :: cldum
-! provide facilities for environment mariables fixing basic filename
+    ! provide facilities for environment mariables fixing basic filename
     CALL getenv('CDFT_MESH_HGR',cldum ) ; IF ( cldum /= '' ) cn_fhgr    = cldum
     CALL getenv('CDFT_MESH_ZGR',cldum ) ; IF ( cldum /= '' ) cn_fzgr    = cldum
     CALL getenv('CDFT_MASK'    ,cldum ) ; IF ( cldum /= '' ) cn_fmsk    = cldum
     CALL getenv('CDFT_BASINS'  ,cldum ) ; IF ( cldum /= '' ) cn_fbasins = cldum
     CALL getenv('CDFT_COORD'   ,cldum ) ; IF ( cldum /= '' ) cn_fcoo    = cldum
+    ! propagates cn_fzgr to e3 metrics (default)
+    cn_fe3t = cn_fzgr
+    cn_fe3u = cn_fzgr
+    cn_fe3v = cn_fzgr
+    cn_fe3w = cn_fzgr
 
-! .. can be extended
+    ! .. can be extended
   END SUBROUTINE chkenv
 
 

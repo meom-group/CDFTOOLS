@@ -97,6 +97,7 @@ PROGRAM cdfsigtrp
   CHARACTER(LEN=256)                            :: cf_tfil              ! temperature salinity file
   CHARACTER(LEN=256)                            :: cf_ufil              ! zonal velocity file
   CHARACTER(LEN=256)                            :: cf_vfil              ! meridional velocity file
+  CHARACTER(LEN=256)                            :: cf_wfil              ! W file for vvl e3w
   CHARACTER(LEN=256)                            :: cf_section='dens_section.dat'  ! input section file
   CHARACTER(LEN=256)                            :: cf_out='trpsig.txt'  ! output  ascii file
   CHARACTER(LEN=256)                            :: cf_nc                ! output netcdf file (2d)
@@ -127,21 +128,25 @@ PROGRAM cdfsigtrp
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg < 6 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file -smin sigma_min ...'
-     PRINT *,'              ...  -smax sigma_max -nbins nbins [-print ] [-full ] ...'
-     PRINT *,'              ... [-refdep ref_depth] [-neutral ] [-section file ] [-temp]'
+     PRINT *,'              ...  -smax sigma_max -nbins nbins [-print ] [-netcdf] ...'
+     PRINT *,'              ... [-full ] [-vvl W-file] [-refdep ref_depth] [-neutral ] ...'
+     PRINT *,'              ... [-section file ] [-temp]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute density class transports, according to the density class' 
-     PRINT *,'       definition ( minimum, maximum and number of bins) given in arguments.'
-     PRINT *,'       Section position are given in ',TRIM(cf_section),', an ASCII file '
-     PRINT *,'       with pairs of lines giving section name and section location as'
-     PRINT *,'       imin imax jmin jmax. Only zonal or meridional section are allowed.'
-     PRINT *,'       The name of this file can be specified with the -section option, if'
-     PRINT *,'       it differs from the standard name. Optionaly, a netcdf root variable '
-     PRINT *,'       name and a netcdf root long-name can be provided on the line giving '
-     PRINT *,'       the section name.'
+     PRINT *,'       definition (minimum, maximum and number of bins) given in arguments.'
+     PRINT *,'      '
+     PRINT *,'       Sections information are read from the file ',TRIM(cf_section)
+     PRINT *,'       which is a text file built  with pairs of lines giving: (1) section name'
+     PRINT *,'       and (2) section location.'
+     PRINT *,'       First line with section name may also have 2 additional strings holding'
+     PRINT *,'       a prefix for variable output, and a long name to be used as attribute '
+     PRINT *,'       in the output file. ' 
+     PRINT *,'       Second line gives the location of the section with specification of '
+     PRINT *,'       4 integer values (imin imax jmin jmax), relative to the model grid.'
+     PRINT *,'       Only  zonal or meridional section are allowed.'
      PRINT *,'      '
      PRINT *,'       This program can also be used to compute transport by class of '
      PRINT *,'       temperatures, provided the temperatures decrease monotonically '
@@ -158,6 +163,7 @@ PROGRAM cdfsigtrp
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full] : for full step configuration' 
+     PRINT *,'       [-vvl W-file]: use time varying vertical metrics. Need a W-file for e3w.'
      PRINT *,'       [-ncdf] : produce extra netcdf output file which shows the details'
      PRINT *,'               of the sections (normal velocity, density, temperature, '
      PRINT *,'               salinity, transports, isopycnal depths. '
@@ -170,6 +176,7 @@ PROGRAM cdfsigtrp
      PRINT *,'       [-section file] : give the name of section file.'
      PRINT *,'               Default is ', TRIM(cf_section)
      PRINT *,'       [-temp] : use temperature instead of density for binning'
+     PRINT *,'       [-help] : give commented example for the section file.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cf_section)
@@ -204,12 +211,15 @@ PROGRAM cdfsigtrp
      CASE ( '-nbins'  ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; ireq=ireq+1
         ! options
      CASE ( '-full'   ) ; lfull  = .TRUE.
+     CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
+        ;                 CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
      CASE ( '-ncdf'   ) ; lncdf  = .TRUE.
      CASE ( '-print'  ) ; lprint = .TRUE.
      CASE ( '-temp'   ) ; ltemp  = .TRUE. 
+     CASE ( '-help'   ) ; CALL file_example ; STOP
      CASE ( '-refdep' ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) refdep
      CASE ( '-section') ; CALL getarg(ijarg, cf_section ) ; ijarg=ijarg+1 
-     CASE ( '-neutral') ; lntr = .TRUE.
+     CASE ( '-neutral') ; lntr   = .TRUE.
      CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
@@ -228,8 +238,14 @@ PROGRAM cdfsigtrp
   lchk = lchk .OR. chkfile( cf_vfil    )
   IF ( lchk ) STOP ! missing file
 
+  IF ( lg_vvl )  THEN
+    cn_fe3u = cf_ufil
+    cn_fe3v = cf_vfil
+    cn_fe3w = cf_wfil
+  ENDIF
+
   IF ( ltemp)  THEN  ! temperature decrease downward. Change sign and swap min/max
-     refdep = -10. ! flag value
+     refdep = -10.   ! flag value
      dltsig     = dsigma_max  ! use dltsig as dummy variable for swapping
      dsigma_max = -dsigma_min
      dsigma_min = -dltsig
@@ -329,11 +345,9 @@ PROGRAM cdfsigtrp
         ENDIF
 
         DO ji=1, npts
-           ddepu(ji,1:npk) = gdept(:)
-        ENDDO
+           ddepu(ji,1) = gdept(1) ! assume that first depth is set by gdept(1)
+        ENDDO                    ! for vvl case, it might not be exact ...
 
-        ! this will correct bottom cells. JMM : in vvl must be done all through the water column
-        !                                       instead of reading gdept !!!!
         DO jk=2, npk
            DO ji=1,npts
               ddepu(ji,jk) = ddepu(ji,jk-1) +MIN (zt(ji,jk), zs(ji,jk) )
@@ -383,7 +397,7 @@ PROGRAM cdfsigtrp
         ENDIF
 
         DO ji=1, npts
-           ddepu(ji,1:npk) = gdept(:)
+           ddepu(ji,1) = gdept(1)
         ENDDO
 
         DO jk=2, npk
@@ -414,19 +428,15 @@ PROGRAM cdfsigtrp
         zt(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin  , npts, npk, kimin=iimin+1 )
         zz(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin+1, npts, npk, kimin=iimin+1 )
         zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
-
      ENDIF
 
      ! compute density only for wet points
      IF ( lntr ) THEN 
         dsig(:,1:nk)=sigmantr( zt, zs,         npts, nk)*zmask(:,:)
      ELSE
-        IF ( refdep == -10. ) THEN
-           dsig(:,1:nk)= -zt(:,:)  ! change sign 
-        ELSEIF ( refdep == 0. ) THEN
-           dsig(:,1:nk)=sigma0( zt, zs,         npts, nk)*zmask(:,:)
-        ELSE
-           dsig(:,1:nk)=sigmai( zt, zs, refdep, npts, nk)*zmask(:,:)
+        IF     ( refdep == -10.) THEN  ; dsig(:,1:nk)= -zt(:,:)  ! change sign 
+        ELSEIF ( refdep ==   0.) THEN  ; dsig(:,1:nk)=sigma0( zt, zs,         npts, nk)*zmask(:,:)
+        ELSE                           ; dsig(:,1:nk)=sigmai( zt, zs, refdep, npts, nk)*zmask(:,:)
         ENDIF
      ENDIF
 
@@ -559,12 +569,9 @@ PROGRAM cdfsigtrp
         stypvar(2)%cshort_name    = 'sigtrp'
      ENDIF
 
-
      ! create output fileset
-     IF (ltemp) THEN
-        cf_outnc = TRIM(csection(jsec))//'_trptemp.nc'
-     ELSE
-        cf_outnc = TRIM(csection(jsec))//'_trpsig.nc'
+     IF (ltemp) THEN  ; cf_outnc = TRIM(csection(jsec))//'_trptemp.nc'
+     ELSE             ; cf_outnc = TRIM(csection(jsec))//'_trpsig.nc'
      ENDIF
 
      ncout = create      (cf_outnc, 'none',  ikx,      iky, nbins, cdep=cv_dep               )
@@ -874,9 +881,72 @@ CONTAINS
     DO  jbin =1, nbins
        PRINT  cfmt_9003, dsigma_lev(jbin),(dwtrpbin(ji,jbin)/1.d6,ji=1,npts), dtrpbin(ksec,jbin)/1.d6
     END DO
-
-
-
   END SUBROUTINE print_out
+
+  SUBROUTINE file_example
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE file_example  ***
+    !!
+    !! ** Purpose :  give an example for the dens_section.dat 
+    !!
+    !!----------------------------------------------------------------------
+    PRINT *,'  '
+    PRINT *,'  '
+    PRINT *,'  '
+    PRINT *,'   EXAMPLE of dens_section.dat file'
+    PRINT *,'   --------------------------------'
+    PRINT *,'  Each section is described by 2 lines :'
+    PRINT *,'    line#1 : name_of_section [variable_suffix] [ long_name_prefix ]'
+    PRINT *,'    line#2 : imin  imax jmin jmax '
+    PRINT *,'  '
+    PRINT *,'  example (taken for ORCA12 configuration) :'
+    PRINT *,'01_Denmark_strait denma Denmark_Strait_transport_in_sigma_classes'
+    PRINT *,'3043 3162 2496 2496'
+    PRINT *,'02_Faoes_Bank_Channel faroe Faroes_Bank_Channel_transport_in_sigma_classes'
+    PRINT *,'3318 3318 2398 2420'
+    PRINT *,'03_Gibraltar gibra Gibraltar_Strait_transport_in_sigma_classes'
+    PRINT *,'3378 3378 1956 1961'
+    PRINT *,'04_Gibbs_FZ gibbs Gibbs_Fracture_Zone_transport_in_sigma_classes'
+    PRINT *,'3075 3075 2215 2235'
+    PRINT *,'  '
+    PRINT *,'   with this example there will be 4 output files named :'
+    PRINT *,'   01_Denmark_strait_trpsig.nc'
+    PRINT *,'   02_Faoes_Bank_Channel_trpsig.nc'
+    PRINT *,'   03_Gibraltar.nc'
+    PRINT *,'   04_Gibbs_FZ'
+    PRINT *,' and taking 03_Gibraltar.nc as example, the variable will be (from ncdump):'
+    PRINT *,'  '
+    PRINT *,'....  '
+    PRINT *,' float sigtrp_gibra(time_counter, levels, y, x) ;'
+    PRINT *,' 	sigtrp_gibra:units = "Sv" ;'
+    PRINT *,' 	sigtrp_gibra:_FillValue = 99999.f ;'
+    PRINT *,' 	sigtrp_gibra:valid_min = -1000.f ;'
+    PRINT *,' 	sigtrp_gibra:valid_max = 1000.f ;'
+    PRINT *,' 	sigtrp_gibra:long_name = "Gibraltar_Strait_transport_in_sigma_classes_transport in sigma class" ;'
+    PRINT *,' 	sigtrp_gibra:short_name = "sigtrp" ;'
+    PRINT *,' 	sigtrp_gibra:iweight = 73 ;'
+    PRINT *,' 	sigtrp_gibra:online_operation = "N/A" ;'
+    PRINT *,' 	sigtrp_gibra:axis = "ZT" ;'
+    PRINT *,' 	sigtrp_gibra:scale_factor = 1.f ;'
+    PRINT *,' 	sigtrp_gibra:add_offset = 0.f ;'
+    PRINT *,' 	sigtrp_gibra:savelog10 = 0.f ;'
+    PRINT *,'....  '
+    PRINT *, ' '
+    PRINT *,'  If no variable name suffix nor longname prefix is given, variable names are '
+    PRINT *,'  the same for all sections, preventing the concatenation of all the output '
+    PRINT *,'  files into a single file.'
+    PRINT *,'  Note that in the given example, the long name is not particularly well chosen,'
+    PRINT *,'  as ''_transport in sigma class'' is automatically append to the prefix ! :) '
+    PRINT *,'  '
+    PRINT *,'  If you are using the DRAKKAR monitoring tools (DMONTOOLS), consider the use'
+    PRINT *,'  of the create_sections_list.ksh script to build the dens_section.dat file '
+    PRINT *,'  from a configuration data base called drakkar_sections_table.txt.'
+    PRINT *,'  '
+    PRINT *,'  '
+    PRINT *,'  '
+
+  END SUBROUTINE file_example
+
+
 
 END PROGRAM cdfsigtrp
