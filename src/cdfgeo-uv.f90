@@ -56,13 +56,14 @@ PROGRAM cdfgeo_uv
   CHARACTER(LEN=256)                        :: cf_tfil        ! input file name
   CHARACTER(LEN=256)                        :: cf_uout='ugeo.nc' 
   CHARACTER(LEN=256)                        :: cf_vout='vgeo.nc'
-  CHARACTER(LEN=256)                        :: cl_dum         ! dummy character variable
+  CHARACTER(LEN=256)                        :: cldum          ! dummy character variable
   CHARACTER(LEN=256)                        :: cl_global      ! global attribute
 
   TYPE(variable), DIMENSION(1)              :: stypvaru       ! attributes for ugeo
   TYPE(variable), DIMENSION(1)              :: stypvarv       ! attributes for vgeo
 
   LOGICAL                                   :: lchk           ! file existence flag
+  LOGICAL                                   :: lnc4 = .FALSE. ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -70,7 +71,7 @@ PROGRAM cdfgeo_uv
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [ -C option ]'
+     PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [-nc4] [-C option]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'         Compute the geostrophic velocity component from the gradient '
@@ -81,18 +82,20 @@ PROGRAM cdfgeo_uv
      PRINT *,'       at (U,V) points on the C-grid.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'      -f  T-file : netcdf file with SSH (input).' 
+     PRINT *,'      -f T-file : netcdf file with SSH (input).' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'      -o UOUT-file VOUT-file: specify the names of the output files.'
-     PRINT *,'                Default are: ',TRIM(cf_uout),' ',TRIM(cf_vout),'.'
-     PRINT *,'      -C option : Using this option, the output velocity component are'
-     PRINT *,'               at the correct (U,V) points on the C-grid'
-     PRINT *,'               2 options are available :'
-     PRINT *,'              option = 1 : SSH is interpolated on the F point prior derivation'
-     PRINT *,'              option = 2 : Ugeo and Vgeo are interpolated on the C-grid after'
-     PRINT *,'                     derivation'
-     PRINT *,'                 Both option should give very similar results...'
+     PRINT *,'      [-o UOUT-file VOUT-file]: specify the names of the output files.'
+     PRINT *,'              Default are: ',TRIM(cf_uout),' ',TRIM(cf_vout),'.'
+     PRINT *,'      [-nc4]: Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'              This option is effective only if cdftools are compiled with'
+     PRINT *,'              a netcdf library supporting chunking and deflation.'
+     PRINT *,'      [-C option]: Using this option, the output velocity component are at the'
+     PRINT *,'              correct (U,V) points on the C-grid. Two options are available :'
+     PRINT *,'           option = 1 : SSH is interpolated on the F point prior derivation'
+     PRINT *,'           option = 2 : Ugeo and Vgeo are interpolated on the C-grid after'
+     PRINT *,'                       derivation'
+     PRINT *,'               Both option should give very similar results...'
      PRINT *,'  '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -109,34 +112,28 @@ PROGRAM cdfgeo_uv
      STOP
   ENDIF
 
-  cl_global=' (Ugeo, Vgeo ) are on ( V, U ) points of the C-grid'
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-     CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
-     SELECT CASE ( cl_dum )
-     CASE ('-f' ) 
-        CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 
-     CASE ('-o' ) 
-        CALL getarg(ijarg, cf_uout ) ; ijarg = ijarg + 1
-        CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
-     CASE ('-C' ) 
-        CALL getarg(ijarg, cl_dum ) ; ijarg = ijarg + 1
-        READ(cl_dum, * ) ioption
-        IF ( ioption == 1 ) THEN
-           PRINT *,'  *** Use SSH interpolation ***'
-           cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (SSH interp)'
-        ELSEIF ( ioption == 2 ) THEN
-           PRINT *,'  *** Use Ugeo Vgeo interpolation ***'
-           cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (velocity interp)'
-        ELSE
-           PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++'
-           STOP
-        ENDIF
-     CASE DEFAULT
-        PRINT *, '  +++ ERROR: Argument ',TRIM(cl_dum),' not supported. +++'
+     CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
+     SELECT CASE ( cldum )
+     CASE ('-f'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 
+        ! options
+     CASE ('-o'   ) ; CALL getarg(ijarg, cf_uout ) ; ijarg = ijarg + 1
+        ;             CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE ('-C'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1
+        ;           READ(cldum, * ) ioption
+     CASE DEFAULT  ; PRINT *, ' ERROR : ',TRIM(cldum),' unknown option.' ; STOP
      END SELECT
   ENDDO
 
+  SELECT CASE ( ioption )
+  CASE ( 0 )   ; PRINT *,' *** UGEO on V-point, VGEO on U-point ***' ; cl_global=' (Ugeo, Vgeo) are on (V,U) points of the C-grid'
+  CASE ( 1 )   ; PRINT *,' *** Use SSH interpolation ***'            ; cl_global=' (Ugeo, Vgeo) are on (U,V) points of the C-grid (SSH interp)'
+  CASE ( 2 )   ; PRINT *,' *** Use Ugeo Vgeo interpolation ***'      ; cl_global=' (Ugeo, Vgeo) are on (U,V) points of the C-grid (velocity interp)'
+  CASE DEFAULT ;  PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++' ; STOP
+  END SELECT
+  
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
@@ -151,27 +148,6 @@ PROGRAM cdfgeo_uv
   PRINT *, ' NPJGLO= ', npjglo
   PRINT *, ' NPK   = ', npk
   PRINT *, ' NPT   = ', npt
-
-  ipk(1)                        = 1
-  stypvaru(1)%cname             = TRIM(cn_vozocrtx)
-  stypvaru(1)%cunits            = 'm/s'
-  stypvaru(1)%rmissing_value    = 0.
-  stypvaru(1)%valid_min         = 0.
-  stypvaru(1)%valid_max         = 20.
-  stypvaru(1)%clong_name        = 'Zonal_Geostrophic_Velocity'
-  stypvaru(1)%cshort_name       = TRIM(cn_vozocrtx)
-  stypvaru(1)%conline_operation = 'N/A'
-  stypvaru(1)%caxis             = 'TYX'
-
-  stypvarv(1)%cname             = TRIM(cn_vomecrty)
-  stypvarv(1)%cunits            = 'm/s'
-  stypvarv(1)%rmissing_value    = 0.
-  stypvarv(1)%valid_min         = 0.
-  stypvarv(1)%valid_max         = 20.
-  stypvarv(1)%clong_name        = 'Meridional_Geostrophic_Velocity'
-  stypvarv(1)%cshort_name       = TRIM(cn_vomecrty)
-  stypvarv(1)%conline_operation = 'N/A'
-  stypvarv(1)%caxis             = 'TYX'
 
   ! Allocate the memory
   ALLOCATE ( e1u(npiglo,npjglo), e2v(npiglo,npjglo) )
@@ -197,31 +173,7 @@ PROGRAM cdfgeo_uv
   glamv = getvar(cn_fhgr, cn_glamv, 1, npiglo, npjglo)
   gphiv = getvar(cn_fhgr, cn_gphiv, 1, npiglo, npjglo)
 
-  ! create output filesets
-  ncoutu = create      (cf_uout, cf_tfil,  npiglo, npjglo, 0                              )
-  ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu, cdglobal=cl_global )
-  IF ( ioption == 0 ) THEN
-     ! U geo  ! @ V-point !
-     ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
-  ELSE
-     ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
-  ENDIF
-
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncoutu,  tim,       npt, 'T')
-
-  ! V geo  ! @ U-point !
-  ncoutv = create      (cf_vout, cf_tfil,  npiglo, npjglo, 0                              )
-  ierr   = createvar   (ncoutv,  stypvarv, 1,      ipk,    id_varoutv, cdglobal=cl_global )
-  IF ( ioption == 0 ) THEN
-     ! V geo  ! @ U-point !
-     ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
-  ELSE
-     ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
-  ENDIF
-
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncoutv,  tim,       npt, 'T')
+  CALL CreateOutputUV
 
   ! Read ssh
   DO jt=1,npt
@@ -231,7 +183,7 @@ PROGRAM cdfgeo_uv
         DO jj=1, npjglo -1
            DO ji=1, npiglo -1
               zsshn(ji,jj) = 0.25*( zwrk (ji,jj  ) +  zwrk (ji+1,jj  ) + &
-                   &                  zwrk (ji,jj+1) +  zwrk (ji+1,jj+1) )
+                   &                zwrk (ji,jj+1) +  zwrk (ji+1,jj+1) )
            ENDDO
         ENDDO
      ELSE
@@ -239,7 +191,7 @@ PROGRAM cdfgeo_uv
      ENDIF
 
      IF ( jt == 1 ) THEN
-        ! compute the masks
+        ! compute the masks (do not depend on time
         umask=0. ; vmask = 0
         DO jj = 1, npjglo 
            DO ji = 1, npiglo - 1
@@ -260,17 +212,13 @@ PROGRAM cdfgeo_uv
            DO jj=2, npjglo - 1
               DO ji=2, npiglo - 1
                  ffu = ff(ji,jj) + ff(ji,  jj-1)
-                 IF ( ffu /= 0. ) THEN 
-                    e1u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e1u(ji,jj)
-                 ELSE
-                    e1u(ji,jj)= 0.  ! spvalue
+                 IF ( ffu /= 0. ) THEN  ; e1u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e1u(ji,jj)
+                 ELSE                   ; e1u(ji,jj)= 0.  ! spvalue
                  ENDIF
 
                  ffv = ff(ji,jj) + ff(ji-1,jj  )
-                 IF ( ffv /= 0. ) THEN 
-                    e2v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e2v(ji,jj)
-                 ELSE
-                    e2v(ji,jj)= 0.  ! spvalue
+                 IF ( ffv /= 0. ) THEN  ; e2v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e2v(ji,jj)
+                 ELSE                   ; e2v(ji,jj)= 0.  ! spvalue
                  ENDIF
               END DO
            END DO
@@ -278,23 +226,17 @@ PROGRAM cdfgeo_uv
            DO jj=2, npjglo - 1
               DO ji=2, npiglo - 1
                  ffu = ff(ji,jj) + ff(ji,  jj-1)
-                 IF ( ffu /= 0. ) THEN
-                    e2u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e2u(ji,jj)
-                 ELSE
-                    e2u(ji,jj)= 0.  ! spvalue
+                 IF ( ffu /= 0. ) THEN ; e2u(ji,jj)= 2.* grav * umask(ji,jj) / ( ffu ) / e2u(ji,jj)
+                 ELSE                  ; e2u(ji,jj)= 0.  ! spvalue
                  ENDIF
 
                  ffv = ff(ji,jj) + ff(ji-1,jj  )
-                 IF ( ffv /= 0. ) THEN
-                    e1v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e1v(ji,jj)
-                 ELSE
-                    e1v(ji,jj)= 0.  ! spvalue
+                 IF ( ffv /= 0. ) THEN ; e1v(ji,jj)= 2.* grav * vmask(ji,jj) / ( ffv ) / e1v(ji,jj)
+                 ELSE                  ; e1v(ji,jj)= 0.  ! spvalue
                  ENDIF
               END DO
            ENDDO
-
         ENDIF
-
      END IF
 
      ! Calculation of geostrophic velocity :
@@ -337,6 +279,68 @@ PROGRAM cdfgeo_uv
 
   ierr = closeout(ncoutu)
   ierr = closeout(ncoutv)
+
+CONTAINS
+
+  SUBROUTINE CreateOutputUV
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutputUV  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1)                        = 1
+    stypvaru(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvaru(1)%cname             = TRIM(cn_vozocrtx)
+    stypvaru(1)%cunits            = 'm/s'
+    stypvaru(1)%rmissing_value    = 0.
+    stypvaru(1)%valid_min         = 0.
+    stypvaru(1)%valid_max         = 20.
+    stypvaru(1)%clong_name        = 'Zonal_Geostrophic_Velocity'
+    stypvaru(1)%cshort_name       = TRIM(cn_vozocrtx)
+    stypvaru(1)%conline_operation = 'N/A'
+    stypvaru(1)%caxis             = 'TYX'
+
+    stypvarv(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvarv(1)%cname             = TRIM(cn_vomecrty)
+    stypvarv(1)%cunits            = 'm/s'
+    stypvarv(1)%rmissing_value    = 0.
+    stypvarv(1)%valid_min         = 0.
+    stypvarv(1)%valid_max         = 20.
+    stypvarv(1)%clong_name        = 'Meridional_Geostrophic_Velocity'
+    stypvarv(1)%cshort_name       = TRIM(cn_vomecrty)
+    stypvarv(1)%conline_operation = 'N/A'
+    stypvarv(1)%caxis             = 'TYX'
+
+    ! create output filesets
+    ncoutu = create      (cf_uout, cf_tfil,  npiglo, npjglo, 0         , ld_nc4=lnc4                     )
+    ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu, ld_nc4=lnc4, cdglobal=cl_global )
+    IF ( ioption == 0 ) THEN
+       ! U geo  ! @ V-point !
+       ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
+    ELSE
+       ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
+    ENDIF
+
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncoutu,  tim,       npt, 'T')
+
+    ! V geo  ! @ U-point !
+    ncoutv = create      (cf_vout, cf_tfil,  npiglo, npjglo, 0         , ld_nc4=lnc4                     )
+    ierr   = createvar   (ncoutv,  stypvarv, 1,      ipk,    id_varoutv, ld_nc4=lnc4, cdglobal=cl_global )
+    IF ( ioption == 0 ) THEN
+       ! V geo  ! @ U-point !
+       ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
+    ELSE
+       ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
+    ENDIF
+
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncoutv,  tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutputUV
 
 END PROGRAM cdfgeo_uv
 
