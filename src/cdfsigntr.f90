@@ -63,6 +63,8 @@ PROGRAM cdfsigntr
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
      PRINT *,'      '

@@ -69,7 +69,7 @@ PROGRAM cdfdiv
   !!----------------------------------------------------------------------
   CALL ReadCdfNames() 
   narg = iargc()
-  IF ( narg < 8 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfdiv -u U-file U-var -v V-file V-var -l levlist  [-8]...'
      PRINT *,'          ... [-surf] [-overf] [-full] [-o OUT-file ] [-nc4] '
      PRINT *,'          ... [-vvl T-file]'
@@ -86,14 +86,14 @@ PROGRAM cdfdiv
      PRINT *,'                  -l  1 . Note that -l "3-" set a levlist from 3 to the bottom'
      PRINT * 
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-8 ]: save in double precision instead of standard simple precision.'
-     PRINT *,'       [-surf ] : work with single level C-grid (not forcing)'
-     PRINT *,'       [-overf ] : store the ratio curl/f where f is the coriolis parameter'
-     PRINT *,'       [-full ] : in case of full step configuration. Default is partial step.'
+     PRINT *,'       [-8]: save in double precision instead of standard simple precision.'
+     PRINT *,'       [-surf] : work with single level C-grid (not forcing)'
+     PRINT *,'       [-overf]: store the ratio curl/f where f is the coriolis parameter'
+     PRINT *,'       [-full] : in case of full step configuration. Default is partial step.'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out) 
-     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'                 This option is effective only if cdftools are compiled with'
-     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-nc4]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                This option is effective only if cdftools are compiled with'
+     PRINT *,'                a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl T-file] : use time-varying e3t, specify T-file for e3t.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -110,15 +110,12 @@ PROGRAM cdfdiv
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-u')
-        CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
-        CALL getarg(ijarg, cv_u   ) ; ijarg=ijarg+1
-     CASE ('-v')
-        CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
-        CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
-     CASE ('-l')
-        CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
-        CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
+     CASE ('-u'    ) ; CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_u   ) ; ijarg=ijarg+1
+     CASE ('-v'    ) ; CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
+     CASE ('-l'    ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 
+        ;              CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
      CASE ('-8'    ) ; ldblpr = .TRUE.
      CASE ('-surf' ) ; lsurf  = .TRUE.
      CASE ('-overf') ; loverf = .TRUE.
@@ -126,9 +123,8 @@ PROGRAM cdfdiv
      CASE ('-nc4'  ) ; lnc4   = .TRUE.
      CASE ('-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ('-vvl'  ) ; lg_vvl = .TRUE.
-        CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1 
-     CASE DEFAULT
-        PRINT *,  TRIM(cldum), ' : unknown option '
+        ;              CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1 
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -155,7 +151,6 @@ PROGRAM cdfdiv
   PRINT *, 'NPT    = ', npt
   PRINT *, 'NLEV   = ', nlev
 
-
   !test if lev exists
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
      PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
@@ -166,9 +161,7 @@ PROGRAM cdfdiv
   ! case of 1 level on C-grid
   IF ( lsurf ) THEN
      nlev=1
-     IF (ALLOCATED (nilev) ) THEN
-        DEALLOCATE(nilev) 
-     ENDIF
+     IF (ALLOCATED (nilev) ) DEALLOCATE(nilev) 
      ALLOCATE(nilev(nlev) )
      npk = 1 ; nilev(1) =1 
   ENDIF
@@ -216,9 +209,9 @@ PROGRAM cdfdiv
 
   IF ( loverf ) THEN
      ALLOCATE (dl_ff(npiglo,npjglo) )
-     dl_pi = acos(-1.d0)
+     dl_pi = ACOS(-1.d0)
      dl_omega = 2* dl_pi/86400.d0
-     dl_ff = 2* dl_omega* sin ( zvn*dl_pi/180.d0 ) 
+     dl_ff = 2* dl_omega* SIN ( zvn*dl_pi/180.d0 ) 
   ENDIF
 
   ! fills in gdep
@@ -236,7 +229,6 @@ PROGRAM cdfdiv
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
 
   CALL CreateOutput
-
 
   DO jt=1,npt
      IF (MOD(jt,100)==0 ) PRINT *, jt,'/',npt
@@ -398,20 +390,24 @@ CONTAINS
     !!----------------------------------------------------------------------
     ! define new variables for output
     stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-    stypvar(1)%cname             = 'div'
-    stypvar(1)%cunits            = 's-1'
-    IF (loverf)  stypvar(1)%cname             = 'divoverf'
-    IF (loverf)  stypvar(1)%cunits            = '-'
+    IF (loverf)  THEN ; stypvar(1)%cname       = 'divoverf'
+      ;                 stypvar(1)%cunits      = '-'
+      ;                 stypvar(1)%clong_name  = 'Divergence normalized by f'
+      ;                 stypvar(1)%cshort_name = 'divoverf'
+    !-----------------------------------------------------------------------
+    ELSE              ; stypvar(1)%cname       = 'div'
+      ;                 stypvar(1)%cunits      = 's-1'
+      ;                 stypvar(1)%clong_name  = 'Divergence '
+      ;                 stypvar(1)%cshort_name = 'div'
+    ENDIF
 
-    stypvar(1)%cprecision        ='r4'
-    IF ( ldblpr )  stypvar(1)%cprecision     ='r8'
+    IF ( ldblpr ) THEN ; stypvar(1)%cprecision = 'r8'
+    ELSE               ; stypvar(1)%cprecision = 'r4'
+    ENDIF
+
     stypvar(1)%rmissing_value    = 0.
     stypvar(1)%valid_min         = -1000.
     stypvar(1)%valid_max         =  1000.
-    stypvar(1)%clong_name        = 'Divergence '
-    stypvar(1)%cshort_name       = 'div'
-    IF (loverf ) stypvar(1)%clong_name        = 'Divergence normalized by f'
-    IF (loverf ) stypvar(1)%cshort_name       = 'divoverf'
     stypvar(1)%conline_operation = 'N/A'
     stypvar(1)%caxis             = 'TYX'
 

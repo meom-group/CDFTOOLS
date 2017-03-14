@@ -97,7 +97,7 @@ PROGRAM cdfweight
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-c COORD-file] : coordinate file [',TRIM(cf_coord),']'
      PRINT *,'       [-t point_type] : point type on C-grid (either T U V or F ) [',TRIM(ctype),']'
-     PRINT *,'       [-2d ]          : tell cdfweight that only 2D weights are to be computed.'
+     PRINT *,'       [-2d ]          : tell cdfweight that only 2D weights will be computed.'
      PRINT *,'       [-v ]           : Verbose mode for extra information (debug mode).'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'

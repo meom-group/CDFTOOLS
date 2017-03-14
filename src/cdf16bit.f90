@@ -64,11 +64,14 @@ PROGRAM cdf16bit
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdf16bit -f 32BIT-file [ -check ] [ -verbose] [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdf16bit -f 32BIT-file [-check] [-verbose] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Convert input 32 bit precision file into 16 bit' 
-     PRINT *,'       precision file using add_offset and scale_factor'
+     PRINT *,'       Convert input 32 bit precision file into 16 bit precision file using' 
+     PRINT *,'       add_offset and scale_factor. '
+     PRINT *,'       Note that predifined values for these two parameters are defined '
+     PRINT *,'       according to the variable name. If variable name is not supported,'
+     PRINT *,'       no conversion is performed.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f 32BIT-file : input 32 bit file to be converted' 

@@ -27,7 +27,7 @@ PROGRAM cdf2levitusgrid2d
 
   INTEGER(KIND=4)                              :: ji, jj, jk, jvar,jt! dummy loop index
   INTEGER(KIND=4)                              :: jilev,jjlev        ! dummy loop index
-  INTEGER(KIND=4)                              :: jvar, numvar0      ! dummy loop index
+  INTEGER(KIND=4)                              :: numvar0            ! dummy loop index
   INTEGER(KIND=4)                              :: ii, ij             ! array index (not loop)
   INTEGER(KIND=4)                              :: iilev, ijlev       ! array index (not loop)
   INTEGER(KIND=4)                              :: npiglo, npjglo     ! size of the domain
@@ -114,10 +114,10 @@ PROGRAM cdf2levitusgrid2d
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum)  ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f' ) ; CALL getarg(ijarg, cf_in)  ; ijarg = ijarg + 1 ; ireq=ireq+1
+     CASE ( '-f' ) ; CALL getarg(ijarg, cf_in ) ; ijarg = ijarg + 1 ; ireq=ireq+1
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out) ; ijarg = ijarg + 1 ; ireq=ireq+1
      CASE ( '-v' ) ; CALL getarg(ijarg, cv_nam) ; ijarg = ijarg + 1 ; ireq=ireq+1
-     CASE DEFAULT  ; PRINT *,', ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,', ERROR : ', TRIM(cldum), ' :  unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -274,6 +274,5 @@ CONTAINS
     ierr = putvar1d( ncout, rlatlev(1,:), npjlev, 'Y')
 
   END SUBROUTINE CreateOutput
-
 
 END PROGRAM cdf2levitusgrid2d

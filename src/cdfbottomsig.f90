@@ -28,6 +28,7 @@ PROGRAM cdfbottomsig
   INTEGER(KIND=4)                            :: jk, jt         ! dummy loop index
   INTEGER(KIND=4)                            :: ierr           ! working integer
   INTEGER(KIND=4)                            :: narg, iargc    ! 
+  INTEGER(KIND=4)                            :: ijarg          ! argument counter
   INTEGER(KIND=4)                            :: npiglo, npjglo ! size of the domain
   INTEGER(KIND=4)                            :: npk, npt       ! size of the domain
   INTEGER(KIND=4)                            :: ncout          ! ncid of output file
@@ -53,13 +54,14 @@ PROGRAM cdfbottomsig
 
   LOGICAL                                    :: lsigi  =.FALSE.! flag for sigma-i computation
   LOGICAL                                    :: lsigntr=.FALSE.! flag for sigma-Neutral computation
+  LOGICAL                                    :: lnc4   =.FALSE.! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbottomsig  T-file [zref]' 
+     PRINT *,' usage : cdfbottomsig  -t T-file [-r REF-depth ] [-ntr] [-o OUT-file] [-nc4]' 
      PRINT *,'      '
      PRINT *,'     PURPOSE :' 
      PRINT *,'       Create a 2D file with bottom density. In case a depth reference' 
@@ -68,19 +70,25 @@ PROGRAM cdfbottomsig
      PRINT *,'       salinity point in the water column.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file : input file with temperature and salinity '
+     PRINT *,'       -t T-file : input file with temperature and salinity '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [zref] : depth reference for potential density'
-     PRINT *,'              keyword ''ntr'' can also be specified, which indicates that we'
-     PRINT *,'              will use neutral density'
-     PRINT *,'             If not given assume sigma-0'
+     PRINT *,'       [-r REF-depth] : depth reference for potential density.'
+     PRINT *,'             Without -r nor -ntr options sigma-0 is assumed.'
+     PRINT *,'       [-ntr ]: Will use neutral density.'
+     PRINT *,'             Without -r nor -ntr options sigma-0 is assumed.'
+     PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4]:  Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'             This option is effective only if cdftools are compiled with'
+     PRINT *,'             a netcdf library supporting chunking and deflation.'
+     PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.'
      PRINT *,'         variables : sobotsig0 or sobotsigi ( kg/m3 - 1000 )' 
      PRINT *,'                     or sobotsigntr (kg/m3)'
      STOP
@@ -88,40 +96,31 @@ PROGRAM cdfbottomsig
 
   cv_sig = 'sobotsig0'
   cref=''
-  CALL getarg (1, cf_tfil)
-  IF ( chkfile(cf_tfil) ) STOP ! missing file
-
-  IF ( narg == 2 ) THEN
-     CALL getarg (2, cldum) 
+  ijarg=1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('NTR', 'ntr', 'Ntr' ) ! Neutral density will be used
-        lsigntr = .TRUE.
-        cv_sig = 'sobotsigntr'
-        WRITE(cref,'("_Neutral")')
-     CASE DEFAULT                ! Argument is a depth for sig-i
-        lsigi = .TRUE.
-        READ(cldum,*) zref
-        cv_sig = 'sobotsigi'
-        WRITE(cref,'("_refered_to_",i4.4,"_m")') NINT(zref)
+     CASE ( '-t'  ) ; CALL getarg(ijarg, cf_tfil) ;  ijarg=ijarg+1
+        ! options
+     CASE ( '-r'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) zref
+        ;             lsigi  = .TRUE. 
+        ;             cv_sig = 'sobotsigi'
+        ;             WRITE(cref,'("_refered_to_",i4.4,"_m")') NINT(zref)
+     CASE ( '-ntr') ; lsigntr = .TRUE.
+        ;             cv_sig  = 'sobotsigntr'
+        ;             WRITE(cref,'("_Neutral")')
+     CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out ) ;  ijarg=ijarg+1
+     CASE ( '-nc4') ; lnc4     = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
-  ENDIF
+  END DO
+
+  IF ( chkfile(cf_tfil) ) STOP ! missing file
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
-
-  ipk(:)= 1  ! all variables (input and output are 3D)
-
-  stypvar(1)%cname             = cv_sig
-  stypvar(1)%cunits            = 'kg/m3'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = 0.001
-  stypvar(1)%valid_max         = 40.
-  stypvar(1)%clong_name        = 'Bottom_Potential_density'//TRIM(cref)
-  stypvar(1)%cshort_name       = cv_sig
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
 
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
@@ -132,11 +131,7 @@ PROGRAM cdfbottomsig
   ALLOCATE (ztemp0(npiglo,npjglo), zsal0(npiglo,npjglo) )
   ALLOCATE ( tim (npt) )
 
-  ! create output fileset
-
-  ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar, 1     , ipk   , id_varout )
-  ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+  CALL CreateOutput
 
   zsal  = 0.
   ztemp = 0.
@@ -163,12 +158,10 @@ PROGRAM cdfbottomsig
         zsig(:,:) = sigma0 ( ztemp, zsal,       npiglo, npjglo ) * zmask(:,:)
      ENDIF
 
-
-
-     zsigmn=minval(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
-     zsigmx=maxval(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
-     ismin= minloc(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
-     ismax= maxloc(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
+     zsigmn=MINVAL(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
+     zsigmx=MAXVAL(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
+     ismin= MINLOC(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
+     ismax= MAXLOC(zsig(2:npiglo-1,2:npjglo-1), zmask(2:npiglo-1,2:npjglo-1)==1)
 
      PRINT *,'Bottom density : min = ', zsigmn,' at ', ismin(1), ismin(2)
      PRINT *,'               : max = ', zsigmx,' at ', ismax(1), ismax(2)
@@ -176,8 +169,40 @@ PROGRAM cdfbottomsig
      ierr = putvar(ncout, id_varout(1), zsig, 1, npiglo, npjglo, ktime=jt)
   ENDDO
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim      , npt, 'T')
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(:)= 1  ! all variables (input and output are 3D)
+
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = cv_sig
+    stypvar(1)%cunits            = 'kg/m3'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = 0.001
+    stypvar(1)%valid_max         = 40.
+    stypvar(1)%clong_name        = 'Bottom_Potential_density'//TRIM(cref)
+    stypvar(1)%cshort_name       = cv_sig
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk      , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar, 1     , ipk   , id_varout, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   tim      , npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfbottomsig

@@ -70,6 +70,8 @@ PROGRAM cdfsiginsitu
      PRINT *,'       [-nc4]          : enable chunking and compression'
      PRINT *,'       [-o OUT-file]   : specify output filename instead of ',TRIM(cf_out)
      PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
      PRINT *,'      '
@@ -79,7 +81,7 @@ PROGRAM cdfsiginsitu
      PRINT *,'         variables : vosigmainsitu (kg/m3 -1000 )'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      cdfsig0, cdfsigi '
+     PRINT *,'      cdfsig0, cdfsigi, cdfsigntr '
      PRINT *,'      '
      STOP
   ENDIF

@@ -213,5 +213,4 @@ CONTAINS
 
   END SUBROUTINE CreateOutput
 
-
 END PROGRAM cdf2matlab
