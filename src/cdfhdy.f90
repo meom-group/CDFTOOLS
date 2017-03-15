@@ -58,7 +58,7 @@ PROGRAM cdfhdy
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg <= 3 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfhdy -f T-file -limit level1 level2 [-o OUT-file] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -94,7 +94,7 @@ PROGRAM cdfhdy
      SELECT CASE ( cldum )
      CASE ( '-f'     ) ;  CALL getarg( ijarg, cf_tfil) ; ijarg=ijarg+1
      CASE ( '-limit' ) ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev1
-                       ;  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev2
+        ;                 CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1  ;  READ(cldum,*) nlev2
         ! options
      CASE ( '-o'     ) ;  CALL getarg( ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ;  lnc4 = .TRUE.
@@ -135,9 +135,6 @@ PROGRAM cdfhdy
      rdepth(:,:) = 0.
 
      DO jk = nlev1, nlev2
-
-        !rdep(:,:)   = getvar(cn_fzgr, 'e3t_ps', jk,npiglo,npjglo,ldiom=.true.)
-        ! we degrade the computation to smooth the results
         rdep(:,:) = e3t_1d(jk)
 
         IF ( jk == 1 ) THEN
