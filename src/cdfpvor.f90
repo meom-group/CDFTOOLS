@@ -90,8 +90,8 @@ PROGRAM cdfpvor
 
   narg= iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfpvor -t T-file  -u U-file -v V-file [-full] [-lspv ] ...'
-     PRINT *,'           ... [-o output OUT-file] [-nc4] [-vvl W-file]'
+     PRINT *,' usage : cdfpvor -t T-file  -u U-file -v V-file [-full] [-lspv] ...'
+     PRINT *,'           ... [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Ertel potential vorticity and save the relative  ' 
@@ -126,8 +126,8 @@ PROGRAM cdfpvor
      PRINT *,'           '
      PRINT *,'       With option -lspv :'
      PRINT *,'       netcdf file : lspv.nc'
-     PRINT *,'         variables :  volspv  (1.e-7 kg.m-4.s-1 ) large scale potential vorticity'
-     PRINT *,'                  LSPV is  located at W points.'
+     PRINT *,'         variables :  volspv  (1.e-7 kg.m-4.s-1 ) large scale potential '
+     PRINT *,'              vorticity. LSPV is located at W points.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfcurl ( compute only the curl on 1 level)'
@@ -148,7 +148,7 @@ PROGRAM cdfpvor
      CASE ( '-nc4'  ) ; lnc4   = .TRUE.
      CASE ( '-o'    ) ; CALL getarg( ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE ( '-vvl'  ) ; lg_vvl = .TRUE.
-                      ; CALL getarg( ijarg, cf_e3w ) ; ijarg = ijarg + 1
+        ;               CALL getarg( ijarg, cf_e3w ) ; ijarg = ijarg + 1
      CASE DEFAULT     ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
