@@ -51,12 +51,12 @@ PROGRAM cdfrmsssh
   cv_in = cn_sossheig
 
   narg= iargc()
-  IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfrmsssh T-file T2-file [-nc4] [-o outputfile]'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfrmsssh -t T-file -t2 T2-file [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the standard deviation of the SSH from its'
-     PRINT *,'       mean value and its mean square value. '
+     PRINT *,'       Compute the standard deviation of the SSH from its mean value'
+     PRINT *,'       its mean square value. '
      PRINT *,'      '
      PRINT *,'       Note that what is computed in this program is stictly the'
      PRINT *,'       standard deviation. It is very often called RMS, which is'
@@ -65,19 +65,19 @@ PROGRAM cdfrmsssh
      PRINT *,'       unchanged: cdfrmsssh'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file  : netcdf file with mean values for SSH' 
-     PRINT *,'       T2-file : netcdf file with mean squared values for SSH' 
+     PRINT *,'       -t T-file   : netcdf file with mean values for SSH' 
+     PRINT *,'       -t2 T2-file : netcdf file with mean squared values for SSH' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : specify the name of the output file instead'
+     PRINT *,'            of default name ', TRIM(cf_out)
      PRINT *,'       [-nc4] : use netcdf4 with chunking and deflation '
-     PRINT *,'       [-o output file ] : specify the name of the output file instead'
-     PRINT *,'                          of default name ', TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
      PRINT *,'         variables : ', TRIM(cv_in)//'_rms, same unit than the input.'
      PRINT *,'      '
      PRINT *,'     SEA ALSO :'
@@ -85,20 +85,16 @@ PROGRAM cdfrmsssh
      STOP
   ENDIF
 
-  ijarg = 1  ; ixtra = 0
+  ijarg = 1  
   DO WHILE ( ijarg <= narg) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_in  ) ; ijarg=ijarg+1
+     CASE ( '-t2'  ) ; CALL getarg(ijarg, cf_in2 ) ; ijarg=ijarg+1
+        ! options
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE DEFAULT
-        ixtra = ixtra + 1
-        SELECT CASE ( ixtra ) 
-        CASE ( 1 ) ; cf_in  = cldum
-        CASE ( 2 ) ; cf_in2 = cldum
-        CASE DEFAULT
-           PRINT *, ' Too many variables ' ; STOP
-        END SELECT
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
 
@@ -112,18 +108,6 @@ PROGRAM cdfrmsssh
   npk    = getdim (cf_in, cn_z)
   npt    = getdim (cf_in, cn_t)
 
-  ipko(1) = 1
-  stypvaro(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
-  stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
-  stypvaro(1)%cunits            = 'm'
-  stypvaro(1)%rmissing_value    = 0.
-  stypvaro(1)%valid_min         = 0.
-  stypvaro(1)%valid_max         = 100.
-  stypvaro(1)%clong_name        = 'RMS_Sea_Surface_height'
-  stypvaro(1)%cshort_name       = TRIM(cv_in)//'_rms'
-  stypvaro(1)%conline_operation = 'N/A'
-  stypvaro(1)%caxis             = 'TYX'
-
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
@@ -132,9 +116,7 @@ PROGRAM cdfrmsssh
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
   ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
 
-  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk                     )
+  CALL CreateOutput
 
   cv_in2 = TRIM(cv_in)//'_sqd'
   DO jt = 1, npt
@@ -146,9 +128,39 @@ PROGRAM cdfrmsssh
      ierr = putvar(ncout, id_varout(1), REAL(dsdev), 1, npiglo, npjglo, ktime=jt)
   END DO
 
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipko(1) = 1
+    stypvaro(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
+    stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
+    stypvaro(1)%cunits            = 'm'
+    stypvaro(1)%rmissing_value    = 0.
+    stypvaro(1)%valid_min         = 0.
+    stypvaro(1)%valid_max         = 100.
+    stypvaro(1)%clong_name        = 'RMS_Sea_Surface_height'
+    stypvaro(1)%cshort_name       = TRIM(cv_in)//'_rms'
+    stypvaro(1)%conline_operation = 'N/A'
+    stypvaro(1)%caxis             = 'TYX'
+
+    ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk                     )
+
+    tim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfrmsssh
