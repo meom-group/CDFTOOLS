@@ -29,7 +29,7 @@ PROGRAM cdfw
   INTEGER(KIND=4)                              :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                              :: npk, npt           ! size of the domain
   INTEGER(KIND=4)                              :: narg, iargc        ! browse line
-  INTEGER(KIND=4)                              :: ijarg, ireq        ! browse line
+  INTEGER(KIND=4)                              :: ijarg              ! browse line
   INTEGER(KIND=4)                              :: ncout              ! ncid of output file
   INTEGER(KIND=4)                              :: ierr               ! error status
   INTEGER(KIND=4)                              :: itop = 1           ! top array index
@@ -66,27 +66,27 @@ PROGRAM cdfw
 
   narg = iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfw U-file V-file [U-var V-var] [-full] [-o OUT-file] [-nc4] ...'
-     PRINT *,'           ...[-vvl T-file ]'
+     PRINT *,' usage : cdfw -u U-file -v V-file [-var U-var V-var] [-full] [-o OUT-file] ...'
+     PRINT *,'              ... [-nc4] [-vvl T-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the vertical velocity from the vertical integration of'
      PRINT *,'       of the horizontal divergence of the velocity.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       U-file : netcdf file with the zonal velocity component.' 
-     PRINT *,'       V-file : netcdf file with the meridional velocity component.' 
+     PRINT *,'       -u U-file : netcdf file with the zonal velocity component.' 
+     PRINT *,'       -v V-file : netcdf file with the meridional velocity component.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ U-var V-var ] : names of the zonal and meridional velocity '
-     PRINT *,'                         components. Default are ', TRIM(cn_vozocrtx),' and ', TRIM(cn_vomecrty)
+     PRINT *,'       [-var U-var V-var] : names of the zonal and meridional velocity '
+     PRINT *,'              components. Default are ', TRIM(cn_vozocrtx),' and ', TRIM(cn_vomecrty)
      PRINT *,'       [ -full ] : in case of full step configuration. Default is partial step.'
-     PRINT *,'       [ -o OUT-file ] : specify the output file name instead of ', TRIM(cf_out)
-     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'                 This option is effective only if cdftools are compiled with'
-     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [ -o OUT-file] : specify the output file name instead of ', TRIM(cf_out)
+     PRINT *,'       [ -nc4 ]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'              This option is effective only if cdftools are compiled with'
+     PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'       [ -vvl T-file ] : Use time varying vertical metrics (e3t), provided '
-     PRINT *,'                in T-file'
+     PRINT *,'              in T-file.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr) 
@@ -97,26 +97,21 @@ PROGRAM cdfw
      STOP
   ENDIF
 
-  ijarg = 1 ; ireq=0
+  ijarg = 1 
   DO WHILE (ijarg <= narg )
-     CALL getarg(ijarg, cldum) ;  ijarg = ijarg + 1
+     CALL getarg(ijarg, cldum) ;  ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-u'    ) ; CALL getarg(ijarg, cf_ufil     ) ;  ijarg=ijarg+1
+     CASE ( '-v'    ) ; CALL getarg(ijarg, cf_vfil     ) ;  ijarg=ijarg+1
+        ! options
+     CASE ( '-var'  ) ; CALL getarg(ijarg, cn_vozocrtx ) ;  ijarg=ijarg+1
+        ;               CALL getarg(ijarg, cn_vomecrty ) ;  ijarg=ijarg+1
      CASE ( '-full' ) ; lfull  = .TRUE.
      CASE ( '-vvl'  ) ; CALL getarg(ijarg, cf_tfil) ;  ijarg = ijarg + 1
-                        lg_vvl = .TRUE. 
+        ;               lg_vvl = .TRUE. 
      CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ;  ijarg = ijarg + 1
      CASE ( '-nc4'  ) ; lnc4   = .TRUE.
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE ( ireq )
-        CASE ( 1 )  ; cf_ufil     = cldum
-        CASE ( 2 )  ; cf_vfil     = cldum
-        CASE ( 3 )  ; cn_vozocrtx = cldum
-        CASE ( 4 )  ; cn_vomecrty = cldum
-        CASE DEFAULT 
-           PRINT *, ' ERROR: Too many ''free'' arguments !'
-           STOP 1
-        END SELECT
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 
@@ -212,6 +207,7 @@ PROGRAM cdfw
   ierr = closeout(ncout)
 
 CONTAINS
+
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***
