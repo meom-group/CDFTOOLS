@@ -75,11 +75,11 @@ PROGRAM cdfgeo_uv
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'         Compute the geostrophic velocity component from the gradient '
-     PRINT *,'       of the SSH read in the input file. '
+     PRINT *,'         of the SSH read in the input file. '
      PRINT *,'         Without any -C option, the zonal component is located on a '
-     PRINT *,'       C-grid V point, the meridional one is located on C-Grid U point.'
+     PRINT *,'         C-grid V point, the meridional one is located on C-Grid U point.'
      PRINT *,'         See the use of the -C option in order to have (Ugeo, Vgeo) '
-     PRINT *,'       at (U,V) points on the C-grid.'
+     PRINT *,'         at (U,V) points on the C-grid.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'      -f T-file : netcdf file with SSH (input).' 
@@ -122,8 +122,8 @@ PROGRAM cdfgeo_uv
         ;             CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
      CASE ( '-nc4') ; lnc4 = .TRUE.
      CASE ('-C'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1
-        ;           READ(cldum, * ) ioption
-     CASE DEFAULT  ; PRINT *, ' ERROR : ',TRIM(cldum),' unknown option.' ; STOP
+        ;             READ(cldum, * ) ioption
+     CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' :  unknown option.' ; STOP
      END SELECT
   ENDDO
 

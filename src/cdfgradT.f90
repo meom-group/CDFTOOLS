@@ -69,7 +69,7 @@ PROGRAM cdfgradT
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : File with ',TRIM(cn_votemper),' and ',TRIM(cn_vosaline),' variables' 
-     PRINT *,'           If ',TRIM(cn_vosaline),' not in T-file give a second name for S-file.'
+     PRINT *,'           If ',TRIM(cn_vosaline),' not in T-file consider the use of -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-s S-file  ] : File with ',TRIM(cn_vosaline),' variable if not in T file'
@@ -99,15 +99,15 @@ PROGRAM cdfgradT
 
   ijarg=1
   DO WHILE ( ijarg <= narg )
-     CALL getarg (1, cldum) ; ijarg=ijarg+1
+     CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t'   ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg=ijarg+1
         ! options
-     CASE ( '-s'   ) ; CALL getarg (1, cf_sfil ) ; ijarg=ijarg+1
-     CASE ( '-o'   ) ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
-        ; CALL getarg (1, cf_e3w  ) ; ijarg=ijarg+1
+        ;              CALL getarg (ijarg, cf_e3w  ) ; ijarg=ijarg+1
      CASE DEFAULT    ; PRINT *,'ERROR : ', TRIM(cldum),' : Option not known.'
      END SELECT
   ENDDO
