@@ -37,7 +37,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
-       cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
+       cdfpsi_level cdfhdy cdfdynh_anom cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp 
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
@@ -231,8 +231,8 @@ cdfnrjcomp: cdfio.o  cdfnrjcomp.f90
 cdfhdy: cdfio.o  eos.o  cdfhdy.f90
 	$(F90)  cdfhdy.f90 -o $(BINDIR)/cdfhdy cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
-cdfhdy3d: cdfio.o  eos.o  cdfhdy3d.f90
-	$(F90)  cdfhdy3d.f90 -o $(BINDIR)/cdfhdy3d cdfio.o eos.o  modcdfnames.o $(FFLAGS)
+cdfdynh_anom: cdfio.o  eos.o  cdfdynh_anom.f90
+	$(F90)  cdfdynh_anom.f90 -o $(BINDIR)/cdfdynh_anom cdfio.o eos.o  modcdfnames.o $(FFLAGS)
 
 cdfmaskdmp: cdfio.o  eos.o  cdfmaskdmp.f90
 	$(F90)  cdfmaskdmp.f90 -o $(BINDIR)/cdfmaskdmp cdfio.o eos.o modcdfnames.o  $(FFLAGS)
