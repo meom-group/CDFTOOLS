@@ -60,10 +60,9 @@ PROGRAM cdfmax
      PRINT *,'      ... [-fact multfact] [-xy ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Find minimum and maximum of a file as well as their '
-     PRINT *,'        respective location. Options allow to restrict the '
-     PRINT *,'        finding to a sub area in time and space. This program'
-     PRINT *,'        also deal with vertical slabs in a domain.'
+     PRINT *,'        Find minimum and maximum of a file as well as their respective '
+     PRINT *,'        location. Options allow to restrict the finding to a sub area in time'
+     PRINT *,'        time and space. This program also deal with vertical slabs in a domain.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file : input file '
@@ -71,10 +70,9 @@ PROGRAM cdfmax
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-lev kmin kmax ] : restrict to level between kmin and kmax. '
-     PRINT *,'       [-zoom imin imax jmin jmax] : restrict to sub area specified'
-     PRINT *,'                       by the given limits. If the zoomed area is '
-     PRINT *,'                       degenerated to a single line, then the vertical'
-     PRINT *,'                       slab is considered as domain.'
+     PRINT *,'       [-zoom imin imax jmin jmax] : restrict to sub area specified by the '
+     PRINT *,'                  given limits. If the zoomed area is degenerated to a single'
+     PRINT *,'                  line, then the vertical slab is considered as the domain.'
      PRINT *,'       [-time tmin tmax ] : restrict to the indicated time windows.'
      PRINT *,'       [-fact multfact] : use a multiplicative factor for the output'
      PRINT *,'       [-xy ] : force horizontal slab even in the case of a degenerated'
@@ -95,16 +93,16 @@ PROGRAM cdfmax
      CASE ( '-f'    ) ; CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
      CASE ( '-v'    ) ; CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
      CASE ( '-lev'  ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
      CASE ( '-fact' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rfact
      CASE ( '-zoom' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
      CASE ( '-time' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
+        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
      CASE ( '-xy'   ) ; lforcexy = .TRUE.
-     CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 
@@ -221,7 +219,7 @@ PROGRAM cdfmax
                  ii2=ilmin(1) ; ij2=ilmin(2)
                  lflag = lchkflag()
                  PRINT 9003, jt, jk, h(jk),ii1+iimin -1, rlon(ii1,ij1),ij1+ijmin -1,rlat(ii1,ij1),v2d(ii1,ij1)*rfact, &
-                      &             ii2+iimin -1, rlon(ii2,ij2),ij2+ijmin -1,rlat(ii2,ij2),v2d(ii2,ij2)*rfact
+                      &                    ii2+iimin -1, rlon(ii2,ij2),ij2+ijmin -1,rlat(ii2,ij2),v2d(ii2,ij2)*rfact
               END DO
            END DO
            EXIT
@@ -244,7 +242,7 @@ PROGRAM cdfmax
               ii2=ilmin(1) ; ij2=ilmin(2)
               lflag = lchkflag()
               PRINT 9002, jt, iimin, iimin, rlon(1,ii1),ii1+ijmin -1,rlat(1,ii1),ij1+ikmin-1, h(ij1+ikmin-1), v2d(ii1,ij1)*rfact, &
-                   &             iimin, rlon(1,ii2),ii2+ijmin -1,rlat(1,ii2),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
+                   &                 iimin, rlon(1,ii2),ii2+ijmin -1,rlat(1,ii2),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
            END DO
            EXIT
         CASE DEFAULT
@@ -265,7 +263,7 @@ PROGRAM cdfmax
               ii2=ilmin(1) ; ij2=ilmin(2)
               lflag = lchkflag()
               PRINT 9002, jt, ijmin, ii1, rlon(ii1,1),ijmin,rlat(ii1,1),ij1+ikmin-1, h(ij1+ikmin-1), v2d(ii1,ij1)*rfact, &
-                   &             ii2, rlon(ii2,1),ijmin,rlat(ii2,1),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
+                   &                 ii2, rlon(ii2,1),ijmin,rlat(ii2,1),ij2+ikmin-1, h(ij2+ikmin-1), v2d(ii2,ij2)*rfact
            END DO
            EXIT
         CASE DEFAULT

@@ -68,7 +68,6 @@ PROGRAM cdfzonalout
      PRINT *,'     SEE ALSO :'
      PRINT *,'         cdfzonalmean, cdfzonalmeanvT, cdfzonalsum'
      PRINT *,'      '
-
      STOP
   ENDIF
 
@@ -77,7 +76,7 @@ PROGRAM cdfzonalout
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum)
      CASE ( 'f' ) ; CALL getarg (ijarg, cf_zonal) ; ijarg=ijarg+1
-     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
 
@@ -119,7 +118,7 @@ PROGRAM cdfzonalout
   ALLOCATE ( zv(1,npjglo,nvar), tim(npt)         )
   ALLOCATE ( zdumlat(1,npjglo) )
 
-  zdumlat(:,:) = getvar  (cf_zonal, 'nav_lat', 1, 1, npjglo)
+  zdumlat(:,:) = getvar  (cf_zonal, cn_vlat2d, 1, 1, npjglo)
   tim(:)       = getvar1d(cf_zonal, cn_vtimec, npt         )
 
   DO jt = 1, npt  ! time loop

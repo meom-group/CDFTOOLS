@@ -23,6 +23,7 @@ PROGRAM cdfinfo
 
   INTEGER(KIND=4)                               :: jvar, jarg               ! dummy loop index
   INTEGER(KIND=4)                               :: ierr                     ! working integer
+  INTEGER(KIND=4)                               :: idep, idep_max           ! possible depth index, maximum
   INTEGER(KIND=4)                               :: narg, iargc, ijarg       ! 
   INTEGER(KIND=4)                               :: npiglo, npjglo, npk ,npt ! size of the domain
   INTEGER(KIND=4)                               :: nvars                    ! Number of variables in a file
@@ -33,19 +34,20 @@ PROGRAM cdfinfo
 
   CHARACTER(LEN=256)                            :: cf_in                    ! file name
   CHARACTER(LEN=256)                            :: cv_dep                   ! depth name
-  CHARACTER(LEN=256)                            :: cl_dum                   ! dummy input variable
+  CHARACTER(LEN=256)                            :: cldum                    ! dummy input variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep                  ! possible choices for dep dimension
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar                  ! variable attributes
 
-  LOGICAL                                       :: ldep                     ! flag for depth control
+  LOGICAL                                       :: ldep  =.FALSE.           ! flag for depth control
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfinfo ''model cdf file'' [-dep dep] '
+     PRINT *,' usage : cdfinfo -f MODEL-file [-dep dep] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Gives very basic information about the file given in arguments.'
@@ -63,13 +65,14 @@ PROGRAM cdfinfo
      STOP
   ENDIF
 
-  CALL getarg (1, cf_in)
-  ijarg = 2
-  DO WHILE ( ijarg <= narg )
-     CALL getarg (ijarg, cl_dum) ; ijarg = ijarg+1
-     SELECT CASE ( cl_dum)
-     CASE ('-dep' ) ; CALL getarg( ijarg, cl_dum); ijarg = ijarg+1; ; READ(cl_dum,*) zdep ; ldep =.TRUE.
-     CASE DEFAULT   ; PRINT *, 'Option ',TRIM(cl_dum),' ignored ...'
+  ijarg=1
+  DO WHILE ( ijarg <= narg ) 
+     CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-f'   ) ; CALL getarg (ijarg, cf_in) ;  ijarg=ijarg+1
+        ! options
+     CASE ( '-dep' ) ; CALL getarg (ijarg, cldum) ;  ijarg=ijarg+1 ; READ(cldum,*) zdep ;  ldep =.TRUE.
+     CASE DEFAULT   ; PRINT *, 'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
 
@@ -77,23 +80,20 @@ PROGRAM cdfinfo
 
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)
-  npk    = getdim (cf_in,cn_z, cdtrue=cv_dep, kstatus=ierr)
 
-  IF (ierr /= 0 ) THEN
-     npk   = getdim (cf_in,'z',cdtrue=cv_dep,kstatus=ierr)
-     IF (ierr /= 0 ) THEN
-        npk   = getdim (cf_in,'sigma',cdtrue=cv_dep,kstatus=ierr)
-        IF ( ierr /= 0 ) THEN 
-           npk = getdim (cf_in,'nav_lev',cdtrue=cv_dep,kstatus=ierr)
-           IF ( ierr /= 0 ) THEN 
-              npk = getdim (cf_in,'levels',cdtrue=cv_dep,kstatus=ierr)
-              IF ( ierr /= 0 ) THEN 
-                 PRINT *,' assume file with no depth'
-                 npk=0
-              ENDIF
-           ENDIF
-        ENDIF
-     ENDIF
+  ! looking for npk among various possible name
+  idep_max=8
+  ALLOCATE ( clv_dep(idep_max) )
+  clv_dep(:) = (/cn_z,'z','sigma','nav_lev','levels','ncatice','icbcla','icbsect'/)
+  idep=1  ; ierr=1000
+  DO WHILE ( ierr /= 0 .AND. idep <= idep_max )
+     npk  = getdim (cf_in, clv_dep(idep), cdtrue=cv_dep, kstatus=ierr)
+     idep = idep + 1
+  ENDDO
+
+  IF ( ierr /= 0 ) THEN  ! none of the dim name was found
+     PRINT *,' assume file with no depth'
+     npk=0
   ENDIF
 
   npt    = getdim (cf_in,cn_t)

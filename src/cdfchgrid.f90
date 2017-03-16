@@ -70,7 +70,7 @@ PROGRAM cdfchgrid
      PRINT *,' usage : cdfchgrid -f IN-file -r REF-file -var IN-var [-nc4] [-o OUT-file] [-d]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Build a new file on a refined grid, from a coarser grid, assuming that'
+     PRINT *,'       Builds a new file on a refined grid, from a coarser grid, assuming that'
      PRINT *,'       the two grids are embedded, with common points (hence an odd scaling '
      PRINT *,'       factor). Grid characteristics are hard wired in the code. Support for'
      PRINT *,'       ORCA025 --> ORCA12, eORCA025 --> eORCA12 is actually provided. Hooks '
@@ -80,7 +80,7 @@ PROGRAM cdfchgrid
      PRINT *,'      '
      PRINT *,'     RESTRICTION :'
      PRINT *,'       Caution for mask coherence !'
-     PRINT *,'       This tool is only adapted for drowned field'
+     PRINT *,'       This tool is only adapted for drowned fields.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file  : input Coarser-grid file'
@@ -107,21 +107,14 @@ PROGRAM cdfchgrid
   DO  WHILE (ijarg <=  narg)
      CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f' )
-        CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
-     CASE ( '-r' )
-        CALL getarg(ijarg, cf_ref) ; ijarg = ijarg + 1
-     CASE ( '-var' )
-        CALL getarg(ijarg,cv_in ) ; ijarg = ijarg + 1
-     CASE ( '-o' )
-        CALL getarg(ijarg,cf_out) ; ijarg = ijarg + 1
-     CASE ( '-nc4' )
-        lnc4 = .TRUE.
-     CASE ( '-d' )
-        ldbg = .TRUE.
-     CASE DEFAULT
-        PRINT *, TRIM(cldum),' : unknown option '
-        STOP
+     CASE ( '-f'  ) ; CALL getarg(ijarg, cf_in ) ; ijarg = ijarg + 1
+     CASE ( '-r'  ) ; CALL getarg(ijarg, cf_ref) ; ijarg = ijarg + 1
+        ! options
+     CASE ( '-var') ; CALL getarg(ijarg,cv_in  ) ; ijarg = ijarg + 1
+     CASE ( '-o'  ) ; CALL getarg(ijarg,cf_out ) ; ijarg = ijarg + 1
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE ( '-d'  ) ; ldbg = .TRUE.
+     CASE DEFAULT   ; PRINT * ,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 
@@ -195,16 +188,7 @@ PROGRAM cdfchgrid
   CALL SetGlobalAtt( cglobal, "A" )
   rdep=getvar1d(cf_in,cv_dep,npkk) 
 
-  ipk(1)=npkk
-  stypvar(iivar)%ichunk = (/npigloout,MAX(1,npjgloout/30),1,1 /)
-
-  ncout = create      (cf_out,   cf_in  , npigloout, npjgloout, npk,   ld_nc4=lnc4  )
-  ierr  = createvar   (ncout   , stypvar(iivar), 1 , ipk  , id_varout, ld_nc4=lnc4, cdglobal=cglobal  )
-  ierr  = putheadervar(ncout,    cf_ref,  npigloout, npjgloout, npk , cdep='deptht', pdep=rdep     )
-
-  ! get time and write time and get deptht and write deptht
-  tim=getvar1d(cf_in,cn_t,npt)    ; ierr=putvar1d(ncout,tim,npt,'T')
-  ierr=putvar1d(ncout,rdep,npk,'D')
+  CALL CreateOutput
 
   PRINT *,' Working with ', TRIM(cv_in), npk
   DO jt = 1, npt
@@ -370,5 +354,27 @@ CONTAINS
     DEALLOCATE (zwvar )
 
   END SUBROUTINE filltab
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1)=npkk
+    stypvar(iivar)%ichunk = (/npigloout,MAX(1,npjgloout/30),1,1 /)
+
+    ncout = create      (cf_out,   cf_in  , npigloout, npjgloout, npk,   ld_nc4=lnc4  )
+    ierr  = createvar   (ncout   , stypvar(iivar), 1 , ipk  , id_varout, ld_nc4=lnc4, cdglobal=cglobal  )
+    ierr  = putheadervar(ncout,    cf_ref,  npigloout, npjgloout, npk , cdep=cn_vdeptht, pdep=rdep      )
+
+    ! get time and write time and get deptht and write deptht
+    tim=getvar1d(cf_in,cn_t,npt)    ; ierr=putvar1d(ncout,tim,npt,'T')
+    ierr=putvar1d(ncout,rdep,npk,'D')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfchgrid

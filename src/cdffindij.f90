@@ -31,7 +31,7 @@ PROGRAM cdffindij
 
   INTEGER(KIND=4)    :: ji                         ! dummy loop index
   INTEGER(KIND=4)    :: narg, iargc                ! command line
-  INTEGER(KIND=4)    :: ijarg, ireq                ! command line
+  INTEGER(KIND=4)    :: ijarg                      ! command line
   INTEGER(KIND=4)    :: iimin, iimax, ijmin, ijmax ! model grid window
   INTEGER(KIND=4)    :: inum=10, iout=6            ! logical unit of assci files
   INTEGER(KIND=4)    :: nfields                    ! number of fields in file_list
@@ -47,7 +47,7 @@ PROGRAM cdffindij
   CHARACTER(LEN=256) :: cf_out                     ! output file name
   CHARACTER(LEN=256) :: cldes='XY'                 ! descriptor for input file
   CHARACTER(LEN=50), DIMENSION(:), ALLOCATABLE :: cfields ! string array to receive
-  ! fields of the list_file
+                                                   ! fields of the list_file
 
   LOGICAL            :: l_file_in=.false.          ! flag for input file
   LOGICAL            :: l_file_ou=.false.          ! flag for output file
@@ -57,20 +57,19 @@ PROGRAM cdffindij
   CALL ReadCdfNames()
   clcoo = cn_fcoo
 
-  !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg < 4 ) THEN
-     PRINT *,' usage :   cdffindij  xmin xmax ymin ymax  [-c COOR-file] [-p point_type]...'
-     PRINT *,'                    [-f list_file ] [-d decriptor] [-o output_file] [-a] [-l]'
+     PRINT *,' usage :   cdffindij  -w xmin xmax ymin ymax  [-c COOR-file] [-p point_type]...'
+     PRINT *,'                    [-f LIST-file] [-d descriptor] [-o OUT-file] [-a] [-l]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Return the model limit (i,j space) of the geographical window ' 
-     PRINT *,'       given on the input line. If using -f list_file option, then the output'
-     PRINT *,'       is just a single point, not a window, and xmin, xmax, ymin ymax are not'
-     PRINT *,'       used at all.'
+     PRINT *,'       Return the model limit (i,j space) of the geographical window given on' 
+     PRINT *,'       the input line. If using -f list_file option, then the output is just'
+     PRINT *,'       a single point, not a window, and there are no need to define the '
+     PRINT *,'       window with -w.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       xmin xmax ymin ymax : geographical limits of the window, in lon/lat' 
+     PRINT *,'       -w xmin xmax ymin ymax : geographical limits of the window, in lon/lat' 
      PRINT *,'       (relevant only if -f option not used.)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
@@ -78,7 +77,7 @@ PROGRAM cdffindij
      PRINT *,'                     default is ',TRIM(cn_fcoo)
      PRINT *,'       [-p point type] : specify the point on the C-grid (T U V F)'
      PRINT *,'                     default is ',TRIM(cltype)
-     PRINT *,'       [-f list_file ] : list_file is an ascii file describing the location'
+     PRINT *,'       [-f LIST-file ] : LIST-file is an ascii file describing the location'
      PRINT *,'                (one per line) of geographical points to be translated to '
      PRINT *,'                model (i,j) point. Unless specified with -d option, this list'
      PRINT *,'                file contains Longitude (X) Latitudes (Y) information.'
@@ -91,8 +90,7 @@ PROGRAM cdffindij
      PRINT *,'                to the corresponding line.'
      PRINT *,'       [-l  ] : With this option, also output the exact model longitude and '
      PRINT *,'                latitude of the I,J point.'
-     PRINT *,'       [-o output_file] : write output in ascii output_file instead of standard'
-     PRINT *,'                output.'
+     PRINT *,'       [-o OUT-file] : write output in text OUT-file instead of standard output.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fcoo),' or the specified coordinates file.' 
@@ -102,10 +100,14 @@ PROGRAM cdffindij
      STOP
   ENDIF
 
-  ijarg = 1 ; ireq = 0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-w' ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) xmin
+        ;            CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) xmax
+        ;            CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ymin
+        ;            CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ymax
      CASE ( '-c' ) ; CALL getarg(ijarg, clcoo  ) ; ijarg=ijarg+1
      CASE ( '-p' ) ; CALL getarg(ijarg, cltype ) ; ijarg=ijarg+1
      CASE ( '-f' ) ; CALL getarg(ijarg, cf_list) ; ijarg=ijarg+1 ;  l_file_in=.true.
@@ -113,24 +115,17 @@ PROGRAM cdffindij
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1 ;  l_file_ou=.true.
      CASE ( '-a' ) ;                                                l_append =.true.
      CASE ( '-l' ) ;                                                l_lonlat =.true.
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE (ireq)
-        CASE ( 1 ) ; READ(cldum,*) xmin
-        CASE ( 2 ) ; READ(cldum,*) xmax
-        CASE ( 3 ) ; READ(cldum,*) ymin
-        CASE ( 4 ) ; READ(cldum,*) ymax
-        CASE DEFAULT 
-           PRINT *,' Too many arguments !' ; STOP
-        END SELECT
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP 1
      END SELECT
   END DO
+
   IF ( l_file_in) THEN
      ! interpret descriptor
-     nfields=LEN(TRIM(cldes) )
-     ipx=INDEX(TRIM(cldes),'X')
-     ipy=INDEX(TRIM(cldes),'Y')
+     nfields = LEN(TRIM(cldes) )
+     ipx     = INDEX(TRIM(cldes),'X')
+     ipy     = INDEX(TRIM(cldes),'Y')
      ALLOCATE( cfields(nfields))
+
      ! open list_file and loop over lines
      OPEN(inum, FILE=cf_list)
      IF ( l_file_ou ) OPEN(iout, FILE=cf_out)

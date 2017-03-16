@@ -24,7 +24,7 @@ PROGRAM cdfwhereij
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: narg, iargc    ! browse line
-  INTEGER(KIND=4)                           :: ijarg, ireq    ! browse line
+  INTEGER(KIND=4)                           :: ijarg          ! browse line
   INTEGER(KIND=4)                           :: iimin, iimax   ! i-zoom limit
   INTEGER(KIND=4)                           :: ijmin, ijmax   ! j-zoom limit
   INTEGER(KIND=4)                           :: npiglo, npjglo ! global size
@@ -43,20 +43,19 @@ PROGRAM cdfwhereij
 
   narg= iargc()
   IF ( narg < 4 ) THEN
-     PRINT *,' usage : cdfwhereij  imin imax jmin jmax [-c COOR-file ] [ -p point_type]'
+     PRINT *,' usage : cdfwhereij  -w imin imax jmin jmax [-c COOR-file] [-p C-point]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Return the geographical coordinates of a model sub-area specified' 
-     PRINT *,'       in i,j space on the command line.'
+     PRINT *,'       Returns the geographical coordinates of a model sub-area specified' 
+     PRINT *,'       by a rectangular window in (i,j) space.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       imin imax jmin jmax : (i,j) space window coordinates' 
+     PRINT *,'       -w imin imax jmin jmax : (i,j) space window coordinates.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-c COOR_file  ] : specify a coordinates file.' 
-     PRINT *,'                      default is ', TRIM(cn_fcoo)
-     PRINT *,'       [-p point type ] : specify a point type on the C-grid (T U V F) '
-     PRINT *,'                      default is ', TRIM(ctype)
+     PRINT *,'       [-c COOR_file ] : specify a coordinates file instead of ', TRIM(cn_fcoo)
+     PRINT *,'       [-p C-point   ] : specify a point type on the C-grid (T U V F) '
+     PRINT *,'               default is ', TRIM(ctype),'.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fcoo),' or COOR-file given in the -c option'
@@ -66,22 +65,18 @@ PROGRAM cdfwhereij
      STOP
   ENDIF
 
-  ijarg = 1 ; ireq = 0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg) 
      CALL getarg( ijarg, cldum ) ; ijarg= ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-w' ) ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) iimin
+        ;            CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) iimax
+        ;            CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijmin
+        ;            CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijmax
+        ! options
      CASE ( '-c' ) ; CALL getarg(ijarg, clcoo ) ; ijarg=ijarg+1
      CASE ( '-p' ) ; CALL getarg(ijarg, ctype ) ; ijarg=ijarg+1
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE (ireq)
-        CASE ( 1 ) ; READ(cldum,*) iimin
-        CASE ( 2 ) ; READ(cldum,*) iimax
-        CASE ( 3 ) ; READ(cldum,*) ijmin
-        CASE ( 4 ) ; READ(cldum,*) ijmax
-        CASE DEFAULT
-           PRINT *,' Too many arguments !' ; STOP
-        END SELECT
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 

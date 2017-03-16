@@ -46,19 +46,18 @@ PROGRAM cdfzoom
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfzoom -f IN-file -zoom imin imax jmin jmax  ...'
-     PRINT *,'               ... -var IN-var [-lev kmin kmax ] ...'
-     PRINT *,'               ... [-time tmin tmax ] [-fact factor] '
+     PRINT *,' usage : cdfzoom -f IN-file -zoom imin imax jmin jmax -v IN-var ...'
+     PRINT *,'               ... [-lev kmin kmax ] [-time tmin tmax ] [-fact factor]'
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'      Display the numerical values of a zoomed area. By'
-     PRINT *,'      default, all times and levels are shown. If the zoomed'
-     PRINT *,'      area is degenerated to a single line, then the vertical'
-     PRINT *,'      slab is displayed.'
+     PRINT *,'      Displays the numerical values of a zoomed area. By default, all times'
+     PRINT *,'      and levels are shown. If the zoomed area is degenerated to a single '
+     PRINT *,'      line, then the vertical slab is displayed.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file : name of input file' 
      PRINT *,'       -zoom imin imax jmin jmax : spatial window definition'
-     PRINT *,'       -var IN-var : cdf variable name to work with.'
+     PRINT *,'       -v IN-var : cdf variable name to work with.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-lev kmin kmax ]  : vertical limits for display.' 
@@ -83,16 +82,16 @@ PROGRAM cdfzoom
      CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
      CASE ( '-f'   ) ; CALL getarg(ijarg, cf_in ) ; ijarg = ijarg + 1
-     CASE ( '-var' ) ; CALL getarg(ijarg, cv_in ) ; ijarg = ijarg + 1
+     CASE ( '-v'   ) ; CALL getarg(ijarg, cv_in ) ; ijarg = ijarg + 1
      CASE ( '-zoom') ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-                     ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-                     ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-                     ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+        ;              CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ;              CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;              CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
      ! options
      CASE ( '-lev' ) ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-                     ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+        ;              CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
      CASE ( '-time') ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
-                     ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
+        ;              CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
      CASE ( '-fact') ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) fact
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT

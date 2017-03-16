@@ -50,18 +50,18 @@ PROGRAM cdfprofile
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar_input     ! structure of input data
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar           ! structure of output data
- 
-  LOGICAL                                       :: l_vert_interp=.false. ! flag for -dep option
+
+  LOGICAL                                       :: l_vert_interp=.FALSE. ! flag for -dep option
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg < 4 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfprofile  -f IN-file -v IN-var -IJ I J [-dep depth ] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Extract a vertical profile at location I J, for a variable' 
-     PRINT *,'       in an input file.'
+     PRINT *,'       Extracts a vertical profile at location I J, for the IN-var variable of'
+     PRINT *,'       the IN-file. A depth can optionally be specified.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'      -f  IN-file : input file to work with.'
@@ -84,21 +84,21 @@ PROGRAM cdfprofile
   ENDIF
 
   ijarg = 1
-  
+
   DO WHILE ( ijarg < narg )
-   CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1
-   SELECT CASE ( cldum )
-   CASE ( '-f'   ) ; CALL getarg (ijarg, cf_in ) ; ijarg = ijarg+1  
-   CASE ( '-v'   ) ; CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  
-   CASE ( '-IJ'  ) ; CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  ; READ(cldum,*) iilook
-                   ; CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  ; READ(cldum,*) ijlook
-   ! options
-   CASE ( '-dep' ) ; CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1  ; READ(cldum,*) rdep ; l_vert_interp = .true.
-   CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg+1
-   CASE  DEFAULT   ; PRINT *,' ERROR :',TRIM(cldum),' : unknown option.' ; STOP
-   END SELECT
+     CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-f'   ) ; CALL getarg (ijarg, cf_in ) ; ijarg = ijarg+1  
+     CASE ( '-v'   ) ; CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  
+     CASE ( '-IJ'  ) ; CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  ; READ(cldum,*) iilook
+        ;              CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  ; READ(cldum,*) ijlook
+        ! options
+     CASE ( '-dep' ) ; CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1  ; READ(cldum,*) rdep ; l_vert_interp = .TRUE.
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg+1
+     CASE  DEFAULT   ; PRINT *,' ERROR :',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
   ENDDO
-      
+
   IF ( chkfile(cf_in) ) STOP ! missing file
 
   npiglo = getdim (cf_in, cn_x)
@@ -130,31 +130,31 @@ PROGRAM cdfprofile
         rprofile(jk) = v2d(iilook,ijlook)
         ! netcdf output 
         IF ( .NOT. l_vert_interp ) THEN
-          rdummy(1,1)  = rprofile(jk)
-          ierr         = putvar(ncout, id_varout(1), rdummy, jk, ikx, iky, ktime=jt)
+           rdummy(1,1)  = rprofile(jk)
+           ierr         = putvar(ncout, id_varout(1), rdummy, jk, ikx, iky, ktime=jt)
         ENDIF
      END DO
      PRINT *, 'FILE : ', TRIM(cf_in), ' TIME = ', jt
      PRINT *, '    ', TRIM(cv_dep),'         ', TRIM(cv_in),'(',iilook,',',ijlook,')'
 
      IF ( l_vert_interp ) THEN
-       rdummy(1,1) = vinterp (rprofile, gdept , rdep, npk )
-       ierr        = putvar(ncout, id_varout(1), rdummy, 1, ikx, iky, ktime=jt)
-       PRINT *, ' Interpolated value is : ', rdummy(1,1)
+        rdummy(1,1) = vinterp (rprofile, gdept , rdep, npk )
+        ierr        = putvar(ncout, id_varout(1), rdummy, 1, ikx, iky, ktime=jt)
+        PRINT *, ' Interpolated value is : ', rdummy(1,1)
      ENDIF
 
      ! Ascii output
      DO jk=1, npk
         PRINT *, gdept(jk), rprofile(jk)
      END DO
-     
+
   END DO
 
   ierr = closeout(ncout)
 
 CONTAINS
 
- REAL(KIND=4) FUNCTION vinterp ( profile, pdept, pdep, kpk)
+  REAL(KIND=4) FUNCTION vinterp ( profile, pdept, pdep, kpk)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION vinterp  ***
     !!
@@ -175,16 +175,16 @@ CONTAINS
     !!----------------------------------------------------------------------
     ! find interpolation limits for required depth
     DO jk = 1, kpk
-      IF ( pdept(jk) > pdep ) THEN
-        ik0 = jk - 1
-        ik1 = ik0 + 1
-        EXIT
-      ENDIF
+       IF ( pdept(jk) > pdep ) THEN
+          ik0 = jk - 1
+          ik1 = ik0 + 1
+          EXIT
+       ENDIF
     ENDDO
     dalfa   = ( pdep  - pdept(ik0) ) / ( pdept(ik1) - pdept(ik0) ) 
     vinterp =  dalfa * profile (ik1) + ( 1.d0 - dalfa ) * profile (ik0 )
 
- END FUNCTION vinterp
+  END FUNCTION vinterp
 
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
@@ -195,33 +195,33 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-  IF ( l_vert_interp ) THEN
-    ipk(:) = 1
-    ikz    = 1
-    ALLOCATE ( gdepout(ikz) )
-    gdepout(1) = rdep
-  ELSE
-    ipk(:) = npk
-    ikz    = npk
-    ALLOCATE ( gdepout(ikz) )
-    gdepout(:) = gdept(:)
-  ENDIF
+    IF ( l_vert_interp ) THEN
+       ipk(:) = 1
+       ikz    = 1
+       ALLOCATE ( gdepout(ikz) )
+       gdepout(1) = rdep
+    ELSE
+       ipk(:) = npk
+       ikz    = npk
+       ALLOCATE ( gdepout(ikz) )
+       gdepout(:) = gdept(:)
+    ENDIF
 
 
-  DO jvar = 1, nvars
-     IF ( cv_names(jvar) == cv_in ) THEN
-        stypvar=stypvar_input(jvar)
-        EXIT  ! found cv_in
-     ENDIF
-  ENDDO
+    DO jvar = 1, nvars
+       IF ( cv_names(jvar) == cv_in ) THEN
+          stypvar=stypvar_input(jvar)
+          EXIT  ! found cv_in
+       ENDIF
+    ENDDO
 
-  ! create output fileset
-  ncout = create      (cf_out, 'none',  ikx,      iky, ikz,     cdep='depth')
-  ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout            )
-  ierr  = putheadervar(ncout,  cf_in,   ikx,      iky, ikz,     pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepout)
+    ! create output fileset
+    ncout = create      (cf_out, 'none',  ikx,      iky, ikz,     cdep='depth')
+    ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout            )
+    ierr  = putheadervar(ncout,  cf_in,   ikx,      iky, ikz,     pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepout)
 
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
+    tim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

@@ -35,9 +35,18 @@ PROGRAM cdfnamelist
      PRINT *,' usage :  cdfnamelist [-i] [-p]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Give information [-i option] on the namelist mechanism implemented' 
-     PRINT *,'       in CDFTOOLS v3. Write a namelist template [-p option ] to initialize'
+     PRINT *,'       Give information [-i option] on the namelist mechanism implemented ' 
+     PRINT *,'       since CDFTOOLS v3. Write a namelist template [-p option] to initialize'
      PRINT *,'       the mechanism.'
+     PRINT *,'      '
+     PRINT *,'       Note also than since CDFTOOLS v4, the name of the mesh/mask files as'
+     PRINT *,'       well as the name of the coordinates file can be modified from the '
+     PRINT *,'       default, setting corresponding environment variable :'
+     PRINT *,'           CDFT_MESH_HGR   to change the default ',TRIM(cn_fhgr)
+     PRINT *,'           CDFT_MESH_ZGR   to change the default ',TRIM(cn_fzgr)
+     PRINT *,'           CDFT_MASK       to change the default ',TRIM(cn_fmsk)
+     PRINT *,'           CDFT_BASINS     to change the default ',TRIM(cn_fbasins)
+     PRINT *,'           CDFT_COORD      to change the default ',TRIM(cn_fcoo)
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       none' 

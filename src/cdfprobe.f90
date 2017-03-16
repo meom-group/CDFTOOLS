@@ -20,27 +20,30 @@ PROGRAM cdfprobe
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)    :: narg, iargc            ! browse line
-  INTEGER(KIND=4)    :: iilook, ijlook, ilevel ! point to look at
+  INTEGER(KIND=4)    :: narg, iargc, ijarg     ! browse line
+  INTEGER(KIND=4)    :: iilook, ijlook, iklook ! point to look at
   CHARACTER(LEN=256) :: cf_in, cldum , cv_in   ! file name  variable name
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfprobe IN-file ilook jlook cdfvar [level]'
+     PRINT *,' usage :  cdfprobe -f IN-file -v IN-var -i ilook -j jlook [-k klook]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'      Display a 2 columns output time (in days), value.'  
+     PRINT *,'      Displays a series of pair of values (time, value) corresponding to the'
+     PRINT *,'      IN-var variable in IN-file, at location (ilook, jlook,[klook]). The'
+     PRINT *,'      standard output can be piped to a graphical tool such as ''graph'' to'
+     PRINT *,'      easily plot the time evolution of IN-var.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file : input file to look for' 
-     PRINT *,'       ilook jlook : i,j position of the probe.'
-     PRINT *,'       cdfvar : name of the cdf variabled to be displayed'
+     PRINT *,'       -f IN-file : input file to look for' 
+     PRINT *,'       -i ilook   : i position of the probe.'
+     PRINT *,'       -j jlook   : j position of the probe.'
+     PRINT *,'       -v IN-var  : name of the cdf variabled to be displayed'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [level] : This optional last argument is used' 
-     PRINT *,'               to specify a model level, instead of first.'
+     PRINT *,'       [-k klook] : Use the probe at level klook, instead of the first level.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none'
@@ -52,18 +55,22 @@ PROGRAM cdfprobe
   ENDIF
 
   ! Browse command line
-  CALL getarg(1, cf_in )
-  CALL getarg(2, cldum ) ; READ(cldum,*) iilook
-  CALL getarg(3, cldum ) ; READ(cldum,*) ijlook
-  CALL getarg(4, cv_in ) 
+  iklook=1
+  ijarg=1
+  DO WHILE ( ijarg <= narg)
+     CALL getarg(ijarg,cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-f' ) ; CALL getarg(ijarg,cf_in) ; ijarg=ijarg+1
+     CASE ( '-v' ) ; CALL getarg(ijarg,cv_in) ; ijarg=ijarg+1
+     CASE ( '-i' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) iilook
+     CASE ( '-j' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) ijlook
+     CASE ( '-k' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) iklook
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     END SELECT
+  ENDDO
 
   IF ( chkfile(cf_in) ) STOP ! missing file
 
-  IF ( narg == 5 ) THEN
-     CALL getarg(5, cldum) ;  READ(cldum,*) ilevel
-     CALL gettimeseries(cf_in, cv_in, iilook, ijlook, klev=ilevel)
-  ELSE
-     CALL gettimeseries(cf_in, cv_in, iilook, ijlook             )
-  ENDIF
+     CALL gettimeseries(cf_in, cv_in, iilook, ijlook, klev=iklook)
 
 END PROGRAM cdfprobe

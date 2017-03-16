@@ -56,32 +56,37 @@ PROGRAM cdfclip
 
   LOGICAL                                       :: lzonal=.FALSE.          !
   LOGICAL                                       :: lmeridian=.FALSE.       !
+  LOGICAL                                       :: lnc4     = .FALSE.      ! Use nc4 with chunking and deflation
   !!-------------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfclip -f IN-file [-o OUT-file] -zoom imin imax jmin jmax [kmin kmax]'
+     PRINT *,' usage : cdfclip -f IN-file  -zoom imin imax jmin jmax ...'
+     PRINT *,'            ...[-klim kmin kmax] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Clip the input file according to the indices given in the'
-     PRINT *,'       zoom statement. If no vertical zoomed area is indicated, ' 
-     PRINT *,'       the whole water column is considered.  This program is able'
-     PRINT *,'       to extract data for a region crossing the E-W periodic boundary'
-     PRINT *,'       of a global configuration. It does so if imax < imin.'
+     PRINT *,'       Clips the input file according to the indices given in the zoom option.'
+     PRINT *,'       If no vertical zoomed area is indicated, the whole water column is '
+     PRINT *,'       considered.'
+     PRINT *,'      '
+     PRINT *,'       This program is able to extract data for a region crossing the E-W '
+     PRINT *,'       periodic boundary of a global configuration. It does so if imax < imin.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file : specify the input file to be clipped' 
      PRINT *,'       -zoom imin imax jmin jmax : specify the domain to be extracted.'
-     PRINT *,'           If imin=imax, or jmin = jmax assume a vertical section either '
-     PRINT *,'           meridional or zonal.'
+     PRINT *,'             If imin=imax, or jmin = jmax assume a vertical section either '
+     PRINT *,'             meridional or zonal.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file ] : use OUT-file instead of ',TRIM(cf_out),' for output file'
-     PRINT *,'               If used, -o option must be used before -zoom argument '
-     PRINT *,'       [kmin kmax ] : specify vertical limits for the zoom, in order to reduce'
-     PRINT *,'               the extracted area to some levels. Default is to take the whole' 
-     PRINT *,'               water column.'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'             This option is effective only if cdftools are compiled with'
+     PRINT *,'             a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-klim kmin kmax ] : specify vertical limits for the zoom, in order to '
+     PRINT *,'             reduce the extracted area to some levels. Default is to take the' 
+     PRINT *,'             while water column.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -96,21 +101,16 @@ PROGRAM cdfclip
   DO WHILE (ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
-     CASE ('-f' )
-        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; cf_in=cldum
-     CASE ('-zoom')
-        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-        IF ( ijarg == narg -2  ) THEN  ! there are kmin kmax optional arguments
-           CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-           CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
-        ENDIF
-     CASE ('-o')
-        CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1 ; cf_out=cldum
-     CASE DEFAULT
-        PRINT *,' Unknown option :', TRIM(cldum) ; STOP
+     CASE ('-f'   ) ; CALL getarg(ijarg,cf_in ) ; ijarg = ijarg + 1 
+     CASE ('-zoom') ; CALL getarg(ijarg,cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+        ;             CALL getarg(ijarg,cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ;             CALL getarg(ijarg,cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;             CALL getarg(ijarg,cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+     CASE ('-klim') ; CALL getarg(ijarg,cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+        ;             CALL getarg(ijarg,cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ('-o'   ) ; CALL getarg(ijarg,cf_out) ; ijarg = ijarg + 1 
+     CASE ('-nc4' ) ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknwn option.';  STOP 1
      END SELECT
   ENDDO
 
@@ -123,8 +123,10 @@ PROGRAM cdfclip
      WRITE(cglobal,'(a,a,a,4i5)') 'cdfclip -f ',TRIM(cf_in),' -zoom ',iimin,iimax,ijmin,ijmax
   ENDIF
 
-  IF ( iimin == iimax ) THEN ; lmeridian=.TRUE.; PRINT *,' Meridional section ' ;  ENDIF
-  IF ( ijmin == ijmax ) THEN ; lzonal=.TRUE.   ; PRINT *,' Zonal section '      ;  ENDIF
+  IF ( iimin == iimax ) THEN ; lmeridian=.TRUE.; PRINT *,' Meridional section ' ;
+  ENDIF
+  IF ( ijmin == ijmax ) THEN ; lzonal=.TRUE.   ; PRINT *,' Zonal section '      ;
+  ENDIF
 
   IF (iimax < iimin ) THEN ! we assume that this is the case when we cross the periodic line in orca (Indian ocean)
      npiglo= getdim (cf_in,cn_x)
@@ -203,34 +205,7 @@ PROGRAM cdfclip
      rdep(:) = rdepg(ikmin:ikmax)  
   ENDIF
 
-  ! get list of variable names and collect attributes in stypvar (optional)
-  cv_names(:)=getvarname(cf_in, nvars, stypvar)
-
-  ! save variable dimension in ndim
-  !  1 = either time or depth : noclip
-  !  2 = nav_lon, nav_lat
-  !  3 = X,Y,T  or X,Y,Z   <-- need to fix the ambiguity ...
-  !  4 = X,Y,Z,T
-  DO jvar=1,nvars
-     ndim(jvar) = getvdim(cf_in, cv_names(jvar)) + 1   !  we add 1 because vdim is dim - 1 ...
-  END DO
-
-  id_var(:)  = (/(jv, jv=1,nvars)/)
-
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:) = getipk (cf_in,nvars,cdep=cv_dep)
-  ipk(:) = MIN ( ipk , ikmax )            ! reduce max depth to the required maximum
-  ipkk(:)= MAX( 0 , ipk(:) - ikmin + 1 )  ! for output variable. For 2D input var, 
-  ! ipkk is set to 0 if ikmin > 1 ... OK ? 
-  WHERE( ipkk == 0 ) cv_names='none'
-  stypvar(:)%cname = cv_names
-
-  ! create output fileset
-  ! create output file taking the sizes in cf_in
-  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npkk, cdep=cv_dep            )
-  ierr  = createvar   (ncout,    stypvar, nvars,  ipkk,   id_varout, cdglobal=cglobal)
-  ierr  = putheadervar(ncout,    cf_in,   npiglo, npjglo, npkk, pnavlon=rlon, pnavlat=rlat, pdep=rdep, cdep=cv_dep)
-
+  CALL CreateOutput
 
   DO jvar = 1,nvars
      ! skip dimension variables (already done when creating the output file)
@@ -273,9 +248,54 @@ PROGRAM cdfclip
         ENDIF
      END SELECT
   END DO ! loop to next var in file
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! get list of variable names and collect attributes in stypvar (optional)
+    cv_names(:)=getvarname(cf_in, nvars, stypvar)
+
+    ! save variable dimension in ndim
+    !  1 = either time or depth : noclip
+    !  2 = nav_lon, nav_lat
+    !  3 = X,Y,T  or X,Y,Z   <-- need to fix the ambiguity ...
+    !  4 = X,Y,Z,T
+    DO jvar=1,nvars
+       ndim(jvar) = getvdim(cf_in, cv_names(jvar)) + 1   !  we add 1 because vdim is dim - 1 ...
+    END DO
+
+    id_var(:)  = (/(jv, jv=1,nvars)/)
+
+    ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+    ipk(:) = getipk (cf_in,nvars,cdep=cv_dep)
+    ipk(:) = MIN ( ipk , ikmax )            ! reduce max depth to the required maximum
+    ipkk(:)= MAX( 0 , ipk(:) - ikmin + 1 )  ! for output variable. For 2D input var, 
+    ! ipkk is set to 0 if ikmin > 1 ... OK ? 
+    WHERE( ipkk == 0 ) cv_names='none'
+    stypvar(:)%cname = cv_names
+
+    DO jv = 1, nvars
+       stypvar(jv)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    ENDDO
+
+    ! create output fileset
+    ! create output file taking the sizes in cf_in
+    ncout = create      (cf_out, cf_in,   npiglo, npjglo, npkk, cdep=cv_dep            , ld_nc4=lnc4)
+    ierr  = createvar   (ncout,  stypvar, nvars,  ipkk,   id_varout, cdglobal=cglobal,   ld_nc4=lnc4)
+    ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, npkk, pnavlon=rlon, pnavlat=rlat, pdep=rdep, cdep=cv_dep)
+
+    tim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, tim,       npt, 'T')
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfclip
