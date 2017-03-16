@@ -38,7 +38,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfpsi_level cdfhdy cdfdynh_anom cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
-       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp 
+       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
 
