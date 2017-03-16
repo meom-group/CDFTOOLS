@@ -1,6 +1,6 @@
-PROGRAM cdfbci
+PROGRAM cdfnrj_bci
   !!======================================================================
-  !!                     ***  PROGRAM  cdfbci  ***
+  !!                     ***  PROGRAM  cdfnrj_bci  ***
   !!=====================================================================
   !!  ** Purpose : Compute the term of energetic transfert BCI
   !!               for the baroclinic instability
@@ -49,11 +49,12 @@ PROGRAM cdfbci
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbci -f UVWT-file [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfnrj_bci -f UVWT-file [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute elements (see variable list below) for analysing the baroclinic'
      PRINT *,'       instability.' 
+     PRINT *,'       Note : this program was formerly named cdfbci.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f UVWT-file : input file is produced by cdfmoyuvwt, and the mean'
@@ -79,7 +80,7 @@ PROGRAM cdfbci
      PRINT *,'             bci  : transfert of energy for the baroclinic instability (*1000)'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'       cdfmoyuvwt '
+     PRINT *,'       cdfmoyuvwt, cdfnrj_bti, cdfnrj_components, cdfnrj_transfert '
      STOP
   ENDIF
 
@@ -246,5 +247,5 @@ CONTAINS
 
   END SUBROUTINE CreateOutput
 
-END PROGRAM cdfbci
+END PROGRAM cdfnrj_bci
 

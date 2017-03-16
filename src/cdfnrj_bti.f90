@@ -1,6 +1,6 @@
-PROGRAM cdfbti
+PROGRAM cdfnrj_bti
   !!======================================================================
-  !!                     ***  PROGRAM  cdfbti  ***
+  !!                     ***  PROGRAM  cdfnrj_bti  ***
   !!=====================================================================
   !!  ** Purpose : Compute the term of energetic transfert BTI
   !!               for the barotropic instability for given gridU 
@@ -57,7 +57,7 @@ PROGRAM cdfbti
   !!
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbti -f UVWT-file [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfnrj_bti -f UVWT-file [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute  the terms in the barotropic energy tranfert equation.'
@@ -65,6 +65,7 @@ PROGRAM cdfbti
      PRINT *,'       bti= -[(u''bar)^2*dubar/dx ...'
      PRINT *,'             +(v''bar)^2*dvbar/dy ...'
      PRINT *,'             +(u''v''*(dubar/dy +dvbar/dx))]'
+     PRINT *,'       Note : This program was formerly named cdfbti.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f UVWT-file : netcdf file produced by cdfmoyuvwt'
@@ -91,7 +92,7 @@ PROGRAM cdfbti
      PRINT *,'              bti  : transfert of energy for the barotropic instability.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      cdfmoyuvwt, cdfbci, cdfnrjcomp, cdfkempemekeepe'
+     PRINT *,'      cdfmoyuvwt, cdfnrj_bci, cdfnrj_components, cdfnrj_transfert'
      PRINT *,'      '
      STOP
   ENDIF
@@ -307,5 +308,5 @@ CONTAINS
 
   END SUBROUTINE CreateOutput
 
-END PROGRAM cdfbti
+END PROGRAM cdfnrj_bti
 
