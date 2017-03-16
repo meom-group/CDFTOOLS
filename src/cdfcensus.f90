@@ -49,8 +49,8 @@ PROGRAM cdfcensus
   INTEGER(KIND=4)                           :: it_vvl                    ! time index for vvl
   INTEGER(KIND=4)                           :: npiglo, npjglo            ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt                  ! size of the domain
-  INTEGER(KIND=4)                           :: nlog
-  INTEGER(KIND=4)                           :: narg, iargc, ijarg, ireq
+  INTEGER(KIND=4)                           :: nlog=0
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg
   INTEGER(KIND=4)                           :: it, is
   INTEGER(KIND=4)                           :: ii1, ii2
   INTEGER(KIND=4)                           :: ij1, ij2
@@ -83,6 +83,7 @@ PROGRAM cdfcensus
 
   LOGICAL                                   :: lchk
   LOGICAL                                   :: lfull = .FALSE.   ! flag for full step
+  LOGICAL                                   :: lnc4  = .FALSE.   ! Use nc4 with chunking and deflation
 
   ! Initialisations
   DATA ztmin, ztmax, zdt /-2.0, 38.0, 0.05/
@@ -90,13 +91,11 @@ PROGRAM cdfcensus
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
-
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfcensus T-file nlog [-zoom imin imax jmin jmax] ...'
-     PRINT *,'                ... [-klim kmin kmax]  [-full] ... '
-     PRINT *,'                ... [-srange smin smax ds ] ...'
-     PRINT *,'                ... [-trange tmin tmax dt ] [-vvl ]'
+     PRINT *,' usage :  cdfcensus -t T-file [-log nlog] [-zoom imin imax jmin jmax] ...'
+     PRINT *,'              ... [-klim kmin kmax] [-srange smin smax ds] ... '
+     PRINT *,'              ... [-trange tmin tmax dt] [-full] [-vvl] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the volumetric water mass census: the ocean is divided in'
@@ -108,19 +107,23 @@ PROGRAM cdfcensus
      PRINT *,'        the number of filter passes being set on the command line.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file  : netcdf file name for temperature and salinity' 
-     PRINT *,'       nlog    : number of log10 filter to perform. Can be 0.'
+     PRINT *,'       -t T-file  : netcdf file name for temperature and salinity' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-log nlog] : number of log10 filter to perform. 0 by default.'
      PRINT *,'       [-zoom imin imax jmin jmax] : define a model sub-area, in model '
-     PRINT *,'                                     coordinates' 
-     PRINT *,'       [-klim ik1 ik2            ] : set limits on the vertical.'
-     PRINT *,'       [-srange smin smax ds     ] : define the size of the salinity bin'
+     PRINT *,'              coordinates' 
+     PRINT *,'       [-klim kmin kmax] : set limits on the vertical.'
+     PRINT *,'       [-srange smin smax ds ] : define the size of the salinity bin'
      PRINT '(a,2f5.1,x,f6.3)','                         defaut is :', zsmin, zsmax, zds
-     PRINT *,'       [-trange tmin tmax dt     ] : define the size of the temperatude bin'
+     PRINT *,'       [-trange tmin tmax dt ] : define the size of the temperatude bin'
      PRINT '(a,2f5.1,x,f6.3)','                         defaut is :', ztmin, ztmax, zdt
-     PRINT *,'       [-full                    ] : use for full step computation'
-     PRINT *,'       [-vvl                     ] : use time-varying vertical metrics.'
+     PRINT *,'       [-full ] : use for full step computation'
+     PRINT *,'       [-vvl ]  : use time-varying vertical metrics.'
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'            This option is effective only if cdftools are compiled with'
+     PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),'  and ',TRIM(cn_fzgr) 
@@ -133,40 +136,30 @@ PROGRAM cdfcensus
      PRINT *,'                       sigma3  (kg/m3 -1000 )'
      STOP
   ENDIF
-
-  ijarg = 1  ; ireq=0
+  
+  ijarg = 1  
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
-     CASE ( '-zoom' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ii1  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ii2  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ij1  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ij2  ; ijarg = ijarg+1
-     CASE ( '-klim' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ik1  ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ik2  ; ijarg = ijarg+1
-     CASE ( '-srange' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmin ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zsmax ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zds   ; ijarg = ijarg+1
-     CASE ( '-trange' )
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmin ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) ztmax ; ijarg = ijarg+1
-        CALL getarg(ijarg,cldum) ; READ(cldum,*) zdt   ; ijarg = ijarg+1
-     CASE ( '-full' )
-        lfull = .TRUE.
-     CASE ( '-vvl'  )
-        lg_vvl = .TRUE.
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE ( ireq) 
-        CASE (1 ) ; cf_tfil = cldum
-        CASE (2 ) ; READ(cldum,*) nlog
-        CASE DEFAULT 
-           PRINT *, ' ERROR : too many ''free'' arguments ..'
-           STOP
-        END SELECT
+     CASE ( '-t'     ) ; CALL getarg(ijarg,cf_tfil) ; ijarg = ijarg+1
+     CASE ( '-zoom'  ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii1   
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii2  
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ij1  
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ij2 
+     CASE ( '-klim'  ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ik1  
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ik2  
+     CASE ( '-srange') ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsmin 
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsmax 
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zds   
+     CASE ( '-trange') ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ztmin 
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ztmax 
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zdt   
+     CASE ( '-o'     ) ; CALL getarg(ijarg,cf_out ) ; ijarg = ijarg+1
+     CASE ( '-log'   ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) nlog
+     CASE ( '-full'  ) ; lfull  = .TRUE.
+     CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
+     CASE ( '-nc4'   ) ; lnc4   = .TRUE.
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
   cglobal = 'Census computed from '//TRIM(cf_tfil)
@@ -203,7 +196,6 @@ PROGRAM cdfcensus
   ii1 = 1 ; ii2 = npiglo
   ij1 = 1 ; ij2 = npjglo
   ik1 = 1 ; ik2 = npk
-
 
   ! Extra checking for over bound
   ii1 = MAX(ii1,1) ; ii2 = MIN(ii2,npiglo)
@@ -331,6 +323,11 @@ CONTAINS
     stypvar%conline_operation = 'N/A'
     stypvar%caxis             = 'TYX'
 
+    stypvar(1)%ichunk         = (/ns,MAX(1,nt/30),1,1 /)
+    stypvar(2)%ichunk         = (/ns,MAX(1,nt/30),1,1 /)
+    stypvar(3)%ichunk         = (/ns,MAX(1,nt/30),1,1 /)
+    stypvar(4)%ichunk         = (/ns,MAX(1,nt/30),1,1 /)
+
     stypvar(1)%cname          = 'volcensus'
     stypvar(2)%cname          = 'sigma0'
     stypvar(3)%cname          = 'sigma2'
@@ -349,8 +346,8 @@ CONTAINS
     stypvar(3)%cshort_name    = 'sigma2'
     stypvar(4)%cshort_name    = 'sigma4'
 
-    ncout = create      (cf_out, cf_tfil,  ns, nt,  1                                           )
-    ierr  = createvar   (ncout,  stypvar,  4,  ipk, id_varout, cdglobal=cglobal                 )
+    ncout = create      (cf_out, cf_tfil,  ns, nt,  1                              , ld_nc4=lnc4)
+    ierr  = createvar   (ncout,  stypvar,  4,  ipk, id_varout, cdglobal=cglobal    , ld_nc4=lnc4)
     ierr  = putheadervar(ncout,  cf_tfil,  ns, nt,  1,   pnavlon=zsx, pnavlat=zty, pdep=zdumdep )
 
   END SUBROUTINE CreateOutput
