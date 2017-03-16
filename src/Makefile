@@ -30,7 +30,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfvint cdffwc\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
-       cdf16bit cdfvita cdfvita-geo cdfconvert cdfclip  cdfbathy cdfvar \
+       cdf16bit cdfvita cdfconvert cdfclip  cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk \
        cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
@@ -428,9 +428,6 @@ cdf2matlab: cdfio.o cdf2matlab.f90
 
 cdfvita: cdfio.o cdfvita.f90
 	$(F90) cdfvita.f90  -o $(BINDIR)/cdfvita cdfio.o modcdfnames.o $(FFLAGS)
-
-cdfvita-geo: cdfio.o cdfvita-geo.f90
-	$(F90) cdfvita-geo.f90  -o $(BINDIR)/cdfvita-geo  cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfconvert: cdfio.o cdfconvert.f90
 	$(F90)  cdfconvert.f90  -o $(BINDIR)/cdfconvert cdfio.o modcdfnames.o $(FFLAGS)
