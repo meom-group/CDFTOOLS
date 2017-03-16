@@ -33,7 +33,6 @@ PROGRAM cdfeddyscale
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: ji, jj, jt         ! dummy loop index
-  INTEGER(KIND=4)                           :: ilev               ! level to be processed
   INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
   INTEGER(KIND=4)                           :: narg, iargc, ijarg ! browse command line
@@ -59,7 +58,6 @@ PROGRAM cdfeddyscale
 
   TYPE (variable), DIMENSION(3)             :: stypvar            ! structure for attibutes
 
-  LOGICAL                                   :: lforcing = .FALSE. ! forcing flag
   LOGICAL                                   :: lchk     = .FALSE. ! flag for missing files
   LOGICAL                                   :: lperio   = .FALSE. ! flag for E-W periodicity
   LOGICAL                                   :: lnc4     = .FALSE. ! Use nc4 with chunking and deflation
@@ -150,8 +148,8 @@ PROGRAM cdfeddyscale
   zmke = -9999.
   DO jj = 1, npjglo-1
      DO ji = 1, npiglo-1   ! vector opt.
-        zmke(ji,jj) =  0.25 * (vozocrtx2(ji,jj+1) + vozocrtx2(ji,jj))   &
-             & + 0.25 * (vomecrty2(ji+1,jj) + vomecrty2(ji,jj))   
+        zmke(ji,jj) =  0.25 *( (vozocrtx2(ji,jj+1) + vozocrtx2(ji,jj))   &
+             &                +(vomecrty2(ji+1,jj) + vomecrty2(ji,jj))   )
      END DO
   END DO
 

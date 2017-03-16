@@ -33,7 +33,7 @@ PROGRAM cdfeddyscale_pass1
   INTEGER(KIND=4),                PARAMETER :: jp_dxcurl2=5, jp_dycurl2=6, jp_u2=7, jp_v2=8
 
   INTEGER(KIND=4)                           :: ji, jj, jt         ! dummy loop index
-  INTEGER(KIND=4)                           :: ilev               ! level to be processed
+  INTEGER(KIND=4)                           :: ilev=1             ! level to be processed
   INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
   INTEGER(KIND=4)                           :: narg, iargc, ijarg ! browse command line
@@ -45,7 +45,6 @@ PROGRAM cdfeddyscale_pass1
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1u, e2u           ! zonal horizontal metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1v, e2v           ! meridional horizontal metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn             ! velocity field
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zun, zvn           ! working arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: fmask              ! fmask
 
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_rotn, dl_rotn2  ! curl and square curl
@@ -62,7 +61,6 @@ PROGRAM cdfeddyscale_pass1
 
   TYPE (variable), DIMENSION(jp_nvar)       :: stypvar            ! structure for attibutes
 
-  LOGICAL                                   :: lforcing = .FALSE. ! forcing flag
   LOGICAL                                   :: lchk     = .FALSE. ! flag for missing files
   LOGICAL                                   :: lperio   = .FALSE. ! flag for E-W periodicity
   LOGICAL                                   :: lnc4     = .FALSE. ! Use nc4 with chunking and deflation
@@ -95,9 +93,7 @@ PROGRAM cdfeddyscale_pass1
      PRINT *,'                 filename and variable name'
      PRINT *,'       -v V-file V-var: meridional component of the vector field:'
      PRINT *,'                 filename and variable name'
-     PRINT *,'       -l lev : level to be processed. If set to 0, assume forcing file in '
-     PRINT *,'                input (hence with velocities on A-grid). For 2D velocities on'
-     PRINT *,'                C-grid, specify lev=1'
+     PRINT *,'       -l lev : level to be processed.'
      PRINT *,'     '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file] : specify output file instead of ',TRIM(cf_out)
@@ -149,31 +145,22 @@ PROGRAM cdfeddyscale_pass1
   npk    = getdim(cf_ufil,cn_z)
   npt    = getdim(cf_ufil,cn_t)
 
-  PRINT *, 'npiglo = ',npiglo
-  PRINT *, 'npjglo = ',npjglo
-  PRINT *, 'npk    = ',npk
-  PRINT *, 'npt    = ',npt
-  PRINT *, 'ilev   = ',ilev
-
-  !test if lev exists
-  IF ( (npk==0) .AND. (ilev > 1) ) THEN
-     PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
-     STOP
-  ELSE
-     npk = 1
-  END IF
-
-  ! if forcing field 
-  IF ( ilev==0 .AND. npk==0 ) THEN
-     lforcing=.TRUE.
-     npk = 1 ; ilev=1
-     PRINT *, 'npk =0, assume 1'
+  IF ( npk==0 ) THEN
+     PRINT *, 'npk=0, assume 1'
+     npk=1
   END IF
 
   IF ( npt==0 ) THEN
      PRINT *, 'npt=0, assume 1'
      npt=1
   END IF
+
+  PRINT *, 'npiglo = ',npiglo
+  PRINT *, 'npjglo = ',npjglo
+  PRINT *, 'npk    = ',npk
+  PRINT *, 'npt    = ',npt
+  PRINT *, 'ilev   = ',ilev
+
   ! check files and determines if the curl will be 2D of 3D
 
   ! Allocate the memory
@@ -181,7 +168,6 @@ PROGRAM cdfeddyscale_pass1
   ALLOCATE ( e1v(npiglo,npjglo)       , e2v(npiglo,npjglo)       )
   ALLOCATE ( e1f(npiglo,npjglo)       , e2f(npiglo,npjglo)       )
   ALLOCATE ( un(npiglo,npjglo)        , vn(npiglo,npjglo)        )
-  ALLOCATE ( zun(npiglo,npjglo)       , zvn(npiglo,npjglo)       )
   ALLOCATE ( fmask(npiglo,npjglo)                                )
   ALLOCATE ( tim(npt)                                            )
   ALLOCATE ( dl_rotn(npiglo,npjglo)   , dl_rotn2(npiglo,npjglo)  )
@@ -202,23 +188,9 @@ PROGRAM cdfeddyscale_pass1
 
   DO jt=1,npt
      IF (MOD(jt,100)==0 ) PRINT *, jt,'/',npt
-     ! if files are forcing fields
-     zun(:,:) =  getvar(cf_ufil, cv_u, ilev ,npiglo,npjglo, ktime=jt)
-     zvn(:,:) =  getvar(cf_vfil, cv_v, ilev ,npiglo,npjglo, ktime=jt)
 
-     IF ( lforcing ) THEN ! for forcing file u and v are on the A grid
-        DO ji=1, npiglo-1
-           un(ji,:) = 0.5*(zun(ji,:) + zun(ji+1,:))
-        END DO
-        !
-        DO jj=1, npjglo-1
-           vn(:,jj) = 0.5*(zvn(:,jj) + zvn(:,jj+1))
-        END DO
-        ! end compute u and v on U and V point
-     ELSE
-        un(:,:) = zun(:,:)
-        vn(:,:) = zvn(:,:)
-     END IF
+     un(:,:) =  getvar(cf_ufil, cv_u, ilev ,npiglo,npjglo, ktime=jt)
+     vn(:,:) =  getvar(cf_vfil, cv_v, ilev ,npiglo,npjglo, ktime=jt)
 
      ! compute the mask
      IF ( jt==1 ) THEN
@@ -235,7 +207,7 @@ PROGRAM cdfeddyscale_pass1
      DO jj = 1, npjglo -1
         DO ji = 1, npiglo -1   ! vector opt.
            dl_rotn(ji,jj) = (  e2v(ji+1,jj  ) * vn(ji+1,jj  ) - e2v(ji,jj) *vn(ji,jj) &
-                &         - e1u(ji  ,jj+1) * un(ji  ,jj+1) + e1u(ji,jj) *un(ji,jj)  ) &
+                &            - e1u(ji  ,jj+1) * un(ji  ,jj+1) + e1u(ji,jj) *un(ji,jj)  ) &
                 &         * fmask(ji,jj) / ( e1f(ji,jj) * e2f(ji,jj) )
         END DO
      END DO
@@ -263,8 +235,8 @@ PROGRAM cdfeddyscale_pass1
      dyrotn2(:,:) = dyrotn(:,:) * dyrotn(:,:)
 
      ! compute the square of the velocity components
-     dl_vozocrtx2(:,:) = zun(:,:) * zun(:,:) 
-     dl_vomecrty2(:,:) = zvn(:,:) * zvn(:,:)
+     dl_vozocrtx2(:,:) = un(:,:) * un(:,:) 
+     dl_vomecrty2(:,:) = vn(:,:) * vn(:,:)
 
      ierr = putvar(ncout, id_varout(jp_curl),    REAL(dl_rotn),  1, npiglo, npjglo, ktime=jt)
      ierr = putvar(ncout, id_varout(jp_curl2),   REAL(dl_rotn2), 1, npiglo, npjglo, ktime=jt)
@@ -391,17 +363,17 @@ CONTAINS
     stypvar(jp_v2)%conline_operation = 'N/A'
     stypvar(jp_v2)%caxis             = 'TYX'
 
-    ! use zun and zvn to store f latitude and longitude for output
-    zun = getvar(cn_fhgr, cn_glamf, 1, npiglo, npjglo)
-    zvn = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
+    ! use un and vn to store f latitude and longitude for output
+    un = getvar(cn_fhgr, cn_glamf, 1, npiglo, npjglo)
+    vn = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
 
     ! look for  E-W periodicity
-    IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
+    IF ( un(1,1) == un(npiglo-1,1) ) lperio = .TRUE.
 
     ! create output fileset
     ncout = create      (cf_out, cf_ufil, npiglo,  npjglo, 0,         ld_nc4=lnc4 )
     ierr  = createvar   (ncout , stypvar, jp_nvar, ipk,    id_varout, ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 0, pnavlon=zun, pnavlat=zvn )
+    ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 0, pnavlon=un, pnavlat=zvn )
 
     tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
     ierr = putvar1d(ncout,   tim,       npt,  'T')
