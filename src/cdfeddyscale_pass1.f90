@@ -13,6 +13,8 @@ PROGRAM cdfeddyscale_pass1
   !!
   !!  ** Method  : Use the same algorithm than NEMO
   !!
+  !! History : 3.0  : 12/2013  : C.Q. Akuetevi (original)
+  !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -34,7 +36,7 @@ PROGRAM cdfeddyscale_pass1
   INTEGER(KIND=4)                           :: ilev               ! level to be processed
   INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
-  INTEGER(KIND=4)                           :: narg, iargc        ! browse command line
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg ! browse command line
   INTEGER(KIND=4)                           :: ncout, ierr        ! browse command line
   INTEGER(KIND=4), DIMENSION(jp_nvar)       :: ipk, id_varout     ! output variable properties
 
@@ -63,33 +65,45 @@ PROGRAM cdfeddyscale_pass1
   LOGICAL                                   :: lforcing = .FALSE. ! forcing flag
   LOGICAL                                   :: lchk     = .FALSE. ! flag for missing files
   LOGICAL                                   :: lperio   = .FALSE. ! flag for E-W periodicity
+  LOGICAL                                   :: lnc4     = .FALSE. ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
-  IF ( narg /= 5 ) THEN
-     PRINT *,' usage : cdfeddyscale_pass1 U-file V-file U-var V-var lev'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfeddyscale_pass1 -u U-file U-var -v -V-file V-var -l lev ...'
+     PRINT *,'               ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'     Compute: - the curl and the square of curl on F-points,' 
+     PRINT *,'        This program computes some elements whose temporal mean is required'
+     PRINT *,'        in the determination of the eddyscales (cf cdfeddyscale). These '
+     PRINT *,'        elements are :'
+     PRINT *,'              - the curl and the square of curl on F-points,' 
      PRINT *,'              - the gradient components of the curl and the'
      PRINT *,'                square of the gradient components on UV-points,'
      PRINT *,'              - the square of velocity components on UV-points,' 
-     PRINT *,'     for given gridU gridV files and variables. These variables are required'
-     PRINT *,'     for computing eddy scales with cdfeddyscale. Therefore this program is'
-     PRINT *,'     the first step in computing the eddy scales.'
-     PRINT *,'     '
-     PRINT *,'        These terms will used to compute the Taylor scale or large'
-     PRINT *,'     scale eddy (lambda1) and the small scale eddy (lambda2) in'
-     PRINT *,'     the program cdfeddyscale.'
      PRINT *,'      '
+     PRINT *,'        They are computed for the set of U/V files given in arguments. '
+     PRINT *,'        Therefore, for a particular experiment, the resulting files obtained'
+     PRINT *,'        for a series of time-frames, need to be time-averaged (cdfmoy), before'
+     PRINT *,'        using the final cdfeddyscale program, for the computation of the eddy'
+     PRINT *,'        scales : Taylor scale (Large scale eddy --lambda1--), and small scale '
+     PRINT *,'        eddy (lambda2).'
+     PRINT *,'     '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       U-file : zonal component of the vector field.'
-     PRINT *,'       V-file : meridional component of the vector field.'
-     PRINT *,'       U-var  : zonal component variable name'
-     PRINT *,'       V-var  : meridional component variable name.'
-     PRINT *,'       lev    : level to be processed. If set to 0, assume forcing file '
-     PRINT *,'                in input.'
+     PRINT *,'       -u U-file U-var: zonal component of the vector field:'
+     PRINT *,'                 filename and variable name'
+     PRINT *,'       -v V-file V-var: meridional component of the vector field:'
+     PRINT *,'                 filename and variable name'
+     PRINT *,'       -l lev : level to be processed. If set to 0, assume forcing file in '
+     PRINT *,'                input (hence with velocities on A-grid). For 2D velocities on'
+     PRINT *,'                C-grid, specify lev=1'
+     PRINT *,'     '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : specify output file instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ', TRIM(cn_fhgr)
@@ -104,16 +118,25 @@ PROGRAM cdfeddyscale_pass1
      PRINT *,'                 C-grid point.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
-     PRINT *,'        cdfeddyscale'
+     PRINT *,'        cdfmoy, cdfeddyscale'
      STOP
   ENDIF
 
-
-  CALL getarg(1, cf_ufil)
-  CALL getarg(2, cf_vfil)
-  CALL getarg(3, cv_u   )
-  CALL getarg(4, cv_v   )
-  CALL getarg(5, cldum  ) ;  READ(cldum,*) ilev
+  ijarg=1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-u'   ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_u    ) ; ijarg=ijarg+1
+     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_v    ) ; ijarg=ijarg+1
+     CASE ( '-l'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,* ) ilev
+        ! option
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
+     END SELECT
+  ENDDO
 
   lchk = chkfile(cn_fhgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
@@ -166,7 +189,6 @@ PROGRAM cdfeddyscale_pass1
   ALLOCATE ( dxrotn2(npiglo,npjglo)   , dyrotn2(npiglo,npjglo)   )
   ALLOCATE ( dl_vozocrtx2(npiglo,npjglo)                         )
   ALLOCATE ( dl_vomecrty2(npiglo,npjglo)                         )
-
 
   ! Read the metrics from the mesh_hgr file
   e1u =  getvar(cn_fhgr, cn_ve1u, 1, npiglo, npjglo)
@@ -244,31 +266,16 @@ PROGRAM cdfeddyscale_pass1
      dl_vozocrtx2(:,:) = zun(:,:) * zun(:,:) 
      dl_vomecrty2(:,:) = zvn(:,:) * zvn(:,:)
 
-     ! write dl_rotn on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_curl),    REAL(dl_rotn),  1, npiglo, npjglo, ktime=jt)
-
-     ! write dl_rotn2 on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_curl2),   REAL(dl_rotn2), 1, npiglo, npjglo, ktime=jt)
-
-     ! write dxrotn on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_dxcurl),  REAL(dxrotn),   1, npiglo, npjglo, ktime=jt)
-
-     ! write dyrotn on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_dycurl),  REAL(dyrotn),   1, npiglo, npjglo, ktime=jt)
-
-     ! write dxrotn2 on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_dxcurl2), REAL(dxrotn2),  1, npiglo, npjglo, ktime=jt)
-
-     ! write dyrotn2 on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_dycurl2), REAL(dyrotn2),  1, npiglo, npjglo, ktime=jt)
-
-     ! write dl_vozocrtx2 on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_u2),  REAL(dl_vozocrtx2), 1, npiglo, npjglo, ktime=jt)
-
-     ! write dl_vozocrtx2 on file at level k and at time jt
      ierr = putvar(ncout, id_varout(jp_v2),  REAL(dl_vomecrty2), 1, npiglo, npjglo, ktime=jt)
 
-  END DO
+  END DO  ! time loop
   ierr = closeout(ncout)
 CONTAINS
 
@@ -281,7 +288,11 @@ CONTAINS
     !! ** Method  :   Use global program variables 
     !!
     !!----------------------------------------------------------------------
-
+    INTEGER :: jv
+    !!----------------------------------------------------------------------
+    DO jv=1, jp_nvar
+       stypvar(jv)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    ENDDO
     ! define new variables for output
     ! Relative Vorticity F point
     ipk(jp_curl)                       = 1   !2D
@@ -388,8 +399,8 @@ CONTAINS
     IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
 
     ! create output fileset
-    ncout = create      (cf_out, cf_ufil, npiglo,  npjglo, 0)
-    ierr  = createvar   (ncout , stypvar, jp_nvar, ipk,    id_varout)
+    ncout = create      (cf_out, cf_ufil, npiglo,  npjglo, 0,         ld_nc4=lnc4 )
+    ierr  = createvar   (ncout , stypvar, jp_nvar, ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 0, pnavlon=zun, pnavlat=zvn )
 
     tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
