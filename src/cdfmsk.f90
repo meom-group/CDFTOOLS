@@ -54,9 +54,16 @@ PROGRAM cdfmsk
 
   IF ( chkfile(cf_msk) ) STOP ! missing file
 
+  ! in mask file cn_z is 'z'
+  cn_z='z'  ! ugly fix
+
   npiglo = getdim (cf_msk, cn_x)
   npjglo = getdim (cf_msk, cn_y)
   npk    = getdim (cf_msk, cn_z)
+
+  PRINT *,' NPIGLO = ', npiglo
+  PRINT *,' NPJGLO = ', npjglo
+  PRINT *,' NPK    = ', npk
 
   ALLOCATE (zmask(npiglo,npjglo))
 
