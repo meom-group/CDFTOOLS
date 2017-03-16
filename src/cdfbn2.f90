@@ -60,6 +60,7 @@ PROGRAM cdfbn2
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfbn2  -t T-file [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file]'
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Brunt-Vaissala frequency (N2) according to' 
      PRINT *,'       temperature and salinity given in the input file.'
@@ -78,6 +79,8 @@ PROGRAM cdfbn2
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file ] : use time-varying vertical metrics, W-file is a file'
      PRINT *,'                 holding e3w(t) for vvl.'
+     PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fzgr),' is needed for this program.' 

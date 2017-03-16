@@ -66,36 +66,35 @@ PROGRAM cdfrichardson
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfrichardson  gridT gridU gridV [-W] [-full] [-o OUT-file] [-nc4] ..'
-     PRINT*,'                 ... [-vvl W-file] '
+     PRINT *,' usage : cdfrichardson  -t gridT -u gridU -v gridV [-W] [-full] ...'
+     PRINT *,'          ... [-o OUT-file] [-nc4] [-vvl W-file] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the Richardson Number (Ri) according to' 
-     PRINT *,'       temperature, salinity and velocity components'
-     PRINT *,'       given in the input files.'
+     PRINT *,'       Compute the Richardson Number (Ri) according to temperature,' 
+     PRINT *,'       salinity and velocity components, given in the input files.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       gridT : input gridT file for temperature and salinity' 
-     PRINT *,'       gridU : input gridU file for zonal velocity component'
-     PRINT *,'       gridV : input gridV file for meridional velocity component'
+     PRINT *,'       -t gridT : input gridT file for temperature and salinity' 
+     PRINT *,'       -u gridU : input gridU file for zonal velocity component'
+     PRINT *,'       -v gridV : input gridV file for meridional velocity component'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-W ] : keep N2 at W points. Default is to interpolate N2' 
-     PRINT *,'             at T point on the vertical'
-     PRINT *,'       [-full ] : indicate a full step configuration instead of'
-     PRINT *,'                the default partial steps.'
+     PRINT *,'       [-W ] : keep N2 at W points. Default is to interpolate N2 at T points' 
+     PRINT *,'             on the vertical'
+     PRINT *,'       [-full ] : indicate a full step configuration instead of the default'
+     PRINT *,'             partial steps.'
      PRINT *,'       [-o OUT-file ]: specify output file instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'                 This option is effective only if cdftools are compiled with'
-     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'             This option is effective only if cdftools are compiled with'
+     PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file ]: use time-varying vertical metrics. W-file holds the'
-     PRINT *,'                time-varying e3w vertical metrics.'
+     PRINT *,'             time-varying e3w vertical metrics.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fzgr),' is needed for this program.' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
      PRINT *,'       variables : ', TRIM(cv_ric)
      STOP
   ENDIF
@@ -103,20 +102,20 @@ PROGRAM cdfrichardson
   cglobal = 'Partial step computation'
 
   ijarg = 1
-  CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
-  CALL getarg (ijarg, cf_ufil) ; ijarg = ijarg + 1
-  CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1
-
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
+     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-u'   ) ; CALL getarg (ijarg, cf_ufil) ; ijarg = ijarg + 1
+     CASE ( '-v'   ) ; CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1
+        ! options
      CASE ('-W'    ) ; l_w   = .TRUE.
      CASE ('-full' ) ; lfull = .TRUE. ; cglobal = 'full step computation'
      CASE ( '-nc4' ) ; lnc4  = .TRUE.
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE ( '-vvl' ) ; lg_vvl= .TRUE.
-                     ; CALL getarg (ijarg, cf_e3w) ; ijarg = ijarg + 1
-     CASE DEFAULT   ; PRINT *,' Option not understood :', TRIM(cldum) ; STOP
+        ;              CALL getarg (ijarg, cf_e3w) ; ijarg = ijarg + 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
@@ -125,7 +124,7 @@ PROGRAM cdfrichardson
   lchk = lchk .OR. chkfile (cf_ufil  )
   lchk = lchk .OR. chkfile (cf_vfil  )
   IF ( lg_vvl ) THEN
-    lchk = lchk .OR. chkfile (cf_e3w  )
+     lchk = lchk .OR. chkfile (cf_e3w  )
   ENDIF
   IF ( lchk   ) STOP  ! missing files  
 
@@ -151,8 +150,10 @@ PROGRAM cdfrichardson
   zwk(:,:,:) = rspval
   zri(:,:)   = rspval
 
-           cv_dep = cn_gdept
-  IF (l_w) cv_dep = cn_gdepw
+  IF (l_w) THEN ; cv_dep = cn_gdepw
+  ELSE          ; cv_dep = cn_gdept
+  ENDIF
+
   gdep(:) = getvare3(cn_fzgr, cv_dep, npk) 
 
   CALL CreateOutput
@@ -204,52 +205,52 @@ PROGRAM cdfrichardson
         IF ( .NOT. l_w ) THEN
            ! now put zri at T level (k )
            WHERE ( zwk(:,:,idown) == 0 )  ; zri(:,:) =  zwk(:,:,iup)
-           ELSEWHERE                      ; zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
-           END WHERE
-        ELSE
-           zri(:,:) = zwk(:,:,iup)
-        ENDIF
+        ELSEWHERE                      ; zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
+        END WHERE
+     ELSE
+        zri(:,:) = zwk(:,:,iup)
+     ENDIF
 
-        WHERE ( zri < 0  .AND. zri /= rspval )  zri = rspval
-        ierr = putvar(ncout, id_varout(1), zri, jk, npiglo, npjglo, ktime=jt )
-        itmp = idown ; idown = iup ; iup = itmp
+     WHERE ( zri < 0  .AND. zri /= rspval )  zri = rspval
+     ierr = putvar(ncout, id_varout(1), zri, jk, npiglo, npjglo, ktime=jt )
+     itmp = idown ; idown = iup ; iup = itmp
 
-     END DO  ! loop to next level
-  END DO
+  END DO  ! loop to next level
+END DO
 
-  ierr = closeout(ncout)
+ierr = closeout(ncout)
 CONTAINS
 
-  SUBROUTINE CreateOutput
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE CreateOutput  ***
-    !!
-    !! ** Purpose :  Create netcdf output file(s) 
-    !!
-    !! ** Method  :  Use stypvar global description of variables
-    !!
-    !!----------------------------------------------------------------------
-  ipk(1)                       = npk  !  3D
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = cv_ric
-  stypvar(1)%cunits            = 'no'
-  stypvar(1)%rmissing_value    = rspval
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 50000.
-  stypvar(1)%clong_name        = 'Richardson Number'
-  stypvar(1)%cshort_name       = cv_ric
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
+SUBROUTINE CreateOutput
+  !!---------------------------------------------------------------------
+  !!                  ***  ROUTINE CreateOutput  ***
+  !!
+  !! ** Purpose :  Create netcdf output file(s) 
+  !!
+  !! ** Method  :  Use stypvar global description of variables
+  !!
+  !!----------------------------------------------------------------------
+ ipk(1)                       = npk  !  3D
+ stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+ stypvar(1)%cname             = cv_ric
+ stypvar(1)%cunits            = 'no'
+ stypvar(1)%rmissing_value    = rspval
+ stypvar(1)%valid_min         = 0.
+ stypvar(1)%valid_max         = 50000.
+ stypvar(1)%clong_name        = 'Richardson Number'
+ stypvar(1)%cshort_name       = cv_ric
+ stypvar(1)%conline_operation = 'N/A'
+ stypvar(1)%caxis             = 'TZYX'
 
-  ! create output fileset
-  ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk                             , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
+ ! create output fileset
+ ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk                             , ld_nc4=lnc4 )
+ ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
+ ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt   )
-  ierr = putvar1d(ncout,  tim,       npt,'T')
+ tim  = getvar1d(cf_tfil, cn_vtimec, npt   )
+ ierr = putvar1d(ncout,  tim,       npt,'T')
 
-  END SUBROUTINE CreateOutput
+END SUBROUTINE CreateOutput
 
 
-END PROGRAM cdfrichardson
+END PROGRAM

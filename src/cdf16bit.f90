@@ -55,26 +55,34 @@ PROGRAM cdf16bit
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar            ! Type variable is defined in cdfio.
 
-  LOGICAL                                       :: l_chk=.FALSE.      ! logical flags to save line options
-  LOGICAL                                       :: l_verbose=.FALSE.  ! logical flags to save line options
+  LOGICAL                                       :: l_chk    = .FALSE. ! logical flags to save line options
+  LOGICAL                                       :: l_verbose= .FALSE. ! logical flags to save line options
+  LOGICAL                                       :: lnc4     = .FALSE. ! Use nc4 with chunking and deflation
   LOGICAL, DIMENSION(:,:),          ALLOCATABLE :: lmask              ! 2D logical land/sea mask (true on ocean)
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdf16bit 32BIT-file [ -check ] [ -verbose]'
+     PRINT *,' usage : cdf16bit -f 32BIT-file [-check] [-verbose] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Convert input 32 bit precision file into 16 bit' 
-     PRINT *,'       precision file using add_offset and scale_factor'
+     PRINT *,'       Convert input 32 bit precision file into 16 bit precision file using' 
+     PRINT *,'       add_offset and scale_factor. '
+     PRINT *,'       Note that predifined values for these two parameters are defined '
+     PRINT *,'       according to the variable name. If variable name is not supported,'
+     PRINT *,'       no conversion is performed.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       32BIT-file : input 32 bit file to be converted' 
+     PRINT *,'       -f 32BIT-file : input 32 bit file to be converted' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -check ]   : control than the scale factors are adequate'
-     PRINT *,'       [ -verbose ] : give information level by level.' 
+     PRINT *,'       [-check ]   : control than the scale factors are adequate'
+     PRINT *,'       [-verbose ] : give information level by level.' 
+     PRINT *,'       [-o OUT-file] : Specify output file name instead of ', TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                 This option is effective only if cdftools are compiled with'
+     PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none '
@@ -86,22 +94,21 @@ PROGRAM cdf16bit
   ENDIF
   !!
   ijarg = 1
-  CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
-  IF ( chkfile(cf_in)  ) STOP ! missing file
-
-  ! Check for options and reflect options on logical flags
   DO WHILE ( ijarg <= narg)  
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
-
-     SELECT CASE (  cldum  )   ! Analyse option
-     CASE ( '-check'   )          ! control if the scale factors are OK
-        l_chk=.TRUE.
-     CASE ( '-verbose' )          ! information will be given level by level
-        l_chk=.TRUE. ; l_verbose=.TRUE.
-     CASE DEFAULT
-        PRINT *,' OPTION ',TRIM(cldum),' not supported.' ; STOP
+     SELECT CASE (  cldum  )  
+     CASE ( '-f'      ) ; CALL getarg (ijarg, cf_in ) ; ijarg = ijarg + 1
+        ! options
+     CASE ( '-check'  ) ; l_chk     =.TRUE.
+     CASE ( '-verbose') ; l_chk     =.TRUE. 
+        ;                 l_verbose =.TRUE.
+     CASE ( '-o'      ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-nc4'    ) ; lnc4      =.TRUE.
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
+
+  IF ( chkfile(cf_in)  ) STOP ! missing file
 
   ! get domain dimension from input file
   npiglo = getdim (cf_in, cn_x)
@@ -129,30 +136,8 @@ PROGRAM cdf16bit
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:)=getvarname(cf_in,nvars,stypvar) 
 
-  id_var(:)  = (/(jv, jv=1,nvars)/)
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk (cf_in,nvars)
+  CALL CreateOutput
 
-  ! flags variable not to be treated by changing their name to none
-  WHERE( ipk == 0 ) cv_names='none'
-  stypvar(:)%cname=cv_names
-
-  ! create output fileset
-  ! fills the scale_factor and add_offset attribute according to variable name
-  ! if the variable is not documented, then, sf=1, ao=0. and no conversion
-  ! is performed for this variable (It stays in REAL*4 )
-  DO jvar=1,nvars
-     IF (cv_names(jvar) /= 'none' ) CALL sf_ao(jvar)
-  END DO
-
-  ! create output file taking the sizes in cf_in
-  ncout =create(cf_out, cf_in,npiglo,npjglo,npk)
-  ! The variables are created as FLOAT or SHORT depending on the scale_factor AND add_offset attribute
-  ierr= createvar(ncout , stypvar,  nvars, ipk, id_varout )
-  ierr= putheadervar(ncout , cf_in, npiglo, npjglo, npk)
-
-  ! Get time and write time
-  tim=getvar1d(cf_in,cn_vtimec,npt) ; ierr=putvar1d(ncout,tim,npt,'T')
   ! Loop on all variables of the file
   DO jvar = 1,nvars
      IF (cv_names(jvar) == 'none' ) THEN
@@ -558,5 +543,43 @@ CONTAINS
        END IF   ! last level
     END IF   ! check mode
   END SUBROUTINE checkscaling
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    id_var(:)  = (/(jv, jv=1,nvars)/)
+    ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+    ipk(:)     = getipk (cf_in,nvars)
+
+    ! flags variable not to be treated by changing their name to none
+    WHERE( ipk == 0 ) cv_names='none'
+    stypvar(:)%cname=cv_names
+
+    ! create output fileset
+    ! fills the scale_factor and add_offset attribute according to variable name
+    ! if the variable is not documented, then, sf=1, ao=0. and no conversion
+    ! is performed for this variable (It stays in REAL*4 )
+    DO jvar=1,nvars
+       IF (cv_names(jvar) /= 'none' ) CALL sf_ao(jvar)
+       stypvar(jvar)%ichunk = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    END DO
+
+    ! create output file taking the sizes in cf_in
+    ncout =create(cf_out, cf_in,npiglo,npjglo,npk           , ld_nc4=lnc4 )
+    ! The variables are created as FLOAT or SHORT depending on the scale_factor AND add_offset attribute
+    ierr= createvar(ncout , stypvar,  nvars, ipk, id_varout , ld_nc4=lnc4 )
+    ierr= putheadervar(ncout , cf_in, npiglo, npjglo, npk)
+
+    ! Get time and write time
+    tim=getvar1d(cf_in,cn_vtimec,npt) 
+    ierr=putvar1d(ncout,tim,npt,'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdf16bit

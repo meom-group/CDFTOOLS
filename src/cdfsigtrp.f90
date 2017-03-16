@@ -33,7 +33,6 @@ PROGRAM cdfsigtrp
   !!   routines      : description
   !!  section_init   : initialize section names and positions
   !!  print_out      : routine which performs standard output if required
-  !!  bimg_writ      : routine which performs bimg output if required
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos          ! for sigma0, sigmai
@@ -55,7 +54,6 @@ PROGRAM cdfsigtrp
   INTEGER(KIND=4)                               :: narg, iargc          ! command line 
   INTEGER(KIND=4)                               :: ijarg, ireq          ! command line
   INTEGER(KIND=4)                               :: npk, nk              ! vertical size, number of wet layers
-  INTEGER(KIND=4)                               :: numbimg=10           ! optional bimg logical unit
   INTEGER(KIND=4)                               :: numout=11            ! ascii output
   INTEGER(KIND=4)                               :: nsection             ! number of sections (overall)
   INTEGER(KIND=4)                               :: iimin, iimax         ! working section limits
@@ -99,9 +97,9 @@ PROGRAM cdfsigtrp
   CHARACTER(LEN=256)                            :: cf_tfil              ! temperature salinity file
   CHARACTER(LEN=256)                            :: cf_ufil              ! zonal velocity file
   CHARACTER(LEN=256)                            :: cf_vfil              ! meridional velocity file
+  CHARACTER(LEN=256)                            :: cf_wfil              ! W file for vvl e3w
   CHARACTER(LEN=256)                            :: cf_section='dens_section.dat'  ! input section file
   CHARACTER(LEN=256)                            :: cf_out='trpsig.txt'  ! output  ascii file
-  CHARACTER(LEN=256)                            :: cf_bimg              ! output bimg file (2d)
   CHARACTER(LEN=256)                            :: cf_nc                ! output netcdf file (2d)
   CHARACTER(LEN=256)                            :: cf_outnc             ! output netcdf file (1d, 0d))
   CHARACTER(LEN=256)                            :: cv_dep               ! depth variable
@@ -122,30 +120,33 @@ PROGRAM cdfsigtrp
   LOGICAL                                       :: l_merid              ! flag for meridional section
   LOGICAL                                       :: ltemp  =.FALSE.      ! flag for use of temperature
   LOGICAL                                       :: lprint =.FALSE.      ! flag for extra print
-  LOGICAL                                       :: lbimg  =.FALSE.      ! flag for bimg output
   LOGICAL                                       :: lncdf  =.FALSE.      ! flag for extra netcdf output
   LOGICAL                                       :: lfull  =.FALSE.      ! flag for full step 
-  LOGICAL                                       :: lneutral  =.FALSE.   ! flag for neutral density
+  LOGICAL                                       :: lntr   =.FALSE.      ! flag for neutral density
   LOGICAL                                       :: lchk   =.FALSE.      ! flag for missing files
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg < 6 ) THEN
-     PRINT *,' usage :  cdfsigtrp T-file U-file V-file sigma_min sigma_max nbins ...'
-     PRINT *,'              ... [-print ] [-bimg ] [-full ] [ -refdep ref_depth] ...'
-     PRINT *,'              ... [-neutral ] [-section file ] [-temp ]'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file -smin sigma_min ...'
+     PRINT *,'              ...  -smax sigma_max -nbins nbins [-print ] [-netcdf] ...'
+     PRINT *,'              ... [-full ] [-vvl W-file] [-refdep ref_depth] [-neutral ] ...'
+     PRINT *,'              ... [-section file ] [-temp]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute density class transports, according to the density class' 
-     PRINT *,'       definition ( minimum, maximum and number of bins) given in arguments.'
-     PRINT *,'       Section position are given in ',TRIM(cf_section),', an ASCII file '
-     PRINT *,'       with pairs of lines giving section name and section location as'
-     PRINT *,'       imin imax jmin jmax. Only zonal or meridional section are allowed.'
-     PRINT *,'       The name of this file can be specified with the -section option, if'
-     PRINT *,'       it differs from the standard name. Optionaly, a netcdf root variable '
-     PRINT *,'       name and a netcdf root long-name can be provided on the line giving '
-     PRINT *,'       the section name.'
+     PRINT *,'       definition (minimum, maximum and number of bins) given in arguments.'
+     PRINT *,'      '
+     PRINT *,'       Sections information are read from the file ',TRIM(cf_section)
+     PRINT *,'       which is a text file built  with pairs of lines giving: (1) section name'
+     PRINT *,'       and (2) section location.'
+     PRINT *,'       First line with section name may also have 2 additional strings holding'
+     PRINT *,'       a prefix for variable output, and a long name to be used as attribute '
+     PRINT *,'       in the output file. ' 
+     PRINT *,'       Second line gives the location of the section with specification of '
+     PRINT *,'       4 integer values (imin imax jmin jmax), relative to the model grid.'
+     PRINT *,'       Only  zonal or meridional section are allowed.'
      PRINT *,'      '
      PRINT *,'       This program can also be used to compute transport by class of '
      PRINT *,'       temperatures, provided the temperatures decrease monotonically '
@@ -153,31 +154,29 @@ PROGRAM cdfsigtrp
      PRINT *,'       sigma_min, sigma_max as temperatures.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file : netcdf file with temperature and salinity' 
-     PRINT *,'       U-file : netcdf file with zonal velocity component'
-     PRINT *,'       V-file : netcdf file with meridional velocity component'
-     PRINT *,'       sigma_min : minimum density for binning'
-     PRINT *,'       sigma_max : maximum density for binning'
-     PRINT *,'       nbins : number of bins. This will fix the bin ''width'' '
+     PRINT *,'       -t T-file : netcdf file with temperature and salinity' 
+     PRINT *,'       -u U-file : netcdf file with zonal velocity component'
+     PRINT *,'       -v V-file : netcdf file with meridional velocity component'
+     PRINT *,'       -smin sigma_min : minimum density for binning'
+     PRINT *,'       -smax sigma_max : maximum density for binning'
+     PRINT *,'       -nbins nbins : number of bins. This will fix the bin ''width'' '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -full ] : for full step configuration' 
-     PRINT *,'       [ -bimg ] : produce extra bimg output file which shows the details'
-     PRINT *,'               of the sections (normal velocity, density, temperature, '
-     PRINT *,'               salinity, transports, isopycnal depths. (to be change to '
-     PRINT *,'               netcdf files for more common use.'
-     PRINT *,'       [ -ncdf ] : produce extra netcdf output file which shows the details'
+     PRINT *,'       [-full] : for full step configuration' 
+     PRINT *,'       [-vvl W-file]: use time varying vertical metrics. Need a W-file for e3w.'
+     PRINT *,'       [-ncdf] : produce extra netcdf output file which shows the details'
      PRINT *,'               of the sections (normal velocity, density, temperature, '
      PRINT *,'               salinity, transports, isopycnal depths. '
-     PRINT *,'       [ -print ]: write the binned transports on standard output, for each'
+     PRINT *,'       [-print]: write the binned transports on standard output, for each'
      PRINT *,'               sections.'
-     PRINT *,'       [ -refdep ref_depth ]: give a reference depths for the computation of'
+     PRINT *,'       [-refdep ref_depth ]: give a reference depths for the computation of'
      PRINT *,'               potential density. Sigma_min, sigma_max must be adapted '
      PRINT *,'               accordingly.'
-     PRINT *,'       [ -neutral ]: use neutral density instead of potential density '
-     PRINT *,'       [ -section file] : give the name of section file.'
+     PRINT *,'       [-neutral]: use neutral density instead of potential density '
+     PRINT *,'       [-section file] : give the name of section file.'
      PRINT *,'               Default is ', TRIM(cf_section)
-     PRINT *,'       [ -temp ] : use temperature instead of density for binning'
+     PRINT *,'       [-temp] : use temperature instead of density for binning'
+     PRINT *,'       [-help] : give commented example for the section file.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cf_section)
@@ -189,10 +188,6 @@ PROGRAM cdfsigtrp
      PRINT *,'                     sigtrp : transport (Sv per bin)'
      PRINT *,'      '
      PRINT *,'       ascii file  : ', TRIM(cf_out) 
-     PRINT *,'      '
-     PRINT *,'       bimg  file  :  There are 2 bimg files whose name is build from section'
-     PRINT *,'         name : section_name_trpdep.bimg and section_name_trpsig.bimg.'
-     PRINT *,'         This file is written only if -bimg option is used.'
      PRINT *,'      '
      PRINT *,'      Standard output : the results are written on standard output only if '
      PRINT *,'         the -print option is used.'
@@ -208,28 +203,31 @@ PROGRAM cdfsigtrp
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ( '-t'      ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
+     CASE ( '-u'      ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1 ; ireq=ireq+1
+     CASE ( '-v'      ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
+     CASE ( '-smin'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) dsigma_min ; ireq=ireq+1
+     CASE ( '-smax'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) dsigma_max ; ireq=ireq+1
+     CASE ( '-nbins'  ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; ireq=ireq+1
+        ! options
      CASE ( '-full'   ) ; lfull  = .TRUE.
-     CASE ( '-bimg'   ) ; lbimg  = .TRUE.
+     CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
+        ;                 CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
      CASE ( '-ncdf'   ) ; lncdf  = .TRUE.
      CASE ( '-print'  ) ; lprint = .TRUE.
      CASE ( '-temp'   ) ; ltemp  = .TRUE. 
+     CASE ( '-help'   ) ; CALL file_example ; STOP
      CASE ( '-refdep' ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) refdep
      CASE ( '-section') ; CALL getarg(ijarg, cf_section ) ; ijarg=ijarg+1 
-     CASE ( '-neutral') ; lneutral = .TRUE.
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE ( ireq)
-        CASE ( 1 ) ; cf_tfil = cldum
-        CASE ( 2 ) ; cf_ufil = cldum
-        CASE ( 3 ) ; cf_vfil = cldum
-        CASE ( 4 ) ; READ(cldum,*) dsigma_min
-        CASE ( 5 ) ; READ(cldum,*) dsigma_max
-        CASE ( 6 ) ; READ(cldum,*) nbins
-        CASE DEFAULT 
-           PRINT *,' Too many arguments ' ; STOP
-        END SELECT
+     CASE ( '-neutral') ; lntr   = .TRUE.
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
+
+  IF ( ireq /= 6 ) THEN
+     PRINT *,' ERROR :  not enough input arguments. See the usage message and correct.' 
+     STOP
+  ENDIF
 
   ! check for file existence
   lchk = lchk .OR. chkfile( cn_fzgr    )
@@ -239,8 +237,15 @@ PROGRAM cdfsigtrp
   lchk = lchk .OR. chkfile( cf_ufil    )
   lchk = lchk .OR. chkfile( cf_vfil    )
   IF ( lchk ) STOP ! missing file
+
+  IF ( lg_vvl )  THEN
+    cn_fe3u = cf_ufil
+    cn_fe3v = cf_vfil
+    cn_fe3w = cf_wfil
+  ENDIF
+
   IF ( ltemp)  THEN  ! temperature decrease downward. Change sign and swap min/max
-     refdep = -10. ! flag value
+     refdep = -10.   ! flag value
      dltsig     = dsigma_max  ! use dltsig as dummy variable for swapping
      dsigma_max = -dsigma_min
      dsigma_min = -dltsig
@@ -334,14 +339,14 @@ PROGRAM cdfsigtrp
               zs( ji,:) = e3w1d(:)
            ENDDO
         ELSE
-           de3(:,:) = getvaryz(cn_fzgr,'e3u', iimin,   npts, npk, kjmin=ijmin+1 )
-           zt( :,:) = getvaryz(cn_fzgr,'e3w', iimin,   npts, npk, kjmin=ijmin+1 )
-           zs( :,:) = getvaryz(cn_fzgr,'e3w', iimin+1, npts, npk, kjmin=ijmin+1 )
+           de3(:,:) = getvaryz(cn_fe3u, cn_ve3u, iimin,   npts, npk, kjmin=ijmin+1 )
+           zt( :,:) = getvaryz(cn_fe3w, cn_ve3w, iimin,   npts, npk, kjmin=ijmin+1 )
+           zs( :,:) = getvaryz(cn_fe3w, cn_ve3w, iimin+1, npts, npk, kjmin=ijmin+1 )
         ENDIF
 
         DO ji=1, npts
-           ddepu(ji,1:npk) = gdept(:)
-        ENDDO
+           ddepu(ji,1) = gdept(1) ! assume that first depth is set by gdept(1)
+        ENDDO                    ! for vvl case, it might not be exact ...
 
         DO jk=2, npk
            DO ji=1,npts
@@ -386,13 +391,13 @@ PROGRAM cdfsigtrp
               zs( ji,:) = e3w1d(:)
            ENDDO
         ELSE
-           de3(:,:) = getvarxz(cn_fzgr,'e3v', ijmin,   npts, npk, kimin=iimin+1 )
-           zt( :,:) = getvarxz(cn_fzgr,'e3w', ijmin,   npts, npk, kimin=iimin+1 )
-           zs( :,:) = getvarxz(cn_fzgr,'e3w', ijmin+1, npts, npk, kimin=iimin+1 )
+           de3(:,:) = getvarxz(cn_fe3v, cn_ve3v, ijmin,   npts, npk, kimin=iimin+1 )
+           zt( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin,   npts, npk, kimin=iimin+1 )
+           zs( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin+1, npts, npk, kimin=iimin+1 )
         ENDIF
 
         DO ji=1, npts
-           ddepu(ji,1:npk) = gdept(:)
+           ddepu(ji,1) = gdept(1)
         ENDDO
 
         DO jk=2, npk
@@ -423,19 +428,15 @@ PROGRAM cdfsigtrp
         zt(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin  , npts, npk, kimin=iimin+1 )
         zz(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin+1, npts, npk, kimin=iimin+1 )
         zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
-
      ENDIF
 
      ! compute density only for wet points
-     IF ( lneutral ) THEN 
+     IF ( lntr ) THEN 
         dsig(:,1:nk)=sigmantr( zt, zs,         npts, nk)*zmask(:,:)
      ELSE
-        IF ( refdep == -10. ) THEN
-           dsig(:,1:nk)= -zt(:,:)  ! change sign 
-        ELSEIF ( refdep == 0. ) THEN
-           dsig(:,1:nk)=sigma0( zt, zs,         npts, nk)*zmask(:,:)
-        ELSE
-           dsig(:,1:nk)=sigmai( zt, zs, refdep, npts, nk)*zmask(:,:)
+        IF     ( refdep == -10.) THEN  ; dsig(:,1:nk)= -zt(:,:)  ! change sign 
+        ELSEIF ( refdep ==   0.) THEN  ; dsig(:,1:nk)=sigma0( zt, zs,         npts, nk)*zmask(:,:)
+        ELSE                           ; dsig(:,1:nk)=sigmai( zt, zs, refdep, npts, nk)*zmask(:,:)
         ENDIF
      ENDIF
 
@@ -452,7 +453,7 @@ PROGRAM cdfsigtrp
               ELSE
                  ! interpolate between jk-1 and jk
                  dalfa=(dsigma - dsig(ji,jk-1)) / ( dsig(ji,jk) -dsig(ji,jk-1) )
-                 IF (ABS(dalfa) > 1.1 .OR. dalfa < 0 ) THEN   ! case dsig(0) = dsig(1)-1.e-4
+                 IF (ABS(dalfa) > 1.1d0 .OR. dalfa < 0.d0 ) THEN   ! case dsig(0) = dsig(1)-1.e-4
                     dhiso(ji,jiso)= 0.d0
                  ELSE
                     dhiso(ji,jiso)= ddepu(ji,jk)*dalfa + (1.d0-dalfa)* ddepu(ji,jk-1)
@@ -490,7 +491,6 @@ PROGRAM cdfsigtrp
 
      ! output of the code for 1 section
      IF (lprint) CALL print_out(jsec)
-     IF (lbimg ) CALL bimg_writ(jsec)
      IF (lncdf ) CALL cdf_writ(jsec)
      PRINT *,' Total transport in all bins :',TRIM(csection(jsec)),' ',SUM(dtrpbin(jsec,:) )/1.d6
 
@@ -569,12 +569,9 @@ PROGRAM cdfsigtrp
         stypvar(2)%cshort_name    = 'sigtrp'
      ENDIF
 
-
      ! create output fileset
-     IF (ltemp) THEN
-        cf_outnc = TRIM(csection(jsec))//'_trptemp.nc'
-     ELSE
-        cf_outnc = TRIM(csection(jsec))//'_trpsig.nc'
+     IF (ltemp) THEN  ; cf_outnc = TRIM(csection(jsec))//'_trptemp.nc'
+     ELSE             ; cf_outnc = TRIM(csection(jsec))//'_trpsig.nc'
      ENDIF
 
      ncout = create      (cf_outnc, 'none',  ikx,      iky, nbins, cdep=cv_dep               )
@@ -670,67 +667,6 @@ CONTAINS
     CLOSE(inum)
 
   END SUBROUTINE section_init
-
-  SUBROUTINE bimg_writ( ksec)
-    !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE bimg_writ  ***
-    !!
-    !! ** Purpose :  Write output bimg files if required 
-    !!
-    !! ** Method  :  Most of the variables are global 
-    !!
-    !!----------------------------------------------------------------------
-    INTEGER(KIND=4), INTENT(in) :: ksec  ! number of the section
-
-    INTEGER(KIND=4)             :: ji, jk
-    !!----------------------------------------------------------------------
-    ! (along section, depth ) 2D variables
-    cf_bimg=TRIM(csection(ksec))//'_trpdep.bimg'
-    OPEN(numbimg,FILE=cf_bimg,FORM='UNFORMATTED')
-    cldum=' 4 dimensions in this isopycnal file '
-    WRITE(numbimg) cldum
-
-    cldum=' 1: T ;  2: S ; 3: sigma ; 4: Velocity '
-    WRITE(numbimg) cldum
-
-    WRITE(cldum,'(a,4i5.4)') ' from '//TRIM(csection(ksec)), iimin,iimax,ijmin,ijmax
-    WRITE(numbimg) cldum
-
-    cldum=' file '//TRIM(cf_tfil)
-    WRITE(numbimg) cldum
-
-    WRITE(numbimg) npts,nk,1,1,4,0
-    WRITE(numbimg) 1.,-float(nk),1.,1., 0.
-    WRITE(numbimg) 0.
-    WRITE(numbimg) 0.
-
-    WRITE(numbimg) (( REAL(zt(ji,jk)  ), ji=1,npts), jk=nk,1,-1 ) ! temperature 
-    WRITE(numbimg) (( REAL(zs(ji,jk)  ), ji=1,npts), jk=nk,1,-1 ) ! salinity
-    WRITE(numbimg) (( REAL(dsig(ji,jk)), ji=1,npts), jk=nk,1,-1 ) ! density
-    WRITE(numbimg) (( REAL(zu(ji,jk)  ), ji=1,npts), jk=nk,1,-1 ) ! normal velocity
-    CLOSE(numbimg)
-
-    ! (along section, sigma ) 2D variables
-    cf_bimg=TRIM(csection(ksec))//'_trpsig.bimg'
-    OPEN(numbimg,FILE=cf_bimg,FORM='UNFORMATTED')
-    cldum=' 3 dimensions in this isopycnal file '
-    WRITE(numbimg) cldum
-    cldum=' 1: hiso ;  2: bin trp ; 3: cumulated  trp '
-    WRITE(numbimg) cldum
-    WRITE(cldum,'(a,4i5.4)') ' from '//TRIM(csection(ksec)), iimin,iimax,ijmin,ijmax
-    WRITE(numbimg) cldum
-    cldum=' file '//TRIM(cf_tfil)
-    WRITE(numbimg) cldum
-    WRITE(numbimg) npts,nbins,1,1,3,0
-    WRITE(numbimg) 1.,-REAL(dsigma_lev(nbins)),1.,REAL(dltsig), 0.
-    WRITE(numbimg) 0.
-    WRITE(numbimg) 0.
-    WRITE(numbimg) (( REAL(dhiso(ji,jiso)   ),      ji=1,npts), jiso=nbins,1,-1) ! isopyc depth
-    WRITE(numbimg) (( REAL(dwtrpbin(ji,jiso))/1.e6, ji=1,npts), jiso=nbins,1,-1) ! binned transport
-    WRITE(numbimg) (( REAL(dwtrp(ji,jiso)   )/1.e6, ji=1,npts), jiso=nbins,1,-1) ! cumulated transport
-    CLOSE(numbimg)
-
-  END SUBROUTINE bimg_writ
 
   SUBROUTINE cdf_writ( ksec)
     !!---------------------------------------------------------------------
@@ -945,9 +881,72 @@ CONTAINS
     DO  jbin =1, nbins
        PRINT  cfmt_9003, dsigma_lev(jbin),(dwtrpbin(ji,jbin)/1.d6,ji=1,npts), dtrpbin(ksec,jbin)/1.d6
     END DO
-
-
-
   END SUBROUTINE print_out
+
+  SUBROUTINE file_example
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE file_example  ***
+    !!
+    !! ** Purpose :  give an example for the dens_section.dat 
+    !!
+    !!----------------------------------------------------------------------
+    PRINT *,'  '
+    PRINT *,'  '
+    PRINT *,'  '
+    PRINT *,'   EXAMPLE of dens_section.dat file'
+    PRINT *,'   --------------------------------'
+    PRINT *,'  Each section is described by 2 lines :'
+    PRINT *,'    line#1 : name_of_section [variable_suffix] [ long_name_prefix ]'
+    PRINT *,'    line#2 : imin  imax jmin jmax '
+    PRINT *,'  '
+    PRINT *,'  example (taken for ORCA12 configuration) :'
+    PRINT *,'01_Denmark_strait denma Denmark_Strait_transport_in_sigma_classes'
+    PRINT *,'3043 3162 2496 2496'
+    PRINT *,'02_Faoes_Bank_Channel faroe Faroes_Bank_Channel_transport_in_sigma_classes'
+    PRINT *,'3318 3318 2398 2420'
+    PRINT *,'03_Gibraltar gibra Gibraltar_Strait_transport_in_sigma_classes'
+    PRINT *,'3378 3378 1956 1961'
+    PRINT *,'04_Gibbs_FZ gibbs Gibbs_Fracture_Zone_transport_in_sigma_classes'
+    PRINT *,'3075 3075 2215 2235'
+    PRINT *,'  '
+    PRINT *,'   with this example there will be 4 output files named :'
+    PRINT *,'   01_Denmark_strait_trpsig.nc'
+    PRINT *,'   02_Faoes_Bank_Channel_trpsig.nc'
+    PRINT *,'   03_Gibraltar.nc'
+    PRINT *,'   04_Gibbs_FZ'
+    PRINT *,' and taking 03_Gibraltar.nc as example, the variable will be (from ncdump):'
+    PRINT *,'  '
+    PRINT *,'....  '
+    PRINT *,' float sigtrp_gibra(time_counter, levels, y, x) ;'
+    PRINT *,' 	sigtrp_gibra:units = "Sv" ;'
+    PRINT *,' 	sigtrp_gibra:_FillValue = 99999.f ;'
+    PRINT *,' 	sigtrp_gibra:valid_min = -1000.f ;'
+    PRINT *,' 	sigtrp_gibra:valid_max = 1000.f ;'
+    PRINT *,' 	sigtrp_gibra:long_name = "Gibraltar_Strait_transport_in_sigma_classes_transport in sigma class" ;'
+    PRINT *,' 	sigtrp_gibra:short_name = "sigtrp" ;'
+    PRINT *,' 	sigtrp_gibra:iweight = 73 ;'
+    PRINT *,' 	sigtrp_gibra:online_operation = "N/A" ;'
+    PRINT *,' 	sigtrp_gibra:axis = "ZT" ;'
+    PRINT *,' 	sigtrp_gibra:scale_factor = 1.f ;'
+    PRINT *,' 	sigtrp_gibra:add_offset = 0.f ;'
+    PRINT *,' 	sigtrp_gibra:savelog10 = 0.f ;'
+    PRINT *,'....  '
+    PRINT *, ' '
+    PRINT *,'  If no variable name suffix nor longname prefix is given, variable names are '
+    PRINT *,'  the same for all sections, preventing the concatenation of all the output '
+    PRINT *,'  files into a single file.'
+    PRINT *,'  Note that in the given example, the long name is not particularly well chosen,'
+    PRINT *,'  as ''_transport in sigma class'' is automatically append to the prefix ! :) '
+    PRINT *,'  '
+    PRINT *,'  If you are using the DRAKKAR monitoring tools (DMONTOOLS), consider the use'
+    PRINT *,'  of the create_sections_list.ksh script to build the dens_section.dat file '
+    PRINT *,'  from a configuration data base called drakkar_sections_table.txt.'
+    PRINT *,'  '
+    PRINT *,'  '
+    PRINT *,'  '
+
+  END SUBROUTINE file_example
+
+
 
 END PROGRAM cdfsigtrp

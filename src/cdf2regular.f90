@@ -1,9 +1,9 @@
-PROGRAM cdf2levitusgrid3d
+PROGRAM cdf2regular
   !!======================================================================
-  !!                     ***  PROGRAM  cdf2levitusgrid3d  ***
+  !!                     ***  PROGRAM  cdf2regular  ***
   !!=====================================================================
-  !!  ** Purpose : remaps (bin) 2D high resolution (finer than 1x1 deg)
-  !!               fields on Levitus 2D 1x1 deg grid
+  !!  ** Purpose : remaps (bin) 3D high resolution (finer than 1x1 deg)
+  !!               fields on Levitus-like (ie lon/lat regular) grid.
   !!
   !!  ** Method  : data surface averaging
   !!               It assumes that Levitus grid SW grid cell center 
@@ -18,7 +18,7 @@ PROGRAM cdf2levitusgrid3d
   USE modutils
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
-  !! $Id: cdf2levitusgrid3d.f90 652 2013-04-17 16:27:00Z molines $
+  !! $Id$
   !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
   !! @class data_transformation
@@ -37,6 +37,7 @@ PROGRAM cdf2levitusgrid3d
   INTEGER(KIND=4)                              :: narg, iargc, ijarg ! browse line
   INTEGER(KIND=4)                              :: ncout              ! ncid of output file
   INTEGER(KIND=4)                              :: ierr               ! error status
+  INTEGER(KIND=4)                              :: ires               ! resolution in fraction
   INTEGER(KIND=4)                              :: nvars              ! number of variables in the input file
   INTEGER(KIND=4)                              :: iimin, iimax       ! IJ coordinates of the closest points
   INTEGER(KIND=4)                              :: ijmin, ijmax       ! "      "            "
@@ -63,12 +64,10 @@ PROGRAM cdf2levitusgrid3d
 
   REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: d_out, d_n         ! output field and weighting field
 
-  CHARACTER(LEN=256)                           :: cdum               ! dummy char variable
+  CHARACTER(LEN=256)                           :: cldum              ! dummy char variable
   CHARACTER(LEN=256)                           :: cf_in              ! input file name
-  CHARACTER(LEN=256)                           :: cf_out             ! output file name ( output)
-  CHARACTER(LEN=256)                           :: cf_levitus_mask='levitus_mask.nc'   ! Levitus mask filename
+  CHARACTER(LEN=256)                           :: cf_out='regular.nc'! output file name ( output)
   CHARACTER(LEN=256)                           :: cv_nam             ! variable name
-  CHARACTER(LEN=256)                           :: cldum              ! dummy string
   CHARACTER(LEN=256)                           :: ctcalendar         ! time attributes
   CHARACTER(LEN=256)                           :: cttitle            ! time attributes
   CHARACTER(LEN=256)                           :: ctlong_name        ! time attributes
@@ -84,30 +83,39 @@ PROGRAM cdf2levitusgrid3d
 
   LOGICAL                                      :: lchk               ! missing files flag
   LOGICAL                                      :: ltest
-  LOGICAL                                      :: l360=.FALSE.       ! flag for 0-360 layout
+  LOGICAL                                      :: l360 = .FALSE.     ! flag for 0-360 layout
+  LOGICAL                                      :: lnc4 = .FALSE.     ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
+  WRITE(cldum,'("1/",i2)') NINT(1./rlev_resol)
+
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdf2levitusgrid3d -f IN-file -o OUT-file  -v VAR-name3D [-360]'
-     PRINT *,'        [-r resolution] '
+     PRINT *,' usage : cdf2regular -f IN-file -v VAR-name [-o OUT-file] [-360]'
+     PRINT *,'        [-r TGT-resolution] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       remaps (bin) 3D high resolution (finer than 1x1 deg) '
-     PRINT *,'       fields on a regular grid. (vertical grid as input grid)  '
-     PRINT *,'       (does not work for vector fields)  '
-     PRINT *,'       Resolution can be given as argument, default is ', rlev_resol,' deg.'
+     PRINT *,'       Remaps (by binnig) high resolution fields on a coarser regular grid,'
+     PRINT *,'       keeping the same vertical grid as in the input file.'
+     PRINT *,'       This program is not suitable for vector fields, as far as transport'
+     PRINT *,'       conservation is concerned.'
+     PRINT *,'       Default output grid resolution is ',TRIM(cldum),' deg. It can be'
+     PRINT *,'       changed using the -r option.'
+     PRINT *,'       Note that output file is not masked.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file  : netcdf input file ' 
-     PRINT *,'       -o OUT-file : netcdf output file ' 
-     PRINT *,'       -v VAR-name2D : input variable name for interpolation '
+     PRINT *,'       -v VAR-name : input variable name to be remapped.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -360 : outfile is defined from 0 to 360 deg'
-     PRINT *,'              Default is from -180 to 180 '
-     PRINT *,'       -r  : resolution.'
+     PRINT *,'       [-o OUT-file]: netcdf output file, instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ]: Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                This option is effective only if cdftools are compiled with'
+     PRINT *,'                a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-360 ]: Output file longitudes span [0 -> 360 deg.], instead of'
+     PRINT *,'                the default [-180 -> 180 deg.].'
+     PRINT *,'       [-r TGT-resolution ]:  Target resolution (in degrees).'
      PRINT *,'     '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr)
@@ -116,32 +124,29 @@ PROGRAM cdf2levitusgrid3d
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : name given as second argument'
      PRINT *,'         variables : 3d_var_name'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'       cdf2levitus2d (a particular case)'
      STOP
   ENDIF
 
   ijarg = 1
   DO WHILE ( ijarg <= narg ) 
-     CALL getarg( ijarg, cdum)  ; ijarg = ijarg + 1
-     SELECT CASE (cdum)
-     CASE ( '-f' )
-        CALL getarg(ijarg, cf_in)  ; ijarg = ijarg + 1
-     CASE ( '-o' )
-        CALL getarg(ijarg, cf_out) ; ijarg = ijarg + 1
-     CASE ( '-v' )
-        CALL getarg(ijarg, cv_nam) ; ijarg = ijarg + 1
-     CASE ( '-360' )
-        l360=.TRUE.
-        rlon0 = 0.
-     CASE ( '-r' )
-        CALL getarg( ijarg, cdum)  ; ijarg = ijarg + 1
-        READ(cdum,*) rlev_resol
+     CALL getarg( ijarg, cldum)  ; ijarg = ijarg + 1
+     SELECT CASE (cldum)
+     CASE ( '-f'  ) ; CALL getarg(ijarg, cf_in)  ; ijarg = ijarg + 1
+     CASE ( '-v'  ) ; CALL getarg(ijarg, cv_nam) ; ijarg = ijarg + 1
+     CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-r'  ) ; CALL getarg( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rlev_resol
+     CASE ( '-360') ; l360 = .TRUE. ; rlon0 = 0.
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
-
   lchk = chkfile (cn_fhgr)
-  lchk = chkfile (cn_fmsk)         .OR. lchk
-  lchk = chkfile (cf_in)           .OR. lchk
+  lchk = chkfile (cn_fmsk) .OR. lchk
+  lchk = chkfile (cf_in  ) .OR. lchk
   IF ( lchk ) STOP ! missing files
 
   npiglo = getdim(cf_in,cn_x)
@@ -153,31 +158,12 @@ PROGRAM cdf2levitusgrid3d
   npjlev = NINT(180./rlev_resol)
 
   nvars = getnvar(cf_in)
+  ! Allocate the memory
   ALLOCATE (cv_names(nvars) )
   ALLOCATE (stypvar(nvars)  , stypvarout(1))
   ALLOCATE (id_var(nvars), ipk(nvars), id_varout(1), ipkout(1))
   ALLOCATE (zbt(npiglo,npjglo) , z_in(npiglo,npjglo) )
 
-  ! get list of variable names and collect attributes in stypvar (optional)
-  cv_names(:) = getvarname(cf_in, nvars, stypvar)
-
-  id_var(:)   = (/(jvar, jvar=1,nvars)/)
-
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk(cf_in, nvars)
-  WHERE( ipk == 0 ) cv_names='none'
-  stypvar(:)%cname = cv_names
-
-  ! select variables to output:
-  ii=1
-  DO jk=1,nvars
-     IF ( TRIM(cv_names(jk)) == TRIM(cv_nam) ) THEN
-        ipkout(ii) = ipk(jk)
-        stypvarout(ii) = stypvar(jk)
-     ENDIF
-  ENDDO
-
-  ! Allocate the memory
   ALLOCATE ( e1t(npiglo,npjglo), e2t(npiglo,npjglo) )
   ALLOCATE ( glamt(npiglo,npjglo), gphit(npiglo,npjglo)  )
 
@@ -195,9 +181,7 @@ PROGRAM cdf2levitusgrid3d
   gphit = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
   gphitmin = MINVAL(gphit(:,1))
   IF ( l360 ) THEN
-     WHERE ( glamt < 0. )
-        glamt = glamt + 360. 
-     END WHERE
+     WHERE ( glamt < 0. ) glamt = glamt + 360. 
   ENDIF
 
   ! get the longitude,latitude,mask from the input Levitus mask file
@@ -209,23 +193,9 @@ PROGRAM cdf2levitusgrid3d
   DO ji=2, npilev
      rlatlev(ji,:) = rlatlev(1,:)
   ENDDO
-  !  rlonlev(:,:)  = getvar(cf_levitus_mask, 'nav_lon',  1, npilev, npjlev)
-  !  rlatlev(:,:)  = getvar(cf_levitus_mask, 'nav_lat' , 1, npilev, npjlev)
-  !  tmasklev(:,:) = getvar(cf_levitus_mask, 'mask',     1, npilev, npjlev)
   tmasklev(:,:) = 1.
 
-
-  ! create output fileset
-  ncout = create      (cf_out,  cf_in, npilev, npjlev, npk ,cdlonvar='lon', cdlatvar='lat'  )
-  ierr  = createvar   (ncout ,  stypvarout, 1,      ipkout,    id_varout    )
-  ierr  = putheadervar(ncout ,  cf_in, npilev, npjlev, npk , pnavlon=rlonlev, pnavlat=rlatlev )
-
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
-  ierr = gettimeatt(cf_in, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
-  ierr = puttimeatt(ncout, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
-  ierr = putvar1d( ncout, rlonlev(:,1), npilev, 'X')
-  ierr = putvar1d( ncout, rlatlev(1,:), npjlev, 'Y')
+  CALL CreateOutput
 
   zbt(:,:) = e1t(:,:) * e2t(:,:)    ! for surface weighting
 
@@ -233,8 +203,8 @@ PROGRAM cdf2levitusgrid3d
      DO jk = 1, npk
         PRINT *,'jt = ', jt,' jk = ', jk
         ! get the tmask from the byte_mask file
-        tmask(:,:) = getvar(cn_fmsk, 'tmask', jk, npiglo, npjglo)
-        z_in (:,:) = getvar(cf_in, cv_nam, jk, npiglo, npjglo, ktime=jt)
+        tmask(:,:) = getvar(cn_fmsk, cn_tmask, jk, npiglo, npjglo)
+        z_in (:,:) = getvar(cf_in,   cv_nam,   jk, npiglo, npjglo, ktime=jt)
         ! Compute spatial mean by bin
         !-----------------------------
         ! Perform bining of the input file on the Levitus grid.
@@ -245,8 +215,6 @@ PROGRAM cdf2levitusgrid3d
            DO ji=1,npiglo
               iilev = MIN( npilev,  INT( (glamt(ji,jj)-rlon0)/rlev_resol ) + 1)
               ijlev = MIN (npjlev , INT( (gphit(ji,jj)+ 90.)/rlev_resol ) + 1)
-              !IF ( iilev < 1 .OR. iilev .GT. 360 ) print*, 'iilev, glamt = ',iilev,glamt(ji,jj)
-              !IF ( ijlev < 1 .OR. ijlev .GT. 180 ) print*, 'ijlev, gphit = ',ijlev,gphit(ji,jj)
               IF ( z_in(ji,jj) /=  stypvarout(1)%rmissing_value ) THEN
                  d_out(iilev,ijlev) = d_out(iilev,ijlev) + (z_in(ji,jj)*tmask(ji,jj))*zbt(ji,jj)*tmasklev(iilev,ijlev)*1.d0
                  d_n  (iilev,ijlev) = d_n (iilev,ijlev)  +              tmask(ji,jj) *zbt(ji,jj)*tmasklev(iilev,ijlev)*1.d0
@@ -266,7 +234,7 @@ PROGRAM cdf2levitusgrid3d
            ALLOCATE ( z_fill(npilev,npjlev) )
            z_fill(:,:) = 0.
            !
-           imethod = 0
+           imethod = 0  ! hard coded here JMM : check if all method works and pass method as argument
            SELECT CASE (imethod)
            CASE ( 0 ) 
               PRINT *, 'no filling, even if required for ',icount
@@ -285,7 +253,7 @@ PROGRAM cdf2levitusgrid3d
                  ENDDO
               ENDDO
 
-           CASE ( 2 ) ! Method 2: compute with influence bubble
+           CASE ( 2 ) ! Method 2: compute with influence bubble 
               ! For each point of Levitus grid, a data screening is performed 
               ! in a influence bubble of radius zradius, centered on Levitus point
               ! and the weighted average of the data in the bubble is computed
@@ -462,8 +430,6 @@ PROGRAM cdf2levitusgrid3d
                  ENDIF
 
               ENDDO
-
-
            CASE DEFAULT 
               PRINT *, ' METHOD ', imethod ,'is not recognized in this program'
               STOP
@@ -557,4 +523,47 @@ CONTAINS
 
   END SUBROUTINE btoe
 
-END PROGRAM cdf2levitusgrid3d
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ! get list of variable names and collect attributes in stypvar (optional)
+  cv_names(:) = getvarname(cf_in, nvars, stypvar)
+
+  id_var(:)   = (/(jvar, jvar=1,nvars)/)
+  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+  ipk(:)     = getipk(cf_in, nvars)
+  WHERE( ipk == 0 ) cv_names='none'
+  stypvar(:)%cname = cv_names
+
+  ! select variables to output:
+  ii=1
+  DO jk=1,nvars
+     IF ( TRIM(cv_names(jk)) == TRIM(cv_nam) ) THEN
+        ipkout(ii) = ipk(jk)
+        stypvarout(ii) = stypvar(jk)
+        stypvar(ii)%ichunk  = (/npilev,MAX(1,npjlev/30),1,1 /)
+     ENDIF
+  ENDDO
+
+  ! create output fileset
+  ncout = create      (cf_out,  cf_in, npilev, npjlev, npk ,cdlonvar='lon', cdlatvar='lat', ld_nc4=lnc4 )
+  ierr  = createvar   (ncout ,  stypvarout, 1,      ipkout,    id_varout                  , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout ,  cf_in, npilev, npjlev, npk , pnavlon=rlonlev, pnavlat=rlatlev )
+
+  tim  = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, tim,       npt, 'T')
+
+  ierr = gettimeatt(cf_in, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
+  ierr = puttimeatt(ncout, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
+  ierr = putvar1d( ncout, rlonlev(:,1), npilev, 'X')
+  ierr = putvar1d( ncout, rlatlev(1,:), npjlev, 'Y')
+
+  END SUBROUTINE CreateOutput
+
+END PROGRAM cdf2regular

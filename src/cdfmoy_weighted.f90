@@ -31,7 +31,7 @@
   INTEGER(KIND=4)                               :: narg, iargc, ijarg  ! command line
   INTEGER(KIND=4)                               :: npiglo, npjglo, npk ! size of the domain
   INTEGER(KIND=4)                               :: nvars               ! number of variables in a file
-  INTEGER(KIND=4)                               :: ixtra               ! number of tags to process
+  INTEGER(KIND=4)                               :: nfiles              ! number of tags to process
   INTEGER(KIND=4)                               :: iweight             ! variable weight
   INTEGER(KIND=4)                               :: ncout               ! ncid of output file
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var              ! array of input var id's
@@ -55,6 +55,7 @@
   CHARACTER(LEN=256)                            :: cv_e3               ! name of e3t variable for vvl
   CHARACTER(LEN=256)                            :: cv_skip             ! name of  variable to skip
   CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_lst              ! file name list of input files
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var name
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep             ! array of possible depth name or 3rd dim.
 
@@ -65,40 +66,41 @@
   LOGICAL                                       :: lleap  = .FALSE.      ! flag for leap years
   LOGICAL                                       :: lnc4   = .FALSE.      ! flag for netcdf4 output with chunking and deflation
   LOGICAL                                       :: ll_vvl                ! working flag for vvl AND 3D fields
+  LOGICAL                                       :: lchk                  ! flag for checking file existence
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoy_weighted list of files [-old5d ] [-month] [-leap] ...'
-     PRINT *,'      [-skip variable] [-nc4] [-vvl] [-o output file]'
+     PRINT *,' usage : cdfmoy_weighted -l LST-files [-old5d ] [-month] [-leap] ...'
+     PRINT *,'       ... [-skip variable] [-vvl] [-o OUT-file] [-nc4]'
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute weight average of files. The weight for each file is'
-     PRINT *,'       read from the iweight attribute. In particular, this attribute'
-     PRINT *,'       is set to the number of elements used when computing a time'
-     PRINT *,'       average (cdfmoy program). A primary application is thus for'
-     PRINT *,'       computing annual mean from monthly means.' 
+     PRINT *,'       Compute weighted average of files. The weight for each file is'
+     PRINT *,'       read from the iweight variable attribute. In particular, this attribute'
+     PRINT *,'       is set to the number of elements used when computing a time average'
+     PRINT *,'       (cdfmoy program). A primary application is thus for computing annual'
+     PRINT *,'       mean from monthly means.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       The list of files to be averaged, which are supposed to be of' 
-     PRINT *,'       the same type and to contain the same variables. This list MUST'
-     PRINT *,'       be given before any options'
+     PRINT *,'       -l LST-files : The list of files to be averaged, which are supposed to'
+     PRINT *,'             be of the same type and to contain the same variables.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-old5d ] : This option is used to mimic/replace the cdfmoy_annual'
-     PRINT *,'                   which is no longer available. With this option, 12 monthly'
-     PRINT *,'                   files must be given, and it is assumed that the monthly'
-     PRINT *,'                   means were computed from 5d output of a simulation using'
-     PRINT *,'                   a noleap calendar ( weights are fixed, predetermined)'
+     PRINT *,'       [-old5d ] : This option is used to mimic/replace the cdfmoy_annual which'
+     PRINT *,'             is no longer available. With this option, 12 monthly files must be'
+     PRINT *,'             given, and it is assumed that the monthly means were computed from'
+     PRINT *,'             5d output of a simulation using a noleap  calendar (weights are '
+     PRINT *,'             fixed, predetermined).'
      PRINT *,'       [-month ] : This option is used to build annual mean from true month'
-     PRINT *,'                   output (1mo) in XIOS output for instance.'
+     PRINT *,'             output (1mo) in XIOS output for instance.'
      PRINT *,'       [-leap ] : This option has only effect together with the -month option.'
-     PRINT *,'                  When used set 29 days in february'
-     PRINT *,'       [-skip variable ] : name of variable to skip '
-     PRINT *,'       [-nc4 ] : Use netcdf4 chunking and deflation in output file.'
+     PRINT *,'             When used set 29 days in february.'
+     PRINT *,'       [-skip variable ] : name of variable to skip, in the input file. '
      PRINT *,'       [-vvl ] : Use time-varying vertical metrics for weighted averages.'
-     PRINT *,'       [-o output file ] : Specify the name for output file instead of the'
-     PRINT *,'                 default name ', TRIM(cf_out)
+     PRINT *,'       [-o OUT-file] : Specify the name for output file instead of'
+     PRINT *,'           ', TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 chunking and deflation in output file.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none'
@@ -110,34 +112,42 @@
   ENDIF
 
   ! scan command line and check if files exist
-  ijarg = 1 ; ixtra=0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg ( ijarg, cldum ) ; ijarg = ijarg +1
      SELECT CASE ( cldum )
-     CASE ( '-old5d' )  ; lold5d = .TRUE.
-     CASE ( '-month' )  ; lmonth = .TRUE.
-     CASE ( '-leap'  )  ; lleap  = .TRUE.
-     CASE ( '-vvl'   )  ; lg_vvl = .TRUE.
-     CASE ( '-nc4'   )  ; lnc4   = .TRUE.
-     CASE ( '-o'     )  ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
-     CASE ( '-skip'  )  ; CALL getarg ( ijarg, cv_skip) ; ijarg = ijarg +1
-     CASE DEFAULT
-        ixtra = ixtra + 1
-        cf_in = cldum
-        IF ( chkfile (cldum ) ) STOP ! missing file
+     CASE ( '-l'     ) ; CALL GetFileList
+        ! options
+     CASE ( '-old5d' ) ; lold5d = .TRUE.
+     CASE ( '-month' ) ; lmonth = .TRUE.
+     CASE ( '-leap'  ) ; lleap  = .TRUE.
+     CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
+     CASE ( '-nc4'   ) ; lnc4   = .TRUE.
+     CASE ( '-o'     ) ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
+     CASE ( '-skip'  ) ; CALL getarg ( ijarg, cv_skip) ; ijarg = ijarg +1
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
+  
+  lchk = .FALSE.
+  DO jt = 1,nfiles
+     lchk = lchk .OR. chkfile ( cf_lst(jt) )
+  ENDDO
+  IF ( lchk ) STOP 1 ! missing files  
+ 
+  ! work with 1rst file for dimension lookup
+  cf_in=cf_lst(1)
 
   ! additional check in case of old_5d averaged files
   IF ( lold5d .OR. lmonth ) THEN
-     IF ( ixtra /= 12 ) THEN 
+     IF ( nfiles /= 12 ) THEN 
         PRINT *,' +++ ERROR : exactly 12 monthly files are required for -old5d/-month options.'
         STOP
      ENDIF
   ENDIF
 
-  npiglo = getdim (cf_in, cn_x                              )
-  npjglo = getdim (cf_in, cn_y                              )
+  npiglo = getdim (cf_in, cn_x )
+  npjglo = getdim (cf_in, cn_y )
 
   ! looking for npk among various possible name
   idep_max=8
@@ -158,14 +168,11 @@
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
 
-  ALLOCATE( dtab(npiglo,npjglo), v2d(npiglo,npjglo) )
-  IF ( lg_vvl ) THEN
-     ALLOCATE( de3s(npiglo,npjglo), e3(npiglo,npjglo) )
-  ENDIF
-
   nvars = getnvar(cf_in)
   PRINT *,' nvars =', nvars
 
+  ALLOCATE(               dtab(npiglo,npjglo), v2d(npiglo,npjglo) )
+  IF ( lg_vvl ) ALLOCATE( de3s(npiglo,npjglo),  e3(npiglo,npjglo) )
   ALLOCATE (cv_names(nvars) )
   ALLOCATE (stypvar(nvars)  )
   ALLOCATE (id_var(nvars), ipk(nvars), id_varout(nvars) )
@@ -196,8 +203,8 @@
          !
            ALLOCATE (v1d( ipk(jvar)), dtab1d(ipk(jvar)) )
            dtab1d(:) = 0.d0 ; dtotal_time=0.d0 ; dsumw=0.d0
-           DO jt=1, ixtra
-              CALL getarg   (jt, cf_in)
+           DO jt=1, nfiles
+              cf_in = cf_lst(jt)
               iweight   = setweight(cf_in, jt, cv_names(jvar)) 
               dsumw     = dsumw + iweight
               tim = getvar1d(cf_in, cn_vtimec, 1 )
@@ -215,8 +222,8 @@
            dtab(:,:) = 0.d0 ; dtotal_time = 0.d0 ; dsumw=0.d0
            IF ( ll_vvl ) THEN  ; de3s(:,:)  = 0.d0    ; ENDIF
 
-           DO jt = 1, ixtra
-              CALL getarg   (jt, cf_in)
+           DO jt = 1, nfiles
+              cf_in = cf_lst(jt)
               iweight   = setweight(cf_in, jt, cv_names(jvar)) 
               dsumw     = dsumw + iweight
               v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk ,npiglo, npjglo )
@@ -317,5 +324,34 @@ CONTAINS
     ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout             , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk,      cdep=cv_dep               )
   END SUBROUTINE CreateOutput
+
+  SUBROUTINE GetFileList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetFileList  ***
+    !!
+    !! ** Purpose :  Set up a file list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    nfiles=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (cf_lst(nfiles) )
+    DO ji = icur, icur + nfiles -1
+       CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetFileList
 
 END PROGRAM cdfmoy_weighted

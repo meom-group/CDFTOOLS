@@ -207,7 +207,7 @@ CONTAINS
     ilmasktrue_e(kpi+1,:) = ilmasktrue_e(1,:)      
 
     ! check cdfs compliance
-    IF ( cdfs(1:4)  .NE. 'fill' .AND. cdfs(1:6) .NE. 'smooth' ) THEN
+    IF ( cdfs(1:4)  /= 'fill' .AND. cdfs(1:6) /= 'smooth' ) THEN
        PRINT*, 'cdfs = ',cdfs ,' <> fill or smooth'
        STOP
     ENDIF

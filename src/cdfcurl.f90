@@ -59,15 +59,15 @@ PROGRAM cdfcurl
   LOGICAL                                   :: ldblpr   = .FALSE. ! flag for dble precision output
   LOGICAL                                   :: lsurf    = .FALSE. ! flag for 1 lev on C grid.
   LOGICAL                                   :: loverf   = .FALSE. ! flag for 1 lev on C grid.
-  LOGICAL                                   :: lnc4=.false.       ! flag for netcdf4 output with chunking and deflation
+  LOGICAL                                   :: lnc4=.FALSE.       ! flag for netcdf4 output with chunking and deflation
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames() 
 
   narg = iargc()
-  IF ( narg < 5 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l levlist [-T] [-8]...'
-     PRINT *,'           ... [-surf] [-overf] [-nc4] [-o OUT-file ]'
+     PRINT *,'           ... [-surf] [-overf] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the curl of a vector field, at a specified level.'  
@@ -85,12 +85,13 @@ PROGRAM cdfcurl
      PRINT *,'                  -l  1 . Note that -l "3-" set a levlist from 3 to the bottom'
      PRINT * 
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -T : compute curl at T point instead of default F-point'
-     PRINT *,'       -8 : save in double precision instead of standard simple precision.'
-     PRINT *,'       -surf : work with single level C-grid (not forcing)'
-     PRINT *,'       -overf : store the ratio curl/f where f is the coriolis parameter'
-     PRINT *,'       -nc4 : use netcdf4 output with chunking and deflation 1'
-     PRINT *,'       -o OUT-file : specify output file name instead of ',TRIM(cf_out) 
+     PRINT *,'       [-T] : compute curl at T point instead of default F-point'
+     PRINT *,'       [-8] : save in double precision instead of standard simple precision.'
+     PRINT *,'       [-surf] : work with single level C-grid (not forcing)'
+     PRINT *,'       [-overf]: store the ratio curl/f where f is the coriolis parameter.'
+     PRINT *,'              This option is not compatible with -T option.'
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out) 
+     PRINT *,'       [-nc4] : use netcdf4 output with chunking and deflation 1'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ', TRIM(cn_fhgr)
@@ -106,56 +107,31 @@ PROGRAM cdfcurl
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-u')
-        CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
-        CALL getarg(ijarg, cv_u   ) ; ijarg=ijarg+1
-     CASE ('-v')
-        CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
-        CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
-     CASE ('-l')
-        CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
-        CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
-     CASE ( '-nc4' )
-        lnc4 = .true.
-     CASE ('-T')
-        ltpoint = .true.
-     CASE ('-8')
-        ldblpr = .true.
-     CASE ('-surf')
-        lsurf = .true.
-     CASE ('-overf')
-        loverf = .true.
-     CASE ('-o')
-        CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
-     CASE DEFAULT
-        PRINT *,  TRIM(cldum), ' : unknown option '
+     CASE ('-u'    ) ; CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_u   ) ; ijarg=ijarg+1
+     CASE ('-v'    ) ; CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
+     CASE ('-l'    ) ; CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
+        ;              CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
+     CASE ( '-nc4' ) ; lnc4    = .TRUE.
+     CASE ('-T'    ) ; ltpoint = .TRUE.
+     CASE ('-8'    ) ; ldblpr  = .TRUE.
+     CASE ('-surf' ) ; lsurf   = .TRUE.
+     CASE ('-overf') ; loverf  = .TRUE.
+     CASE ('-o'    ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
+
+  IF ( ltpoint .AND. loverf ) THEN
+     PRINT *,' ERROR : You might choose only one of -T or -overf option !' 
+     STOP
+  ENDIF
 
   lchk = chkfile(cn_fhgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
   IF ( lchk ) STOP ! missing files
-
-
-  ! define new variables for output
-  stypvar(1)%cname             = 'socurl'
-  IF (ltpoint) stypvar(1)%cname             = 'socurlt'
-  stypvar(1)%cunits            = 's-1'
-  IF (loverf)  stypvar(1)%cname             = 'socurloverf'
-  IF (loverf)  stypvar(1)%cunits            = '-'
-
-  stypvar(1)%cprecision        ='r4'
-  IF ( ldblpr )  stypvar(1)%cprecision     ='r8'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = -1000.
-  stypvar(1)%valid_max         =  1000.
-  stypvar(1)%clong_name        = 'Relative_Vorticity (curl)'
-  stypvar(1)%cshort_name       = 'socurl'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TYX'
-
-  ipk(1) = nlev  !  nlevel so far
 
   npiglo = getdim(cf_ufil,cn_x)
   npjglo = getdim(cf_ufil,cn_y)
@@ -168,10 +144,6 @@ PROGRAM cdfcurl
   PRINT *, 'npt    = ',npt
   PRINT *, 'nlev   = ',nlev
 
-  ! choose chunk size for output ... not easy not used if lnc4=.false. but anyway ..
-  stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
-  print *, stypvar(1)%ichunk
-
   !test if lev exists
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
      PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
@@ -182,20 +154,17 @@ PROGRAM cdfcurl
   ! case of 1 level on C-grid
   IF ( lsurf ) THEN
      nlev=1
-     IF (ALLOCATED (nilev) ) THEN
-        DEALLOCATE(nilev) 
-     ENDIF
+     IF (ALLOCATED (nilev) ) DEALLOCATE(nilev) 
      ALLOCATE(nilev(nlev) )
      npk = 1 ; nilev(1) =1 
   ENDIF
 
   ! if forcing field 
   IF ( nilev(1) == 0 .AND. npk==0 ) THEN
-     lforcing=.true.
+     lforcing=.TRUE.
      npk = 1 ; nilev(1)=1
      PRINT *, 'npk =0, assume 1'
   END IF
-
 
   IF ( npt==0 ) THEN
      PRINT *, 'npt=0, assume 1'
@@ -232,9 +201,9 @@ PROGRAM cdfcurl
 
   IF ( loverf ) THEN
      ALLOCATE (dl_ff(npiglo,npjglo) )
-     dl_pi = acos(-1.d0)
+     dl_pi = ACOS(-1.d0)
      dl_omega = 2* dl_pi/86400.d0
-     dl_ff = 2* dl_omega* sin ( zvn*dl_pi/180.d0 ) 
+     dl_ff = 2* dl_omega* SIN ( zvn*dl_pi/180.d0 ) 
   ENDIF
 
   ! fills in gdep
@@ -247,17 +216,10 @@ PROGRAM cdfcurl
      ENDDO
   ENDIF
 
-
   ! look for  E-W periodicity
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev           , ld_nc4=lnc4)
-  ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout      , ld_nc4=lnc4)
-  ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
-
-  tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
-  ierr = putvar1d(ncout,   tim,       npt,  'T')
+  CALL CreateOutput
 
   DO jt=1,npt
      IF (MOD(jt,100)==0 ) PRINT *, jt,'/',npt
@@ -411,6 +373,51 @@ CONTAINS
 
 
   END SUBROUTINE ParseLevel
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1) = nlev  !  nlevel so far
+
+    stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+
+    IF     (ltpoint) THEN ; stypvar(1)%cname = 'socurlt'
+    ELSEIF (loverf ) THEN ; stypvar(1)%cname = 'socurloverf'
+    ELSE                  ; stypvar(1)%cname = 'socurl'
+    ENDIF
+
+    IF     (ltpoint) THEN ; stypvar(1)%cunits = 's-1'
+    ELSEIF (loverf ) THEN ; stypvar(1)%cunits = '-'
+    ELSE                  ; stypvar(1)%cunits = 's-1'
+    ENDIF
+
+    IF     (ldblpr ) THEN ; stypvar(1)%cprecision = 'r8'
+    ELSE                  ; stypvar(1)%cprecision = 'r4'
+    ENDIF
+
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = -1000.
+    stypvar(1)%valid_max         =  1000.
+    stypvar(1)%clong_name        = 'Relative_Vorticity (curl)'
+    stypvar(1)%cshort_name       = 'socurl'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TYX'
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev           , ld_nc4=lnc4)
+    ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout      , ld_nc4=lnc4)
+    ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
+
+    tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout,   tim,       npt,  'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfcurl
 

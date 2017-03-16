@@ -37,7 +37,7 @@ PROGRAM cdfvita
   INTEGER(KIND=4)                            :: ivar_vert               ! variable index of vertical velocity
   INTEGER(KIND=4)                            :: ivar_cub                ! variable index of cube of velocity module
   INTEGER(KIND=4)                            :: nvar                    ! number of variable
-  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: nklev                   ! selected levels
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: nklevel                 ! selected levels
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout          ! output stuff
 
   REAL(KIND=4)                               :: pi                      ! pi
@@ -64,8 +64,8 @@ PROGRAM cdfvita
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvita U-file V_file T-file [-w W-file] [-geo ] [-cubic] [-nc4] ...'
-     PRINT *,'                 ... [-o OUT-file] [-lev level_list]'
+     PRINT *,' usage : cdfvita -u U-file -v V-file -t T-file [-w W-file] [-geo] [-cubic]'
+     PRINT *,'               ... [-o OUT-file] [-nc4] [-lev LST-level]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create a file with velocity components, module  and direction'
@@ -74,31 +74,29 @@ PROGRAM cdfvita
      PRINT *,'       can be used.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       U-file  : netcdf file with zonal component of velocity' 
-     PRINT *,'       V-file  : netcdf file with meridional component of velocity' 
-     PRINT *,'       T-file  : netcdf file with T points header OK.'
+     PRINT *,'       -u U-file  : netcdf file with zonal component of velocity' 
+     PRINT *,'       -v V-file  : netcdf file with meridional component of velocity' 
+     PRINT *,'       -t T-file  : netcdf file with T points header OK.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -w W-file ] : if used, also compute vertical velocities at' 
-     PRINT *,'                       T points.'
-     PRINT *,'       [ -geo ]     : indicate that input velocity files are produced '
-     PRINT *,'                      by cdfgeo-uv, hence ugeo on V-point, vgeo on U-points'
-     PRINT *,'                      ( U-file and V_file are the same !)'
-     PRINT *,'       [ -cubic ]   : Save the cube of the veocity module '
-     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'                 This option is effective only if cdftools are compiled with'
-     PRINT *,'                 a netcdf library supporting chunking and deflation.'
-     PRINT *,'       [ -o OUT-file ] : Specify name of output file instead of ',TRIM(cf_out)
-     PRINT *,'       [ -lev level_list] : specify a list of level to be used '
-     PRINT *,'                   (default option is to use all input levels).'
-     PRINT *,'                   This option MUST be the last on the command line !!'
+     PRINT *,'       [-w W-file ]: if used, also compute vertical velocities at T points.' 
+     PRINT *,'       [-geo ]     : indicate that input velocity files are produced by '
+     PRINT *,'              cdfgeo-uv, hence ugeo on V-point, vgeo on U-points. '
+     PRINT *,'       [-cubic ]   : Save the cube of the veocity module.'
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'              This option is effective only if cdftools are compiled with'
+     PRINT *,'              a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-o OUT-file ] : Specify name of output file instead of ',TRIM(cf_out)
+     PRINT *,'       [-lev LST-level] : specify a list of level to be used. (default option'
+     PRINT *,'              is to use all input levels).'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used'
-     PRINT *,'         variables : sovitua, sovitva, sovitmod, sovitdir, [sovitmod3], [sovitwa]'
+     PRINT *,'         variables : sovitua, sovitva, sovitmod, sovitdir, [sovitmod3] and'
+     PRINT *,'                     [sovitwa]'
      STOP
   ENDIF
 
@@ -108,40 +106,22 @@ PROGRAM cdfvita
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-lev' )
-        nlev= narg - ijarg + 1
-        ALLOCATE (nklev(nlev) )
-        DO jlev = 1, nlev
-           CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,* ) nklev(jlev)
-        ENDDO
-     CASE ( '-w' )
-        CALL getarg( ijarg, cf_wfil ) ; ijarg=ijarg+1
-        lvertical=.TRUE.
-     CASE ( '-geo' )
-        lgeo = .TRUE.
-     CASE ( '-cubic' )
-        lcub = .TRUE.
-     CASE ( '-nc4' )
-        lnc4 = .TRUE.
-     CASE ( '-o' )
-        CALL getarg( ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE DEFAULT
-        cf_ufil=cldum
-        CALL getarg( ijarg, cf_vfil ) ; ijarg=ijarg+1
-        CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-u'   ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1
+     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-lev' ) ; CALL GetLevList
+     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-w'   ) ; CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1
+        ;              lvertical=.TRUE.
+     CASE ( '-geo' ) ; lgeo = .TRUE.
+     CASE ('-cubic') ; lcub = .TRUE.
+     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
 
-  ! adjust number of variable according to -w option
-  nvar=4
-  IF ( lvertical )  nvar = nvar + 1
-  IF ( lcub      )  nvar = nvar + 1
-
-
-  ALLOCATE ( ipk(nvar), id_varout(nvar), stypvar(nvar) )
-
   IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) .OR. chkfile(cf_tfil) ) STOP ! missing file
-
   IF ( lvertical ) THEN 
      IF ( chkfile(cf_wfil) ) STOP ! missing file
   ENDIF
@@ -157,106 +137,19 @@ PROGRAM cdfvita
 
   IF ( nlev == 0 ) THEN ! take all levels
      nlev = npk
-     ALLOCATE (nklev(nlev) )
+     ALLOCATE (nklevel(nlev) )
      DO jlev = 1, nlev
-        nklev(jlev) = jlev
+        nklevel(jlev) = jlev
      ENDDO
   ENDIF
 
+  ! adjust number of variable according to  option
+  nvar=4
+  IF ( lvertical )  nvar = nvar + 1
+  IF ( lcub      )  nvar = nvar + 1
+
+  ALLOCATE ( ipk(nvar), id_varout(nvar), stypvar(nvar) )
   ALLOCATE ( gdept(nlev) )
-  ivar=0
-
-  ! Zonal Velocity T point
-  ivar                            = ivar+1
-  ipk(ivar)                       = nlev
-  stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(ivar)%cname             = 'sovitua'
-  stypvar(ivar)%cunits            = 'm/s'
-  stypvar(ivar)%rmissing_value    = 0.
-  stypvar(ivar)%valid_min         = 0.
-  stypvar(ivar)%valid_max         = 10000.
-  stypvar(ivar)%clong_name        = 'Zonal Velocity T point'
-  stypvar(ivar)%cshort_name       = 'sovitua'
-  stypvar(ivar)%conline_operation = 'N/A'
-  stypvar(ivar)%caxis             = 'TZYX'
-
-  ! Meridional Velocity T point
-  ivar                            = ivar+1
-  ipk(ivar)                       = nlev
-  stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(ivar)%cname             = 'sovitva'
-  stypvar(ivar)%cunits            = 'm/s'
-  stypvar(ivar)%rmissing_value    = 0.
-  stypvar(ivar)%valid_min         = 0.
-  stypvar(ivar)%valid_max         = 10000.
-  stypvar(ivar)%clong_name        = 'Meridional Velocity T point'
-  stypvar(ivar)%cshort_name       = 'sovitva'
-  stypvar(ivar)%conline_operation = 'N/A'
-  stypvar(ivar)%caxis             = 'TZYX'
-
-  ! Velocity module T point
-  ivar                            = ivar+1
-  ipk(ivar)                       = nlev
-  stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(ivar)%cname             = 'sovitmod'
-  stypvar(ivar)%cunits            = 'm/s'
-  stypvar(ivar)%rmissing_value    = 0.
-  stypvar(ivar)%valid_min         = 0.
-  stypvar(ivar)%valid_max         = 10000.
-  stypvar(ivar)%clong_name        = 'Velocity module T point'
-  stypvar(ivar)%cshort_name       = 'sovitmod'
-  stypvar(ivar)%conline_operation = 'N/A'
-  stypvar(ivar)%caxis             = 'TZYX'
-
-  ! Velocity direction  T point
-  ivar                            = ivar+1
-  ipk(ivar)                       = nlev
-  stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(ivar)%cname             = 'sovitdir'
-  stypvar(ivar)%cunits            = 'deg N'
-  stypvar(ivar)%rmissing_value    = 0.
-  stypvar(ivar)%valid_min         = 0.
-  stypvar(ivar)%valid_max         = 360.
-  stypvar(ivar)%clong_name        = 'Velocity direction T point'
-  stypvar(ivar)%cshort_name       = 'sovitdir'
-  stypvar(ivar)%conline_operation = 'N/A'
-  stypvar(ivar)%caxis             = 'TZYX'
-
-
-
-  IF ( lvertical ) THEN
-     ! Vertical Velocity at T point
-     ivar                            = ivar+1
-     ivar_vert                       = ivar
-     ipk(ivar)                       = nlev
-     stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-     stypvar(ivar)%cname             = 'sovitwa'
-     stypvar(ivar)%cunits            = 'mm/s'
-     stypvar(ivar)%rmissing_value    = 0.
-     stypvar(ivar)%valid_min         = 0.
-     stypvar(ivar)%valid_max         = 10000.
-     stypvar(ivar)%clong_name        = 'Vertical Velocity at T point'
-     stypvar(ivar)%cshort_name       = 'sovitwa'
-     stypvar(ivar)%conline_operation = 'N/A'
-     stypvar(ivar)%caxis             = 'TZYX'
-  ENDIF
-
-  IF ( lcub ) THEN
-     ! Cube of velocity module
-     ivar                            = ivar+1
-     ivar_cub                        = ivar
-     ipk(ivar)                       = nlev
-     stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-     stypvar(ivar)%cname             = 'sovitmod3'
-     stypvar(ivar)%cunits            = 'm3/s3'
-     stypvar(ivar)%rmissing_value    = 0.
-     stypvar(ivar)%valid_min         = 0.
-     stypvar(ivar)%valid_max         = 10000.
-     stypvar(ivar)%clong_name        = 'cube of velocity module'
-     stypvar(ivar)%cshort_name       = 'sovitmod3'
-     stypvar(ivar)%conline_operation = 'N/A'
-     stypvar(ivar)%caxis             = 'TZYX'
-  ENDIF
 
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
@@ -271,7 +164,7 @@ PROGRAM cdfvita
 
   gdeptall(:) = getvar1d(cf_tfil,cn_vdeptht, npk)
   DO jlev = 1, nlev
-     ik = nklev(jlev)
+     ik = nklevel(jlev)
      gdept(jlev) = gdeptall(ik)
   ENDDO
 
@@ -282,13 +175,11 @@ PROGRAM cdfvita
      PRINT *,' E-W periodicity detected.'
   ENDIF
 
-  ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, nlev     , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout ,   stypvar,  nvar,   ipk,    id_varout, ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, nlev,     pdep=gdept )
+  CALL CreateOutput
 
   DO jt = 1, npt
      DO jlev = 1, nlev
-        ik = nklev(jlev)
+        ik = nklevel(jlev)
         uc(:,:) = getvar(cf_ufil, cn_vozocrtx, ik ,npiglo, npjglo, ktime=jt )
         vc(:,:) = getvar(cf_vfil, cn_vomecrty, ik ,npiglo, npjglo, ktime=jt )
 
@@ -299,7 +190,7 @@ PROGRAM cdfvita
                  ua(ji,jj)   = 0.5* (uc(ji,jj)+ uc(ji  ,jj-1))
                  va(ji,jj)   = 0.5* (vc(ji,jj)+ vc(ji-1,jj  ))
                  vmod(ji,jj) = SQRT( ua(ji,jj)*ua(ji,jj) + va(ji,jj)*va(ji,jj) )
-                 vdir(ji,jj) = 90. - atan2(va(ji,jj),ua(ji,jj))*180./pi
+                 vdir(ji,jj) = 90. - ATAN2(va(ji,jj),ua(ji,jj))*180./pi
                  IF ( vdir(ji,jj) < 0. ) vdir(ji,jj) = 360.+vdir(ji,jj)
               END DO
            END DO
@@ -309,7 +200,7 @@ PROGRAM cdfvita
                  ua(ji,jj)   = 0.5* (uc(ji,jj)+ uc(ji-1,jj))
                  va(ji,jj)   = 0.5* (vc(ji,jj)+ vc(ji,jj-1))
                  vmod(ji,jj) = SQRT( ua(ji,jj)*ua(ji,jj) + va(ji,jj)*va(ji,jj) )
-                 vdir(ji,jj) = 90. - atan2(va(ji,jj),ua(ji,jj))*180./pi
+                 vdir(ji,jj) = 90. - ATAN2(va(ji,jj),ua(ji,jj))*180./pi
                  IF ( vdir(ji,jj) < 0. ) vdir(ji,jj) = 360.+vdir(ji,jj)
               END DO
            END DO
@@ -335,8 +226,8 @@ PROGRAM cdfvita
      ! reuse uc an vc arrays to store Wk and Wk+1
      DO jt = 1, npt
         DO jlev=1, nlev - 1
-           uc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklev(jlev),   npiglo, npjglo, ktime=jt )
-           vc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklev(jlev)+1, npiglo, npjglo, ktime=jt )
+           uc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklevel(jlev),   npiglo, npjglo, ktime=jt )
+           vc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklevel(jlev)+1, npiglo, npjglo, ktime=jt )
            ua(:,:) = 0.5*(uc(:,:) + vc(:,:))*1000.  ! mm/sec
            ierr    = putvar(ncout, id_varout(ivar_vert), ua, jlev,      npiglo, npjglo, ktime=jt )
            uc(:,:) = vc(:,:)
@@ -344,16 +235,154 @@ PROGRAM cdfvita
         IF ( nlev == npk ) THEN
            ua(:,:) = 0.e0  ! npk
         ELSE
-           uc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklev(nlev),   npiglo, npjglo, ktime=jt )
-           vc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklev(nlev)+1, npiglo, npjglo, ktime=jt )
+           uc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklevel(nlev),   npiglo, npjglo, ktime=jt )
+           vc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklevel(nlev)+1, npiglo, npjglo, ktime=jt )
            ua(:,:) = 0.5*(uc(:,:) + vc(:,:))*1000.  ! mm/sec
         ENDIF
         ierr = putvar(ncout, id_varout(ivar_vert), ua, nlev ,npiglo, npjglo, ktime=jt )
      ENDDO
   ENDIF
 
-  tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,  tim,       npt, 'T')
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ivar=0
+    ! Zonal Velocity T point
+    ivar                            = ivar+1
+    ipk(ivar)                       = nlev
+    stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(ivar)%cname             = 'sovitua'
+    stypvar(ivar)%cunits            = 'm/s'
+    stypvar(ivar)%rmissing_value    = 0.
+    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_max         = 10000.
+    stypvar(ivar)%clong_name        = 'Zonal Velocity T point'
+    stypvar(ivar)%cshort_name       = 'sovitua'
+    stypvar(ivar)%conline_operation = 'N/A'
+    stypvar(ivar)%caxis             = 'TZYX'
+
+    ! Meridional Velocity T point
+    ivar                            = ivar+1
+    ipk(ivar)                       = nlev
+    stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(ivar)%cname             = 'sovitva'
+    stypvar(ivar)%cunits            = 'm/s'
+    stypvar(ivar)%rmissing_value    = 0.
+    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_max         = 10000.
+    stypvar(ivar)%clong_name        = 'Meridional Velocity T point'
+    stypvar(ivar)%cshort_name       = 'sovitva'
+    stypvar(ivar)%conline_operation = 'N/A'
+    stypvar(ivar)%caxis             = 'TZYX'
+
+    ! Velocity module T point
+    ivar                            = ivar+1
+    ipk(ivar)                       = nlev
+    stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(ivar)%cname             = 'sovitmod'
+    stypvar(ivar)%cunits            = 'm/s'
+    stypvar(ivar)%rmissing_value    = 0.
+    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_max         = 10000.
+    stypvar(ivar)%clong_name        = 'Velocity module T point'
+    stypvar(ivar)%cshort_name       = 'sovitmod'
+    stypvar(ivar)%conline_operation = 'N/A'
+    stypvar(ivar)%caxis             = 'TZYX'
+
+    ! Velocity direction  T point
+    ivar                            = ivar+1
+    ipk(ivar)                       = nlev
+    stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(ivar)%cname             = 'sovitdir'
+    stypvar(ivar)%cunits            = 'deg N'
+    stypvar(ivar)%rmissing_value    = 0.
+    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_max         = 360.
+    stypvar(ivar)%clong_name        = 'Velocity direction T point'
+    stypvar(ivar)%cshort_name       = 'sovitdir'
+    stypvar(ivar)%conline_operation = 'N/A'
+    stypvar(ivar)%caxis             = 'TZYX'
+
+    IF ( lvertical ) THEN
+       ! Vertical Velocity at T point
+       ivar                            = ivar+1
+       ivar_vert                       = ivar
+       ipk(ivar)                       = nlev
+       stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(ivar)%cname             = 'sovitwa'
+       stypvar(ivar)%cunits            = 'mm/s'
+       stypvar(ivar)%rmissing_value    = 0.
+       stypvar(ivar)%valid_min         = 0.
+       stypvar(ivar)%valid_max         = 10000.
+       stypvar(ivar)%clong_name        = 'Vertical Velocity at T point'
+       stypvar(ivar)%cshort_name       = 'sovitwa'
+       stypvar(ivar)%conline_operation = 'N/A'
+       stypvar(ivar)%caxis             = 'TZYX'
+    ENDIF
+
+    IF ( lcub ) THEN
+       ! Cube of velocity module
+       ivar                            = ivar+1
+       ivar_cub                        = ivar
+       ipk(ivar)                       = nlev
+       stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(ivar)%cname             = 'sovitmod3'
+       stypvar(ivar)%cunits            = 'm3/s3'
+       stypvar(ivar)%rmissing_value    = 0.
+       stypvar(ivar)%valid_min         = 0.
+       stypvar(ivar)%valid_max         = 10000.
+       stypvar(ivar)%clong_name        = 'cube of velocity module'
+       stypvar(ivar)%cshort_name       = 'sovitmod3'
+       stypvar(ivar)%conline_operation = 'N/A'
+       stypvar(ivar)%caxis             = 'TZYX'
+    ENDIF
+
+    ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, nlev     , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout ,   stypvar,  nvar,   ipk,    id_varout, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, nlev,     pdep=gdept )
+
+    tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
+  SUBROUTINE GetLevList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetLevList  ***
+    !!
+    !! ** Purpose :  Set up a level list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    nlev=0
+    ! need to read a list of level ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; nlev = nlev+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (nklevel(nlev) )
+    DO ji = icur, icur + nlev -1
+       CALL getarg(ji, cldum ) ; ijarg=ijarg+1 ; READ(cldum, * ) nklevel( ji -icur +1 )
+    END DO
+  END SUBROUTINE GetLevList
 
 END PROGRAM cdfvita

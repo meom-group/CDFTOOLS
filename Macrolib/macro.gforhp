@@ -18,3 +18,4 @@ FFLAGS= -O  -fcheck=bounds -g -fbacktrace -ffpe-trap='invalid','zero','overflow'
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin
+INSTALL_MAN=$(HOME)/man

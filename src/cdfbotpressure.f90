@@ -93,6 +93,8 @@ PROGRAM cdfbotpressure
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fmsk),' and ', TRIM(cn_fzgr) 
      PRINT *,'      '
@@ -168,20 +170,20 @@ PROGRAM cdfbotpressure
         zt(:,:)       = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * pp_rau0 * zt(:,:)
         IF (lxtra ) THEN
-           ierr = putvar(ncout, id_varout(2) ,zt            , 1, npiglo, npjglo, ktime=jt)
+           ierr = putvar(ncout, id_varout(2) ,zt      ,       1, npiglo, npjglo, ktime=jt)
            ierr = putvar(ncout, id_varout(3) ,dl_psurf,       1, npiglo, npjglo, ktime=jt)
         ENDIF
      ELSE IF ( lssh2 ) THEN 
         zt(:,:)    = getvar(cf_in,   cn_votemper, 1, npiglo, npjglo, ktime=jt )
         zs(:,:)    = getvar(cf_in,   cn_vosaline, 1, npiglo, npjglo, ktime=jt )
 
-        dl_sigi(:,:) = 1000. + sigmai(zt, zs, 0., npiglo, npjglo)
+        dl_sigi(:,:) = 1000.d0 + sigmai(zt, zs, 0., npiglo, npjglo)
 
         !  CAUTION : hdept is used for reading SSH in the next line
         hdept(:,:)   = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * dl_sigi * hdept(:,:)
         IF (lxtra ) THEN
-           ierr = putvar(ncout, id_varout(2) ,hdept         , 1, npiglo, npjglo, ktime=jt)
+           ierr = putvar(ncout, id_varout(2) ,hdept   ,       1, npiglo, npjglo, ktime=jt)
            ierr = putvar(ncout, id_varout(3) ,dl_psurf,       1, npiglo, npjglo, ktime=jt)
         ENDIF
      ELSE
@@ -191,12 +193,12 @@ PROGRAM cdfbotpressure
      dl_bpres(:,:) = dl_psurf(:,:)
 
      DO jk = 1, npk
-        tmask(:,:) = getvar(cn_fmsk, cn_tmask,      jk, npiglo, npjglo           )
+        tmask(:,:) = getvar(cn_fmsk, cn_tmask,      jk, npiglo, npjglo          )
         hdept(:,:) = getvar(cn_fzgr, cn_hdept,     jk, npiglo, npjglo           )
         zt(:,:)    = getvar(cf_in,   cn_votemper,  jk, npiglo, npjglo, ktime=jt )
         zs(:,:)    = getvar(cf_in,   cn_vosaline,  jk, npiglo, npjglo, ktime=jt )
 
-        dl_sigi(:,:) = 1000. + sigmai(zt, zs, hdept, npiglo, npjglo)
+        dl_sigi(:,:) = 1000.d0 + sigmai(zt, zs, hdept, npiglo, npjglo)
         IF ( lfull ) THEN ; e3t(:,:) = e31d(jk)
         ELSE ; e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
         ENDIF

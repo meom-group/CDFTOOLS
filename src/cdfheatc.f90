@@ -64,8 +64,6 @@ PROGRAM cdfheatc
 
   LOGICAL                                   :: lfull=.FALSE.       ! flag for full step computation
   LOGICAL                                   :: lchk                ! flag for missing files
-
-  ! NETCDF OUTPUT
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -118,12 +116,12 @@ PROGRAM cdfheatc
   DO WHILE ( ijarg <= narg ) 
      CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f'    ) ; CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1
-     CASE ( '-full' ) ; lfull = .true.
-     CASE ( '-vvl'  ) ; lg_vvl = .true.
+     CASE ( '-f'         ) ; CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-full'      ) ; lfull = .true.
+     CASE ( '-vvl'       ) ; lg_vvl = .true.
      CASE ( '-mxloption' ) ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) mxloption
-     CASE ( '-o   ' ) ; CALL getarg ( ijarg, cf_out)    ; ijarg = ijarg + 1 
-     CASE ( '-zoom' )   
+     CASE ( '-o   '      ) ; CALL getarg ( ijarg, cf_out)    ; ijarg = ijarg + 1 
+     CASE ( '-zoom'      )   
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
         CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
@@ -295,9 +293,9 @@ CONTAINS
     ncout =  create     (cf_out, 'none',  1,      1, npkk,   cdep='depthw' )
     ierr  = createvar   (ncout,  stypvar, ivar, ipk, id_varout             )
     ierr  = putheadervar(ncout,  cf_tfil, 1,      1, npkk,                 &
-         &         pnavlon=zdumlon, pnavlat=zdumlat,              &
-         &         pdep=gdepw(ikmin:ikmax),                       &
-         &         cdep='depthw'                                  )
+          &                 pnavlon=zdumlon, pnavlat=zdumlat,              &
+          &                 pdep=gdepw(ikmin:ikmax),                       &
+          &                 cdep='depthw'                                  )
     tim(:)= putvar1d(ncout,  tim,       npt, 'T')
 
     DEALLOCATE( zdumlon, zdumlat)

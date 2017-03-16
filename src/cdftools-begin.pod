@@ -17,7 +17,6 @@ This documentation is automatically produced by the concatenation of the C<USAGE
 
 Each program name starts with the 3 letters 'cdf' followed by a word related to the action performed by the tools. Example:  C<cdfw  Ufile.nc Vfile.nc > is used to compute the vertical velocity using the horizontal velocity field represented by its two components Ufile.nc and Vfile.nc.
 
-Better than a long speech, the following paragraphs  describes each of the existing cdftools.
+Better than a long speech, the following paragraphs  describes each of the existing cdftools. C<CDFTOOLS>  have been sorted out by classes in order to have a consistent documentation.
 
-=head1 COMMANDS DESCRIPTION
 

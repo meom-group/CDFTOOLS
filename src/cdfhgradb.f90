@@ -86,15 +86,16 @@ PROGRAM cdfhgradb
      PRINT *,'          with -sal and/or -tem options, respectively.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'      [-s S-file ] : File with ',TRIM(cn_vosaline),' variable if not in T file'
-     PRINT *,'      [-nc4      ] : use netcdf4 chunking and deflation on output '
-     PRINT *,'      [-o output file] : specify the name of output file instead of '
-     PRINT *,'                default name ',TRIM(cf_out)
-     PRINT *,'      [-sal SAL-name] : specify the name of salinity variable'
-     PRINT *,'      [-tem TEM-name] : specify the name of temperature variable'
+     PRINT *,'        [-s S-file ]   : File with ',TRIM(cn_vosaline),' variable if not in T file.'
+     PRINT *,'        [-o OUT-file]  : specify the name of output file instead of ',TRIM(cf_out)
+     PRINT *,'        [-nc4]         : use netcdf4 chunking and deflation on output.'
+     PRINT *,'        [-sal SAL-name]: specify the name of salinity variable.'
+     PRINT *,'        [-tem TEM-name]: specify the name of temperature variable.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),' ',TRIM(cn_fmsk),' and ',TRIM(cn_fzgr)
+     PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORTED : yes '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out),' ( unless specified with -o option)' 
@@ -120,10 +121,7 @@ PROGRAM cdfhgradb
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg+1
      CASE ( '-sal' ) ; CALL getarg (ijarg, cv_sal ) ; ijarg = ijarg+1
      CASE ( '-tem' ) ; CALL getarg (ijarg, cv_tem ) ; ijarg = ijarg+1
-     CASE DEFAULT
-        PRINT *, 'Option ',TRIM(cldum),' not understood !'
-        PRINT *, 'Check usage with cdfhgradb (no argument).'
-        STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -163,9 +161,6 @@ PROGRAM cdfhgradb
 
   CALL CreateOutput
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,  tim,        npt, 'T')
-
   e1u =  getvar(cn_fhgr, cn_ve1u, 1, npiglo, npjglo)
   e2v =  getvar(cn_fhgr, cn_ve2v, 1, npiglo, npjglo)
   gdept(:)    = getvare3(cn_fzgr, cn_gdept, npkk )
@@ -180,9 +175,9 @@ PROGRAM cdfhgradb
         zt(:,:) = getvar(cf_tfil, cv_tem, jk,   npiglo, npjglo, ktime=jt)
         zs(:,:) = getvar(cf_sfil, cv_sal, jk,   npiglo, npjglo, ktime=jt)
 
-        umask(:,:) = getvar(cn_fmsk, 'umask' , jk, npiglo, npjglo )
-        vmask(:,:) = getvar(cn_fmsk, 'vmask' , jk, npiglo, npjglo )
-        tmask(:,:) = getvar(cn_fmsk, 'tmask' , jk, npiglo, npjglo )
+        umask(:,:) = getvar(cn_fmsk, cn_umask , jk, npiglo, npjglo )
+        vmask(:,:) = getvar(cn_fmsk, cn_vmask , jk, npiglo, npjglo )
+        tmask(:,:) = getvar(cn_fmsk, cn_tmask , jk, npiglo, npjglo )
 
         ! zonal grad located at U point at current level
         dgradt_xu(:,:) = 0.d0
@@ -215,13 +210,6 @@ PROGRAM cdfhgradb
            ENDDO
         ENDDO
 
-        !DO ji=1,npiglo
-        !    DO jj=npjglo,2 -1
-        !      dgradt_yt(ji,jj) = 0.5*(dgradt_yv(ji,jj-1)+dgradt_yv(ji,jj))
-        !      dgrads_yt(ji,jj) = 0.5*(dgrads_yv(ji,jj-1)+dgrads_yv(ji,jj))
-        !    ENDDO
-        ! ENDDO
-
         ! compute alpha and beta at t-point
         zalbet(:,:) = albet ( zt, zs, zdep, npiglo, npjglo) ! not exact for partial-step level
         zbeta (:,:) = beta  ( zt, zs, zdep, npiglo, npjglo) ! 
@@ -253,7 +241,6 @@ CONTAINS
     !!----------------------------------------------------------------------
     ipk(:) = npkk  !  3D
 
-
     stypvar(1)%cname             = 'vohgradb'
     stypvar(1)%cunits            = 's^{-2}'
     stypvar(1)%rmissing_value    = -1000.
@@ -264,11 +251,13 @@ CONTAINS
     stypvar(1)%conline_operation = 'N/A'
     stypvar(1)%ichunk            = (/npiglo, MAX(1,npjglo/30), 1, 1 /)
 
-
     ! create output fileset
     ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk,       ld_nc4=lnc4    )
     ierr  = createvar   (ncout,  stypvar, jp_varout, ipk, id_varout, ld_nc4=lnc4    )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  tim,        npt, 'T')
 
   END SUBROUTINE CreateOutput
 

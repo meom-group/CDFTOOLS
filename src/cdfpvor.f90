@@ -46,7 +46,7 @@ PROGRAM cdfpvor
   INTEGER(KIND=4)                             :: it                   ! time index for vvl
   INTEGER(KIND=4)                             :: ierr                 ! working integer
   INTEGER(KIND=4)                             :: narg, iargc          ! command line
-  INTEGER(KIND=4)                             :: ijarg, ireq          ! command line
+  INTEGER(KIND=4)                             :: ijarg                ! command line
   INTEGER(KIND=4)                             :: npiglo, npjglo       ! size of the domain
   INTEGER(KIND=4)                             :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                             :: iup=1, idown=2, itmp ! working interger
@@ -90,8 +90,8 @@ PROGRAM cdfpvor
 
   narg= iargc()
   IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdfpvor T-file  U-file V-file [-full] [-lspv ] [-o output file] ...'
-     PRINT *,'           ... [-nc4] [-vvl W-file]'
+     PRINT *,' usage : cdfpvor -t T-file  -u U-file -v V-file [-full] [-lspv] ...'
+     PRINT *,'           ... [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Ertel potential vorticity and save the relative  ' 
@@ -100,9 +100,9 @@ PROGRAM cdfpvor
      PRINT *,'       With -lspv option, compute only Qstretch or Large Scale P V '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file : netcdf file for temperature and salinity.           ' 
-     PRINT *,'       U-file : netcdf file for zonal component of the velocity.    '
-     PRINT *,'       V-file : netcdf file for meridional component of the velocity.'
+     PRINT *,'       -t T-file : netcdf file for temperature and salinity.           ' 
+     PRINT *,'       -u U-file : netcdf file for zonal component of the velocity.    '
+     PRINT *,'       -v V-file : netcdf file for meridional component of the velocity.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full ] : indicate a full step configuration.                ' 
@@ -110,7 +110,7 @@ PROGRAM cdfpvor
      PRINT *,'                  ( replace the old cdflspv tool).'
      PRINT *,'                  If used only T-file is required, no need for velocities.'
      PRINT *,'       [-nc4 ] :  use netcdf4 with chunking and deflation '
-     PRINT *,'       [-o output file ] : use output file instead of default ',TRIM(cf_out)
+     PRINT *,'       [-o OUT-file] : use output file instead of default ',TRIM(cf_out)
      PRINT *,'       [-vvl W-file] : use time-varying vertical metrics. W-file holds the'
      PRINT *,'                  time-varying e3w vertical metrics.'
      PRINT *,'      '
@@ -126,8 +126,8 @@ PROGRAM cdfpvor
      PRINT *,'           '
      PRINT *,'       With option -lspv :'
      PRINT *,'       netcdf file : lspv.nc'
-     PRINT *,'         variables :  volspv  (1.e-7 kg.m-4.s-1 ) large scale potential vorticity'
-     PRINT *,'                  LSPV is  located at W points.'
+     PRINT *,'         variables :  volspv  (1.e-7 kg.m-4.s-1 ) large scale potential '
+     PRINT *,'              vorticity. LSPV is located at W points.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfcurl ( compute only the curl on 1 level)'
@@ -135,26 +135,21 @@ PROGRAM cdfpvor
      STOP
   ENDIF
 
-  ijarg = 1  ; ireq = 0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg = ijarg + 1
-
      SELECT CASE ( cldum )
+     CASE ( '-t'    ) ; CALL getarg( ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-u'    ) ; CALL getarg( ijarg, cf_ufil) ; ijarg = ijarg + 1
+     CASE ( '-v'    ) ; CALL getarg( ijarg, cf_vfil) ; ijarg = ijarg + 1
+      ! options
      CASE ( '-full' ) ; lfull  = .TRUE.
-     CASE ( '-lspv' ) ; lertel = .FALSE. ; nvar = 1 ; cf_out = 'lspv.nc'
+     CASE ( '-lspv' ) ; lertel = .FALSE. ; nvar = 1  ; cf_out = 'lspv.nc'
      CASE ( '-nc4'  ) ; lnc4   = .TRUE.
      CASE ( '-o'    ) ; CALL getarg( ijarg, cf_out ) ; ijarg = ijarg + 1
      CASE ( '-vvl'  ) ; lg_vvl = .TRUE.
-        ; CALL getarg( ijarg, cf_e3w ) ; ijarg = ijarg + 1
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE ( ireq )
-        CASE ( 1 ) ; cf_tfil = cldum
-        CASE ( 2 ) ; cf_ufil = cldum
-        CASE ( 3 ) ; cf_vfil = cldum
-        CASE DEFAULT
-           PRINT *,' Too many arguments '; STOP
-        END SELECT
+        ;               CALL getarg( ijarg, cf_e3w ) ; ijarg = ijarg + 1
+     CASE DEFAULT     ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
@@ -246,10 +241,10 @@ PROGRAM cdfpvor
            DO jj = 2, npjglo -1 
               DO ji = 2, npiglo -1    
                  drotn(ji,jj) = ( dun(ji-1,jj-1)  + dun(ji,jj-1)  &
-                      &        -dun(ji-1,jj+1)  - dun(ji,jj+1)  &
-                      &        -dvn(ji-1,jj-1)  - dvn(ji-1,jj)  &
-                      &        +dvn(ji+1,jj-1)  + dvn(ji+1,jj)) &
-                      / dareat(ji,jj) 
+                        &        -dun(ji-1,jj+1)  - dun(ji,jj+1)  &
+                        &        -dvn(ji-1,jj-1)  - dvn(ji-1,jj)  &
+                        &        +dvn(ji+1,jj-1)  + dvn(ji+1,jj)) &
+                        / dareat(ji,jj) 
               END DO
            END DO
         ENDIF
@@ -270,95 +265,97 @@ PROGRAM cdfpvor
            zwk(:,:,iup) = eosbn2 ( ztemp, zsal, gdepw(jk), e3w, npiglo, npjglo ,iup, idown)* tmask(:,:)
            !
            IF ( lertel ) THEN ! put zn2 at T level (k )
-              WHERE ( zwk(:,:,idown) == 0 ) ; zn2(:,:) =  zwk(:,:,iup)
-           ELSEWHERE                     ; zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * tmask(:,:)
-           END WHERE
-        ELSE               ! keep bn2 at w points
-           zn2(:,:) = zwk(:,:,iup) * tmask(:,:)
+              WHERE ( zwk(:,:,idown) == 0 ) 
+                 zn2(:,:) =  zwk(:,:,iup)
+              ELSEWHERE                     
+                 zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * tmask(:,:)
+              END WHERE
+           ELSE               ! keep bn2 at w points
+              zn2(:,:) = zwk(:,:,iup) * tmask(:,:)
+           ENDIF
         ENDIF
+        !
+        !   now rotn will be converted to relative vorticity and zn2 to stretching
+        dstretch(:,:) = d2fcor(:,:)* rau0sg * zn2(:,:)
+
+        IF ( lertel ) THEN
+           drotn(:,:)    = drotn(:,:) * rau0sg * zn2(:,:)
+           ! write the three variables on file at level k
+           ierr = putvar(ncout, id_varout(1), REAL( drotn          )*1.e7, jk, npiglo, npjglo, ktime=jt)
+           ierr = putvar(ncout, id_varout(2), REAL( dstretch       )*1.e7, jk, npiglo, npjglo, ktime=jt)
+           ierr = putvar(ncout, id_varout(3), REAL((drotn+dstretch))*1.e7, jk, npiglo, npjglo, ktime=jt)
+        ELSE
+           ! save absolute value of dstretch, as in olf cdflspv
+           ierr = putvar(ncout, id_varout(1), REAL( ABS(dstretch)  )*1.e7, jk, npiglo, npjglo, ktime=jt)
+        ENDIF
+
+        itmp = idown ; idown = iup ; iup = itmp
+
+     END DO  ! loop to next level
+
+     !  set zero at bottom and surface
+     zwk(:,:,1) = 0.e0
+     ierr = putvar(ncout, id_varout(1), zwk(:,:,1), 1,   npiglo, npjglo, ktime=jt)
+     ierr = putvar(ncout, id_varout(1), zwk(:,:,1), npk, npiglo, npjglo, ktime=jt)
+
+     IF (lertel ) THEN
+        ierr = putvar(ncout, id_varout(2), zwk(:,:,1), 1,   npiglo, npjglo, ktime=jt)
+        ierr = putvar(ncout, id_varout(3), zwk(:,:,1), 1,   npiglo, npjglo, ktime=jt)
+
+        ierr = putvar(ncout, id_varout(2), zwk(:,:,1), npk, npiglo, npjglo, ktime=jt)
+        ierr = putvar(ncout, id_varout(3), zwk(:,:,1), npk, npiglo, npjglo, ktime=jt)
      ENDIF
-     !
-     !   now rotn will be converted to relative vorticity and zn2 to stretching
-     dstretch(:,:) = d2fcor(:,:)* rau0sg * zn2(:,:)
+  END DO   ! loop on time
 
-     IF ( lertel ) THEN
-        drotn(:,:)    = drotn(:,:) * rau0sg * zn2(:,:)
-        ! write the three variables on file at level k
-        ierr = putvar(ncout, id_varout(1), REAL( drotn          )*1.e7, jk, npiglo, npjglo, ktime=jt)
-        ierr = putvar(ncout, id_varout(2), REAL( dstretch       )*1.e7, jk, npiglo, npjglo, ktime=jt)
-        ierr = putvar(ncout, id_varout(3), REAL((drotn+dstretch))*1.e7, jk, npiglo, npjglo, ktime=jt)
-     ELSE
-        ! save absolute value of dstretch, as in olf cdflspv
-        ierr = putvar(ncout, id_varout(1), REAL( ABS(dstretch)  )*1.e7, jk, npiglo, npjglo, ktime=jt)
-     ENDIF
-
-     itmp = idown ; idown = iup ; iup = itmp
-
-  END DO  ! loop to next level
-
-  !  set zero at bottom and surface
-  zwk(:,:,1) = 0.e0
-  ierr = putvar(ncout, id_varout(1), zwk(:,:,1), 1,   npiglo, npjglo, ktime=jt)
-  ierr = putvar(ncout, id_varout(1), zwk(:,:,1), npk, npiglo, npjglo, ktime=jt)
-
-  IF (lertel ) THEN
-     ierr = putvar(ncout, id_varout(2), zwk(:,:,1), 1,   npiglo, npjglo, ktime=jt)
-     ierr = putvar(ncout, id_varout(3), zwk(:,:,1), 1,   npiglo, npjglo, ktime=jt)
-
-     ierr = putvar(ncout, id_varout(2), zwk(:,:,1), npk, npiglo, npjglo, ktime=jt)
-     ierr = putvar(ncout, id_varout(3), zwk(:,:,1), npk, npiglo, npjglo, ktime=jt)
-  ENDIF
-END DO   ! loop on time
-
-ierr = closeout(ncout)
+  ierr = closeout(ncout)
 
 CONTAINS
 
-SUBROUTINE CreateOutput
-  !!---------------------------------------------------------------------
-  !!                  ***  ROUTINE CreateOutput  ***
-  !!
-  !! ** Purpose :  Create netcdf output file(s) 
-  !!
-  !! ** Method  :  Use stypvar global description of variables
-  !!
-  !!----------------------------------------------------------------------
- ipk(:)= npk                   ! Those three variables are  3D
- stypvar%cunits            = '1.e-7 kg.m-4.s-1'
- stypvar%rmissing_value    = 0.
- stypvar%valid_min         = -10000.
- stypvar%valid_max         = 10000.
- stypvar%conline_operation = 'N/A'
- stypvar%caxis             = 'TZYX'
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(:)= npk                   ! Those three variables are  3D
+    stypvar%cunits            = '1.e-7 kg.m-4.s-1'
+    stypvar%rmissing_value    = 0.
+    stypvar%valid_min         = -10000.
+    stypvar%valid_max         = 10000.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TZYX'
 
- DO ji = 1, nvar
-    stypvar(ji)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
- ENDDO
+    DO ji = 1, nvar
+       stypvar(ji)%ichunk = (/npiglo,MAX(1,npjglo/30), 1, 1 /)
+    ENDDO
 
- IF (lertel ) THEN
-    ! define variable name and attribute
-    stypvar(1)%cname = 'vorelvor' ; stypvar(1)%clong_name = 'Relative_component_of_Ertel_PV'
-    stypvar(2)%cname = 'vostrvor' ; stypvar(2)%clong_name = 'Stretching_component_of_Ertel_PV'
-    stypvar(3)%cname = 'vototvor' ; stypvar(3)%clong_name = 'Ertel_potential_vorticity'
+    IF (lertel ) THEN
+       ! define variable name and attribute
+       stypvar(1)%cname = 'vorelvor' ; stypvar(1)%clong_name = 'Relative_component_of_Ertel_PV'
+       stypvar(2)%cname = 'vostrvor' ; stypvar(2)%clong_name = 'Stretching_component_of_Ertel_PV'
+       stypvar(3)%cname = 'vototvor' ; stypvar(3)%clong_name = 'Ertel_potential_vorticity'
 
-    stypvar(1)%cshort_name = 'vorelvor'
-    stypvar(2)%cshort_name = 'vostrvor'
-    stypvar(3)%cshort_name = 'vototvor'
+       stypvar(1)%cshort_name = 'vorelvor'
+       stypvar(2)%cshort_name = 'vostrvor'
+       stypvar(3)%cshort_name = 'vototvor'
 
-    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
-    ierr  = createvar   (ncout,  stypvar, nvar,   ipk,    id_varout )
-    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
- ELSE
-    stypvar(1)%cname = 'volspv' ; stypvar(1)%clong_name = 'Large Scale Potential_vorticity'
-    stypvar(1)%cshort_name = 'volspv'
-    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, cdep=TRIM(cn_vdepthw) )
-    ierr  = createvar   (ncout,  stypvar, nvar,   ipk,    id_varout                  )
-    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, pdep=gdepw            )
- ENDIF
+       ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       )
+       ierr  = createvar   (ncout,  stypvar, nvar,   ipk,    id_varout )
+       ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+    ELSE
+       stypvar(1)%cname = 'volspv' ; stypvar(1)%clong_name = 'Large Scale Potential_vorticity'
+       stypvar(1)%cshort_name = 'volspv'
+       ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, cdep=TRIM(cn_vdepthw) )
+       ierr  = createvar   (ncout,  stypvar, nvar,   ipk,    id_varout                  )
+       ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, pdep=gdepw            )
+    ENDIF
 
- tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
- ierr = putvar1d(ncout,   tim,       npt, 'T' )
+    tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout,   tim,       npt, 'T' )
 
-END SUBROUTINE CreateOutput
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfpvor

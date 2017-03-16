@@ -90,11 +90,13 @@ PROGRAM cdfspice
      PRINT *,'       [-nc4]  : enable chunking and compression'
      PRINT *,'       [-o OUT-file]    : specify output filename instead of ',TRIM(cf_out)
      PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
      PRINT *,'         variables : vospice'
      PRINT *,'      '
      PRINT *,'     REFERENCE :'

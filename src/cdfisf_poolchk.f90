@@ -177,7 +177,7 @@ CONTAINS
     !! ** Purpose :  Create the output file. This is done outside the main
     !!               in order to increase readability of the code. 
     !!
-    !! ** Method  :  Use global variables, defined in mail 
+    !! ** Method  :  Use global variables, defined in main 
     !!----------------------------------------------------------------------
     ! define new variables for output
     ipk(1) = 1  !  2D

@@ -80,9 +80,9 @@ PROGRAM cdfnorth_unfold
      PRINT *,'       -jpacif jpacif : J index to start the unfold process in the Pacific.'
      PRINT *,'       -p pivot       : type of pivot for the north fold condition ( T or F )'
      PRINT *,'       -typ TYP-Cgrid : one of T|U|V|W|F , indicating the grid point where the'
-     PRINT *,'                   variables in the input file are located. If all variables in'
-     PRINT *,'                   a single file are not on the same C-grid location, there '
-     PRINT *,'                   might be a problem ...'
+     PRINT *,'                 variables in the input file are located. If all variables in'
+     PRINT *,'                 a single file are not on the same C-grid location, there '
+     PRINT *,'                 might be a problem ...'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)

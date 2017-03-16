@@ -44,69 +44,68 @@ PROGRAM cdfspeed
   TYPE (variable), DIMENSION(1)              :: stypvar              ! structure for attibutes
 
   LOGICAL                                    :: lforcing             ! forcing flag
-  LOGICAL                                    :: lnc4 = .false.       ! flag for netcdf4 chunking and deflation
+  LOGICAL                                    :: lchk   = .FALSE.     ! flag for missing files
+  LOGICAL                                    :: lnc4   = .FALSE.     ! flag for netcdf4 chunking and deflation
+  LOGICAL                                    :: lcgrid = .FALSE.     ! flag for C-grid 2D data
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfspeed  U-file V-file U-var V-var [-t T-file] ...'
-     PRINT *,'            ... [-nc4] [-o OUT-file ] [-lev level_list]' 
+     PRINT *,' usage : cdfspeed  -u U-file U-var -v V-file V-var [-t T-file] ...'
+     PRINT *,'            ... [-o OUT-file] [-nc4] [-lev LST-level] [-C]' 
+     PRINT *,'       '
      PRINT *,'    PURPOSE :'
-     PRINT *,'       Computes the speed of ocean currents or wind speed'
+     PRINT *,'       Computes the speed of ocean currents or wind speed.'
      PRINT *,'       '
-     PRINT *,'       If the input files are 3D, the input is assumed to be '
-     PRINT *,'       a model output on native C-grid. Speed is computed on the A-grid.'
+     PRINT *,'       If the input files are 3D, the input is assumed to be a model'
+     PRINT *,'       output on native C-grid. Speed is computed on the A-grid.'
      PRINT *,'       '
-     PRINT *,'       If the input file is 2D and then we assume that this is '
-     PRINT *,'       a forcing file already on the A-grid.'
+     PRINT *,'       If the input file is 2D then we assume that this is a forcing'
+     PRINT *,'       file already on the A-grid, unless -C option is used.'
      PRINT *,'    '
      PRINT *,'    ARGUMENTS :'
-     PRINT *,'       U-file : netcdf file for U component'
-     PRINT *,'       V-file : netcdf file for V component'
-     PRINT *,'       U-var  : netcdf variable name for U component'
-     PRINT *,'       V-var  : netcdf variable name for V component'
+     PRINT *,'       -u U-file U-var : netcdf file for U component and variable name.'
+     PRINT *,'       -v V-file V-var : netcdf file for V componentt and variable name.'
      PRINT *,'    '
      PRINT *,'    OPTIONS :'
-     PRINT *,'       -t T-file  : indicate any file on gridT for correct header'
-     PRINT *,'                 of the output file (usefull for 3D files)'
-     PRINT *,'       -lev level_list  : indicate a list of levels to be processed'
-     PRINT *,'                 If not used, all levels are processed.'
-     PRINT *,'                 This option should be the last on the command line'
-     PRINT *,'       -nc4 : use netcdf4 output with chunking and deflation'
-     PRINT *,'       -o OUT-file : use specified output file instead of ',TRIM(cf_out)
+     PRINT *,'       [-t T-file] : indicate any file on gridT for correct header of the'
+     PRINT *,'             output file (needed for 3D files or if -C option is used).'
+     PRINT *,'       [-lev LST-level] : indicate a list of levels to be processed.'
+     PRINT *,'             If not used, all levels are processed.'
+     PRINT *,'       [-C] : indicates that data are on a C-grid even if input files are 2D.'
+     PRINT *,'       [-o OUT-file] : use specified output file instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4] : use netcdf4 output with chunking and deflation.'
      PRINT *,'    '
      PRINT *,'    OUTPUT :'
-     PRINT *,'       Output on ',TRIM(cf_out),'  variable U '
+     PRINT *,'       Output on ',TRIM(cf_out),' unless -o option is used.'
+     PRINT *,'         netcdf variable : U '
      STOP
   ENDIF
 
   nlev =0
   ijarg=1
   DO WHILE ( ijarg <= narg ) 
-     CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
+     CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-lev' ) 
-        nlev = narg -ijarg + 1
-        ALLOCATE ( nklevel(nlev) )
-        DO jlev = 1, nlev 
-           CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ( cldum,*) nklevel(jlev)
-        END DO
-     CASE ( '-t' ) 
-        CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1
-        IF ( chkfile (cf_tfil) ) STOP ! missing file
-     CASE ( '-nc4' ) 
-        lnc4=.true.
-     CASE ( '-o' ) 
-        CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
-     CASE DEFAULT
-        cf_ufil = cldum
-        CALL getarg(ijarg, cf_vfil ) ; ijarg = ijarg + 1
-        IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) ) STOP ! missing file
-        CALL getarg(ijarg, cv_u ) ; ijarg = ijarg + 1
-        CALL getarg(ijarg, cv_v ) ; ijarg = ijarg + 1
+     CASE ( '-u'   ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_u    ) ; ijarg=ijarg+1
+     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cv_v    ) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-lev' ) ; CALL GetLevList
+     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-nc4' ) ; lnc4   = .TRUE.
+     CASE ( '-C'   ) ; lcgrid = .TRUE.
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
+
+  IF ( cf_tfil /= 'none' ) lchk = lchk .OR. chkfile (cf_tfil)
+  lchk = lchk .OR. chkfile (cf_ufil)
+  lchk = lchk .OR. chkfile (cf_vfil)
+  IF ( lchk ) STOP 1 ! missing file
 
   npiglo = getdim (cf_vfil,cn_x)
   npjglo = getdim (cf_vfil,cn_y)
@@ -115,7 +114,9 @@ PROGRAM cdfspeed
   npt    = getdim (cf_vfil,cn_t)
 
   IF ( (npk == 0) ) THEN
-     lforcing=.TRUE.
+     IF ( lcgrid ) THEN ; lforcing = .FALSE.
+     ELSE               ; lforcing = .TRUE.
+     ENDIF
      npk=1
      PRINT *, 'W A R N I N G : you used a forcing field'
   ELSE
@@ -123,7 +124,7 @@ PROGRAM cdfspeed
      IF ( TRIM(cf_tfil) == 'none' ) THEN
         PRINT *,'  ERROR: you must specify a griT file as fifth argument '
         PRINT *,'     This is for the proper header of output file '
-        STOP
+        STOP 1
      ENDIF
   END IF
 
@@ -150,48 +151,10 @@ PROGRAM cdfspeed
      nlev = nvpk
   END IF
 
-  ! choose chunk size for output ... not easy not used if lnc4=.false. but
-  ! anyway ..
-  stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
-
-  ! define new variables for output
-  stypvar(1)%cname             = 'U'
-  stypvar(1)%cunits            = 'm.s-1'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = -1000.
-  stypvar(1)%valid_max         = 1000.
-  stypvar(1)%clong_name        = 'Current or wind speed'
-  stypvar(1)%cshort_name       = 'U'
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
-
-  ! create output fileset
-  IF (lforcing ) THEN
-     ipk(1) = 1 !  2D  no dep variable
-     ncout  = create      (cf_out, cf_vfil, npiglo, npjglo, 0         , ld_nc4=lnc4 )
-     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
-     ierr   = putheadervar(ncout,  cf_vfil, npiglo, npjglo, 0                       )
-     nlev=1 ; nklevel(nlev) = 1
-  ELSE
-     ALLOCATE ( gdept(nlev), gdeptall(npk) )
-     gdeptall = getvar1d ( cf_tfil, cn_vdeptht, npk )
-     DO jlev = 1, nlev
-        gdept(jlev) = gdeptall( nklevel(jlev) )
-     END DO
-     ipk(1) = nlev
-     ncout  = create      (cf_out, cf_tfil, npiglo, npjglo, nlev      , ld_nc4=lnc4   )
-     ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4   )
-     ierr   = putheadervar(ncout,  cf_tfil, npiglo, npjglo, nlev,  pdep=gdept         )
-  END IF
-
   ! Allocate arrays
   ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), zspeed(npiglo,npjglo), tim(npt))
 
-  DO jt=1,npt
-     tim(jt)=jt
-  END DO
-
-  ierr=putvar1d(ncout, tim, npt, 'T')
+  CALL CreateOutput
 
   DO jt = 1,npt
      DO jlev = 1, nlev
@@ -221,5 +184,81 @@ PROGRAM cdfspeed
      END DO
   END DO
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define new variables for output
+    stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'U'
+    stypvar(1)%cunits            = 'm.s-1'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = -1000.
+    stypvar(1)%valid_max         = 1000.
+    stypvar(1)%clong_name        = 'Current or wind speed'
+    stypvar(1)%cshort_name       = 'U'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
+
+    ! create output fileset
+    IF (lforcing ) THEN
+       ipk(1) = 1 !  2D  no dep variable
+       ncout  = create      (cf_out, cf_vfil, npiglo, npjglo, 0         , ld_nc4=lnc4 )
+       ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
+       ierr   = putheadervar(ncout,  cf_vfil, npiglo, npjglo, 0                       )
+       nlev=1 ; nklevel(nlev) = 1
+    ELSE
+       ALLOCATE ( gdept(nlev), gdeptall(npk) )
+       gdeptall = getvar1d ( cf_tfil, cn_vdeptht, npk )
+       DO jlev = 1, nlev
+          gdept(jlev) = gdeptall( nklevel(jlev) )
+       END DO
+       ipk(1) = nlev
+       ncout  = create      (cf_out, cf_tfil, npiglo, npjglo, nlev      , ld_nc4=lnc4   )
+       ierr   = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4   )
+       ierr   = putheadervar(ncout,  cf_tfil, npiglo, npjglo, nlev,  pdep=gdept         )
+    END IF
+
+    tim   = getvar1d(cf_vfil, cn_vtimec, npt     )
+    ierr=putvar1d(ncout, tim, npt, 'T')
+
+  END SUBROUTINE CreateOutput
+
+  SUBROUTINE GetLevList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetLevList  ***
+    !!
+    !! ** Purpose :  Set up a level list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    nlev=0
+    ! need to read a list of level ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; nlev = nlev+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (nklevel(nlev) )
+    DO ji = icur, icur + nlev -1
+       CALL getarg(ji, cldum ) ; ijarg=ijarg+1 ; READ(cldum, * ) nklevel( ji -icur +1 )
+    END DO
+  END SUBROUTINE GetLevList
 
 END PROGRAM cdfspeed

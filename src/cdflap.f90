@@ -27,7 +27,6 @@ PROGRAM cdflap
   INTEGER(KIND=4)                              :: npk, npt           ! size of the domain
   INTEGER(KIND=4)                              :: npkv               ! vertical size of the variable
   INTEGER(KIND=4)                              :: narg, iargc, ijarg ! browse line
-  INTEGER(KIND=4)                              :: ii                 ! browse line
   INTEGER(KIND=4)                              :: ncout              ! ncid of output file
   INTEGER(KIND=4)                              :: nvars              ! nmber of variables in input file
   INTEGER(KIND=4)                              :: ierr               ! error status
@@ -71,28 +70,36 @@ PROGRAM cdflap
 
   LOGICAL                                      :: lchk               ! missing files flag
   LOGICAL                                      :: l_overf2=.FALSE.   ! overf flag
-  LOGICAL                                      :: l_metric=.TRUE.    ! overf flag
+  LOGICAL                                      :: l_metric=.TRUE.    ! use metric flag
+  LOGICAL                                      :: lnc4    = .FALSE.  ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
-  IF ( narg < 2 ) THEN
-     PRINT *,' usage : cdflap IN-file IN-var  IN-type [-overf2] [-nometric]'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdflap -f IN-file -v IN-var -t IN-type [-overf2] [-nometric] ...'
+     PRINT *,'               ...[-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Laplacian of the variable IN-var in file IN-file'
      PRINT *,'       Assumes that the data are on a C-grid model (as NEMO) '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file : netcdf file in input'
-     PRINT *,'       IN-var  : name of the variable to process '
-     PRINT *,'       IN-TYPE : Position of the variable on the C-grid [ T U V F ]'
+     PRINT *,'       -f IN-file : netcdf file in input'
+     PRINT *,'       -v IN-var  : name of the variable to process '
+     PRINT *,'       -t IN-TYPE : Position of the variable on the C-grid [ T U V F ]'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -overf2 : save laplacien/f/f*g (where f is the local coriolis '
+     PRINT *,'       [-overf2] : save laplacien/f/f*g (where f is the local coriolis '
      PRINT *,'            parameter, and g is the accelaration due to gravity --9.81 m/s2-- )'
      PRINT *,'            For the SSH field, this is a proxy for geostrophic vorticity'
-     PRINT *,'       -nometric : compute laplacian without considering metrics '
+     PRINT *,'       [-nometric] : compute laplacian without considering metrics '
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'            This option must be used after the -overf2 or -nometric option, as'
+     PRINT *,'            output file name is redefined when using these options.'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'            This option is effective only if cdftools are compiled with'
+     PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr)," ",TRIM(cn_fzgr) ,' and ', TRIM(cn_fmsk)
@@ -102,41 +109,34 @@ PROGRAM cdflap
      PRINT *,'         variables : lap<var> (unit/m2)'
      PRINT *,'       if option -overf2 is used, netcdf file is lapoverf2.nc and '
      PRINT *,'       variable is lap<var>overf2'
-    
-
      STOP
   ENDIF
 
-  ijarg = 1 ; ii=0
+  ijarg = 1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE (cldum )
-     CASE ( '-overf2' ) 
-          l_overf2=.true.
-          cf_out='lapoverf2.nc'
-     CASE ( '-nometric' )
-          l_metric=.false.
-          cf_out='lapgrid.nc'
-     CASE DEFAULT
-        ii=ii+1
-        SELECT CASE (ii)
-        CASE ( 1 ) ; cf_in = cldum
-        CASE ( 2 ) ; cv_in = cldum
-        CASE ( 3 ) ; ct_in = cldum
-        CASE DEFAULT
-          PRINT *,' Too many free arguments ...'
-          STOP
-        END SELECT
+     CASE ( '-f'       ) ; CALL getarg(ijarg,cf_in ) ; ijarg=ijarg+1
+     CASE ( '-v'       ) ; CALL getarg(ijarg,cv_in ) ; ijarg=ijarg+1
+     CASE ( '-t'       ) ; CALL getarg(ijarg,ct_in ) ; ijarg=ijarg+1
+        !options
+     CASE ( '-overf2'  ) ; l_overf2 = .TRUE.
+        ;                  cf_out   = 'lapoverf2.nc'
+     CASE ( '-nometric') ; l_metric = .FALSE.
+        ;                  cf_out   = 'lapgrid.nc'
+     CASE ( '-o'       ) ; CALL getarg(ijarg,cf_out) ; ijarg=ijarg+1
+     CASE ( '-nc4'     ) ; lnc4     = .TRUE.
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.'; STOP
      END SELECT
   ENDDO
   PRINT *, ' TYP ', ct_in
 
   ! check if files exists
-  lchk=.false.
+  lchk=.FALSE.
   IF ( l_metric ) THEN
-    lchk = chkfile (cn_fhgr)
-    lchk = chkfile (cn_fzgr) .OR. lchk
-    lchk = chkfile (cn_fmsk) .OR. lchk
+     lchk = chkfile (cn_fhgr)
+     lchk = chkfile (cn_fzgr) .OR. lchk
+     lchk = chkfile (cn_fmsk) .OR. lchk
   ENDIF
   lchk = chkfile (cf_in  ) .OR. lchk
   IF ( lchk ) STOP ! missing files
@@ -146,90 +146,73 @@ PROGRAM cdflap
   npk    = getdim(cf_in,cn_z)
   npt    = getdim(cf_in,cn_t)
 
- !IF ( npk == 0 ) THEN 
- !  PRINT *, 'Input file with no vertical dimension'
- !  PRINT *, 'Set npk to 1 '
- !  npk = 1
- !ENDIF
+  !IF ( npk == 0 ) THEN 
+  !  PRINT *, 'Input file with no vertical dimension'
+  !  PRINT *, 'Set npk to 1 '
+  !  npk = 1
+  !ENDIF
 
   PRINT *, 'NPIGLO : ', npiglo
   PRINT *, 'NPJGLO : ', npjglo
   PRINT *, 'NPK    : ', npk
   PRINT *, 'NPT    : ', npT
-  ! determine the vertical size of the working variable
+
   nvars = getnvar(cf_in)   ! get the number of variables in files
   ALLOCATE(cv_nam(nvars), ipkin(nvars) ,sdum(nvars) )
 
   ! get list of variable names and collect attributes in stypvar
   cv_nam(:) = getvarname(cf_in,nvars, sdum)
+
+  ! determine the vertical size of the working variable
   ipkin(:)  = getipk (cf_in,nvars)
   DO jv =1, nvars
-   IF ( cv_nam(jv) == cv_in ) THEN
-     npkv=ipkin(jv)
-     EXIT
-   ENDIF
+     IF ( cv_nam(jv) == cv_in ) THEN
+        npkv=ipkin(jv)
+        EXIT
+     ENDIF
   ENDDO
 
   ierr = getvaratt (cf_in, cv_in, cv_units, rmissing, cln_in, csn_in)
-
-  ! define new variables for output
-  ipk(1) = npkv
-  IF ( l_overf2) THEN
-     stypvar(1)%cname             = 'lap'//TRIM(cv_in)//'overf2'
-  ELSE
-     stypvar(1)%cname             = 'lap'//TRIM(cv_in)
-  ENDIF
-  stypvar(1)%cunits            = TRIM(cv_units)//'/m2'
-  IF ( l_overf2) stypvar(1)%cunits  = TRIM(cv_units)//'/m'
-  stypvar(1)%rmissing_value    = dspval
-  stypvar(1)%valid_min         = -10.
-  stypvar(1)%valid_max         = 10.
-  stypvar(1)%clong_name        = 'Laplacian of '//TRIM(cln_in)
-  IF ( l_overf2) stypvar(1)%clong_name        = 'g /f/f* Laplacian of '//TRIM(cln_in)
-  stypvar(1)%cshort_name       = stypvar(1)%cname
-  stypvar(1)%conline_operation = 'N/A'
-  stypvar(1)%caxis             = 'TZYX'
 
   ! fix mesh mask variables according to variable type
   ! HOT ! need to write down stencil to fully understand those settings ...
   SELECT CASE (ct_in )
   CASE ( 'T' )
-      ! needs umask, vmask, e1u, e1t, e2v, e2t 
-      cmask_i = 'umask'  ; cmask_j = 'vmask'
-      ce1_i1  = cn_ve1u  ; ce1_i2  = cn_ve1t
-      ce2_j1  = cn_ve2v  ; ce2_j2  = cn_ve2t
-      iioff1  = 0        ; iioff2  = 1
-      ijoff1  = 0        ; ijoff2  = 1
-      cv_lat  =cn_gphit
+     ! needs umask, vmask, e1u, e1t, e2v, e2t 
+     cmask_i = cn_umask  ; cmask_j = cn_vmask
+     ce1_i1  = cn_ve1u   ; ce1_i2  = cn_ve1t
+     ce2_j1  = cn_ve2v   ; ce2_j2  = cn_ve2t
+     iioff1  = 0         ; iioff2  = 1
+     ijoff1  = 0         ; ijoff2  = 1
+     cv_lat  =cn_gphit
   CASE ( 'U' )
-      ! needs tmask, fmask, e1t, e1u, e2f, e2u 
-      cmask_i = 'tmask'  ; cmask_j = 'fmask'
-      ce1_i1  = cn_ve1t  ; ce1_i2  = cn_ve1u
-      ce2_j1  = cn_ve2f  ; ce2_j2  = cn_ve2u
-      iioff1  = 1        ; iioff2  = 0
-      ijoff1  = 0        ; ijoff2  = 1
-      cv_lat  =cn_gphiu
+     ! needs tmask, fmask, e1t, e1u, e2f, e2u 
+     cmask_i = cn_tmask  ; cmask_j = cn_fmask
+     ce1_i1  = cn_ve1t   ; ce1_i2  = cn_ve1u
+     ce2_j1  = cn_ve2f   ; ce2_j2  = cn_ve2u
+     iioff1  = 1         ; iioff2  = 0
+     ijoff1  = 0         ; ijoff2  = 1
+     cv_lat  =cn_gphiu
   CASE ( 'V' )
-      ! needs fmask, tmask, e1f, e1v, e2t, e2v 
-      cmask_i = 'fmask'  ; cmask_j = 'tmask'
-      ce1_i1  = cn_ve1f  ; ce1_i2  = cn_ve1v
-      ce2_j1  = cn_ve2t  ; ce2_j2  = cn_ve2v
-      iioff1  = 0        ; iioff2  = 1
-      ijoff1  = 1        ; ijoff2  = 0
-      cv_lat  =cn_gphiv
+     ! needs fmask, tmask, e1f, e1v, e2t, e2v 
+     cmask_i = cn_fmask  ; cmask_j = cn_tmask
+     ce1_i1  = cn_ve1f   ; ce1_i2  = cn_ve1v
+     ce2_j1  = cn_ve2t   ; ce2_j2  = cn_ve2v
+     iioff1  = 0         ; iioff2  = 1
+     ijoff1  = 1         ; ijoff2  = 0
+     cv_lat  =cn_gphiv
   CASE ( 'F' )
-      ! needs vmask, umask, e1v, e1f, e2u, e2f 
-      cmask_i = 'vmask'  ; cmask_j = 'umask'
-      ce1_i1  = cn_ve1v  ; ce1_i2  = cn_ve1f
-      ce2_j1  = cn_ve2u  ; ce2_j2  = cn_ve2f
-      iioff1  = 1        ; iioff2  = 0
-      ijoff1  = 1        ; ijoff2  = 0
-      cv_lat  =cn_gphif
+     ! needs vmask, umask, e1v, e1f, e2u, e2f 
+     cmask_i = cn_vmask  ; cmask_j = cn_umask
+     ce1_i1  = cn_ve1v   ; ce1_i2  = cn_ve1f
+     ce2_j1  = cn_ve2u   ; ce2_j2  = cn_ve2f
+     iioff1  = 1         ; iioff2  = 0
+     ijoff1  = 1         ; ijoff2  = 0
+     cv_lat  =cn_gphif
   CASE DEFAULT
-      PRINT *, ' TYPE ', TRIM(ct_in),' unknown on C-grid'
-      STOP
+     PRINT *, ' TYPE ', TRIM(ct_in),' unknown on C-grid'
+     STOP
   END SELECT
-      
 
   ! Allocate the memory
   ALLOCATE ( e1_i1(npiglo,npjglo), e2_j1(npiglo,npjglo) )
@@ -244,33 +227,28 @@ PROGRAM cdflap
 
   ! Read the metrics from the mesh_hgr file
   IF ( l_metric ) THEN
-    e1_i1 = getvar(cn_fhgr, ce1_i1, 1, npiglo, npjglo)
-    e1_i2 = getvar(cn_fhgr, ce1_i2, 1, npiglo, npjglo)
-    e2_j1 = getvar(cn_fhgr, ce2_j1, 1, npiglo, npjglo)
-    e2_j2 = getvar(cn_fhgr, ce2_j2, 1, npiglo, npjglo)
+     e1_i1 = getvar(cn_fhgr, ce1_i1, 1, npiglo, npjglo)
+     e1_i2 = getvar(cn_fhgr, ce1_i2, 1, npiglo, npjglo)
+     e2_j1 = getvar(cn_fhgr, ce2_j1, 1, npiglo, npjglo)
+     e2_j2 = getvar(cn_fhgr, ce2_j2, 1, npiglo, npjglo)
   ELSE
-    e1_i1 = 1.
-    e1_i2 = 1.
-    e2_j1 = 1.
-    e2_j2 = 1.
+     e1_i1 = 1.
+     e1_i2 = 1.
+     e2_j1 = 1.
+     e2_j2 = 1.
   ENDIF
-!
+  !
   IF ( l_overf2 ) THEN
-    ! to prepare computation of g/f*LAP(SSH) 
+     ! to prepare computation of g/f*LAP(SSH) 
      gphi    = getvar(cn_fhgr, cv_lat, 1, npiglo, npjglo)
-     rpi     = acos(-1.)
+     rpi     = ACOS(-1.)
      omega   = 2 * rpi / 86400.
-     ff     = 2.*omega* sin (gphi*rpi/180.)
-     WHERE (ff == 0 ) ff = epsilon(1.0)
+     ff     = 2.*omega* SIN (gphi*rpi/180.)
+     WHERE (ff == 0 ) ff = EPSILON(1.0)
   ENDIF
 
-  ! create output fileset
-  ncout = create      (cf_out, cf_in, npiglo, npjglo, npk         ) 
-  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_in, npiglo, npjglo, npk         )
-
-  tim  = getvar1d(cf_in , cn_vtimec, npt     )
-  ierr = putvar1d(ncout , tim      , npt, 'T')
+  ! define new variables for output
+  CALL CreateOutput
 
   ! Main time loop
   DO jt = 1, npt
@@ -282,12 +260,12 @@ PROGRAM cdflap
         v2d(:,:) =  getvar(cf_in, cv_in, jk, npiglo, npjglo, ktime=jt)
         ! relevant mask
         IF ( l_metric ) THEN
-        rmski = getvar(cn_fmsk, cmask_i, jk, npiglo, npjglo)
-        rmskj = getvar(cn_fmsk, cmask_j, jk, npiglo, npjglo)
+           rmski = getvar(cn_fmsk, cmask_i, jk, npiglo, npjglo)
+           rmskj = getvar(cn_fmsk, cmask_j, jk, npiglo, npjglo)
         ELSE
-        ! something can be done with regard to field's  missing value
-        rmski = 1.
-        rmskj = 1.
+           ! something can be done with regard to field's  missing value
+           rmski = 1.
+           rmskj = 1.
         ENDIF
         ! Compute laplacian
         dlap(:,:) = 0.d0
@@ -297,19 +275,19 @@ PROGRAM cdflap
            DO ji = 2, npiglo -1
               ii1 = ji + iioff1
               ii2 = ji - iioff2
-              dlap(ji,jj) =  ( ( v2d(ji+1,jj) - v2d(ji,jj) )*1.d0 /e1_i1(ii1,jj)* rmski(ii1,jj)    &
-           &  - ( v2d(ji,jj) - v2d(ji-1,jj) )*1.d0/e1_i1(ii2,jj)*  rmski(ii2,jj) ) / e1_i2(ji,jj)  &
-           &  + ( ( v2d(ji,jj+1) - v2d(ji,jj) )*1.d0 /e2_j1(ji,ij1)* rmskj(ji,ij1)                 &
-           &  - ( v2d(ji,jj) - v2d(ji,jj-1) )*1.d0/e2_j1(ji,ij2)*  rmskj(ji,ij2) ) / e2_j2(ji,jj)
+              dlap(ji,jj) = ((v2d(ji+1,jj  )-v2d(ji  ,jj  ))*1.d0/e1_i1(ii1,jj)*rmski(ii1,jj)                &
+                   &       - (v2d(ji  ,jj  )-v2d(ji-1,jj  ))*1.d0/e1_i1(ii2,jj)*rmski(ii2,jj))/e1_i2(ji,jj)  &
+                   &       +((v2d(ji  ,jj+1)-v2d(ji  ,jj  ))*1.d0/e2_j1(ji,ij1)*rmskj(ji,ij1)                &
+                   &       - (v2d(ji  ,jj  )-v2d(ji  ,jj-1))*1.d0/e2_j1(ji,ij2)*rmskj(ji,ij2))/e2_j2(ji,jj)
            END DO
         END DO
 
         IF ( l_overf2 ) THEN
-          WHERE (dlap == 0.d0 )
-            dlap = dspval
-          ELSEWHERE
-            dlap = grav*dlap /ff/ff
-          ENDWHERE
+           WHERE (dlap == 0.d0 )
+              dlap = dspval
+           ELSEWHERE
+              dlap = grav*dlap /ff/ff
+           ENDWHERE
         ENDIF
 
         ! write level jk 
@@ -319,6 +297,44 @@ PROGRAM cdflap
   END DO ! loop on time
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1) = npkv
+    IF ( l_overf2) THEN ; stypvar(1)%cname      = 'lap'//TRIM(cv_in)//'overf2'
+       ;                  stypvar(1)%cunits     = TRIM(cv_units)//'/m'
+       ;                  stypvar(1)%clong_name = 'Laplacian of '//TRIM(cln_in)
+    ELSE                ; stypvar(1)%cname      = 'lap'//TRIM(cv_in)
+       ;                  stypvar(1)%cunits     = TRIM(cv_units)//'/m2'
+       ;                  stypvar(1)%clong_name = 'g /f/f* Laplacian of '//TRIM(cln_in)
+    ENDIF
+
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%rmissing_value    = dspval
+    stypvar(1)%valid_min         = -10.
+    stypvar(1)%valid_max         = 10.
+    stypvar(1)%cshort_name       = stypvar(1)%cname
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_in, npiglo, npjglo, npk         , ld_nc4=lnc4 ) 
+    ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_in, npiglo, npjglo, npk         )
+
+    tim  = getvar1d(cf_in , cn_vtimec, npt     )
+    ierr = putvar1d(ncout , tim      , npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdflap
 

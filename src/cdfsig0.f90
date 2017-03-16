@@ -65,6 +65,8 @@ PROGRAM cdfsig0
      PRINT *,'       [-nc4]  : enable chunking and compression'
      PRINT *,'       [-o OUT-file]    : specify output filename instead of ',TRIM(cf_out)
      PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
+     PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
      PRINT *,'      '
@@ -73,7 +75,7 @@ PROGRAM cdfsig0
      PRINT *,'         variables : ', TRIM(cn_vosigma0), ' ( kg/m3 - 1000 )'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'       cdfsigi, cdfsigintu'
+     PRINT *,'       cdfsigi, cdfsigintu, signtr'
      STOP
   ENDIF
 

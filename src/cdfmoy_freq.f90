@@ -74,30 +74,30 @@ PROGRAM cdfmoy_freq
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoy_freq -i IN-file -f averaging-length [ -v3d] [-v4d] '
-     PRINT *,'              [-nc4] [-o output root] '
+     PRINT *,' usage : cdfmoy_freq -i IN-file -f AVG-length [-v3d] [-v4d] [-o OUT-rootname]'
+     PRINT *,'            ... [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       This program takes a file covering 1 year of data (evenly spaced)'
-     PRINT *,'       and sub-samples the data by performing box averages, which span is given'
-     PRINT *,'       as argument.  The original data sampling can be hours, days or monthes '
-     PRINT *,'       or even seasons.'
+     PRINT *,'       This program takes a file covering 1 year of data (evenly spaced) and'
+     PRINT *,'       sub-samples the data by performing box averages, which span is given as'
+     PRINT *,'       argument. The original data sampling can be hours, days, monthes or'
+     PRINT *,'       even seasons.'
      PRINT *,'       The program recognizes leap years, and when feb. 29 is found, it is '
-     PRINT *,'       included in the current ''box'' (averaging length is thus increased'
-     PRINT *,'       by 1 day.'
+     PRINT *,'       included in the current ''box'' (averaging length is thus increased by'
+     PRINT *,'       1 day.)'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -i IN-file : gives the name of the yearly file containing either 365 '
-     PRINT *,'                  or 366 days'
-     PRINT *,'       -f averaging-length : Set the time size of the averaging box. '
-     PRINT *,'                 Averaging length is specified using XIOS convention (e.g. 1d,'
-     PRINT *,'                 5d, 1mo, 1y ; 4mo stands for seasonal means )'
+     PRINT *,'                 or 366 days'
+     PRINT *,'       -f AVG-length : Set the time size of the averaging box. Averaging length'
+     PRINT *,'                 is specified using XIOS convention (e.g. 1d,5d, 1mo, 1y ; 4mo'
+     PRINT *,'                 stands for seasonal means )'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-v3d] : use 3d variable (x,y,t) : save execution time, increase memory'
      PRINT *,'       [-v4d] : use 4d variable (x,y,z,t): save execution time, increase memory'
      PRINT *,'       [-nc4] : use netcdf4 with chunking and deflation for the output file'
-     PRINT *,'       [-o output_root] : specify the root of the output file name instead '
+     PRINT *,'       [-o OUT-rootname] : specify the root of the output file name instead '
      PRINT *,'                   of ',TRIM(cf_out),'. Final name will have <freq> appened'
      PRINT *,'                   to the root.'
      PRINT *,'      '
@@ -125,9 +125,7 @@ PROGRAM cdfmoy_freq
      CASE ( '-nc4' ) ; lnc4=.TRUE.
      CASE ( '-v3d' ) ; lv3d=.TRUE.
      CASE ( '-v4d' ) ; lv4d=.TRUE.
-     CASE DEFAULT 
-        PRINT *,' +++ ERROR : Option ', TRIM(cldum) ,' not understood !'
-        STOP 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP 1
      END SELECT
   END DO
 
@@ -294,21 +292,7 @@ PROGRAM cdfmoy_freq
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:)=getvarname(cf_in, nvars, stypvar)
 
-  id_var(:)  = (/(jv, jv=1,nvars)/)
-  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
-  ipk(:)     = getipk (cf_in, nvars, cdep=cv_dep)
-  !
-  WHERE( ipk == 0 ) cv_names='none'
-  stypvar(:)%cname = cv_names
-  DO jv=1, nvars
-    stypvar(jv)%ichunk=(/npiglo,MAX(1,npjglo/30), 1, 1 /)
-  ENDDO
-
-  ! create output file taking the sizes in cf_in
-  cf_out = TRIM(cf_out)//'_'//TRIM(cfreq_o)//'.nc'
-  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdep=cv_dep , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout,  stypvar, nvars,  ipk,    id_varout        , ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk, cdep=cv_dep               )
+  CALL CreateOutput
 
   time(:)=getvar1d(cf_in, cn_vtimec, npt)
   DO jvar = 1,nvars
@@ -335,10 +319,8 @@ PROGRAM cdfmoy_freq
                   IF ( lv4d) THEN 
                        v2d(:,:) = v4d(:,:,jk,jtt)
                   ELSE
-                    IF ( lv3d ) THEN
-                       v2d(:,:)  = v3d(:,:,jtt)
-                    ELSE
-                       v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jtt )
+                    IF ( lv3d ) THEN ; v2d(:,:)  = v3d(:,:,jtt)
+                    ELSE             ; v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jtt )
                     ENDIF
                   ENDIF
                  dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
@@ -365,5 +347,34 @@ PROGRAM cdfmoy_freq
   ierr = putvar1d(ncout,   time_mean,  nframes  , 'T')
   ierr = closeout(ncout)
 
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  id_var(:)  = (/(jv, jv=1,nvars)/)
+  ! ipk gives the number of level or 0 if not a T[Z]YX  variable
+  ipk(:)     = getipk (cf_in, nvars, cdep=cv_dep)
+  !
+  WHERE( ipk == 0 ) cv_names='none'
+  stypvar(:)%cname = cv_names
+  DO jv=1, nvars
+    stypvar(jv)%ichunk=(/npiglo,MAX(1,npjglo/30), 1, 1 /)
+  ENDDO
+
+  ! create output file taking the sizes in cf_in
+  cf_out = TRIM(cf_out)//'_'//TRIM(cfreq_o)//'.nc'
+  ncout = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdep=cv_dep , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvar, nvars,  ipk,    id_varout        , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk, cdep=cv_dep               )
+
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfmoy_freq

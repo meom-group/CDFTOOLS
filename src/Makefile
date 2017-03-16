@@ -36,11 +36,11 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfnorth_unfold cdfmppini\
-       cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2levitusgrid3d\
-       cdfpsi_level cdfhdy cdfhdy3d cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
+       cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
+       cdfpsi_level cdfhdy cdfdynh_anom cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp 
 
-.PHONY: all help clean cleanexe install man installman
+.PHONY: all help clean cleanexe install man installman zclass_list.txt
 
 all: $(EXEC)
 
@@ -231,8 +231,8 @@ cdfnrjcomp: cdfio.o  cdfnrjcomp.f90
 cdfhdy: cdfio.o  eos.o  cdfhdy.f90
 	$(F90)  cdfhdy.f90 -o $(BINDIR)/cdfhdy cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
-cdfhdy3d: cdfio.o  eos.o  cdfhdy3d.f90
-	$(F90)  cdfhdy3d.f90 -o $(BINDIR)/cdfhdy3d cdfio.o eos.o  modcdfnames.o $(FFLAGS)
+cdfdynh_anom: cdfio.o  eos.o  cdfdynh_anom.f90
+	$(F90)  cdfdynh_anom.f90 -o $(BINDIR)/cdfdynh_anom cdfio.o eos.o  modcdfnames.o $(FFLAGS)
 
 cdfmaskdmp: cdfio.o  eos.o  cdfmaskdmp.f90
 	$(F90)  cdfmaskdmp.f90 -o $(BINDIR)/cdfmaskdmp cdfio.o eos.o modcdfnames.o  $(FFLAGS)
@@ -371,8 +371,8 @@ cdfcoloc3: cdfio.o  cdfcoloc3.f90
 cdf2levitusgrid2d: cdfio.o cdftools.o modutils.o cdf2levitusgrid2d.f90
 	$(F90) cdf2levitusgrid2d.f90  -o $(BINDIR)/cdf2levitusgrid2d  cdfio.o modcdfnames.o cdftools.o modutils.o $(FFLAGS)
 
-cdf2levitusgrid3d: cdfio.o cdftools.o modutils.o cdf2levitusgrid3d.f90
-	$(F90) cdf2levitusgrid3d.f90  -o $(BINDIR)/cdf2levitusgrid3d  cdfio.o modcdfnames.o cdftools.o modutils.o $(FFLAGS)
+cdf2regular: cdfio.o cdftools.o modutils.o cdf2regular.f90
+	$(F90) cdf2regular.f90  -o $(BINDIR)/cdf2regular  cdfio.o modcdfnames.o cdftools.o modutils.o $(FFLAGS)
 
 cdf025to05: cdfio.o  cdf025to05.f90
 	$(F90) cdf025to05.f90  -o $(BINDIR)/cdf025to05 cdfio.o modcdfnames.o $(FFLAGS)
@@ -524,6 +524,12 @@ cleanexe: clean
 
 man: cdftools.1 cdftools.html
 
+zclass_title.txt:
+	grep @class *90 | awk '{print $$NF}' | tr [a-z] [A-Z] | sort -u  | sed -e "s/_/ /g" > zclass_title.txt
+
+zclass_list.txt:
+	grep @class *90 | awk '{print $$NF}' |  sort -u  > zclass_list.txt
+
 cdftools.1: cdftools.opod
 	pod2man --center "CDFTOOLS / NEMO Documentation" \
 	  --release "SVN Revision $$(LANG=C svn update | grep '^At rev' | awk '{print $$3}' | cut -f 1 -d '.')" \
@@ -532,9 +538,15 @@ cdftools.1: cdftools.opod
 cdftools.html: cdftools.opod
 	pod2html --infile=cdftools.opod --outfile=cdftools.html --title="CDFTOOLS Man pages" --css="./cdftools.css"
 
-cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod
+cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod zclass_list.txt
 	cat cdftools-begin.pod > cdftools.opod
-	for s in $$( cd $(BINDIR); ls -1 ); do echo ''; echo "=head2 $$s"; echo ''; $(BINDIR)/$$s; done >> cdftools.opod
+	for class in $$( cat zclass_list.txt ) ; do \
+           title="$$(echo $$class | tr [a-z] [A-Z] |  sed -e "s/_/ /g")" ; \
+	   echo ' ' >> cdftools.opod ; \
+	   echo "=head1 $$title" >> cdftools.opod ; \
+	   echo ' ' >> cdftools.opod ; \
+	   for s in $$( grep -e "@class $$class" *90 | awk -F. '{print $$1}' ) ; do echo '' ; echo "=head2 $$s" ; echo ''; $(BINDIR)/$$s; done >> cdftools.opod ; \
+	done
 	echo ' ' >> cdftools.opod
 	echo "=head1 AUTHORS" >> cdftools.opod
 	echo ' ' >> cdftools.opod
