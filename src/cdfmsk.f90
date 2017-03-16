@@ -40,7 +40,7 @@ PROGRAM cdfmsk
      PRINT *,'       some statistics.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       MSK-file : input mask file (which contains tmask)' 
+     PRINT *,'       MSK-file : input mask file (which contains ',TRIM(cn_tmask),').'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none apart the mask file passed as argument.'
