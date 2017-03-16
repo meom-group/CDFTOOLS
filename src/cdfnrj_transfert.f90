@@ -1,6 +1,6 @@
-PROGRAM cdfkempemekeepe
+PROGRAM cdfnrj_transfert
   !!======================================================================
-  !!                     ***  PROGRAM  cdfkempemekeepe  ***
+  !!                     ***  PROGRAM  cdfnrj_transfert  ***
   !!=====================================================================
   !!  ** Purpose : Compute the term of energetic transfert from mean kinetic
   !!               energy to mean potential energy (T1) and from eddy 
@@ -48,7 +48,7 @@ PROGRAM cdfkempemekeepe
 
   narg = iargc()
   IF ( narg /= 1 ) THEN
-     PRINT *,'usage : cdfkempemekeepe file'
+     PRINT *,'usage : cdfnrj_transfert -f UVWT-file [-o OUT-file] [-nc4]'
      PRINT *,'     Produce a cdf file transfertst1t3.nc with wT and anowT variables'
      PRINT *,'     file is from cdfmoyuvwt'
      PRINT *,'     the mean must have been computed on a period long enough'
@@ -136,5 +136,5 @@ PROGRAM cdfkempemekeepe
 
   ierr = closeout(ncout)  
 
-END PROGRAM cdfkempemekeepe
+END PROGRAM cdfnrj_transfert
 

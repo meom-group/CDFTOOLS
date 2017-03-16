@@ -35,7 +35,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
-       cdfkempemekeepe cdfbci cdfbti cdfnrjcomp cdfcofdis cdfnorth_unfold cdfmppini\
+       cdfnrj_transfert cdfbci cdfbti cdfnrjcomp cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfpsi_level cdfhdy cdfdynh_anom cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk
@@ -216,8 +216,8 @@ cdfgradT: cdfio.o  cdfgradT.f90
 cdfhgradb: cdfio.o  eos.o cdfhgradb.f90
 	$(F90) cdfhgradb.f90 -o $(BINDIR)/cdfhgradb cdfio.o  eos.o modcdfnames.o  $(FFLAGS) 
 
-cdfkempemekeepe: cdfio.o  cdfkempemekeepe.f90
-	$(F90) cdfkempemekeepe.f90 -o $(BINDIR)/cdfkempemekeepe cdfio.o  modcdfnames.o $(FFLAGS) 
+cdfnrj_transfert: cdfio.o  cdfnrj_transfert.f90
+	$(F90) cdfnrj_transfert.f90 -o $(BINDIR)/cdfnrj_transfert cdfio.o  modcdfnames.o $(FFLAGS) 
 
 cdfbci: cdfio.o  cdfbci.f90
 	$(F90) cdfbci.f90 -o $(BINDIR)/cdfbci cdfio.o modcdfnames.o  $(FFLAGS) 

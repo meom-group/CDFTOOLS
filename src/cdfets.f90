@@ -81,12 +81,12 @@ PROGRAM cdfets
      PRINT *,' usage : cdfets -f T-file [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the eddy time scale, and a proxy for rossby radius.' 
-     PRINT *,'       The Rossby radius is computed as the vertical integral of N2'
-     PRINT *,'       (Brunt Vaissala frequency), scaled by |f|*pi'
-     PRINT *,'       The Eddy Time Scale is the ratio N/|grad B| where N is the square'
-     PRINT *,'       root of N2 and |grad B| is the module of the horizontal buoyancy'
-     PRINT *,'       gradient. B is the buoyancy computed as B=-g rho/rho0.'
+     PRINT *,'       Compute the eddy time scale, and a proxy for rossby radius. The Rossby' 
+     PRINT *,'       radius is computed as the vertical integral of N2 (Brunt Vaissala '
+     PRINT *,'       frequency), scaled by |f|*pi.'
+     PRINT *,'       The Eddy Time Scale is the ratio N/|grad B| where N is the square root'
+     PRINT *,'       of N2 and |grad B| is the module of the horizontal buoyancy gradient.'
+     PRINT *,'       B is the buoyancy computed as B=-g rho/rho0.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f T-file : netcdf input file for temperature and salinity (gridT).'
@@ -117,7 +117,7 @@ PROGRAM cdfets
      CASE ( '-o'   ) ; CALL getarg (1, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
-                     ; CALL getarg (1, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
+        ;              CALL getarg (1, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
@@ -204,110 +204,115 @@ PROGRAM cdfets
         WHERE( zmask == 0 ) zwk(:,:,iup) = spval                            ! set to spval on land
 
         ! now put zn2 at T level (k )
-        WHERE ( zwk(:,:,idown) == spval )  ; zn2(:,:) =  zwk(:,:,iup)
-     ELSEWHERE                          ; zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) 
-     END WHERE
+        WHERE ( zwk(:,:,idown) == spval )  
+           zn2(:,:) =  zwk(:,:,iup)
+        ELSEWHERE                         
+           zn2(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) 
+        END WHERE
 
-     ! Only the square root is used in this program (work for ocean points only)
-     WHERE (zmask == 1 )  ; zn2=SQRT(zn2)
-  ELSEWHERE            ; zn2=spval
-  END WHERE
+        ! Only the square root is used in this program (work for ocean points only)
+        WHERE (zmask == 1 )  
+           zn2=SQRT(zn2)
+        ELSEWHERE            
+           zn2=spval
+        END WHERE
 
-  ! integrates vertically (ff is already ABS(ff) * pi
-  dlda(:,:) = dlda(:,:) + e3w(:,:)/ff(:,:) * zn2(:,:)* zmask(:,:)
+        ! integrates vertically (ff is already ABS(ff) * pi
+        dlda(:,:) = dlda(:,:) + e3w(:,:)/ff(:,:) * zn2(:,:)* zmask(:,:)
 
-  ! Compute buoyancy at level Tk ( idown)
-  dbuoy(:,:) = - grav * (sigma0 ( ztemp(:,:,idown),  zsal(:,:,idown),npiglo, npjglo) )  * zmask(:,:) / rau0
+        ! Compute buoyancy at level Tk ( idown)
+        dbuoy(:,:) = - grav * (sigma0 ( ztemp(:,:,idown),  zsal(:,:,idown),npiglo, npjglo) )  * zmask(:,:) / rau0
 
-  ! Compute dB/dx (U point) and dB/dy (V point)
-  DO jj =1 , npjglo -1
-     DO ji= 1, npiglo -1
-        dbu(ji,jj) = 1./e1u(ji,jj) *( dbuoy(ji+1,jj) - dbuoy(ji,jj) )
-        dbv(ji,jj) = 1./e2v(ji,jj) *( dbuoy(ji,jj+1) - dbuoy(ji,jj) )
-     END DO
-  END DO
+        ! Compute dB/dx (U point) and dB/dy (V point)
+        DO jj =1 , npjglo -1
+           DO ji= 1, npiglo -1
+              dbu(ji,jj) = 1./e1u(ji,jj) *( dbuoy(ji+1,jj) - dbuoy(ji,jj) )
+              dbv(ji,jj) = 1./e2v(ji,jj) *( dbuoy(ji,jj+1) - dbuoy(ji,jj) )
+           END DO
+        END DO
 
-  ! dM2 at T point ( (dB/dx)^2 + (dB/dy)^2 ) ^1/2
-  DO jj=2,npjglo -1
-     DO ji=2,npiglo -1
-        dM2(ji,jj) =  0.25*(dbu(ji,jj) + dbu(ji-1,jj)) * (dbu(ji,jj) + dbu(ji-1,jj))  &
-             + 0.25*(dbv(ji,jj) + dbv(ji,jj-1))  * (dbv(ji,jj) + dbv(ji,jj-1))
-     END DO
-  END DO
-  dM2(:,:) = SQRT( dM2(:,:) )
+        ! dM2 at T point ( (dB/dx)^2 + (dB/dy)^2 ) ^1/2
+        DO jj=2,npjglo -1
+           DO ji=2,npiglo -1
+              dM2(ji,jj) =  0.25*(dbu(ji,jj) + dbu(ji-1,jj)) * (dbu(ji,jj) + dbu(ji-1,jj))  &
+                   + 0.25*(dbv(ji,jj) + dbv(ji,jj-1))  * (dbv(ji,jj) + dbv(ji,jj-1))
+           END DO
+        END DO
+        dM2(:,:) = SQRT( dM2(:,:) )
 
-  ! Eddy Time Scale = N / dM2
-  dets(:,:) = spval
-  WHERE (dM2 /= 0 )  
-     dets =  zn2/dM2/86400.   ! in seconds
-  ELSEWHERE
-     dets = -10.d0            ! flag ocean points with dM2 = 0 (very few ?)
-  END WHERE
-  WHERE (zmask == 0 ) dets = spval
+        ! Eddy Time Scale = N / dM2
+        dets(:,:) = spval
+        WHERE (dM2 /= 0 )  
+           dets =  zn2/dM2/86400.   ! in seconds
+        ELSEWHERE
+           dets = -10.d0            ! flag ocean points with dM2 = 0 (very few ?)
+        END WHERE
+        WHERE (zmask == 0 ) dets = spval
 
-  ! write dets at level jk on the output file
-  ierr = putvar(ncout, id_varout(1) ,SNGL(dets), jk, npiglo, npjglo, ktime=jt)
+        ! write dets at level jk on the output file
+        ierr = putvar(ncout, id_varout(1) ,SNGL(dets), jk, npiglo, npjglo, ktime=jt)
 
-  ! swap up and down, next will be read in up
-  itmp = idown ; idown = iup ; iup = itmp
+        ! swap up and down, next will be read in up
+        itmp = idown ; idown = iup ; iup = itmp
 
-END DO  ! loop to next level
+     END DO  ! loop to next level
 
-! repeat dets at the surface and level 2 (the last computed)
-ierr = putvar(ncout, id_varout(1) ,SNGL(dets), 1,npiglo, npjglo, ktime=jt)
+     ! repeat dets at the surface and level 2 (the last computed)
+     ierr = putvar(ncout, id_varout(1) ,SNGL(dets), 1,npiglo, npjglo, ktime=jt)
 
-! apply land mask (level 2) on dlda (level 1 and 2 have same mask, as there are  always at least 3 levels)
-WHERE (zmask == 0 ) dlda=spval
-ierr = putvar(ncout, id_varout(2) ,SNGL(dlda), 1,npiglo, npjglo, ktime=jt)
+     ! apply land mask (level 2) on dlda (level 1 and 2 have same mask, as there are  always at least 3 levels)
+     WHERE (zmask == 0 ) dlda=spval
+     ierr = putvar(ncout, id_varout(2) ,SNGL(dlda), 1,npiglo, npjglo, ktime=jt)
 
-END DO  ! time loop
+  END DO  ! time loop
 
-ierr = closeout(ncout)
+  ierr = closeout(ncout)
+
 CONTAINS
 
-SUBROUTINE CreateOutput
-  !!---------------------------------------------------------------------
-  !!                  ***  ROUTINE CreateOutput  ***
-  !!
-  !! ** Purpose :  Create netcdf output file(s) 
-  !!
-  !! ** Method  :  Use stypvar global description of variables
-  !!
-  !!----------------------------------------------------------------------
-  ! define new variables for output 
-ipk(1) = npk  ! 3D
-stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-stypvar(1)%cname             = 'voets'
-stypvar(1)%cunits            = 'days'
-stypvar(1)%rmissing_value    = -1000.
-stypvar(1)%valid_min         = 0
-stypvar(1)%valid_max         = 50000.
-stypvar(1)%clong_name        = 'Eddy_Time_Scale'
-stypvar(1)%cshort_name       = 'voets'
-stypvar(1)%conline_operation = 'N/A'
-stypvar(1)%caxis             = 'TZYX'
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define new variables for output 
+    ipk(1) = npk  ! 3D
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'voets'
+    stypvar(1)%cunits            = 'days'
+    stypvar(1)%rmissing_value    = -1000.
+    stypvar(1)%valid_min         = 0
+    stypvar(1)%valid_max         = 50000.
+    stypvar(1)%clong_name        = 'Eddy_Time_Scale'
+    stypvar(1)%cshort_name       = 'voets'
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
 
-ipk(2) = 1    ! 2D
-stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-stypvar(2)%cname             = 'sorosrad'
-stypvar(2)%cunits            = 'm'
-stypvar(2)%rmissing_value    = -1000.
-stypvar(2)%valid_min         = 0.
-stypvar(2)%valid_max         = 50000.
-stypvar(2)%clong_name        = 'Rossby_Radius'
-stypvar(2)%cshort_name       = 'sorosrad'
-stypvar(2)%conline_operation = 'N/A'
-stypvar(2)%caxis             = 'TYX'
+    ipk(2) = 1    ! 2D
+    stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%cname             = 'sorosrad'
+    stypvar(2)%cunits            = 'm'
+    stypvar(2)%rmissing_value    = -1000.
+    stypvar(2)%valid_min         = 0.
+    stypvar(2)%valid_max         = 50000.
+    stypvar(2)%clong_name        = 'Rossby_Radius'
+    stypvar(2)%cshort_name       = 'sorosrad'
+    stypvar(2)%conline_operation = 'N/A'
+    stypvar(2)%caxis             = 'TYX'
 
-! create output fileset
-ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk       , ld_nc4=lnc4 )
-ierr  = createvar   (ncout,  stypvar , 2,      ipk,    id_varout , ld_nc4=lnc4 )
-ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
+    ! create output fileset
+    ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk       , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar , 2,      ipk,    id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
 
-tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-ierr = putvar1d(ncout,  tim,       npt, 'T')
+    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  tim,       npt, 'T')
 
-END SUBROUTINE CreateOutput
+  END SUBROUTINE CreateOutput
 
 
-END PROGRAM
+END PROGRAM cdfets
