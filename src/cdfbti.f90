@@ -29,10 +29,10 @@ PROGRAM cdfbti
   INTEGER(KIND=4), PARAMETER                :: jp_dudy    = 3, jp_dvdy    = 4
   INTEGER(KIND=4), PARAMETER                :: jp_anousqrt= 5, jp_anovsqrt= 6
   INTEGER(KIND=4), PARAMETER                :: jp_anouv   = 7, jp_bti     = 8
-  INTEGER(KIND=4)                           :: ji, jj, jk, jt         ! dummy loop index
+  INTEGER(KIND=4)                           :: ji, jj, jk, jt,jv      ! dummy loop index
   INTEGER(KIND=4)                           :: npiglo, npjglo         ! domain size
   INTEGER(KIND=4)                           :: npk, npt               ! vertical and time
-  INTEGER(KIND=4)                           :: narg, iargc            !
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg     ! command line parser
   INTEGER(KIND=4)                           :: ncout, ierr            ! ncid of output file, error status
   INTEGER(KIND=4), DIMENSION(jp_varout)     :: ipk, id_varout         ! 
 
@@ -44,18 +44,20 @@ PROGRAM cdfbti
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: anouv, bti             !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: dudx, dudy, dvdx, dvdy !
 
-  CHARACTER(LEN=256)                        :: cf_out='bti.nc'      ! output file name
-  CHARACTER(LEN=256)                        :: cf_uvwtfil                  ! input file name
+  CHARACTER(LEN=256)                        :: cf_out='bti.nc'        ! output file name
+  CHARACTER(LEN=256)                        :: cf_uvwtfil             ! input file name
+  CHARACTER(LEN=256)                        :: cldum                  ! working char variable
 
   TYPE (variable), DIMENSION(jp_varout)     :: stypvar                ! structure for attibutes
 
-  LOGICAL                                   :: lchk
+  LOGICAL                                   :: lchk                   ! flag for missing files
+  LOGICAL                                   :: lnc4 = .FALSE.         ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   !!
   narg = iargc()
-  IF ( narg /= 1 ) THEN
-     PRINT *,' usage : cdfbti UVWT-file'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfbti -f UVWT-file [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute  the terms in the barotropic energy tranfert equation.'
@@ -65,7 +67,13 @@ PROGRAM cdfbti
      PRINT *,'             +(u''v''*(dubar/dy +dvbar/dx))]'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       UVWT-file : netcdf file produced by cdfmoyuvwt'
+     PRINT *,'       -f UVWT-file : netcdf file produced by cdfmoyuvwt'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : specify the output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'             This option is effective only if cdftools are compiled with'
+     PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr) 
@@ -73,14 +81,14 @@ PROGRAM cdfbti
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : '
-     PRINT *,'               dudx : zonal derivate of ubar on T point'
-     PRINT *,'               dvdx : zonal derivate of vbar on T point'
-     PRINT *,'               dudy : meridional derivate of ubar on T point'
-     PRINT *,'               dvdy : meridional derivate of vbar on T point'
-     PRINT *,'               anousqrt : mean of (u-ubar)^2 on T point'
-     PRINT *,'               anovsqrt : mean of (v-vbar)^2 on T point'
-     PRINT *,'               anouv : mean of (u-ubar)*(v-vbar) on T point'
-     PRINT *,'               bti  : transfert of energy for the barotropic instability.'
+     PRINT *,'              dudx : zonal derivate of ubar on T point'
+     PRINT *,'              dvdx : zonal derivate of vbar on T point'
+     PRINT *,'              dudy : meridional derivate of ubar on T point'
+     PRINT *,'              dvdy : meridional derivate of vbar on T point'
+     PRINT *,'              anousqrt : mean of (u-ubar)^2 on T point'
+     PRINT *,'              anovsqrt : mean of (v-vbar)^2 on T point'
+     PRINT *,'              anouv : mean of (u-ubar)*(v-vbar) on T point'
+     PRINT *,'              bti  : transfert of energy for the barotropic instability.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfmoyuvwt, cdfbci, cdfnrjcomp, cdfkempemekeepe'
@@ -88,7 +96,17 @@ PROGRAM cdfbti
      STOP
   ENDIF
 
-  CALL getarg(1, cf_uvwtfil)
+  ijarg = 1
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-f'   ) ; CALL getarg(ijarg, cf_uvwtfil ) ; ijarg=ijarg+1
+        ! option
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
+     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
+     END SELECT
+  ENDDO
 
   lchk = chkfile (cn_fhgr )
   lchk = lchk .OR. chkfile (cf_uvwtfil )
@@ -104,53 +122,6 @@ PROGRAM cdfbti
   PRINT *, 'npk    =', npk
   PRINT *, 'npt    =', npt
 
-  ! define new variables for output ( must update att.txt)
-  stypvar(jp_dudx)%cname       = 'dudx'
-  stypvar(jp_dudx)%clong_name  = 'zonal derivate of u on T point'
-  stypvar(jp_dudx)%cshort_name = 'dudx'
-
-  stypvar(jp_dvdx)%cname       = 'dvdx'
-  stypvar(jp_dvdx)%clong_name  = 'zonal derivate of v on T point'
-  stypvar(jp_dvdx)%cshort_name = 'dvdx'
-
-  stypvar(jp_dudy)%cname       = 'dudy'
-  stypvar(jp_dudy)%clong_name  = 'meridional derivate of u on T point'
-  stypvar(jp_dudy)%cshort_name = 'dudy'
-
-  stypvar(jp_dvdy)%cname       = 'dvdy'
-  stypvar(jp_dvdy)%clong_name  = 'meridional derivate of v on T point'
-  stypvar(jp_dvdy)%cshort_name = 'dvdy'
-
-  stypvar(jp_anousqrt)%cname       = 'anousqrt'
-  stypvar(jp_anousqrt)%clong_name  = 'temporal mean of the square of the zonal speed anomaly'
-  stypvar(jp_anousqrt)%cshort_name = 'anousqrt'
-
-  stypvar(jp_anovsqrt)%cname       = 'anovsqrt'
-  stypvar(jp_anovsqrt)%clong_name  = 'temporal mean of the square of the meridional speed anomaly'
-  stypvar(jp_anovsqrt)%cshort_name = 'anovsqrt'
-
-  stypvar(jp_anouv)%cname       = 'anouv'
-  stypvar(jp_anouv)%clong_name  = 'temporal mean of the Reynolds term'
-  stypvar(jp_anouv)%cshort_name = 'anouanov'
-
-  stypvar(jp_bti)%cname         = 'bti'
-  stypvar(jp_bti)%clong_name    = 'transfert of energy for the barotropic instability'
-  stypvar(jp_bti)%cshort_name   = 'bti'
-
-  stypvar%cunits            = '100000 s-1'
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -1000.
-  stypvar%valid_max         = 1000.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TYX'
-
-  ipk(:) = npk  
-
-  ! create output fileset
-  ncout = create      (cf_out, cf_uvwtfil, npiglo,    npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar,    jp_varout, ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_uvwtfil, npiglo,    npjglo, npk       )
-
   ! Allocate the memory
   ALLOCATE ( e1t(npiglo,npjglo) , e1f(npiglo,npjglo) )
   ALLOCATE ( e2t(npiglo,npjglo) , e2f(npiglo,npjglo) )
@@ -165,13 +136,13 @@ PROGRAM cdfbti
   ALLOCATE ( anouv(npiglo,npjglo), bti(npiglo,npjglo) )
   ALLOCATE ( tim(npt) )
 
+  CALL CreateOutput
+
   e1t = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo)
   e1f = getvar(cn_fhgr, cn_ve1f, 1, npiglo, npjglo)
   e2t = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo)
   e2f = getvar(cn_fhgr, cn_ve2f, 1, npiglo, npjglo)
 
-  tim  = getvar1d(cf_uvwtfil, cn_vtimec, npt      )
-  ierr = putvar1d(ncout, tim,       npt, 'T' )
 
   DO jt = 1, npt
      DO jk=1, npk
@@ -214,44 +185,44 @@ PROGRAM cdfbti
         DO jj = 2, npjglo  
            DO ji = 2, npiglo    ! vector opt.
               ! compute derivates at T points
-              dudx(ji,jj) = 100000 * ( un(ji,jj ) - un(ji-1,jj) )   &
+              dudx(ji,jj) = 100000. * ( un(ji,jj ) - un(ji-1,jj) )   &
                    &               * umask(ji,jj) / e1t(ji,jj) 
 
-              dvdy(ji,jj) = 100000 * ( vn(ji,jj ) - vn(ji,jj-1) )   &
+              dvdy(ji,jj) = 100000. * ( vn(ji,jj ) - vn(ji,jj-1) )   &
                    &               * vmask(ji,jj) / e2t(ji,jj)             
 
-              dudy(ji,jj) = 100000/4 *( ( un(ji,jj+1 ) - un(ji,jj) )   &
-                   &           * fmask(ji,jj) / e2f(ji,jj)             &
-                   &       + (un(ji,jj ) - un(ji,jj-1) )               &
-                   &           * fmask(ji,jj-1) / e2f(ji,jj-1)         &
-                   &       + (un(ji-1,jj+1 ) - un(ji-1,jj) )           &
-                   &           * fmask(ji-1,jj) / e2f(ji-1,jj)         &         
-                   &       + (un(ji-1,jj ) - un(ji-1,jj-1) )           &    
+              dudy(ji,jj) = 100000./4. *( ( un(ji,jj+1 ) - un(ji,jj) )   &
+                   &           * fmask(ji,jj) / e2f(ji,jj)               &
+                   &       + (un(ji,jj ) - un(ji,jj-1) )                 &
+                   &           * fmask(ji,jj-1) / e2f(ji,jj-1)           &
+                   &       + (un(ji-1,jj+1 ) - un(ji-1,jj) )             &
+                   &           * fmask(ji-1,jj) / e2f(ji-1,jj)           &         
+                   &       + (un(ji-1,jj ) - un(ji-1,jj-1) )             &    
                    &           * fmask(ji-1,jj-1) / e2f(ji-1,jj-1) )            
 
-              dvdx(ji,jj) = 100000/4 *( ( vn(ji,jj ) - vn(ji-1,jj) )   &
-                   &           * fmask(ji-1,jj) / e1f(ji-1,jj)         &
-                   &       + (vn(ji+1,jj ) - vn(ji,jj) )               &
-                   &           * fmask(ji,jj) / e1f(ji,jj)             &
-                   &       + (vn(ji-1,jj-1 ) - vn(ji,jj-1) )           &
-                   &           * fmask(ji-1,jj-1) / e1f(ji-1,jj-1)     &
-                   &       + (vn(ji+1,jj-1 ) - vn(ji,jj-1) )           &
+              dvdx(ji,jj) = 100000./4. *( ( vn(ji,jj ) - vn(ji-1,jj) )   &
+                   &           * fmask(ji-1,jj) / e1f(ji-1,jj)           &
+                   &       + (vn(ji+1,jj ) - vn(ji,jj) )                 &
+                   &           * fmask(ji,jj) / e1f(ji,jj)               &
+                   &       + (vn(ji-1,jj-1 ) - vn(ji,jj-1) )             &
+                   &           * fmask(ji-1,jj-1) / e1f(ji-1,jj-1)       &
+                   &       + (vn(ji+1,jj-1 ) - vn(ji,jj-1) )             &
                    &           * fmask(ji,jj-1) / e1f(ji,jj-1) )         
 
               ! Compute Reynolds terms
-              anousqrt(ji,jj) = 1000/2 * umask(ji,jj)*( ( u2n(ji,jj) - un(ji,jj)*un(ji,jj) ) &
+              anousqrt(ji,jj) = 1000./2. * umask(ji,jj)*( ( u2n(ji,jj) - un(ji,jj)*un(ji,jj) ) &
                    &                     + ( u2n(ji-1,jj) - un(ji-1,jj)*un(ji-1,jj) ) )       
 
-              anovsqrt(ji,jj) = 1000/2 * vmask(ji,jj)*( ( v2n(ji,jj) - vn(ji,jj)*vn(ji,jj) ) &
+              anovsqrt(ji,jj) = 1000./2. * vmask(ji,jj)*( ( v2n(ji,jj) - vn(ji,jj)*vn(ji,jj) ) &
                    &                     + ( v2n(ji,jj-1) - vn(ji,jj)*vn(ji,jj-1) ) ) 
 
-              anouv(ji,jj)    = 1000 * ( uvn(ji,jj) &
+              anouv(ji,jj)    = 1000. * ( uvn(ji,jj) &
                    &                 -   0.5 * umask(ji,jj)*( un(ji,jj) + un(ji-1,jj) ) &
                    &                   * 0.5 * vmask(ji,jj)*( vn(ji,jj) + vn(ji,jj-1) ) )
 
               ! Compute bti
               bti(ji,jj) = -1. * ( anousqrt(ji,jj) * dudx(ji,jj)                &
-                   &           + anovsqrt(ji,jj) * dvdy(ji,jj)                 &
+                   &           + anovsqrt(ji,jj) * dvdy(ji,jj)                  &
                    &           + anouv(ji,jj) * ( dvdx(ji,jj) + dudy(ji,jj) ))
 
            END DO
@@ -269,6 +240,72 @@ PROGRAM cdfbti
   END DO  ! time loop
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ! define new variables for output ( must update att.txt)
+    DO jv = 1, jp_varout
+       stypvar(jv)%ichunk        = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    ENDDO
+    ipk(:) = npk  
+
+    stypvar(jp_dudx)%cname       = 'dudx'
+    stypvar(jp_dudx)%clong_name  = 'zonal derivate of u on T point'
+    stypvar(jp_dudx)%cshort_name = 'dudx'
+
+    stypvar(jp_dvdx)%cname       = 'dvdx'
+    stypvar(jp_dvdx)%clong_name  = 'zonal derivate of v on T point'
+    stypvar(jp_dvdx)%cshort_name = 'dvdx'
+
+    stypvar(jp_dudy)%cname       = 'dudy'
+    stypvar(jp_dudy)%clong_name  = 'meridional derivate of u on T point'
+    stypvar(jp_dudy)%cshort_name = 'dudy'
+
+    stypvar(jp_dvdy)%cname       = 'dvdy'
+    stypvar(jp_dvdy)%clong_name  = 'meridional derivate of v on T point'
+    stypvar(jp_dvdy)%cshort_name = 'dvdy'
+
+    stypvar(jp_anousqrt)%cname       = 'anousqrt'
+    stypvar(jp_anousqrt)%clong_name  = 'temporal mean of the square of the zonal speed anomaly'
+    stypvar(jp_anousqrt)%cshort_name = 'anousqrt'
+
+    stypvar(jp_anovsqrt)%cname       = 'anovsqrt'
+    stypvar(jp_anovsqrt)%clong_name  = 'temporal mean of the square of the meridional speed anomaly'
+    stypvar(jp_anovsqrt)%cshort_name = 'anovsqrt'
+
+    stypvar(jp_anouv)%cname       = 'anouv'
+    stypvar(jp_anouv)%clong_name  = 'temporal mean of the Reynolds term'
+    stypvar(jp_anouv)%cshort_name = 'anouanov'
+
+    stypvar(jp_bti)%cname         = 'bti'
+    stypvar(jp_bti)%clong_name    = 'transfert of energy for the barotropic instability'
+    stypvar(jp_bti)%cshort_name   = 'bti'
+
+    stypvar%cunits            = '100000 s-1'
+    stypvar%rmissing_value    = 0.
+    stypvar%valid_min         = -1000.
+    stypvar%valid_max         = 1000.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'TYX'
+
+    ! create output fileset
+    ncout = create      (cf_out, cf_uvwtfil, npiglo,    npjglo, npk      , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar,    jp_varout, ipk,    id_varout, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_uvwtfil, npiglo,    npjglo, npk       )
+
+    tim  = getvar1d(cf_uvwtfil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout, tim,       npt, 'T' )
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfbti
 
