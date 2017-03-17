@@ -145,28 +145,18 @@ PROGRAM cdfbuoyflx
   DO   WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f' )     ! specify  flx files
-        CALL getarg (ijarg, cf_flxfil) ; ijarg = ijarg + 1
-        lchk = lchk .OR. chkfile (cf_flxfil)
-     CASE ( '-t' )     ! specify  T files
-        CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
-        lchk = lchk .OR. chkfile (cf_tfil  )
-     CASE ( '-r' )     ! specify  runoff files
-        CALL getarg (ijarg, cf_rnfil) ; ijarg = ijarg + 1
-        lchk = lchk .OR. chkfile (cf_rnfil )
-     CASE ( '-sss' )     ! specify  runoff files
-        CALL getarg (ijarg, cv_sss) ; ijarg = ijarg + 1
-     CASE ( '-sst' )     ! specify  runoff files
-        CALL getarg (ijarg, cv_sst) ; ijarg = ijarg + 1
-     CASE ( '-nc4' )   !  allow chunking and deflation on output
-        lnc4 = .TRUE.
-     CASE ( '-o' )     ! specify  output files
-        CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-     CASE ( '-short' ) ! use short output ( only buoyancy fluxes )
-        lsho = .TRUE. ; np_varout = 1
-     CASE DEFAULT
-        PRINT *, " Option ", TRIM(cldum)," not supported "
-        STOP
+     CASE ( '-f'   ) ; CALL getarg (ijarg, cf_flxfil) ; ijarg = ijarg + 1
+        ;              lchk = lchk .OR. chkfile (cf_flxfil)
+     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+        ;              lchk = lchk .OR. chkfile (cf_tfil  )
+     CASE ( '-r'   ) ; CALL getarg (ijarg, cf_rnfil) ; ijarg = ijarg + 1
+        ;              lchk = lchk .OR. chkfile (cf_rnfil )
+     CASE ( '-sss' ) ; CALL getarg (ijarg, cv_sss) ; ijarg = ijarg + 1
+     CASE ( '-sst' ) ; CALL getarg (ijarg, cv_sst) ; ijarg = ijarg + 1
+     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ('-short') ; lsho = .TRUE. ; np_varout = 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
   IF (lchk ) STOP ! missing files

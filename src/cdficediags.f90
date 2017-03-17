@@ -1,41 +1,71 @@
 MODULE icediag
+  !!======================================================================
+  !!                     ***  MODULE  icediag  ***
+  !! Container for the icediags routine
+  !!=====================================================================
+  !! History : 3.0  !  date     J. Regidor      Create module
+  !!----------------------------------------------------------------------
 
+  !!----------------------------------------------------------------------
+  !!   routines      : description
+  !!   icediags      : compute ice diagnostics
+  !!----------------------------------------------------------------------
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_4.0 , MEOM 2017
+  !! $Id$
+  !! Copyright (c) 2017, J.-M. Molines
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class ice_diagnostics
+  !!----------------------------------------------------------------------
 CONTAINS
 
-    SUBROUTINE icediags(e1, e2, tmask, ff, ricethick, riceldfra, dvoln, darean, dextendn, &
-                        dextendn2, dvols, dareas, dextends, dextends2)
-        REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: e1, e2               ! metrics
-        REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: tmask, ff            ! npiglo x npjglo
-        REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: ricethick, riceldfra ! thickness, leadfrac (concentration)
-        REAL(KIND=8), INTENT(OUT)        :: dvols, dareas        ! volume, area extend South hemisphere
-        REAL(KIND=8), INTENT(OUT)        :: dextends, dextends2  ! volume, area extend South hemisphere
-        REAL(KIND=8), INTENT(OUT)        :: dvoln, darean        ! volume, area extend North hemisphere
-        REAL(KIND=8), INTENT(OUT)        :: dextendn, dextendn2
+  SUBROUTINE icediags(e1, e2, tmask, ff, ricethick, riceldfra, dvoln, darean, dextendn, &
+       dextendn2, dvols, dareas, dextends, dextends2)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE icediags  ***
+    !!
+    !! ** Purpose :  Compute ice diagnostics ice volume, ice area and ice extend
+    !!               for both hemisphere.
+    !!
+    !! ** Method  :  surface integration 
+    !!
+    !! ** Comment :  The use of a routine instead of having the computation in the
+    !!               core of the program is experimental. Doing so, the routine can
+    !!               be called from a python script, but having a routine with 14
+    !!               arguments is a real problem for readibility.
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: e1, e2               ! metrics
+    REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: tmask, ff            ! npiglo x npjglo
+    REAL(KIND=4), DIMENSION(:,:), INTENT(IN) :: ricethick, riceldfra ! thickness, leadfrac (concentration)
+    REAL(KIND=8), INTENT(OUT)        :: dvols, dareas        ! volume, area extend South hemisphere
+    REAL(KIND=8), INTENT(OUT)        :: dextends, dextends2  ! volume, area extend South hemisphere
+    REAL(KIND=8), INTENT(OUT)        :: dvoln, darean        ! volume, area extend North hemisphere
+    REAL(KIND=8), INTENT(OUT)        :: dextendn, dextendn2
+    !!----------------------------------------------------------------------
 
+    ! North : ff > 0
+    dvoln     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
+    darean    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
+    dextendn  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
+    ! JMM added 22/01/2007 : to compute same extent than the NSIDC
+    dextendn2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
 
-        ! North : ff > 0
-        dvoln     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
-        darean    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff > 0 ) )
-        dextendn  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
-        ! JMM added 22/01/2007 : to compute same extent than the NSIDC
-        dextendn2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff > 0 ) )
+    ! South : ff < 0
+    dvols     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
+    dareas    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
+    dextends  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
+    dextends2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
 
-        ! South : ff < 0
-        dvols     = SUM( ricethick (:,:)* e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
-        dareas    = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (ff < 0 ) )
-        dextends  = SUM(                  e1(:,:) * e2(:,:) * riceldfra (:,:) * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
-        dextends2 = SUM(                  e1(:,:) * e2(:,:)                   * tmask (:,:), (riceldfra > 0.15 .AND. ff < 0  ) )
+    dvoln = dvoln / 1d9
+    darean = darean / 1d9
+    dextendn = dextendn / 1d9
+    dextendn2 = dextendn2 / 1d9
 
-        dvoln = dvoln / 1d9
-        darean = darean / 1d9
-        dextendn = dextendn / 1d9
-        dextendn2 = dextendn2 / 1d9
-
-        dvols = dvols / 1d9
-        dareas = dareas / 1d9
-        dextends = dextends / 1d9
-        dextends2 = dextends2 / 1d9
-    END SUBROUTINE icediags
+    dvols = dvols / 1d9
+    dareas = dareas / 1d9
+    dextends = dextends / 1d9
+    dextends2 = dextends2 / 1d9
+  END SUBROUTINE icediags
 
 END MODULE icediag
 
@@ -64,14 +94,13 @@ PROGRAM cdficediag
   !! $Id$
   !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
-  !! @class ice_diagnostics
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER(KIND=4)                            :: jt           ! dummy loop index
   INTEGER(KIND=4)                            :: ierr                 ! working integer
   INTEGER(KIND=4)                            :: narg, iargc          ! command line
-  INTEGER(KIND=4)                            :: ijarg, ireq         ! command line
+  INTEGER(KIND=4)                            :: ijarg                ! command line
   INTEGER(KIND=4)                            :: npiglo, npjglo, npt  ! size of the domain
   INTEGER(KIND=4)                            :: nperio = 4           ! boundary condition ( periodic, north fold)
   INTEGER(KIND=4)                            :: ikx=1, iky=1, ikz=0  ! dims of netcdf output file
@@ -95,16 +124,18 @@ PROGRAM cdficediag
   CHARACTER(LEN=256)                         :: cf_ifil              ! input ice file
   CHARACTER(LEN=256)                         :: cf_out='icediags.nc' ! output file
   CHARACTER(LEN=256)                         :: cldum                ! dummy string
-  CHARACTER(LEN=256)                         :: cn_mask='tmask'      ! mask variable name
+  CHARACTER(LEN=256)                         :: cv_mask              ! mask variable name
   !
-  LOGICAL                                    :: lchk  = .false.      ! missing file flag
-  LOGICAL                                    :: llim3 = .false.      ! LIM3 flag
+  LOGICAL                                    :: lchk  = .FALSE.      ! missing file flag
+  LOGICAL                                    :: llim3 = .FALSE.      ! LIM3 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  cv_mask=cn_tmask
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdficediag ICE-file [-lim3] '
+     PRINT *,' usage : cdficediag -i ICE-file [-lim3] [-o OUT-file] [-maskfile MSK-file] ...'
+     PRINT *,'                   ... [-maskvar MSK-var]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the ice volume, area and extent for each hemisphere.'
@@ -117,10 +148,12 @@ PROGRAM cdficediag
      PRINT *,'        ice concentration, but it will be deprecated soon.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       ICE-file : netcdf icemod file (LIM2 by default)' 
+     PRINT *,'       -i ICE-file : netcdf icemod file (LIM2 by default)' 
      PRINT *,'      '
      PRINT *,'     OPTION :'
-     PRINT *,'       [-lim3 ] : LIM3 variable name convention is used'
+     PRINT *,'       [-lim3 ] : LIM3 variable name convention is used. Default is LIM2.'
+     PRINT *,'       [-maskfile MSK-file] : specify name of mask file instead of ',TRIM(cn_fmsk)
+     PRINT *,'       [-maskvar MSK-var ] : specify name of mask variable instead of ',TRIM(cn_tmask)
      PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -138,28 +171,17 @@ PROGRAM cdficediag
      STOP
   ENDIF
 
-  CALL getarg (1, cf_ifil)
-  
-  ijarg = 1 ; ireq = 0
-  
+  ijarg = 1 
   DO WHILE ( ijarg <= narg )
-    CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 
-    SELECT CASE ( cldum )
-    CASE ( '-lim3'    ) ; llim3 = .true.
-    CASE ( '-lim2' ) ; llim3 = .false.
-    CASE ( '-mask' ) ;
-        CALL getarg (ijarg, cn_mask) ; ijarg=ijarg+1
-    CASE ( '-maskfile' ) ;
-        CALL getarg (ijarg, cn_fmsk) ; ijarg=ijarg+1
-    CASE ('-o') 
-        CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
-    CASE DEFAULT 
-      ireq=ireq+1
-      SELECT CASE ( ireq )
-      CASE ( 1 )    ; cf_ifil=cldum
-      CASE DEFAULT  ; PRINT *,' Too many arguments'
-      END SELECT
-    END SELECT
+     CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 
+     SELECT CASE ( cldum )
+     CASE ( '-i'       ) ; CALL getarg (ijarg, cf_ifil) ; ijarg=ijarg+1
+     CASE ( '-lim3'    ) ; llim3 = .TRUE.
+     CASE ( '-maskvar' ) ; CALL getarg (ijarg, cv_mask) ; ijarg=ijarg+1
+     CASE ( '-maskfile') ; CALL getarg (ijarg, cn_fmsk) ; ijarg=ijarg+1
+     CASE ('-o'        ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP 1
+     END SELECT
   END DO
 
   lchk = lchk .OR. chkfile(cn_fhgr)
@@ -181,57 +203,7 @@ PROGRAM cdficediag
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
   ALLOCATE ( rdumlon(1,1), rdumlat(1,1) )
 
-  rdumlon(:,:) = 0.
-  rdumlat(:,:) = 0.
-
-  ipk(:) = 1
-
-  ! define new variables for output 
-  stypvar%scale_factor      = 1.
-  stypvar%add_offset        = 0.
-  stypvar%savelog10         = 0.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'T'
-
-  stypvar(1)%cname          = 'NVolume'
-  stypvar(1)%cunits         = '10^9 m3'
-  stypvar(1)%clong_name     = 'Ice_volume_in_Northern_Hemisphere'
-  stypvar(1)%cshort_name    = 'NVolume'
-
-  stypvar(2)%cname          = 'NArea'
-  stypvar(2)%cunits         = '10^9 m2'
-  stypvar(2)%clong_name     = 'Ice_area_in_Northern_Hemisphere'
-  stypvar(2)%cshort_name    = 'NArea'
-
-  stypvar(3)%cname          = 'NExtent'
-  stypvar(3)%cunits         = '10^9 m2'
-  stypvar(3)%clong_name     = 'Ice_extent_in_Northern_Hemisphere'
-  stypvar(3)%cshort_name    = 'NExtent'
-
-  stypvar(4)%cname          = 'NExnsidc'
-  stypvar(4)%cunits         = '10^9 m2'
-  stypvar(4)%clong_name     = 'Ice_extent_similar_to_NSIDC_in_Northern_Hemisphere'
-  stypvar(4)%cshort_name    = 'NExnsidc'
-
-  stypvar(5)%cname          = 'SVolume'
-  stypvar(5)%cunits         = '10^9 m3'
-  stypvar(5)%clong_name     = 'Ice_volume_in_Southern_Hemisphere'
-  stypvar(5)%cshort_name    = 'SVolume'
-
-  stypvar(6)%cname          = 'SArea'
-  stypvar(6)%cunits         = '10^9 m2'
-  stypvar(6)%clong_name     = 'Ice_area_in_Southern_Hemisphere'
-  stypvar(6)%cshort_name    = 'SArea'
-
-  stypvar(7)%cname          = 'SExtent'
-  stypvar(7)%cunits         = '10^9 m2'
-  stypvar(7)%clong_name     = 'Ice_extent_in_Southern_Hemisphere'
-  stypvar(7)%cshort_name    = ''
-
-  stypvar(8)%cname          = 'SExnsidc'
-  stypvar(8)%cunits         = '10^9 m2'
-  stypvar(8)%clong_name     = 'Ice_extent_similar_to_NSIDC_in_Southern_Hemisphere'
-  stypvar(8)%cshort_name    = 'SExnsidc'
+  CALL CreateOutput
 
   e1(:,:) = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo)
   e2(:,:) = getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo)
@@ -239,7 +211,7 @@ PROGRAM cdficediag
 
   ! modify the mask for periodic and north fold condition (T pivot, F Pivot ...)
   ! in fact should be nice to use jperio as in the code ...
-  tmask(:,:)=getvar(cn_fmsk,cn_mask,1,npiglo,npjglo)
+  tmask(:,:)=getvar(cn_fmsk,cv_mask,1,npiglo,npjglo)
   SELECT CASE (nperio)
   CASE (0) ! closed boundaries
      ! nothing to do
@@ -292,15 +264,6 @@ PROGRAM cdficediag
      PRINT *,'          SExtend (10^9 m2)  ', dextends
      PRINT *,'          SExnsidc (10^9 m2) ', dextends2
 
-     IF ( jt == 1 ) THEN
-        ! create output fileset
-        ncout = create      (cf_out, 'none',  ikx,      iky, ikz,     cdep='depthw'                   )
-        ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout                                )
-        ierr  = putheadervar(ncout,  cf_ifil, ikx,      iky, ikz,     pnavlon=rdumlon, pnavlat=rdumlat)
-
-        tim   = getvar1d(cf_ifil, cn_vtimec, npt     )
-        ierr  = putvar1d(ncout,   tim,       npt, 'T')
-     ENDIF
 
      ! netcdf output 
      ierr = putvar0d(ncout,id_varout(1), REAL(dvoln     ), ktime=jt)
@@ -313,6 +276,78 @@ PROGRAM cdficediag
      ierr = putvar0d(ncout,id_varout(8), REAL(dextends2 ), ktime=jt)
   END DO ! time loop
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+
+    rdumlon(:,:) = 0.
+    rdumlat(:,:) = 0.
+    ipk(:) = 1
+    ! define new variables for output 
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'T'
+
+    stypvar(1)%cname          = 'NVolume'
+    stypvar(1)%cunits         = '10^9 m3'
+    stypvar(1)%clong_name     = 'Ice_volume_in_Northern_Hemisphere'
+    stypvar(1)%cshort_name    = 'NVolume'
+
+    stypvar(2)%cname          = 'NArea'
+    stypvar(2)%cunits         = '10^9 m2'
+    stypvar(2)%clong_name     = 'Ice_area_in_Northern_Hemisphere'
+    stypvar(2)%cshort_name    = 'NArea'
+
+    stypvar(3)%cname          = 'NExtent'
+    stypvar(3)%cunits         = '10^9 m2'
+    stypvar(3)%clong_name     = 'Ice_extent_in_Northern_Hemisphere'
+    stypvar(3)%cshort_name    = 'NExtent'
+
+    stypvar(4)%cname          = 'NExnsidc'
+    stypvar(4)%cunits         = '10^9 m2'
+    stypvar(4)%clong_name     = 'Ice_extent_similar_to_NSIDC_in_Northern_Hemisphere'
+    stypvar(4)%cshort_name    = 'NExnsidc'
+
+    stypvar(5)%cname          = 'SVolume'
+    stypvar(5)%cunits         = '10^9 m3'
+    stypvar(5)%clong_name     = 'Ice_volume_in_Southern_Hemisphere'
+    stypvar(5)%cshort_name    = 'SVolume'
+
+    stypvar(6)%cname          = 'SArea'
+    stypvar(6)%cunits         = '10^9 m2'
+    stypvar(6)%clong_name     = 'Ice_area_in_Southern_Hemisphere'
+    stypvar(6)%cshort_name    = 'SArea'
+
+    stypvar(7)%cname          = 'SExtent'
+    stypvar(7)%cunits         = '10^9 m2'
+    stypvar(7)%clong_name     = 'Ice_extent_in_Southern_Hemisphere'
+    stypvar(7)%cshort_name    = ''
+
+    stypvar(8)%cname          = 'SExnsidc'
+    stypvar(8)%cunits         = '10^9 m2'
+    stypvar(8)%clong_name     = 'Ice_extent_similar_to_NSIDC_in_Southern_Hemisphere'
+    stypvar(8)%cshort_name    = 'SExnsidc'
+
+    ! create output fileset
+    ncout = create      (cf_out, 'none',  ikx,      iky, ikz,     cdep='depthw'                   )
+    ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout                                )
+    ierr  = putheadervar(ncout,  cf_ifil, ikx,      iky, ikz,     pnavlon=rdumlon, pnavlat=rdumlat)
+
+    tim   = getvar1d(cf_ifil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,   tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdficediag
 

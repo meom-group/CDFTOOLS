@@ -91,7 +91,7 @@ PROGRAM cdfdegrad
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfdegrad -f IN-file -v IN-var -ratio ri rj -p T|U|V|W  [-start i0 j0]'
+     PRINT *,' usage : cdfdegrad -f IN-file -v IN-var -r ri rj -p T|U|V|W  [-start i0 j0]'
      PRINT *,'       ... [-full] [-vvl] [-o OUT-file]'
      PRINT *,'       '
      PRINT *,'     PURPOSE :'
@@ -101,10 +101,10 @@ PROGRAM cdfdegrad
      PRINT *,'       grid is considered starting from the indices i0 and j0.      ' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f IN-file  : netcdf input file on grid point corresponding to -p option.' 
-     PRINT *,'       -v IN-var    : name of netcdf variable to work with' 
-     PRINT *,'       -ratio ri rj : degradation ratio for x-direction and y-direction.' 
-     PRINT *,'       -p T|U|V|W   : position of variable on C-grid.'
+     PRINT *,'       -f IN-file : netcdf input file on grid point corresponding to -p option.' 
+     PRINT *,'       -v IN-var  : name of netcdf variable to work with' 
+     PRINT *,'       -r ri rj   : degradation ratio for x-direction and y-direction.' 
+     PRINT *,'       -p T|U|V|W : position of variable on C-grid.'
      PRINT *,'      '
      PRINT *,'     OPTIONS : '
      PRINT *,'       [-start i0 j0] : spatial indices from where the procedure of   '
@@ -132,16 +132,16 @@ PROGRAM cdfdegrad
      SELECT CASE (cldum) 
      CASE ('-f'    ) ; CALL getarg(ijarg, cf_in   ) ; ijarg = ijarg + 1
      CASE ('-v'    ) ; CALL getarg(ijarg, cv_nam  ) ; ijarg = ijarg + 1
-     CASE ('-ratio') ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) nri
-        CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) nrj
+     CASE ('-r'    ) ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) nri
+        ;              CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) nrj
      CASE ('-p'    ) ; CALL getarg(ijarg, ctyp    ) ; ijarg = ijarg + 1
         ! options
      CASE ('-o'    ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg + 1
      CASE ('-full' ) ; lfull  = .TRUE. ; cglobal = 'full step computation'
      CASE ('-vvl'  ) ; lg_vvl = .TRUE. 
      CASE ('-start') ; lstart = .TRUE.
-        CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;              CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+        ;              CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option !' ; STOP
      END SELECT
   END DO

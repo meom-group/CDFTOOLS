@@ -46,7 +46,7 @@ PROGRAM cdfcmp
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cmp_var -f1 IN-file1 -f2 IN-file2 -var IN-var ...'
+     PRINT *,' usage : cdfcmp -f1 IN-file1 -f2 IN-file2 -v IN-var ...'
      PRINT *,'     ... [-lev kmin kmax ] [-zoom imin imax jmin jmax] ...'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -56,7 +56,7 @@ PROGRAM cdfcmp
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f1 IN-file1 : input file1'
      PRINT *,'       -f2 IN-file2 : input file2'
-     PRINT *,'       -var IN-var  : input variable'
+     PRINT *,'       -v  IN-var   : input variable'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-lev kmin kmax ] : restrict to level between kmin and kmax. '
@@ -72,27 +72,19 @@ PROGRAM cdfcmp
   ENDIF
   !!
   ijarg  = 1
-  ! Read command line
   DO  WHILE (ijarg <=  narg)
      CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f1' )
-        CALL getarg(ijarg, cf1_in) ; ijarg = ijarg + 1
-     CASE ( '-f2' )
-        CALL getarg(ijarg, cf2_in) ; ijarg = ijarg + 1
-     CASE ( '-var' )
-        CALL getarg(ijarg,cv_in) ; ijarg = ijarg + 1
-     CASE ( '-lev'  )
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
-     CASE ( '-zoom' )
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-     CASE DEFAULT
-        PRINT *, TRIM(cldum),' : unknown option '
-        STOP
+     CASE ( '-f1' ) ; CALL getarg(ijarg, cf1_in) ; ijarg = ijarg + 1
+     CASE ( '-f2' ) ; CALL getarg(ijarg, cf2_in) ; ijarg = ijarg + 1
+     CASE ( '-var') ; CALL getarg(ijarg, cv_in ) ; ijarg = ijarg + 1
+     CASE ( '-lev') ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+        ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ('-zoom') ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+        ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 

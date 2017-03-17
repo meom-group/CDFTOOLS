@@ -51,7 +51,7 @@ PROGRAM cdfcsp
   narg = iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfcsp -l LIST-files [-v value ]'
+     PRINT *,' usage : cdfcsp -l LIST-files [-v value]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Replace missing_values by 0 and update attribute.' 
@@ -67,7 +67,7 @@ PROGRAM cdfcsp
      PRINT *,'              be processed.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-v value ] : use value instead of 0 as the new missing_value'
+     PRINT *,'       [-v value] : use value instead of 0 as the new missing_value'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -83,7 +83,7 @@ PROGRAM cdfcsp
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg,cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-f' ) ; CALL GetFileList
+     CASE ( '-l' ) ; CALL GetFileList
         ! options
      CASE ( '-v' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1  ; READ(cldum,*) spval
      CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum) , ' : unknown option.' ; STOP

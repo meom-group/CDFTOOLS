@@ -80,7 +80,7 @@ PROGRAM cdfhflx
      PRINT *,'       part of ORCA configurations.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file : a file with heat fluxes (gridT). '
+     PRINT *,'       -f T-file : a file with heat fluxes (gridT). '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUTNC-file ]: specify the name of the netcdf output file, instead of'

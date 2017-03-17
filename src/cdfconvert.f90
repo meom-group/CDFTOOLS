@@ -26,13 +26,14 @@ PROGRAM cdfconvert
   !! $Id$
   !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
-  !! @class forcing
+  !! @class file_operations
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
   INTEGER(KIND=4)                            :: ji, jj, jk      ! dummy loop index
   INTEGER(KIND=4)                            :: jt, jvar        ! dummy loop index
   INTEGER(KIND=4)                            :: narg, iargc     ! command line
+  INTEGER(KIND=4)                            :: ijarg           ! command line
   INTEGER(KIND=4)                            :: nvar            ! number of output variables
   INTEGER(KIND=4)                            :: npiglo, npjglo  ! size of the domain
   INTEGER(KIND=4)                            :: npk, npt        ! size of the domain
@@ -69,6 +70,7 @@ PROGRAM cdfconvert
   CHARACTER(LEN=256)                         :: cf_dimgvv       ! input dimg V2 file
   CHARACTER(LEN=256)                         :: cf_dimgssh      ! input dimg SSH file
   CHARACTER(LEN=256)                         :: ctag            ! time tag
+  CHARACTER(LEN=256)                         :: cldum           ! working char variable
   CHARACTER(LEN=256)                         :: confcase        ! config-case
   CHARACTER(LEN=80 )                         :: cheader         ! comment in header of dimg file
   CHARACTER(LEN=4  )                         :: cver            ! dimg version
@@ -81,11 +83,13 @@ PROGRAM cdfconvert
 
   !!  Read command line
   narg= iargc()
-  IF ( narg /= 2 ) THEN
-     PRINT *,' usage : cdfconvert CLIPPER_tag CLIPPER_Confcase'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfconvert -t CLIPPER_tag -c CLIPPER_Confcase'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Convert dimg files (CLIPPER like) to netcdf (DRAKKAR like).'
+     PRINT *,'       With recent version of NEMO and XIOS this program is likely to become'
+     PRINT *,'       obsolete soon. It is maintained for historical reasons.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       CLIPPER_tag      : a string such as y2000m01d15 for time identification.' 
@@ -99,13 +103,20 @@ PROGRAM cdfconvert
      PRINT *,'         variables : same as in standard NEMO output'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'       cdfflxconv, cdfsstconv, cdfstrconv'
+     PRINT *,'       '
      PRINT *,'      '
      STOP
   ENDIF
   !!
-  CALL getarg (1, ctag)
-  CALL getarg (2, confcase)
+  ijarg = 1
+  DO WHILE (ijarg <= narg )
+     CALL getarg( ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-t' ) ; CALL getarg( ijarg, ctag    ) ; ijarg=ijarg+1
+     CASE ( '-c' ) ; CALL getarg( ijarg, confcase) ; ijarg=ijarg+1
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum) ,' : unknown option.' ; STOP 1
+     END SELECT
+  ENDDO
 
   lchk = lchk .OR. chkfile( cn_fhgr )
   lchk = lchk .OR. chkfile (cn_fzgr )

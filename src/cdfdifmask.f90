@@ -46,6 +46,7 @@ PROGRAM cdfdifmask
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfdifmask -m  mask1 mask2 [-o OUT-file] [-nc4]'
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the difference between 2 NEMO mask files.' 
      PRINT *,'       This difference is not easy to perform with nco.'
@@ -73,7 +74,7 @@ PROGRAM cdfdifmask
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-m'   ) ; CALL getarg(ijarg, cf_msk1) ; ijarg=ijarg+1
-        ; CALL getarg(ijarg, cf_msk2) ; ijarg=ijarg+1
+        ;              CALL getarg(ijarg, cf_msk2) ; ijarg=ijarg+1
         ! options
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
