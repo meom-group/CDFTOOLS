@@ -66,7 +66,7 @@ PROGRAM cdfmeshmask
 
   LOGICAL :: lchk=.FALSE.
 
-  CHARACTER(LEN=80) :: cdum
+  CHARACTER(LEN=80) :: cldum
   CHARACTER(LEN=80) :: cf_nam
   CHARACTER(LEN=80) :: cf_bat
   CHARACTER(LEN=80) :: cf_coo
@@ -145,7 +145,7 @@ PROGRAM cdfmeshmask
      PRINT *,'        namelist, bathymetry and coordinated passed on the command line' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf files : ', TRIM(cf_zgr) , TRIM(cf_hgr), TRIM(cf_msk)
+     PRINT *,'       netcdf files : ', TRIM(cf_zgr),' ', TRIM(cf_hgr),' and ', TRIM(cf_msk)
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       '
@@ -155,12 +155,12 @@ PROGRAM cdfmeshmask
 
   ijarg=1
   DO WHILE ( ijarg <= narg )
-     CALL getarg(ijarg, cdum) ; ijarg=ijarg+1
-     SELECT CASE ( cdum )
+     CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
      CASE ('-n '    ) ; CALL getarg(ijarg,cf_nam) ; ijarg=ijarg+1
      CASE ('-b '    ) ; CALL getarg(ijarg,cf_bat) ; ijarg=ijarg+1
      CASE ('-c '    ) ; CALL getarg(ijarg,cf_coo) ; ijarg=ijarg+1
-     CASE ('-njbloc') ; CALL getarg(ijarg,cdum  ) ; ijarg=ijarg+1 ; READ(cdum,*) nbloc
+     CASE ('-njbloc') ; CALL getarg(ijarg,cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbloc
      CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO

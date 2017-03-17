@@ -26,7 +26,7 @@ PROGRAM cdfvint
   IMPLICIT NONE
 
   INTEGER(KIND=4)                           :: jk, jt              ! dummy loop index
-  INTEGER(KIND=4)                           :: ierr, ij, iko, it   ! working integer
+  INTEGER(KIND=4)                           :: ierr,  iko, it   ! working integer
   INTEGER(KIND=4)                           :: narg, iargc, ijarg  ! command line 
   INTEGER(KIND=4)                           :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt            ! size of the domain
@@ -70,34 +70,33 @@ PROGRAM cdfvint
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvint T-file [IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]'
+     PRINT *,' usage : cdfvint -f T-file [-v IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]'
      PRINT *,'                 [-tmean] [-smean] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'          Compute the vertical integral of the variable from top '
-     PRINT *,'       to bottom, and save the cumulated valued, level by level.'
-     PRINT *,'       For temperature (default var), the integral is transformed'
-     PRINT *,'       to Heat Content ( 10^6 J/m2) hence for salinity, the integral'
-     PRINT *,'       represents PSU.m '
+     PRINT *,'       Computes the vertical integral of the variable from top to bottom,'
+     PRINT *,'       and save the cumulated valued, level by level. For temperature '
+     PRINT *,'       (default variable), the integral is transformed to heat content, '
+     PRINT *,'       (unit in 10^6 J/m2) hence for salinity, the units are PSU.m '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'         T-file : gridT file holding either temperature or salinity '
-     PRINT *,'        [IN-var ] : name of input variable to process. Default is '
-     PRINT *,'               ', TRIM(cn_votemper),'. Can also be ',TRIM(cn_vosaline)
+     PRINT *,'         -f T-file : gridT file holding either temperature or salinity '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        -GSOP : Use 7 GSOP standard level for the output '
+     PRINT *,'        [-v IN-var ] : name of input variable to process. Default is ',TRIM(cn_votemper)
+     PRINT *,'                Possible other choice is ', TRIM(cn_vosaline)
+     PRINT *,'        [-GSOP] : Use 7 GSOP standard level for the output '
      PRINT *,'                Default is to take the model levels for the output'
-     PRINT *,'        -OCCI : Use 3 levels for the output: 700m, 2000m and bottom'
+     PRINT *,'        [-OCCI] : Use 3 levels for the output: 700m, 2000m and bottom'
      PRINT *,'                Default is to take the model levels for the output'
-     PRINT *,'        -full : for full step computation ' 
-     PRINT *,'        -nc4  : use netcdf4 output with chunking and deflation'
-     PRINT *,'        -tmean : output mean temperature instead of heat content'
-     PRINT *,'        -smean : output mean salinity instead of PSU.m'
-     PRINT *,'        -vvl   : use time-varying metrics for vertical integration'
+     PRINT *,'        [-full] : for full step computation ' 
+     PRINT *,'        [-nc4]  : use netcdf4 output with chunking and deflation'
+     PRINT *,'        [-tmean] : output mean temperature instead of heat content'
+     PRINT *,'        [-smean] : output mean salinity instead of PSU.m'
+     PRINT *,'        [-vvl]   : use time-varying metrics for vertical integration'
      PRINT *,'               (still some details to fix for the last cell including the'
      PRINT *,'                target deptht).'
-     PRINT *,'        -o OUT-file : use specified output file instead of <IN-var>.nc'
+     PRINT *,'        [-o OUT-file] : use specified output file instead of <IN-var>.nc'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fmsk),', ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr) 
@@ -118,25 +117,22 @@ PROGRAM cdfvint
   cv_in = cn_votemper
 
   ! browse command line
-  ijarg = 1   ; ij = 0
+  ijarg = 1   
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
+     CASE ( '-f'    ) ; CALL getarg (ijarg, cf_in  ) ; ijarg = ijarg + 1
+        ! options
+     CASE ( '-v'    ) ; CALL getarg (ijarg, cv_in  ) ; ijarg = ijarg + 1
      CASE ( '-GSOP' ) ; lgsop = .TRUE.
      CASE ( '-OCCI' ) ; locci = .TRUE.
      CASE ( '-full' ) ; lfull = .TRUE. 
-     CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
      CASE ( '-tmean') ; ltmean= .TRUE. 
      CASE ( '-smean') ; lsmean= .TRUE. 
      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
+     CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
      CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-     CASE DEFAULT     
-        ij = ij + 1
-        SELECT CASE ( ij)
-        CASE ( 1 ) ; cf_in = cldum
-        CASE ( 2 ) ; cv_in = cldum
-        CASE DEFAULT ; PRINT *, ' ERROR: Too many arguments ! ' ; STOP
-        END SELECT
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 
@@ -328,6 +324,5 @@ CONTAINS
     ierr  = putvar1d    (ncout, tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
-
 
 END PROGRAM cdfvint

@@ -75,7 +75,7 @@ PROGRAM cdfmkmask
      PRINT *,'                   ... [-time ] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Build a mask file from vosaline array read from the input file.' 
+     PRINT *,'       Builds a mask file from vosaline array read from the input file.' 
      PRINT *,'       It assumes that land salinity values are set to 0.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -97,7 +97,7 @@ PROGRAM cdfmkmask
      PRINT *,'                        limit the area where the mask is builded. Outside'
      PRINT *,'                        this area, the mask is set to 0.' 
      PRINT *,'                        Need mesh_zgr.nc'
-     PRINT *,'       [-zoomvar varname varmin varmax] : range of varname used to'
+     PRINT *,'       [-zoomvar varname varmin varmax] : range of varname variable used to'
      PRINT *,'                        limit the area where the mask is builded. Outside'
      PRINT *,'                        this area, the mask is set to 0.'
      PRINT *,'       [-time ] : If further time step is available'
@@ -247,8 +247,8 @@ PROGRAM cdfmkmask
 
         IF ( lzoomvar ) THEN
            zmask=tmask
-           WHERE ((tmask .GE. rvarmin) .AND. (tmask .LE. rvarmax)) zmask = 1
-           WHERE ((tmask .LT. rvarmin) .OR.  (tmask .GT. rvarmax)) zmask = 0
+           WHERE ((tmask >= rvarmin) .AND. (tmask <= rvarmax)) zmask = 1
+           WHERE ((tmask <  rvarmin) .OR.  (tmask >  rvarmax)) zmask = 0
            tmask=zmask
         ELSE
            WHERE (tmask > 0 ) tmask = 1

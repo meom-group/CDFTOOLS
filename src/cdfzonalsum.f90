@@ -29,8 +29,7 @@ PROGRAM cdfzonalsum
   INTEGER(KIND=4)                               :: ijvar               ! variable counter
   INTEGER(KIND=4)                               :: npbasins=1          ! number of subbasin
   INTEGER(KIND=4)                               :: ivar = 0            ! output variable counter
-  INTEGER(KIND=4)                               :: narg, iargc         ! command line 
-  INTEGER(KIND=4)                               :: ijarg, ireq         ! command line 
+  INTEGER(KIND=4)                               :: narg, iargc, ijarg  ! command line 
   INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                               :: nvarin, nvar        ! number of input variables: all/valid
@@ -87,15 +86,14 @@ PROGRAM cdfzonalsum
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfzonalsum IN-file point_type [ BASIN-file] ...'
-     PRINT *,'                  ... [-var var1,var2,..] [-pdep | --positive_depths]'
-     PRINT *,'                  ... [-pdeg | --per_degree] [-debug] [-o OUT-file]'
+     PRINT *,' usage : cdfzonalsum -f IN-file -p C-type [-b BASIN-file] [-l LST-var] ...'
+     PRINT *,'               ... [-pdep] [-pdeg] [-o OUT-file] [-debug] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the zonal sum of all the variables available in the' 
-     PRINT *,'       input file. This program assume that all the variables are'
-     PRINT *,'       located on the same C-grid point, specified on the command line.'
-     PRINT *,'         Using -var option limits the variables to be processed.'
+     PRINT *,'       Computes the zonal sum of all the variables available in the input file.' 
+     PRINT *,'       This program assumes that all the variables are located at the same '
+     PRINT *,'       C-grid point, specified on the command line. If a list of variables is'
+     PRINT *,'       given with  -l option, only the listed variables will be processed.'
      PRINT *,'      '
      PRINT *,'       Zonal sum is in fact the integral value computed along the I coordinate.'
      PRINT *,'       The result is a vertical slice, in the meridional direction.'
@@ -104,26 +102,26 @@ PROGRAM cdfzonalsum
      PRINT *,'                probably minor impact on results), e3x not zonally constant.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file    : input netcdf file.' 
-     PRINT *,'       point_type : indicate the location on C-grid (T|U|V|F|W)'
+     PRINT *,'       -f IN-file : input netcdf file.' 
+     PRINT *,'       -p C-type  : indicate the location on C-grid (T|U|V|F|W)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [BASIN-file] : netcdf file describing sub basins, similar to '
-     PRINT *,'                      ', TRIM(cn_fbasins),'. If this name is not given '
-     PRINT *,'                      as option, only the global zonal integral is computed.'
-     PRINT *,'       [-var var1,var2,.. ] : Comma separated list of selected variables'
-     PRINT *,'       [-pdep | --positive_depths ] : use positive depths in the output file.'
-     PRINT *,'                      Default behaviour is to have negative depths.'
-     PRINT *,'       [-pdeg | --per_degree ] : When using this option, the zonal integral'
-     PRINT *,'                      is normalized per degree of latitude. This was formally'
-     PRINT *,'                      done with cdfzonalintdeg program, which is now merged'
-     PRINT *,'                      in this one.'
-     PRINT *,'                      Default behaviour is not to normalize.'
-     PRINT *,'       [-debug ] : add some print for debug'
+     PRINT *,'       [-b BASIN-file] : netcdf file describing sub basins, similar to '
+     PRINT *,'             ', TRIM(cn_fbasins),'. If this name is not given as option, only'
+     PRINT *,'             the global zonal integral is computed.'
+     PRINT *,'       [-l LST-var ] : Comma separated list of selected variables'
+     PRINT *,'       [-pdep      ] : use positive depths in the output file.'
+     PRINT *,'             Default behaviour is to have negative depths.'
+     PRINT *,'       [-pdeg ] : When using this option, the zonal integral is normalized per'
+     PRINT *,'             degree of latitude. This was formerly done with cdfzonalintdeg. '
+     PRINT *,'             Default behaviour is not to normalize.'
      PRINT *,'       [-o OUT-file ] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-debug ] : add some print for debug'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cn_fmsk)
+     PRINT *,'      '
+     PRINT *,'      OPENMP SUPPORT : yes'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out),' or ', TRIM(cf_pdeg),' (-pdeg option)' 
@@ -134,31 +132,24 @@ PROGRAM cdfzonalsum
      PRINT *,'                      if a BASIN-file is used.'
      PRINT *,'            Units are modified by adding ''.m2'' at the end. Can be improved !'
      PRINT *,'            In addition, ''.degree-1'' is append to unit with -pdeg option.'
+     PRINT *,'      '
      STOP
   ENDIF
 
-  ijarg = 1  ; ireq = 0
+  ijarg = 1  
   DO WHILE ( ijarg <= narg ) 
      CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE (cldum)
-     CASE ( '-pdep' , '--positive_depths' ) ; lpdep  =.TRUE.
-     CASE ( '-pdeg' , '--per_degree'      ) ; lpdeg  =.TRUE.
-     CASE ( '-debug'                      ) ; ldebug =.TRUE.
-     CASE ( '-var'                        ) ; lvar   =.TRUE.
-                                            ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1
-                                            ; CALL ParseVars(cldum)
-     CASE ( '-o'                          ) ; CALL getarg( ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE (ireq)
-        CASE (1) ; cf_in      = cldum                 ! file name is the 1rst argument
-        CASE (2) ; ctyp       = cldum                 ! point type is the 2nd
-        CASE (3) ; cf_basins  = cldum                 ! sub basin file is the 3rd (optional)
-           npbasins   = 5
-           lchk       = chkfile (cf_basins)
-        CASE DEFAULT 
-           PRINT *,' Too many arguments ...' ; STOP
-        END SELECT
+     CASE ( '-f'     ) ; CALL getarg( ijarg, cf_in     ) ; ijarg=ijarg+1
+     CASE ( '-p'     ) ; CALL getarg( ijarg, ctyp      ) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-b'     ) ; CALL getarg( ijarg, cf_basins ) ; ijarg=ijarg+1 ; npbasins = 5  ; lchk = chkfile (cf_basins)
+     CASE ( '-l'     ) ; CALL getarg( ijarg, cldum     ) ; ijarg=ijarg+1 ; lvar = .TRUE. ; CALL ParseVars(cldum)
+     CASE ( '-pdep'  ) ; lpdep  = .TRUE.
+     CASE ( '-pdeg'  ) ; lpdeg  = .TRUE.
+     CASE ( '-o'     ) ; CALL getarg( ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-debug' ) ; ldebug = .TRUE.
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 
      END SELECT
   END DO
 
@@ -222,12 +213,12 @@ PROGRAM cdfzonalsum
 
   IF ( lvar )  THEN
      ALLOCATE ( lbad(nvarin) )
-     lbad(:) = .true.  ! 
+     lbad(:) = .TRUE.  ! 
      ! tricks : in case of specified variables, set ipki to 0 all variables
      !          not choosen.
      DO ji = 1, nvaro
         DO jvar = 1, nvarin
-           IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .false.
+           IF ( cv_namesi(jvar) == cv_fix(ji) ) lbad(jvar) = .FALSE.
         END DO
      END DO
      WHERE ( lbad ) ipki=0
