@@ -129,7 +129,6 @@ PROGRAM cdfisf_rnf
      CASE ('-vb') ; CALL getarg(ijarg,cv_bathy  ) ; ijarg=ijarg+1
      CASE ('-i' ) ; CALL getarg(ijarg,cf_isfdr  ) ; ijarg=ijarg+1
      CASE ('-vi') ; CALL getarg(ijarg,cv_isfdr  ) ; ijarg=ijarg+1
-
      CASE ('-nc4'); lnc4 = .TRUE.
      CASE ('-o' ) ; CALL getarg(ijarg,cf_out    ) ; ijarg=ijarg+1
      CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
@@ -270,6 +269,8 @@ CONTAINS
     !! ** Method  :  Use global variables to know about the file to be created
     !!           
     !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(1) :: ztim
+    !!----------------------------------------------------------------------
     ! define new variables for output
     stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
     stypvar(1)%cname             = 'sozisfmax'
@@ -309,6 +310,9 @@ CONTAINS
     ncout  = create      (cf_out, cf_fill,   npiglo, npjglo, npk,  ld_nc4=lnc4)
     ierr   = createvar   (ncout,  stypvar, 3,   ipk, id_varout  ,  ld_nc4=lnc4)
     ierr   = putheadervar(ncout,  cf_fill,   npiglo, npjglo, npk              )
+
+    ztim(1) = 0.
+    ierr = putvar1d(ncout, ztim, 1, 'T') 
 
   END SUBROUTINE CreateOutput
 

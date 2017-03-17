@@ -29,7 +29,7 @@ PROGRAM cdfvertmean
   INTEGER(KIND=4)                               :: it                  ! time index for vvl
   INTEGER(KIND=4)                               :: ik1, ik2            ! vertical limit of integration
   INTEGER(KIND=4)                               :: narg, iargc         ! command line 
-  INTEGER(KIND=4)                               :: ijarg, ireq         ! command line 
+  INTEGER(KIND=4)                               :: ijarg               ! command line 
   INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt            ! size of the domain,
   INTEGER(KIND=4)                               :: nvars, ivar         ! variables in input
@@ -79,28 +79,28 @@ PROGRAM cdfvertmean
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfvertmean [-debug] IN-file IN-var1,var2,.. VAR-type dep1 dep2 [-full]'
-     PRINT *,'              ... [-o OUT-file ] [-nc4] [-vvl]'
+     PRINT *,' usage :  cdfvertmean -f IN-file -l LST-var -p C-type -zlim dep1 dep2'
+     PRINT *,'              ... [-full] [-o OUT-file] [-nc4] [-vvl] [-debug]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the vertical mean between dep1 and dep2 given in m,'
-     PRINT *,'       for variable IN-var in the input file.'
+     PRINT *,'       Compute the vertical mean between dep1 and dep2 given in m, for the '
+     PRINT *,'       list of variables LST-var, belonging to the input file.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file  : netcdf input file.' 
-     PRINT *,'       IN-var1,var2,.. : Comma separated list of input variables to process.'
-     PRINT *,'       VAR-type  : one of T U V W indicating position of variable on C-grid'
-     PRINT *,'       dep1 dep2 : depths limit for vertical integration (meters), from top '
-     PRINT *,'                to bottom, positive depths.'
+     PRINT *,'       -f IN-file  : netcdf input file.' 
+     PRINT *,'       -l LST-var : Comma separated list of input variables to process.'
+     PRINT *,'       -p C-type  : one of T U V W indicating position of variable on C-grid'
+     PRINT *,'       -zlim dep1 dep2 : depths limit for vertical integration (in meters), '
+     PRINT *,'           from top to bottom, positive depths.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full  ] : for full step configurations. Default is partial step.'
      PRINT *,'       [-debug ] : print some extra informations.'
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out)
-     PRINT *,'       [ -nc4 ]: Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'                 This option is effective only if cdftools are compiled with'
-     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-nc4 ]: Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'           This option is effective only if cdftools are compiled with'
+     PRINT *,'           a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fzgr),' and ',TRIM(cn_fmsk)
@@ -112,26 +112,22 @@ PROGRAM cdfvertmean
      STOP
   ENDIF
 
-  ijarg = 1 ; ireq=0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
+     CASE ( '-f'     ) ; CALL getarg (ijarg, cf_in  ) ; ijarg=ijarg+1
+     CASE ( '-l'     ) ; CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; CALL ParseVars(cldum)
+     CASE ( '-p'     ) ; CALL getarg (ijarg, ctype  ) ; ijarg=ijarg+1 
+     CASE ( '-zlim'  ) ; CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) rdep_up
+        ;                CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) rdep_down
+        ! options
      CASE ( '-full'  ) ; lfull  = .TRUE.
      CASE ( '-debug' ) ; ldebug = .TRUE.
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
-     CASE ( '-o' )     ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
-     CASE DEFAULT
-        ireq=ireq+1
-        SELECT CASE ( ireq )
-        CASE ( 1 ) ; cf_in=cldum
-        CASE ( 2 ) ; CALL ParseVars(cldum)
-        CASE ( 3 ) ; ctype=cldum
-        CASE ( 4 ) ; READ(cldum,*) rdep_up
-        CASE ( 5 ) ; READ(cldum,*) rdep_down
-        CASE DEFAULT
-           PRINT *,' Too many arguments ...' ; STOP
-        END SELECT
+     CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
 

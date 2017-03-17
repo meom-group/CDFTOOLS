@@ -77,7 +77,7 @@ PROGRAM cdfrhoproj
 
   narg=iargc()
   IF ( narg == 0  ) THEN
-     PRINT *,' usage : cdfrhoproj-v IN-var -s RHO-file -l LST-files [-p VAR-type] [-debug]...'
+     PRINT *,' usage : cdfrhoproj-v IN-var -s RHO-file -l LST-files [-p C-type] [-debug]...'
      PRINT *,'       ... [-isodep] [-s0 sig0 | -s0 sigmin,sigstp,nsig] [-sig sigma_name]..'
      PRINT *,'       ... [-noiso] [-rholev TXT-file] [-o OUT-isodep] [-nc4] '
      PRINT *,'      '
@@ -114,7 +114,7 @@ PROGRAM cdfrhoproj
      PRINT *,'            ''sigstp''. This option prevails the use of ',TRIM(cf_rholev),' file.'
      PRINT *,'       [-rholev TXT-file] : Specify the name of the ''rholev'' text file, '
      PRINT *,'            instead of ',TRIM(cf_rholev),'.'
-     PRINT *,'       [-p VAR-type] : position of IN-var on the C-grid ( either T U V F W S ),'
+     PRINT *,'       [-p C-type] : position of IN-var on the C-grid ( either T U V F W S ),'
      PRINT *,'            default is ''T''. ''S'' special point is used in case of section'
      PRINT *,'            files created by cdf_xtract_brokenline.'
      PRINT *,'       [-sig sigma_name] : name of the density variable in RHO_file. Default is'

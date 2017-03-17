@@ -86,8 +86,8 @@ PROGRAM cdfsigintegr
 
   narg=iargc()
   IF ( narg < 3 ) THEN
-     PRINT *,' usage : cdfsigintegr -v IN-var -r RHO-file -l list_of_files [ -p VAR-type ] ...'
-     PRINT *,'              ... [ -sig sigma_name] [ -full ] [-nc4] [-vvl]'
+     PRINT *,' usage : cdfsigintegr -v IN-var -s RHO-file -l LST-files [-p C-type ] ...'
+     PRINT *,'              ... [-sig sigma_name] [-full] [-nc4] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :' 
      PRINT *,'       Take a list of input files with specific IN-var variable, associated'
@@ -102,12 +102,12 @@ PROGRAM cdfsigintegr
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -v IN-var : input variable to be integrated' 
-     PRINT *,'       -r RHO-file : netcdf file with already computed density' 
-     PRINT *,'       -l list_of_files : a blank separated list of model netcdf files '
+     PRINT *,'       -s RHO-file : netcdf file with already computed density' 
+     PRINT *,'       -l LST-files : a blank separated list of model netcdf files '
      PRINT *,'              containing IN-var.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-p  VAR-type ] : one of T U V F W which defined the position on' 
+     PRINT *,'       [-p  C-type ] : one of T U V F W which defined the position of' 
      PRINT *,'               IN-var in the model C-grid. Default is ', TRIM(ctype)
      PRINT *,'       [-sig sigma_name ] : give the name of sigma variable in RHO-file.'
      PRINT *,'               Default is ',TRIM(cn_vosigma0)
@@ -116,18 +116,20 @@ PROGRAM cdfsigintegr
      PRINT *,'               integration. Default is ', TRIM(cf_rholev)
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'               This option is effective only if cdftools are compiled with'
-     PRINT *,'               a netcdf library supporting chunking and deflation.'
+     PRINT *,'            This option is effective only if cdftools are compiled with'
+     PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fzgr),' and ',TRIM(cf_rholev)
      PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes'
+     PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : IN-file.integr'
-     PRINT *,'         variables : inv_IN-var  : inventory of IN-var from input file.'
-     PRINT *,'                     ', TRIM(cn_vodepiso),' (m) : depth of isopycnal.'
-     PRINT *,'                     ', TRIM(cn_isothick),' (m) : thickness of isopycnal layer.'
-     PRINT *,'                     mean_IN-var (same unit as IN-var) : mean IN-var in the isopycnal'
+     PRINT *,'         variables : inv_<IN-var>  : inventory of IN-var from input file.'
+     PRINT *,'            ', TRIM(cn_vodepiso),' (m) : depth of isopycnal.'
+     PRINT *,'            ', TRIM(cn_isothick),' (m) : thickness of isopycnal layer.'
+     PRINT *,'            mean_<IN-var> (same unit as IN-var) : mean IN-var in the isopycnal'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdfsigtrp, cdfisopycdep'
@@ -140,7 +142,7 @@ PROGRAM cdfsigintegr
      CALL getarg( ijarg, cldum ) ; ijarg = ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-v'      ) ; CALL getarg( ijarg, cv_in      ) ; ijarg = ijarg+1 ; ireq=ireq+1
-     CASE ( '-r'      ) ; CALL getarg( ijarg, cf_rho     ) ; ijarg = ijarg+1 ; ireq=ireq+1
+     CASE ( '-s'      ) ; CALL getarg( ijarg, cf_rho     ) ; ijarg = ijarg+1 ; ireq=ireq+1
      CASE ( '-l'      ) ; CALL GetFileList                                   ; ireq=ireq+1
         ! options
      CASE ( '-p'      ) ; CALL getarg( ijarg, ctype      ) ; ijarg = ijarg+1 
@@ -153,7 +155,8 @@ PROGRAM cdfsigintegr
      END SELECT
   ENDDO
 
-  IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP;  ENDIF
+  IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP;
+  ENDIF
 
      CALL SetGlobalAtt( cglobal )
 
@@ -210,6 +213,7 @@ PROGRAM cdfsigintegr
 
      !! ** Compute interpolation coefficients as well as the level used
      !!    to interpolate between
+     !$OMP PARALLEL DO SCHEDULE(RUNTIME)
      DO ji=1,npiglo
         DO jj = 1, npjglo
            ijk = 1
@@ -235,6 +239,7 @@ PROGRAM cdfsigintegr
            END DO
         END DO
      END DO
+     !$OMP END PARALLEL DO
 
      ! Create output variables
      CALL CreateOutputVar
@@ -251,7 +256,7 @@ PROGRAM cdfsigintegr
         cf_out=TRIM(cf_in)//'.integr'
 
         ! creation of output file is done within the file loop, but do not interfere with 
-        ! possible parameterization
+        ! possible parallelization as output files name are different.
         ncout = create      (cf_out, cf_rho,  npiglo, npjglo, npiso                      , ld_nc4=lnc4 )
         ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4 )
         ierr  = putheadervar(ncout,  cf_rho,  npiglo, npjglo, npiso, pdep=rho_lev                      )

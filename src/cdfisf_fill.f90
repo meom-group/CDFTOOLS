@@ -61,7 +61,7 @@ PROGRAM cdfisf_fill
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfisf_fill  -f ISF-file -v ISF-var -l ISF-list [-nc4 ] [-o OUT-file]'
      PRINT *,'      '
-     PRINT *,'     PURPOSE : Build a nc file with a single value for each pool around a list'
+     PRINT *,'     PURPOSE : Builds nc file with a single value for each pool around a list'
      PRINT *,'               of given point. A warning is given when neighbouring ice-shelves'
      PRINT *,'               cannot be discriminated (no gap in between). In this case, hand'
      PRINT *,'               edit on the ISF-file is required.'
@@ -95,7 +95,7 @@ PROGRAM cdfisf_fill
      PRINT *,'                        each shelf.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
-     PRINT *,'           cdfisf_forcing,  cdfisf_rnf '
+     PRINT *,'           cdfisf_forcing,  cdfisf_rnf , cdfisf_poolchk'
      PRINT *,'      '
      STOP
   ENDIF
@@ -210,6 +210,7 @@ PROGRAM cdfisf_fill
   ierr = closeout(ncout)
 
 CONTAINS
+
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***
@@ -219,6 +220,9 @@ CONTAINS
     !!
     !! ** Method  :  Use global variables, defined in main 
     !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(1) :: ztim
+    !!----------------------------------------------------------------------
+    
     ! define new variables for output
     ipk(1) = 1  !  2D
     stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
@@ -237,6 +241,9 @@ CONTAINS
     ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
     ierr   = createvar   (ncout ,  stypvar,  1,  ipk,    id_varout           , ld_nc4=lnc4)
     ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep             )
+
+    ztim(1)=0.
+    ierr  = putvar1d(ncout, ztim, 1, 'T')
 
   END SUBROUTINE CreateOutput
 

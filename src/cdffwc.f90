@@ -53,8 +53,8 @@ PROGRAM cdffwc
   CHARACTER(LEN=256)                         :: cf_in                ! input file
   CHARACTER(LEN=256)                         :: cf_out='fwc.nc'      ! output file 
   CHARACTER(LEN=256)                         :: cldum                ! dummy string for command line browsing
+  CHARACTER(LEN=256)                         :: cdefault             ! dummy string for default salinity value
   CHARACTER(LEN=256)                         :: cf_subbas='subbasins.nc'     ! subbasins file
-
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names           ! name of input variables
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in              ! name of output variables
 
@@ -67,16 +67,17 @@ PROGRAM cdffwc
   TYPE(variable), DIMENSION(:), ALLOCATABLE  :: stypvar              ! extension for attributes
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  WRITE(cdefault,'(f5.1)') ds0
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdffwc -f T-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]'
-     PRINT *,'                [-full] [-accum] [-ssh]'
+     PRINT *,'                [-full] [-accum] [-ssh] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the freshwater content in a given basin from top'
-     PRINT *,'       to bottom for each layer. Can handle full step configuration'
-     PRINT *,'       using the -full option.'
+     PRINT *,'       Computes the freshwater content in a given basin from top to bottom'
+     PRINT *,'       for each layer, using a reference salinity (',TRIM(cdefault),') that'
+     PRINT *,'       can be changed with -sref option.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        -f T-file   : netcdf input file holding salinity (in general a gridT).' 
@@ -87,7 +88,7 @@ PROGRAM cdffwc
      PRINT *,'        -full  : for full step computation ' 
      PRINT *,'        -accum : compute accumulated content from top to bottom' 
      PRINT *,'        -ssh   : take ssh into account for surface layer' 
-     PRINT *,'        -sref  : reference salinity (= 34.7 by default)'
+     PRINT *,'        -sref  : reference salinity (',TRIM(cdefault),' by default)'
      PRINT *,'        -vvl   : use time-varying vertical metrics'
      PRINT *,'        -o OUT-file :  use specified output file instead of ', TRIM(cf_out)
      PRINT *,'        -b SUBAS-file :  use specified subbasin file instead of ', TRIM(cf_subbas)
@@ -228,6 +229,7 @@ PROGRAM cdffwc
   ierr = closeout(ncout)
 
 CONTAINS
+
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***

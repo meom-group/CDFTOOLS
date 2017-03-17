@@ -2,9 +2,9 @@ PROGRAM cdficb_clim
   !!======================================================================
   !!                     ***  PROGRAM  cdficb_clim  ***
   !!=====================================================================
-  !!  ** Purpose : Compute the iceberg mass and melt
-  !!
-  !!  ** Method  : Use the icb files for input and determine the
+  !!  ** Purpose : Concatenate ceberg mass and melt from 12 monthly files
+  !!               into a single 12 time frame file.
+  !!  ** Method  : read and write ...
   !!
   !! History :  3.0  : 06/2016  : N. Merino         : Original code
   !!         :  4.0  : 03/2017  : J.-M. Molines
@@ -20,45 +20,51 @@ PROGRAM cdficb_clim
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                            :: jk, jj, jt, ji       ! dummy loop index
+  INTEGER(KIND=4)                            :: jf, jt               ! dummy loop index
   INTEGER(KIND=4)                            :: ierr                 ! working integer
-  INTEGER(KIND=4)                            :: narg, iargc          ! command line 
-  INTEGER(KIND=4)                            :: npiglo, npjglo, npt, numFiles  ! size of the domain
+  INTEGER(KIND=4)                            :: nfiles               ! number of files
+  INTEGER(KIND=4)                            :: narg, iargc, ijarg   ! command line 
+  INTEGER(KIND=4)                            :: npiglo, npjglo, npt  ! size of the domain
   INTEGER(KIND=4)                            :: nvpk                 ! vertical levels in working variable
-  INTEGER(KIND=4)                            :: nperio = 4           ! boundary condition ( periodic, north fold)
-  INTEGER(KIND=4)                            :: ikx, iky, ikz=0      ! dims of netcdf output file
   INTEGER(KIND=4)                            :: nboutput=2           ! number of values to write in cdf output
   INTEGER(KIND=4)                            :: ncout                ! for netcdf output
-  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout, itimeVar
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
 
-  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: e1, e2               ! metrics
-  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: tmask, ff            ! npiglo x npjglo
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ricbmass, ricbmelt   ! icbmass icbmelt
-  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: rdumlon, rdumlat     ! dummy lon lat for output
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                  ! time counter
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar              ! structure of output
   !
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_icb            ! input icb file
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_lst            ! input icb file
   CHARACTER(LEN=256)                         :: cf_out='icbdiags.nc' ! output file
   CHARACTER(LEN=256)                         :: cldum                ! dummy string
   !
-  LOGICAL                                    :: lchk  = .false.      ! missing file flag
+  LOGICAL                                    :: lchk  = .FALSE.      ! missing file flag
+  LOGICAL                                    :: lnc4  = .FALSE.      ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdficb_clim 12-ICB-monthly-means-files'
+     PRINT *,' usage : cdficb_clim -l LIST-ICB-monthly-files [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the 2D field of icb mass and icb melt.'
+     PRINT *,'        Concatenates 12 monthly input files, into a 12 frames output file.'
+     PRINT *,'        This is done for the 2 variables corresponding to mass and melt.'
+     PRINT *,'        No process done in this tool.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       ICE-file : netcdf icb file' 
+     PRINT *,'       -l  LIST-ICB-monthly-files : A list of 12 monthly-mean ICB files.'
+     PRINT *,'            These files are likely produced by cdfmoy.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'            This option is effective only if cdftools are compiled with'
+     PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
-     PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fmsk)
+     PRINT *,'         none '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
@@ -67,115 +73,128 @@ PROGRAM cdficb_clim
      STOP
   ENDIF
 
-  CALL getarg(1,cldum)
-  READ(cldum,*) numFiles
+  ijarg = 1
+  DO WHILE (ijarg <= narg )
+     CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-l'  ) ; CALL GetFileList
+        ! options
+     CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' unknown option.' ; STOP 1
+     END SELECT
+  ENDDO
 
-  IF (numFiles < 12) STOP
+  IF ( nfiles /= 12 ) THEN 
+     PRINT *,' +++ ERROR : This program needs 12 monthly files in input.' ; STOP 1
+  ENDIF
 
-  ALLOCATE(cf_icb(numFiles))
-
-  DO ji= 1, numFiles
-     CALL getarg(ji+1,cf_icb(ji))
-     lchk = lchk .OR. chkfile(cf_icb(ji))
-  END DO
-
-
-  lchk = lchk .OR. chkfile(cn_fhgr) 
-  lchk = lchk .OR. chkfile(cn_fmsk) 
+  DO jf=1, nfiles
+     lchk = lchk .OR. chkfile(cf_lst(jf))
+  ENDDO
 
   IF ( lchk ) STOP ! missing file
 
-  npiglo = getdim (cf_icb(1),cn_x)
-  npjglo = getdim (cf_icb(1),cn_y)
+  npiglo = getdim (cf_lst(1),cn_x)
+  npjglo = getdim (cf_lst(1),cn_y)
   npt    = 12
-  ikx = npiglo
-  iky = npjglo
 
-  ALLOCATE ( tmask(npiglo,npjglo) ,ff(npiglo,npjglo) )
   ALLOCATE ( ricbmass(npiglo,npjglo) )
   ALLOCATE ( ricbmelt(npiglo,npjglo) )
-  ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo) )
-  ALLOCATE ( tim(npt),itimeVar(npt) )
-
-  itimeVar = (/(ji,ji=1,12)/)  
-
+  ALLOCATE ( tim(npt) )
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
-  ALLOCATE ( rdumlon(1,1), rdumlat(1,1) )
 
-  rdumlon(:,:) = 0.
-  rdumlat(:,:) = 0.
-
-  ipk(:) = 1
-
-  ! define new variables for output 
-  stypvar%scale_factor      = 1.
-  stypvar%add_offset        = 0.
-  stypvar%savelog10         = 0.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'T'
-
-  stypvar(1)%cname          = 'Mass'
-  stypvar(1)%cunits         = 'Kg/m2'
-  stypvar(1)%clong_name     = 'Icb mass per unit of area'
-  stypvar(1)%cshort_name    = 'Mass'
-
-  stypvar(2)%cname          = 'Melt'
-  stypvar(2)%cunits         = 'Kg/m2/s'
-  stypvar(2)%clong_name     = 'Icb melt flux'
-  stypvar(2)%cshort_name    = 'Melt'
-
-
-  e1(:,:) = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo)
-  e2(:,:) = getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo)
-  ff(:,:) = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo) ! only the sign of ff is important
-
-  tmask(:,:)=getvar(cn_fmsk,'tmask',1,npiglo,npjglo)
-  SELECT CASE (nperio)
-  CASE (0) ! closed boundaries
-     ! nothing to do
-  CASE (4) ! ORCA025 type boundary
-     tmask(1:2,:)=0.
-     tmask(:,npjglo)=0.
-     tmask(npiglo/2+1:npiglo,npjglo-1)= 0.
-  CASE (6)
-     tmask(1:2,:)=0.
-     tmask(:,npjglo)=0.
-  CASE DEFAULT
-     PRINT *,' Nperio=', nperio,' not yet coded'
-     STOP
-  END SELECT
-
-  itimeVar = (/(ji,ji=1,12)/)
-  ! Check variable
-  IF (chkvar(cf_icb(1), cn_iicbmass)) THEN
+  ! Check variable on first file ?
+  IF (chkvar(cf_lst(1), cn_iicbmass)) THEN
      cn_iicbmass='missing'
      PRINT *,'' 
      PRINT *,' WARNING, ICEBERG MASS IS SET TO 0. '
      PRINT *,' '
   END IF
-
   !
   DO jt = 1, npt
-     IF (TRIM(cn_iicbmass) /= 'missing') ricbmass(:,:) = getvar(cf_icb(jt), cn_iicbmass, 1, npiglo, npjglo, ktime=1)
-     ricbmelt(:,:) = getvar(cf_icb(jt), cn_iicbmelt, 1, npiglo, npjglo, ktime=1)
-
-     IF ( jt == 1 ) THEN
-        ! create output fileset
-        ncout = create      (cf_out, 'none',  ikx,      iky, ikz,     cdep='depthw'                   )
-        ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout                                )
-        ierr  = putheadervar(ncout,  cf_icb(1), ikx,      iky, ikz)
-
-        tim   = getvar1d(cf_icb(1), cn_vtimec, npt     )
-        tim = (/(ji,ji=1,12)/)
-        ierr  = putvar1d(ncout,   tim,       npt, 'T')
+     IF (TRIM(cn_iicbmass) /= 'missing') THEN ; ricbmass(:,:) = getvar(cf_lst(jt), cn_iicbmass, 1, npiglo, npjglo, ktime=1)
+     ELSE                                     ; ricbmass(:,:) = 0.
      ENDIF
+     ricbmelt(:,:) = getvar(cf_lst(jt), cn_iicbmelt, 1, npiglo, npjglo, ktime=1)
 
      ! netcdf output
-     !ierr = putvar0d(ncout,cn_vtimec,jt,ktime=jt) 
      ierr = putvar(ncout,id_varout(1),REAL(ricbmass(:,:)),1,npiglo,npjglo, ktime=jt)
      ierr = putvar(ncout,id_varout(2),REAL(ricbmelt(:,:)),1,npiglo,npjglo, ktime=jt)
-
   END DO ! time loop
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+
+    ipk(:) = 1
+    ! define new variables for output 
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'T'
+
+    stypvar(1)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname          = 'Mass'
+    stypvar(1)%cunits         = 'Kg/m2'
+    stypvar(1)%clong_name     = 'Icb mass per unit of area'
+    stypvar(1)%cshort_name    = 'Mass'
+
+    stypvar(2)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%cname          = 'Melt'
+    stypvar(2)%cunits         = 'Kg/m2/s'
+    stypvar(2)%clong_name     = 'Icb melt flux'
+    stypvar(2)%cshort_name    = 'Melt'
+
+
+    ! create output fileset
+    ncout = create      (cf_out, 'none',  npiglo,      npjglo, 1,  cdep='depthw', ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout              , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_lst(1), npiglo,      npjglo, 1)
+
+    tim = (/(jt,jt=1,12)/)
+    ierr  = putvar1d(ncout, tim, npt, 'T')
+
+
+  END SUBROUTINE CreateOutput
+
+  SUBROUTINE GetFileList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetFileList  ***
+    !!
+    !! ** Purpose :  Set up a file list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    nfiles=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (cf_lst(nfiles) )
+    DO ji = icur, icur + nfiles -1
+       CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetFileList
 
 END PROGRAM cdficb_clim

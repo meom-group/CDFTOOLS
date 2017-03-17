@@ -70,10 +70,10 @@ PROGRAM cdfisf_poolchk
      PRINT *,'            [-nc4] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Produce a netcdf mask file with 1 everywhere, except for points '
-     PRINT *,'       not connected to the open ocean (Frequent for cavities below '
-     PRINT *,'       ice-shelves), which have 0 value. Both 3D and 2D variables are'
-     PRINT *,'       created, the 2D variables beiing used for cdfisf_forcing.'
+     PRINT *,'       Produces a netcdf mask file with 1 everywhere, except for points not '
+     PRINT *,'       connected to the open ocean (frequent for cavities below ice-shelves),'
+     PRINT *,'       which have 0 value. Both 3D and 2D variables are created, the 2D '
+     PRINT *,'       variables being used for cdfisf_forcing.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -m MASK-file : name of the input NEMO mask file, with tmask variable.'
@@ -170,6 +170,7 @@ PROGRAM cdfisf_poolchk
   ierr = closeout(ncout)
 
 CONTAINS
+
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***
@@ -178,6 +179,8 @@ CONTAINS
     !!               in order to increase readability of the code. 
     !!
     !! ** Method  :  Use global variables, defined in main 
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(1) :: ztim
     !!----------------------------------------------------------------------
     ! define new variables for output
     ipk(1) = 1  !  2D
@@ -208,6 +211,9 @@ CONTAINS
     ncout  = create      (cf_out, cf_in,   npiglo, npjglo, npk, cdepvar=cn_vdeptht, ld_nc4=lnc4 )
     ierr   = createvar   (ncout,  stypvar, 2,   ipk, id_varout,                     ld_nc4=lnc4 )
     ierr   = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk                                  )
+
+    ztim(1) = 0.
+    ierr = putvar1d(ncout, ztim, 1, 'T')
 
   END SUBROUTINE CreateOutput
 

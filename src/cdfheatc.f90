@@ -81,12 +81,12 @@ PROGRAM cdfheatc
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-zoom imin imax jmin jmax kmin kmax] : limit of a sub domain where'
-     PRINT *,'                      the heat content will be calculated.'
-     PRINT *,'                   - if imin = 0 then ALL i are taken'
-     PRINT *,'                   - if jmin = 0 then ALL j are taken'
-     PRINT *,'                   - if kmin = 0 then ALL k are taken'
+     PRINT *,'              the heat content will be calculated.'
+     PRINT *,'                - if imin = 0 then ALL i are taken'
+     PRINT *,'                - if jmin = 0 then ALL j are taken'
+     PRINT *,'                - if kmin = 0 then ALL k are taken'
      PRINT *,'       [-full ] : assume full step model output instead of default'
-     PRINT *,'                  partial steps.'
+     PRINT *,'               partial steps.'
      PRINT *,'       [-mxloption option]: option= 1 : compute only in the mixed layer,'
      PRINT *,'                            option=-1 : exclude mixed layer in the computation'
      PRINT *,'                            option= 0 : [Default], do not take care of mxl.'
@@ -116,24 +116,20 @@ PROGRAM cdfheatc
   DO WHILE ( ijarg <= narg ) 
      CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f'         ) ; CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1
-     CASE ( '-full'      ) ; lfull = .true.
-     CASE ( '-vvl'       ) ; lg_vvl = .true.
-     CASE ( '-mxloption' ) ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) mxloption
-     CASE ( '-o   '      ) ; CALL getarg ( ijarg, cf_out)    ; ijarg = ijarg + 1 
-     CASE ( '-zoom'      )   
-        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-        CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
-     CASE ( '-M' )   
-        CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1 
-        CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
-     CASE DEFAULT
-        PRINT *,' A single argument is considered as a T-file'
-        CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1 
+     CASE ( '-f'       ) ; CALL getarg ( ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-full'    ) ; lfull = .true.
+     CASE ( '-vvl'     ) ; lg_vvl = .true.
+     CASE ('-mxloption') ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) mxloption
+     CASE ( '-o   '    ) ; CALL getarg ( ijarg, cf_out)    ; ijarg = ijarg + 1 
+     CASE ( '-zoom'    ) ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+        ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+        ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+        ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ( '-M'       ) ; CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1 
+        ;                    CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 
@@ -167,26 +163,20 @@ PROGRAM cdfheatc
   PRINT *, 'nvpk   = ', nvpk
 
   ! Allocate arrays
-  PRINT *, 'Allocate TMASK'
   ALLOCATE ( tmask(npiglo,npjglo))
-  PRINT *, 'Allocate temp'
   ALLOCATE ( temp (npiglo,npjglo))
-  PRINT *, 'Allocate e1t'
   ALLOCATE ( e1t  (npiglo,npjglo), e2t(npiglo,npjglo), e3t(npiglo,npjglo))
 
   IF (mxloption /= 0) THEN
-     PRINT *, 'Allocate rmxldep'
      ALLOCATE ( rmxldep(npiglo,npjglo))
   ENDIF
 
-  PRINT *, 'Allocate gdepw'
   ALLOCATE ( gdepw(npk), tim(npt))
   IF ( lfull ) ALLOCATE ( e31d(npk))
 
   e1t(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   e2t(:,:) = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw,  npk)
-  tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
 
   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
 
@@ -296,6 +286,8 @@ CONTAINS
           &                 pnavlon=zdumlon, pnavlat=zdumlat,              &
           &                 pdep=gdepw(ikmin:ikmax),                       &
           &                 cdep='depthw'                                  )
+
+    tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
     tim(:)= putvar1d(ncout,  tim,       npt, 'T')
 
     DEALLOCATE( zdumlon, zdumlat)

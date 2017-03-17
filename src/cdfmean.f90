@@ -26,7 +26,7 @@ PROGRAM cdfmean
 
   INTEGER(KIND=4)                            :: jk, jt, jvar       ! dummy loop index
   INTEGER(KIND=4)                            :: it                 ! time index for vvl
-  INTEGER(KIND=4)                            :: ik, ireq, ivar     !
+  INTEGER(KIND=4)                            :: ik, ivar     !
   INTEGER(KIND=4)                            :: iimin=0, iimax=0   ! domain limitation for computation
   INTEGER(KIND=4)                            :: ijmin=0, ijmax=0   ! domain limitation for computation
   INTEGER(KIND=4)                            :: ikmin=0, ikmax=0   ! domain limitation for computation
@@ -99,10 +99,10 @@ PROGRAM cdfmean
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmean  IN-file IN-var T|U|V|F|W [imin imax jmin jmax kmin kmax]'
-     PRINT *,'       ... [-full] [-var] [-zeromean] [-M MSK-file VAR-mask ]'
-     PRINT *,'       ... [-o OUT-file] [ -ot OUTASCII-file] [-oz ZEROMEAN-file]'
-     PRINT *,'       ... [ -ov VAR-file] [ -vvl ]'
+     PRINT *,' usage : cdfmean -f IN-file -v IN-var -p C-point  ...'
+     PRINT *,'       ... [-w imin imax jmin jmax kmin kmax] [-full] [-var] [-zeromean]...'
+     PRINT *,'       ... [-M MSK-file VAR-mask ] [-o OUT-file] [ -ot OUTASCII-file] ...'
+     PRINT *,'       ... [-oz ZEROMEAN-file] [-ov VAR-file] [ -vvl ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Computes the mean value of the field (3D, weighted). For 3D fields,'
@@ -110,45 +110,49 @@ PROGRAM cdfmean
      PRINT *,'        is specified, the mean value is computed only in this window.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       IN-file : input netcdf file.'
-     PRINT *,'       IN-var  : name of netcdf variable to work with.'
-     PRINT *,'       T|U|V|F|W : position of cdfvar on the C-grid' 
+     PRINT *,'       -f IN-file : input netcdf file.'
+     PRINT *,'       -v IN-var  : name of netcdf variable to work with.'
+     PRINT *,'       -p C-point : one of T|U|V|F|W indicating the position of IN-var on the'
+     PRINT *,'                C-grid.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [imin imax jmin jmax kmin kmax] : spatial windows where mean value '
-     PRINT *,'                  is computed:' 
+     PRINT *,'       [-w imin imax jmin jmax kmin kmax] : spatial window where mean value'
+     PRINT *,'                is computed:' 
      PRINT *,'                  if imin = 0 then ALL i are taken'
      PRINT *,'                  if jmin = 0 then ALL j are taken'
      PRINT *,'                  if kmin = 0 then ALL k are taken'
      PRINT *,'       [-M MSK-file VAR-mask] : Allow the use of a non standard mask file '
-     PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and ',TRIM(cv_msk)
-     PRINT *,'              This option is a usefull alternative to the previous options, when the '
-     PRINT *,'              area of interest is not ''box-like'''
-     PRINT *,'       [ -full ] : compute the mean for full steps, instead of default '
-     PRINT *,'                   partial steps.'
-     PRINT *,'       [ -var ]  : also compute the spatial variance of cdfvar '
-     PRINT *,'       [ -zeromean ] : create a file with cdfvar having a zero spatial mean.'
-     PRINT *,'       [ -o OUT-file] : specify the name of the output file instead of ',TRIM(cf_ncout)
-     PRINT *,'       [ -ot OUTASCII-file] : specify the name of the output ASCII file instead '
+     PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and the variable'
+     PRINT *,'              associated with the grid point set by -p argument.'
+     PRINT *,'              This option is a usefull alternative to the -w option, when the '
+     PRINT *,'              area of interest is not ''box-like''. However, for vertical '
+     PRINT *,'              selection, both -w and -M can be used together.'
+     PRINT *,'       [-full ] : compute the mean for full steps, instead of default '
+     PRINT *,'              partial steps.'
+     PRINT *,'       [-var ]: also compute the spatial variance of IN-var.'
+     PRINT *,'       [-zeromean ] : create a file with cdfvar having a zero spatial mean.'
+     PRINT *,'       [-o OUT-file]: specify the name of the output file instead of ',TRIM(cf_ncout)
+     PRINT *,'       [-ot OUTASCII-file] : specify the name of the output ASCII file instead '
      PRINT *,'                   of ',TRIM(cf_out)
-     PRINT *,'       [ -oz ZEROMEAN-file] : specify the name of the output file for option '
-     PRINT *,'                   -zeromean, instead of ', TRIM(cf_zerom)
-     PRINT *,'       [ -ov VAR-file] : specify the name of the output file for option '
+     PRINT *,'       [-oz ZEROMEAN-file] : specify the name of the output netcdf file for '
+     PRINT *,'                   option -zeromean, instead of ', TRIM(cf_zerom)
+     PRINT *,'       [-ov VAR-file] : specify the name of the output text file for option '
      PRINT *,'                   -var, instead of ', TRIM(cf_var)
-     PRINT *,'       [ -vvl        ] : use time-varying vertical metrics.'
+     PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ', TRIM(cn_fhgr),', ', TRIM(cn_fzgr),', ', TRIM(cn_fmsk)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       - netcdf file : ', TRIM(cf_ncout)
-     PRINT *,'           variables : mean_cdfvar, mean_3D_cdfvar '
-     PRINT *,'                    [var_cdfvar, var_3D_cdfvar, in case of -var]'
+     PRINT *,'           variables : mean_<IN-var>, mean_3D_<IN-var> '
+     PRINT *,'                    [var_<IN-VAR>, var_3D_<IN-var>, in case of -var]'
      PRINT *,'       - netcdf file : ', TRIM(cf_zerom),' [ in case of -zeromean option]'
-     PRINT *,'           variables : cdfvar'
+     PRINT *,'           variables : <IN-var>'
      PRINT *,'       - ASCII files : ', TRIM(cf_out) 
      PRINT *,'                       [ ',TRIM(cf_var),', in case of -var ]'
      PRINT *,'       - all output on ASCII files are also sent to standard output.'
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -157,37 +161,31 @@ PROGRAM cdfmean
   ! OPEN(6,FORM='FORMATTED')          ! gfortran
 
   cglobal = 'Partial step computation'
-  ijarg = 1 ; ireq = 0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 
      SELECT CASE (cldum) 
-     CASE ('-full'     ) ; lfull     = .TRUE.  
-        cglobal   = 'full step computation'
+     CASE ('-f'        ) ; CALL getarg(ijarg, cf_in    ) ; ijarg = ijarg + 1
+     CASE ('-v'        ) ; CALL getarg(ijarg, cv_nam   ) ; ijarg = ijarg + 1
+     CASE ('-p'        ) ; CALL getarg(ijarg, ctype    ) ; ijarg = ijarg + 1
+        ! options
+     CASE ('-full'     ) ; lfull     = .TRUE.  ; cglobal = 'full step computation'
      CASE ('-var'      ) ; lvar      = .TRUE. 
      CASE ('-zeromean' ) ; lzeromean = .TRUE. 
      CASE ('-vvl'      ) ; lg_vvl    = .TRUE. 
+     CASE ('-w'        ) ; CALL getarg(ijarg, cldum    ) ; ijarg = ijarg + 1 ;  READ(cldum,*) iimin
+        ;                  CALL getarg(ijarg, cldum    ) ; ijarg = ijarg + 1 ;  READ(cldum,*) iimax
+        ;                  CALL getarg(ijarg, cldum    ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ijmin
+        ;                  CALL getarg(ijarg, cldum    ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ijmax
+        ;                  CALL getarg(ijarg, cldum    ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ikmin
+        ;                  CALL getarg(ijarg, cldum    ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ikmax
      CASE ('-o'        ) ; CALL getarg(ijarg, cf_ncout ) ; ijarg = ijarg + 1
      CASE ('-oz'       ) ; CALL getarg(ijarg, cf_zerom ) ; ijarg = ijarg + 1
      CASE ('-ov'       ) ; CALL getarg(ijarg, cf_var   ) ; ijarg = ijarg + 1
      CASE ('-ot'       ) ; CALL getarg(ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ('-M'        ) ; CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1
-        CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
-     CASE DEFAULT 
-        ireq=ireq+1
-        SELECT CASE (ireq) 
-        CASE ( 1 ) ; cf_in  = cldum 
-        CASE ( 2 ) ; cv_nam = cldum 
-        CASE ( 3 ) ; ctype  = cldum 
-        CASE ( 4 ) ; READ(cldum,*) iimin
-        CASE ( 5 ) ; READ(cldum,*) iimax
-        CASE ( 6 ) ; READ(cldum,*) ijmin
-        CASE ( 7 ) ; READ(cldum,*) ijmax
-        CASE ( 8 ) ; READ(cldum,*) ikmin
-        CASE ( 9 ) ; READ(cldum,*) ikmax
-        CASE DEFAULT 
-           PRINT *, '  ERROR : Too many arguments ...'
-           STOP
-        END SELECT
+        ;                  CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   END DO
 
@@ -256,7 +254,7 @@ PROGRAM cdfmean
      cf_e3    = cn_fe3t
      cv_e3    = cn_ve3t
      cv_e31d  = cn_ve3t
-     IF (cv_msk   == '' ) THEN ; cv_msk = 'tmask' ;
+     IF (cv_msk   == '' ) THEN ; cv_msk = cn_tmask ;
      ENDIF
      cv_dep   = cn_gdept
   CASE ( 'U' )
@@ -265,7 +263,7 @@ PROGRAM cdfmean
      cf_e3    = cn_fe3u
      cv_e3    = cn_ve3u
      cv_e31d  = cn_ve3t
-     IF (cv_msk   == '' ) THEN ; cv_msk = 'umask' ;
+     IF (cv_msk   == '' ) THEN ; cv_msk = cn_umask ;
      ENDIF
      cv_dep   = cn_gdept
   CASE ( 'V' )
@@ -274,7 +272,7 @@ PROGRAM cdfmean
      cf_e3    = cn_fe3v
      cv_e3    = cn_ve3v
      cv_e31d  = cn_ve3t
-     IF (cv_msk   == '' ) THEN ; cv_msk = 'vmask' ;
+     IF (cv_msk   == '' ) THEN ; cv_msk = cn_vmask ;
      ENDIF
      cv_dep   = cn_gdept
   CASE ( 'F' )   ! JMM : WARNING : e3f metrics is not written any where we take e3t for the time being 111
@@ -283,7 +281,7 @@ PROGRAM cdfmean
      cf_e3    = cn_fe3t
      cv_e3    = cn_ve3t
      cv_e31d  = cn_ve3t
-     IF (cv_msk   == '' ) THEN ; cv_msk = 'fmask' ;
+     IF (cv_msk   == '' ) THEN ; cv_msk = cn_fmask ;
      ENDIF
      cv_dep   = cn_gdept
   CASE ( 'W' )
@@ -292,7 +290,7 @@ PROGRAM cdfmean
      cf_e3    = cn_fe3t
      cv_e3    = cn_ve3w
      cv_e31d  = cn_ve3w
-     IF (cv_msk   == '' ) THEN ; cv_msk = 'tmask' ;
+     IF (cv_msk   == '' ) THEN ; cv_msk = cn_tmask ;
      ENDIF
      cv_dep   = cn_gdepw
   CASE DEFAULT
@@ -307,10 +305,8 @@ PROGRAM cdfmean
   zdep(:) = getvare3(cn_fzgr, cv_dep, npk_fi)
   gdep(:) = zdep(ikmin:npk - ikmin + 1)
 
-  IF ( lvar ) THEN
-     nvars = 4  ! space for variance too
-  ELSE
-     nvars = 2  ! default value
+  IF ( lvar ) THEN ; nvars = 4  ! space for variance too
+  ELSE             ; nvars = 2  ! default value
   ENDIF
 
   ALLOCATE ( stypvar(nvars), ipk(nvars), id_varout(nvars) )

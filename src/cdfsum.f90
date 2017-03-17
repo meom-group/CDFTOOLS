@@ -80,21 +80,22 @@ PROGRAM cdfsum
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsum -f IN-file -v IN-var -p T| U | V | F | W  ... '
-     PRINT *,'          ... [-zoom imin imax jmin jmax kmin kmax] [-full ] ...'
+     PRINT *,' usage : cdfsum -f IN-file -v IN-var -p C-type ... '
+     PRINT *,'          ... [-w imin imax jmin jmax kmin kmax] [-full ] ...'
      PRINT *,'          ... [-o OUT-file] [-nc4] [-M MSK-file VAR-mask ] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the sum value of the field (3D, weighted)' 
-     PRINT *,'       This sum can be optionally limited to a 3D sub-area.'
+     PRINT *,'       Computes the sum value of the field (3D, weighted). This sum can be' 
+     PRINT *,'       optionally limited to a 3D sub-area.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file : netcdf input file.' 
      PRINT *,'       -v IN-var  : netcdf variable to work with.'
-     PRINT *,'       -p T| U | V | F | W : C-grid point where IN-var is located.'
+     PRINT *,'       -p C-type  : one of T|U|V|F|W indicating rhe  C-grid point where'
+     PRINT *,'               IN-var is located.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-zoom imin imax jmin jmax kmin kmax] : limit of the 3D sub area. '
+     PRINT *,'       [-w imin imax jmin jmax kmin kmax]: set the 3D window limiting sub area.'
      PRINT *,'              if imin=0 all i are taken'
      PRINT *,'              if jmin=0 all j are taken'
      PRINT *,'              if kmin=0 all k are taken'
@@ -105,8 +106,9 @@ PROGRAM cdfsum
      PRINT *,'       [-M MSK-file VAR-mask] : Allow the use of a non standard mask file '
      PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and the variable'
      PRINT *,'              associated with the grid point set by -p argument.'
-     PRINT *,'              This option is a usefull alternative to -zoom option, when the '
-     PRINT *,'              area of interest is not ''box-like'' '
+     PRINT *,'              This option is a usefull alternative to the -w option, when the '
+     PRINT *,'              area of interest is not ''box-like''. However, for vertical '
+     PRINT *,'              selection, both -w and -M can be used together.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'      ', TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk),'. If'
@@ -133,22 +135,21 @@ PROGRAM cdfsum
      CASE ( '-f '   ) ; CALL getarg(ijarg, cf_in   ) ; ijarg=ijarg+1
      CASE ( '-v '   ) ; CALL getarg(ijarg, cv_in   ) ; ijarg=ijarg+1
      CASE ( '-p '   ) ; CALL getarg(ijarg, cvartype) ; ijarg=ijarg+1
+        ! options
      CASE ( '-o '   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-vvl ' ) ; lg_vvl=.TRUE.
      CASE ( '-nc4 ' ) ; lnc4  =.TRUE.
-     CASE ( '-zoom' ) ; 
-                        CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimin
-                        CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimax
-                        CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ijmin
-                        CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ijmax
-                        CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ikmin
-                        CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ikmax
-     CASE ( '-M' ) ;    lfmsk =.TRUE.
-                        CALL getarg(ijarg, cn_fmsk ) ; ijarg=ijarg+1 
-                        CALL getarg(ijarg, cl_vmsk ) ; ijarg=ijarg+1 
-     CASE DEFAULT 
-         PRINT *,' Option ', TRIM(cldum),' not understood ...'
-         STOP
+     CASE ( '-w'    ) ; 
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimin
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimax
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ijmin
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ijmax
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ikmin
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  ikmax
+     CASE ( '-M'    ) ;    lfmsk =.TRUE.
+        ;               CALL getarg(ijarg, cn_fmsk ) ; ijarg=ijarg+1 
+        ;               CALL getarg(ijarg, cl_vmsk ) ; ijarg=ijarg+1 
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
      END SELECT
   ENDDO
   
@@ -172,11 +173,11 @@ PROGRAM cdfsum
   lchk = chkfile(cf_in  ) .OR. lchk
   IF ( lchk ) STOP ! missing file
 
-  npiglo = getdim (cf_in,cn_x)
-  npjglo = getdim (cf_in,cn_y)
-  npk    = getdim (cf_in,cn_z)
+  npiglo = getdim (cf_in,cn_x )
+  npjglo = getdim (cf_in,cn_y )
+  npk    = getdim (cf_in,cn_z )
   nvpk   = getvdim(cf_in,cv_in)
-  npt    = getdim (cf_in,cn_t)
+  npt    = getdim (cf_in,cn_t )
   npkk = npk
 
   IF (iimin /= 0 ) THEN ; npiglo = iimax - iimin + 1;  ELSE ; iimin = 1 ;  ENDIF

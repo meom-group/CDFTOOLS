@@ -28,7 +28,7 @@ PROGRAM cdfisf_forcing
   INTEGER(KIND=4)                               :: ierr               ! working integer
   INTEGER(KIND=4)                               :: narg, iargc, ijarg ! browsing command line
   INTEGER(KIND=4)                               :: npiglo, npjglo     ! size of the domain
-  INTEGER(KIND=4)                               :: npk, npt, nisf     ! size of the domain
+  INTEGER(KIND=4)                               :: npk,      nisf     ! size of the domain
   INTEGER(KIND=4)                               :: iunit=10           ! id file
   INTEGER(KIND=4)                               :: ncout              ! ncid of output files
   INTEGER(KIND=4)                               :: iiseed, ijseed
@@ -220,6 +220,7 @@ PROGRAM cdfisf_forcing
   ierr = closeout(ncout)
 
 CONTAINS
+
   SUBROUTINE CreateOutput
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***
@@ -228,6 +229,8 @@ CONTAINS
     !!               in order to increase readability of the code. 
     !!
     !! ** Method  :  Use global variables, defined in main 
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(1) :: ztim
     !!----------------------------------------------------------------------
     ! define new variables for output
     ipk(1) = 1  !  2D
@@ -247,6 +250,9 @@ CONTAINS
     ncout  = create      (cf_out, cf_fill, npiglo, npjglo, npk,   ld_nc4=lnc4 )
     ierr   = createvar   (ncout , stypvar, 1,  ipk,  id_varout,   ld_nc4=lnc4 )
     ierr   = putheadervar(ncout,  cn_fzgr, npiglo, npjglo, npk                )
+   
+    ztim(1) = 0.
+    ierr = putvar1d( ncout, ztim,1 , 'T')
 
   END SUBROUTINE CreateOutput
 
