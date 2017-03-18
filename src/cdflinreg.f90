@@ -75,14 +75,13 @@ PROGRAM cdflinreg
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdflinreg -l LIST-files  [-o OUT-file] [-nc4] '
+     PRINT *,' usage : cdflinreg -l LST-files  [-o OUT-file] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the linear regression coefficients for a bunch of'
-     PRINT *,'        input files. '
+     PRINT *,'        Computes the linear regression coefficients for a bunch of input files.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -l  LIST-files: A list of netcdf model file of same kind' 
+     PRINT *,'       -l  LST-files: A blank-separated list of netcdf model file of same kind.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file ] : specify name of the output file instead of ',TRIM(cf_out)

@@ -17,7 +17,7 @@ VPATH = $(BINDIR)
 
 EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfvsig cdfspeed cdfsum cdfenstat cdfpdf \
-       cdfmoyuvwt \
+       cdfuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
        cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
@@ -71,8 +71,8 @@ cdfenstat2: cdfio.o   cdfenstat2.f90
 cdfmoy_freq: cdfio.o   cdfmoy_freq.f90
 	$(F90) cdfmoy_freq.f90 -o $(BINDIR)/cdfmoy_freq cdfio.o  modcdfnames.o $(FFLAGS)
 
-cdfmoyuvwt: cdfio.o  modutils.o cdfmoyuvwt.f90
-	$(F90) cdfmoyuvwt.f90 -o $(BINDIR)/cdfmoyuvwt cdfio.o modutils.o modcdfnames.o $(FFLAGS)
+cdfuvwt: cdfio.o  modutils.o cdfuvwt.f90
+	$(F90) cdfuvwt.f90 -o $(BINDIR)/cdfuvwt cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
 cdfstd: cdfio.o  cdfstd.f90
 	$(F90)  cdfstd.f90 -o $(BINDIR)/cdfstd cdfio.o modcdfnames.o $(FFLAGS)

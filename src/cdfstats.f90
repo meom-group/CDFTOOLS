@@ -58,41 +58,44 @@ PROGRAM cdfstats
   INTEGER(KIND=4)                           :: ierr                   ! error status for ncdf
 
   LOGICAL                                   :: lchk                   ! flag for checking missing files
+  LOGICAL                                   :: lnc4 = .FALSE.         ! Use nc4 with chunking and deflation
   !!--------------------------------------------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg < 3 ) THEN
-     PRINT *,' usage : cdfstats IN-file REF-file ncy [VAR-name1 [VAR-name2]] ...'
-     PRINT *,'                [-m mesh_mask file ]'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfstats -f IN-file -r REF-file -ncy ncy  [-v1 VAR-name1 [-v2 VAR-name2] ...'
+     PRINT *,'                [-m MSH-MSK-file ] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'            This tool computes some statistics (rms, correlation, '
-     PRINT *,'         signal/noise ratio and signal ratio [ratio of std '
-     PRINT *,'         deviation]) between to files. In this tool, the files'
-     PRINT *,'         are supposed to hold monthly averages values, for many '
-     PRINT *,'         years. Specifying ncy=12, allows to remove the seasonal'
+     PRINT *,'         This tool computes some statistics (rms, correlation, signal/noise'
+     PRINT *,'         ratio and signal ratio [ratio of std deviation]) between two files.'
+     PRINT *,'         In this tool, the files are supposed to hold monthly averages values,'
+     PRINT *,'         for many years. Specifying ncy=12, allows to remove the seasonal'
      PRINT *,'         cycle of the data.'
-     PRINT *,'            This program was initially written for SSH statistics'
-     PRINT *,'         between model output and AVISO files (default variable'
-     PRINT *,'         names are ',TRIM(cn_sossheig),' for this reason ). It can'
-     PRINT *,'         now be used with any variables.'
+     PRINT *,'      '
+     PRINT *,'         This program was initially written for SSH statistics between model'
+     PRINT *,'         output and AVISO files (default variable names are ',TRIM(cn_sossheig)
+     PRINT *,'         for this reason ). It can now be used with any variables.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        IN-file  : First data file ( usually model output) '
-     PRINT *,'        REF-file : Second data file ( usually observation file) '
-     PRINT *,'        ncy      : 1 or 12. If set to 12, annual cycle is removed '
-     PRINT *,'                   from the data '
-     PRINT *,'        [VAR-name1 [VAR-name2]] : If variable names of input files'
-     PRINT *,'                 are not ', TRIM(cn_sossheig),' they can be specified'
-     PRINT *,'                 on the command line. If only one name is given, it is'
-     PRINT *,'                 assumed that both file use same variable name.'
+     PRINT *,'        -f IN-file  : Model data file.'
+     PRINT *,'        -r REF-file : Reference data file (usually observation file) '
+     PRINT *,'        -ncy ncy    : ncy can only be 1 or 12. If set to 12, annual cycle is '
+     PRINT *,'                 removed  from the data.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        -m mesh_mask file : specify a mesh_mask file holding the tmaskutil'
-     PRINT *,'                 and the horizontal metrics. If this option is not used,'
-     PRINT *,'                 mask are taken in ',TRIM(cn_fmsk), ' and horizontal metric'
-     PRINT *,'                 is taken in ',TRIM(cn_fhgr)
+     PRINT *,'        [-v1 VAR-name1] : Variable name in the model file. Default is ',TRIM(cn_sossheig),'.'
+     PRINT *,'        [-v2 VAR-name2] : Variable name in the reference file. If not specified'
+     PRINT *,'              assumes that it is the same than in the model file.'
+     PRINT *,'        [-m MSH-MSK-file] : specify a mesh_mask file holding the tmaskutil'
+     PRINT *,'              and the horizontal metrics. If this option is not used,'
+     PRINT *,'              mask are taken in ',TRIM(cn_fmsk), ' and horizontal metric'
+     PRINT *,'              is taken in ',TRIM(cn_fhgr)
+     PRINT *,'        [-o OUT-file] : specify the output file name instead of ',TRIM(cf_out)
+     PRINT *,'        [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'              This option is effective only if cdftools are compiled with'
+     PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ' , TRIM(cn_fmsk),' and ', TRIM(cn_fhgr)
@@ -117,30 +120,23 @@ PROGRAM cdfstats
   CALL SetGlobalAtt( cglobal )  ! global attribute for history : command line
 
   ! Browse command line
-  ijarg = 1 ; ij    = 0
+  ijarg = 1 
   DO WHILE (ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-m ' )     ! non default mesh-mask file
-        CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
-        cf_msk = cldum
-        cf_hgr = cldum
-     CASE DEFAULT       ! the order of arguments does matter !
-        ij = ij + 1
-        SELECT CASE (ij)
-        CASE ( 1 ) ; cf_in    = cldum 
-        CASE ( 2 ) ; cf_ref   = cldum
-        CASE ( 3 ) ; cy       = cldum ; READ(cy, * ) ncy
-        CASE ( 4 ) ; cv_name1 = cldum
-        CASE ( 5 ) ; cv_name2 = cldum
-        CASE DEFAULT
-           PRINT *, ' Too many arguments ...'
-           STOP
-        END SELECT
+     CASE ( '-f ' ) ; CALL getarg (ijarg, cf_in   ) ; ijarg=ijarg+1
+     CASE ( '-r ' ) ; CALL getarg (ijarg, cf_ref  ) ; ijarg=ijarg+1
+     CASE ( '-ncy') ; CALL getarg (ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ncy
+        ! option
+     CASE ( '-m ' ) ; CALL getarg (ijarg, cf_msk  ) ; ijarg=ijarg+1
+        ;             cf_hgr = cf_msk
+     CASE ( '-v1' ) ; CALL getarg (ijarg, cv_name1) ; ijarg=ijarg+1 ; cv_name2=cv_name1
+     CASE ( '-v2' ) ; CALL getarg (ijarg, cv_name2) ; ijarg=ijarg+1 
+     CASE ( '-o ' ) ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
-
-  IF (ij == 4 ) cv_name2 = cv_name1   ! if only one variable name given, take the same for both
 
   ! Security check for files
   lchk = chkfile ( cf_in  )
@@ -179,47 +175,10 @@ PROGRAM cdfstats
   ALLOCATE( dl_um(npiglo,npjglo), dl_vm(npiglo,npjglo) )
   ALLOCATE( dl_area(npiglo,npjglo)                     )
 
-  ! prepare output file 
-  !   common features to all variables
-  ipk    (:)                   = 1
-  stypvar(:)%conline_operation = 'N/A'
-  stypvar(:)%caxis             = 'TYX'
-
-  !   specific features
-  stypvar(1)%cname             = 'rms'
-  stypvar(1)%cunits            = 'm'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 100.
-  stypvar(1)%clong_name        = 'RMS_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(1)%cshort_name       = 'rms'
-
-  stypvar(2)%cname             = 'correl'
-  stypvar(2)%cunits            = 'ndim'
-  stypvar(2)%rmissing_value    = 0.
-  stypvar(2)%valid_min         = -1.
-  stypvar(2)%valid_max         = 1.
-  stypvar(2)%clong_name        = 'CORREL_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(2)%cshort_name       = 'correl'
-
-  stypvar(3)%cname             = 'rrat'
-  stypvar(3)%cunits            = 'N/A'
-  stypvar(3)%rmissing_value    = 0.
-  stypvar(3)%valid_min         = 0.
-  stypvar(3)%valid_max         = 100.
-  stypvar(3)%clong_name        = 'RMS/signal_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(3)%cshort_name       = 'rrat'
-
-  stypvar(4)%cname             = 'srat'
-  stypvar(4)%cunits            = 'N/A'
-  stypvar(4)%rmissing_value    = 0.
-  stypvar(4)%valid_min         = 0.
-  stypvar(4)%valid_max         = 100.
-  stypvar(4)%clong_name        = 'sdvm/sdvo_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(4)%cshort_name       = 'srat'
+  CALL CreateOutput
 
   ! Read mask and metrics  
-  tmask= getvar(cf_msk, 'tmaskutil', 1, npiglo, npjglo)
+  tmask= getvar(cf_msk, cn_tmaskutil, 1, npiglo, npjglo)
   e1t  = getvar(cf_hgr, cn_ve1t,     1, npiglo, npjglo)
   e2t  = getvar(cf_hgr, cn_ve2t,     1, npiglo, npjglo)
 
@@ -230,9 +189,6 @@ PROGRAM cdfstats
 
   PRINT *, 'dl_spma = ',dl_spma, SUM(tmask)
 
-  PRINT *,' creating output file'
-  ncout = create   (cf_out, cf_in,   npiglo, npjglo, npk                              )
-  ierr  = createvar(ncout,  stypvar, jpvar,  ipk,    id_varout, cdglobal=TRIM(cglobal))
 
   PRINT *,' output file created'
   dl_er(:,:) = 0.d0   ! rms
@@ -301,8 +257,70 @@ PROGRAM cdfstats
   ierr = putvar(ncout, id_varout(3), REAL(dl_sn), 1, npiglo, npjglo)
   ierr = putvar(ncout, id_varout(4), REAL(dl_sg), 1, npiglo, npjglo)
 
+  ierr      = closeout(ncout             )
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+  ! prepare output file 
+  !   common features to all variables
+  ipk    (:)                   = 1
+  stypvar(:)%conline_operation = 'N/A'
+  stypvar(:)%caxis             = 'TYX'
+
+  !   specific features
+  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(1)%cname             = 'rms'
+  stypvar(1)%cunits            = 'm'
+  stypvar(1)%rmissing_value    = 0.
+  stypvar(1)%valid_min         = 0.
+  stypvar(1)%valid_max         = 100.
+  stypvar(1)%clong_name        = 'RMS_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+  stypvar(1)%cshort_name       = 'rms'
+
+  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(2)%cname             = 'correl'
+  stypvar(2)%cunits            = 'ndim'
+  stypvar(2)%rmissing_value    = 0.
+  stypvar(2)%valid_min         = -1.
+  stypvar(2)%valid_max         = 1.
+  stypvar(2)%clong_name        = 'CORREL_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+  stypvar(2)%cshort_name       = 'correl'
+
+  stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(3)%cname             = 'rrat'
+  stypvar(3)%cunits            = 'N/A'
+  stypvar(3)%rmissing_value    = 0.
+  stypvar(3)%valid_min         = 0.
+  stypvar(3)%valid_max         = 100.
+  stypvar(3)%clong_name        = 'RMS/signal_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+  stypvar(3)%cshort_name       = 'rrat'
+
+  stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  stypvar(4)%cname             = 'srat'
+  stypvar(4)%cunits            = 'N/A'
+  stypvar(4)%rmissing_value    = 0.
+  stypvar(4)%valid_min         = 0.
+  stypvar(4)%valid_max         = 100.
+  stypvar(4)%clong_name        = 'sdvm/sdvo_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+  stypvar(4)%cshort_name       = 'srat'
+
+  PRINT *,' creating output file'
+  ncout = create   (cf_out, cf_in,   npiglo, npjglo, npk                              , ld_nc4=lnc4)
+  ierr  = createvar(ncout,  stypvar, jpvar,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4)
+  ierr  = putheadervar(ncout,  cf_in, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+
   timean(1) = 1.e0
   ierr      = putvar1d(ncout,timean,1,'T')
-  ierr      = closeout(ncout             )
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfstats

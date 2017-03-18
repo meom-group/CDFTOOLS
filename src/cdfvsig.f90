@@ -32,6 +32,7 @@ PROGRAM cdfvsig
   INTEGER(KIND=4)                           :: ierr                 ! working integer
   INTEGER(KIND=4)                           :: narg, iargc          ! command line
   INTEGER(KIND=4)                           :: ijarg, iiarg         ! argument counter
+  INTEGER(KIND=4)                           :: ntags                ! number of tags to process
   INTEGER(KIND=4)                           :: ndep                 ! number of reference depth to deal with
   INTEGER(KIND=4)                           :: npiglo,npjglo        ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt             ! size of the domain
@@ -76,24 +77,27 @@ PROGRAM cdfvsig
   CHARACTER(LEN=256)                        :: cf_ufil              ! zonal velocity file
   CHARACTER(LEN=256)                        :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                        :: cf_wfil              ! vertical velocity file
+  CHARACTER(LEN=256)                        :: cf_root=''           ! file name root for output
   CHARACTER(LEN=256)                        :: cf_outu='usig.nc'    ! output file
   CHARACTER(LEN=256)                        :: cf_outv='vsig.nc'    ! output file
   CHARACTER(LEN=256)                        :: cf_outw='wsig.nc'    ! output file
   CHARACTER(LEN=256)                        :: config               ! configuration name
   CHARACTER(LEN=256)                        :: ctag                 ! current tag to work with               
   CHARACTER(LEN=256)                        :: cldum                ! dummy character var for browsing
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE:: ctag_lst          ! tag list to process
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvaru             ! structure for attributes
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvarv             ! structure for attributes
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvarw             ! structure for attributes
 
-  LOGICAL                                   :: lcaltmean            ! flag for mean time computation
-  LOGICAL                                   :: lwo=.true.           ! flag for -no-w option
-  LOGICAL                                   :: lsigo=.true.         ! flag for -no-sig option
-  LOGICAL                                   :: luvo=.true.          ! flag for -no-uv option
-  LOGICAL                                   :: lTpt=.false.         ! flag for -no-uv option
-  LOGICAL                                   :: lpref=.false.        ! flag for -pref option
-  LOGICAL                                   :: lperio=.false.       ! checking E-W periodicity
+  LOGICAL                                   :: lcaltmean             ! flag for mean time computation
+  LOGICAL                                   :: lwo   = .TRUE.        ! flag for -no-w option
+  LOGICAL                                   :: lsigo = .TRUE.        ! flag for -no-sig option
+  LOGICAL                                   :: luvo  = .TRUE.        ! flag for -no-uv option
+  LOGICAL                                   :: lTpt  = .FALSE.       ! flag for -no-uv option
+  LOGICAL                                   :: lpref = .FALSE.       ! flag for -pref option
+  LOGICAL                                   :: lperio= .FALSE.       ! checking E-W periodicity
+  LOGICAL                                   :: lnc4  = .FALSE.       ! Use nc4 with chunking and deflation
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -101,29 +105,42 @@ PROGRAM cdfvsig
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvsig CONFIG  [-no-w] [-no-sig]  [-no-uv] [-T ] [-pref pref1,pref2,...]'
-     PRINT *,'        ... ''list_of_tags'' '
+     PRINT *,' usage : cdfvsig -c CONFIG-CASE -l LST-tags [-o OUT-root] [-nc4] [-no-w] ...'
+     PRINT *,'              ... [-no-sig]  [-no-uv] [-T ] [-depref LST-depht] '
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the time average values for second order products ' 
-     PRINT *,'       U.sig,  V.sig and W.sig.  Also save mean sigma-0 interpolated at'
-     PRINT *,'       velocity points, as well as mean velocity component, for further use.'
+     PRINT *,'       Computes the time average values for second order moments U.sig, V.sig' 
+     PRINT *,'       and W.sig. By default sig is sigma-0, the potential density refered to'
+     PRINT *,'       the surface. The user can provide a list of reference depths, to force'
+     PRINT *,'       the computation of the respective second order moments, e.g U.sig-2 ...'
+     PRINT *,'      '
+     PRINT *,'       In order to ease the post processing, time-mean densities interpolated'
+     PRINT *,'       at velocity points, as well as mean velocity components are also saved.'
+     PRINT *,'       Various options allows the modulation of the output.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       CONFIG is the config name of a given experiment (eg ORCA025-G70)'
+     PRINT *,'       -c CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)'
      PRINT *,'            The program will look for gridT, gridU, gridV  and gridW files for' 
      PRINT *,'            this config ( grid_T, grid_U, grid_V and grid_W are also accepted).'
-     PRINT *,'       list_of_tags : a list of time tags that will be used for time'
-     PRINT *,'            averaging. e.g. y2000m01d05 y2000m01d10.'
-     PRINT *,'            ! IMPORTANT : list_of_tag are at the end of the command line ! '
+     PRINT *,'       -l LST-tags : a blank-separated list of time tags that will be used for '
+     PRINT *,'            time averaging, e.g. y2000m01d05 y2000m01d10.'
      PRINT *,'      '
-     PRINT *,'     OPTIONS ( to be used before the list_of tags ):'
-     PRINT *,'        -T : compute u and v at T points, so that usig, vsig will be at T point'
-     PRINT *,'        -no-w : no computation of vertical products'
-     PRINT *,'        -no-sig : no output of density on U V points'
-     PRINT *,'        -no-uv : no output of mean velocity components'
-     PRINT *,'        -pref pref1,pref2,..: give comma separated list of reference depths for'
-     PRINT *,'             density computation. eg : -pref 0,2000,3000  If not specified '
-     PRINT *,'             assumes pref=0.'
+     PRINT *,'     OPTIONS :'
+     PRINT *,'        [-o OUT-root]: specify the file name root used for the output.'
+     PRINT *,'            Output file names will be <ROOT>usig.nc, <ROOT>vsig and <ROOT>wsig.'
+     PRINT *,'            Default <ROOT> is empty. Consider then to add an ''_'' in the root'
+     PRINT *,'            name.'
+     PRINT *,'        [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'            This option is effective only if cdftools are compiled with'
+     PRINT *,'            a netcdf library supporting chunking and deflation.'
+     PRINT *,'        [-no-w] : do not compute the  mean vertical products.'
+     PRINT *,'        [-no-sig] : do not output the mean density on U V points.'
+     PRINT *,'        [-no-uv ] : do not  output the mean velocity components.'
+     PRINT *,'        [-T ] : computes U and V at T points, so that  U.sig, V.sig will be at'
+     PRINT *,'              at  T point.'
+     PRINT *,'        [-depref LST-depht] : give a comma-separated list of reference depths '
+     PRINT *,'              for potential density computation. eg : ''-depref  0,2000,3000'' '
+     PRINT *,'              If not specified the unique reference depth is  0m (surface).'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fmsk)
@@ -134,30 +151,30 @@ PROGRAM cdfvsig
      PRINT *,'                                            at velocity point.'
      PRINT *,'                   vosigu, vosigv, vosigw : mean sigma-0 at velocity point.'
      PRINT *,'                   ',TRIM(cn_vozocrtx),', ',TRIM(cn_vomecrty),', ',TRIM(cn_vovecrtz),' : mean velocity components.'
+     PRINT *,'      '
      STOP
   ENDIF
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
-  ijarg = 1 ; iiarg=0 ; nopt=0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-no-w'   ) ; lwo=.false.   ; nopt=nopt+1
-     CASE ( '-no-sig' ) ; lsigo=.false. ; nopt=nopt+1
-     CASE ( '-no-uv'  ) ; luvo=.false.  ; nopt=nopt+1
-     CASE ( '-T'      ) ; lTpt=.true.   ; nopt=nopt+1
-     CASE ( '-pref'   ) ; lpref=.true.  ; CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
-        CALL ParseRefDep(cldum)
-        nopt=nopt+2 ! this option count for 2 args
-     CASE DEFAULT
-        iiarg=iiarg+1
-        SELECT CASE (iiarg)
-        CASE ( 1 )  ; config=cldum ;  nopt=nopt+1
-        CASE ( 2 )  ; ctag=cldum
-        END SELECT
+     CASE ( '-c'     ) ; CALL getarg(ijarg, config ) ; ijarg=ijarg+1 
+     CASE ( '-l'     ) ; CALL GetTagList
+        ! options
+     CASE ( '-o'     ) ; CALL getarg(ijarg, cf_root) ; ijarg=ijarg+1 
+     CASE ( '-nc4'   ) ; lnc4 = .TRUE.
+     CASE ( '-no-w'  ) ; lwo   =.FALSE. 
+     CASE ( '-no-sig') ; lsigo =.FALSE.
+     CASE ( '-no-uv' ) ; luvo  =.FALSE. 
+     CASE ( '-T'     ) ; lTpt  =.TRUE.  
+     CASE ( '-pref'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; CALL ParseRefDep(cldum)
+        ;                 lpref =.TRUE.  
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
-
+  
   ! initialize refdep if not done on command line
   IF ( .NOT. lpref ) THEN
      ndep = 1
@@ -171,6 +188,7 @@ PROGRAM cdfvsig
   nfieldv = nfieldu
   nfieldw = 2 * COUNT ( (/lwo /)) * nfieldu
 
+  ctag = ctag_lst(1)
   cf_tfil = SetFileName ( config, ctag, 'T')
   cf_ufil = SetFileName ( config, ctag, 'U')
   cf_vfil = SetFileName ( config, ctag, 'V')
@@ -210,31 +228,39 @@ PROGRAM cdfvsig
      PRINT *,' E-W periodicity detected '
   ENDIF
 
-
   CALL CreateOutputFile
 
   lcaltmean=.TRUE.
   DO jk = 1, npk
      PRINT *,'level ',jk
-     dcumulus(:,:,:) = 0.d0 ;  dcumulvs(:,:,:) = 0.d0 
-     IF ( lwo   ) dcumulws(:,:,:) = 0.d0
-     IF ( lsigo ) THEN  ; dcumulsu(:,:,:) = 0.d0 ;  dcumulsv(:,:,:) = 0.d0  ;
+        ! Reset of cumulation arrays
+        ;                   dcumulus(:,:,:) = 0.d0 
+        ;                   dcumulvs(:,:,:) = 0.d0 
+
+     IF ( lwo   )           dcumulws(:,:,:) = 0.d0
+
+     IF ( lsigo ) THEN  ;   dcumulsu(:,:,:) = 0.d0 
+        ;                   dcumulsv(:,:,:) = 0.d0  
      ENDIF
      IF ( lsigo .AND. lwo ) dcumulsw(:,:,:) = 0.d0
-     IF ( luvo  ) THEN   ; dcumulu(:,:)    = 0.d0  ;  dcumulv(:,:)   = 0.d0 ;
+
+     IF ( luvo  ) THEN   ;  dcumulu(:,:)    = 0.d0  
+        ;                   dcumulv(:,:)    = 0.d0 
      ENDIF
-     IF ( luvo  ) THEN   ; dcumulu2(:,:)   = 0.d0  ;  dcumulv2(:,:)  = 0.d0 ;
+     IF ( luvo  ) THEN   ;  dcumulu2(:,:)   = 0.d0  
+        ;                   dcumulv2(:,:)   = 0.d0 
      ENDIF
-     IF (luvo .AND. lwo ) THEN ; dcumulw(:,:) = 0.d0 ; dcumulw2(:,:) = 0.d0 ;
+     IF (luvo .AND. lwo ) THEN ; dcumulw( :,:) = 0.d0 
+        ;                        dcumulw2(:,:) = 0.d0 
      ENDIF
      dtotal_time   = 0.d0 ;  ntframe     = 0
 
-     umask(:,:) = getvar(cn_fmsk, 'umask' , jk, npiglo, npjglo )
-     vmask(:,:) = getvar(cn_fmsk, 'vmask' , jk, npiglo, npjglo )
-     IF ( lwo .OR. lTpt ) wmask(:,:) = getvar(cn_fmsk, 'tmask' , jk, npiglo, npjglo )
+     umask(:,:) = getvar(cn_fmsk, cn_umask , jk, npiglo, npjglo )
+     vmask(:,:) = getvar(cn_fmsk, cn_vmask , jk, npiglo, npjglo )
+     IF ( lwo .OR. lTpt ) wmask(:,:) = getvar(cn_fmsk, cn_tmask , jk, npiglo, npjglo )
 
-     DO jt = nopt+1, narg            ! loop on tags
-        CALL getarg (jt, ctag)
+     DO jt = 1, ntags            ! loop on tags
+        ctag = ctag_lst(jt)
         cf_tfil = SetFileName ( config, ctag, 'T' )
         cf_ufil = SetFileName ( config, ctag, 'U' )
         cf_vfil = SetFileName ( config, ctag, 'V' )
@@ -410,13 +436,26 @@ CONTAINS
     !!               in this routine.
     !!
     !!----------------------------------------------------------------------
-    INTEGER(KIND=4)    :: jsig, ivaru, ivarv, ivarw
+    INTEGER(KIND=4)    :: jsig, ivaru, ivarv, ivarw, jf
     CHARACTER(LEN=1)   :: cldep
     CHARACTER(LEN=256) :: cl_global, cl_refu, cl_refv, cl_refw
     !!----------------------------------------------------------------------
     ALLOCATE ( stypvaru(nfieldu), ipku(nfieldu), id_varoutu(nfieldu)    )
     ALLOCATE ( stypvarv(nfieldv), ipkv(nfieldv), id_varoutv(nfieldv)     )
     IF ( lwo ) ALLOCATE ( stypvarw(nfieldw), ipkw(nfieldw), id_varoutw(nfieldw)  )
+
+    ! initialize chunking used in case of lnc4
+    DO jf=1, nfieldu
+       stypvaru(jf)%ichunk = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    ENDDO
+    DO jf=1, nfieldv
+       stypvarv(jf)%ichunk = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    ENDDO
+    IF ( lwo ) THEN
+      DO jf=1, nfieldw
+         stypvarw(jf)%ichunk = (/npiglo,MAX(1,npjglo/30),1,1 /)
+      ENDDO
+    ENDIF
 
     IF ( lTpt ) THEN
        cl_global = ' All variables computed on T points'
@@ -463,8 +502,8 @@ CONTAINS
     ENDIF
 
     ! create output fileset
-    ncoutu = create      (cf_outu, cl_refu,  npiglo, npjglo, npk        )
-    ierr   = createvar   (ncoutu,  stypvaru, nfieldu,      ipku,   id_varoutu , cdglobal=cl_global)
+    ncoutu = create      (cf_outu, cl_refu,  npiglo, npjglo, npk                                  , ld_nc4=lnc4)
+    ierr   = createvar   (ncoutu,  stypvaru, nfieldu,      ipku,   id_varoutu , cdglobal=cl_global, ld_nc4=lnc4)
     ierr   = putheadervar(ncoutu,  cl_refu,  npiglo, npjglo, npk        )
 
 
@@ -499,8 +538,8 @@ CONTAINS
        stypvarv(ivarv)%clong_name = 'Mean merid vel squared' ; stypvarv(ivarv)%cshort_name   = TRIM(cn_vomecrty)//'_sqd'
     ENDIF
 
-    ncoutv = create      (cf_outv, cl_refv,  npiglo, npjglo, npk        )
-    ierr   = createvar   (ncoutv,  stypvarv, nfieldv,      ipkv,   id_varoutv, cdglobal=cl_global )
+    ncoutv = create      (cf_outv, cl_refv,  npiglo, npjglo, npk                                  , ld_nc4=lnc4)
+    ierr   = createvar   (ncoutv,  stypvarv, nfieldv,      ipkv,   id_varoutv, cdglobal=cl_global , ld_nc4=lnc4)
     ierr   = putheadervar(ncoutv,  cl_refv,  npiglo, npjglo, npk        )
 
     IF ( lwo ) THEN
@@ -535,11 +574,10 @@ CONTAINS
           stypvarw(ivarw)%clong_name = 'Mean vert. vel squared' ; stypvarw(ivarw)%cshort_name   = TRIM(cn_vovecrtz)//'_sqd'
        ENDIF
 
-       ncoutw = create      (cf_outw, cl_refw,  npiglo, npjglo, npk        )
-       ierr   = createvar   (ncoutw,  stypvarw, nfieldw,      ipku,   id_varoutw, cdglobal=cl_global )
+       ncoutw = create      (cf_outw, cl_refw,  npiglo, npjglo, npk                                 , ld_nc4=lnc4)
+       ierr   = createvar   (ncoutw,  stypvarw, nfieldw,      ipku,   id_varoutw, cdglobal=cl_global, ld_nc4=lnc4)
        ierr   = putheadervar(ncoutw,  cl_refw,  npiglo, npjglo, npk        )
     ENDIF
-
 
   END SUBROUTINE  CreateOutputFile
 
@@ -580,5 +618,34 @@ CONTAINS
     ENDDO
     PRINT *, refdep
   END SUBROUTINE ParseRefDep
+
+  SUBROUTINE GetTagList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetTagList  ***
+    !!
+    !! ** Purpose :  Set up a tag list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    ntags=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; ntags = ntags+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (ctag_lst(ntags) )
+    DO ji = icur, icur + ntags -1
+       CALL getarg(ji, ctag_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetTagList
 
 END PROGRAM cdfvsig

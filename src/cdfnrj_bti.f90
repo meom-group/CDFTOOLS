@@ -7,7 +7,7 @@ PROGRAM cdfnrj_bti
   !!               gridV gridU2 gridV2 files and variables
   !!
   !!  ** Method  : Take an input file which is preprocessed by
-  !!               cdfmoyuvwt. See also cdfbci
+  !!               cdfuvwt. See also cdfbci
   !!
   !! History : 2.1  : 02/2008  : A. Melet     : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
@@ -68,7 +68,7 @@ PROGRAM cdfnrj_bti
      PRINT *,'       Note : This program was formerly named cdfbti.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f UVWT-file : netcdf file produced by cdfmoyuvwt'
+     PRINT *,'       -f UVWT-file : netcdf file produced by cdfuvwt'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file] : specify the output file name instead of ',TRIM(cf_out)
@@ -92,7 +92,7 @@ PROGRAM cdfnrj_bti
      PRINT *,'              bti  : transfert of energy for the barotropic instability.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      cdfmoyuvwt, cdfnrj_bci, cdfnrj_components, cdfnrj_transfert'
+     PRINT *,'      cdfuvwt, cdfnrj_bci, cdfnrj_components, cdfnrj_transfert'
      PRINT *,'      '
      STOP
   ENDIF

@@ -59,7 +59,7 @@ PROGRAM cdfpdf
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfpdf -f IN-file -v IN-var [-zoom imin imax jmin jmax] ..'
-     PRINT *,'       [-lev level ] [-range vmin vmax nbin ] [-o OUT-ncfile] [-a OUT-ascfile]'
+     PRINT *,'       [-lev level] [-range vmin vmax nbin ] [-o OUT-ncfile] [-a OUT-ascfile]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Build the pdf of a given variable, on a given area, according'
@@ -74,7 +74,7 @@ PROGRAM cdfpdf
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-zoom imin imax jmin jmax] : define a sub-area, in model '
      PRINT *,'                                     coordinates' 
-     PRINT *,'       [ -lev level ] : choose a level for pdf computation '
+     PRINT *,'       [-lev level ] : choose a level for pdf computation '
      PRINT *,'              If not specified, takes level 1 '
      PRINT *,'       [-range vmin vmax nbin  ] : define the limit for binning '
      PRINT *,'                               and number of bins.'
@@ -106,19 +106,17 @@ PROGRAM cdfpdf
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-a'   ) ; CALL getarg(ijarg, cf_asc ) ; ijarg=ijarg+1
      CASE ( '-v'   ) ; CALL getarg(ijarg, cv_nam ) ; ijarg=ijarg+1
-     CASE ( '-zoom') ; l_nozoom = .FALSE.
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imin
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imax
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmin
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmax
-     CASE ( '-lev') 
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
-     CASE ( '-range') ; l_norange = .FALSE.
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmin
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmax
-        CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbin
-     CASE DEFAULT
-        PRINT *,' option ',TRIM(cldum),' not understood'
+     CASE ( '-zoom') ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imin
+        ;              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) imax
+        ;              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmin
+        ;              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jmax
+        ;              l_nozoom = .FALSE.
+     CASE ( '-lev' ) ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ilev
+     CASE ('-range') ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmin
+        ;              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmax
+        ;              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbin
+        ;              l_norange = .FALSE.
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

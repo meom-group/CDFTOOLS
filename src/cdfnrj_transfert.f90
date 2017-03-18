@@ -55,15 +55,15 @@ PROGRAM cdfnrj_transfert
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       This program computes the energy transfert term from previously'
-     PRINT *,'       computed high order moments (cdfmoyuvwt). High order moments must'
+     PRINT *,'       computed high order moments (cdfuvwt). High order moments must'
      PRINT *,'       have been evaluated on a long enough period, in order to get '
      PRINT *,'       meaningfull statistics.'
      PRINT *,'       Note : this program was formerly named cdfkempemekeepe. (no idea of the'
      PRINT *,'       pronunciation :) ).'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f UVWT-file : Input file is the output of cdfmoyuvwt, holding'
-     PRINT *,'             the required high order moments.'
+     PRINT *,'       -f UVWT-file : Input file is the output of cdfuvwt, holding the required'
+     PRINT *,'             high order moments.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file] : Specify the output file name instead of ',TRIM(cf_out)
@@ -80,7 +80,7 @@ PROGRAM cdfnrj_transfert
      PRINT *,'                     anoWT : temporal mean of W''xT'' at T points.'
      PRINT *,'             units : 1000 x Celsius x m/s'
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      cdfmoyuvwt, cdfnrj_bci, cdfnrj_bti, cdfnrj_components' 
+     PRINT *,'      cdfuvwt, cdfnrj_bci, cdfnrj_bti, cdfnrj_components' 
      PRINT *,'      '
      STOP
   ENDIF

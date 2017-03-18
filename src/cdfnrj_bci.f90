@@ -6,7 +6,7 @@ PROGRAM cdfnrj_bci
   !!               for the baroclinic instability
   !!
   !!  ** Method  : take  an input file which is the result of a preprocessing
-  !!               tool cdfmoyuvwt.
+  !!               tool cdfuvwt.
   !!
   !! History : 2.1  : 02/2008  : A. Melet     : Original code
   !!           3.0  : 12/2010  : J.M. Molines : Doctor norm + Lic.
@@ -57,7 +57,7 @@ PROGRAM cdfnrj_bci
      PRINT *,'       Note : this program was formerly named cdfbci.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f UVWT-file : input file is produced by cdfmoyuvwt, and the mean'
+     PRINT *,'       -f UVWT-file : input file is produced by cdfuvwt, and the mean'
      PRINT *,'              must be computed on a long-enough period for the statistics' 
      PRINT *,'              to be meaningful. Points are on T grid.'
      PRINT *,'      '
@@ -80,7 +80,7 @@ PROGRAM cdfnrj_bci
      PRINT *,'             bci  : transfert of energy for the baroclinic instability (*1000)'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'       cdfmoyuvwt, cdfnrj_bti, cdfnrj_components, cdfnrj_transfert '
+     PRINT *,'       cdfuvwt, cdfnrj_bti, cdfnrj_components, cdfnrj_transfert '
      STOP
   ENDIF
 

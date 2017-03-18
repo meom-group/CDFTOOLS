@@ -1,6 +1,6 @@
-PROGRAM cdfmoyuvwt
+PROGRAM cdfuvwt
   !!======================================================================
-  !!                     ***  PROGRAM  cdfmoyuvwt  ***
+  !!                     ***  PROGRAM  cdfuvwt  ***
   !!=====================================================================
   !!  ** Purpose : Compute mean values of some quantities, required for
   !!               other cdftools ( cdfbci, cdfbti and cdfnrjcomp).
@@ -64,7 +64,7 @@ PROGRAM cdfmoyuvwt
   !!
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoyuv -c CONFCASE -l LST-tags [-w imin imax jmin jmax] ...'
+     PRINT *,' usage : cdfuvwt -c CONFCASE -l LST-tags [-w imin imax jmin jmax] ...'
      PRINT *,'               ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -357,5 +357,5 @@ CONTAINS
     END DO
   END SUBROUTINE GetTagList
 
-END PROGRAM cdfmoyuvwt
+END PROGRAM cdfuvwt
 
