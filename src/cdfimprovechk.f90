@@ -30,7 +30,7 @@ PROGRAM cdfimprovechk
 
   INTEGER(KIND=4)                           :: jk, jt            ! dummy loop index
   INTEGER(KIND=4)                           :: ierr              ! working integer
-  INTEGER(KIND=4)                           :: narg, iargc       ! browse line
+  INTEGER(KIND=4)                           :: narg, iargc, ijarg! browse line
   INTEGER(KIND=4)                           :: npiglo, npjglo    ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt          ! size of the domain
   INTEGER(KIND=4)                           :: nvpk              ! dim of the working variable
@@ -49,29 +49,40 @@ PROGRAM cdfimprovechk
   CHARACTER(LEN=256)                        :: cf_tst            ! test-file name
   CHARACTER(LEN=256)                        :: cv_in             ! cdf variable name
   CHARACTER(LEN=256)                        :: cf_out='chk.nc'   ! output filename
+  CHARACTER(LEN=256)                        :: cldum             ! working char variable
 
   TYPE (variable), DIMENSION(1)             :: stypvar           ! structure for attributes
 
+  LOGICAL                                   :: lnc4 = .FALSE.    ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfimprovechk IN-var OBS-file REF-file TST-file'
+     PRINT *,' usage : cdfimprovechk -v IN-var -obs OBS-file -r REF-file -t TST-file ...'
+     PRINT *,'                ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Estimate the improvement/deterioration of a test run,'
-     PRINT *,'        compared with a reference run relative to some observations'
-     PRINT *,'        This program computes the quantity zchk= ( REF - TEST )/(REF - OBS)'
+     PRINT *,'        Estimates the improvement/deterioration of a test run, compared with a'
+     PRINT *,'        reference run relative to some observations.'
+     PRINT *,'        This program computes the field zchk= ( REF - TST )/(REF - OBS).'
      PRINT *,'        Where 0 < zchk <= 1, the TST is better than the reference'
      PRINT *,'        Where 1 < zchk, the TST  was corrected in the right sense but too much'
      PRINT *,'        Where  zchk < 0, the TST  was corrected was corrected in the wrong way.'
+     PRINT *,'        Although not very much used, this program is maintained as one of the'
+     PRINT *,'        first CDFTOOLS.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        IN-var    : netcdf input variable'
-     PRINT *,'        OBS-file  : netcdf observation file'
-     PRINT *,'        REF-file  : netcdf reference file'
-     PRINT *,'        TST-file  : netcdf test file'
+     PRINT *,'        -v IN-var    : netcdf input variable'
+     PRINT *,'        -obs OBS-file: netcdf observation file'
+     PRINT *,'        -r REF-file  : netcdf reference file'
+     PRINT *,'        -t TST-file  : netcdf test file'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'        [-o OUT-file] : specifiy the output file name instead of ',TRIM(cf_out)
+     PRINT *,'        [-nc4]    : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'               This option is effective only if cdftools are compiled with'
+     PRINT *,'               a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -79,13 +90,24 @@ PROGRAM cdfimprovechk
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : same as input variable.'
+     PRINT *,'      '
      STOP
   ENDIF
 
-  CALL getarg (1, cv_in )
-  CALL getarg (2, cf_obs)
-  CALL getarg (3, cf_ref)
-  CALL getarg (4, cf_tst)
+  ijarg=1
+  DO WHILE (ijarg <= narg )
+     CALL getarg(ijarg,cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-v'  ) ; CALL getarg(ijarg,cv_in ) ; ijarg=ijarg+1
+     CASE ( '-obs') ; CALL getarg(ijarg,cf_obs) ; ijarg=ijarg+1
+     CASE ( '-r'  ) ; CALL getarg(ijarg,cf_ref) ; ijarg=ijarg+1
+     CASE ( '-t'  ) ; CALL getarg(ijarg,cf_tst) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-o'  ) ; CALL getarg(ijarg,cf_out) ; ijarg=ijarg+1
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
+  ENDDO
 
   IF ( chkfile(cf_obs) .OR. chkfile(cf_ref) .OR. chkfile(cf_tst) ) STOP ! missing files
 
@@ -98,20 +120,6 @@ PROGRAM cdfimprovechk
   IF (nvpk == 2 ) nvpk = 1
   IF (nvpk == 3 ) nvpk = npk
 
-  ipk(:)                       = nvpk  ! all variables 
-  stypvar(1)%cname             = TRIM(cv_in)
-  stypvar(1)%cunits            = '%'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 100.
-  stypvar(1)%clong_name        = 'Checking ratio for'//TRIM(cv_in)
-  stypvar(1)%cshort_name       = cv_in
-  stypvar(1)%conline_operation = 'N/A'
-
-  IF (nvpk == npk ) stypvar(1)%caxis='TZYX'
-  IF (nvpk == 1   ) stypvar(1)%caxis='TYX'
-
-
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
@@ -120,12 +128,7 @@ PROGRAM cdfimprovechk
   ALLOCATE (zobs(npiglo,npjglo), zref(npiglo,npjglo), ztst(npiglo,npjglo), zmask(npiglo,npjglo))
   ALLOCATE (zchk(npiglo,npjglo), tim(npt) )
 
-  ! create output fileset
-
-  ncout = create      (cf_out, cf_ref,  npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_ref,  npiglo, npjglo, npk       )
-
+  CALL CreateOutput
   zref  = 0. ;   zobs  = 0. ;  zmask = 1.
 
   DO jt = 1,npt
@@ -143,13 +146,45 @@ PROGRAM cdfimprovechk
            zchk = (zref - ztst ) / ( zref - zobs) * zmask
         END WHERE
         ierr = putvar(ncout, id_varout(1), zchk, jk, npiglo, npjglo, ktime=jt)
-
      END DO
   END DO
 
-  tim  = getvar1d(cf_ref, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,  tim,       npt, 'T')
-
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(:)                       = nvpk  ! all variables 
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = TRIM(cv_in)
+    stypvar(1)%cunits            = '%'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 100.
+    stypvar(1)%clong_name        = 'Checking ratio for'//TRIM(cv_in)
+    stypvar(1)%cshort_name       = cv_in
+    stypvar(1)%conline_operation = 'N/A'
+
+    IF (nvpk == npk ) stypvar(1)%caxis='TZYX'
+    IF (nvpk == 1   ) stypvar(1)%caxis='TYX'
+
+    ! create output fileset
+
+    ncout = create      (cf_out, cf_ref,  npiglo, npjglo, npk       , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_ref,  npiglo, npjglo, npk       )
+
+    tim  = getvar1d(cf_ref, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfimprovechk

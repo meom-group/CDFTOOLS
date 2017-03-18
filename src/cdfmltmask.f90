@@ -49,33 +49,43 @@ PROGRAM cdfmltmask
   CHARACTER(LEN=20)                           :: cv_msk             ! mask variable name
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in            ! cdf variable names to process
 
-  LOGICAL                                     :: lnc4=.false.       ! use Netcdf4 chunking and deflation
-  LOGICAL                                     :: lout=.false.       ! specified output file name
+  LOGICAL                                     :: lnc4 =.FALSE.      ! use Netcdf4 chunking and deflation
+  LOGICAL                                     :: lout =.FALSE.      ! specified output file name
+  LOGICAL                                     :: lupd =.TRUE.      ! update of _FillValue
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmltmask -f IN-file -m MSK-file -v IN-var1,var2,...  '
-     PRINT *,'              -p  T| U | V | F | W | P  [-s _Fillvalue] [-nc4] [-o OUT-file]'
-     PRINT *,'              [ -M MSK-var ]'
+     PRINT *,' usage : cdfmltmask -f IN-file -m MSK-file -v LST-var -p C-type ...  '
+     PRINT *,'              ...  [-s _Fillvalue] [-o OUT-file] [-M MSK-var] [-noup]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Multiply IN-var(s) of IN-file by the mask corresponding to the' 
-     PRINT *,'       C-grid point position given by the -p argument.'
+     PRINT *,'       This program is used to apply masking (multiply by 1 or 0 ) some '
+     PRINT *,'       selected variables from the input file, according to their position'
+     PRINT *,'       on the C-grid. The use of polymask (polygon shape mask, created by'
+     PRINT *,'       cdfpolymask) is possible.'
+     PRINT *,'      '
+     PRINT *,'       Once the variables are masked, the ''_FillValue'' attribute of the'
+     PRINT *,'       variables is changed to its correct new value. However, when working'
+     PRINT *,'       with NETCDF4/HDF4 files, it fails with segmentation fault. The actual'
+     PRINT *,'       workaround is either to transform the input file in NETCDF classical, or'
+     PRINT *,'       to use -noup option to prevent the update of the _FillValue attribute.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file  : input netcdf file.' 
      PRINT *,'       -m MSK-file : input netcdf mask file.' 
-     PRINT *,'       -v IN-var1,var2,...   : Comma separated list of variable names to mask.'
-     PRINT *,'       -p T| U | V | F | W | P : C-grid position of IN-var'
-     PRINT *,'                P indicate a polygon mask created by cdfpoly.'
+     PRINT *,'       -v LST-var  : Comma separated list of variable names to mask.'
+     PRINT *,'       -p C-type : one of T|U|V|F|W|P indicating the  C-grid position of the'
+     PRINT *,'               variables.  P indicates a polygon mask created by cdfpolymask.'
      PRINT *,'      OPTIONS : '
-     PRINT *,'        -s _FillValue : specify values for masked areas [0 by default ]'
-     PRINT *,'        -nc4 : output file will be chunked and deflated'
-     PRINT *,'        -o OUT-file : name of output file, instead of <IN-file>_masked'
-     PRINT *,'        -M MSK-var : use MSK-var in the MSK-file, instead of the one defined'
+     PRINT *,'        [-s _FillValue] : specify values for masked areas [0 by default]'
+     PRINT *,'        [-o OUT-file] : name of output file, instead of <IN-file>_masked'
+     PRINT *,'        [-M MSK-var] : use MSK-var in the MSK-file, instead of the one defined'
      PRINT *,'               by default according to the -p option. Overrid -p option.'
+     PRINT *,'        [-noup] : do not update the _FillValue attribute of the masked '
+     PRINT *,'               variables. Usefull for NETCDF4/HDF5 files, to prevent program'
+     PRINT *,'               crash (a better fix will be provided, if possible).'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none, all are given as arguments.'
@@ -94,15 +104,16 @@ PROGRAM cdfmltmask
   DO WHILE (ijarg <= narg)
     CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
     SELECT CASE ( cldum)
-    CASE ( '-f'  ) ; CALL getarg(ijarg, cf_in )   ; ijarg = ijarg + 1
-    CASE ( '-m'  ) ; CALL getarg(ijarg, cf_msk)   ; ijarg = ijarg + 1
-    CASE ( '-M'  ) ; CALL getarg(ijarg, cv_msk)   ; ijarg = ijarg + 1
-    CASE ( '-v'  ) ; CALL getarg(ijarg, cldum )   ; ijarg = ijarg + 1
-                   ; CALL ParseVars ( cldum   )
-    CASE ( '-p'  ) ; CALL getarg(ijarg, cvartype) ; ijarg = ijarg + 1
-    CASE ( '-s'  ) ; CALL getarg(ijarg, cldum )   ; ijarg = ijarg + 1  ; READ(cldum,*) zspv0
-    CASE ( '-nc4') ; lnc4 = .false. ; PRINT *,' Option -nc4 actually ignored, sorry !, proceed ...'
-    CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out )  ; ijarg = ijarg + 1 ; lout=.TRUE.
+    CASE ( '-f'   ) ; CALL getarg(ijarg, cf_in )   ; ijarg = ijarg + 1
+    CASE ( '-m'   ) ; CALL getarg(ijarg, cf_msk)   ; ijarg = ijarg + 1
+    CASE ( '-M'   ) ; CALL getarg(ijarg, cv_msk)   ; ijarg = ijarg + 1
+    CASE ( '-v'   ) ; CALL getarg(ijarg, cldum )   ; ijarg = ijarg + 1
+       ;              CALL ParseVars ( cldum   )
+    CASE ( '-p'   ) ; CALL getarg(ijarg, cvartype) ; ijarg = ijarg + 1
+    CASE ( '-s'   ) ; CALL getarg(ijarg, cldum )   ; ijarg = ijarg + 1  ; READ(cldum,*) zspv0
+    CASE ( '-nc4' ) ; lnc4 = .FALSE. ; PRINT *,' Option -nc4 actually ignored, sorry !, proceed ...'
+    CASE ( '-noup') ; lupd = .FALSE.
+    CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out )  ; ijarg = ijarg + 1 ; lout=.TRUE.
     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
     END SELECT
   ENDDO
@@ -217,7 +228,9 @@ PROGRAM cdfmltmask
   DO jvar = 1, nvar 
      ierr = getvaratt (cf_in, cv_in(jvar), cunits, zspval, clname, csname)
      IF ( csname == "" ) csname=TRIM( cv_in(jvar) )
-!    ierr = cvaratt   (cf_out, cv_in(jvar), cunits, zspv0,  clname, csname)
+     ! next line does not work with netcdf4 files ... no work around so far 
+     !  (_FillValue is internal to Netcdf and cannot be changed after file create)
+     IF ( lupd ) ierr = cvaratt   (cf_out, cv_in(jvar), cunits, zspv0,  clname, csname)
   END DO
 
 CONTAINS

@@ -94,26 +94,25 @@ PROGRAM cdfmxl
      PRINT *,' usage : cdfmxl -t T-file [-s S-file] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute 7 estimates of the mixed layer depth from temperature'
-     PRINT *,'       and salinity given in the input file, based on 3 different criteria:'
-     PRINT *,'       1- Density criterium (0.01 kg/m3 difference between surface and MLD)' 
-     PRINT *,'       2- Density criterium (0.03 kg/m3 difference between surface and MLD)' 
-     PRINT *,'       3- Temperature criterium (0.2 C absolute difference between surface '
+     PRINT *,'       Computes 7 estimates of the mixed layer depth from temperature and '
+     PRINT *,'       salinity given in the input file, based on 7 different criteria:'
+     PRINT *,'       1- Density criterion (0.01 kg/m3 difference between surface and MLD)' 
+     PRINT *,'       2- Density criterion (0.03 kg/m3 difference between surface and MLD)' 
+     PRINT *,'       3- Temperature criterion (0.2 C absolute difference between surface '
      PRINT *,'          and MLD)'
-     PRINT *,'       4- Temperature criterium (0.2 C absolute difference between T at 10m '
+     PRINT *,'       4- Temperature criterion (0.2 C absolute difference between T at 10m '
      PRINT *,'          and MLD)'
-     PRINT *,'       5- Temperature criterium (0.5 C absolute difference between T at 10m '
+     PRINT *,'       5- Temperature criterion (0.5 C absolute difference between T at 10m '
      PRINT *,'          and MLD)'
-     PRINT *,'       6- Density criterium (0.03 kg/m3 difference between rho at 10m and MLD) '
-     PRINT *,'       7- Density criterium (0.125 kg/m3 difference between rho at 10m and MLD) '
+     PRINT *,'       6- Density criterion (0.03 kg/m3 difference between rho at 10m and MLD) '
+     PRINT *,'       7- Density criterion (0.125 kg/m3 difference between rho at 10m and MLD) '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file   : input netcdf file (gridT)' 
-     PRINT *,'       [-s S-file] : input netcdf file (gridS), if vosaline not in T-file' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-o OUT-file] : specify the name of output file instead of '
-     PRINT *,'                default name ',TRIM(cf_out)
+     PRINT *,'       [-s S-file] : input netcdf file (gridS), if vosaline not in T-file' 
+     PRINT *,'       [-o OUT-file] : specify the name of output file instead of ', TRIM(cf_out)
      PRINT *,'       [-nc4] : use netcdf4 chunking and deflation on output '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -129,6 +128,7 @@ PROGRAM cdfmxl
      PRINT *,'                     somxlt05z10 = mld on temperature criterium -0.5 ref. 10m'
      PRINT *,'                     somxl030z10 = mld on density criterium 0.03 ref. 10m'
      PRINT *,'                     somxl125z10 = mld on density criterium 0.125 ref. 10m'
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -142,7 +142,7 @@ PROGRAM cdfmxl
         ! options
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg (ijarg,cf_out  ) ; ijarg = ijarg + 1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum) ,' unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum) ,' :  unknown option.' ; STOP
      END SELECT
   ENDDO
 

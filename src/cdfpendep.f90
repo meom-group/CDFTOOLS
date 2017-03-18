@@ -58,9 +58,8 @@ PROGRAM cdfpendep
      PRINT *,'              ... [-vinv inventory_name -vtrc trc_name ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the penetration depth for passive tracers. It is the'
-     PRINT *,'        ratio between the inventory and the surface concentration of'
-     PRINT *,'        the tracer.'
+     PRINT *,'        Computes the penetration depth for passive tracers. It is the ratio'
+     PRINT *,'        between the inventory and the surface concentration of the tracer.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -trc TRC-file : netcdf file with tracer concentration.' 
@@ -82,6 +81,7 @@ PROGRAM cdfpendep
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : pendep (m)'
+     PRINT *,'      '
      STOP
   ENDIF
 

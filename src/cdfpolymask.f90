@@ -52,12 +52,12 @@ PROGRAM cdfpolymask
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfpolymask -p POLY-file -ref REF-file [ -r] [-o OUT_file]'
+     PRINT *,' usage : cdfpolymask -p POLY-file -ref REF-file [-r] [-o OUT_file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Create a maskfile with polymask variable having 1'
-     PRINT *,'       inside the polygon, and 0 outside. Option -r revert'
-     PRINT *,'       the behaviour (0 inside, 1 outside).'
+     PRINT *,'       Create a maskfile with polymask variable having 1 inside the'
+     PRINT *,'       polygon, and 0 outside. Option -r revert the behaviour (0 inside,'
+     PRINT *,'       1 outside).'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -p POLY-file : input ASCII file describing a polyline in I J grid.'
@@ -72,9 +72,8 @@ PROGRAM cdfpolymask
      PRINT *,'             in order to build the output file (nav_lon, nav_lat etc ...)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        [ -r ] : revert option. When used, 0 is inside the polygon,'
-     PRINT *,'                 1 outside.'
-     PRINT *,'        [ -o OUT-file ] : spefify the name of the output mask file instead'
+     PRINT *,'        [-r ] : revert option. When used, 0 is inside the polygon,1 outside.'
+     PRINT *,'        [-o OUT-file ] : spefify the name of the output mask file instead'
      PRINT *,'                 of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -83,6 +82,7 @@ PROGRAM cdfpolymask
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : ', TRIM(cn_polymask)
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -107,6 +107,8 @@ PROGRAM cdfpolymask
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
+
+  CALL CreateOutput
 
   ALLOCATE( rpmask(npiglo,npjglo) )
 

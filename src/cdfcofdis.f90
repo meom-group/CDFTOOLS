@@ -95,7 +95,6 @@ PROGRAM cdfcofdis
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : ', TRIM(cv_out),' (m)'
      PRINT *,'      '
-     PRINT *,'      '
      STOP
   ENDIF
 

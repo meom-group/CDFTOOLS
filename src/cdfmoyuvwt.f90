@@ -17,6 +17,7 @@ PROGRAM cdfmoyuvwt
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
+  USE modutils    ! SetFileName function
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
@@ -53,36 +54,41 @@ PROGRAM cdfmoyuvwt
   CHARACTER(LEN=256)                            :: cf_out='moyuvwt.nc'
   CHARACTER(LEN=256)                            :: cldum
   CHARACTER(LEN=256)                            :: config , ctag
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: ctabtag
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: ctag_lst
 
   TYPE (variable), DIMENSION(jp_var)            :: stypvar         ! structure for attibutes
 
-  LOGICAL                                       :: llnam_nemo = .FALSE.
+  LOGICAL                                       :: lnc4 = .FALSE.  ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   !!
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoyuv CONFCASE [-zoom imin imax jmin jmax ] ''list of tags'' '
+     PRINT *,' usage : cdfmoyuv -c CONFCASE -l LST-tags [-w imin imax jmin jmax] ...'
+     PRINT *,'               ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute temporal mean fields for velocity components (u,v,w) and' 
+     PRINT *,'       Computes the time-mean fields for velocity components (u,v,w) and' 
      PRINT *,'       temperature (t), as well as second order moments ( u2, v2, t2, uv, ut,'
      PRINT *,'       vt, wt).'
-     PRINT *,'        These fields are required in other cdftools which computes either '
-     PRINT *,'        barotropic (cdfbti) or baroclinic (cdfbci) instabilities, and a global'
-     PRINT *,'        energy balance (cdfnrjcomp)'
+     PRINT *,'       These fields are required in other cdftools which computes either '
+     PRINT *,'       barotropic (cdfnrj_bti) or baroclinic (cdfnrj_bci) instabilities, and a'
+     PRINT *,'       global energy balance (cdfnrj_components)'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       CONFCASE : the root name for the data files. Grid files are assumed to'
-     PRINT *,'                  be gridT, gridU, gridV, gridW. ( grid_T, grid_U, grid_V and'
-     PRINT *,'                  grid_W are also supported.'
-     PRINT *,'       List_of_tags : The list of time tags corresponding to the time serie'
-     PRINT *,'                  whose mean is being computed.'
+     PRINT *,'       -c CONFCASE : the root name for the data files. Grid files are assumed '
+     PRINT *,'                to be gridT, gridU, gridV, gridW. (grid_T, grid_U, grid_V and'
+     PRINT *,'                grid_W are also supported).'
+     PRINT *,'       -l LST-tags : set the list of time tags corresponding to the time serie'
+     PRINT *,'                whose mean is being computed.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-zoom imin imax jmin jmax ] : limit the mean computation to the ' 
-     PRINT *,'                  specified sub area.'
+     PRINT *,'       [-w imin imax jmin jmax ] : model window limiting the area where the'
+     PRINT *,'                time-means will be computed.'
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4]   : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'             This option is effective only if cdftools are compiled with'
+     PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -98,150 +104,45 @@ PROGRAM cdfmoyuvwt
      PRINT *,'                 utbar, vtbar, wtbar : mean product [uvw].t (m/s.K) [T-point]'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      cdfbti, cdfbci and cdfnrjcomp' 
+     PRINT *,'      cdfnrj_bti, cdfnrj_bci, cdfnrj_components and cdfnrj_transfert.' 
      PRINT *,'      '
      STOP
   ENDIF
 
   iimin=0 ; ijmin=0
   iimax=0 ; ijmax=0
-  ijarg = 1 ; ntags=-1
-  ALLOCATE (ctabtag ( narg ) )  ! allocate string array for tags ( OK: it is an over-estimate).
 
+  ijarg = 1 
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum) ; ijarg = ijarg +1
      SELECT CASE (cldum)
-     CASE ( '-zoom' )            
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) iimin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) iimax
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) ijmin
-        CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) ijmax
-     CASE DEFAULT 
-        ntags=ntags+1
-        SELECT CASE ( ntags )
-        CASE (0) ; config = cldum
-        CASE DEFAULT
-           ctabtag(ntags) = cldum
-        END SELECT
+     CASE ( '-c'  ) ; CALL getarg(ijarg, config) ; ijarg=ijarg+1
+     CASE ( '-l'  ) ; CALL GetTagList
+        ! options
+     CASE ( '-w'  ) ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) iimin
+        ;             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) iimax
+        ;             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ijmin
+        ;             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ijmax
+     CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP
      END SELECT
   END DO
 
-  ! check if all files exists
-  DO jt=1, ntags
-     ctag = ctabtag(jt)
-
-     ! check U-file
-     WRITE(cf_ufil,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
-     IF ( chkfile (cf_ufil ) ) THEN 
-        WRITE(cf_ufil,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_ufil ) ) STOP ! missing gridU or grid_U file
-        llnam_nemo=.TRUE. ! assume all files are nemo style ...
-     ENDIF
-
-     ! check V-file
-     WRITE(cf_vfil,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
-     IF ( chkfile (cf_vfil ) ) THEN 
-        WRITE(cf_vfil,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_vfil ) ) STOP ! missing gridV or grid_V file
-     ENDIF
-
-     ! check W-file
-     WRITE(cf_wfil,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
-     IF ( chkfile (cf_wfil ) ) THEN 
-        WRITE(cf_wfil,'(a,"_",a,"_grid_W.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_wfil ) ) STOP ! missing gridW or grid_W file
-     ENDIF
-
-     ! check T-file
-     WRITE(cf_tfil,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
-     IF ( chkfile (cf_tfil ) ) THEN 
-        WRITE(cf_tfil,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_tfil ) ) STOP ! missing gridT or grid_T file
-     ENDIF
-  END DO
+  cf_ufil = SetFileName( config, ctag_lst(1), 'U')
 
   ! assume all input files have same spatial size
   npiglo = getdim (cf_ufil, cn_x )
   npjglo = getdim (cf_ufil, cn_y )
   npk    = getdim (cf_ufil, cn_z )
 
-  ! modify sizes with respect to zoomed area
+  ! modify sizes with respect to working window  area
   IF (iimin /= 0 ) THEN ; npiglo=iimax -iimin + 1 ; ELSE ; iimin=1 ; iimax=npiglo ; ENDIF
   IF (ijmin /= 0 ) THEN ; npjglo=ijmax -ijmin + 1 ; ELSE ; ijmin=1 ; ijmax=npjglo ; ENDIF
-
-  ! define new variables for output ( must update att.txt)
-
-  stypvar( 1)%cname       = 'ubar'
-  stypvar( 1)%clong_name  = 'temporal mean of u on U point'
-  stypvar( 1)%cshort_name = 'ubar'
-  stypvar( 1)%cunits      = 'm/s'
-
-  stypvar( 2)%cname       = 'vbar'
-  stypvar( 2)%clong_name  = 'temporal mean of v on V point'
-  stypvar( 2)%cshort_name = 'vbar'
-  stypvar( 2)%cunits      = 'm/s'
-
-  stypvar( 3)%cname       = 'u2bar'
-  stypvar( 3)%clong_name  = 'temporal mean of u * u on U point'
-  stypvar( 3)%cshort_name = 'u2bar'
-  stypvar( 3)%cunits      = 'm2/s2'
-
-  stypvar( 4)%cname       = 'v2bar'
-  stypvar( 4)%clong_name  = 'temporal mean of v * v on V point'
-  stypvar( 4)%cshort_name = 'v2bar'
-  stypvar( 4)%cunits      = 'm2/s2'
-
-  stypvar( 5)%cname       = 'uvbar'
-  stypvar( 5)%clong_name  = 'temporal mean of u * v on T point'
-  stypvar( 5)%cshort_name = 'uvbar'
-  stypvar( 5)%cunits      = 'm2/s2'
-
-  stypvar( 6)%cname       = 'wbar'
-  stypvar( 6)%clong_name  = 'temporal mean of w on W point'
-  stypvar( 6)%cshort_name = 'wbar'
-  stypvar( 6)%cunits      = 'm/s'
-
-  stypvar( 7)%cname       = 'tbar'
-  stypvar( 7)%clong_name  = 'temporal mean of T on T point in K'
-  stypvar( 7)%cshort_name = 'tbar'
-  stypvar( 7)%cunits      = 'K'
-
-  stypvar( 8)%cname       = 'utbar'
-  stypvar( 8)%clong_name  = 'temporal mean of u * T (in K) on T point'
-  stypvar( 8)%cshort_name = 'utbar'
-  stypvar( 8)%cunits      = 'm/s.K'
-
-  stypvar( 9)%cname       = 'vtbar'
-  stypvar( 9)%clong_name  = 'temporal mean of v * T (in K) on T point'
-  stypvar( 9)%cshort_name = 'vtbar'
-  stypvar( 9)%cunits      = 'm/s.K'
-
-  stypvar(10)%cname       = 't2bar'
-  stypvar(10)%clong_name  = 'temporal mean of T * T on T point in K^2'
-  stypvar(10)%cshort_name = 't2bar'
-  stypvar(10)%cunits      = 'K2'
-
-  stypvar(11)%cname       = 'wtbar'
-  stypvar(11)%clong_name  = 'temporal mean of w * T (in K) on T point'
-  stypvar(11)%cshort_name = 'wtbar'
-  stypvar(11)%cunits      = 'm/s.K'
-
-  stypvar%rmissing_value    = 0.
-  stypvar%valid_min         = -1000.
-  stypvar%valid_max         = 1000.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'TYX'
-
-  ipk(:) = npk  
 
   PRINT *, ' npiglo = ', npiglo
   PRINT *, ' npjglo = ', npjglo
   PRINT *, ' npk    = ', npk
-
-  ! create output fileset
-  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvar, jp_var, ipk,    id_varout )
-  ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, npk       )
 
   ! Allocate the memory
   ALLOCATE ( u2d(npiglo,npjglo), v2d(npiglo,npjglo)   )
@@ -253,6 +154,8 @@ PROGRAM cdfmoyuvwt
   ALLOCATE ( dtabw(npiglo,npjglo),                        dtabwt(npiglo,npjglo) )
   ALLOCATE (                                              dtabuv(npiglo,npjglo) )
 
+  CALL CreateOutput
+
   DO jk=1, npk-1   ! level npk is masked for T U V and is 0 for W ( bottom ) !
      PRINT *,'            level ',jk
      dtotal_time  = 0.d0 ;  ntframe=0 
@@ -262,19 +165,12 @@ PROGRAM cdfmoyuvwt
      dtabt2(:,:)  = 0.d0 ; dtabwt(:,:) = 0.d0
 
      DO jt= 1, ntags
-        ctag    = ctabtag(jt)
-        IF ( llnam_nemo ) THEN
-           WRITE(cf_ufil,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
-           WRITE(cf_vfil,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
-           WRITE(cf_wfil,'(a,"_",a,"_grid_W.nc")') TRIM(config),TRIM(ctag)
-           WRITE(cf_tfil,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
-        ELSE  ! drakkar style
-           WRITE(cf_ufil,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
-           WRITE(cf_vfil,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
-           WRITE(cf_wfil,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
-           WRITE(cf_tfil,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
-        ENDIF
-
+        ctag    = ctag_lst(jt)
+        cf_ufil = SetFileName( config, ctag_lst(jt), 'U')
+        cf_vfil = SetFileName( config, ctag_lst(jt), 'V')
+        cf_wfil = SetFileName( config, ctag_lst(jt), 'W')
+        cf_tfil = SetFileName( config, ctag_lst(jt), 'T')
+        
         IF ( jk == 1 ) THEN
            npt = getdim(cf_ufil, cn_t)
            ALLOCATE ( tim(npt) )
@@ -345,6 +241,121 @@ PROGRAM cdfmoyuvwt
   ierr = putvar1d(ncout, (/REAL(dtotal_time*dcoef)/), 1, 'T')
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4) :: jv
+    !!----------------------------------------------------------------------
+  DO jv=1,jp_var
+     stypvar(jv)%ichunk   = (/npiglo,MAX(1,npjglo/30),1,1 /)
+  ENDDO
+  ipk(:) = npk  
+
+  stypvar( 1)%cname       = 'ubar'
+  stypvar( 1)%clong_name  = 'temporal mean of u on U point'
+  stypvar( 1)%cshort_name = 'ubar'
+  stypvar( 1)%cunits      = 'm/s'
+
+  stypvar( 2)%cname       = 'vbar'
+  stypvar( 2)%clong_name  = 'temporal mean of v on V point'
+  stypvar( 2)%cshort_name = 'vbar'
+  stypvar( 2)%cunits      = 'm/s'
+
+  stypvar( 3)%cname       = 'u2bar'
+  stypvar( 3)%clong_name  = 'temporal mean of u * u on U point'
+  stypvar( 3)%cshort_name = 'u2bar'
+  stypvar( 3)%cunits      = 'm2/s2'
+
+  stypvar( 4)%cname       = 'v2bar'
+  stypvar( 4)%clong_name  = 'temporal mean of v * v on V point'
+  stypvar( 4)%cshort_name = 'v2bar'
+  stypvar( 4)%cunits      = 'm2/s2'
+
+  stypvar( 5)%cname       = 'uvbar'
+  stypvar( 5)%clong_name  = 'temporal mean of u * v on T point'
+  stypvar( 5)%cshort_name = 'uvbar'
+  stypvar( 5)%cunits      = 'm2/s2'
+
+  stypvar( 6)%cname       = 'wbar'
+  stypvar( 6)%clong_name  = 'temporal mean of w on W point'
+  stypvar( 6)%cshort_name = 'wbar'
+  stypvar( 6)%cunits      = 'm/s'
+
+  stypvar( 7)%cname       = 'tbar'
+  stypvar( 7)%clong_name  = 'temporal mean of T on T point in K'
+  stypvar( 7)%cshort_name = 'tbar'
+  stypvar( 7)%cunits      = 'K'
+
+  stypvar( 8)%cname       = 'utbar'
+  stypvar( 8)%clong_name  = 'temporal mean of u * T (in K) on T point'
+  stypvar( 8)%cshort_name = 'utbar'
+  stypvar( 8)%cunits      = 'm/s.K'
+
+  stypvar( 9)%cname       = 'vtbar'
+  stypvar( 9)%clong_name  = 'temporal mean of v * T (in K) on T point'
+  stypvar( 9)%cshort_name = 'vtbar'
+  stypvar( 9)%cunits      = 'm/s.K'
+
+  stypvar(10)%cname       = 't2bar'
+  stypvar(10)%clong_name  = 'temporal mean of T * T on T point in K^2'
+  stypvar(10)%cshort_name = 't2bar'
+  stypvar(10)%cunits      = 'K2'
+
+  stypvar(11)%cname       = 'wtbar'
+  stypvar(11)%clong_name  = 'temporal mean of w * T (in K) on T point'
+  stypvar(11)%cshort_name = 'wtbar'
+  stypvar(11)%cunits      = 'm/s.K'
+
+  stypvar%rmissing_value    = 0.
+  stypvar%valid_min         = -1000.
+  stypvar%valid_max         = 1000.
+  stypvar%conline_operation = 'N/A'
+  stypvar%caxis             = 'TYX'
+
+  ! create output fileset
+  ncout = create      (cf_out, cf_ufil, npiglo, npjglo, npk       , ld_nc4=lnc4 )
+  ierr  = createvar   (ncout,  stypvar, jp_var, ipk,    id_varout , ld_nc4=lnc4 )
+  ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, npk       )
+
+  END SUBROUTINE CreateOutput
+
+  SUBROUTINE GetTagList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetTagList  ***
+    !!
+    !! ** Purpose :  Set up a tag list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    ntags=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; ntags = ntags+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (ctag_lst(ntags) )
+    DO ji = icur, icur + ntags -1
+       CALL getarg(ji, ctag_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetTagList
 
 END PROGRAM cdfmoyuvwt
 
