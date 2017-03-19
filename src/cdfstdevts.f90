@@ -23,7 +23,7 @@ PROGRAM cdfstdevts
 
   INTEGER(KIND=4)                            :: jk, jt, jvar      ! dummy loop index
   INTEGER(KIND=4)                            :: narg, iargc       ! command line
-  INTEGER(KIND=4)                            :: ijarg, ireq       ! command line
+  INTEGER(KIND=4)                            :: ijarg             ! command line
   INTEGER(KIND=4)                            :: npiglo, npjglo    ! size of the domain
   INTEGER(KIND=4)                            :: npk, npt          ! size of the domain
   INTEGER(KIND=4)                            :: ncout             ! ncid of output variable
@@ -45,6 +45,7 @@ PROGRAM cdfstdevts
   TYPE(variable), DIMENSION(2)               :: stypvaro          ! output data structure
 
   LOGICAL                                    :: lchk = .FALSE.    ! flag for missing files
+  LOGICAL                                    :: lnc4 = .FALSE.    ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -52,16 +53,25 @@ PROGRAM cdfstdevts
   cv_namesi(2) = cn_vosaline
 
   narg= iargc()
-  IF ( narg /= 2 ) THEN
-     PRINT *,' usage : cdfstdevts T-file T2-file '
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfstdevts -t T-file -t2 T2-file '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the standard deviation of the temperature'
-     PRINT *,'       and salinity from their mean and  mean square values. '
+     PRINT *,'       Computes the standard deviation of the temperature and salinity from'
+     PRINT *,'       their mean and  mean squared values.  The mean squared values for T'
+     PRINT *,'       and S are not automatically computed with cdfmoy (need some namelist'
+     PRINT *,'       modification). Consider using the more generic program ''cdfstd'' if'
+     PRINT *,'       you do not already have the mean T2 and mean S2.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       T-file  : netcdf file with mean values for T, S' 
-     PRINT *,'       T2-file : netcdf file with mean squared values for T,S' 
+     PRINT *,'       -t T-file  : netcdf file with mean values for T, S' 
+     PRINT *,'       -t T2-file : netcdf file with mean squared values for T,S' 
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'            This option is effective only if cdftools are compiled with'
+     PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -73,21 +83,20 @@ PROGRAM cdfstdevts
      PRINT *,'      '
      PRINT *,'     SEA ALSO :'
      PRINT *,'       cdfstd, cdfrmsssh, cdfstdevw.'
+     PRINT *,'      '
      STOP
   ENDIF
 
-  ijarg = 1  ; ireq = 0
+  ijarg = 1  
   DO WHILE ( ijarg <= narg) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE DEFAULT
-        ireq = ireq + 1
-        SELECT CASE ( ireq ) 
-        CASE ( 1 ) ; cf_in  = cldum
-        CASE ( 2 ) ; cf_in2 = cldum
-        CASE DEFAULT
-           PRINT *, ' Too many variables ' ; STOP
-        END SELECT
+     CASE ( 't'  ) ; CALL getarg(ijarg, cf_in ) ; ijarg=ijarg+1
+     CASE ( 't2' ) ; CALL getarg(ijarg, cf_in2) ; ijarg=ijarg+1
+        ! option
+     CASE ( 'o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE ('-nc4') ; lnc4 = .TRUE.
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.'
      END SELECT
   ENDDO
 
@@ -101,28 +110,6 @@ PROGRAM cdfstdevts
   npk    = getdim (cf_in, cn_z)
   npt    = getdim (cf_in, cn_t)
 
-  ipko(1) = npk
-  stypvaro(1)%cname             = TRIM(cn_votemper)//'_stdev'
-  stypvaro(1)%cunits            = 'DegC'
-  stypvaro(1)%rmissing_value    = 0.
-  stypvaro(1)%valid_min         = 0.
-  stypvaro(1)%valid_max         = 20
-  stypvaro(1)%clong_name        = 'STDEV_Temperature'
-  stypvaro(1)%cshort_name       = TRIM(cn_votemper)//'_stdev'
-  stypvaro(1)%conline_operation = 'N/A'
-  stypvaro(1)%caxis             = 'TZYX'
-
-  ipko(2) = npk
-  stypvaro(2)%cname             = TRIM(cn_vosaline)//'_stdev'
-  stypvaro(2)%cunits            = 'PSU'
-  stypvaro(2)%rmissing_value    = 0.
-  stypvaro(2)%valid_min         = 0.
-  stypvaro(2)%valid_max         = 10
-  stypvaro(2)%clong_name        = 'STDEV_Salinity'
-  stypvaro(2)%cshort_name       = TRIM(cn_vosaline)//'_stdev'
-  stypvaro(2)%conline_operation = 'N/A'
-  stypvaro(2)%caxis             = 'TZYX'
-
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
@@ -131,9 +118,7 @@ PROGRAM cdfstdevts
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
   ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
 
-  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       )
-  ierr  = createvar   (ncout,  stypvaro, 2,      ipko,   id_varout )
-  ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
+  CALL CreateOutput
 
   DO jvar = 1, 2
      cv_in  = cv_namesi(jvar)
@@ -150,9 +135,50 @@ PROGRAM cdfstdevts
      END DO
   END DO
 
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
-
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipko(1) = npk
+    stypvaro(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvaro(1)%cname             = TRIM(cn_votemper)//'_stdev'
+    stypvaro(1)%cunits            = 'DegC'
+    stypvaro(1)%rmissing_value    = 0.
+    stypvaro(1)%valid_min         = 0.
+    stypvaro(1)%valid_max         = 20
+    stypvaro(1)%clong_name        = 'STDEV_Temperature'
+    stypvaro(1)%cshort_name       = TRIM(cn_votemper)//'_stdev'
+    stypvaro(1)%conline_operation = 'N/A'
+    stypvaro(1)%caxis             = 'TZYX'
+
+    ipko(2) = npk
+    stypvaro(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvaro(2)%cname             = TRIM(cn_vosaline)//'_stdev'
+    stypvaro(2)%cunits            = 'PSU'
+    stypvaro(2)%rmissing_value    = 0.
+    stypvaro(2)%valid_min         = 0.
+    stypvaro(2)%valid_max         = 10
+    stypvaro(2)%clong_name        = 'STDEV_Salinity'
+    stypvaro(2)%cshort_name       = TRIM(cn_vosaline)//'_stdev'
+    stypvaro(2)%conline_operation = 'N/A'
+    stypvaro(2)%caxis             = 'TZYX'
+
+    ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4)
+    ierr  = createvar   (ncout,  stypvaro, 2,      ipko,   id_varout , ld_nc4=lnc4)
+    ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
+
+    tim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, tim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfstdevts

@@ -373,7 +373,7 @@ CONTAINS
     ! create output fileset
     ncout = create      (cf_out, cf_ufil, npiglo,  npjglo, 0,         ld_nc4=lnc4 )
     ierr  = createvar   (ncout , stypvar, jp_nvar, ipk,    id_varout, ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 0, pnavlon=un, pnavlat=zvn )
+    ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 0, pnavlon=un, pnavlat=vn )
 
     tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
     ierr = putvar1d(ncout,   tim,       npt,  'T')
