@@ -28,7 +28,7 @@ PROGRAM cdfmaxmoc
   !
   INTEGER(KIND=4)                             :: jj, jk            ! dummy loop index
   INTEGER(KIND=4)                             :: npjglo, npk       ! size of the overturning
-  INTEGER(KIND=4)                             :: narg, iargc       ! line command stuff
+  INTEGER(KIND=4)                             :: narg, iargc, ijarg! line command stuff
   INTEGER(KIND=4)                             :: iarg              ! line command stuff
   INTEGER(KIND=4)                             :: ijmin, ijmax      ! latitude window where to look at extrema
   INTEGER(KIND=4)                             :: ikmin, ikmax      ! depth window where to look at extrema
@@ -60,18 +60,22 @@ PROGRAM cdfmaxmoc
   narg=iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmaxmoc OVT-file basin_name latmin latmax depmin depmax'
+     PRINT *,' usage : cdfmaxmoc -f OVT-file -b BASIN-name -w latmin latmax depmin depmax ...'
+     PRINT *,'                 ... [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the maximum and minimum of the overturning, from file OVT-file,' 
-     PRINT *,'        for oceanic basin specified by cbasin, and in the geographical frame '
-     PRINT *,'        defined by latmin latmax, depmin, depmax.'
+     PRINT *,'        Computes the maximum and minimum of the overturning, from OVT-file,' 
+     PRINT *,'        for the specified oceanic basin, and in the geographical window'
+     PRINT *,'        defined with ''-w'' option as a range of latitudes and depths.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       OVT-file   : overturning file from cdfmoc, with or w/o sub basins.' 
-     PRINT *,'       basin_name : name of oceanic subbasin as defined in ',TRIM(cn_fbasins)
-     PRINT *,'                usually it can be one of atl, glo, inp, ind or pac'
-     PRINT *,'                glo means no subbasins.'
+     PRINT *,'        -f OVT-file   : overturning file from cdfmoc, with or w/o sub basins.' 
+     PRINT *,'        -b BASIN-name : name of oceanic subbasin as defined in ',TRIM(cn_fbasins)
+     PRINT *,'                usually it can be one of atl, glo, inp, ind or pac. glo means'
+     PRINT *,'                no subbasins.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'        [-o OUT-file] : specify the output file name instead of ',TRIM(cf_ncout)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -89,12 +93,21 @@ PROGRAM cdfmaxmoc
      STOP
   ENDIF
 
-  CALL getarg(1, cf_moc)                          ! input moc file
-  CALL getarg(2, cbasin)                          ! basin name
-  CALL getarg(3, cldum ) ; READ(cldum,*) rlatmin  ! searching window : latmin
-  CALL getarg(4, cldum ) ; READ(cldum,*) rlatmax  ! searching window : latmax
-  CALL getarg(5, cldum ) ; READ(cldum,*) rdepmin  ! searching window : depth min
-  CALL getarg(6, cldum ) ; READ(cldum,*) rdepmax  ! searching window : depth max
+  ijarg = 1
+  DO WHILE (ijarg <= narg )
+     CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
+     SELECT CASE ( cldum) 
+     CASE ( '-f' ) ; CALL getarg(ijarg,cf_moc    ) ; ijarg=ijarg+1
+     CASE ( '-b' ) ; CALL getarg(ijarg,cbasin    ) ; ijarg=ijarg+1
+     CASE ( '-w' ) ; CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatmin
+        ;            CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatmax
+        ;            CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) rdepmin
+        ;            CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) rdepmax
+        ! options
+     CASE ( '-o' ) ; CALL getarg(ijarg,cf_ncout  ) ; ijarg=ijarg+1
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     END SELECT
+  ENDDO
 
   IF ( chkfile(cf_moc) ) STOP ! missing file
 
@@ -117,43 +130,7 @@ PROGRAM cdfmaxmoc
   ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
   ALLOCATE ( rdumlon(1,1) , rdumlat(1,1) )
 
-  rdumlon(:,:)=0.
-  rdumlat(:,:)=0.
-
-  DO jj=1,nvarout
-     ipk(jj)=1
-  ENDDO
-
-  ! define new variables for output 
-  ! all variables :
-  stypvar%rmissing_value    = 99999.
-  stypvar%scale_factor      = 1.
-  stypvar%add_offset        = 0.
-  stypvar%savelog10         = 0.
-  stypvar%conline_operation = 'N/A'
-  stypvar%caxis             = 'T'
-
-  ! each pair of variables
-  stypvar(1)%cname          = 'maxmoc'                         ; stypvar(2)%cname          = 'minmoc'
-  stypvar(1)%clong_name     = 'Maximum_Overturing'             ; stypvar(2)%clong_name     = 'Minimum_Overtuning'
-  stypvar(1)%cshort_name    = 'maxmoc'                         ; stypvar(2)%cshort_name    = 'minmoc'
-  stypvar(1:2)%cunits       = 'Sverdrup'
-  stypvar(1:2)%valid_min    = -1000. 
-  stypvar(1:2)%valid_max    =  1000.
-
-  stypvar(3)%cname          = 'latmaxmoc'                      ; stypvar(4)%cname          = 'latminmoc'
-  stypvar(3)%clong_name     = 'Latitude_of_Maximum_Overturing' ; stypvar(4)%clong_name     = 'Latitude_of_Minimum_Overtuning'
-  stypvar(3)%cshort_name    = 'latmaxmoc'                      ; stypvar(4)%cshort_name    = 'latminmoc'
-  stypvar(3:4)%cunits       = 'Degrees'
-  stypvar(3:4)%valid_min    = -90.
-  stypvar(3:4)%valid_max    = 90.
-
-  stypvar(5)%cname          = 'depthmaxmoc'                    ; stypvar(6)%cname          = 'depthminmoc'
-  stypvar(5)%clong_name     = 'Depth_of_Maximum_Overturing'    ; stypvar(6)%clong_name     = 'Depth_of_Minimum_Overtuning'
-  stypvar(5)%cshort_name    = 'depthmaxmoc'                    ; stypvar(6)%cshort_name    = 'depthminmoc'
-  stypvar(5:6)%cunits       = 'Meters'
-  stypvar(5:6)%valid_min    = -10000.
-  stypvar(5:6)%valid_max    = 0.
+  CALL CreateOutput
 
   DO jk=1,npk
      rmoc(:,:,jk) = getvar(cf_moc, cv_in, jk, 1, npjglo)
@@ -187,16 +164,6 @@ PROGRAM cdfmaxmoc
   PRINT *,' Maximum ', ovtmax ,' Sv latitude ', rlat(1,ilatmax),' depth = ', gdepw(idepmax)
   PRINT *,' Minimum ', ovtmin ,' Sv latitude ', rlat(1,ilatmin),' depth = ', gdepw(idepmin)
 
-  ! create output fileset
-  ncout = create      (cf_ncout, 'none',  nx,      ny,  nz,      cdep=cn_vdepthw )
-  ierr  = createvar   (ncout,    stypvar, nvarout, ipk, id_varout                )
-
-  ierr  = putheadervar(ncout,    cf_moc,  nx,      ny,  nz,      &
-       pnavlon=rdumlon, pnavlat=rdumlat,   pdep=gdepw           )
-
-  tim  = getvar1d(cf_moc,cn_vtimec, 1     )
-  ierr = putvar1d(ncout, tim,       1, 'T')
-
   ! netcdf output 
   ierr = putvar0d(ncout,id_varout(1), REAL(ovtmax) )
   ierr = putvar0d(ncout,id_varout(2), REAL(ovtmin) )
@@ -206,5 +173,67 @@ PROGRAM cdfmaxmoc
   ierr = putvar0d(ncout,id_varout(6), REAL(gdepw(idepmin)) )
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+
+    rdumlon(:,:)=0.
+    rdumlat(:,:)=0.
+
+    DO jj=1,nvarout
+       ipk(jj)=1
+    ENDDO
+
+    ! define new variables for output 
+    ! all variables :
+    stypvar%rmissing_value    = 99999.
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'T'
+
+    ! each pair of variables
+    stypvar(1)%cname          = 'maxmoc'                         ; stypvar(2)%cname          = 'minmoc'
+    stypvar(1)%clong_name     = 'Maximum_Overturing'             ; stypvar(2)%clong_name     = 'Minimum_Overtuning'
+    stypvar(1)%cshort_name    = 'maxmoc'                         ; stypvar(2)%cshort_name    = 'minmoc'
+    stypvar(1:2)%cunits       = 'Sverdrup'
+    stypvar(1:2)%valid_min    = -1000. 
+    stypvar(1:2)%valid_max    =  1000.
+
+    stypvar(3)%cname          = 'latmaxmoc'                      ; stypvar(4)%cname          = 'latminmoc'
+    stypvar(3)%clong_name     = 'Latitude_of_Maximum_Overturing' ; stypvar(4)%clong_name     = 'Latitude_of_Minimum_Overtuning'
+    stypvar(3)%cshort_name    = 'latmaxmoc'                      ; stypvar(4)%cshort_name    = 'latminmoc'
+    stypvar(3:4)%cunits       = 'Degrees'
+    stypvar(3:4)%valid_min    = -90.
+    stypvar(3:4)%valid_max    = 90.
+
+    stypvar(5)%cname          = 'depthmaxmoc'                    ; stypvar(6)%cname          = 'depthminmoc'
+    stypvar(5)%clong_name     = 'Depth_of_Maximum_Overturing'    ; stypvar(6)%clong_name     = 'Depth_of_Minimum_Overtuning'
+    stypvar(5)%cshort_name    = 'depthmaxmoc'                    ; stypvar(6)%cshort_name    = 'depthminmoc'
+    stypvar(5:6)%cunits       = 'Meters'
+    stypvar(5:6)%valid_min    = -10000.
+    stypvar(5:6)%valid_max    = 0.
+
+    ! create output fileset
+    ncout = create      (cf_ncout, 'none',  nx,      ny,  nz,      cdep=cn_vdepthw )
+    ierr  = createvar   (ncout,    stypvar, nvarout, ipk, id_varout                )
+
+    ierr  = putheadervar(ncout,    cf_moc,  nx,      ny,  nz,      &
+         &     pnavlon=rdumlon, pnavlat=rdumlat,   pdep=gdepw           )
+
+    tim  = getvar1d(cf_moc,cn_vtimec, 1     )
+    ierr = putvar1d(ncout, tim,       1, 'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfmaxmoc

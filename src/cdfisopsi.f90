@@ -10,7 +10,7 @@ PROGRAM cdfisopsi
   !!              isopycnal, compute specific volume anomaly and
   !!              integrates it.
   !!
-  !! History : 2.1  : 12/2010  : R. Dussin 
+  !! History : 2.1  : 12/2010  : R. Dussin (during L. Talley visit at MEOM)
   !!           3.0  : 03/2011  : J.M. Molines : Doctor norm + Lic.
   !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
@@ -49,7 +49,7 @@ PROGRAM cdfisopsi
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: ztempint ! 2d working arrays
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zsalint ! 2d working arrays
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zint ! 2d working arrays
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: pint    ! 2d working arrays
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zpint    ! 2d working arrays
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: alpha ! 2d working arrays
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1t, e2t
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdeltapsi1
@@ -63,7 +63,7 @@ PROGRAM cdfisopsi
   REAL(KIND=4)                                :: refdepth
   REAL(KIND=4)                                :: zsigmaref      !
   REAL(KIND=4)                                :: ztmean, zsmean  ! mean temperature and salinity on isopycnal
-  REAL(KIND=4)                                :: hmean, pmean  ! mean isopycnal depth and mean pressure
+  REAL(KIND=4)                                :: hmean, zpmean  ! mean isopycnal depth and mean pressure
 
   CHARACTER(LEN=256) :: cf_tfil                              ! input gridT file
   CHARACTER(LEN=256) :: cf_out='isopsi.nc'                   ! output file name
@@ -83,7 +83,12 @@ PROGRAM cdfisopsi
      PRINT *,'          ... [-nc4] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute  a geostrophic streamfunction, projected  on an isopycn.'
+     PRINT *,'       Computes a ''geostrophic streamfunction'', projected on an isopycn.'
+     PRINT *,'       In this program, temperature and salinities on the selected isopync'
+     PRINT *,'       are saved, as well as the depth of the isopycnal surface.'
+     PRINT *,'       Then the specific volume anomaly at each model level  (1/rho0 -1/rho)'
+     PRINT *,'       is integrated from top to isopycnal surface. The resulting 3D field'
+     PRINT *,'       is finally projected (and normalized) on the isopycnal surface.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        -ref REF-level: reference level for pot. density.'
@@ -92,20 +97,29 @@ PROGRAM cdfisopsi
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        [-o OUT-file ]: specify output filename instead of ',TRIM(cf_out)
-     PRINT *,'        [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'        [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
-     PRINT *,'        [ -vvl ] : use time varying vertical metrics.'
+     PRINT *,'        [-vvl ] : use time varying vertical metrics.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr) 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.'
-     PRINT *,'         variables : ', TRIM(cv_out),' (    )'
+     PRINT *,'         7 variables : '
+     PRINT *,'            votemper_interp : Temperature interpolated on isopycnal layer'
+     PRINT *,'            vosaline_interp : Salinity interpolated on isopycnal layer'
+     PRINT *,'            depth_interp    : Depth of the isopycnal layer'
+     PRINT *,'            soisopsi        : Total streamfunction on the isopycnal layer'
+     PRINT *,'            soisopsi1       : Contribution of the SSH'
+     PRINT *,'            soisopsi2       : Contribution of specific volume anomaly vertical'
+     PRINT *,'                              integration'
+     PRINT *,'            soisopsi3       : Contribution of pressure term on the isopycnal'
+     PRINT *,'                              layer'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      '
+     PRINT *,'       cdfhdy '
      PRINT *,'      '
      STOP
   ENDIF
@@ -168,7 +182,7 @@ PROGRAM cdfisopsi
         ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
         zsal(:,:)  = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
-        WHERE(zsal == zspval ) zmask = 0
+        WHERE(zsal == zspval ) zmask = 0.
 
         v3d(:,:,jk) = sigmai(ztemp, zsal, refdepth, npiglo, npjglo ) * zmask(:,:)
      END DO  ! loop to next level
@@ -205,7 +219,7 @@ PROGRAM cdfisopsi
      DEALLOCATE (v3d)
 
      ! Working on temperature first
-     ALLOCATE( ztempint(npiglo, npjglo), zint(npiglo, npjglo), pint(npiglo, npjglo) )
+     ALLOCATE( ztempint(npiglo, npjglo), zint(npiglo, npjglo), zpint(npiglo, npjglo) )
      ALLOCATE( ztemp3(npiglo, npjglo,npk) )
 
      DO jk=1,npk
@@ -214,7 +228,7 @@ PROGRAM cdfisopsi
 
      CALL ProjectOverIso ( ztemp3, ztempint, prof, zint )
 
-     pint = zint / 10. ! pressure on the isopycnal layer = depth / 10.
+     zpint = zint / 10. ! pressure on the isopycnal layer = depth / 10.
 
      ierr = putvar(ncout, id_varout(1), ztempint, 1, npiglo, npjglo, ktime=jt)
      ierr = putvar(ncout, id_varout(3), zint,     1, npiglo, npjglo, ktime=jt)
@@ -242,7 +256,7 @@ PROGRAM cdfisopsi
      zsmean = SUM( zsalint  * e1t * e2t * zmask ) / SUM( e1t * e2t * zmask )
      ! JMM rem : hmean never used ...
      ! hmean = SUM( zint     * e1t * e2t * zmask ) / SUM( e1t * e2t * zmask )
-     pmean = SUM( pint     * e1t * e2t * zmask ) / SUM( e1t * e2t * zmask )
+     zpmean = SUM( zpint     * e1t * e2t * zmask ) / SUM( e1t * e2t * zmask )
 
      DEALLOCATE ( ztempint, zsalint )
 
@@ -295,11 +309,11 @@ PROGRAM cdfisopsi
 
      CALL ProjectOverIso ( zsva3, zsva2 )
 
-     rdeltapsi2 = ( pint - pmean ) * zsva2
+     rdeltapsi2 = ( zpint - zpmean ) * zsva2
      ierr       = putvar(ncout, id_varout(7), rdeltapsi2, 1, npiglo, npjglo, ktime=jt)
-     DEALLOCATE ( zsva3, zsva2, alpha, zint, pint )
+     DEALLOCATE ( zsva3, zsva2, alpha, zint, zpint )
 
-     ! 6. Finally we compute the surface streamfunction
+     ! 7. Finally we compute the surface streamfunction
      ALLOCATE(zssh(npiglo,npjglo) , zsigsurf(npiglo,npjglo), psi0(npiglo,npjglo) )
 
      ztemp   (:,:) = getvar(cf_tfil, cn_votemper, 1, npiglo, npjglo, ktime=jt)
@@ -316,7 +330,7 @@ PROGRAM cdfisopsi
      ierr = putvar(ncout, id_varout(5), psi0, 1, npiglo, npjglo, ktime=jt)
      DEALLOCATE(zssh, zsigsurf, ztemp, zsal )
 
-     ! 7. At least we are done with the computations
+     ! 8. At least we are done with the computations
      ALLOCATE( psi(npiglo,npjglo) )
      ! final mask for output : mask the contribution of SSH where isopycn outcrops
      zmask=1.

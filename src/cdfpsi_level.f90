@@ -5,9 +5,8 @@ PROGRAM cdfpsi_level
   !!  **  Purpose  :  Compute Stream Function for each level
   !!                  PARTIAL STEPS
   !!  
-  !!  **  Method   :  Compute the 3D fields ztrpu, ztrpv 
-  !!                  as the integral on the vertical of u, v on their
-  !!                  respective points. 
+  !!  **  Method   :  Compute the 3D fields ztrpu, ztrpv as the vertical
+  !!                  integral of u, v on their respective points.
   !!                  Then integrate from south to north : ==> psiu
   !!                  Then integrate from West to East   : ==> psiv
   !!                  (should be almost the same (if no error ))
