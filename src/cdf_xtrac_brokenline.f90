@@ -34,7 +34,7 @@ PROGRAM cdf_xtract_brokenline
 
   INTEGER(KIND=4) :: jsec, jleg, jt, jk,  jipt, jvar ! dummy loop index
   INTEGER(KIND=4) :: it                              ! time index for vvl
-  INTEGER(KIND=4) :: narg, iargc, ijarg, ifree       ! command line
+  INTEGER(KIND=4) :: narg, iargc, ijarg              ! command line
   INTEGER(KIND=4) :: numin=10                        ! logical unit for input section file
   INTEGER(KIND=4) :: numout=11                       ! logical unit for output section.dat (used in cdftransport)
   INTEGER(KIND=4) :: npiglo, npjglo, npk, npt        ! size of the domain
@@ -53,7 +53,7 @@ PROGRAM cdf_xtract_brokenline
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout  ! netcdf output stuff
 
   ! broken line definition
-  INTEGER(KIND=4) :: nsec = 1                       ! number of sections
+  INTEGER(KIND=4) :: nfiles = 1                       ! number of sections
   INTEGER(KIND=4) :: nn                             ! working integer (number of points in a leg)
   INTEGER(KIND=4) :: nstamax                        ! maximum number of points per defined broken line
   INTEGER(KIND=4) :: npsecmax                       ! maximum number of points per defined model broken line
@@ -101,14 +101,16 @@ PROGRAM cdf_xtract_brokenline
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE   :: dbarot  ! for barotropic transport computation
 
   CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
-  CHARACTER(LEN=255) :: cf_icefil                    ! input ice file
+  CHARACTER(LEN=255) :: cf_ifil                      ! input ice file
   CHARACTER(LEN=255) :: cf_root=''                   ! root name used as prefix
   CHARACTER(LEN=255) :: cf_out                       ! output file
   CHARACTER(LEN=255) :: cf_secdat                    ! output section file (suitable for cdftransport or cdfsigtrp)
+  CHARACTER(LEN=255) :: cv_ileadfra                  ! name of ice concentration variable
+  CHARACTER(LEN=255) :: cv_iicethic                  ! name of ice thickness variable
   CHARACTER(LEN=255) :: cverb='n'                    ! verbose key for findij
   CHARACTER(LEN=5  ) :: cstar, cend                  ! dummy character variable
   CHARACTER(LEN=255) :: cldum                        ! can handle a long list of section files ...
-  CHARACTER(LEN=255), DIMENSION(:), ALLOCATABLE :: cf_sec    ! input section file dim: nsec
+  CHARACTER(LEN=255), DIMENSION(:), ALLOCATABLE :: cf_lst    ! input section file dim: nfiles
   CHARACTER(LEN=255), DIMENSION(:), ALLOCATABLE :: csection  ! section name
 
   LOGICAL  :: lchk                                  ! flag for missing files
@@ -129,70 +131,79 @@ PROGRAM cdf_xtract_brokenline
   ! check argument number and show usage if necessary
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdf_xtrac_brokenline T-file U-file V-file [ice-file] ....'
-     PRINT *,'    [-f section_filei,sec_file2, ... ] [-verbose] [-ssh ] [-mld] [-ice] '
-     PRINT *,'    [-vt] [-vvl] [-o ROOT_name]'
+     PRINT *,' usage :  cdf_xtrac_brokenline T-file U-file V-file [-i ice-file] ....'
+     PRINT *,'         ... [-f section_filei,sec_file2, ...] [-l LST-sections] [-verbose] ...'
+     PRINT *,'         ... [-ssh] [-mld] [-ice] [-vt] [-vvl] [-o ROOT_name]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        This tool extracts model variables from model files for a geographical' 
+     PRINT *,'      This tool extracts model variables from model files for a geographical' 
      PRINT *,'      broken line, similar to an oceanographic campaign where an oceanic '
      PRINT *,'      section is formed by one or more legs.' 
-     PRINT *,'        The broken line is specified by the position of ending points of each'
+     PRINT *,'      '
+     PRINT *,'      The broken line is specified by the position of ending points of each'
      PRINT *,'      leg, given in an ASCII file. OVIDE section is taken as default, when no'
      PRINT *,'      section file is provided.'
-     PRINT *,'        This tool provides a netcdf file similar to a model file, but with a '
-     PRINT *,'      degenerated y dimension (1). In order to be able to use standard CDFTOOLS'
-     PRINT *,'      relevant metric variables are saved into the output file, such as pseudo'
-     PRINT *,'      e1v and e3v and vmask. Therefore the output file can be considered as'
-     PRINT *,'      a mesh_hgr, mesh_zgr and mask file for any ''meridional'' computation.'
-     PRINT *,'        This tools works with temperatures, salinities and normal velocities.'
+     PRINT *,'      '
+     PRINT *,'      This tool provides a netcdf file similar to a model file, but with a '
+     PRINT *,'      degenerated ''y'' dimension (1). In order to be able to use standard '
+     PRINT *,'      CDFTOOLS, relevant metric variables are saved into the output file, such'
+     PRINT *,'      as pseudo e1v and e3v and vmask. Therefore the output file can be '
+     PRINT *,'      considered as a mesh_hgr, mesh_zgr and mask file for any ''meridional'' '
+     PRINT *,'      computation. In the relevant CDFTOOLS, the option ''-self'' tells the '
+     PRINT *,'      program that input data file can be considered as mesh_mask file as well.'
+     PRINT *,'      '
+     PRINT *,'      This tools works with temperatures, salinities and normal velocities.'
      PRINT *,'      The broken line is approximated in the model, by a succession of segments'
      PRINT *,'      joining F-points. The velocity is taken as either U or V depending on the'
      PRINT *,'      orientation of the segment, temperatures and salinities are interpolated'
-     PRINT *,'      on the velocity points. When progressing along the broken line, velocity'
-     PRINT *,'      is positive when heading to the right of the progression.' 
-     PRINT *,'        The barotropic transport across the broken line is computed, using the'
+     PRINT *,'      on the velocity points. When progressing along the broken line, normal '
+     PRINT *,'      velocity is positive when heading to the right of the progression.' 
+     PRINT *,'      '
+     PRINT *,'      The barotropic transport across the broken line is computed, using the'
      PRINT *,'      same sign convention. On a closed broken line, the barotropic transport'
      PRINT *,'      should be very small.'
      PRINT *,'      ' 
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'      T-file   :  model gridT file '
-     PRINT *,'      U-file   :  model gridU file '
-     PRINT *,'      V-file   :  model gridV file '
-     PRINT *,'      ice-file :  model ice file '
+     PRINT *,'       -t T-file :  model gridT file '
+     PRINT *,'       -u U-file :  model gridU file '
+     PRINT *,'       -v V-file :  model gridV file '
      PRINT *,'      ' 
      PRINT *,'     OPTIONS :'
-     PRINT *,'      -f section_file1,section_file2,... : provide a comma separated list of'
-     PRINT *,'              files for section definition. Section_file is an ascii file as '
-     PRINT *,'              follows:'
-     PRINT *,'             * line #1 : name of the section (e.g. ovide). '
-     PRINT *,'                  Will be used for naming the output file.'
-     PRINT *,'             * line #2 : number of points defining the broken line.'
-     PRINT *,'             * line #3-end : a pair of Longitude latitude values defining'
-     PRINT *,'                   the points. If not supplied, use hard-coded information'
-     PRINT *,'                   for OVIDE section. A comment can be added at the end of'
-     PRINT *,'                   of the lines, using a # as separator'
-     PRINT *,'      -verbose : increase verbosity  ' 
-     PRINT *,'      -ssh     : also save ssh along the broken line.'
-     PRINT *,'      -mld     : also save mld along the broken line.'
-     PRINT *,'      -ice     : also save ice properties along the broken line.'
-     PRINT *,'      -vt      : also save products vt and vs along the broken line.'
-     PRINT *,'      -vvl     : use time-varying vertical metrics'
-     PRINT *,'      -o ROOT-name : specified the prefix to be used for the output file name.'
-     PRINT *,'                 Note that it may be a good idea to include a separator '
-     PRINT *,'                 character such as _ at the end of the ROOT_name.'
+     PRINT *,'      [-l LST-sections ] : provides a blank-separated list of files for section'
+     PRINT *,'              definitions. Section_file is an ascii file as follows :'
+     PRINT *,'               * line #1 : name of the section (e.g. ovide). '
+     PRINT *,'                    Will be used for naming the output file.'
+     PRINT *,'               * line #2 : number of points defining the broken line.'
+     PRINT *,'               * line #3-end : a pair of Longitude latitude values defining'
+     PRINT *,'                    the points. If not supplied, use hard-coded information'
+     PRINT *,'                    for OVIDE section. A comment can be added at the end of'
+     PRINT *,'                    of the lines, using a # as separator'
+     PRINT *,'      [-f section_file1,section_file2,...] : provide a comma-separated list of'
+     PRINT *,'              files for section definition. This option will be deprecated in'
+     PRINT *,'              favor of ''-l'' option, which passes the same file names, but'
+     PRINT *,'              easier to parse when using a big number of files.'
+     PRINT *,'      [-verbose] : increase verbosity  ' 
+     PRINT *,'      [-ssh]     : also save ssh along the broken line.'
+     PRINT *,'      [-mld]     : also save mld along the broken line.'
+     PRINT *,'      [-i ICE-file] : also save ice properties (concentration, thickness)'
+     PRINT *,'             extracted from ICE-file along the broken line.'
+     PRINT *,'      [-vt]      : also save products vt and vs along the broken line.'
+     PRINT *,'      [-vvl]     : use time-varying vertical metrics'
+     PRINT *,'      [-o ROOT-name] : specified the prefix to be used for the output file name.'
+     PRINT *,'             Note that it may be a good idea to include a separator character'
+     PRINT *,'             such as ''_'' at the end of the ROOT_name.'
      PRINT *,'     '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'      ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' in the current directory ' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : <section_name>.nc (default). If -o option is used, the'
-     PRINT *,'                     name will be <ROOT-name><section_name>.nc'
+     PRINT *,'             name will be <ROOT-name><section_name>.nc'
      PRINT *,'         variables : temperature, salinity, normal velocity, pseudo V metrics,'
-     PRINT *,'                    mask, barotropic transport, bathymetry of velocity points.'
-     PRINT *,'                    Additional variables can be set when using options.'
+     PRINT *,'             mask, barotropic transport, bathymetry of velocity points.'
+     PRINT *,'             Additional variables can be set when using options.'
      PRINT *,'       ASCII file : <section_name>_section.dat usefull for cdftransport, gives'
-     PRINT *,'                  the position in I,J of the geographical input points.'
+     PRINT *,'             the position in I,J of the geographical input points.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'        cdftransport, cdfmoc, cdfmocsig. This tool replaces cdfovide.' 
@@ -201,27 +212,25 @@ PROGRAM cdf_xtract_brokenline
   ENDIF
 
   ! Decode command line
-  ijarg = 1 ; ifree=0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE  ( cldum   )
+     CASE ( '-t'       ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-u'       ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1
+     CASE ( '-v'       ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-i'       ) ; CALL getarg(ijarg, cf_ifil ) ; ijarg=ijarg+1 ; lice = .TRUE. ;  nvar=nvar+2
+     CASE ( '-o '      ) ; CALL getarg(ijarg, cf_root ) ; ijarg=ijarg+1
+     CASE ( '-l'       ) ; CALL GetFileList ;  lsecfile=.TRUE.
      CASE ( '-verbose' ) ; lverbose=.TRUE.  ; cverb='y'
-     CASE ( '-ssh'     ) ; lssh    =.TRUE.  ; nvar = nvar + 1  ! 
-     CASE ( '-mld'     ) ; lmld    =.TRUE.  ; nvar = nvar + 1  !
-     CASE ( '-ice'     ) ; lice    =.TRUE.  ; nvar = nvar + 2  !
-     CASE ( '-vt '     ) ; lvt     =.TRUE.  ; nvar = nvar + 2  !
+     CASE ( '-ssh'     ) ; lssh    =.TRUE.  ; nvar=nvar+1  ! 
+     CASE ( '-mld'     ) ; lmld    =.TRUE.  ; nvar=nvar+1  !
+     CASE ( '-vt '     ) ; lvt     =.TRUE.  ; nvar=nvar+2  !
      CASE ( '-vvl '    ) ; lg_vvl  =.TRUE.                     !
-     CASE ( '-o '      ) ; CALL getarg(ijarg, cf_root) ; ijarg = ijarg + 1
      CASE ( '-f'       ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
-        CALL ParseFiles(cldum)        ! many section files can be given separated with comma
-     CASE DEFAULT 
-        ifree = ifree + 1
-        SELECT CASE ( ifree )
-        CASE ( 1 ) ;             cf_tfil   = cldum
-        CASE ( 2 ) ;             cf_ufil   = cldum
-        CASE ( 3 ) ;             cf_vfil   = cldum
-        CASE ( 4 ) ; IF ( lice ) cf_icefil = cldum
-        END SELECT
+        ;                  CALL ParseFiles(cldum)  ! many section files can be given separated with comma
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -232,8 +241,8 @@ PROGRAM cdf_xtract_brokenline
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
   IF ( lsecfile ) THEN 
-     DO jsec = 1, nsec
-        lchk = chkfile(cf_sec(jsec) ) .OR. lchk
+     DO jsec = 1, nfiles
+        lchk = chkfile(cf_lst(jsec) ) .OR. lchk
      ENDDO
   ENDIF
   IF ( lchk     ) STOP ! missing files
@@ -242,27 +251,56 @@ PROGRAM cdf_xtract_brokenline
      cn_fe3v = cf_vfil
   ENDIF
 
-  ! nvar and nsec are  now fixed
+  IF ( lice ) THEN 
+     ! try to findout the name of ice-concentration and ice thickness (LIM2/LIM3)
+     cv_ileadfra = cn_ileadfra
+     lchk = .FALSE. 
+     lchk = lchk .OR. chkvar(cf_ifil, cv_ileadfra)
+     IF ( lchk ) THEN
+        cv_ileadfra = cn_ileadfra3
+        IF (  chkvar(cf_ifil, cv_ileadfra) ) THEN
+           PRINT *,' No ice concentration found, disable ''-i'' option.'
+           lice = .FALSE. ; nvar = nvar - 2
+        ENDIF
+     ENDIF
+  ENDIF
+
+  ! if not found concentration, lice is already false here ...
+  ! do not merge the two if (lice) : nvar will be incorrect
+  IF ( lice ) THEN 
+     cv_iicethic = cn_iicethic
+     lchk = .FALSE.
+     lchk = lchk .OR. chkvar(cf_ifil, cv_iicethic)
+     IF ( lchk ) THEN
+        cv_iicethic = cn_iicethic3
+        IF (  chkvar(cf_ifil, cv_iicethic) ) THEN
+           PRINT *,' No ice thickness found, disable ''-i'' option.'
+           lice = .FALSE. ; nvar = nvar - 2
+        ENDIF
+     ENDIF
+  ENDIF
+
+  ! nvar and nfiles are  now fixed
   ALLOCATE( stypvar(nvar), ipk(nvar), id_varout(nvar) )
-  ALLOCATE( csection (nsec),nsta(nsec), ncout(nsec), dbarot(nsec)  )
+  ALLOCATE( csection (nfiles),nsta(nfiles), ncout(nfiles), dbarot(nfiles)  )
 
   ! read section file if required
   IF ( lsecfile ) THEN
      nstamax = 0
-     DO jsec =1, nsec
-        OPEN(numin, file=cf_sec(jsec) )
+     DO jsec =1, nfiles
+        OPEN(numin, file=cf_lst(jsec) )
         READ(numin,'(a)') csection(jsec)
         READ(numin,*    ) nsta(jsec)
         nstamax  = MAX( nstamax, nsta(jsec))
         CLOSE (numin)
      END DO
      IF ( lverbose ) PRINT *, 'NSTAMAX = ', nstamax
-     ALLOCATE ( iista(nstamax,nsec), ijsta(nstamax,nsec), ikeepn(nstamax -1,nsec )  )
-     ALLOCATE ( npsec(nsec) )
-     ALLOCATE ( rlonsta(nstamax,nsec), rlatsta(nstamax,nsec) )
+     ALLOCATE ( iista(nstamax,nfiles), ijsta(nstamax,nfiles), ikeepn(nstamax -1,nfiles )  )
+     ALLOCATE ( npsec(nfiles) )
+     ALLOCATE ( rlonsta(nstamax,nfiles), rlatsta(nstamax,nfiles) )
 
-     DO jsec =1, nsec
-        OPEN(numin, file=cf_sec(jsec) )
+     DO jsec =1, nfiles
+        OPEN(numin, file=cf_lst(jsec) )
         READ(numin,'(a)') csection(jsec)
         READ(numin,*    ) ista
         DO jipt = 1, ista
@@ -271,12 +309,12 @@ PROGRAM cdf_xtract_brokenline
         CLOSE (numin)
      ENDDO
   ELSE    ! default to OVIDE section
-     nsec = 1
-     nstamax = 1
+     nfiles = 1
+     nstamax = 5
      nsta(1) = 5
      csection(1) = 'ovide'
-     ALLOCATE ( iista(nstamax,nsec), ijsta(nstamax,nsec), ikeepn(nstamax -1,nsec )  )
-     ALLOCATE ( rlonsta(nstamax,nsec), rlatsta(nstamax,nsec) )
+     ALLOCATE ( iista(nstamax,nfiles), ijsta(nstamax,nfiles), ikeepn(nstamax -1,nfiles )  )
+     ALLOCATE ( rlonsta(nstamax,nfiles), rlatsta(nstamax,nfiles) )
 
      ! D. Desbruyeres : Location of leg points that define the 4 legs of the OVIDE section
      rlonsta(1,1) = -43.70 ; rlatsta(1,1) = 59.90    ! 
@@ -315,16 +353,16 @@ PROGRAM cdf_xtract_brokenline
   IF ( lice ) ALLOCATE(ricethick(npiglo,npjglo),ricefra(npiglo,npjglo))
 
   ! allocate section working arrays
-  ALLOCATE ( iilegs(nstamax-1, npiglo+npjglo, nsec), ijlegs(nstamax-1, npiglo+npjglo, nsec) )
-  ALLOCATE ( norm_u(nstamax-1, nsec) , norm_v(nstamax-1, nsec) )
-  ALLOCATE ( rxx(npiglo+npjglo, nsec), ryy(npiglo+npjglo, nsec) )
+  ALLOCATE ( iilegs(nstamax-1, npiglo+npjglo, nfiles), ijlegs(nstamax-1, npiglo+npjglo, nfiles) )
+  ALLOCATE ( norm_u(nstamax-1, nfiles) , norm_v(nstamax-1, nfiles) )
+  ALLOCATE ( rxx(npiglo+npjglo, nfiles), ryy(npiglo+npjglo, nfiles) )
   ALLOCATE ( tim (npt) )
 
   iilegs = 0  ; ijlegs = 0 ; npsec(:) = 0
 
   ! Loop on the sections 
   npsecmax = 0
-  DO jsec  = 1, nsec
+  DO jsec  = 1, nfiles
      ! loop on the legs
      DO jleg = 1, nsta(jsec)-1
 
@@ -398,10 +436,10 @@ PROGRAM cdf_xtract_brokenline
   IF ( lice ) ALLOCATE(ricethicksec(npsecmax-1,1),ricefrasec(npsecmax-1,1))
 
   ! Next arrays are initialized outside the vertical loop and thus require a section index
-  ALLOCATE ( iisec    (npsecmax,nsec),     ijsec(npsecmax,nsec) ) 
-  ALLOCATE ( normu_sec(npsecmax,nsec), normv_sec(npsecmax,nsec) ) 
-  ALLOCATE ( e2usec   (npsecmax-1,1,nsec), e3usec(npsecmax-1,npk) )
-  ALLOCATE ( e1vsec   (npsecmax-1,1,nsec), e3vsec(npsecmax-1,npk) )
+  ALLOCATE ( iisec    (npsecmax,nfiles),     ijsec(npsecmax,nfiles) ) 
+  ALLOCATE ( normu_sec(npsecmax,nfiles), normv_sec(npsecmax,nfiles) ) 
+  ALLOCATE ( e2usec   (npsecmax-1,1,nfiles), e3usec(npsecmax-1,npk) )
+  ALLOCATE ( e1vsec   (npsecmax-1,1,nfiles), e3vsec(npsecmax-1,npk) )
 
   ! 3. : Extraction along the legs
   ! ------------------------------
@@ -424,7 +462,7 @@ PROGRAM cdf_xtract_brokenline
   hdepw(:,:) = getvar(cn_fzgr, cn_hdepw, 1, npiglo, npjglo)
 
   !  Loop on section for metrics and non z-depending variables
-  DO jsec = 1, nsec   ! loop on sections
+  DO jsec = 1, nfiles   ! loop on sections
      cf_out    = TRIM(cf_root)//TRIM(csection(jsec))//'.nc'
      cf_secdat = TRIM(cf_root)//TRIM(csection(jsec))//'_section.dat'
 
@@ -511,10 +549,10 @@ PROGRAM cdf_xtract_brokenline
      ELSE ;                it=1
      ENDIF
      dbarot(:) = 0.d0    ! reset barotropic transport  for all sections
-     IF ( lssh ) ssh (:,:)      = getvar(cf_tfil  , cn_sossheig, 1, npiglo, npjglo, ktime = jt)
-     IF ( lmld ) rmld(:,:)      = getvar(cf_tfil  , cn_somxl010, 1, npiglo, npjglo, ktime = jt)
-     IF ( lice ) ricethick(:,:) = getvar(cf_icefil, cn_iicethic, 1, npiglo, npjglo, ktime = jt)
-     IF ( lice ) ricefra(:,:)   = getvar(cf_icefil, cn_ileadfra, 1, npiglo, npjglo, ktime = jt)
+     IF ( lssh ) ssh (:,:)      = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime = jt)
+     IF ( lmld ) rmld(:,:)      = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime = jt)
+     IF ( lice ) ricethick(:,:) = getvar(cf_ifil, cv_iicethic, 1, npiglo, npjglo, ktime = jt)
+     IF ( lice ) ricefra(:,:)   = getvar(cf_ifil, cv_ileadfra, 1, npiglo, npjglo, ktime = jt)
 
      DO jk=1,npk   ! level loop , read only once the horizontal slab
         temper(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
@@ -532,7 +570,7 @@ PROGRAM cdf_xtract_brokenline
         uzonalsec(:,:) = 0.
         vmeridsec(:,:) = 0.
 
-        DO jsec = 1, nsec  ! section loop at level jk
+        DO jsec = 1, nfiles  ! section loop at level jk
            DO jipt=1,npsec(jsec)-1
               ii  = iisec(jipt  ,jsec) ; ij  = ijsec(jipt  ,jsec)  ! F point  position
               ii1 = iisec(jipt+1,jsec) ; ij1 = ijsec(jipt+1,jsec)  ! Next F point position
@@ -664,7 +702,7 @@ PROGRAM cdf_xtract_brokenline
      END DO  ! levels
 
      ! print and output barotropic transport once all levels have been processed
-     DO jsec = 1, nsec
+     DO jsec = 1, nfiles
         PRINT 9010, TRIM(csection(jsec)),' BAROTROPIC TRANSPORT at time ',jt,' = ', dbarot(jsec)/1.d6, ' Sv.'
         ierr  = putvar0d ( ncout(jsec), id_varout(np_baro), REAL(dbarot(jsec)/1.d6), ktime = jt    )
      ENDDO
@@ -672,7 +710,7 @@ PROGRAM cdf_xtract_brokenline
   END DO  ! time 
 
   ! close all output files
-  DO jsec = 1, nsec
+  DO jsec = 1, nfiles
      ierr = closeout(ncout(jsec))
   ENDDO
 9010 FORMAT ( "Section :",a15,a,i3,a3,f8.3,a4)
@@ -899,12 +937,12 @@ CONTAINS
        ivar = ivar + 1
 
        np_icefra = ivar
-       stypvar(ivar)%cname       = cn_ileadfra
+       stypvar(ivar)%cname       = cv_ileadfra
        stypvar(ivar)%cunits      = 'm'
        stypvar(ivar)%valid_min   = -10000.
        stypvar(ivar)%valid_max   = 1000000.
        stypvar(ivar)%clong_name  = 'icefra along '//TRIM(csection(ksec))//' section'
-       stypvar(ivar)%cshort_name = cn_ileadfra
+       stypvar(ivar)%cshort_name = cv_ileadfra
        stypvar(ivar)%caxis       = 'TX'
        ipk(ivar)                 = 1
        ivar = ivar + 1
@@ -943,6 +981,35 @@ CONTAINS
 
   END SUBROUTINE CreateOutputFile
 
+  SUBROUTINE GetFileList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetFileList  ***
+    !!
+    !! ** Purpose :  Set up a file list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    nfiles=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; nfiles = nfiles+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (cf_lst(nfiles) )
+    DO ji = icur, icur + nfiles -1
+       CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetFileList
+
   SUBROUTINE ParseFiles (cdum)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE ParseFiles  ***
@@ -950,7 +1017,7 @@ CONTAINS
     !! ** Purpose :  Decode -f option from command line 
     !!
     !! ** Method  :  look for , in the argument string and set the number of 
-    !!         sections (nsec), allocate cf_sec array and fill it with the 
+    !!         sections (nfiles), allocate cf_lst array and fill it with the 
     !!         decoded  names.
     !!
     !!----------------------------------------------------------------------
@@ -965,19 +1032,19 @@ CONTAINS
     ! scan the input string and look for ',' as separator
     DO ji=1,inchar
        IF ( cdum(ji:ji) == ',' ) THEN
-          cl_dum(nsec) = cdum(i1:ji-1)
+          cl_dum(nfiles) = cdum(i1:ji-1)
           i1=ji+1
-          nsec=nsec+1
+          nfiles=nfiles+1
        ENDIF
     ENDDO
 
     ! last name of the list does not have a ','
-    cl_dum(nsec) = cdum(i1:inchar)
+    cl_dum(nfiles) = cdum(i1:inchar)
 
-    ALLOCATE ( cf_sec(nsec) )
+    ALLOCATE ( cf_lst(nfiles) )
 
-    DO ji=1, nsec
-       cf_sec(ji) = cl_dum(ji)
+    DO ji=1, nfiles
+       cf_lst(ji) = cl_dum(ji)
     ENDDO
   END SUBROUTINE ParseFiles
 
