@@ -142,8 +142,8 @@ MODULE modCdfNames
   ! ice variable names
   CHARACTER(LEN=256) :: cn_iicethic='iicethic' !: ice thickness
   CHARACTER(LEN=256) :: cn_ileadfra='ileadfra' !: ice concentration
-  CHARACTER(LEN=256) :: cn_iicethic3='iicethic'!: ice thickness (LIM3)
-  CHARACTER(LEN=256) :: cn_ileadfra3='iiceconc'!: ice concentration (LIM3)
+  CHARACTER(LEN=256) :: cn_iicethic3='sithic'  !: ice thickness (LIM3)
+  CHARACTER(LEN=256) :: cn_ileadfra3='siconc'  !: ice concentration (LIM3)
   
   ! Bathymetry
   CHARACTER(LEN=256) :: cn_fbathymet='bathy_meter.nc' !: file Bathymetry in meters
