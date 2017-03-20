@@ -117,7 +117,7 @@ PROGRAM cdfsigtrp_broken
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg < 4 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfsigtrp_broken -f BRK-file -bin sigma_min sigma_max nbins ...'
      PRINT *,'              ... [-print ] [-full ] [ -refdep ref_depth] ...'
      PRINT *,'              ... [-neutral ] [-section file ] [-temp ]'

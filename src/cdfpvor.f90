@@ -89,7 +89,7 @@ PROGRAM cdfpvor
   CALL ReadCdfNames()
 
   narg= iargc()
-  IF ( narg < 2 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfpvor -t T-file  -u U-file -v V-file [-full] [-lspv] ...'
      PRINT *,'           ... [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '

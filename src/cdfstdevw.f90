@@ -113,6 +113,8 @@ PROGRAM cdfstdevw
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
 
+  CALL CreateOutput
+
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
   ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
 

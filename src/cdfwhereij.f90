@@ -42,7 +42,7 @@ PROGRAM cdfwhereij
 
 
   narg= iargc()
-  IF ( narg < 4 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfwhereij  -w imin imax jmin jmax [-c COOR-file] [-p C-point]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'

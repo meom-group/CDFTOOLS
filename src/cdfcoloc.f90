@@ -100,7 +100,7 @@ PROGRAM cdfcoloc
   ctmplst0 = 'U,V,Sx,Sy,H'                 ! default list
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
-  IF ( narg <  1  ) THEN
+  IF ( narg == 0  ) THEN
      PRINT *,' usage : cdfcoloc  -w root_weight -t gridT -trc TRC_file ...'
      PRINT *,'          ...  -u gridU -v gridV [-l field list ] [-h]'
      PRINT *,'       -w root_weight  : specify the root name of the weight files'

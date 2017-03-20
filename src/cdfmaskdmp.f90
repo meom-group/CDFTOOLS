@@ -21,7 +21,7 @@ PROGRAM cdfmaskdmp
   !! $Id$
   !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
-  !! @class mask
+  !! @class preprocessing
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

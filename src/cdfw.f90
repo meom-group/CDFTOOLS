@@ -65,7 +65,7 @@ PROGRAM cdfw
   CALL ReadCdfNames()
 
   narg = iargc()
-  IF ( narg < 2 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfw -u U-file -v V-file [-var U-var V-var] [-full] [-o OUT-file] ...'
      PRINT *,'              ... [-nc4] [-vvl T-file ]'
      PRINT *,'      '

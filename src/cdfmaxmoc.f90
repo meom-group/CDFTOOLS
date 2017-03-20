@@ -59,7 +59,7 @@ PROGRAM cdfmaxmoc
   CALL ReadCdfNames()
   narg=iargc()
 
-  IF ( narg /= 6 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmaxmoc OVT-file basin_name latmin latmax depmin depmax'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'

@@ -58,7 +58,7 @@ PROGRAM cdffindij
   clcoo = cn_fcoo
 
   narg= iargc()
-  IF ( narg < 4 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage :   cdffindij  -w xmin xmax ymin ymax  [-c COOR-file] [-p point_type]...'
      PRINT *,'                    [-f LIST-file] [-d descriptor] [-o OUT-file] [-a] [-l]'
      PRINT *,'      '

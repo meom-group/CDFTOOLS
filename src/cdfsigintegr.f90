@@ -85,7 +85,7 @@ PROGRAM cdfsigintegr
   CALL ReadCdfNames()
 
   narg=iargc()
-  IF ( narg < 3 ) THEN
+  IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfsigintegr -v IN-var -s RHO-file -l LST-files [-p C-type ] ...'
      PRINT *,'              ... [-sig sigma_name] [-full] [-nc4] [-vvl]'
      PRINT *,'      '

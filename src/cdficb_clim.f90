@@ -104,6 +104,8 @@ PROGRAM cdficb_clim
   ALLOCATE ( tim(npt) )
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
 
+  CALL CreateOutput
+
   ! Check variable on first file ?
   IF (chkvar(cf_lst(1), cn_iicbmass)) THEN
      cn_iicbmass='missing'
