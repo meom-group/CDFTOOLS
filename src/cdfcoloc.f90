@@ -86,8 +86,8 @@ PROGRAM cdfcoloc
   CHARACTER(LEN=256)                             :: cldum   ! dummy char variable for line input
   CHARACTER(LEN=256)                             :: ctmplst0 ! current list of type: separated by ,
   CHARACTER(LEN=256)                             :: cformat  ! ASCII format adapted to ntyp
-  CHARACTER(LEN=12), DIMENSION(jptyp)            :: ctype  !  all possible type defined there
-  CHARACTER(LEN=12), DIMENSION(:),ALLOCATABLE    :: cltype !  actual type used given as argument
+  CHARACTER(LEN=15), DIMENSION(jptyp)            :: ctype  !  all possible type defined there
+  CHARACTER(LEN=15), DIMENSION(:),ALLOCATABLE    :: cltype !  actual type used given as argument
 
   LOGICAL                                        :: llchk
   !!----------------------------------------------------------------------
@@ -98,26 +98,59 @@ PROGRAM cdfcoloc
        &        'MXL     ','MXL01   ','MXLT02  ','ISOTHICK','U       ','V       ', &
        &        'Sx      ','Sy      ','H       ','etopo   '/)
   ctmplst0 = 'U,V,Sx,Sy,H'                 ! default list
-  !!  Read command line and output usage message if not compliant.
+
   narg= iargc()
-  IF ( narg == 0  ) THEN
-     PRINT *,' usage : cdfcoloc  -w root_weight -t gridT -trc TRC_file ...'
-     PRINT *,'          ...  -u gridU -v gridV [-l field list ] [-h]'
-     PRINT *,'       -w root_weight  : specify the root name of the weight files'
-     PRINT *,'                         _T.bin, _U.bin, or _V.bin will be appended '
-     PRINT *,'                         to name if necessary.'
-     PRINT *,'       -t gridT file   : name of gridT model file'
-     PRINT *,'       -trc TRC file   : name of gridT model file'
-     PRINT *,'       -d  diag file   : name of specific diagnostic file '
-     PRINT *,'       -u gridU file   : name of gridU model file'
-     PRINT *,'       -v gridV file   : name of gridV model file'
-     PRINT *,'       -b bathy file   : name of etopo like bathymetric file'
-     PRINT *,'       -l field list   : list of fields to be colocated, separated by '',''' 
-     PRINT *,'                         Default list is :',TRIM(ctmplst0)
-     PRINT *,'       -h              : Give the details of available field to colocate.'
-     PRINT *,'     Return a column ascii file id dep fields()'
-     PRINT *,  TRIM(cn_fmsk),' is required in local directory'
-     PRINT *,  TRIM(cn_fcoo),',',TRIM(cn_fzgr),' are also required for slope computation'
+  IF ( narg == 0 ) THEN
+     PRINT *,' usage : cdfcoloc -w ROOT-weight -t T-file -u U-file -v V-file [-h] ...'
+     PRINT *,'            ... [-l LST-fields] [-trc TRC-file] [-d DIAG-file] [-b ETOPO-file]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       This program produces 3D colocalized model values for selected fields.' 
+     PRINT *,'       It is the final pass in the colocalization process initialized by '
+     PRINT *,'       ''cdfweight'', in which the location of the points to be colocalized'
+     PRINT *,'       is set. The 2 steps of the process are separated because weight files'
+     PRINT *,'       are to be produced only once for a set of data-point and model config,'
+     PRINT *,'       whereas ''cdfcoloc'' is used for several model files corresponding to'
+     PRINT *,'       different times.'
+     PRINT *,'       This program was initially written to deal with G. Holloway topostrophy'
+     PRINT *,'       works.'
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       -w ROOT-weight : specify the root-name of the weight files (binary '
+     PRINT *,'                files), to which the suffixes ''_T.bin'', ''_U.bin'' or ''_V.bin'''
+     PRINT *,'                are appended if necessary.'
+     PRINT *,'       -t T-file : name of gridT model file, used for default fields.'
+     PRINT *,'       -u U-file : name of gridU model file, used for default fields.'
+     PRINT *,'       -v V-file : name of gridV model file, used for default fields.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-h ] : Gives details on the available fields.'
+     PRINT *,'       [-l LST-fields ] : Gives a comma-separated list of selected fields to be'
+     PRINT *,'              colocalized, from a whole set of fields which are fully described'
+     PRINT *,'              with the ''-h'' option. The default list is: ',TRIM(ctmplst0)
+     PRINT *,'              According to the selected fields, specific model files are to be'
+     PRINT *,'              passed to the program with corresponding option.'
+     PRINT *,'       [-trc TRC-file]: name of ptrcT model file, used for when passive tracers'
+     PRINT *,'              related fields are selected (CFCINV, CFCCINC or PENDEP).'
+     PRINT *,'       [-d DIAG-file ] : name of specific diagnostic file. This file is used '
+     PRINT *,'              when ''PENDEP'' or ''ISOTHICK'' are selected. It must have the '
+     PRINT *,'              variables ',TRIM(cn_pendep),' or ',TRIM(cn_isothick),', respectively produced by'
+     PRINT *,'              ''cdfpendep'' and ''cdfsigintegr''.'
+     PRINT *,'       [-b ETOPO-file ] : name of ''etopo-like'' bathymetric file.'
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       ',TRIM(cn_fmsk),'. If bathymetric slopes are needed, then'
+     PRINT *,'       ',TRIM(cn_fcoo),' and ',TRIM(cn_fzgr),' files are also required.'
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       Output is a multi columns ASCII file with first 2 columns giving'
+     PRINT *,'            ''ID'' and ''DEPTH''. Then the line is completed with colocated'
+     PRINT *,'            field values. The output file looks pretty much as the input file'
+     PRINT *,'            used in ''cdfweight'' for building the weight files.'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'      cdfweight '
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -127,12 +160,13 @@ PROGRAM cdfcoloc
      SELECT CASE ( cldum )
      CASE ('-w'   ) ; CALL getarg ( iarg, cf_weight_root ) ; iarg = iarg + 1
      CASE ('-t'   ) ; CALL getarg ( iarg, cf_gridt       ) ; iarg = iarg + 1
-     CASE ('-trc' ) ; CALL getarg ( iarg, cf_gridtrc     ) ; iarg = iarg + 1
-     CASE ('-d'   ) ; CALL getarg ( iarg, cf_diag        ) ; iarg = iarg + 1
      CASE ('-u'   ) ; CALL getarg ( iarg, cf_gridu       ) ; iarg = iarg + 1
      CASE ('-v'   ) ; CALL getarg ( iarg, cf_gridv       ) ; iarg = iarg + 1
-     CASE ('-b'   ) ; CALL getarg ( iarg, cf_bathy       ) ; iarg = iarg + 1
+        ! options
      CASE ('-l'   ) ; CALL getarg ( iarg, ctmplst0       ) ; iarg = iarg + 1
+     CASE ('-trc' ) ; CALL getarg ( iarg, cf_gridtrc     ) ; iarg = iarg + 1
+     CASE ('-d'   ) ; CALL getarg ( iarg, cf_diag        ) ; iarg = iarg + 1
+     CASE ('-b'   ) ; CALL getarg ( iarg, cf_bathy       ) ; iarg = iarg + 1
      CASE ('-h'   ) ; CALL help_message 
      CASE DEFAULT   ; PRINT *,TRIM(cldum),' : option not available.' ; STOP
      END SELECT
@@ -235,7 +269,7 @@ PROGRAM cdfcoloc
         cvmask    = cn_tmask
         npkv      = 1
         dscale    = 1.d0
-     CASE ('ISOTHICK' )  !  Mixed layer depth
+     CASE ('ISOTHICK' )  !  Isopycnal thickness
         cf_weight = cf_weight_t
         cf_in     = cf_diag
         cvar      = cn_isothick
@@ -277,7 +311,7 @@ PROGRAM cdfcoloc
         cf_weight = cf_weight_v
         cf_in     = 'none' 
         cvar      = 'none'
-        cvmask    = 'vmask'
+        cvmask    = cn_vmask
         npkv      = 1
         dscale    = 100.d0  ! to be in % in the output
         llchk = llchk .OR. chkfile(cn_fcoo    )
@@ -588,12 +622,12 @@ CONTAINS
     !!              corresponding required input files  
     !!
     !!----------------------------------------------------------------------
-    CHARACTER(LEN=24), DIMENSION(jptyp) :: comments
-    CHARACTER(LEN=10), DIMENSION(jptyp) :: crequired
+    CHARACTER(LEN=25), DIMENSION(jptyp) :: comments
+    CHARACTER(LEN=25), DIMENSION(jptyp) :: crequired
     !!----------------------------------------------------------------------
     PRINT *,' List of available field to process:' 
-    PRINT *,'field name  comments                input files'
-
+    PRINT 9001,'field name   ','  comments  ','  input files  '
+    PRINT 9002
 
     ! ctype    = (/'T','S','SSH','CFCINV','CFCCONC','PENDEP','MXL','MXL01',
     !              'MXLT02','ISOTHICK','U ','V ','Sx','Sy','H ','etopo'/)
@@ -613,26 +647,30 @@ CONTAINS
          &      ' Meridional bottom slope', &
          &      ' Local model bathymetry ', &
          &      ' etopo like bathymetry  ' /)
-    crequired = (/' -t gridT ',   &
-         &       ' -t gridT ',   &
-         &       ' -t gridT ',   &
-         &       ' -trc TRC ',   &
-         &       ' -trc TRC ',   &
-         &       ' -d  diag ',   &
-         &       ' -t gridT ',   &
-         &       ' -t gridT ',   &
-         &       ' -t gridT ',   &
-         &       ' -d  diag ',   &
-         &       ' -u gridU ',   &
-         &       ' -v gridV ',   &
-         &       ' zgr coord',   &
-         &       ' zgr coord',   &
-         &       ' zgr      ',   &
-         &       ' -b etopo ' /)
+    crequired = (/' -t T-file ',   &
+         &       ' -t T-file ',   &
+         &       ' -t T-file ',   &
+         &       ' -trc TRC-file ',   &
+         &       ' -trc TRC-file ',   &
+         &       ' -d  DIAG-file ',   &
+         &       ' -t T-file ',   &
+         &       ' -t T-file ',   &
+         &       ' -t T-file',   &
+         &       ' -d  DIAG-file',   &
+         &       ' -u U-file ',   &
+         &       ' -v V-file ',   &
+         &        TRIM(cn_fzgr),   &
+         &        TRIM(cn_fcoo),   &
+         &        TRIM(cn_fzgr),   &
+         &       ' -b ETOPO-file ' /)
 
     DO jtyp=1, jptyp
-       PRINT '( 12a,x,24a,x,10a)', TRIM(ctype(jtyp)), comments(jtyp), crequired(jtyp)
+       PRINT 9001 , TRIM(ctype(jtyp)), comments(jtyp), crequired(jtyp)
     ENDDO
+    PRINT 9002
+    PRINT *,''
+9001 FORMAT (a15,x,a25,x,a15)
+9002 FORMAT (57("-") )
     STOP
 
   END SUBROUTINE help_message

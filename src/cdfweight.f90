@@ -83,16 +83,16 @@ PROGRAM cdfweight
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfweight  [-f] IN-file [-c COORD-file] ... '
+     PRINT *,' usage : cdfweight  -f IN-file [-c COORD-file] ... '
      PRINT *,'              ...  [-t point_type] [-2d] [-v] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Produce a weight file for further bilinear collocalisation ' 
+     PRINT *,'       Produces a weight file for further bilinear colocalisation ' 
      PRINT *,'       with cdfcoloc program. It takes the position of the points'
-     PRINT *,'       to be collocated into a simple ascii file. '
+     PRINT *,'       to be colocated into a simple ascii file. '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       [-f ] IN-file   : input file is a iyxz ASCII file, 1 line per point.'  
+     PRINT *,'       -f  IN-file   : input file is a iyxz ASCII file, 1 line per point.'  
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-c COORD-file] : coordinate file [',TRIM(cf_coord),']'
@@ -108,6 +108,7 @@ PROGRAM cdfweight
      PRINT *,'       binary weight file : weight_point_type.bin'
      PRINT *,'       standard output : almost the same info that is saved in the binary file'
      PRINT *,'                   When using -v option, even more informations !'
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -116,11 +117,12 @@ PROGRAM cdfweight
      CALL getarg(iarg, cldum) ; iarg=iarg+1
      SELECT CASE ( cldum )
      CASE ('-f' ) ; CALL getarg(iarg, cf_in   ) ; iarg=iarg+1 
+        ! options
      CASE ('-c' ) ; CALL getarg(iarg, cf_coord) ; iarg=iarg+1 
      CASE ('-t' ) ; CALL getarg(iarg, ctype   ) ; iarg=iarg+1 
      CASE ('-2d') ; ll2d    = .TRUE.
      CASE ('-v' ) ; lldebug = .TRUE.
-     CASE DEFAULT ; CALL getarg(iarg, cf_in   ) ; iarg=iarg+1  ! if no switch assume file name
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP
      END SELECT
   END DO
 
