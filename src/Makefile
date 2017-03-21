@@ -52,7 +52,7 @@ help:
 	@echo "#  clean        : remove building object (.o, .mod...)"
 	@echo "#  cleanexe     : remove binary executable"
 	@echo "#  install      : install binary in INSTALL folder"
-	@echo "#  install_man  : install manual in INSTALL_MAN folder"
+	@echo "#  installman   : install manual in INSTALL_MAN folder"
 	@echo "#-------------------------------------------------"
 
 ## Statistical programs
