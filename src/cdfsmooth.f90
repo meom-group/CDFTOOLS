@@ -119,6 +119,7 @@ PROGRAM cdfsmooth
      PRINT *,'       of the filter type (1 letter) and of ncut.'
      PRINT *,'       netcdf file :   IN-file[LHSB]ncut'
      PRINT *,'         variables : same as input variables.'
+     PRINT *,'      '
      STOP
   ENDIF
   !

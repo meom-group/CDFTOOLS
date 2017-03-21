@@ -68,7 +68,7 @@ PROGRAM cdfvita
      PRINT *,'               ... [-o OUT-file] [-nc4] [-lev LST-level]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Create a file with velocity components, module  and direction'
+     PRINT *,'       Creates a file with velocity components, module  and direction'
      PRINT *,'       at T points from file on C-grid. T-file is used only for' 
      PRINT *,'       getting the header of the output file. Any file on T grid'
      PRINT *,'       can be used.'
@@ -82,13 +82,13 @@ PROGRAM cdfvita
      PRINT *,'       [-w W-file ]: if used, also compute vertical velocities at T points.' 
      PRINT *,'       [-geo ]     : indicate that input velocity files are produced by '
      PRINT *,'              cdfgeo-uv, hence ugeo on V-point, vgeo on U-points. '
-     PRINT *,'       [-cubic ]   : Save the cube of the veocity module.'
+     PRINT *,'       [-cubic ]   : Save the cube of the velocity module.'
      PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'              This option is effective only if cdftools are compiled with'
      PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-o OUT-file ] : Specify name of output file instead of ',TRIM(cf_out)
-     PRINT *,'       [-lev LST-level] : specify a list of level to be used. (default option'
-     PRINT *,'              is to use all input levels).'
+     PRINT *,'       [-lev LST-level] : specify a blank-separated list of levels to be used.'
+     PRINT *,'              (default option is to use all input levels).'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -97,6 +97,10 @@ PROGRAM cdfvita
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used'
      PRINT *,'         variables : sovitua, sovitva, sovitmod, sovitdir, [sovitmod3] and'
      PRINT *,'                     [sovitwa]'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO : '
+     PRINT *,'        cdfspeed only computes the speed (velocity module).'
+     PRINT *,'      '
      STOP
   ENDIF
 

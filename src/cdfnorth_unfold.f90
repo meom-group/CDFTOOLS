@@ -66,11 +66,11 @@ PROGRAM cdfnorth_unfold
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfnorth_unfold -f IN-file -jatl jatl -jpacif jpacif -p pivot ...'
-     PRINT *,'              ... -typ TYP-Cgrid [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfnorth_unfold -f IN-file -jatl jatl -jpacif jpacif -piv pivot ...'
+     PRINT *,'              ... -p C-type [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Unfold the Artic Ocean in an ORCA configuration. Produce a netcdf' 
+     PRINT *,'       Unfolds the Artic Ocean in an ORCA configuration. Produce a netcdf' 
      PRINT *,'       file with the Artic ocean as a whole. The area can be adjusted on'
      PRINT *,'       both Atlantic and Pacific sides.'
      PRINT *,'      '
@@ -78,11 +78,12 @@ PROGRAM cdfnorth_unfold
      PRINT *,'       -f IN-file     : Input netcdf file to be unfolded.' 
      PRINT *,'       -jatl jatl     : J index to start the unfold process in the Atlantic.'
      PRINT *,'       -jpacif jpacif : J index to start the unfold process in the Pacific.'
-     PRINT *,'       -p pivot       : type of pivot for the north fold condition ( T or F )'
-     PRINT *,'       -typ TYP-Cgrid : one of T|U|V|W|F , indicating the grid point where the'
-     PRINT *,'                 variables in the input file are located. If all variables in'
-     PRINT *,'                 a single file are not on the same C-grid location, there '
-     PRINT *,'                 might be a problem ...'
+     PRINT *,'       -piv pivot     : type of pivot for the north fold condition ( T or F )'
+     PRINT *,'             ORCA1, ORCA05 use F-pivot, ORCA2, ORCA025, ORCA12 use T-pivot.'
+     PRINT *,'       -p C-type : one of T|U|V|W|F , indicating the grid point where the'
+     PRINT *,'             variables in the input file are located. If all variables in a '
+     PRINT *,'             single file are not on the same C-grid location, there might be'
+     PRINT *,'             a problem ...'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)
@@ -96,6 +97,7 @@ PROGRAM cdfnorth_unfold
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : same name and units than in the input file.'
+     PRINT *,'      '
      STOP
   ENDIF
   
@@ -106,8 +108,8 @@ PROGRAM cdfnorth_unfold
       CASE ( '-f'     ) ; CALL getarg (ijarg, cf_in ) ; ijarg=ijarg+1
       CASE ( '-jatl'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijatl
       CASE ( '-jpacif') ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijpacif
-      CASE ( '-p'     ) ; CALL getarg (ijarg, cpivot) ; ijarg=ijarg+1
-      CASE ( '-typ'   ) ; CALL getarg (ijarg, ctype ) ; ijarg=ijarg+1
+      CASE ( '-piv'   ) ; CALL getarg (ijarg, cpivot) ; ijarg=ijarg+1
+      CASE ( '-p'     ) ; CALL getarg (ijarg, ctype ) ; ijarg=ijarg+1
       ! options
       CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
       CASE ( '-nc4'   ) ; lnc4 = .TRUE.

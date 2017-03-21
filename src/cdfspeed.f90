@@ -80,6 +80,10 @@ PROGRAM cdfspeed
      PRINT *,'    OUTPUT :'
      PRINT *,'       Output on ',TRIM(cf_out),' unless -o option is used.'
      PRINT *,'         netcdf variable : U '
+     PRINT *,'    '
+     PRINT *,'    SEE ALSO :'
+     PRINT *,'       cdfvita also computes the speed.'
+     PRINT *,'    '
      STOP
   ENDIF
 
