@@ -23,6 +23,7 @@ PROGRAM cdf_xtract_brokenline
   USE cdfio
   USE cdftools
   USE modcdfnames
+  USE modutils    ! for heading
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
@@ -53,7 +54,7 @@ PROGRAM cdf_xtract_brokenline
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout  ! netcdf output stuff
 
   ! broken line definition
-  INTEGER(KIND=4) :: nfiles = 1                       ! number of sections
+  INTEGER(KIND=4) :: nfiles = 1                     ! number of sections
   INTEGER(KIND=4) :: nn                             ! working integer (number of points in a leg)
   INTEGER(KIND=4) :: nstamax                        ! maximum number of points per defined broken line
   INTEGER(KIND=4) :: npsecmax                       ! maximum number of points per defined model broken line
@@ -67,9 +68,8 @@ PROGRAM cdf_xtract_brokenline
   INTEGER(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: ikeepn           ! Number of points per leg
   INTEGER(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: iilegs, ijlegs   ! F-index of points on the broken line per leg
 
-  REAL(KIND=4)                              :: xmin, xmax, ymin, ymax !
   REAL(KIND=4)                              :: ztmp
-
+  REAL(KIND=4)                              :: xmin, xmax, ymin, ymax !
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! Model time array
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rxx, ryy            ! leg i j index of F points
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonsta, rlatsta    ! Geographic position defining legs
@@ -98,9 +98,11 @@ PROGRAM cdf_xtract_brokenline
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: e1vsec, e2usec  ! 3rd dimension for sections
 
   REAL(KIND=8)                              :: dtmp    ! temporary cumulating variable
+  REAL(KIND=8)                              :: dl_xmin, dl_xmax, dl_ymin, dl_ymax !
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE   :: dbarot  ! for barotropic transport computation
 
   CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
+   CHARACTER(LEN=255) :: cn_bath                      ! bathy file JMM
   CHARACTER(LEN=255) :: cf_ifil                      ! input ice file
   CHARACTER(LEN=255) :: cf_root=''                   ! root name used as prefix
   CHARACTER(LEN=255) :: cf_out                       ! output file
@@ -121,6 +123,12 @@ PROGRAM cdf_xtract_brokenline
   LOGICAL  :: lice     = .FALSE.                    ! flag for saving ice*
   LOGICAL  :: lvt      = .FALSE.                    ! flag for saving products vt, vs
   LOGICAL  :: ll_ssh, ll_mld, ll_ice                ! working flag for jk =1
+   LOGICAL  :: lvecrot  = .FALSE.                    ! flag for saving mld
+   REAL(KIND=4)                                    :: angled, angle, alfa, pi
+   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE       :: uzonala, vmerida, urot, vrot
+   INTEGER(KIND=4)                                 :: ji, jj 
+   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: urotsec, vrotsec
+   INTEGER(KIND=4) :: np_urot,np_vrot
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar  ! variable definition and attributes
   !!----------------------------------------------------------------------
@@ -192,6 +200,7 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'      [-o ROOT-name] : specified the prefix to be used for the output file name.'
      PRINT *,'             Note that it may be a good idea to include a separator character'
      PRINT *,'             such as ''_'' at the end of the ROOT_name.'
+      PRINT *,'      -vecrot  : also save normal and tangent velocities along the broken line (for plots purpose only).'
      PRINT *,'     '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'      ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' in the current directory ' 
@@ -228,14 +237,17 @@ PROGRAM cdf_xtract_brokenline
      CASE ( '-mld'     ) ; lmld    =.TRUE.  ; nvar=nvar+1  !
      CASE ( '-vt '     ) ; lvt     =.TRUE.  ; nvar=nvar+2  !
      CASE ( '-vvl '    ) ; lg_vvl  =.TRUE.                     !
+      CASE ( '-vecrot'  ) ; lvecrot =.TRUE.  ; nvar = nvar + 2  !
      CASE ( '-f'       ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
         ;                  CALL ParseFiles(cldum)  ! many section files can be given separated with comma
      CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
+   cn_bath = 'bathymetry.nc'          ! JMM ****************
   ! check file existence
   lchk = chkfile(cn_fhgr )
+   lchk = chkfile(cn_bath ) .OR. lchk  !JMM **********
   lchk = chkfile(cn_fzgr ) .OR. lchk
   lchk = chkfile(cf_tfil ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
@@ -351,6 +363,7 @@ PROGRAM cdf_xtract_brokenline
   IF ( lssh ) ALLOCATE (ssh (npiglo, npjglo))
   IF ( lmld ) ALLOCATE (rmld(npiglo, npjglo))
   IF ( lice ) ALLOCATE(ricethick(npiglo,npjglo),ricefra(npiglo,npjglo))
+   IF ( lvecrot ) ALLOCATE ( uzonala(npiglo,npjglo),vmerida(npiglo,npjglo), urot(npiglo,npjglo),vrot(npiglo,npjglo) )
 
   ! allocate section working arrays
   ALLOCATE ( iilegs(nstamax-1, npiglo+npjglo, nfiles), ijlegs(nstamax-1, npiglo+npjglo, nfiles) )
@@ -366,10 +379,16 @@ PROGRAM cdf_xtract_brokenline
      ! loop on the legs
      DO jleg = 1, nsta(jsec)-1
 
+        dl_xmin = rlonsta(jleg,  jsec) *1.d0
+        dl_ymin = rlatsta(jleg,  jsec) *1.d0
+        dl_xmax = rlonsta(jleg+1,jsec) *1.d0
+        dl_ymax = rlatsta(jleg+1,jsec) *1.d0
+        ! also need xmin xmax ymin ymax in single precision for cdf_findij
         xmin = rlonsta(jleg,  jsec)
         ymin = rlatsta(jleg,  jsec)
         xmax = rlonsta(jleg+1,jsec)
         ymax = rlatsta(jleg+1,jsec)
+        
 
         ! return ending points of a leg in I J model coordinates
         PRINT *,TRIM(csection(jsec)),' leg ',jleg
@@ -434,6 +453,7 @@ PROGRAM cdf_xtract_brokenline
   IF ( lssh ) ALLOCATE ( sshsec (npsecmax-1,1) )
   IF ( lmld ) ALLOCATE ( rmldsec(npsecmax-1,1) )
   IF ( lice ) ALLOCATE(ricethicksec(npsecmax-1,1),ricefrasec(npsecmax-1,1))
+   IF ( lvecrot ) ALLOCATE ( urotsec(npsecmax-1,npk), vrotsec(npsecmax-1,npk) )
 
   ! Next arrays are initialized outside the vertical loop and thus require a section index
   ALLOCATE ( iisec    (npsecmax,nfiles),     ijsec(npsecmax,nfiles) ) 
@@ -459,7 +479,8 @@ PROGRAM cdf_xtract_brokenline
   e1v(:,:)   = getvar(cn_fhgr, cn_ve1v,  1, npiglo, npjglo)
   e2u(:,:)   = getvar(cn_fhgr, cn_ve2u,  1, npiglo, npjglo)
   rmbat(:,:) = getvar(cn_fzgr, cn_mbathy,1, npiglo, npjglo)
-  hdepw(:,:) = getvar(cn_fzgr, cn_hdepw, 1, npiglo, npjglo)
+  hdepw(:,:) = getvar(cn_fzgr, cn_hdepw, 1, npiglo, npjglo) !JMM ****
+!   hdepw(:,:) = getvar(cn_bath, 'Bathymetry', 1, npiglo, npjglo)
 
   !  Loop on section for metrics and non z-depending variables
   DO jsec = 1, nfiles   ! loop on sections
@@ -559,6 +580,34 @@ PROGRAM cdf_xtract_brokenline
         saline(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
         uzonal(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime = jt)
         vmerid(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime = jt)
+
+         IF ( lvecrot ) THEN
+            !We put the velocities in point a
+            DO jj=1,npjglo
+              uzonala(1,jj)=0.
+              DO ji=2,npiglo
+                 uzonala(ji,jj)=0.5*(uzonal(ji-1,jj) + uzonal(ji,jj))
+              END DO
+            END DO
+
+            DO ji=1,npiglo
+              vmerida(ji,1)=0.
+              DO jj=2,npjglo
+                vmerida(ji,jj)=0.5*(vmerid(ji,jj-1) + vmerid(ji,jj))
+              END DO
+            END DO
+          
+            !Get alfa for the current section
+            angle= heading (dl_xmin,  dl_xmax,  dl_ymin, dl_ymax )
+            pi      = ACOS(-1.)
+            angle = angled*pi/180.
+            alfa  = angle - pi/2.
+            !We rotate the velocities according to the angle in the section
+            
+            urot = uzonala * COS(alfa) - vmerida * SIN(alfa)
+            vrot = uzonala * SIN(alfa) + vmerida * COS(alfa)
+         ENDIF 
+
         e3u(:,:)    = getvar(cn_fe3u, cn_ve3u,     jk, npiglo, npjglo, ktime = it, ldiom=.NOT.lg_vvl )
         e3v(:,:)    = getvar(cn_fe3v, cn_ve3v,     jk, npiglo, npjglo, ktime = it, ldiom=.NOT.lg_vvl )
 
@@ -569,6 +618,10 @@ PROGRAM cdf_xtract_brokenline
         salinesec(:,:) = 0.
         uzonalsec(:,:) = 0.
         vmeridsec(:,:) = 0.
+         IF ( lvecrot ) THEN
+            urotsec  (:,:) = 0.
+            vrotsec  (:,:) = 0.
+         ENDIF
 
         DO jsec = 1, nfiles  ! section loop at level jk
            DO jipt=1,npsec(jsec)-1
@@ -585,6 +638,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.
+                           vrotsec(jipt,jk) = 0.
+                        ENDIF
                     ELSE
                        tempersec(jipt,jk) = 0.5 * ( temper(ii+1,ij) + temper(ii+1,ij+1) )
                        salinesec(jipt,jk) = 0.5 * ( saline(ii+1,ij) + saline(ii+1,ij+1) )
@@ -592,6 +650,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii+1,ij) + rmld(ii+1,ij+1) )
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii+1,ij) + ricethick(ii+1,ij+1) )
                        IF ( ll_ice ) ricefrasec(jipt,jk)   = 0.5 * ( ricefra(ii+1,ij) + ricefra(ii+1,ij+1) )
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.5 * ( urot(ii+1,ij) + urot(ii+1,ij+1) )
+                           vrotsec(jipt,jk) = 0.5 * ( vrot(ii+1,ij) + vrot(ii+1,ij+1) )
+                        ENDIF
                     ENDIF
                     vmeridsec(jipt,jk) = vmerid(ii+1,ij) * normv_sec(jipt,jsec)
                     e3vsec   (jipt,jk) = e3v   (ii+1,ij)
@@ -604,6 +667,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.
+                           vrotsec(jipt,jk) = 0.
+                        ENDIF
                     ELSE
                        tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii,ij+1) )
                        salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii,ij+1) )
@@ -611,6 +679,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij) + rmld(ii,ij+1) )
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii,ij) + ricethick(ii,ij+1) )
                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.5 * ( ricefra(ii,ij) + ricefra(ii,ij+1) )
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.5 * ( urot(ii,ij) + urot(ii,ij+1) )
+                           vrotsec(jipt,jk) = 0.5 * ( vrot(ii,ij) + vrot(ii,ij+1) )
+                        ENDIF
                     ENDIF
                     vmeridsec(jipt,jk) = vmerid(ii,ij) * normv_sec(jipt,jsec)
                     e3vsec   (jipt,jk) = e3v   (ii,ij)
@@ -627,6 +700,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.
+                           vrotsec(jipt,jk) = 0.
+                        ENDIF
                     ELSE
                        tempersec(jipt,jk) = 0.5 * ( temper(ii,ij) + temper(ii+1,ij) )
                        salinesec(jipt,jk) = 0.5 * ( saline(ii,ij) + saline(ii+1,ij) )
@@ -634,6 +712,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij) + rmld(ii+1,ij) )
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii,ij) + ricethick(ii+1,ij) )
                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.5 * ( ricefra(ii,ij) + ricefra(ii+1,ij) )
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.5 * ( urot(ii,ij) + urot(ii+1,ij) )
+                           vrotsec(jipt,jk) = 0.5 * ( vrot(ii,ij) + vrot(ii+1,ij) )
+                        ENDIF
                     ENDIF
                     uzonalsec(jipt,jk) = uzonal(ii,ij) * normu_sec(jipt,jsec)
                     e3usec   (jipt,jk) = e3u   (ii,ij)
@@ -646,6 +729,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.
                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.
+                           vrotsec(jipt,jk) = 0.
+                        ENDIF
                     ELSE
                        tempersec(jipt,jk) = 0.5 * ( temper(ii,ij+1) + temper(ii+1,ij+1) )
                        salinesec(jipt,jk) = 0.5 * ( saline(ii,ij+1) + saline(ii+1,ij+1) )
@@ -653,6 +741,11 @@ PROGRAM cdf_xtract_brokenline
                        IF ( ll_mld ) rmldsec(jipt,jk) = 0.5 * ( rmld(ii,ij+1) + rmld(ii+1,ij+1) )
                        IF ( ll_ice ) ricethicksec(jipt,jk) = 0.5 * ( ricethick(ii,ij+1) + ricethick(ii+1,ij+1) )
                        IF ( ll_ice ) ricefrasec(jipt,jk) = 0.5 * ( ricefra(ii,ij+1) + ricefra(ii+1,ij+1) )
+
+                        IF ( lvecrot ) THEN
+                           urotsec(jipt,jk) = 0.5 * ( urot(ii,ij+1) + urot(ii+1,ij+1) )
+                           vrotsec(jipt,jk) = 0.5 * ( vrot(ii,ij+1) + vrot(ii+1,ij+1) ) 
+                        ENDIF
                     ENDIF
                     uzonalsec(jipt,jk) = uzonal(ii,ij+1) * normu_sec(jipt,jsec)
                     e3usec   (jipt,jk) = e3u   (ii,ij+1)
@@ -687,6 +780,11 @@ PROGRAM cdf_xtract_brokenline
            IF (ll_ice) ierr = putvar (ncout(jsec), id_varout(np_icefra  ), ricefrasec(:,jk),           1, npsec(jsec)-1, 1, ktime=jt )
            IF (lvt   ) ierr = putvar (ncout(jsec), id_varout(np_vt      ), zvmod(:,1)*tempersec(:,jk),jk, npsec(jsec)-1, 1, ktime=jt )
            IF (lvt   ) ierr = putvar (ncout(jsec), id_varout(np_vs      ), zvmod(:,1)*salinesec(:,jk),jk, npsec(jsec)-1, 1, ktime=jt )
+
+            IF ( lvecrot ) THEN
+               ierr = putvar (ncout(jsec), id_varout(np_urot), urotsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+               ierr = putvar (ncout(jsec), id_varout(np_vrot), vrotsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+            ENDIF
 
            IF ( jt == 1 ) THEN   ! output of time independent variables at first time step only
               ! save a mask of the section
@@ -972,6 +1070,31 @@ CONTAINS
        ivar = ivar + 1
     ENDIF
 
+      IF ( lvecrot ) THEN
+         ! define new variables for output 
+         np_urot = ivar
+         stypvar(ivar)%cname       = 'vtang'
+         stypvar(ivar)%cunits      = 'm/s'
+         stypvar(ivar)%valid_min   = -10.
+         stypvar(ivar)%valid_max   = 10.
+         stypvar(ivar)%clong_name  = 'Tangential velocity along '//TRIM(csection(ksec))//' section'
+         stypvar(ivar)%cshort_name = 'vtang'
+         stypvar(ivar)%caxis       = 'TZX'
+         ipk(ivar)                 = npk
+         ivar = ivar + 1
+
+         np_vrot = ivar
+         stypvar(ivar)%cname       = 'vnorm'
+         stypvar(ivar)%cunits      = 'm/s'
+         stypvar(ivar)%valid_min   = -10.
+         stypvar(ivar)%valid_max   = 10.
+         stypvar(ivar)%clong_name  = 'Normal velocity along '//TRIM(csection(ksec))//' section'
+         stypvar(ivar)%cshort_name = 'vnorm'
+         stypvar(ivar)%caxis       = 'TZX'
+         ipk(ivar)                 = npk
+         ivar = ivar + 1
+      ENDIF
+
     ! create output fileset
     ncout(ksec) = create      (cf_out, cf_tfil, npsec(ksec),  1, npk, cdep='deptht'                      )
     ierr  = createvar   (ncout(ksec),  stypvar, nvar,  ipk, id_varout                                    )
@@ -1105,5 +1228,48 @@ CONTAINS
 9006 FORMAT ("  |    Section : ",a33,"    |" )
 
   END SUBROUTINE FancyPrint
+
+  SUBROUTINE CalculateCutHeading( pmap_coord )
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CalculateCutHeading  ***
+    !!
+    !! ** Purpose :  Compute the geographical direction of a transect
+    !!
+    !! ** Method  :  Elementary Trigonometry 
+    !!
+    !! References :  
+    !!----------------------------------------------------------------------
+    REAL(KIND=4),DIMENSION(:), INTENT(in) :: pmap_coord  ! transect limit (4 real)
+
+    REAL(KIND=4)  ::  zxa, zxb, zya, zyb, zpi     ! real working space
+    REAL(KIND=4)  ::  zzz     ! real working space
+    !!----------------------------------------------------------------------
+
+    zpi=ACOS(-1.)   ! something like 3.14159...
+
+    zxa=pmap_coord(1)*zpi/180.
+    zxb=pmap_coord(2)*zpi/180.
+    zzz=TAN((45-pmap_coord(3)/2.)*zpi/180.)
+    IF ( zzz > 0. ) THEN
+      zya=-alog(zzz)
+    ELSE
+      zya=0.
+    ENDIF
+
+    zzz=TAN((45-pmap_coord(4)/2.)*zpi/180.)
+    IF ( zzz > 0. ) THEN
+      zyb=-alog(zzz)
+    ELSE
+      zyb=0.
+    ENDIF
+
+    angled=ATAN2((zxb-zxa),(zyb-zya))
+    angled=angled*180./zpi
+
+    IF (angled  < 0) angled=angled+360.
+
+    PRINT '(a,f5.1)',' Transect orientation: N',angled
+
+  END SUBROUTINE CalculateCutHeading
 
 END PROGRAM cdf_xtract_brokenline
