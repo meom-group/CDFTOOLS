@@ -35,7 +35,7 @@ PROGRAM cdfpsi
   INTEGER(KIND=4)                           :: it              ! time idex for vvl
   INTEGER(KIND=4)                           :: ierr            ! working integer
   INTEGER(KIND=4)                           :: narg, iargc     ! command line 
-  INTEGER(KIND=4)                           :: ijarg, ireq     ! command line
+  INTEGER(KIND=4)                           :: ijarg           ! command line
   INTEGER(KIND=4)                           :: npiglo, npjglo  ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt        ! size of the domain
   INTEGER(KIND=4)                           :: ncout           ! ncid of output file
@@ -89,33 +89,34 @@ PROGRAM cdfpsi
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfpsi U-file V-file [V] [-full ] [-mask ] [-mean] [-nc4 ] ...'
+     PRINT *,' usage : cdfpsi -u U-file -v V-file [-V] [-full ] [-mask ] [-mean] [-nc4 ] ...'
      PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the barotropic stream function (a proxy ) as the integral of '
-     PRINT *,'       the transport.' 
+     PRINT *,'       Computes the barotropic stream function (a proxy) as the integral of '
+     PRINT *,'       the transport. It is a proxy, as far as the flow in not strictly non-'
+     PRINT *,'       divergent. '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       U-file  : netcdf file of zonal velocity.' 
-     PRINT *,'       V-file  : netcdf file of meridional velocity.' 
+     PRINT *,'       -u U-file  : netcdf file of zonal velocity.' 
+     PRINT *,'       -v V-file  : netcdf file of meridional velocity.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [V] : use V field instead of U field for integration.' 
-     PRINT *,'       [ -full ] : indicates a full step case. Default is partial steps.'
-     PRINT *,'       [ -mask ] : mask output fields. Note that the land value is significant.'
-     PRINT *,'                   It correspond to the potential on this continent.'
-     PRINT *,'       [ -mean ] : save the average of the computations done with U and V.'
-     PRINT *,'       [ -nc4  ] : use netcdf4 output files with chunking and deflation'
-     PRINT *,'       [ -ssh T-file ] : compute the transport in the ''ssh'' layer, using '
-     PRINT *,'                  surface velocities. Take the ssh from T-file specified in '
-     PRINT *,'                  this option. This is a experimental option, not certified ...'
-     PRINT *,'       [ -open ] : for open domain configuration. See also -ref to set '
-     PRINT *,'                   reference point.'
-     PRINT *,'       [ -ref iref jref ] : Set the reference point in i,j coordinates.'
-     PRINT *,'                   BSF at reference point is arbitrarly set to zero.'
-     PRINT *,'       [ -o  OUT-file ] : specify output file name instead of default ',TRIM(cf_out)
-     PRINT *,'       [ -vvl  ] : use time-varying vertical metrics'
+     PRINT *,'       [-V ] : use V field instead of U field for integration.' 
+     PRINT *,'       [-full ] : indicates a full step case. Default is partial steps.'
+     PRINT *,'       [-mask ] : mask output fields. Note that the land value is significant.'
+     PRINT *,'              It correspond to the potential on this continent.'
+     PRINT *,'       [-mean ] : save the average of the computations done with U and V.'
+     PRINT *,'       [-ssh T-file ] : compute the transport in the ''ssh'' layer, using '
+     PRINT *,'              surface velocities. Take the ssh from T-file specified in this'
+     PRINT *,'              option. This is an experimental option, not certified ...'
+     PRINT *,'       [-open ] : for open domain configuration. See also -ref to set  '
+     PRINT *,'              reference point.'
+     PRINT *,'       [-ref iref jref ] : Set the reference point in i,j coordinates. BSF at'
+     PRINT *,'              reference point is arbitrarly set to zero.'
+     PRINT *,'       [-o  OUT-file ] : specify output file name instead of default ',TRIM(cf_out)
+     PRINT *,'       [-nc4  ] : use netcdf4 output files with chunking and deflation'
+     PRINT *,'       [-vvl  ] : use time-varying vertical metrics'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),' and ', TRIM(cn_fzgr),'.'
@@ -134,31 +135,26 @@ PROGRAM cdfpsi
   CALL SetGlobalAtt (cglobal)
   iiref = -1 ; ijref= -1
 
-  ijarg = 1 ; ireq = 0
+  ijarg = 1
   DO WHILE ( ijarg <= narg )
-     CALL getarg( ijarg, cldum ) ; ijarg=ijarg + 1
+     CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ('-u'   ) ; CALL getarg( ijarg, cf_ufil ) ; ijarg=ijarg+1 
+     CASE ('-v'   ) ; CALL getarg( ijarg, cf_vfil ) ; ijarg=ijarg+1 
+        ! options 
+     CASE ('-V'   ) ; ll_v  = .TRUE. ;  ll_u = .FALSE.
      CASE ('-full') ; lfull = .TRUE.
      CASE ('-mask') ; lmask = .TRUE.
-     CASE ('-mean') ; lmean = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
+     CASE ('-mean') ; lmean = .TRUE.  ; ll_v = .TRUE. ; ll_u = .TRUE.
      CASE ('-ssh' ) ; lssh  = .TRUE.  ; nvout=3
-                    ;  CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg + 1 
-     CASE ('-nc4' ) ; lnc4  = .TRUE. 
-     CASE ('-open') ; lopen = .TRUE.  ; ll_v=.TRUE. ; ll_u=.TRUE.
+        ;             CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg+1 
+     CASE ('-open') ; lopen = .TRUE.  ; ll_v = .TRUE. ; ll_u = .TRUE.
      CASE ('-o'   ) ; CALL getarg( ijarg, cf_out ) ; ijarg=ijarg + 1 
-     CASE ('-ref')  ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg + 1 ; READ(cldum,*) iiref
-                    ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg + 1 ; READ(cldum,*) ijref
+     CASE ('-nc4' ) ; lnc4  = .TRUE. 
+     CASE ('-ref')  ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) iiref
+        ;             CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ijref
      CASE ('-vvl')  ; lg_vvl = .TRUE.
-
-     CASE DEFAULT
-        ireq = ireq + 1
-        SELECT CASE ( ireq)
-        CASE ( 1 ) ; cf_ufil = cldum
-        CASE ( 2 ) ; cf_vfil = cldum
-        CASE ( 3 ) ; ll_v = .TRUE. ; ll_u = .FALSE.
-        CASE DEFAULT
-           PRINT *, ' Too many arguments !' ; STOP
-        END SELECT
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -222,10 +218,11 @@ PROGRAM cdfpsi
   gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
 
   CALL CreateOutput
+
   e1v(:,:)   = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
   e2u(:,:)   = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
   IF ( lmask) THEN
-     zmask(:,:) = getvar(cn_fmsk, 'fmask', 1, npiglo, npjglo)
+     zmask(:,:) = getvar(cn_fmsk, cn_fmask, 1, npiglo, npjglo)
      WHERE ( zmask >= 2 ) zmask = 1
   ENDIF
 

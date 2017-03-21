@@ -103,6 +103,7 @@ PROGRAM cdfvFWov
      PRINT *,'       Output file only has time relevant dimension. Other dims are set to 1.'
      PRINT *,'       Degenerated dimensions can be removed with :'
      PRINT *,'           ncwga -a x,y,depthw ',TRIM(cf_out), ' -o out.nc'
+     PRINT *,'      '
      STOP
   ENDIF
 

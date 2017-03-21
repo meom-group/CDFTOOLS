@@ -106,29 +106,31 @@ PROGRAM cdfmocsig
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmocsig  -V V-file -T T-file -D depth_ref [-eiv] [-full]  ... '
-     PRINT *,'        ... [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] [-v]...'
-     PRINT *,'        ... [-o OUT-file] [-vvl] '
+     PRINT *,' usage : cdfmocsig  -v V-file -t T-file -r REF-depth | -ntr [-eiv] [-full] ...'
+     PRINT *,'        ... [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] ...'
+     PRINT *,'        ... [-o OUT-file] [-vvl] [-verbose]'
+     PRINT *,'      '
      PRINT *,'     PURPOSE : '
-     PRINT *,'       Computes the MOC in density-latitude coordinates. The global value'
-     PRINT *,'       is always computed. Values for oceanic sub-basins are calculated'
-     PRINT *,'       if the file ', TRIM(cn_fbasins), ' is provided.'
-     PRINT *,'       Last arguments is the reference depth for potential density, in m.'
-     PRINT *,'       Actually only 0 1000 or 2000 are available with standard values for'
-     PRINT *,'       density bins. If you specify another reference depth, you must also'
-     PRINT *,'       specify the minimum density, the bin size and the number of bins,'
-     PRINT *,'       with the options -sigmin, -sigstp, -nbins'
+     PRINT *,'       Computes the MOC in density-latitude coordinates. The global value is '
+     PRINT *,'       always computed. Values for oceanic sub-basins are calculated if the '
+     PRINT *,'       ', TRIM(cn_fbasins), ' file is provided.'
+     PRINT *,'      '
+     PRINT *,'       The reference depth for potential density is given with ''-D'' option.'
+     PRINT *,'       Density ranges and number of bins to use are pre-defined only for three'
+     PRINT *,'       reference depth (0, 1000 and 2000 m). For other reference depth, the '
+     PRINT *,'       density binning must be specified using the relevant options for setting'
+     PRINT *,'       the minimum density, the density step and the number of bins to use.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        -V V-file  : Netcdf gridV file.'
-     PRINT *,'        -T T-file  : Netcdf gridT file.'
-     PRINT *,'        -D ref-depth : reference depth for density. '
-     PRINT *,'               For depth values of 0 1000 or 2000, pre-defined limits for'
-     PRINT *,'               minimum density, number of density bins and width of density'
-     PRINT *,'               bins are provided. For other reference depth, you must use'
-     PRINT *,'               -sigmin, -sigstp and -nbins options (see below).'
-     PRINT *,'               Keyword ''ntr'' can also be used in place of ref-depth in '
-     PRINT *,'               order to use neutral density (no default bin defined so far).'
+     PRINT *,'        -v V-file  : Netcdf gridV file.'
+     PRINT *,'        -t T-file  : Netcdf gridT file.'
+     PRINT *,'        -r ref-depth : reference depth for density. '
+     PRINT *,'            For depth values of 0 1000 or 2000 m, pre-defined limits for minimum'
+     PRINT *,'            density, number of density bins and width of density bins are '
+     PRINT *,'            provided. For other reference depth, you must use the options '
+     PRINT *,'               ''-sigmin'', ''-sigstp'' and ''-nbins'' (see below).'
+     PRINT *,'        or '
+     PRINT *,'        -ntr : uses neutral density (no default bin defined so far), no ''-r'''
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-eiv ] : takes into account VEIV Meridional eddy induced velocity.'
@@ -138,15 +140,17 @@ PROGRAM cdfmocsig
      PRINT *,'       [-sigmin     ] : Specify minimum of density for bining.'
      PRINT *,'       [-sigstp     ] : Specify density step for bining.'
      PRINT *,'       [-nbins      ] : Specify the number of density bins you want.'
-     PRINT *,'       [-isodep     ] : Compute the zonal mean of isopycnal depths used for '
+     PRINT *,'       [-isodep     ] : Computes the zonal mean of isopycnal depths used for '
      PRINT *,'                        mocsig.'
      PRINT *,'       [-o OUT-file ] : Specify output file name instead of ', TRIM(cf_moc)
      PRINT *,'       [-vvl        ] : Use time-varying vertical metrics.'
-     PRINT *,'       [-v          ] : Verbose option for more info during execution.'
+     PRINT *,'       [-verbose    ] : Verbose option for more info during execution.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        Files ', TRIM(cn_fzgr),', ',TRIM(cn_fhgr),', ', TRIM(cn_fmsk)
      PRINT *,'        File ', TRIM(cn_fbasins),' is optional [sub basins masks]'
+     PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_moc) 
@@ -155,10 +159,14 @@ PROGRAM cdfmocsig
      PRINT *,'       variables ',TRIM( cn_zomsfinp),' : Indo Pacific '
      PRINT *,'       variables ',TRIM( cn_zomsfind),' : Indian Ocean alone'
      PRINT *,'       variables ',TRIM( cn_zomsfpac),' : Pacific Ocean alone'
-     PRINT *,'       If file ',TRIM(cn_fbasins),' is not present, ',TRIM(cn_fmsk),' file'
-     PRINT *,'       is used and only ',TRIM( cn_zomsfglo),' is produced.'
+     PRINT *,'       If file ',TRIM(cn_fbasins),' is not present, ',TRIM(cn_fmsk),' file is used and'
+     PRINT *,'       only ',TRIM( cn_zomsfglo),' is produced.'
      PRINT *,'       If option -isodep is used, each MOC variable is complemented by a iso'
      PRINT *,'       variable, giving the zonal mean of ispycnal depth (e.g.',TRIM(cn_zoisoglo),').'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'       cdfmoc '
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -168,24 +176,21 @@ PROGRAM cdfmocsig
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-V'    ) ;  CALL getarg (ijarg, cf_vfil) ; ijarg=ijarg+1 ; ii=ii+1
-     CASE ( '-T'    ) ;  CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1 ; ii=ii+1
-     CASE ( '-D'    ) ;  CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; ii=ii+1
-        SELECT CASE ( cldum )
-        CASE ( 'ntr', 'NTR', 'Ntr' ) ; lntr = .TRUE.   ! use Neutral Density
-        CASE DEFAULT                 ; READ(cldum,*) pref
-        END SELECT
+     CASE ( '-v'     ) ;  CALL getarg (ijarg, cf_vfil) ; ijarg=ijarg+1 ; ii=ii+1
+     CASE ( '-t'     ) ;  CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1 ; ii=ii+1
+     CASE ( '-r'     ) ;  CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; ii=ii+1 ; READ(cldum,*) pref
+     CASE ( '-ntr'   ) ;  lntr = .TRUE. ; ii=ii+1
         ! options
-     CASE ('-full'  ) ; lfull   = .TRUE. ; cglobal = 'Full step computation'
-     CASE ('-eiv'   ) ; leiv    = .TRUE.
-     CASE ('-sigmin') ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigmin ; lbin(1) = .FALSE.
-     CASE ('-nbins' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins  ; lbin(2) = .FALSE.
-     CASE ('-sigstp') ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigstp ; lbin(3) = .FALSE.
-     CASE ('-o'     ) ; CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1 
-     CASE ('-vvl'   ) ; lg_vvl  = .TRUE.
-     CASE ('-isodep') ; lisodep = .TRUE.
-     CASE ('-v'     ) ; lprint  = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.'               ; STOP
+     CASE ('-full'   ) ; lfull   = .TRUE. ; cglobal = 'Full step computation'
+     CASE ('-eiv'    ) ; leiv    = .TRUE.
+     CASE ('-sigmin' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigmin ; lbin(1) = .FALSE.
+     CASE ('-nbins'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins  ; lbin(2) = .FALSE.
+     CASE ('-sigstp' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigstp ; lbin(3) = .FALSE.
+     CASE ('-o'      ) ; CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1 
+     CASE ('-vvl'    ) ; lg_vvl  = .TRUE.
+     CASE ('-isodep' ) ; lisodep = .TRUE.
+     CASE ('-verbose') ; lprint  = .TRUE.
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.'  ; STOP
      END SELECT
   END DO
 
@@ -452,6 +457,7 @@ PROGRAM cdfmocsig
   ierr = closeout(ncout)
 
 CONTAINS
+
   SUBROUTINE CreateOutputFile
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutputFile ***

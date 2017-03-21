@@ -208,21 +208,21 @@ PROGRAM cdftransport
   ! Print usage if no argument
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdftransport -u U-file -v V-file [-t T-file] [-vt VT-file] ...'
-     PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS]... '
+     PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... '
      PRINT *,'                  ... [-full] [-time jt] [-vvl] [-time jt] [-self] ...'
      PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix]'
      PRINT *,'      '
      PRINT *,'    PURPOSE :'
-     PRINT *,'      Compute the transports (volume heat and salt) accross a section.'
+     PRINT *,'      Computes the transports (volume, heat and salt) accross a section.'
      PRINT *,'      The name of the section and the imin, imax, jmin, jmax for the section '
      PRINT *,'      is read from the standard input. To finish the program use the key name'
      PRINT *,'      ''EOF'' for the section name. It may be usefull to use the syntax :'
-     PRINT *,'         cdftransport [..options.. ] < section_file.txt. Section corresponds'
+     PRINT *,'      ''cdftransport [..options.. ] < section_file.txt''. Section corresponds'
      PRINT *,'      to a line between 2 F-points A(imin, jmin) and B(imax,jmax). The order'
      PRINT *,'      of the points does matter: when travelling from A to B, transports to '
      PRINT *,'      the right are positive, transports to the left are negative.   '
      PRINT *,'      OBC U,V files can be used if -obc option is specified.'
-     PRINT *,'      extracted broken lines files can also be used with option -self.'
+     PRINT *,'      Extracted broken lines files can also be used with option -self.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'      -u U-file  : netcdf file with the zonal velocity component.'
@@ -287,22 +287,22 @@ PROGRAM cdftransport
 
   ! Browse command line for arguments and/or options
   DO WHILE (ijarg <= narg )
-     CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
+     CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-vt'    ) ; CALL getarg (ijarg, cf_vtfil) ; ijarg = ijarg + 1 
-     CASE ('-u'     ) ; CALL getarg (ijarg, cf_ufil ) ; ijarg = ijarg + 1 
-     CASE ('-v'     ) ; CALL getarg (ijarg, cf_vfil ) ; ijarg = ijarg + 1 
-     CASE ('-t'     ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg = ijarg + 1 
-     CASE ('-test ' ) ; CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) udum
-        ; CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) vdum
-        ; ltest = .TRUE. 
+     CASE ('-vt'    ) ; CALL getarg (ijarg, cf_vtfil) ; ijarg=ijarg+1 
+     CASE ('-u'     ) ; CALL getarg (ijarg, cf_ufil ) ; ijarg=ijarg+1 
+     CASE ('-v'     ) ; CALL getarg (ijarg, cf_vfil ) ; ijarg=ijarg+1 
+     CASE ('-t'     ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg=ijarg+1 
+     CASE ('-test ' ) ; CALL getarg (ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) udum
+        ;               CALL getarg (ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) vdum
+        ;               ltest = .TRUE. 
      CASE ('-full'  ) ; lfull = .TRUE.
      CASE ('-noheat') ; lheat = .FALSE.
      CASE ('-time'  ) ; CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) itime
      CASE ('-pm'    ) ; lpm   = .TRUE.
-        ; lheat = .FALSE.
+        ;               lheat = .FALSE.
      CASE ('-obc'   ) ; lobc  = .TRUE.
-        ; lheat = .FALSE.
+        ;               lheat = .FALSE.
      CASE ( '-TS'   ) ; l_tsfil = .TRUE.
      CASE ( '-vvl'  ) ; lg_vvl = .TRUE.
      CASE ( '-self' ) ; l_self = .TRUE.
@@ -1009,6 +1009,7 @@ PROGRAM cdftransport
 9003 FORMAT(f9.2,f9.2,f9.2,f9.2,f9.2)
 
 CONTAINS
+
   SUBROUTINE set_typvar ( sd_typvar, cdsection, cdvarname, cdlongname ) 
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE set_typvar  ***
@@ -1151,6 +1152,7 @@ CONTAINS
     ENDIF
 
   END SUBROUTINE set_typvar
+
   SUBROUTINE interm_pt (ydpt, kk, pai, pbi, paj, pbj, ydpti)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE nterm_pt  ***

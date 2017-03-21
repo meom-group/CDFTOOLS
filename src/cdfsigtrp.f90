@@ -132,7 +132,7 @@ PROGRAM cdfsigtrp
      PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file -smin sigma_min ...'
      PRINT *,'              ...  -smax sigma_max -nbins nbins [-print ] [-netcdf] ...'
      PRINT *,'              ... [-full ] [-vvl W-file] [-refdep ref_depth] [-neutral ] ...'
-     PRINT *,'              ... [-section file ] [-temp]'
+     PRINT *,'              ... [-section file ] [-temp] [-help]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute density class transports, according to the density class' 
@@ -142,16 +142,16 @@ PROGRAM cdfsigtrp
      PRINT *,'       which is a text file built  with pairs of lines giving: (1) section name'
      PRINT *,'       and (2) section location.'
      PRINT *,'       First line with section name may also have 2 additional strings holding'
-     PRINT *,'       a prefix for variable output, and a long name to be used as attribute '
-     PRINT *,'       in the output file. ' 
-     PRINT *,'       Second line gives the location of the section with specification of '
-     PRINT *,'       4 integer values (imin imax jmin jmax), relative to the model grid.'
-     PRINT *,'       Only  zonal or meridional section are allowed.'
+     PRINT *,'       a prefix for variable output, and a long name to be used as attribute in'
+     PRINT *,'       the output file. ' 
+     PRINT *,'       Second line gives the location of the section with specification of four'
+     PRINT *,'       integer values (imin imax jmin jmax), relative to the model grid.'
+     PRINT *,'       Only  zonal or meridional sections are allowed.'
      PRINT *,'      '
-     PRINT *,'       This program can also be used to compute transport by class of '
-     PRINT *,'       temperatures, provided the temperatures decrease monotonically '
-     PRINT *,'       downward. In this case, use -temp option and of course specify'
-     PRINT *,'       sigma_min, sigma_max as temperatures.'
+     PRINT *,'       This program can also be used to compute transport by temperatures'
+     PRINT *,'       classes, provided the temperatures decrease monotonically downward.'
+     PRINT *,'       In this case, use -temp option and of course specify sigma_min, '
+     PRINT *,'       sigma_max as temperatures.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf file with temperature and salinity' 
@@ -520,67 +520,8 @@ PROGRAM cdfsigtrp
   DO jsec=1,nsection
      ! setup output variables (section dependant for adaptative variable name (if possible)
      ! define new variables for output 
-     IF ( cvarname(jsec) /= 'none' ) THEN
-        csuffixvarname='_'//TRIM(cvarname(jsec))
-     ELSE
-        csuffixvarname=''
-     ENDIF
-     IF ( clongname(jsec) /= 'none' ) THEN
-        cprefixlongname=TRIM(clongname(jsec))//'_'
-     ELSE
-        cprefixlongname=''
-     ENDIF
 
-     stypvar%rmissing_value    = 99999.
-     stypvar%scale_factor      = 1.
-     stypvar%add_offset        = 0.
-     stypvar%savelog10         = 0.
-     stypvar%iwght             = iweight
-     stypvar%conline_operation = 'N/A'
-     stypvar%caxis             = 'ZT'
-
-     IF ( ltemp ) THEN
-        stypvar(1)%cname          = 'temp_class'
-        stypvar(1)%cunits         = '[]'
-        stypvar(1)%valid_min      = 0.
-        stypvar(1)%valid_max      = 100.
-        stypvar(1)%clong_name     = 'class of potential temperature'
-        stypvar(1)%cshort_name    = 'temp_class'
-
-        stypvar(2)%cname          = 'temptrp'//TRIM(csuffixvarname)
-        stypvar(2)%cunits         = 'Sv'
-        stypvar(2)%valid_min      = -1000.
-        stypvar(2)%valid_max      = 1000.
-        stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in temperature class'
-        stypvar(2)%cshort_name    = 'temptrp'
-     ELSE
-        stypvar(1)%cname          = 'sigma_class'
-        stypvar(1)%cunits         = '[]'
-        stypvar(1)%valid_min      = 0.
-        stypvar(1)%valid_max      = 100.
-        stypvar(1)%clong_name     = 'class of potential density'
-        stypvar(1)%cshort_name    = 'sigma_class'
-
-        stypvar(2)%cname          = 'sigtrp'//TRIM(csuffixvarname)
-        stypvar(2)%cunits         = 'Sv'
-        stypvar(2)%valid_min      = -1000.
-        stypvar(2)%valid_max      = 1000.
-        stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in sigma class'
-        stypvar(2)%cshort_name    = 'sigtrp'
-     ENDIF
-
-     ! create output fileset
-     IF (ltemp) THEN  ; cf_outnc = TRIM(csection(jsec))//'_trptemp.nc'
-     ELSE             ; cf_outnc = TRIM(csection(jsec))//'_trpsig.nc'
-     ENDIF
-
-     ncout = create      (cf_outnc, 'none',  ikx,      iky, nbins, cdep=cv_dep               )
-     ierr  = createvar   (ncout,    stypvar, nboutput, ipk, id_varout, cdglobal=TRIM(cglobal))
-     ierr  = putheadervar(ncout,    cf_tfil, ikx,      iky, nbins, &
-          &   pnavlon=rdumlon, pnavlat=rdumlat, pdep=REAL(dsigma_lev), cdep=cv_dep           )
-
-     tim  = getvar1d(cf_tfil, cn_vtimec, 1     )
-     ierr = putvar1d(ncout,   tim,       1, 'T')
+     CALL CreateOutput (jsec) 
 
      DO jiso=1,nbins
         rdummy1 = dsigma_lev(jiso)
@@ -598,6 +539,7 @@ PROGRAM cdfsigtrp
 9006 FORMAT('# ',a)
 
 CONTAINS
+
   SUBROUTINE section_init(cdfile, cdsection, cdvarname, cdlongname, kimin, kimax, kjmin, kjmax, knumber)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE section_init  ***
@@ -882,6 +824,82 @@ CONTAINS
        PRINT  cfmt_9003, dsigma_lev(jbin),(dwtrpbin(ji,jbin)/1.d6,ji=1,npts), dtrpbin(ksec,jbin)/1.d6
     END DO
   END SUBROUTINE print_out
+
+  SUBROUTINE CreateOutput(ksec)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4), INTENT(in) :: ksec  ! section index
+    !!----------------------------------------------------------------------
+
+     IF ( cvarname(ksec) /= 'none' ) THEN
+        csuffixvarname='_'//TRIM(cvarname(ksec))
+     ELSE
+        csuffixvarname=''
+     ENDIF
+     IF ( clongname(ksec) /= 'none' ) THEN
+        cprefixlongname=TRIM(clongname(ksec))//'_'
+     ELSE
+        cprefixlongname=''
+     ENDIF
+
+     stypvar%rmissing_value    = 99999.
+     stypvar%scale_factor      = 1.
+     stypvar%add_offset        = 0.
+     stypvar%savelog10         = 0.
+     stypvar%iwght             = iweight
+     stypvar%conline_operation = 'N/A'
+     stypvar%caxis             = 'ZT'
+
+     IF ( ltemp ) THEN
+        stypvar(1)%cname          = 'temp_class'
+        stypvar(1)%cunits         = '[]'
+        stypvar(1)%valid_min      = 0.
+        stypvar(1)%valid_max      = 100.
+        stypvar(1)%clong_name     = 'class of potential temperature'
+        stypvar(1)%cshort_name    = 'temp_class'
+
+        stypvar(2)%cname          = 'temptrp'//TRIM(csuffixvarname)
+        stypvar(2)%cunits         = 'Sv'
+        stypvar(2)%valid_min      = -1000.
+        stypvar(2)%valid_max      = 1000.
+        stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in temperature class'
+        stypvar(2)%cshort_name    = 'temptrp'
+     ELSE
+        stypvar(1)%cname          = 'sigma_class'
+        stypvar(1)%cunits         = '[]'
+        stypvar(1)%valid_min      = 0.
+        stypvar(1)%valid_max      = 100.
+        stypvar(1)%clong_name     = 'class of potential density'
+        stypvar(1)%cshort_name    = 'sigma_class'
+
+        stypvar(2)%cname          = 'sigtrp'//TRIM(csuffixvarname)
+        stypvar(2)%cunits         = 'Sv'
+        stypvar(2)%valid_min      = -1000.
+        stypvar(2)%valid_max      = 1000.
+        stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in sigma class'
+        stypvar(2)%cshort_name    = 'sigtrp'
+     ENDIF
+
+     ! create output fileset
+     IF (ltemp) THEN  ; cf_outnc = TRIM(csection(ksec))//'_trptemp.nc'
+     ELSE             ; cf_outnc = TRIM(csection(ksec))//'_trpsig.nc'
+     ENDIF
+
+     ncout = create      (cf_outnc, 'none',  ikx,      iky, nbins, cdep=cv_dep               )
+     ierr  = createvar   (ncout,    stypvar, nboutput, ipk, id_varout, cdglobal=TRIM(cglobal))
+     ierr  = putheadervar(ncout,    cf_tfil, ikx,      iky, nbins, &
+          &   pnavlon=rdumlon, pnavlat=rdumlat, pdep=REAL(dsigma_lev), cdep=cv_dep           )
+
+     tim  = getvar1d(cf_tfil, cn_vtimec, 1     )
+     ierr = putvar1d(ncout,   tim,       1, 'T')
+
+  END SUBROUTINE CreateOutput
 
   SUBROUTINE file_example
     !!---------------------------------------------------------------------

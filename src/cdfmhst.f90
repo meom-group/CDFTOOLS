@@ -36,7 +36,6 @@ PROGRAM cdfmhst
   INTEGER(KIND=4)                              :: it               ! time index for vvl
   INTEGER(KIND=4)                              :: narg, iargc      ! command line 
   INTEGER(KIND=4)                              :: ik0              ! working integer
-  INTEGER(KIND=4)                              :: ifile            ! dummuy loop
   INTEGER(KIND=4)                              :: ijarg            ! argument counter
   INTEGER(KIND=4)                              :: npiglo, npjglo   ! size of the domain
   INTEGER(KIND=4)                              :: npk, npt, npko   ! size of the domain
@@ -99,9 +98,9 @@ PROGRAM cdfmhst
 
   LOGICAL                                      :: llglo = .FALSE.  ! flag for sub basin file
   LOGICAL                                      :: lchk  = .FALSE.  ! flag for missing files
-  LOGICAL                                      :: lfull = .FALSE.  ! flag for missing files
+  LOGICAL                                      :: lfull = .FALSE.  ! flag for full step
   LOGICAL                                      :: lsepf = .FALSE.  ! flag for separate files
-  LOGICAL                                      :: lzdim = .FALSE.  ! flag for separate files
+  LOGICAL                                      :: lzdim = .FALSE.  ! flag for saving cumulated MHT
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -109,7 +108,7 @@ PROGRAM cdfmhst
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmhst  -vt VT-file | (-v V-file -t T-file [-s S-file]) [-MST] ...'
-     PRINT *,'              ... [-full] [-Zdim] [-o OUT-file] [-vvl] '
+     PRINT *,'              ... [-b BASIN-mask] [-full] [-Zdim] [-o OUT-file] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the meridional heat/salt transport as a function of latitude.'
@@ -121,9 +120,9 @@ PROGRAM cdfmhst
      PRINT *,'       available, or if working with model snap-shot, V-file and T-file can'
      PRINT *,'       be specified as an alternative.'
      PRINT *,'      '
-     PRINT *,'      In the evaluation of the ''meridional'' component, a ''zonal'' integration'
-     PRINT *,'      is performed. Note that in CDFTOOLS, as far as ''zonal'' integrals'
-     PRINT *,'      are concerned, they in-fact correspond to ''along-model I'' integrals.'
+     PRINT *,'       In the evaluation of the ''meridional'' component, a ''zonal'' integration'
+     PRINT *,'       is performed. Note that in CDFTOOLS, as far as ''zonal'' integrals'
+     PRINT *,'       are concerned, they in-fact correspond to ''along-model I'' integrals.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -vt VT-file  : netcdf file containing the mean value of the products' 
@@ -140,6 +139,7 @@ PROGRAM cdfmhst
      PRINT *,'              computed.  If not specified, only the MHT is output.' 
      PRINT *,'       [-full ] : to be set for full step case.'
      PRINT *,'       [-Zdim ] : to be set to output vertical structure of Heat/salt transport'
+     PRINT *,'       [-b BASIN-mask ] : use BASIN-mask instead of default', TRIM(cf_outnc)
      PRINT *,'       [-o OUT-file ] : change name of the output file. Default:', TRIM(cf_outnc)
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'      '
@@ -160,40 +160,46 @@ PROGRAM cdfmhst
      DO jbasins=2, 6
         PRINT *,'                       ', TRIM(cv_zomht),cbasin(jbasins),' : Meridional Heat Transport'
         PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(jbasins),' : Meridional Salt Transport ]'
+     PRINT *,'      '
      END DO
      STOP
   ENDIF
 
+  cf_vtfil='none'
+  cf_vfil='none'
+  cf_tfil='none'
+  cf_sfil='none'
+  lsepf  = .TRUE.
   npvar   = 1    ! default value ( no MST output)
   ijarg   = 1
-  ifile   = 0
   ! browse command line and detect the file name as argument different from any option
   ! count the number of files. Assume VT if 1 only, V TS if 2 and V T S if 3
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg+1
      SELECT CASE ( cldum)
+     CASE ( '-vt'   ) ; CALL getarg(ijarg, cf_vtfil  ) ; ijarg = ijarg+1
+     CASE ( '-v'    ) ; CALL getarg(ijarg, cf_vfil   ) ; ijarg = ijarg+1
+     CASE ( '-t'    ) ; CALL getarg(ijarg, cf_tfil   ) ; ijarg = ijarg+1
+     CASE ( '-s'    ) ; CALL getarg(ijarg, cf_sfil   ) ; ijarg = ijarg+1
      CASE ( 'MST' )   ; npvar    = 2
      CASE ( '-full' ) ; lfull    = .TRUE.
      CASE ( '-Zdim' ) ; lzdim    = .TRUE.
-     CASE ( '-o'    ) ; CALL getarg(ijarg, cf_outnc) ; ijarg = ijarg+1
+     CASE ( '-b'    ) ; CALL getarg(ijarg, cn_fbasins) ; ijarg = ijarg+1
+     CASE ( '-o'    ) ; CALL getarg(ijarg, cf_outnc  ) ; ijarg = ijarg+1
      CASE ( '-vvl'  ) ; lg_vvl   = .TRUE.
-     CASE DEFAULT     ; ifile = ifile + 1
-        SELECT CASE (ifile)
-        CASE ( 1) ; cf_vtfil = cldum
-        CASE ( 2) ; cf_tfil  = cldum
-        CASE ( 3) ; cf_sfil  = cldum
-        CASE DEFAULT ; PRINT *,' WARNING: more than 3 files in input : weird '
-        END SELECT
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
   ! security check
-  SELECT CASE (ifile )
-  CASE ( 0 ) ; PRINT *, ' You must provide at least 1 file name (VT) ' ; STOP
-  CASE ( 1 ) ; lsepf = .false.; 
-  CASE ( 2 ) ; lsepf = .true. ; cf_vfil = cf_vtfil ; cf_sfil = cf_tfil
-  CASE ( 3 ) ; lsepf = .true. ; cf_vfil = cf_vtfil 
-  END SELECT
+  IF ( TRIM(cf_vtfil) /= 'none' ) lsepf = .FALSE.
+
+  IF ( lsepf ) THEN  ! need to have cf_vfil and cf_tfil at least
+     lchk = chkfile ( cf_vfil )
+     lchk = lchk .OR. chkfile( cf_tfil )
+     IF ( lchk ) STOP 'Missing V-file of T-file '
+     IF ( TRIM(cf_sfil) == 'none' ) cf_sfil = cf_tfil
+  ENDIF
 
   ! check for missing files
   lchk = lchk .OR. chkfile( cn_fhgr )

@@ -26,7 +26,7 @@ PROGRAM cdfvtrp
 
   INTEGER(KIND=4)                            :: ji, jj, jk, jt       ! dummy loop index
   INTEGER(KIND=4)                            :: it                   ! time index
-  INTEGER(KIND=4)                            :: ierr, ireq           ! working integer
+  INTEGER(KIND=4)                            :: ierr                 ! working integer
   INTEGER(KIND=4)                            :: narg, iargc, ijarg   ! command line 
   INTEGER(KIND=4)                            :: npiglo, npjglo       ! size of the domain
   INTEGER(KIND=4)                            :: npk, npt             ! size of the domain
@@ -65,25 +65,27 @@ PROGRAM cdfvtrp
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvtrp U-file V-file [-full] [-bathy] [-vvl] [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfvtrp -u U-file -v V-file [-full] [-bathy] [-vvl] ...'
+     PRINT *,'               ... [-o OUT-file] [-nc4]'
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the vertically integrated transports at each grid cell.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       U-file : netcdf gridU file' 
-     PRINT *,'       V-file : netcdf gridV file' 
+     PRINT *,'       -u U-file : netcdf gridU file' 
+     PRINT *,'       -v V-file : netcdf gridV file' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full ]  : To be used in case of full step configuration.'
-     PRINT *,'                   Default is partial steps.'
-     PRINT *,'       [-bathy ] : When used, cdfvtrp also compute the along slope'
-     PRINT *,'                   and cross slope transport components.'
-     PRINT *,'                   Bathymetry is read from ',TRIM(cn_fzgr),' file.'
-     PRINT *,'       [ -vvl  ] : Use time-varying vertical metrics'
-     PRINT *,'       [ -o OUT-file  ] : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'                 This option is effective only if cdftools are compiled with'
-     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'                Default is partial steps.'
+     PRINT *,'       [-bathy ] : When used, cdfvtrp also compute the along slope and cross'
+     PRINT *,'                slope transport components.'
+     PRINT *,'                Bathymetry is read from ',TRIM(cn_fzgr),' file.'
+     PRINT *,'       [-vvl  ] : Use time-varying vertical metrics'
+     PRINT *,'       [-o OUT-file  ] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'                This option is effective only if cdftools are compiled with'
+     PRINT *,'                a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -97,25 +99,24 @@ PROGRAM cdfvtrp
      PRINT *,'          If option -bathy is used :'
      PRINT *,'           ', TRIM(cv_soastrp),' : along slope transport'
      PRINT *,'           ', TRIM(cv_socstrp),' : cross slope transport'
+     PRINT *,'      '
      STOP
   ENDIF
 
   ! scan command line and set flags
-  ijarg = 1 ; ireq=0
+  ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum ) 
+     CASE ('-u'     ) ; CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
+     CASE ('-v'     ) ; CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
+        ! options
      CASE ('-full'  ) ; lfull  = .TRUE.
      CASE ('-vvl'   ) ; lg_vvl = .TRUE.
      CASE ('-o'     ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ('-nc4'   ) ; lnc4   = .TRUE.
      CASE ('-bathy' ) ; lbathy = .TRUE. ; nvarout = 4
-     CASE DEFAULT 
-        ireq=ireq+1  ! required arguments
-        SELECT CASE ( ireq )
-        CASE ( 1 ) ; cf_ufil = cldum   
-        CASE ( 2 ) ; cf_vfil = cldum      
-        END SELECT
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
   

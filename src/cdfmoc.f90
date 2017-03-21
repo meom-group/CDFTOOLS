@@ -57,7 +57,7 @@ PROGRAM cdfmoc
   INTEGER(KIND=4)                             :: nbasinso        ! number of sub output basins nbasins+1 to include INDP0
   INTEGER(KIND=4)                             :: ierr            ! working integer
   INTEGER(KIND=4)                             :: narg, iargc     ! command line browser
-  INTEGER(KIND=4)                             :: ijarg, ii       !  "             "
+  INTEGER(KIND=4)                             :: ijarg           !  "             "
   INTEGER(KIND=4)                             :: npiglo,npjglo   ! size of the domain
   INTEGER(KIND=4)                             :: npk, npt        ! size of the domain
   INTEGER(KIND=4)                             :: ncout           ! out put file id
@@ -125,39 +125,60 @@ PROGRAM cdfmoc
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoc  V-file [-full] [-decomp ] [T-file] [S-file] [U-file] ...'
-     PRINT *,'                [-o OUT-file] [-rapid] [-vvl ]'
+     PRINT *,' usage : cdfmoc  -v V-file  [-decomp] [-rapid] [-t T-file] [-s S-file] ...'
+     PRINT *,'                  ... [-u U-file] [-full] [-vvl ] [-o OUT-file] '
+     PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the MOC for oceanic sub basins as described '
-     PRINT *,'       in ',TRIM(cn_fbasins)
+     PRINT *,'       The primary purpose of this tool is to compute the MOC for oceanic '
+     PRINT *,'       sub-basins as described in ',TRIM(cn_fbasins),'. If this sub-basins'
+     PRINT *,'       file is not found, then only computes the global MOC.'
+     PRINT *,'      '
+     PRINT *,'       The option ''-decomp'' was developped in order to decompose the MOC'
+     PRINT *,'       into its 3 components : Geostrophic, Barotropic and Ageostrophic.'
+     PRINT *,'      '
+     PRINT *,'       With the option ''-rapid'', the model MOC at the latitude of the RAPID'
+     PRINT *,'       section (26.5 N) is evaluated in the same manner as it is done with'
+     PRINT *,'       observations of the RAPID MOCHA array, (see details below).'
+     PRINT *,'      '
+     PRINT *,'     REFERENCES :'
+     PRINT *,'        - MOC decomposition:'
+     PRINT *,'          Lee & Marotzke (1998), Baehr, Hirschi, Beismann &  Marotzke (2004),'
+     PRINT *,'          Cabanes, Lee, & Fu (2007), Koehl & Stammer (2007).'
+     PRINT *,'        - RAPID MOCHA array evaluation:'
+     PRINT *,'          See :   http://www.rapid.ac.uk'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       V-file : file with meridional velocity component (mandatory).'
-     PRINT *,'       T-file : file with temperature and salinity'
-     PRINT *,'               (required only for -decomp option).'
-     PRINT *,'       S-file  (required only for -rapid option, might be the same as T_file).'
-     PRINT *,'       U-file  (required only for -rapid option).'
+     PRINT *,'       -v V-file : file with meridional velocity component (mandatory).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-full ] : use full step instead of default partial step' 
-     PRINT *,'       [-decomp ] : decompose MOC in 3 components: Geostrophic,'
-     PRINT *,'                 Barotropic,  Ageostrophic). For this option a '
-     PRINT *,'                 gridT file is required.'
-     PRINT *,'       [-rapid ] : Compute the AMOC at 26.5 N in the same waay than the'
-     PRINT *,'                  RAPID MOCHA array, separating the Gulfstream transport,'
-     PRINT *,'                  and the contribution of different water masses :'
+     PRINT *,'       [-decomp ] : decompose MOC in 3 components: Geostrophic, Barotropic and'
+     PRINT *,'                 Ageostrophic. For this option temperatures and salinity are'
+     PRINT *,'                 needed (for density calculation), hence T-file/S-file.'
+     PRINT *,'       [-rapid ] : Compute the AMOC at 26.5 N in the same manner than the'
+     PRINT *,'                 RAPID MOCHA array, separating the Gulfstream transport and the'
+     PRINT *,'                 contribution of different water masses :'
      PRINT *,'                   - 0-800m      : Thermocline recirculation'
      PRINT *,'                   - 800-1100m   : AIW recirculation'
      PRINT *,'                   - 1100-3000m  : upper-NADW recirculation'
      PRINT *,'                   - 3000-5000m  : lower-NADW recirculation'
      PRINT *,'                   - 5000-bottom : AABW recirculation'
-     PRINT *,'       [ -vvl  ] : Use time-varying vertical metrics'
-     PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_moc)
+     PRINT *,'       [-t T-file] : file with temperature and salinity. Required for '
+     PRINT *,'               ''-decomp'' and ''-rapid'' options.'
+     PRINT *,'       [-s S-file]:  Specify a salinity only file if the salinity is not '
+     PRINT *,'                available in T-file.  Required for  ''-decomp'' and '
+     PRINT *,'               ''-rapid'' options.'
+     PRINT *,'       [-u U-file]:  Specify the U-file (zonal wind-stress), required only for '
+     PRINT *,'                ''-rapid'' option, for the evaluation of Ekman transport. '
+     PRINT *,'       [-full ] : use full step instead of default partial step' 
+     PRINT *,'       [-vvl  ] : Use time-varying vertical metrics'
+     PRINT *,'       [-o OUT-file] : specify output file instead of ',TRIM(cf_moc)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ',TRIM(cn_fhgr),' ', TRIM(cn_fhgr),' and ', TRIM(cn_fmsk)
      PRINT *,'       File ',TRIM(cn_fbasins),'. If this latter file is not available '
      PRINT *,'             only the MOC for the global domain is computed'
+     PRINT *,'      '
+     PRINT *,'     OPENMP SUPPORT : yes '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_moc)
@@ -177,38 +198,41 @@ PROGRAM cdfmoc
      PRINT *,'       traditionally.'
      PRINT *,'       Additional variables are also computed following CLIVAR-GODAE '
      PRINT *,'       reanalysis intercomparison project recommendations. '
+     PRINT *,'      '
      STOP
   ENDIF
 
   cglobal = 'Partial step computation'
-  ijarg = 1 ; ii = 0
+  ! optional files set to none
+  cf_sfil='none'
+  cf_tfil='none'
+  cf_ufil='none'
+
+  ijarg = 1 
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
+     CASE ('-v'     ) ; CALL getarg (ijarg, cf_vfil) ; ijarg=ijarg+1
+        ! options
+     CASE ('-t'     ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ('-s'     ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ('-u'     ) ; CALL getarg (ijarg, cf_ufil) ; ijarg=ijarg+1
+     CASE ('-o'     ) ; CALL getarg (ijarg, cf_moc ) ; ijarg=ijarg+1
      CASE ('-full'  ) ; lfull  = .TRUE. ; cglobal = 'Full step computation'
      CASE ('-decomp') ; ldec   = .TRUE.
      CASE ('-rapid' ) ; lrap   = .TRUE.
      CASE ('-vvl'   ) ; lg_vvl = .TRUE.
-     CASE ('-o'     ) ; CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1
-     CASE DEFAULT
-        ii=ii+1
-        SELECT CASE (ii)
-        CASE ( 1 ) ; cf_vfil = cldum
-        CASE ( 2 ) ; cf_tfil = cldum
-        CASE ( 3 ) ; cf_sfil = cldum
-        CASE ( 4 ) ; cf_ufil = cldum
-        CASE DEFAULT
-           PRINT*, 'ERROR : Too many arguments ...'
-           STOP
-        END SELECT
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
+  IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil
 
   lchk = lchk .OR. chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cn_fzgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_vfil )
-  IF ( ldec  ) lchk = lchk .OR. chkfile ( TRIM(cf_tfil) ) 
+  IF ( ldec  ) lchk = lchk .OR. chkfile (TRIM(cf_tfil)) .OR. chkfile (TRIM(cf_sfil)) 
+  IF ( lrap  ) lchk = lchk .OR. chkfile (TRIM(cf_tfil)) .OR. chkfile (TRIM(cf_sfil)) .OR. chkfile(TRIM(cf_ufil)) 
   IF ( lchk  ) STOP  ! missing file(s)
   IF ( lg_vvl) cn_fe3v = cf_vfil
 
@@ -232,20 +256,13 @@ PROGRAM cdfmoc
   !  Detects newmaskglo file 
   lbas = .NOT. chkfile (cn_fbasins )
 
-  IF (lbas) THEN
-     nbasins = 5
-     nbasinso= 6
-  ELSE
-     nbasins = 1
-     nbasinso= 1
+  IF (lbas) THEN ; nbasins = 5 ; nbasinso= 6
+  ELSE           ; nbasins = 1 ; nbasinso= 1
   ENDIF
 
-  IF ( ldec ) THEN
-     nvarout=nbasinso * 4   ! total, _sh, _bt, _ag
-  ELSE
-     nvarout=nbasinso       ! total
+  IF ( ldec ) THEN ; nvarout=nbasinso * 4   ! total, _sh, _bt, _ag
+  ELSE             ; nvarout=nbasinso       ! total
   ENDIF
-
 
   ! Allocate arrays
   ALLOCATE ( ibmask(nbasins, npiglo, npjglo) )
@@ -288,6 +305,7 @@ PROGRAM cdfmoc
   rdumlon(:,:) = 0.   ! set the dummy longitude to 0
 
   ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
+
   CALL CreateOutput
 
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
@@ -319,7 +337,8 @@ PROGRAM cdfmoc
      ! 1) Compute total MOC: dmoc
      ! --------------------------
      dmoc(:,:,:) = 0.d0        ! initialize moc to 0
-     IF ( ldec) THEN ; dvbt=0.d0 ; hdep=0.0 ; dmoc_bt=0.d0 ; ENDIF
+     IF ( ldec) THEN ; dvbt=0.d0 ; hdep=0.0 ; dmoc_bt=0.d0 ;
+     ENDIF
      DO jk = 1, npk-1
         ! Get velocities v at jk, time = jt
         zv(:,:)= getvar(cf_vfil, cn_vomecrty,  jk, npiglo, npjglo, ktime=jt)
@@ -538,7 +557,9 @@ PROGRAM cdfmoc
   ENDDO  ! time loop
 
   ierr = closeout(ncout)
+
 CONTAINS
+
   FUNCTION get_e3v(kk,kt)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION get_e3  ***
@@ -971,6 +992,8 @@ CONTAINS
     !!
     !! ** Method  :  use global module variables 
     !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4) :: ii   ! variable counter
     !!----------------------------------------------------------------------
     ! define new variables for output 
     !    all variables

@@ -91,19 +91,19 @@ PROGRAM cdftransig_xy3d
   CALL ReadCdfNames()
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdftransig_xy3d -c CONFCASE -l ''list_of_tags'' [-code code ] ...'
+     PRINT *,' usage : cdftransig_xy3d -c CONFIG-CASE -l LST-tags [-code code ] ...'
      PRINT *,'                    ... [-depref depref ] [ -nbins nbins ] ... ' 
      PRINT *,'                    ... [-sigmin smin s-scal] [-sigzoom sminr s-scalr ] ...'
      PRINT *,'                    ... [-full ] [-v ] [-vvl ] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the time average volume transport at each grid cell in density'
-     PRINT *,'        space, for the list of tags given as arguments. Results must be '
-     PRINT *,'        condidered as intermediate for further integration.'
+     PRINT *,'       space, for the list of tags given as arguments. Results must be '
+     PRINT *,'       condidered as intermediate for further integration.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -c CONFCASE  : a DRAKKAR CONFIG-CASE name '
-     PRINT *,'       -l list_of_tags : a blank separated list of time tags to be processed.'
+     PRINT *,'       -l LST-tags : a blank-separated list of time tags to be processed.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-code code ] : code corresponds to pre-defined parameters settings '
@@ -150,31 +150,19 @@ PROGRAM cdftransig_xy3d
   ENDIF
 
   ! browse command line according to options
-  ijarg = 1 ;  ntags = 0 ; iset = 0
+  ijarg = 1 ;  iset = 0
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-c'       ) ; CALL getarg(ijarg, config    ) ; ijarg=ijarg+1
-     CASE ( '-l'       ) ; ! need to read a list of tags ( number unknow ) 
-                           ! loop on argument till a '-' is found as first char
-           icur=ijarg      ! save current position of argument number
-           DO ji = icur, narg  ! scan arguments till - found
-              CALL getarg ( ji, cldum ) 
-              IF ( cldum(1:1) /= '-' ) THEN ; ntags = ntags+1
-              ELSE                          ; EXIT
-              ENDIF
-           ENDDO
-           ALLOCATE (ctag_lst(ntags) )
-           DO ji = icur, icur + ntags -1
-              CALL getarg(ji, ctag_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
-           ENDDO
+     CASE ( '-l'       ) ; CALL GetTagList
      CASE ( '-code'    ) ; CALL getarg(ijarg, cldepcode ) ; ijarg=ijarg+1                            
      CASE ( '-depref'  ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) pref       ; iset = iset+1
-                           WRITE(clsigma,'("sigma_",I1)'), NINT(pref/1000.)
+        ;                  WRITE(clsigma,'("sigma_",I1)'), NINT(pref/1000.)
      CASE ( '-nbins'   ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; iset = iset+1
      CASE ( '-sigmin'  ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1min
      CASE ( '-sigzoom' ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1zoom    ; iset = iset+1
-                           CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1scalmin
+        ;                  CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1scalmin
      CASE ( '-full'    ) ; lfull  = .TRUE.
      CASE ( '-v'       ) ; lprint = .TRUE.
      CASE ( '-vvl'     ) ; lg_vvl = .TRUE. 
@@ -196,7 +184,8 @@ PROGRAM cdftransig_xy3d
       pref = 2000. ; nbins = 174 ; ds1min = 29.0d0 ; ds1scal = 0.05d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_2'
   CASE ( 'none'                 ) 
       ! in this case check that all parameters are set individually
-      IF ( iset /= 3  ) THEN  ; PRINT *, ' You must set depref, nbins, sigmin  individually'    ; STOP ; ENDIF
+      IF ( iset /= 3  ) THEN  ; PRINT *, ' You must set depref, nbins, sigmin  individually'    ; STOP 
+      ENDIF
   CASE DEFAULT                ; PRINT *, ' This depcode :',TRIM(cldepcode),' is not available.' ; STOP 
   END SELECT
 
@@ -261,8 +250,6 @@ PROGRAM cdftransig_xy3d
   ! define new variables for output ( must update att.txt)
   ! define output variables
   CALL SetGlobalAtt(cglobal)
-
-
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -354,7 +341,7 @@ PROGRAM cdftransig_xy3d
            IF (jtag == 1) THEN 
               zmasku(:,:)= 1; zmaskv(:,:)= 1.0 ;
               WHERE( zu == 0) zmasku(:,:)= 0.0 ;
-              WHERE( zv == 0) zmaskv(:,:)= 0.0;
+              WHERE( zv == 0) zmaskv(:,:)= 0.0 ;
               IF (lprint  ) PRINT *, ' min,max u:',MINVAL(zu),MAXVAL(zu)
            ENDIF
            !                     density  
@@ -455,6 +442,35 @@ CONTAINS
   ierr  = putheadervar(ncout,  cf_vfil, npiglo, npjglo, nbins,     pdep=REAL(dsigma)      )
 
   END SUBROUTINE CreateOutput
+
+  SUBROUTINE GetTagList
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetTagList  ***
+    !!
+    !! ** Purpose :  Set up a tag list given on the command line as 
+    !!               blank separated list
+    !!
+    !! ** Method  :  Scan the command line until a '-' is found
+    !!----------------------------------------------------------------------
+    INTEGER (KIND=4)  :: ji
+    INTEGER (KIND=4)  :: icur
+    !!----------------------------------------------------------------------
+    !!
+    ntags=0
+    ! need to read a list of file ( number unknow ) 
+    ! loop on argument till a '-' is found as first char
+    icur=ijarg                          ! save current position of argument number
+    DO ji = icur, narg                  ! scan arguments till - found
+       CALL getarg ( ji, cldum )
+       IF ( cldum(1:1) /= '-' ) THEN ; ntags = ntags+1
+       ELSE                          ; EXIT
+       ENDIF
+    ENDDO
+    ALLOCATE (ctag_lst(ntags) )
+    DO ji = icur, icur + ntags -1
+       CALL getarg(ji, ctag_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+    END DO
+  END SUBROUTINE GetTagList
 
 END PROGRAM cdftransig_xy3d
 
