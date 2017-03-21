@@ -350,8 +350,8 @@ cdffindij: cdfio.o cdftools.o  cdffindij.f90
 cdf_use_lib: cdftools.o cdf_use_lib.f90
 	$(F90) cdf_use_lib.f90  -o $(BINDIR)/cdf_use_lib cdfio.o  cdftools.o $(FFLAGS)
 
-cdfweight: cdfio.o  cdftools.o cdfweight.f90 
-	$(F90) cdfweight.f90  -o $(BINDIR)/cdfweight cdfio.o cdftools.o modcdfnames.o $(FFLAGS)
+cdfweight: cdfio.o  cdftools.o  modutils.o  cdfweight.f90 
+	$(F90) cdfweight.f90  -o $(BINDIR)/cdfweight cdfio.o cdftools.o  modutils.o modcdfnames.o $(FFLAGS)
 
 cdfweight2D: cdfio.o  cdfweight2D.f90
 	$(F90) cdfweight2D.f90  -o $(BINDIR)/cdfweight2D cdfio.o $(FFLAGS)
@@ -474,8 +474,8 @@ cdficb_clim: cdfio.o  cdficb_clim.f90
 cdficb_diags: cdfio.o  cdficb_diags.f90
 	$(F90) cdficb_diags.f90 -o $(BINDIR)/cdficb_diags cdfio.o modcdfnames.o $(FFLAGS)
 
-cdf_xtrac_brokenline: cdfio.o  modcdfnames.o cdftools.o  cdf_xtrac_brokenline.f90
-	$(F90)  cdf_xtrac_brokenline.f90  -o $(BINDIR)/cdf_xtrac_brokenline cdfio.o cdftools.o modcdfnames.o $(FFLAGS)
+cdf_xtrac_brokenline: cdfio.o  modcdfnames.o cdftools.o modutils.o cdf_xtrac_brokenline.f90
+	$(F90)  cdf_xtrac_brokenline.f90  -o $(BINDIR)/cdf_xtrac_brokenline cdfio.o cdftools.o modutils.o modcdfnames.o $(FFLAGS)
 
 cdfmppini: cdfio.o  cdfmppini.f90
 	$(F90)  cdfmppini.f90  -o $(BINDIR)/cdfmppini cdfio.o modcdfnames.o $(FFLAGS)
