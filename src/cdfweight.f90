@@ -27,6 +27,7 @@ PROGRAM cdfweight
   !!----------------------------------------------------------------------
   USE cdfio
   USE cdftools       ! cdf_find_ij
+  USE modutils
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
@@ -385,49 +386,5 @@ CONTAINS
     !!----------------------------------------------------------------------
     det = dp1*dp4 - dp2*dp3
   END FUNCTION det
-
-  FUNCTION heading(dplona, dplonb, dplata, dplatb)
-    !!---------------------------------------------------------------------
-    !!                  ***  FUNCTION heading  ***
-    !!
-    !! ** Purpose : Compute true heading between point a and b
-    !!
-    !! ** Method  : Suppose that the 2 points are not too far away 
-    !!              from each other so that heading can be computed 
-    !!              with loxodromy.
-    !!
-    !!----------------------------------------------------------------------
-    REAL(KIND=8), INTENT(in) :: dplata, dplona ! lat lon of point a
-    REAL(KIND=8), INTENT(in) :: dplatb, dplonb ! lat lon of point b
-    REAL(KIND=8)             :: heading        ! return value in degree
-
-    REAL(KIND=8)             :: dlpi, dlconv   ! pi and conversion factor
-    REAL(KIND=8)             :: dlxa,dlya      ! working variable
-    REAL(KIND=8)             :: dlxb,dlyb      ! working variable
-    REAL(KIND=8)             :: dlxb_xa        !  ""        ""
-    !!----------------------------------------------------------------------
-
-    dlpi   = ACOS(-1.d0)
-    dlconv = dlpi/180.d0  ! for degree to radian conversion
-
-    ! there is a problem if the Greenwich meridian pass between a and b
-    IF ( lldebug) PRINT *,' Plonb  Plona ' , dplonb, dplona
-    dlxa = dplona*dlconv
-    dlxb = dplonb*dlconv
-
-    dlya = -LOG(TAN(dlpi/4.-dlconv*dplata/2.d0))
-    dlyb = -LOG(TAN(dlpi/4.-dlconv*dplatb/2.d0))
-
-    IF (lldebug) PRINT *,' dlxa_xb , modulo 2pi', dlxb-dlxa, MOD((dlxb-dlxa),2*dlpi)
-    dlxb_xa = MOD((dlxb-dlxa),2*dlpi)
-
-    IF ( dlxb_xa >=  dlpi ) dlxb_xa = dlxb_xa -2*dlpi
-    IF ( dlxb_xa <= -dlpi ) dlxb_xa = dlxb_xa +2*dlpi
-    IF (lldebug)  PRINT *, 'dlyb -dlya, dlxb_xa ',dlyb -dlya , dlxb_xa
-
-    heading=ATAN2(dlxb_xa,(dlyb-dlya))*180.d0/dlpi
-
-    IF (heading < 0) heading=heading+360.d0
-  END FUNCTION heading
 
 END PROGRAM cdfweight
