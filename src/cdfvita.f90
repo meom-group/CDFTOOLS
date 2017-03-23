@@ -96,7 +96,8 @@ PROGRAM cdfvita
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used'
      PRINT *,'         variables : sovitua, sovitva, sovitmod, sovitdir, [sovitmod3] and'
-     PRINT *,'                     [sovitwa]'
+     PRINT *,'                     [sovitwa]. Note that the direction is relative to the'
+     PRINT *,'                     model grid.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
      PRINT *,'        cdfspeed only computes the speed (velocity module).'
@@ -194,6 +195,7 @@ PROGRAM cdfvita
                  ua(ji,jj)   = 0.5* (uc(ji,jj)+ uc(ji  ,jj-1))
                  va(ji,jj)   = 0.5* (vc(ji,jj)+ vc(ji-1,jj  ))
                  vmod(ji,jj) = SQRT( ua(ji,jj)*ua(ji,jj) + va(ji,jj)*va(ji,jj) )
+                 ! the direction is relative to the model mesh, not the true North
                  vdir(ji,jj) = 90. - ATAN2(va(ji,jj),ua(ji,jj))*180./pi
                  IF ( vdir(ji,jj) < 0. ) vdir(ji,jj) = 360.+vdir(ji,jj)
               END DO
@@ -204,6 +206,7 @@ PROGRAM cdfvita
                  ua(ji,jj)   = 0.5* (uc(ji,jj)+ uc(ji-1,jj))
                  va(ji,jj)   = 0.5* (vc(ji,jj)+ vc(ji,jj-1))
                  vmod(ji,jj) = SQRT( ua(ji,jj)*ua(ji,jj) + va(ji,jj)*va(ji,jj) )
+                 ! the direction is relative to the model mesh, not the true North
                  vdir(ji,jj) = 90. - ATAN2(va(ji,jj),ua(ji,jj))*180./pi
                  IF ( vdir(ji,jj) < 0. ) vdir(ji,jj) = 360.+vdir(ji,jj)
               END DO

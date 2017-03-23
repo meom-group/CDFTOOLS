@@ -11,6 +11,10 @@ PROGRAM cdfuv
   !!           2.1  : 02/2010  : J.M. Molines : handle multiframes input files.
   !!           3.0  : 04/2011  : J.M. Molines : Doctor norm + Lic.
   !!         : 4.0  : 03/2017  : J.M. Molines  
+  !!
+  !! * Reference for mean and variance computing:
+  !! Higham N. (2002) :"Accuracy and Stability of Numerical Algorithms." 
+  !!         Second edition, Siam editor, 710pp. (see chapter 1.9 )
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -62,13 +66,14 @@ PROGRAM cdfuv
   LOGICAL                                   :: lcaltmean            ! flag for mean time computation
   LOGICAL                                   :: lperio = .FALSE.     ! flag for E-W periodicity
   LOGICAL                                   :: lnc4   = .FALSE.     ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: lopt   = .FALSE.     ! optimized algorithm flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfuv -c CONFIG-CASE -l LST-tags [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfuv -c CONFIG-CASE -l LST-tags [-opt] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Computes the time average values for U.V product, at T point.' 
@@ -82,6 +87,8 @@ PROGRAM cdfuv
      PRINT *,'            e.g. :  y2000m01d05 y2000m01d10 ...'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-opt :] use optimized algorithm, minimizing truncation errors in the'
+     PRINT *,'             evaluation of mean U, meanV and mean (U''.V'').'
      PRINT *,'       [-o OUT-file] : specify output filename instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ] :  Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'             This option is effective only if cdftools are compiled with'
@@ -107,6 +114,7 @@ PROGRAM cdfuv
      CASE ( '-c'  ) ; CALL getarg(ijarg, config) ; ijarg=ijarg+1
      CASE ( '-l'  ) ; CALL GetTagList
         ! options
+     CASE ( '-opt') ; lopt = .TRUE.
      CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
      CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
@@ -149,7 +157,7 @@ PROGRAM cdfuv
      dcumulu(:,:)  = 0.d0 ;  dcumulv(:,:) = 0.d0
 
      DO jt = 2, narg           ! loop on tags
-        CALL getarg (jt, ctag)
+        ctag=ctag_lst(jt)
 
         cf_ufil = SetFileName( config, ctag, 'U', ld_stop=.TRUE. )
         npt = getdim (cf_ufil, cn_t)
@@ -182,27 +190,53 @@ PROGRAM cdfuv
                  zworkv(ji,jj) = 0.5 * ( zv(ji,jj) + zv(ji,jj-1) )  ! V at T point
               END DO
            END DO
-
-           dcumuluv(:,:) = dcumuluv(:,:) + zworku(:,:) * zworkv(:,:)*1.d0
-           dcumulu(:,:)  = dcumulu(:,:)  + zworku(:,:)*1.d0
-           dcumulv(:,:)  = dcumulv(:,:)  + zworkv(:,:)*1.d0
+           IF ( lopt ) THEN
+              IF ( ntframe == 1 ) THEN  ! initialize recurence formula
+                dcumulu(:,:) = zworku(:,:)
+                dcumulv(:,:) = zworkv(:,:)
+                dupvp(:,:)   = 0.d0
+                dcumuluv(:,:) =zworku(:,:) * zworkv(:,:)*1.d0
+              ELSE
+                dupvp(:,:)= dupvp(:,:) + (1.*(ntframe -1))/ntframe*(zworku(:,:) - dcumulu(:,:))*(zworkv(:,:) - dcumulv(:,:))
+                dcumulu(:,:) = dcumulu(:,:)  +  1./ntframe*(zworku(:,:)            *1.d0 - dcumulu(:,:))
+                dcumulv(:,:) = dcumulv(:,:)  +  1./ntframe*(zworkv(:,:)            *1.d0 - dcumulv(:,:))
+                dcumuluv(:,:) = dcumuluv(:,:)+  1./ntframe*(zworku(:,:)*zworkv(:,:)*1.d0 - dcumuluv(:,:))
+              ENDIF
+           ELSE
+             dcumuluv(:,:) = dcumuluv(:,:) + zworku(:,:) * zworkv(:,:)*1.d0
+             dcumulu(:,:)  = dcumulu(:,:)  + zworku(:,:)*1.d0
+             dcumulv(:,:)  = dcumulv(:,:)  + zworkv(:,:)*1.d0
+           ENDIF
 
         END DO  !jtt
      END DO  ! jt
-     ! finish with level jk ; compute mean (assume spval is 0 )
-     zmean(:,:) = dcumuluv(:,:)/ntframe
+     ! finish with level jk ; compute mean (assume spval is 0 ) 
+     !  < > is temporal mean here
+     ! < U.V> 
+     IF ( lopt) THEN ; zmean(:,:) = dcumuluv(:,:)
+     ELSE            ; zmean(:,:) = dcumuluv(:,:)/ntframe
+     ENDIF
      IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
      ierr = putvar(ncout, id_varout(1), zmean, jk,npiglo, npjglo, kwght=ntframe )
 
-     zmean(:,:) = dcumulu(:,:)/ntframe
+     ! < U >
+     IF ( lopt ) THEN ; zmean(:,:) = dcumulu(:,:)
+     ELSE             ; zmean(:,:) = dcumulu(:,:)/ntframe
+     ENDIF
      IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
      ierr = putvar(ncout, id_varout(2), zmean, jk,npiglo, npjglo, kwght=ntframe )
 
-     zmean(:,:) = dcumulv(:,:)/ntframe
+     ! < V >
+     IF ( lopt ) THEN ; zmean(:,:) = dcumulv(:,:)
+     ELSE             ; zmean(:,:) = dcumulv(:,:)/ntframe
+     ENDIF
      IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
      ierr = putvar(ncout, id_varout(3), zmean, jk,npiglo, npjglo, kwght=ntframe )
 
-     dupvp(:,:) = dcumuluv(:,:)/ntframe - dcumulu(:,:)*dcumulv(:,:)/ntframe/ntframe
+     ! < U'.V' >
+     IF ( lopt ) THEN ; dupvp(:,:)= 1./(ntframe -1 ) * dupvp(:,:) ! use unbiased estimate 
+     ELSE             ; dupvp(:,:) = dcumuluv(:,:)/ntframe - dcumulu(:,:)*dcumulv(:,:)/ntframe/ntframe
+     ENDIF
      zmean(:,:) = dupvp(:,:)
      IF ( lperio ) zmean(1, :) = zmean(npiglo-1,:)
      ierr = putvar(ncout, id_varout(4), zmean, jk,npiglo, npjglo, kwght=ntframe )
