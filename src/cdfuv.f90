@@ -32,7 +32,7 @@ PROGRAM cdfuv
   INTEGER(KIND=4)                           :: ierr                 ! working integer
   INTEGER(KIND=4)                           :: narg, iargc, ijarg   ! command line
   INTEGER(KIND=4)                           :: npiglo,npjglo        ! size of the domain
-  INTEGER(KIND=4)                           :: npk, npt             ! size of the domain
+  INTEGER(KIND=4)                           :: npk, npt, npkf       ! size of the domain
   INTEGER(KIND=4)                           :: ntframe              ! Cumul of time frame
   INTEGER(KIND=4)                           :: ntags                ! number of tags to process
   INTEGER(KIND=4)                           :: ncout                ! ncid of output file
@@ -126,7 +126,11 @@ PROGRAM cdfuv
 
   npiglo = getdim (cf_ufil,cn_x)
   npjglo = getdim (cf_ufil,cn_y)
-  npk    = getdim (cf_ufil,cn_z)
+  npkf   = getdim (cf_ufil,cn_z)
+
+  IF ( npkf == 0 ) THEN ; npk = 1
+  ELSE                  ; npk=npkf
+  ENDIF
 
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
@@ -156,7 +160,7 @@ PROGRAM cdfuv
      dcumuluv(:,:) = 0.d0 ;  dtotal_time  = 0.d0 ; ntframe = 0
      dcumulu(:,:)  = 0.d0 ;  dcumulv(:,:) = 0.d0
 
-     DO jt = 2, narg           ! loop on tags
+     DO jt = 1, ntags           ! loop on tags
         ctag=ctag_lst(jt)
 
         cf_ufil = SetFileName( config, ctag, 'U', ld_stop=.TRUE. )
@@ -290,9 +294,9 @@ CONTAINS
     stypvar(4)%clong_name     = 'Uprime .Vprime at T point' ; stypvar(3)%cshort_name   = cl_name
 
     ! create output fileset
-    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE., ld_nc4=lnc4 )
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npkf, ld_xycoo=.TRUE., ld_nc4=lnc4 )
     ierr  = createvar   (ncout , stypvar, 4,      ipk,    id_varout           , ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npkf, ld_xycoo=.TRUE. )
 
   END SUBROUTINE CreateOutput
 
@@ -319,6 +323,7 @@ CONTAINS
        ELSE                          ; EXIT
        ENDIF
     ENDDO
+    PRINT *,' NTAGS', ntags
     ALLOCATE (ctag_lst(ntags) )
     DO ji = icur, icur + ntags -1
        CALL getarg(ji, ctag_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
