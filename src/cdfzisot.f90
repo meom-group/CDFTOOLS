@@ -61,7 +61,7 @@ PROGRAM cdfzisot
      PRINT *,' usage : cdfzisot -t T-file -iso ISO-temp [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the depth of an isotherm surface from the temperature file'
+     PRINT *,'       Compute the depth of an isotherm surface from the temperature file'
      PRINT *,'       and value of the isotherm given on the command line.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -71,7 +71,7 @@ PROGRAM cdfzisot
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        [-o OUT-file] : specify the output file name instead of ',TRIM(cf_out)
-     PRINT *,'        [-nc4]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'        [-nc4]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -93,7 +93,7 @@ PROGRAM cdfzisot
         ! options
      CASE ( '-o'  ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

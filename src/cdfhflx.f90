@@ -72,7 +72,7 @@ PROGRAM cdfhflx
      PRINT *,' usage : cdfhflx  -f T-file [-o OUTNC-file ] [-ot OUTTXT-file] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the Meridional Heat Transport (MHT) from surface heat fluxes,' 
+     PRINT *,'       Compute the Meridional Heat Transport (MHT) from surface heat fluxes,' 
      PRINT *,'       in function of the latitude.'
      PRINT *,'       If a sub-basin file is available, MHT is computed for each sub-basin.'
      PRINT *,'       Note that the latitude is in fact a line of constant J coordinate, not'

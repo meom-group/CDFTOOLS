@@ -74,7 +74,7 @@ PROGRAM cdfheatc
      PRINT *,'     [-M MSK-file VAR-mask ] [-vvl ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Computes the heat content in the specified 3D area (Joules)'
+     PRINT *,'        Compute the heat content in the specified 3D area (Joules)'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f T-file : name of the input file with temperature (and MLD if needed).'
@@ -129,7 +129,7 @@ PROGRAM cdfheatc
         ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
      CASE ( '-M'       ) ; CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1 
         ;                    CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
-     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

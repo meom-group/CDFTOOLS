@@ -115,7 +115,7 @@ PROGRAM cdfsigintegr
      PRINT *,'       [-rholev  file] : indicates name of file defining the limits for '
      PRINT *,'               integration. Default is ', TRIM(cf_rholev)
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

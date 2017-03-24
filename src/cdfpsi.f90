@@ -93,7 +93,7 @@ PROGRAM cdfpsi
      PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the barotropic stream function (a proxy) as the integral of '
+     PRINT *,'       Compute the barotropic stream function (a proxy) as the integral of '
      PRINT *,'       the transport. It is a proxy, as far as the flow in not strictly non-'
      PRINT *,'       divergent. '
      PRINT *,'      '

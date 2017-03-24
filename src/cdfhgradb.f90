@@ -72,12 +72,12 @@ PROGRAM cdfhgradb
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfhgradb -t T-file [-s S-file] [-nc4 ] [-o OUT-file] ...'
+     PRINT *,' usage : cdfhgradb -t T-file [-s S-file] [-o OUT-file] [-nc4] ...'
      PRINT *,'                   ...  [-sal SAL-name]  [-tem TEMP-name] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the norm of the horizontal buoyancy gradient.'
-     PRINT *,'      Results are saved at T points.'
+     PRINT *,'       Compute the norm of the horizontal buoyancy gradient. Results are '
+     PRINT *,'       saved at T points.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : File with ',TRIM(cn_votemper),' and ',TRIM(cn_vosaline),' variables' 

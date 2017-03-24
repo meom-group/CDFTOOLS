@@ -94,7 +94,7 @@ PROGRAM cdfrmsssh
         ! options
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

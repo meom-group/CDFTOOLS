@@ -52,7 +52,7 @@ PROGRAM cdfnan
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfnan -l FILE-list [-r value] [-absmax max] '
+     PRINT *,' usage : cdfnan -l LST-files [-r value] [-absmax max] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Detect NaN values in the input files, and change them to either spval'
@@ -67,7 +67,8 @@ PROGRAM cdfnan
      PRINT *,'      ################################'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -l FILE-list : All files in the list must have the same geometry and'
+     PRINT *,'       -l LST-files : A blank-separated list of the name of the files to '
+     PRINT *,'              process. All files in the list must have the same geometry and'
      PRINT *,'              must contain the same variables.'
      PRINT *,'              CAUTION : input files are over-written!'
      PRINT *,'      '
@@ -79,6 +80,7 @@ PROGRAM cdfnan
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : input file is rewritten without NaN.' 
      PRINT *,'         variables : same name as input.' 
+     PRINT *,'      '
      STOP
   ENDIF
 

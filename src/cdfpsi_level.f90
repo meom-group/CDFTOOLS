@@ -57,7 +57,7 @@ PROGRAM cdfpsi_level
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' Usage : cdfpsi_level  Ufile Vfile <V> (optional argument)'
-     PRINT *,' Computes the barotropic stream function as the integral of the transport'
+     PRINT *,' Compute the barotropic stream function as the integral of the transport'
      PRINT *,' PARTIAL CELLS VERSION'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,mask.nc must be in te current directory'
      PRINT *,' Output on psi_level.nc, variables sobarstf on f-points'

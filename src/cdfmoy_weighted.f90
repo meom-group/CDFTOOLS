@@ -76,11 +76,11 @@
      PRINT *,'       ... [-skip variable] [-vvl] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute weighted average of files. The weight for each file is'
-     PRINT *,'       read from the iweight variable attribute. In particular, this attribute'
-     PRINT *,'       is set to the number of elements used when computing a time average'
-     PRINT *,'       (cdfmoy program). A primary application is thus for computing annual'
-     PRINT *,'       mean from monthly means.' 
+     PRINT *,'       Compute weighted average of files. The weight for each file is read from'
+     PRINT *,'       the iweight variable attribute. In particular, this attribute is set to'
+     PRINT *,'       the number of elements used when computing a time average (''cdfmoy'').'
+     PRINT *,'       A primary application is thus for computing annual mean from monthly '
+     PRINT *,'       means.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -l LST-files : The list of files to be averaged, which are supposed to'
@@ -106,8 +106,13 @@
      PRINT *,'       none'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
+     PRINT *,'      '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'       variables : same as in the input files'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO : '
+     PRINT *,'       cdfmoy, cdfmoyt, cdfmoy_freq'
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -125,7 +130,7 @@
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
      CASE ( '-o'     ) ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
      CASE ( '-skip'  ) ; CALL getarg ( ijarg, cv_skip) ; ijarg = ijarg +1
-     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
   
@@ -133,7 +138,7 @@
   DO jt = 1,nfiles
      lchk = lchk .OR. chkfile ( cf_lst(jt) )
   ENDDO
-  IF ( lchk ) STOP 1 ! missing files  
+  IF ( lchk ) STOP ! missing files  
  
   ! work with 1rst file for dimension lookup
   cf_in=cf_lst(1)

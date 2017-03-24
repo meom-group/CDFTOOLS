@@ -92,7 +92,7 @@ PROGRAM cdfmppini
      CASE( '-b'      ) ; cf_msk = cn_fbathymet  ; cv_in = cn_bathymet
      CASE( '-z'      ) ; cf_msk = cn_fzgr       ; cv_in = cn_mbathy
      CASE( '-jperio' ) ; CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jperio
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

@@ -180,7 +180,7 @@ PROGRAM cdficediag
      CASE ( '-maskvar' ) ; CALL getarg (ijarg, cv_mask) ; ijarg=ijarg+1
      CASE ( '-maskfile') ; CALL getarg (ijarg, cn_fmsk) ; ijarg=ijarg+1
      CASE ('-o'        ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP 1
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP
      END SELECT
   END DO
 

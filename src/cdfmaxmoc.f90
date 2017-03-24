@@ -64,7 +64,7 @@ PROGRAM cdfmaxmoc
      PRINT *,'                 ... [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Computes the maximum and minimum of the overturning, from OVT-file,' 
+     PRINT *,'        Compute the maximum and minimum of the overturning, from OVT-file,' 
      PRINT *,'        for the specified oceanic basin, and in the geographical window'
      PRINT *,'        defined with ''-w'' option as a range of latitudes and depths.'
      PRINT *,'      '

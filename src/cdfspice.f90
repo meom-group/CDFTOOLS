@@ -103,6 +103,7 @@ PROGRAM cdfspice
      PRINT *,'       Flament (2002) "A state variable for characterizing '
      PRINT *,'             water masses and their diffusive stability: spiciness."'
      PRINT *,'             Progress in Oceanography Volume 54, 2002, Pages 493-501.'
+     PRINT *,'      '
      STOP
   ENDIF
 

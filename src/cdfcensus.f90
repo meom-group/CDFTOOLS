@@ -121,7 +121,7 @@ PROGRAM cdfcensus
      PRINT *,'       [-full ] : use for full step computation'
      PRINT *,'       [-vvl ]  : use time-varying vertical metrics.'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -159,7 +159,7 @@ PROGRAM cdfcensus
      CASE ( '-full'  ) ; lfull  = .TRUE.
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
   cglobal = 'Census computed from '//TRIM(cf_tfil)
@@ -272,7 +272,7 @@ PROGRAM cdfcensus
 
      END DO  ! Main loop
 
-     ! Computes some statistics
+     ! Compute some statistics
      rcmax = MAXVAL ( dcensus )
      ijloc = MAXLOC ( dcensus )
      zsm    = zsmin + (ijloc(1) -1 ) * zds

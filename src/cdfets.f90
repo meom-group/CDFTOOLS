@@ -9,10 +9,10 @@ PROGRAM cdfets
   !!  ** Method  : (1) Compute the BruntVaissala frequency (N2) using eosbn2
   !!               (2) Compute the Rossby Radius as the vertical integral of N,
   !!                   scaled by |f|*pi
-  !!               (3) Computes the buoyancy =-g x rho/rho0 and is horizontal 
+  !!               (3) Compute the buoyancy =-g x rho/rho0 and is horizontal 
   !!                   derivative db/dx and db/dy
-  !!               (4) Computes M2 = SQRT ( (db/dx)^2 + (db/dy)^2 )
-  !!               (5) Computes eddy length scale = ets = N/M2
+  !!               (4) Compute M2 = SQRT ( (db/dx)^2 + (db/dy)^2 )
+  !!               (5) Compute eddy length scale = ets = N/M2
   !!               (6) Output on netcdf file ets.nc :  
   !!                   ets = voets ;  rosby_radius = sorosrad
   !!
@@ -93,7 +93,7 @@ PROGRAM cdfets
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file] : specifiy the name of output file instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file] : use time varying vertical metrics. W-file holds the '
@@ -173,7 +173,7 @@ PROGRAM cdfets
      IF ( lg_vvl ) THEN ; it=jt
      ELSE               ; it=1
      ENDIF
-     ! at level 1 and npk, dets is not defined
+     ! at level 1. and npk, dets is not defined
      dets(:,:) = spval
      ierr = putvar(ncout, id_varout(1) ,SNGL(dets), npk, npiglo, npjglo, ktime = jt)
      !  2 levels of T and S are required : iup,idown (with respect to W level)
@@ -260,7 +260,7 @@ PROGRAM cdfets
      ! repeat dets at the surface and level 2 (the last computed)
      ierr = putvar(ncout, id_varout(1) ,SNGL(dets), 1,npiglo, npjglo, ktime=jt)
 
-     ! apply land mask (level 2) on dlda (level 1 and 2 have same mask, as there are  always at least 3 levels)
+     ! apply land mask (level 2) on dlda (level 1. and 2 have same mask, as there are  always at least 3 levels)
      WHERE (zmask == 0 ) dlda=spval
      ierr = putvar(ncout, id_varout(2) ,SNGL(dlda), 1,npiglo, npjglo, ktime=jt)
 

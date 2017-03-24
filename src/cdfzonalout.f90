@@ -76,7 +76,7 @@ PROGRAM cdfzonalout
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum)
      CASE ( 'f' ) ; CALL getarg (ijarg, cf_zonal) ; ijarg=ijarg+1
-     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

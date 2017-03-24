@@ -43,10 +43,10 @@ PROGRAM cdfwhereij
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfwhereij  -w imin imax jmin jmax [-c COOR-file] [-p C-point]'
+     PRINT *,' usage : cdfwhereij  -w imin imax jmin jmax [-c COOR-file] [-p C-type]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Returns the geographical coordinates of a model sub-area specified' 
+     PRINT *,'       Return the geographical coordinates of a model sub-area specified' 
      PRINT *,'       by a rectangular window in (i,j) space.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -54,7 +54,7 @@ PROGRAM cdfwhereij
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-c COOR_file ] : specify a coordinates file instead of ', TRIM(cn_fcoo)
-     PRINT *,'       [-p C-point   ] : specify a point type on the C-grid (T U V F) '
+     PRINT *,'       [-p C-type ] : specify a point type on the C-grid (T U V F),  '
      PRINT *,'               default is ', TRIM(ctype),'.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -62,6 +62,10 @@ PROGRAM cdfwhereij
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Standard output'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO : '
+     PRINT *,'      cdffindij '
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -76,7 +80,7 @@ PROGRAM cdfwhereij
         ! options
      CASE ( '-c' ) ; CALL getarg(ijarg, clcoo ) ; ijarg=ijarg+1
      CASE ( '-p' ) ; CALL getarg(ijarg, ctype ) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

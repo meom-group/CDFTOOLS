@@ -152,7 +152,7 @@ PROGRAM cdfgeostrophy
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-ufile OUT-vfile] : Specify output files name''s  instead of '
      PRINT *,'            ',TRIM(cf_uout),' and ', TRIM(cf_vout)
-     PRINT *,'       [-nc4 ]:  Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ]:  Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl] : use time varying vertical metrics.'

@@ -83,7 +83,7 @@ PROGRAM cdfvita
      PRINT *,'       [-geo ]     : indicate that input velocity files are produced by '
      PRINT *,'              cdfgeo-uv, hence ugeo on V-point, vgeo on U-points. '
      PRINT *,'       [-cubic ]   : Save the cube of the velocity module.'
-     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'              This option is effective only if cdftools are compiled with'
      PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-o OUT-file ] : Specify name of output file instead of ',TRIM(cf_out)
@@ -122,7 +122,7 @@ PROGRAM cdfvita
      CASE ('-cubic') ; lcub = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

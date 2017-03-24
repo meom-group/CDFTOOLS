@@ -96,7 +96,7 @@ PROGRAM cdfbuoyflx
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfbuoyflx  -t T-file [-r RNF-file] [-f FLX-file ] [-sss SSS-name]'
-     PRINT *,'     ... [-sst SST-name] [-nc4] [-o output_file]  [-short ]'
+     PRINT *,'     ... [-sst SST-name] [-nc4] [-o output_file] [-short ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute (or read) the heat and water fluxes components.'
@@ -110,18 +110,18 @@ PROGRAM cdfbuoyflx
      PRINT *,'      '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [ -r RNF-file ] : Specify a run-off file if runoff not in T-file '
+     PRINT *,'       [-r RNF-file ] : Specify a run-off file if runoff not in T-file '
      PRINT *,'                         nor in FLX-file'
-     PRINT *,'       [ -f FLX-file ] : Use this option if fluxes are not saved in gridT files'
-     PRINT *,'       [ -sss SSS-name ] : Use this option if SSS variable name in T-file '
+     PRINT *,'       [-f FLX-file ] : Use this option if fluxes are not saved in gridT files'
+     PRINT *,'       [-sss SSS-name ] : Use this option if SSS variable name in T-file '
      PRINT *,'                          differ from ',TRIM(cn_vosaline)
-     PRINT *,'       [ -sst SST-name ] : Use this option if SST variable name in T-file '
+     PRINT *,'       [-sst SST-name ] : Use this option if SST variable name in T-file '
      PRINT *,'                          differ from ',TRIM(cn_votemper)
-     PRINT *,'       [ -nc4 ] Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'               This option is effective only if cdftools are compiled with'
      PRINT *,'               a netcdf library supporting chunking and deflation.'
-     PRINT *,'       [ -o output_file ] Default is ', TRIM(cf_out)
-     PRINT *,'       [ -short ] With this option only save the buoyancy flux without '
+     PRINT *,'       [-o output_file ] Default is ', TRIM(cf_out)
+     PRINT *,'       [-short ] With this option only save the buoyancy flux without '
      PRINT *,'                  all the components of the flux.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -132,7 +132,6 @@ PROGRAM cdfbuoyflx
      PRINT *,'         variables : 25 variables (2D) or 1 variable in case of -short option'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      '
      PRINT *,'      '
      STOP
   ENDIF
@@ -156,7 +155,7 @@ PROGRAM cdfbuoyflx
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE ('-short') ; lsho = .TRUE. ; np_varout = 1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
   IF (lchk ) STOP ! missing files

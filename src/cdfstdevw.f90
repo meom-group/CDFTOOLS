@@ -57,7 +57,7 @@ PROGRAM cdfstdevw
      PRINT *,' usage : cdfstdevw -w W-file -w2 W2-file [-v IN-var] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the standard deviation of the vertical velocity from its mean'
+     PRINT *,'       Compute the standard deviation of the vertical velocity from its mean'
      PRINT *,'       value and its mean square value. If a variable name is given ,then '
      PRINT *,'       the standard deviation of this variable instead of the vertical '
      PRINT *,'       velocity.'

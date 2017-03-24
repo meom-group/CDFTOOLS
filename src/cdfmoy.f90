@@ -116,7 +116,7 @@ PROGRAM cdfmoy
      PRINT *,'            ... [-vvl] [-o OUT-rootname] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the ''time average'' of a list of files given as arguments.' 
+     PRINT *,'       Compute the ''time average'' of a list of files given as arguments.' 
      PRINT *,'       The program assumes that all files in the list are of same type (shape,'
      PRINT *,'       variables,  etc...). Any file in the list may have many time frames,'
      PRINT *,'       they will be taken into account in the average.'
@@ -157,7 +157,7 @@ PROGRAM cdfmoy
      PRINT *,'              -spval0 if missing values are not 0 in all the input files.'
      PRINT *,'       [-vvl ] : take into account the time varying vertical scale factor.'
      PRINT *,'       [-o OUT-rootname] : Define output root-name instead of ', TRIM(cf_root) 
-     PRINT *,'       [-nc4 ]: Use netcdf4 output with chunking and deflation level 1.'
+     PRINT *,'       [-nc4 ]: Use netcdf4 output with chunking and deflation level 1..'
      PRINT *,'              This option is effective only if cdftools are compiled with'
      PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -437,7 +437,7 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE zeromean  ***
     !!
-    !! ** Purpose :  Computes the spatial average of argument and
+    !! ** Purpose :  Compute the spatial average of argument and
     !!               and substract it from the field 
     !!
     !! ** Method  :  requires the horizontal metrics 

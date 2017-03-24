@@ -105,7 +105,7 @@ PROGRAM cdfmean
      PRINT *,'       ... [-oz ZEROMEAN-file] [-ov VAR-file] [ -vvl ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Computes the mean value of the field (3D, weighted). For 3D fields,'
+     PRINT *,'        Compute the mean value of the field (3D, weighted). For 3D fields,'
      PRINT *,'        a horizontal mean for each level is also given. If a spatial window'
      PRINT *,'        is specified, the mean value is computed only in this window.'
      PRINT *,'      '
@@ -185,7 +185,7 @@ PROGRAM cdfmean
      CASE ('-ot'       ) ; CALL getarg(ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ('-M'        ) ; CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1
         ;                  CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
-     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

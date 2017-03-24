@@ -76,7 +76,7 @@ PROGRAM cdfuv
      PRINT *,' usage : cdfuv -c CONFIG-CASE -l LST-tags [-opt] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the time average values for U.V product, at T point.' 
+     PRINT *,'       Compute the time average values for U.V product, at T point.' 
      PRINT *,'       Mean U, mean V  and mean U''.V''  at T point are also computed.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -90,7 +90,7 @@ PROGRAM cdfuv
      PRINT *,'       [-opt :] use optimized algorithm, minimizing truncation errors in the'
      PRINT *,'             evaluation of mean U, meanV and mean (U''.V'').'
      PRINT *,'       [-o OUT-file] : specify output filename instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] :  Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] :  Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

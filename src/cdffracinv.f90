@@ -2,7 +2,7 @@ PROGRAM cdffracinv
   !!======================================================================
   !!                     ***  PROGRAM  cdffracinv  ***
   !!=====================================================================
-  !!  ** Purpose : Computes fraction of inventory for passive tracers
+  !!  ** Purpose : Compute fraction of inventory for passive tracers
   !!               output. This is the ratio between inventory at a
   !!               grid point and total inventory
   !!
@@ -60,7 +60,7 @@ PROGRAM cdffracinv
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-inv INV-name ]: netcdf variable name for inventory [ ',TRIM(cv_inv),' ]'
      PRINT *,'       [-o OUT-file ]: specify output file name instead of ', TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

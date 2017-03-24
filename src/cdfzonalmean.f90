@@ -91,7 +91,7 @@ PROGRAM cdfzonalmean
      PRINT *,'       ... [-l LST-var] [-max ] [-pdep] [-o OUT-file ] [-debug] ...'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the zonal mean of all the variables available in the input' 
+     PRINT *,'       Compute the zonal mean of all the variables available in the input' 
      PRINT *,'       file. This program assumes that all the variables are located on the'
      PRINT *,'       same C-grid point, specified on the command line. Using -l option'
      PRINT *,'       limits the variables to be processed to the listed variables.'
@@ -151,7 +151,7 @@ PROGRAM cdfzonalmean
         ;                 CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1 ; CALL ParseVars(cldum) 
      CASE ( '-o'      ) ; CALL getarg( ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-debug'  ) ; ldebug   = .TRUE.
-     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

@@ -74,7 +74,7 @@ PROGRAM cdfmoy_freq
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmoy_freq -i IN-file -f AVG-length [-v3d] [-v4d] [-o OUT-rootname]'
+     PRINT *,' usage : cdfmoy_freq -f IN-file -avg AVG-length [-v3d] [-v4d] [-o OUT-rootname]'
      PRINT *,'            ... [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -87,19 +87,19 @@ PROGRAM cdfmoy_freq
      PRINT *,'       1 day.)'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -i IN-file : gives the name of the yearly file containing either 365 '
-     PRINT *,'                 or 366 days'
-     PRINT *,'       -f AVG-length : Set the time size of the averaging box. Averaging length'
-     PRINT *,'                 is specified using XIOS convention (e.g. 1d,5d, 1mo, 1y ; 4mo'
-     PRINT *,'                 stands for seasonal means )'
+     PRINT *,'       -f IN-file : gives the name of the yearly file containing either 365 '
+     PRINT *,'              or 366 days'
+     PRINT *,'       -avg AVG-length : Set the time size of the averaging box. Averaging '
+     PRINT *,'              length is specified using XIOS convention (e.g. 1d,5d, 1mo, 1y ;'
+     PRINT *,'              4mo stands for seasonal means )'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-v3d] : use 3d variable (x,y,t) : save execution time, increase memory'
      PRINT *,'       [-v4d] : use 4d variable (x,y,z,t): save execution time, increase memory'
-     PRINT *,'       [-nc4] : use netcdf4 with chunking and deflation for the output file'
      PRINT *,'       [-o OUT-rootname] : specify the root of the output file name instead '
      PRINT *,'                   of ',TRIM(cf_out),'. Final name will have <freq> appened'
      PRINT *,'                   to the root.'
+     PRINT *,'       [-nc4] : use netcdf4 with chunking and deflation for the output file'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none.'
@@ -119,13 +119,14 @@ PROGRAM cdfmoy_freq
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum) ; ijarg = ijarg +1
      SELECT CASE ( cldum ) 
-     CASE ( '-i'   ) ; CALL getarg(ijarg, cf_in   ) ; ijarg = ijarg + 1
-     CASE ( '-f'   ) ; CALL getarg(ijarg, cfreq_o ) ; ijarg = ijarg + 1
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg + 1
-     CASE ( '-nc4' ) ; lnc4=.TRUE.
+     CASE ( '-f'   ) ; CALL getarg(ijarg, cf_in   ) ; ijarg = ijarg + 1
+     CASE ( '-avg' ) ; CALL getarg(ijarg, cfreq_o ) ; ijarg = ijarg + 1
+        ! options
      CASE ( '-v3d' ) ; lv3d=.TRUE.
      CASE ( '-v4d' ) ; lv4d=.TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP 1
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg + 1
+     CASE ( '-nc4' ) ; lnc4=.TRUE.
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP
      END SELECT
   END DO
 

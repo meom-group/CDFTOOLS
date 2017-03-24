@@ -114,7 +114,7 @@ PROGRAM cdfconvert
      SELECT CASE ( cldum )
      CASE ( '-t' ) ; CALL getarg( ijarg, ctag    ) ; ijarg=ijarg+1
      CASE ( '-c' ) ; CALL getarg( ijarg, confcase) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum) ,' : unknown option.' ; STOP 1
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum) ,' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

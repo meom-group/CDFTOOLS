@@ -213,7 +213,7 @@ PROGRAM cdftransport
      PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix]'
      PRINT *,'      '
      PRINT *,'    PURPOSE :'
-     PRINT *,'      Computes the transports (volume, heat and salt) accross a section.'
+     PRINT *,'      Compute the transports (volume, heat and salt) accross a section.'
      PRINT *,'      The name of the section and the imin, imax, jmin, jmax for the section '
      PRINT *,'      is read from the standard input. To finish the program use the key name'
      PRINT *,'      ''EOF'' for the section name. It may be usefull to use the syntax :'

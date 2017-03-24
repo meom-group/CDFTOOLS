@@ -124,7 +124,7 @@ PROGRAM cdfrhoproj
      PRINT *,'       [-debug]   : Produces extra prints.'
      PRINT *,'       [-o OUT-isodep]: specify the name of isodep file (-isodep option),'
      PRINT *,'           instead of ',TRIM(cf_iso),'.'
-     PRINT *,'       [ -nc4 ]   : Use netcdf4 output with chunking and deflation level 1.'
+     PRINT *,'       [ -nc4 ]   : Use netcdf4 output with chunking and deflation level 1..'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -169,7 +169,7 @@ PROGRAM cdfrhoproj
      CASE ('-rholev') ; CALL getarg( ijarg, cf_rholev) ; ijarg=ijarg+1
      CASE ( '-o'    ) ; CALL getarg( ijarg, cf_iso   ) ; ijarg=ijarg+1
      CASE ( '-nc4'  ) ; lnc4    = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
@@ -403,7 +403,7 @@ CONTAINS
        sigstp = 0.
     ELSE
        PRINT *,' Error in -s0 option : either -s0 val  or -s0 sigmin,sigstp,nsig'
-       STOP 1
+       STOP
     ENDIF
 
     ALLOCATE ( zi(npsig) )

@@ -111,7 +111,7 @@ PROGRAM cdfmhst
      PRINT *,'              ... [-b BASIN-mask] [-full] [-Zdim] [-o OUT-file] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the meridional heat/salt transport as a function of latitude.'
+     PRINT *,'       Compute the meridional heat/salt transport as a function of latitude.'
      PRINT *,'       If the basin mask-file ',TRIM(cn_fbasins),' is provided, the meridional'
      PRINT *,'       heat/salt transport for each sub-basin is also computed.'
      PRINT *,'      '

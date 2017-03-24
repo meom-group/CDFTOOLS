@@ -74,12 +74,13 @@ PROGRAM cdfgeo_uv
      PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [-nc4] [-C option]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'         Compute the geostrophic velocity component from the gradient '
-     PRINT *,'         of the SSH read in the input file. '
-     PRINT *,'         Without any -C option, the zonal component is located on a '
-     PRINT *,'         C-grid V point, the meridional one is located on C-Grid U point.'
-     PRINT *,'         See the use of the -C option in order to have (Ugeo, Vgeo) '
-     PRINT *,'         at (U,V) points on the C-grid.'
+     PRINT *,'         Compute the geostrophic velocity components from the gradient of the'
+     PRINT *,'         SSH read in the input file. '
+     PRINT *,'      '
+     PRINT *,'         Without any -C option, the zonal component is located on a C-grid '
+     PRINT *,'         V point, the meridional one is located on a C-grid U point. See the'
+     PRINT *,'         use of the -C option in order to have (Ugeo, Vgeo) at (U,V) points on'
+     PRINT *,'         the C-grid.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'      -f T-file : netcdf file with SSH (input).' 
@@ -87,15 +88,15 @@ PROGRAM cdfgeo_uv
      PRINT *,'     OPTIONS :'
      PRINT *,'      [-o UOUT-file VOUT-file]: specify the names of the output files.'
      PRINT *,'              Default are: ',TRIM(cf_uout),' ',TRIM(cf_vout),'.'
-     PRINT *,'      [-nc4]: Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'      [-nc4]: Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'              This option is effective only if cdftools are compiled with'
      PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'      [-C option]: Using this option, the output velocity component are at the'
      PRINT *,'              correct (U,V) points on the C-grid. Two options are available :'
-     PRINT *,'           option = 1 : SSH is interpolated on the F point prior derivation'
+     PRINT *,'           option = 1 : SSH is interpolated on the F point prior derivation.'
      PRINT *,'           option = 2 : Ugeo and Vgeo are interpolated on the C-grid after'
-     PRINT *,'                       derivation'
-     PRINT *,'               Both option should give very similar results...'
+     PRINT *,'              derivation.'
+     PRINT *,'              Both options should give very similar results...'
      PRINT *,'  '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -109,6 +110,7 @@ PROGRAM cdfgeo_uv
      PRINT *,'           variables : ', TRIM(cn_vomecrty)
      PRINT *,'           Unless -C option is used : '
      PRINT *,'             *** CAUTION:  this variable is located on U-point ***'
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -120,7 +122,7 @@ PROGRAM cdfgeo_uv
         ! options
      CASE ('-o'   ) ; CALL getarg(ijarg, cf_uout ) ; ijarg = ijarg + 1
         ;             CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
-     CASE ( '-nc4') ; lnc4 = .TRUE.
+     CASE ('-nc4' ) ; lnc4 = .TRUE.
      CASE ('-C'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1
         ;             READ(cldum, * ) ioption
      CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' :  unknown option.' ; STOP

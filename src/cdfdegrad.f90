@@ -91,7 +91,7 @@ PROGRAM cdfdegrad
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfdegrad -f IN-file -v IN-var -r ri rj -p T|U|V|W  [-start i0 j0]'
+     PRINT *,' usage : cdfdegrad -f IN-file -v IN-var -r ri rj -p C-type  [-start i0 j0]'
      PRINT *,'       ... [-full] [-vvl] [-o OUT-file]'
      PRINT *,'       '
      PRINT *,'     PURPOSE :'
@@ -104,7 +104,7 @@ PROGRAM cdfdegrad
      PRINT *,'       -f IN-file : netcdf input file on grid point corresponding to -p option.' 
      PRINT *,'       -v IN-var  : name of netcdf variable to work with' 
      PRINT *,'       -r ri rj   : degradation ratio for x-direction and y-direction.' 
-     PRINT *,'       -p T|U|V|W : position of variable on C-grid.'
+     PRINT *,'       -p C-type : position of variable on C-grid, one of T|U|V|W.'
      PRINT *,'      '
      PRINT *,'     OPTIONS : '
      PRINT *,'       [-start i0 j0] : spatial indices from where the procedure of   '

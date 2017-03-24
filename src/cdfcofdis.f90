@@ -84,7 +84,7 @@ PROGRAM cdfcofdis
      PRINT *,'           condition. Default is  4.'
      PRINT *,'       [-surf ] : only compute  distance at the surface.'
      PRINT *,'       [-o OUT-file ] : specify name of the output file instead of ', TRIM(cf_out)
-     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

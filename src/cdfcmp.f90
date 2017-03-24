@@ -84,7 +84,7 @@ PROGRAM cdfcmp
         ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
         ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
         ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

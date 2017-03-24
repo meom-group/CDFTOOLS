@@ -2,7 +2,7 @@ PROGRAM cdfmsk
   !!======================================================================
   !!                     ***  PROGRAM  cdfmsk  ***
   !!=====================================================================
-  !!  ** Purpose : Computes the number of land points from the mask
+  !!  ** Purpose : Compute the number of land points from the mask
   !!
   !! History : 2.1  : 05/2005  : J.M. Molines : Original code
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.

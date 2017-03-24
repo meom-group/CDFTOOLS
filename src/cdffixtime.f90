@@ -418,7 +418,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     ky = kiyyy
     ! ... Year 0 never existed ...
-    IF (ky == 0) STOP 101
+    IF (ky == 0) STOP01
     !
     IF (ky < 0) ky = ky + 1
     IF (kmm > 2) THEN

@@ -86,7 +86,7 @@ PROGRAM cdfdynh_anom
      PRINT *,'              dynamic height anomaly at lev1 with reference at lev2.'
      PRINT *,'       [-vvl] : use time-varying vertical metrics.'
      PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                This option is effective only if cdftools are compiled with'
      PRINT *,'                a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

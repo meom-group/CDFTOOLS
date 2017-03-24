@@ -72,7 +72,7 @@ PROGRAM cdfinfo
      CASE ( '-f'   ) ; CALL getarg (ijarg, cf_in) ;  ijarg=ijarg+1
         ! options
      CASE ( '-dep' ) ; CALL getarg (ijarg, cldum) ;  ijarg=ijarg+1 ; READ(cldum,*) zdep ;  ldep =.TRUE.
-     CASE DEFAULT   ; PRINT *, 'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT   ; PRINT *, 'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

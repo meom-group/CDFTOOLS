@@ -417,7 +417,7 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE NearestPoint  ***
     !!
-    !! ** Purpose : Computes the positions of the nearest i,j in the grid
+    !! ** Purpose : Compute the positions of the nearest i,j in the grid
     !!              from the given longitudes and latitudes
     !!
     !! ** Method  : Starts on the middle of the grid, search in a 20x20 box,

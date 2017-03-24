@@ -57,7 +57,7 @@ PROGRAM cdfstdevts
      PRINT *,' usage : cdfstdevts -t T-file -t2 T2-file '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the standard deviation of the temperature and salinity from'
+     PRINT *,'       Compute the standard deviation of the temperature and salinity from'
      PRINT *,'       their mean and  mean squared values.  The mean squared values for T'
      PRINT *,'       and S are not automatically computed with cdfmoy (need some namelist'
      PRINT *,'       modification). Consider using the more generic program ''cdfstd'' if'
@@ -69,7 +69,7 @@ PROGRAM cdfstdevts
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

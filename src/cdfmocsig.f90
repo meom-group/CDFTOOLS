@@ -111,7 +111,7 @@ PROGRAM cdfmocsig
      PRINT *,'        ... [-o OUT-file] [-vvl] [-verbose]'
      PRINT *,'      '
      PRINT *,'     PURPOSE : '
-     PRINT *,'       Computes the MOC in density-latitude coordinates. The global value is '
+     PRINT *,'       Compute the MOC in density-latitude coordinates. The global value is '
      PRINT *,'       always computed. Values for oceanic sub-basins are calculated if the '
      PRINT *,'       ', TRIM(cn_fbasins), ' file is provided.'
      PRINT *,'      '
@@ -140,7 +140,7 @@ PROGRAM cdfmocsig
      PRINT *,'       [-sigmin     ] : Specify minimum of density for bining.'
      PRINT *,'       [-sigstp     ] : Specify density step for bining.'
      PRINT *,'       [-nbins      ] : Specify the number of density bins you want.'
-     PRINT *,'       [-isodep     ] : Computes the zonal mean of isopycnal depths used for '
+     PRINT *,'       [-isodep     ] : Compute the zonal mean of isopycnal depths used for '
      PRINT *,'                        mocsig.'
      PRINT *,'       [-o OUT-file ] : Specify output file name instead of ', TRIM(cf_moc)
      PRINT *,'       [-vvl        ] : Use time-varying vertical metrics.'

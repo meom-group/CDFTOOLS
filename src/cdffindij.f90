@@ -59,8 +59,8 @@ PROGRAM cdffindij
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :   cdffindij  -w xmin xmax ymin ymax  [-c COOR-file] [-p point_type]...'
-     PRINT *,'                    [-f LIST-file] [-d descriptor] [-o OUT-file] [-a] [-l]'
+     PRINT *,' usage :   cdffindij  -w xmin xmax ymin ymax  [-c COOR-file] [-p C-type]...'
+     PRINT *,'                 ... [-f LIST-file] [-d descriptor] [-o OUT-file] [-A] [-l]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Return the model limit (i,j space) of the geographical window given on' 
@@ -75,8 +75,7 @@ PROGRAM cdffindij
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-c COOR-file ] : specify a particular coordinate file' 
      PRINT *,'                     default is ',TRIM(cn_fcoo)
-     PRINT *,'       [-p point type] : specify the point on the C-grid (T U V F)'
-     PRINT *,'                     default is ',TRIM(cltype)
+     PRINT *,'       [-p C-type] : specify the point on the C-grid (T U V F). Default is ',TRIM(cltype),'.'
      PRINT *,'       [-f LIST-file ] : LIST-file is an ascii file describing the location'
      PRINT *,'                (one per line) of geographical points to be translated to '
      PRINT *,'                model (i,j) point. Unless specified with -d option, this list'
@@ -86,7 +85,7 @@ PROGRAM cdffindij
      PRINT *,'                of the descriptor is ''XY''. Any other field on the line is '
      PRINT *,'                indicated with any characterm except X or Y. Example of valid'
      PRINT *,'                descriptor : ''oXYooo'' or ''ooYabcdfXooo'' '
-     PRINT *,'       [-a  ] : With this option, output is similar to input with I,J appended'
+     PRINT *,'       [-A  ] : With this option, output is similar to input with I,J appended'
      PRINT *,'                to the corresponding line.'
      PRINT *,'       [-l  ] : With this option, also output the exact model longitude and '
      PRINT *,'                latitude of the I,J point.'
@@ -97,6 +96,10 @@ PROGRAM cdffindij
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Output is done on standard output.'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO : '
+     PRINT *,'       cdfwhereij'
+     PRINT *,'      '
      STOP
   ENDIF
 
@@ -113,9 +116,9 @@ PROGRAM cdffindij
      CASE ( '-f' ) ; CALL getarg(ijarg, cf_list) ; ijarg=ijarg+1 ;  l_file_in=.true.
      CASE ( '-d' ) ; CALL getarg(ijarg, cldes  ) ; ijarg=ijarg+1
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1 ;  l_file_ou=.true.
-     CASE ( '-a' ) ;                                                l_append =.true.
+     CASE ( '-A' ) ;                                                l_append =.true.
      CASE ( '-l' ) ;                                                l_lonlat =.true.
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP 1
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP
      END SELECT
   END DO
 

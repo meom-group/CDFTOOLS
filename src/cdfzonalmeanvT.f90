@@ -77,7 +77,7 @@ PROGRAM cdfzonalmeanvT
      PRINT *,'                 ...  [-ndep_in] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the time average of zonal-mean(V) x zonal-mean(T/S) for the'
+     PRINT *,'       Compute the time average of zonal-mean(V) x zonal-mean(T/S) for the'
      PRINT *,'       set of files corresponding to the list of tags, passed as arguments.'
      PRINT *,'       This quantity is the mean-flow contribution to the heat/salt transport'
      PRINT *,'       overturning component. < > being the zonal average, we have: '

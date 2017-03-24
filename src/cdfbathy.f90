@@ -90,8 +90,8 @@ PROGRAM cdfbathy
      PRINT *,' usage : cdfbathy/cdfvar -f IN-file [options]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Allow manual modification of the input file. Very convenient' 
-     PRINT *,'       for bathymetric files, can also be used with any model file'
+     PRINT *,'       Allow manual modification of the input file. Very convenient for ' 
+     PRINT *,'       bathymetric files, can also be used with any other model file.'
      PRINT *,'       Keep a log.f90 file of the modifications for automatic reprocessing'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -152,10 +152,9 @@ PROGRAM cdfbathy
      CASE ( '-time' , '-t') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itime
      CASE ( '-scale'      ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) scale_factor
      CASE ( '-zoom' , '-z') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-
+        ;                     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ;                     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;                     CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
      CASE ('-fillzone','-fz' ) ; lfill =.TRUE. ; lmodif =.TRUE.
      CASE ('-raz_zone','-raz') ; lraz  =.TRUE. ; lmodif =.TRUE.
      CASE ('-raz_below','-rb') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill

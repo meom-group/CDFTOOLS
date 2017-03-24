@@ -65,7 +65,7 @@ PROGRAM cdfmxlsaltc
      PRINT *,' usage : cdfmxlsaltc -f T-file [-full] [-o OUT-file] [-nc4] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the salt content in the mixed layer.' 
+     PRINT *,'       Compute the salt content in the mixed layer.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f T-file : netcdf input file with salinity and mld (gridT).' 
@@ -73,7 +73,7 @@ PROGRAM cdfmxlsaltc
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full ] : for full step configurations, default is partial step.' 
      PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out) 
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'

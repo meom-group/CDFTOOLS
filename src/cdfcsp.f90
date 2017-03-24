@@ -51,7 +51,7 @@ PROGRAM cdfcsp
   narg = iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfcsp -l LIST-files [-v value]'
+     PRINT *,' usage : cdfcsp -l LST-files [-v value]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Replace missing_values by 0 and update attribute.' 
@@ -63,7 +63,7 @@ PROGRAM cdfcsp
      PRINT *,'      ################################'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -l LIST-files : The list of cdf file to process, all variables will '
+     PRINT *,'       -l LST-files : The list of cdf file to process, all variables will '
      PRINT *,'              be processed.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
@@ -75,6 +75,7 @@ PROGRAM cdfcsp
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : same as input file (modified)'
      PRINT *,'         variables : same as input file'
+     PRINT *,'      '
      STOP
   ENDIF
 

@@ -89,14 +89,13 @@ PROGRAM cdfsmooth
 
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t filter_type] [ -k level_list ] ...'
-     PRINT *,'       [-a anisotripoc ratio ] [-nc4 ] '
+     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t FLT-type] [-k LST-level] ...'
+     PRINT *,'       [-anis ratio ] [-nc4 ] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Perform a spatial smoothing on the file using a particular'
-     PRINT *,'       filter as specified in the option. Available filters' 
-     PRINT *,'       are : Lanczos, Hanning, Shapiro, Box car average. Default'
-     PRINT *,'       is Lanczos filter.'
+     PRINT *,'       Perform a spatial smoothing on the file using a particular filter as'
+     PRINT *,'       specified in the ''-t'' option. Available filters are : Lanczos, Hanning,' 
+     PRINT *,'       Shapiro and Box car average. Default is Lanczos filter.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f  IN-file  : input data file. All variables will be filtered'
@@ -104,14 +103,16 @@ PROGRAM cdfsmooth
      PRINT *,'                    of iteration of the Shapiro filter.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-t filter_type] : Lanczos      , L, l  (default)'
-     PRINT *,'                          Hanning      , H, h'
-     PRINT *,'                          Shapiro      , S, s'
-     PRINT *,'                          Box          , B, b'
-     PRINT *,'       [-a aniso      ] : anisotropic ratio for Box car '
-     PRINT *,'       [-k level_list ] : levels to be filtered (default = all levels)'
-     PRINT *,'               level_list is a comma-separated list of levels.'
-     PRINT *,'                  the syntax 1-3,6,9-12 will select 1 2 3 6 9 10 11 12'
+     PRINT *,'       [-t FLT-type] : Lanczos      , L, l  (default)'
+     PRINT *,'                       Hanning      , H, h'
+     PRINT *,'                       Shapiro      , S, s'
+     PRINT *,'                       Box          , B, b'
+     PRINT *,'       [-anis ratio ] : Specify an anisotropic ratio in case of Box-car filter.'
+     PRINT *,'               With ratio=1, the box is a square 2.ncut x 2.ncut grid points.'
+     PRINT *,'               In general, the box is then a rectangle 2.ncut*ratio x 2.ncut.'
+     PRINT *,'       [-k LST-level ] : levels to be filtered (default = all levels)'
+     PRINT *,'               LST-level is a comma-separated list of levels. For example,'
+     PRINT *,'               the syntax 1-3,6,9-12 will select 1 2 3 6 9 10 11 12'
      PRINT *,'       [-nc4] : produce netcdf4 output file with chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
@@ -136,7 +137,7 @@ PROGRAM cdfsmooth
      CASE ( '-t'  ) ; CALL getarg ( ijarg, ctyp    ) ; ijarg=ijarg+1 
      CASE ( '-k'  ) ; CALL getarg ( ijarg, clklist ) ; ijarg=ijarg+1 
                     ; CALL GetList (clklist, iklist, ilev )
-     CASE ( '-a'  ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
+     CASE ('-anis') ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
      CASE ( '-nc4') ; lnc4 = .TRUE.
      CASE DEFAULT   ; PRINT *,' ERROR :' ,TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
@@ -613,7 +614,7 @@ CONTAINS
 
   END SUBROUTINE lisshapiro1d
 
-  SUBROUTINE lisbox(px, kiw, py, kpi, kpj, pfn, knj,anis)
+  SUBROUTINE lisbox(px, kiw, py, kpi, kpj, pfn, knj,panis)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE lisbox  ***
     !!
@@ -626,7 +627,7 @@ CONTAINS
     INTEGER(KIND=4),                 INTENT(in ) :: kpi, kpj         ! size of input/output
     REAL(KIND=4),                    INTENT(in ) :: pfn              ! cutoff frequency/wavelength
     INTEGER(KIND=4),                 INTENT(in ) :: knj              ! filter bandwidth
-    REAL(KIND=4),                    INTENT(in ) :: anis             ! anisotrop
+    REAL(KIND=4),                    INTENT(in ) :: panis            ! anisotrop
 
     INTEGER(KIND=4)                              :: ji, jj
     INTEGER(KIND=4)                              :: ik1x, ik2x, ik1y, ik2y
@@ -636,8 +637,8 @@ CONTAINS
     ll_mask=.TRUE.
     WHERE (kiw == 0 ) ll_mask=.FALSE.
     DO ji=1,kpi
-       ik1x = ji-NINT( anis * knj)  ; ik2x = ji+NINT( anis * knj)
-       ik1x = MAX(1,ik1x)           ; ik2x = MIN(kpi,ik2x)
+       ik1x = ji-NINT( panis * knj)  ; ik2x = ji+NINT( panis * knj)
+       ik1x = MAX(1,ik1x)            ; ik2x = MIN(kpi,ik2x)
        DO jj=1,kpj
           ik1y = jj-knj       ; ik2y = jj+knj
           ik1y = MAX(1,ik1y)  ; ik2y = MIN(kpj,ik2y)

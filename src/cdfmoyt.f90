@@ -83,7 +83,7 @@ PROGRAM cdfmoyt
      PRINT *,' usage : cdfmoyt -l LST-files [-spval0] [-vvl] [-o OUT-rootname] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the ''file average'' of the files listed on the command line.'
+     PRINT *,'       Compute the ''file average'' of the files listed on the command line.'
      PRINT *,'       The ''file average'' will have the same number of time frame than any'
      PRINT *,'       individual file in the list, the average being done frame by frame.'
      PRINT *,'       '
@@ -111,7 +111,7 @@ PROGRAM cdfmoyt
      PRINT *,'              if missing_values differ from files to files.'
      PRINT *,'       [-vvl] : Use time-varying vertical metrics.'
      PRINT *,'       [-o OUT-rootname] : Define output root-name instead of ', TRIM(cf_root)
-     PRINT *,'       [-nc4 ]: Use netcdf4 output with chunking and deflation level 1.'
+     PRINT *,'       [-nc4 ]: Use netcdf4 output with chunking and deflation level 1..'
      PRINT *,'              This option is effective only if cdftools are compiled with'
      PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -135,7 +135,7 @@ PROGRAM cdfmoyt
      CASE ( '-o'      ) ; CALL getarg(ijarg, cf_root) ; ijarg=ijarg+1
      CASE ( '-nc4'    ) ; lnc4    = .TRUE.
      CASE ( '-vvl'    ) ; lg_vvl  = .TRUE. ; STOP ' vvl not yet supported'
-     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

@@ -73,6 +73,9 @@ PROGRAM cdfrichardson
      PRINT *,'       Compute the Richardson Number (Ri) according to temperature,' 
      PRINT *,'       salinity and velocity components, given in the input files.'
      PRINT *,'      '
+     PRINT *,'       Richardson''s number is the ratio N2/(Vertical Shear)^2, N being'
+     PRINT *,'       the Brunt-Vaissala frequency.'
+     PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t gridT : input gridT file for temperature and salinity' 
      PRINT *,'       -u gridU : input gridU file for zonal velocity component'
@@ -84,7 +87,7 @@ PROGRAM cdfrichardson
      PRINT *,'       [-full ] : indicate a full step configuration instead of the default'
      PRINT *,'             partial steps.'
      PRINT *,'       [-o OUT-file ]: specify output file instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file ]: use time-varying vertical metrics. W-file holds the'
@@ -96,6 +99,7 @@ PROGRAM cdfrichardson
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
      PRINT *,'       variables : ', TRIM(cv_ric)
+     PRINT *,'      '
      STOP
   ENDIF
 

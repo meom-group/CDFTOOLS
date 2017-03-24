@@ -69,7 +69,7 @@ PROGRAM cdfmaskdmp
      PRINT *,'             ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes a damping mask with smooth transition according to density,'
+     PRINT *,'       Compute a damping mask with smooth transition according to density,'
      PRINT *,'       depth and latitude criteria. For each kind of criterion, a minimum  '
      PRINT *,'       value and a width of transition is used. Both minimum and width can'
      PRINT *,'       be adjusted with corresponding options. Reasonable default values are'
@@ -91,7 +91,7 @@ PROGRAM cdfmaskdmp
      PRINT *,'       [-dep  hmin width] : set minimum depth and width for depth tapering'
      PRINT *,'       [-lat  latmax width]: set max latitude and width for latitude tapering'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

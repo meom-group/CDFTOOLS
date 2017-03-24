@@ -58,7 +58,7 @@ PROGRAM cdfokubow
      PRINT *,'                    ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes Okubo-Weiss parameter of a vector field at all level or at'  
+     PRINT *,'       Compute Okubo-Weiss parameter of a vector field at all level or at'  
      PRINT *,'       specified level (-l option).'
      PRINT *,'       This parameter represents the balance between strain and vorticity.'
      PRINT *,'       W = Sn^2 +Ss^2 - curl(V)^2. Sn and Ss are the non-symetrical and  '
@@ -73,7 +73,7 @@ PROGRAM cdfokubow
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-l lev]: level to be processed. Process all level by default.'
      PRINT *,'       [-o OUT-file] : specify output file instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -98,7 +98,7 @@ PROGRAM cdfokubow
      CASE ( '-l'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,* ) ilev
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP
      END SELECT
   ENDDO
 

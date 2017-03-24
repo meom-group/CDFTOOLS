@@ -70,7 +70,7 @@ PROGRAM cdfdiv
   CALL ReadCdfNames() 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfdiv -u U-file U-var -v V-file V-var -l levlist  [-8]...'
+     PRINT *,' usage : cdfdiv -u U-file U-var -v V-file V-var -l LST-level [-8]...'
      PRINT *,'          ... [-surf] [-overf] [-full] [-o OUT-file ] [-nc4] '
      PRINT *,'          ... [-vvl T-file]'
      PRINT *,'      '
@@ -80,7 +80,7 @@ PROGRAM cdfdiv
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -u U-file U-var : file and variable name for zonal component'
      PRINT *,'       -v V-file V-var : file and variable name for meridional component'
-     PRINT *,'       -l levlist    : levels to be processed. If set to 0, assume forcing file'
+     PRINT *,'       -l LST-level : levels to be processed. If set to 0, assume forcing file'
      PRINT *,'                in input. Example of recognized syntax :'
      PRINT *,'                  -l "1,10,30"  or -l "1-20" or even -l "1-3,10-20,30-"'
      PRINT *,'                  -l  1 . Note that -l "3-" set a levlist from 3 to the bottom'
@@ -91,7 +91,7 @@ PROGRAM cdfdiv
      PRINT *,'       [-overf]: store the ratio curl/f where f is the coriolis parameter'
      PRINT *,'       [-full] : in case of full step configuration. Default is partial step.'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out) 
-     PRINT *,'       [-nc4]  : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                This option is effective only if cdftools are compiled with'
      PRINT *,'                a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl T-file] : use time-varying e3t, specify T-file for e3t.'

@@ -48,7 +48,7 @@ PROGRAM cdfstatcoord
      PRINT *,' usage : cdfstatcoord -c COOR-file -m MSK-file [-v MSK-var ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes and displays statistics about grid metrics vs latitude.'
+     PRINT *,'       Compute and displays statistics about grid metrics vs latitude.'
      PRINT *,'       Bins e1 and e2 by latitude bins, and compute the mean of each bin.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'

@@ -65,7 +65,7 @@ PROGRAM cdfprobe
      CASE ( '-i' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) iilook
      CASE ( '-j' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) ijlook
      CASE ( '-k' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) iklook
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 

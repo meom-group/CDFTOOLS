@@ -68,7 +68,7 @@ PROGRAM cdfuvwt
      PRINT *,'               ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the time-mean fields for velocity components (u,v,w) and' 
+     PRINT *,'       Compute the time-mean fields for velocity components (u,v,w) and' 
      PRINT *,'       temperature (t), as well as second order moments ( u2, v2, t2, uv, ut,'
      PRINT *,'       vt, wt).'
      PRINT *,'       These fields are required in other cdftools which computes either '
@@ -86,7 +86,7 @@ PROGRAM cdfuvwt
      PRINT *,'       [-w imin imax jmin jmax ] : model window limiting the area where the'
      PRINT *,'                time-means will be computed.'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4]   : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4]   : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

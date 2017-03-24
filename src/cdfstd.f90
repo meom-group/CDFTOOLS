@@ -80,7 +80,7 @@ PROGRAM cdfstd
      PRINT *,'                ... [-o STD-fileout] [-m MEAN-fileout] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the standard deviation of the variables belonging to a set of' 
+     PRINT *,'       Compute the standard deviation of the variables belonging to a set of' 
      PRINT *,'       files given as arguments.  This computation is direct and does not '
      PRINT *,'       required a pre-processing with any of the cdfmoy tools.'
      PRINT *,'      '
@@ -103,7 +103,7 @@ PROGRAM cdfstd
      PRINT *,'           and std is unbiased.'
      PRINT *,'       [-o STD-fileout]: specify std dev output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-m MEAN-fileout]: specify mean output file name instead of ',TRIM(cf_moy)
-     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'           This option is effective only if cdftools are compiled with'
      PRINT *,'           a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

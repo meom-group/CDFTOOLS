@@ -2,7 +2,7 @@ PROGRAM cdffwc
   !!======================================================================
   !!                      ***  PROGRAM  cdffwc   ***
   !!=====================================================================
-  !!  ** Purpose : Computes the freshwater content in a given basin from top
+  !!  ** Purpose : Compute the freshwater content in a given basin from top
   !!               to bottom for each layer. Can handle full step configuration
   !!               using the -full option.'
   !!
@@ -75,7 +75,7 @@ PROGRAM cdffwc
      PRINT *,'                [-full] [-accum] [-ssh] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the freshwater content in a given basin from top to bottom'
+     PRINT *,'       Compute the freshwater content in a given basin from top to bottom'
      PRINT *,'       for each layer, using a reference salinity (',TRIM(cdefault),') that'
      PRINT *,'       can be changed with -sref option.'
      PRINT *,'      '

@@ -90,7 +90,7 @@ PROGRAM cdfzonalsum
      PRINT *,'               ... [-pdep] [-pdeg] [-o OUT-file] [-debug] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the zonal sum of all the variables available in the input file.' 
+     PRINT *,'       Compute the zonal sum of all the variables available in the input file.' 
      PRINT *,'       This program assumes that all the variables are located at the same '
      PRINT *,'       C-grid point, specified on the command line. If a list of variables is'
      PRINT *,'       given with  -l option, only the listed variables will be processed.'

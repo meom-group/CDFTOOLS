@@ -75,7 +75,7 @@ PROGRAM cdfpdf
      PRINT *,'       [-zoom imin imax jmin jmax] : define a sub-area, in model '
      PRINT *,'                                     coordinates' 
      PRINT *,'       [-lev level ] : choose a level for pdf computation '
-     PRINT *,'              If not specified, takes level 1 '
+     PRINT *,'              If not specified, takes level 1. '
      PRINT *,'       [-range vmin vmax nbin  ] : define the limit for binning '
      PRINT *,'                               and number of bins.'
      PRINT *,'       [-o OUT-file] : specify name for netcdf output file'

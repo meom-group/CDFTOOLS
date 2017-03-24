@@ -77,10 +77,10 @@ PROGRAM cdf16bit
      PRINT *,'       -f 32BIT-file : input 32 bit file to be converted' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-check ]   : control than the scale factors are adequate'
+     PRINT *,'       [-check ]   : control than the scale factors are adequate.'
      PRINT *,'       [-verbose ] : give information level by level.' 
      PRINT *,'       [-o OUT-file] : Specify output file name instead of ', TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

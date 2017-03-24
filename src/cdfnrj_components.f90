@@ -51,7 +51,7 @@ PROGRAM cdfnrj_components
      PRINT *,' usage : cdfnrj_components -f UVWT-file [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes contributing terms of the energy equation at T-points.'
+     PRINT *,'       Compute contributing terms of the energy equation at T-points.'
      PRINT *,'       Input file contains mean values processed by cdfuvwt.' 
      PRINT *,'       The means must have been computed on long enough period for the'
      PRINT *,'       statistics to be meaningful.'
@@ -63,7 +63,7 @@ PROGRAM cdfnrj_components
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-o OUT-file]: specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -95,7 +95,7 @@ PROGRAM cdfnrj_components
         ! option
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP
      END SELECT
   ENDDO
 

@@ -2,7 +2,7 @@ PROGRAM cdfpendep
   !!======================================================================
   !!                     ***  PROGRAM  cdfpendep  ***
   !!=====================================================================
-  !!  ** Purpose : Computes penetration depth for passive tracer output. 
+  !!  ** Purpose : Compute penetration depth for passive tracer output. 
   !!               This is the ratio between inventory and surface 
   !!               concentration.
   !!
@@ -58,7 +58,7 @@ PROGRAM cdfpendep
      PRINT *,'              ... [-vinv inventory_name -vtrc trc_name ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Computes the penetration depth for passive tracers. It is the ratio'
+     PRINT *,'        Compute the penetration depth for passive tracers. It is the ratio'
      PRINT *,'        between the inventory and the surface concentration of the tracer.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -71,7 +71,7 @@ PROGRAM cdfpendep
      PRINT *,'       [-vtrc trc_name   ]    : specify netcdf variable name for tracer.' 
      PRINT *,'                                Default is ', TRIM(cv_trc)
      PRINT *,'       [-o OUT-file ] : specify output file name instead of ', TRIM(cf_out)
-     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [ -nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

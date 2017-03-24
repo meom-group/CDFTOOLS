@@ -67,7 +67,7 @@ PROGRAM cdfchgrid
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfchgrid -f IN-file -r REF-file -var IN-var [-nc4] [-o OUT-file] [-d]'
+     PRINT *,' usage : cdfchgrid -f IN-file -r REF-file -var IN-var [-o OUT-file] [-nc4] [-d]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Builds a new file on a refined grid, from a coarser grid, assuming that'
@@ -89,9 +89,9 @@ PROGRAM cdfchgrid
      PRINT *,'       -var IN-var : input coarser-grid variable to be converted'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       -nc4        : use netcdf4 chunking and deflation for the output file'
-     PRINT *,'       -o OUT-file : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       -d          : Display some debugging information '
+     PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4 ]       : use netcdf4 chunking and deflation for the output file'
+     PRINT *,'       [-d ]         : Display some debugging information '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none '
@@ -99,6 +99,10 @@ PROGRAM cdfchgrid
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out)
      PRINT *,'         variable : same name as in input file'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO : '
+     PRINT *,'       cdf2regular cdfdegrad'
+     PRINT *,'      '
      STOP
   ENDIF
   !!
@@ -114,7 +118,7 @@ PROGRAM cdfchgrid
      CASE ( '-o'  ) ; CALL getarg(ijarg,cf_out ) ; ijarg = ijarg + 1
      CASE ( '-nc4') ; lnc4 = .TRUE.
      CASE ( '-d'  ) ; ldbg = .TRUE.
-     CASE DEFAULT   ; PRINT * ,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT   ; PRINT * ,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 

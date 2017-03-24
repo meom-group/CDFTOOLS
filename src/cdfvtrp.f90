@@ -69,7 +69,7 @@ PROGRAM cdfvtrp
      PRINT *,'               ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the vertically integrated transports at each grid cell.' 
+     PRINT *,'       Compute the vertically integrated transports at each grid cell.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -u U-file : netcdf gridU file' 
@@ -83,7 +83,7 @@ PROGRAM cdfvtrp
      PRINT *,'                Bathymetry is read from ',TRIM(cn_fzgr),' file.'
      PRINT *,'       [-vvl  ] : Use time-varying vertical metrics'
      PRINT *,'       [-o OUT-file  ] : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                This option is effective only if cdftools are compiled with'
      PRINT *,'                a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

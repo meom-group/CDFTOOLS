@@ -97,7 +97,7 @@ PROGRAM cdftransig_xy3d
      PRINT *,'                    ... [-full ] [-v ] [-vvl ] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the time average volume transport at each grid cell in density'
+     PRINT *,'       Compute the time average volume transport at each grid cell in density'
      PRINT *,'       space, for the list of tags given as arguments. Results must be '
      PRINT *,'       condidered as intermediate for further integration.'
      PRINT *,'      '
@@ -132,7 +132,7 @@ PROGRAM cdftransig_xy3d
      PRINT *,'       [-v ] : verbose mode : extra print are performed during execution.'
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'       [-o OUT-file ] : specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'               This option is effective only if cdftools are compiled with'
      PRINT *,'               a netcdf library supporting chunking and deflation.'
      PRINT *,'      '

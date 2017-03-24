@@ -65,12 +65,12 @@ PROGRAM cdfbottomsig
      PRINT *,'      '
      PRINT *,'     PURPOSE :' 
      PRINT *,'       Create a 2D file with bottom density. In case a depth reference' 
-     PRINT *,'       is given, the density is refered to this depth. By default sigma-0'
+     PRINT *,'       is given, the density is referred to this depth. By default sigma-0'
      PRINT *,'       is used. Bottom most point is determined from the last non zero '
      PRINT *,'       salinity point in the water column.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -t T-file : input file with temperature and salinity '
+     PRINT *,'       -t T-file : input file with temperature and salinity.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-r REF-depth] : depth reference for potential density.'
@@ -78,7 +78,7 @@ PROGRAM cdfbottomsig
      PRINT *,'       [-ntr ]: Will use neutral density.'
      PRINT *,'             Without -r nor -ntr options sigma-0 is assumed.'
      PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4]:  Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4]:  Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -91,6 +91,7 @@ PROGRAM cdfbottomsig
      PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.'
      PRINT *,'         variables : sobotsig0 or sobotsigi ( kg/m3 - 1000 )' 
      PRINT *,'                     or sobotsigntr (kg/m3)'
+     PRINT *,'      '
      STOP
   ENDIF
 

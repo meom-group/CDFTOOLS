@@ -94,7 +94,7 @@ PROGRAM cdfmxl
      PRINT *,' usage : cdfmxl -t T-file [-s S-file] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes 7 estimates of the mixed layer depth from temperature and '
+     PRINT *,'       Compute 7 estimates of the mixed layer depth from temperature and '
      PRINT *,'       salinity given in the input file, based on 7 different criteria:'
      PRINT *,'       1- Density criterion (0.01 kg/m3 difference between surface and MLD)' 
      PRINT *,'       2- Density criterion (0.03 kg/m3 difference between surface and MLD)' 

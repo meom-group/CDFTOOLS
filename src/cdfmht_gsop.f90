@@ -87,7 +87,7 @@ PROGRAM cdfmht_gsop
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' Usage : cdfmht_gsop  V file Tfile'
-     PRINT *,' Computes the MHT for atlantic basin'
+     PRINT *,' Compute the MHT for atlantic basin'
      PRINT *,' PARTIAL CELLS VERSION'
      PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,new_maskglo.nc ,mask.nc '
      PRINT *,'  must be in the current directory'

@@ -57,7 +57,7 @@ PROGRAM cdfbottom
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbottom  -f IN-file [-p  T | U | V | F] [-o OUT-file] [-nc4] '
+     PRINT *,' usage : cdfbottom  -f IN-file [-p C-type] [-o OUT-file] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create a 2D file with bottom most values for all the variables'
@@ -67,12 +67,12 @@ PROGRAM cdfbottom
      PRINT *,'       -f IN-file : input netcdf 3D file.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-p  T | U | V | F] : specify the type of grid point on the C-grid' 
-     PRINT *,'            if not given, assume that land points are values with 0.'
+     PRINT *,'       [-p C-type] : specify the type of grid point on the C-grid (T|U|V|F).' 
+     PRINT *,'               If not given, assume that land points are values with 0.'
      PRINT *,'       [-o OUT-file ]: specify output filename instead of ',TRIM(cf_out)
-     PRINT *,'       [-nc4 ]       : Use netcdf4 output with chunking and deflation level 1'
-     PRINT *,'                 This option is effective only if cdftools are compiled with'
-     PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
+     PRINT *,'                This option is effective only if cdftools are compiled with'
+     PRINT *,'               a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fmsk),' file is required if the grid point is specified' 
@@ -82,6 +82,7 @@ PROGRAM cdfbottom
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables :  same names than input file, long_name attribute is'
      PRINT *,'               prefixed by Bottom '
+     PRINT *,'      '
      STOP
   ENDIF
 

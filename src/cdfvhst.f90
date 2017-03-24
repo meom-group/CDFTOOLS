@@ -62,7 +62,7 @@ PROGRAM cdfvhst
      PRINT *,' usage : cdfvhst  -f VT-file [-full] [-vvl] [-o OUT-file] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'         Computes the vertically integrated heat and salt transports '
+     PRINT *,'         Compute the vertically integrated heat and salt transports '
      PRINT *,'         at each grid cell.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'

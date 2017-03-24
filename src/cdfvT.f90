@@ -73,7 +73,7 @@ PROGRAM cdfvT
      PRINT *,' usage : cdfvT -c CONFIG-CASE -l LST-tags [-o OUT-file ] [-nc4 ] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the time average values for second order moments V.T, V.S, U.T' 
+     PRINT *,'       Compute the time average values for second order moments V.T, V.S, U.T' 
      PRINT *,'       and U.S used in heat and salt transport computation.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'

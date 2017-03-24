@@ -56,7 +56,7 @@ PROGRAM cdfspeed
      PRINT *,'            ... [-o OUT-file] [-nc4] [-lev LST-level] [-C]' 
      PRINT *,'       '
      PRINT *,'    PURPOSE :'
-     PRINT *,'       Computes the speed of ocean currents or wind speed.'
+     PRINT *,'       Compute the speed of ocean currents or wind speed.'
      PRINT *,'       '
      PRINT *,'       If the input files are 3D, the input is assumed to be a model'
      PRINT *,'       output on native C-grid. Speed is computed on the A-grid.'
@@ -102,14 +102,14 @@ PROGRAM cdfspeed
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-C'   ) ; lcgrid = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
   IF ( cf_tfil /= 'none' ) lchk = lchk .OR. chkfile (cf_tfil)
   lchk = lchk .OR. chkfile (cf_ufil)
   lchk = lchk .OR. chkfile (cf_vfil)
-  IF ( lchk ) STOP 1 ! missing file
+  IF ( lchk ) STOP ! missing file
 
   npiglo = getdim (cf_vfil,cn_x)
   npjglo = getdim (cf_vfil,cn_y)
@@ -128,7 +128,7 @@ PROGRAM cdfspeed
      IF ( TRIM(cf_tfil) == 'none' ) THEN
         PRINT *,'  ERROR: you must specify a griT file as fifth argument '
         PRINT *,'     This is for the proper header of output file '
-        STOP 1
+        STOP
      ENDIF
   END IF
 

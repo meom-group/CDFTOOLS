@@ -85,7 +85,7 @@ PROGRAM cdfsum
      PRINT *,'          ... [-o OUT-file] [-nc4] [-M MSK-file VAR-mask ] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the sum value of the field (3D, weighted). This sum can be' 
+     PRINT *,'       Compute the sum value of the field (3D, weighted). This sum can be' 
      PRINT *,'       optionally limited to a 3D sub-area.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
@@ -149,7 +149,7 @@ PROGRAM cdfsum
      CASE ( '-M'    ) ;    lfmsk =.TRUE.
         ;               CALL getarg(ijarg, cn_fmsk ) ; ijarg=ijarg+1 
         ;               CALL getarg(ijarg, cl_vmsk ) ; ijarg=ijarg+1 
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
   

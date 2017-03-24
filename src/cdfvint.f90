@@ -74,7 +74,7 @@ PROGRAM cdfvint
      PRINT *,'                 [-tmean] [-smean] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Computes the vertical integral of the variable from top to bottom,'
+     PRINT *,'       Compute the vertical integral of the variable from top to bottom,'
      PRINT *,'       and save the cumulated valued, level by level. For temperature '
      PRINT *,'       (default variable), the integral is transformed to heat content, '
      PRINT *,'       (unit in 10^6 J/m2) hence for salinity, the units are PSU.m '
@@ -132,7 +132,7 @@ PROGRAM cdfvint
      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
      CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
      CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 1
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
