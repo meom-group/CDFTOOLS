@@ -623,11 +623,14 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
     CHARACTER(LEN=25), DIMENSION(jptyp) :: comments
-    CHARACTER(LEN=25), DIMENSION(jptyp) :: crequired
+    CHARACTER(LEN=15), DIMENSION(jptyp) :: crequired
+    CHARACTER(LEN=15)  :: cf_zgr, cf_coo
     !!----------------------------------------------------------------------
     PRINT *,' List of available field to process:' 
     PRINT 9001,'field name   ','  comments  ','  input files  '
     PRINT 9002
+    cf_zgr=cn_fzgr
+    cf_coo=cn_fcoo
 
     ! ctype    = (/'T','S','SSH','CFCINV','CFCCONC','PENDEP','MXL','MXL01',
     !              'MXLT02','ISOTHICK','U ','V ','Sx','Sy','H ','etopo'/)
@@ -647,22 +650,22 @@ CONTAINS
          &      ' Meridional bottom slope', &
          &      ' Local model bathymetry ', &
          &      ' etopo like bathymetry  ' /)
-    crequired = (/' -t T-file ',   &
-         &       ' -t T-file ',   &
-         &       ' -t T-file ',   &
-         &       ' -trc TRC-file ',   &
-         &       ' -trc TRC-file ',   &
-         &       ' -d  DIAG-file ',   &
-         &       ' -t T-file ',   &
-         &       ' -t T-file ',   &
-         &       ' -t T-file',   &
-         &       ' -d  DIAG-file',   &
-         &       ' -u U-file ',   &
-         &       ' -v V-file ',   &
-         &        TRIM(cn_fzgr),   &
-         &        TRIM(cn_fcoo),   &
-         &        TRIM(cn_fzgr),   &
-         &       ' -b ETOPO-file ' /)
+    crequired = (/' -t T-file     ',   &
+         &        ' -t T-file     ',   &
+         &        ' -t T-file     ',   &
+         &        ' -trc TRC-file ',   &
+         &        ' -trc TRC-file ',   &
+         &        ' -d  DIAG-file ',   &
+         &        ' -t T-file     ',   &
+         &        ' -t T-file     ',   &
+         &        ' -t T-file     ',   &
+         &        ' -d  DIAG-file ',   &
+         &        ' -u U-file     ',   &
+         &        ' -v V-file     ',   &
+         &            cf_zgr,   &
+         &            cf_coo,   &
+         &            cf_zgr,   &
+         &        ' -b ETOPO-file ' /)
 
     DO jtyp=1, jptyp
        PRINT 9001 , TRIM(ctype(jtyp)), comments(jtyp), crequired(jtyp)
