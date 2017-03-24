@@ -539,18 +539,18 @@ cdftools.opod: $(EXEC) cdftools-begin.pod cdftools-end.pod zclass_list.txt
 	cat cdftools-begin.pod > cdftools.opod
 	for class in $$( cat zclass_list.txt ) ; do \
            title="$$(echo $$class | tr [a-z] [A-Z] |  sed -e "s/_/ /g")" ; \
-	   echo ' ' >> cdftools.opod ; \
+	   echo '' >> cdftools.opod ; \
 	   echo "=head1 $$title" >> cdftools.opod ; \
-	   echo ' ' >> cdftools.opod ; \
+	   echo '' >> cdftools.opod ; \
 	   for s in $$( grep -e "@class $$class" *90 | awk -F. '{print $$1}' ) ; do echo '' ; echo "=head2 $$s" ; echo ''; $(BINDIR)/$$s; done >> cdftools.opod ; \
 	done
-	echo ' ' >> cdftools.opod
+	echo '' >> cdftools.opod
 	echo "=head1 AUTHORS" >> cdftools.opod
-	echo ' ' >> cdftools.opod
+	echo '' >> cdftools.opod
 	echo "Project headed  by Jean-Marc Molines, (IGE, Grenoble - France)" >> cdftools.opod
-	echo ' ' >> cdftools.opod
+	echo '' >> cdftools.opod
 	grep -A1000  -i contribu ../License/CDFTOOLSCeCILL.txt | grep -m1 -B1000 ^$$ >> cdftools.opod
-	echo ' ' >> cdftools.opod
+	echo '' >> cdftools.opod
 	cat cdftools-end.pod >> cdftools.opod
 
 install:
