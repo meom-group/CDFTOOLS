@@ -87,7 +87,8 @@ PROGRAM cdfhgradb
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        [-s S-file ]   : File with ',TRIM(cn_vosaline),' variable if not in T file.'
-     PRINT *,'        [-o OUT-file]  : specify the name of output file instead of ',TRIM(cf_out)
+     PRINT *,'        [-o OUT-file]  : specify the name of output file instead of '
+     PRINT *,'                   ',TRIM(cf_out)
      PRINT *,'        [-nc4]         : use netcdf4 chunking and deflation on output.'
      PRINT *,'        [-sal SAL-name]: specify the name of salinity variable.'
      PRINT *,'        [-tem TEM-name]: specify the name of temperature variable.'

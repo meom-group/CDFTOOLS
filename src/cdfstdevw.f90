@@ -63,13 +63,15 @@ PROGRAM cdfstdevw
      PRINT *,'       velocity.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -w W-file  : netcdf file with mean values for w ( or given variable)' 
-     PRINT *,'       -w2 W2-file : netcdf file with mean squared values for w (or given variable)' 
+     PRINT *,'       -w W-file  : netcdf file with mean values for w or <IN-var>' 
+     PRINT *,'       -w2 W2-file : netcdf file with mean squared values for w or <IN-var>' 
      PRINT *,'      '
      PRINT *,'     OPTIONS: '
      PRINT *,'        [-v IN-var] : give name of variable if not ', TRIM(cn_vovecrtz)
      PRINT *,'        [-o OUT-file] : specify the name of the output file instead of ',TRIM(cf_out)
-     PRINT *,'        [-nc4] :'
+     PRINT *,'        [-nc4 ]   : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'              This option is effective only if cdftools are compiled with'
+     PRINT *,'              a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -79,7 +81,7 @@ PROGRAM cdfstdevw
      PRINT *,'         variables : ', TRIM(cv_in)//'_rms, (or IN-var_rms)  same unit than the input.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'       cdfstd, cdfrmsssh, cdfstdevts.'
+     PRINT *,'       cdfstd, cdfrmsssh, cdfstdevts, cdfstats.'
      PRINT *,'      '
      STOP
   ENDIF
@@ -93,7 +95,7 @@ PROGRAM cdfstdevw
         ! options
      CASE ( '-v'   ) ; CALL getarg(ijarg, cv_in ) ; ijarg=ijarg+1 ; cf_out='rms_'//TRIM(cv_in)//'.nc'
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
-     CASE ( '-nc4' ) ; lnc4 = .true.
+     CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
@@ -145,24 +147,24 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-  ipko(1) = npk
-  stypvaro(1)%ichunk            = (/ npiglo, MAX(1,npjglo/30), 1,1 /)
-  stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
-  stypvaro(1)%cunits            = TRIM(cl_units)
-  stypvaro(1)%rmissing_value    = 0.
-  stypvaro(1)%valid_min         = 0.
-  stypvaro(1)%valid_max         = 10.
-  stypvaro(1)%clong_name        = 'RMS_'//TRIM(cl_longname)
-  stypvaro(1)%cshort_name       = TRIM(cv_in)//'_rms'
-  stypvaro(1)%conline_operation = 'N/A'
-  stypvaro(1)%caxis             = 'TZYX'
+    ipko(1) = npk
+    stypvaro(1)%ichunk            = (/ npiglo, MAX(1,npjglo/30), 1,1 /)
+    stypvaro(1)%cname             = TRIM(cv_in)//'_rms'
+    stypvaro(1)%cunits            = TRIM(cl_units)
+    stypvaro(1)%rmissing_value    = 0.
+    stypvaro(1)%valid_min         = 0.
+    stypvaro(1)%valid_max         = 10.
+    stypvaro(1)%clong_name        = 'RMS_'//TRIM(cl_longname)
+    stypvaro(1)%cshort_name       = TRIM(cv_in)//'_rms'
+    stypvaro(1)%conline_operation = 'N/A'
+    stypvaro(1)%caxis             = 'TZYX'
 
-  ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
-  ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
+    ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
+    tim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

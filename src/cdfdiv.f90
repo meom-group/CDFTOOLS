@@ -75,7 +75,8 @@ PROGRAM cdfdiv
      PRINT *,'          ... [-vvl T-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the divergence of the flow from the U and V velocity components'
+     PRINT *,'       Compute the divergence of the flow from the U and V velocity components.'
+     PRINT *,'       Divergence is computed at T point on the C-grid.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -u U-file U-var : file and variable name for zonal component'
@@ -103,6 +104,7 @@ PROGRAM cdfdiv
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : div units : s^-1'
      PRINT *,'               or divoverf, no units (if -overf option)'
+     PRINT *,'      '
      STOP
   ENDIF
 

@@ -70,11 +70,11 @@ PROGRAM cdfcurl
      PRINT *,'           ... [-surf] [-overf] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the curl of a vector field, at a specified level.'  
-     PRINT *,'       If level is specified as 0, assume that the input files are'
-     PRINT *,'       forcing files, presumably on A-grid. In this latter case, the'
-     PRINT *,'       vector field is interpolated on the C-grid. In any case, the'
-     PRINT *,'       curl is computed on the F-point (unless -T option is used).'
+     PRINT *,'       Compute the curl of a vector field, at a specified level. If level is'  
+     PRINT *,'       specified as 0, assume that the input files are forcing files, using'
+     PRINT *,'       an A-grid. In this latter case, the vector field is interpolated on the'
+     PRINT *,'       C-grid. In any case, curl is computed on  F-point (unless ''-T'' option'
+     PRINT *,'       is used).'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -u U-file U-var : file and variable name for zonal component'
@@ -100,6 +100,7 @@ PROGRAM cdfcurl
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : socurl or socurlt (if -T option), units : s^-1'
      PRINT *,'            or socurloverf, no units (if -overf option)'
+     PRINT *,'      '
      STOP
   ENDIF
 

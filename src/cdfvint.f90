@@ -70,8 +70,8 @@ PROGRAM cdfvint
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfvint -f T-file [-v IN-var] [-GSOP] [-OCCI] [-full] [-nc4] [-o OUT-file]'
-     PRINT *,'                 [-tmean] [-smean] [-vvl] '
+     PRINT *,' usage : cdfvint -f T-file [-v IN-var] [-GSOP] [-OCCI] [-full] [-vvl] ...'
+     PRINT *,'              ... [-tmean] [-smean] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the vertical integral of the variable from top to bottom,'
@@ -90,13 +90,13 @@ PROGRAM cdfvint
      PRINT *,'        [-OCCI] : Use 3 levels for the output: 700m, 2000m and bottom'
      PRINT *,'                Default is to take the model levels for the output'
      PRINT *,'        [-full] : for full step computation ' 
-     PRINT *,'        [-nc4]  : use netcdf4 output with chunking and deflation'
-     PRINT *,'        [-tmean] : output mean temperature instead of heat content'
-     PRINT *,'        [-smean] : output mean salinity instead of PSU.m'
      PRINT *,'        [-vvl]   : use time-varying metrics for vertical integration'
      PRINT *,'               (still some details to fix for the last cell including the'
      PRINT *,'                target deptht).'
+     PRINT *,'        [-tmean] : output mean temperature instead of heat content'
+     PRINT *,'        [-smean] : output mean salinity instead of PSU.m'
      PRINT *,'        [-o OUT-file] : use specified output file instead of <IN-var>.nc'
+     PRINT *,'        [-nc4]  : use netcdf4 output with chunking and deflation'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fmsk),', ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr) 

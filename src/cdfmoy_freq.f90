@@ -22,7 +22,7 @@ PROGRAM cdfmoy_freq
   !! $Id$
   !! Copyright (c) 2017, J.-M. Molines 
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
-  !! @class derived_fields
+  !! @class time_averaging
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 

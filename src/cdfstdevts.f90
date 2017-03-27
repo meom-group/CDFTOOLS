@@ -54,7 +54,7 @@ PROGRAM cdfstdevts
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfstdevts -t T-file -t2 T2-file '
+     PRINT *,' usage : cdfstdevts -t T-file -t2 T2-file [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the standard deviation of the temperature and salinity from'
@@ -82,7 +82,7 @@ PROGRAM cdfstdevts
      PRINT *,'                     ', TRIM(cn_vosaline)//'_stdev, same unit than the input.'
      PRINT *,'      '
      PRINT *,'     SEA ALSO :'
-     PRINT *,'       cdfstd, cdfrmsssh, cdfstdevw.'
+     PRINT *,'       cdfstd, cdfrmsssh, cdfstdevw, cdfstats.'
      PRINT *,'      '
      STOP
   ENDIF

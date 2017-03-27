@@ -64,8 +64,8 @@ PROGRAM cdfstats
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfstats -f IN-file -r REF-file -ncy ncy  [-v1 VAR-name1 [-v2 VAR-name2] ...'
-     PRINT *,'                [-m MSH-MSK-file ] [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfstats -f IN-file -r REF-file -ncy ncy [-v1 VAR-name1] ...'
+     PRINT *,'             ... [-v2 VAR-name2] [-m MSH-MSK-file ] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'         This tool computes some statistics (rms, correlation, signal/noise'

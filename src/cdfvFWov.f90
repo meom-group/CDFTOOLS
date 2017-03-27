@@ -75,11 +75,15 @@ PROGRAM cdfvFWov
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfvFWov -v V-secfile -s S-secfile -zgr ZGR-secfile -hgr HGR-secfile '
-     PRINT *,'                  ... -msk MSK-secfile [-vvl] [-o OUT-file]'
+     PRINT *,'                  ... -msk MSK-secfile [-o OUT-file] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the fresh water transport and its overturning component through'
      PRINT *,'        a section specified by the input files (data and metrics).'
+     PRINT *,'      '
+     PRINT *,'        All input files corresponds to a zonal extraction holding 2 rows of'
+     PRINT *,'        data. In fact the 2 rows are needed for the salinity to be interpolated'
+     PRINT *,'        on the V-points.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        All arguments are ''section files'', which are assumed to be files with'
@@ -116,6 +120,7 @@ PROGRAM cdfvFWov
      CASE ( '-zgr' ) ; CALL getarg( ijarg, cf_zgr  ) ; ijarg=ijarg+1
      CASE ( '-hgr' ) ; CALL getarg( ijarg, cf_hgr  ) ; ijarg=ijarg+1
      CASE ( '-msk' ) ; CALL getarg( ijarg, cf_mask ) ; ijarg=ijarg+1
+        ! options
      CASE ( '-o'   ) ; CALL getarg( ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP

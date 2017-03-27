@@ -259,7 +259,7 @@ PROGRAM cdftransport
      PRINT *,'                  broken line, hence  data files hold the metrics. In this '
      PRINT *,'                  case, the input file is considered as a V-file, and must'
      PRINT *,'                  specified with -v option.'
-     PRINT *,'      [-sfx suffix] : use suffix instead of ',TRIM(csfx), 'in the netcdf'
+     PRINT *,'      [-sfx suffix] : use suffix instead of ',TRIM(csfx), ' in the netcdf'
      PRINT *,'                  output file. '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'

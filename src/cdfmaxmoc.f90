@@ -73,6 +73,10 @@ PROGRAM cdfmaxmoc
      PRINT *,'        -b BASIN-name : name of oceanic subbasin as defined in ',TRIM(cn_fbasins)
      PRINT *,'                usually it can be one of atl, glo, inp, ind or pac. glo means'
      PRINT *,'                no subbasins.'
+     PRINT *,'        -w latmin latmax depmin depmax : specify the geographical window in'
+     PRINT *,'                maximum and minimum of the overturning will be computed: '
+     PRINT *,'                    latmin latmax : limits in latitudes (deg N).'
+     PRINT *,'                    depmin depmax : limits in depths (meters).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        [-o OUT-file] : specify the output file name instead of ',TRIM(cf_ncout)

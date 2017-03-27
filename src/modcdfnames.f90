@@ -80,8 +80,8 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_vomeeivv='vomeeivv' !: meridional Eddy Induced Velocity
   CHARACTER(LEN=256) :: cn_vovecrtz='vovecrtz' !: vertical velocity
   CHARACTER(LEN=256) :: cn_sossheig='sossheig' !: Sea Surface Height
-  CHARACTER(LEN=256) :: cn_somxl010='somxl010' !: Mixed layer depth (density criterium)
-  CHARACTER(LEN=256) :: cn_somxlt02='somxlt02' !: Mixed layer depth (temperature criterium)
+  CHARACTER(LEN=256) :: cn_somxl010='somxl010' !: Mixed layer depth (density criterion)
+  CHARACTER(LEN=256) :: cn_somxlt02='somxlt02' !: Mixed layer depth (temperature criterion)
   CHARACTER(LEN=256) :: cn_sozotaux='sozotaux' !: Zonal wind stress
 
   CHARACTER(LEN=256) :: cn_sohefldo='sohefldo' !: Total Heat FLux

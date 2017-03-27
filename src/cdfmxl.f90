@@ -49,11 +49,11 @@ PROGRAM cdfmxl
 
   REAL(KIND=4)                                 :: rmisval=32767. ! Missing value of Mercator fields 
   REAL(KIND=4)                                 :: rr1,rr2        ! Coef for T(z=10m) interp. 
-  REAL(KIND=4)                                 :: rho_c1=0.01    ! 1rst density criterium
-  REAL(KIND=4)                                 :: rho_c2=0.03    ! 2nd density criterium
-  REAL(KIND=4)                                 :: rho_c3=0.125   ! 3rd density criterium 
-  REAL(KIND=4)                                 :: temp_c=-0.2    ! temperature criterium
-  REAL(KIND=4)                                 :: temp_c2=-0.5   ! 2nd temperature criterium 
+  REAL(KIND=4)                                 :: rho_c1=0.01    ! 1rst density criterion
+  REAL(KIND=4)                                 :: rho_c2=0.03    ! 2nd density criterion
+  REAL(KIND=4)                                 :: rho_c3=0.125   ! 3rd density criterion 
+  REAL(KIND=4)                                 :: temp_c=-0.2    ! temperature criterion
+  REAL(KIND=4)                                 :: temp_c2=-0.5   ! 2nd temperature criterion 
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rtem           ! temperature
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rtem10         ! 10m depth temperature 
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rsal           ! salinity
@@ -65,13 +65,13 @@ PROGRAM cdfmxl
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: tmask_surf     ! surface tmask
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: tmask_10       ! 10m-depth tmask 
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: tmask          ! level tmask
-  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp1          ! mxl depth based on density criterium 1
-  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp2          ! mxl depth based on density criterium 2
-  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp3          ! mxl depth based on density criterium 2 and 10m
-  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp4          ! mxl depth based on density criterium 3 and 10m
-  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlt           ! mxl depth based on temperature criterium
-  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlt2          ! mxl depth based on temperature criterium and 10m
-  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlt3          ! mxl depth based on temperature criterium 2 and 10m
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp1          ! mxl depth based on density criterion 1
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp2          ! mxl depth based on density criterion 2
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp3          ! mxl depth based on density criterion 2 and 10m
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlp4          ! mxl depth based on density criterion 3 and 10m
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlt           ! mxl depth based on temperature criterion
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlt2          ! mxl depth based on temperature criterion and 10m
+  REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlt3          ! mxl depth based on temperature criterion 2 and 10m
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdepw          ! depth of w levels
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdept          ! depth of T levels 
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim            ! time counter
@@ -121,13 +121,13 @@ PROGRAM cdfmxl
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'         variables : somxl010    = mld on density criterium 0.01 ref. surf.'
-     PRINT *,'                     somxl030    = mld on density criterium 0.03 ref. surf.'
-     PRINT *,'                     somxlt02    = mld on temperature criterium -0.2 ref. surf.'
-     PRINT *,'                     somxlt02z10 = mld on temperature criterium -0.2 ref. 10m'
-     PRINT *,'                     somxlt05z10 = mld on temperature criterium -0.5 ref. 10m'
-     PRINT *,'                     somxl030z10 = mld on density criterium 0.03 ref. 10m'
-     PRINT *,'                     somxl125z10 = mld on density criterium 0.125 ref. 10m'
+     PRINT *,'         variables : somxl010    = mld on density criterion 0.01 ref. surf.'
+     PRINT *,'                     somxl030    = mld on density criterion 0.03 ref. surf.'
+     PRINT *,'                     somxlt02    = mld on temperature criterion -0.2 ref. surf.'
+     PRINT *,'                     somxlt02z10 = mld on temperature criterion -0.2 ref. 10m'
+     PRINT *,'                     somxlt05z10 = mld on temperature criterion -0.5 ref. 10m'
+     PRINT *,'                     somxl030z10 = mld on density criterion 0.03 ref. 10m'
+     PRINT *,'                     somxl125z10 = mld on density criterion 0.125 ref. 10m'
      PRINT *,'      '
      STOP
   ENDIF

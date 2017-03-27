@@ -117,7 +117,7 @@ PROGRAM cdfmhst
      PRINT *,'      '
      PRINT *,'       This program is designed to read the time-average products V.T into'
      PRINT *,'       the corresponding VT-file (produced by cdfvT). If VT-files are not'
-     PRINT *,'       available, or if working with model snap-shot, V-file and T-file can'
+     PRINT *,'       available, or if working with model snapshot, V-file and T-file can'
      PRINT *,'       be specified as an alternative.'
      PRINT *,'      '
      PRINT *,'       In the evaluation of the ''meridional'' component, a ''zonal'' integration'
@@ -139,7 +139,7 @@ PROGRAM cdfmhst
      PRINT *,'              computed.  If not specified, only the MHT is output.' 
      PRINT *,'       [-full ] : to be set for full step case.'
      PRINT *,'       [-Zdim ] : to be set to output vertical structure of Heat/salt transport'
-     PRINT *,'       [-b BASIN-mask ] : use BASIN-mask instead of default', TRIM(cf_outnc)
+     PRINT *,'       [-b BASIN-mask ] : use BASIN-mask instead of default ', TRIM(cn_fbasins)
      PRINT *,'       [-o OUT-file ] : change name of the output file. Default:', TRIM(cf_outnc)
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'      '

@@ -63,7 +63,8 @@ PROGRAM cdfvhst
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'         Compute the vertically integrated heat and salt transports '
-     PRINT *,'         at each grid cell.'
+     PRINT *,'         at each grid cell. In other words, it is the vertical integral'
+     PRINT *,'         of the VT-file.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'         -f VT-file : file which contains UT, VT, US, VS quantities'
@@ -92,8 +93,8 @@ PROGRAM cdfvhst
         ! options
      CASE ( '-full' ) ;  lfull  = .TRUE.
      CASE ( '-vvl'  ) ;  lg_vvl = .TRUE.
-     CASE ( '-nc4'  ) ;  lnc4   = .TRUE.
      CASE ( '-o'    ) ;  CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg+1
+     CASE ( '-nc4'  ) ;  lnc4   = .TRUE.
      CASE DEFAULT     ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.'  ; STOP
      END SELECT
   END DO

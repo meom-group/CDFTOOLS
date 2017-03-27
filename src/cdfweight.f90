@@ -109,6 +109,9 @@ PROGRAM cdfweight
      PRINT *,'       standard output : almost the same info that is saved in the binary file'
      PRINT *,'                   When using -v option, even more informations !'
      PRINT *,'      '
+     PRINT *,'     SEE ALSO : '
+     PRINT *,'        cdfcoloc'
+     PRINT *,'      '
      STOP
   ENDIF
 

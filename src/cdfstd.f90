@@ -76,7 +76,7 @@ PROGRAM cdfstd
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfstd -l LST-files [-save] [-spval0] [-mskmiss] [-stdopt] ...' 
+     PRINT *,' usage : cdfstd -l LST-files [-save] [-spval0] [-mskmiss] [-opt] ...' 
      PRINT *,'                ... [-o STD-fileout] [-m MEAN-fileout] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -99,8 +99,8 @@ PROGRAM cdfstd
      PRINT *,'           missing value at any gridpoint where the variable contains a '
      PRINT *,'           missing value for at least one timestep. You should combine '
      PRINT *,'           with -spval0 if missing values are not 0 in all the input files.' 
-     PRINT *,'       [-stdopt ]:  use an optimal algorithm to compute std'
-     PRINT *,'           and std is unbiased.'
+     PRINT *,'       [-opt ]:  use an optimal algorithm to compute std deviation and use an'
+     PRINT *,'           unbiased standard deviation estimates.'
      PRINT *,'       [-o STD-fileout]: specify std dev output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-m MEAN-fileout]: specify mean output file name instead of ',TRIM(cf_moy)
      PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
@@ -130,7 +130,7 @@ PROGRAM cdfstd
      CASE ( '-save'  ) ; lsave    = .TRUE.
      CASE ('-spval0' ) ; lspval0  = .TRUE. 
      CASE ('-mskmiss') ; lmskmiss = .TRUE. 
-     CASE ('-stdopt' ) ; lstdopt  = .TRUE. 
+     CASE ('-opt'    ) ; lstdopt  = .TRUE. 
      CASE ('-o'      ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ('-m'      ) ; CALL getarg (ijarg, cf_moy ) ; ijarg=ijarg+1
      CASE ('-nc4'    ) ; lnc4     = .TRUE.

@@ -92,8 +92,8 @@ PROGRAM cdf2regular
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdf2regular -f IN-file -v VAR-name [-o OUT-file] [-360]'
-     PRINT *,'        [-r TGT-resolution] [-nc4] '
+     PRINT *,' usage : cdf2regular -f IN-file -v VAR-name [-o OUT-file] [-360] ...'
+     PRINT *,'        ... [-r TGT-resolution] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Remap (by binnig) high resolution fields on a coarser regular grid,'
@@ -127,6 +127,7 @@ PROGRAM cdf2regular
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdf2levitus2d (a particular case)'
+     PRINT *,'      '
      STOP
   ENDIF
 

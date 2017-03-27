@@ -70,7 +70,7 @@ PROGRAM cdfspice
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfspice -t T-file [-sal SAL-name] [-tem TEM-name] ...'
-     PRINT *,'        ... [-nc4] [-o OUT-file]'
+     PRINT *,'        ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the spiceness corresponding to temperatures and salinities'
@@ -87,8 +87,8 @@ PROGRAM cdfspice
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-sal SAL-name]  : name of salinity variable'
      PRINT *,'       [-tem TEM-name]  : name of temperature variable'
-     PRINT *,'       [-nc4]  : enable chunking and compression'
      PRINT *,'       [-o OUT-file]    : specify output filename instead of ',TRIM(cf_out)
+     PRINT *,'       [-nc4]  : enable chunking and compression'
      PRINT *,'      '
      PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '

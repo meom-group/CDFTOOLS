@@ -89,7 +89,7 @@ PROGRAM cdffindij
      PRINT *,'                to the corresponding line.'
      PRINT *,'       [-l  ] : With this option, also output the exact model longitude and '
      PRINT *,'                latitude of the I,J point.'
-     PRINT *,'       [-o OUT-file] : write output in text OUT-file instead of standard output.'
+     PRINT *,'       [-o OUT-file]: write output in text OUT-file instead of standard output.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fcoo),' or the specified coordinates file.' 

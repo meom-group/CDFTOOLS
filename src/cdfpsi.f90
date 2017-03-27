@@ -89,8 +89,8 @@ PROGRAM cdfpsi
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfpsi -u U-file -v V-file [-V] [-full ] [-mask ] [-mean] [-nc4 ] ...'
-     PRINT *,'          ... [-ssh T-file ] [-open ] [-ref iref jref ] [-o OUT-file] [-vvl]'
+     PRINT *,' usage : cdfpsi -u U-file -v V-file [-V] [-full] [-mask] [-mean] [-nc4] ...'
+     PRINT *,'          ... [-ssh T-file] [-open] [-ref iref jref] [-o OUT-file] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the barotropic stream function (a proxy) as the integral of '

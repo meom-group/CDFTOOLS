@@ -63,7 +63,7 @@ PROGRAM cdfgradT
      PRINT *,' usage : cdfgradT -t T-file [-s S-file] [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute horizontal and vertical gradient of temperature and salinity.'
+     PRINT *,'      Compute horizontal and vertical gradient of temperature and salinity.'
      PRINT *,'      Results are saved at U point for zonal gradient, V point for meridional'
      PRINT *,'      gradient and W for vertical gradient.'
      PRINT *,'      '
@@ -92,7 +92,7 @@ PROGRAM cdfgradT
      PRINT *,'                          located respectively at U, V and W points'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
-     PRINT *,'      '
+     PRINT *,'      cdfhgradb'
      PRINT *,'      '
      STOP
   ENDIF

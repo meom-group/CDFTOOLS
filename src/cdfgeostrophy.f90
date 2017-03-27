@@ -142,7 +142,8 @@ PROGRAM cdfgeostrophy
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the geostrophic velocity components from the pressure gradient'
-     PRINT *,'       induced by SSH and in-situ density (T,S of input file) '
+     PRINT *,'       induced by SSH and in-situ density (T,S of input file), using the thermal'
+     PRINT *,'       wind equation.'
      PRINT *,'      '
      PRINT *,'     WARNING : USE AT YOUR OWN RISKS. '
      PRINT *,'      '
@@ -165,6 +166,7 @@ PROGRAM cdfgeostrophy
      PRINT *,'           variables : ', TRIM(cn_vozocrtx)
      PRINT *,'       - netcdf file : ', TRIM(cf_vout) 
      PRINT *,'           variables : ', TRIM(cn_vomecrty)
+     PRINT *,'      '
      STOP
   ENDIF
 

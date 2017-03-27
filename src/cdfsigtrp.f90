@@ -120,7 +120,7 @@ PROGRAM cdfsigtrp
   LOGICAL                                       :: l_merid              ! flag for meridional section
   LOGICAL                                       :: ltemp  =.FALSE.      ! flag for use of temperature
   LOGICAL                                       :: lprint =.FALSE.      ! flag for extra print
-  LOGICAL                                       :: lncdf  =.FALSE.      ! flag for extra netcdf output
+  LOGICAL                                       :: lxtra  =.FALSE.      ! flag for extra netcdf output
   LOGICAL                                       :: lfull  =.FALSE.      ! flag for full step 
   LOGICAL                                       :: lntr   =.FALSE.      ! flag for neutral density
   LOGICAL                                       :: lchk   =.FALSE.      ! flag for missing files
@@ -130,7 +130,7 @@ PROGRAM cdfsigtrp
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file -smin sigma_min ...'
-     PRINT *,'              ...  -smax sigma_max -nbins nbins [-print ] [-netcdf] ...'
+     PRINT *,'              ...  -smax sigma_max -nbins nbins [-print ] [-xtra] ...'
      PRINT *,'              ... [-full ] [-vvl W-file] [-refdep ref_depth] [-neutral ] ...'
      PRINT *,'              ... [-section file ] [-temp] [-help]'
      PRINT *,'      '
@@ -164,7 +164,7 @@ PROGRAM cdfsigtrp
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-full] : for full step configuration' 
      PRINT *,'       [-vvl W-file]: use time varying vertical metrics. Need a W-file for e3w.'
-     PRINT *,'       [-ncdf] : produce extra netcdf output file which shows the details'
+     PRINT *,'       [-xtra] : produce extra netcdf output file which shows the details'
      PRINT *,'               of the sections (normal velocity, density, temperature, '
      PRINT *,'               salinity, transports, isopycnal depths. '
      PRINT *,'       [-print]: write the binned transports on standard output, for each'
@@ -213,7 +213,7 @@ PROGRAM cdfsigtrp
      CASE ( '-full'   ) ; lfull  = .TRUE.
      CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
         ;                 CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
-     CASE ( '-ncdf'   ) ; lncdf  = .TRUE.
+     CASE ( '-xtra'   ) ; lxtra  = .TRUE.
      CASE ( '-print'  ) ; lprint = .TRUE.
      CASE ( '-temp'   ) ; ltemp  = .TRUE. 
      CASE ( '-help'   ) ; CALL file_example ; STOP
@@ -491,7 +491,7 @@ PROGRAM cdfsigtrp
 
      ! output of the code for 1 section
      IF (lprint) CALL print_out(jsec)
-     IF (lncdf ) CALL cdf_writ(jsec)
+     IF (lxtra ) CALL cdf_writ(jsec)
      PRINT *,' Total transport in all bins :',TRIM(csection(jsec)),' ',SUM(dtrpbin(jsec,:) )/1.d6
 
      ! free memory for the next section
@@ -512,8 +512,8 @@ PROGRAM cdfsigtrp
 
   cv_dep='levels'
   ! need to call section_init again in order to reset cvarname, clongname if they where modified 
-  ! previously in cdf_writ(  case lncdf=true )
-  IF (lncdf) THEN
+  ! previously in cdf_writ(  case lxtra=true )
+  IF (lxtra) THEN
      CALL section_init(cf_section, csection,cvarname,clongname, iimina,iimaxa,ijmina,ijmaxa, nsection)
   ENDIF
 

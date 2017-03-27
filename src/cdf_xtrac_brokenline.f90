@@ -142,7 +142,7 @@ PROGRAM cdf_xtract_brokenline
   ! check argument number and show usage if necessary
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdf_xtrac_brokenline -t T-file -u U-file -v V-file [-i ice-file] ...'
+     PRINT *,' usage :  cdf_xtrac_brokenline -t T-file -u U-file -v V-file [-i ICE-file] ...'
      PRINT *,'         ... [-b BAT-file] [-f section_filei,sec_file2,..] [-l LST-sections]...'
      PRINT *,'         ... [-ssh] [-mld] [-ice] [-vt] [-vecrot] [-vvl] [-o ROOT_name] ...'
      PRINT *,'         ... [-verbose]'
@@ -210,7 +210,7 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'             (for plots purpose only).'
      PRINT *,'     '
      PRINT *,'     REQUIRED FILES :'
-     PRINT *,'      ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' in the current directory ' 
+     PRINT *,'       ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr),' in the current directory ' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : <section_name>.nc (default). If -o option is used, the'

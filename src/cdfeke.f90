@@ -65,8 +65,8 @@ PROGRAM cdfeke
      PRINT *,'            ... [-mke] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute the Eddy Kinetic Energy from previously computed'
-     PRINT *,'        mean values and mean squared values of velocity components.'
+     PRINT *,'        Compute the Eddy Kinetic Energy from previously computed mean values'
+     PRINT *,'        and mean squared values of velocity components.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS : both ''General Use'' or ''Reduced Use'' are acceptable'
      PRINT *,'      * General Use: 5 files are given in argument, and EKE is computed'
@@ -93,6 +93,7 @@ PROGRAM cdfeke
      PRINT *,'       netcdf file : ', TRIM(cf_out) , ' unless -o option in use.'
      PRINT *,'         variables : voeke (m2/s)'
      PRINT *,'         variables : vomke (m2/s) if required'
+     PRINT *,'      '
      STOP
   ENDIF
   !!
