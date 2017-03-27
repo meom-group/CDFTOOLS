@@ -37,7 +37,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
        cdfnrj_transfert cdfnrj_bci cdfnrj_bti cdfnrj_components cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
-       cdfpsi_level cdfhdy cdfdynh_anom cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
+       cdfpsi_level  cdfdynh_anom cdffracinv  cdfmaskdmp cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
@@ -227,9 +227,6 @@ cdfnrj_bti: cdfio.o  cdfnrj_bti.f90
 
 cdfnrj_components: cdfio.o  cdfnrj_components.f90
 	$(F90) cdfnrj_components.f90 -o $(BINDIR)/cdfnrj_components cdfio.o modcdfnames.o $(FFLAGS) 
-
-cdfhdy: cdfio.o  eos.o  cdfhdy.f90
-	$(F90)  cdfhdy.f90 -o $(BINDIR)/cdfhdy cdfio.o eos.o modcdfnames.o $(FFLAGS)
 
 cdfdynh_anom: cdfio.o  eos.o  cdfdynh_anom.f90
 	$(F90)  cdfdynh_anom.f90 -o $(BINDIR)/cdfdynh_anom cdfio.o eos.o  modcdfnames.o $(FFLAGS)
