@@ -60,7 +60,7 @@ PROGRAM cdffindij
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :   cdffindij  -w xmin xmax ymin ymax  [-c COOR-file] [-p C-type]...'
-     PRINT *,'                 ... [-f LIST-file] [-d descriptor] [-o OUT-file] [-A] [-l]'
+     PRINT *,'                 ... [-f LST-file] [-d descriptor] [-o OUT-file] [-A] [-l]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Return the model limit (i,j space) of the geographical window given on' 
@@ -76,7 +76,7 @@ PROGRAM cdffindij
      PRINT *,'       [-c COOR-file ] : specify a particular coordinate file' 
      PRINT *,'                     default is ',TRIM(cn_fcoo)
      PRINT *,'       [-p C-type] : specify the point on the C-grid (T U V F). Default is ',TRIM(cltype),'.'
-     PRINT *,'       [-f LIST-file ] : LIST-file is an ascii file describing the location'
+     PRINT *,'       [-f LST-file ] : LST-file is an ascii file describing the location'
      PRINT *,'                (one per line) of geographical points to be translated to '
      PRINT *,'                model (i,j) point. Unless specified with -d option, this list'
      PRINT *,'                file contains Longitude (X) Latitudes (Y) information.'

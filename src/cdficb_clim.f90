@@ -46,7 +46,7 @@ PROGRAM cdficb_clim
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdficb_clim -l LIST-ICB-monthly-files [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdficb_clim -l LST-ICB-monthly-files [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Concatenates 12 monthly input files, into a 12 frames output file.'
@@ -54,7 +54,7 @@ PROGRAM cdficb_clim
      PRINT *,'        No process done in this tool.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -l  LIST-ICB-monthly-files : A list of 12 monthly-mean ICB files.'
+     PRINT *,'       -l  LST-ICB-monthly-files : A list of 12 monthly-mean ICB files.'
      PRINT *,'            These files are likely produced by cdfmoy.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'

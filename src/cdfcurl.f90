@@ -66,7 +66,7 @@ PROGRAM cdfcurl
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l levlist [-T] [-8]...'
+     PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l LST-level [-T] [-8]...'
      PRINT *,'           ... [-surf] [-overf] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -79,10 +79,10 @@ PROGRAM cdfcurl
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -u U-file U-var : file and variable name for zonal component'
      PRINT *,'       -v V-file V-var : file and variable name for meridional component'
-     PRINT *,'       -l levlist    : levels to be processed. If set to 0, assume forcing file'
-     PRINT *,'                in input. Example of recognized syntax :'
-     PRINT *,'                  -l "1,10,30"  or -l "1-20" or even -l "1-3,10-20,30-"'
-     PRINT *,'                  -l  1 . Note that -l "3-" set a levlist from 3 to the bottom'
+     PRINT *,'       -l LST-level : levels to be processed. If set to 0, assume forcing file'
+     PRINT *,'             in input. Example of recognized syntax :'
+     PRINT *,'               -l "1,10,30"  or -l "1-20" or even -l "1-3,10-20,30-"'
+     PRINT *,'               -l  1 . Note that -l "3-" set a level list from 3 to the bottom.'
      PRINT * 
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-T] : compute curl at T point instead of default F-point'

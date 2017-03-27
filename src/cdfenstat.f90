@@ -72,7 +72,7 @@ PROGRAM cdfenstat
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfenstat -l LIST-mbr-files [-spval0] [-v4d] [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfenstat -l LST-mbr-files [-spval0] [-v4d] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute an ensemble mean and standard deviation for a set of files'
@@ -83,7 +83,7 @@ PROGRAM cdfenstat
      PRINT *,'       in order to reduce truncation errors.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -l LIST-mbr-files : A list of members  model output files. '
+     PRINT *,'       -l LST-mbr-files : A list of members  model output files. '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [ -spval0 ] :  set missing_value attribute to 0 for all output'
