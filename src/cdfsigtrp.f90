@@ -52,10 +52,11 @@ PROGRAM cdfsigtrp
   INTEGER(KIND=4)                               :: nbins                ! number of density classes
   INTEGER(KIND=4)                               :: ipos                 ! working variable
   INTEGER(KIND=4)                               :: narg, iargc          ! command line 
-  INTEGER(KIND=4)                               :: ijarg, ireq          ! command line
+  INTEGER(KIND=4)                               :: ijarg, ireq, nreq    ! command line
   INTEGER(KIND=4)                               :: npk, nk              ! vertical size, number of wet layers
   INTEGER(KIND=4)                               :: numout=11            ! ascii output
   INTEGER(KIND=4)                               :: nsection             ! number of sections (overall)
+  INTEGER(KIND=4)                               :: npiglo               ! length of broken line section
   INTEGER(KIND=4)                               :: iimin, iimax         ! working section limits
   INTEGER(KIND=4)                               :: ijmin, ijmax         ! working section limits
   INTEGER(KIND=4)                               :: npts                 ! number of points in section
@@ -98,6 +99,7 @@ PROGRAM cdfsigtrp
   CHARACTER(LEN=256)                            :: cf_ufil              ! zonal velocity file
   CHARACTER(LEN=256)                            :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                            :: cf_wfil              ! W file for vvl e3w
+  CHARACTER(LEN=256)                            :: cf_brk               ! broken-line file
   CHARACTER(LEN=256)                            :: cf_section='dens_section.dat'  ! input section file
   CHARACTER(LEN=256)                            :: cf_out='trpsig.txt'  ! output  ascii file
   CHARACTER(LEN=256)                            :: cf_nc                ! output netcdf file (2d)
@@ -124,6 +126,7 @@ PROGRAM cdfsigtrp
   LOGICAL                                       :: lfull  =.FALSE.      ! flag for full step 
   LOGICAL                                       :: lntr   =.FALSE.      ! flag for neutral density
   LOGICAL                                       :: lchk   =.FALSE.      ! flag for missing files
+  LOGICAL                                       :: lbrk   =.FALSE.      ! flag for broken lines
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -148,15 +151,27 @@ PROGRAM cdfsigtrp
      PRINT *,'       integer values (imin imax jmin jmax), relative to the model grid.'
      PRINT *,'       Only  zonal or meridional sections are allowed.'
      PRINT *,'      '
+     PRINT *,'       This program also offer the possibilty to read ''broken-line'' files,'
+     PRINT *,'       holding already extracted data along a pseudo zonal section. In this '
+     PRINT *,'       particular case, (''-brk'' switch), no additional information about the'
+     PRINT *,'       section is required, nor metric files, as it is already available in the'
+     PRINT *,'       input file.'
+     PRINT *,'      '
      PRINT *,'       This program can also be used to compute transport by temperatures'
      PRINT *,'       classes, provided the temperatures decrease monotonically downward.'
      PRINT *,'       In this case, use -temp option and of course specify sigma_min, '
      PRINT *,'       sigma_max as temperatures.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
+     PRINT *,'       Input data file can be specified either using the 3 following switches:'
      PRINT *,'       -t T-file : netcdf file with temperature and salinity' 
      PRINT *,'       -u U-file : netcdf file with zonal velocity component'
      PRINT *,'       -v V-file : netcdf file with meridional velocity component'
+     PRINT *,'       Or, using the ''-brk'' switch.'
+     PRINT *,'        -brk BRK-file : specify a ''broken-line'' file produced by the tool'
+     PRINT *,'              cdf_xtrac_brokenline, which is considered already as a pseudo'
+     PRINT *,'              zonal section, holding all the relevant metrics for the section.'
+     PRINT *,'            '
      PRINT *,'       -smin sigma_min : minimum density for binning'
      PRINT *,'       -smax sigma_max : maximum density for binning'
      PRINT *,'       -nbins nbins : number of bins. This will fix the bin ''width'' '
@@ -180,6 +195,8 @@ PROGRAM cdfsigtrp
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),', ', TRIM(cn_fzgr),' and ', TRIM(cf_section)
+     PRINT *,'         If option ''-brk'' is used, there is no need for these files, the '
+     PRINT *,'         metrics being already embarked into this section file.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Netcdf file : There is 1 netcdf file per section. File name is build'
@@ -199,13 +216,15 @@ PROGRAM cdfsigtrp
   ENDIF
 
   ! browse command line
-  ijarg = 1 ; ireq = 0
+  ijarg = 1 ; ireq = 0 ; nreq=6
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-t'      ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
      CASE ( '-u'      ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1 ; ireq=ireq+1
      CASE ( '-v'      ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
+     CASE ( '-brk'    ) ; CALL getarg(ijarg, cf_brk  ) ; ijarg=ijarg+1 ; ireq=ireq+1
+        ;                 lbrk   = .TRUE. ; nreq= 4
      CASE ( '-smin'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) dsigma_min ; ireq=ireq+1
      CASE ( '-smax'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) dsigma_max ; ireq=ireq+1
      CASE ( '-nbins'  ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; ireq=ireq+1
@@ -224,9 +243,18 @@ PROGRAM cdfsigtrp
      END SELECT
   END DO
 
-  IF ( ireq /= 6 ) THEN
+  IF ( ireq /= nreq ) THEN
      PRINT *,' ERROR :  not enough input arguments. See the usage message and correct.' 
      STOP
+  ENDIF
+
+  IF ( lbrk ) THEN
+     cn_fzgr = cf_brk
+     cn_fhgr = cf_brk
+     cf_tfil = cf_brk
+     cf_ufil = cf_brk
+     cf_vfil = cf_brk 
+     cf_section = cf_brk  ! never used in this case, just for check
   ENDIF
 
   ! check for file existence
@@ -270,10 +298,25 @@ PROGRAM cdfsigtrp
 
   ! Initialise sections from file 
   ! first call to get nsection and allocate arrays 
-  nsection = 0 ; CALL section_init(cf_section, csection,cvarname,clongname,iimina, iimaxa, ijmina, ijmaxa, nsection)
+  IF ( lbrk ) THEN 
+      npiglo = getdim (cf_brk, cn_x)
+      nsection = 1 ; iimina=1 ; iimaxa=npiglo ; ijmina=1 ; ijmaxa=1
+  ELSE             
+      nsection = 0 
+      CALL section_init(cf_section, csection,cvarname,clongname,iimina, iimaxa, ijmina, ijmaxa, nsection)
+  ENDIF
   ALLOCATE ( csection(nsection), cvarname(nsection), clongname(nsection) )
   ALLOCATE ( iimina(nsection), iimaxa(nsection), ijmina(nsection),ijmaxa(nsection) )
-  CALL section_init(cf_section, csection,cvarname,clongname, iimina,iimaxa,ijmina,ijmaxa, nsection)
+  IF ( lbrk )  THEN ! initialise section for true section
+     npiglo = getdim (cf_brk, cn_x)
+     iimina = 1 ; iimaxa = npiglo ; ijmina = 1 ; ijmaxa = 1
+     ! file name for BRK file is <prefix>_<section>.nc
+!    csection(1)  = 
+!    cvarname(1)  = 
+!    clongname(1) = 
+  ELSE
+     CALL section_init(cf_section, csection,cvarname,clongname, iimina,iimaxa,ijmina,ijmaxa, nsection)
+  ENDIF
 
   ! Allocate and build sigma levels and section array
   ALLOCATE ( dsigma_lev (nbins+1) , dtrpbin(nsection,nbins)  )
@@ -964,7 +1007,5 @@ CONTAINS
     PRINT *,'  '
 
   END SUBROUTINE file_example
-
-
 
 END PROGRAM cdfsigtrp
