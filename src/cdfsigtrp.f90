@@ -311,9 +311,12 @@ PROGRAM cdfsigtrp
      npiglo = getdim (cf_brk, cn_x)
      iimina = 1 ; iimaxa = npiglo ; ijmina = 1 ; ijmaxa = 1
      ! file name for BRK file is <prefix>_<section>.nc
-!    csection(1)  = 
-!    cvarname(1)  = 
-!    clongname(1) = 
+     ipos         = INDEX(cf_brk,'_',.TRUE.)
+     csection(1)  = cf_brk(ipos+1:)
+     ipos         = INDEX(csection(1),'.',.TRUE.)
+     csection(1)  = csection(1)(1:ipos-1)
+     cvarname(1)  = csection(1)
+     clongname(1) = csection(1)
   ELSE
      CALL section_init(cf_section, csection,cvarname,clongname, iimina,iimaxa,ijmina,ijmaxa, nsection)
   ENDIF
@@ -420,13 +423,37 @@ PROGRAM cdfsigtrp
         zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
 
 
-     ELSE                   ! zonal section at j=ijmin=ijmax
+     ELSE                   ! zonal section at j=ijmin=ijmax ( include BRK-line sections)
+
         tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
         eu(:)        = tmpz(:,1)
         tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin, kjmin=ijmin)
         rlonlat(:,1) = tmpz(:,1)  ! longitude in this case
 
-        ! use zt and zs as temporaty variable for e3w
+        IF (lbrk ) THEN
+           ! need to fix de3, ddepu, zu, zs, zt, nk , zmask
+           IF ( lfull) THEN 
+              DO ji=1, npts
+                 de3(ji,:) = e3t1d(:)
+              ENDDO
+           ELSE
+             de3(  :,:    ) = getvarxz(cn_fe3v, cn_ve3v,     ijmin,   npts, npk, kimin=iimin+1 )
+             ddepu(:,1:npk) = getvarxz(cf_brk,  cn_gdept,    ijmin,   npts, npk, kimin=iimin+1 )
+           ENDIF
+           zu(   :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
+           zt(   :,:) = getvarxz(cf_vfil, cn_votemper, ijmin,   npts, npk, kimin=iimin+1 )
+           zs(   :,:) = getvarxz(cf_vfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
+           zmask(:,:) = getvarxz(cf_vfil, cn_vmask,    ijmin,   npts, npk, kimin=iimin+1 )
+           ! limitation to 'wet' points
+           DO jk = 1, npk
+              IF ( SUM(zmask(:,jk)) == 0 ) THEN
+                nk=jk
+                EXIT
+              ENDIF
+           ENDDO
+        ELSE
+
+        ! use zt and zs as temporary variable for e3w
         IF ( lfull ) THEN
            DO ji=1, npts
               de3(ji,:) = e3t1d(:)
@@ -471,6 +498,7 @@ PROGRAM cdfsigtrp
         zt(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin  , npts, npk, kimin=iimin+1 )
         zz(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin+1, npts, npk, kimin=iimin+1 )
         zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
+        ENDIF
      ENDIF
 
      ! compute density only for wet points
@@ -959,6 +987,7 @@ CONTAINS
     PRINT *,'  Each section is described by 2 lines :'
     PRINT *,'    line#1 : name_of_section [variable_suffix] [ long_name_prefix ]'
     PRINT *,'    line#2 : imin  imax jmin jmax '
+    PRINT *,'     IMPORTANT : the points indicated by imin,jmin  imax,jmax are F-point.'
     PRINT *,'  '
     PRINT *,'  example (taken for ORCA12 configuration) :'
     PRINT *,'01_Denmark_strait denma Denmark_Strait_transport_in_sigma_classes'
