@@ -81,6 +81,7 @@ PROGRAM cdfzisot
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
+     PRINT *,'      '
      STOP
   ENDIF
 
