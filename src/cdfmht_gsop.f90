@@ -1,179 +1,165 @@
-!!! JMM : This program is here for historical reason. Iy has never been ported to the 
-!!!       actual standards of CDFTOOLS. It requires some workk !
-
 PROGRAM cdfmht_gsop
-  !!-------------------------------------------------------------------
-  !!               ***  PROGRAM cdfmht_gsop  ***
-  !!
-  !!  **  Purpose  :  Compute the Meridional Heat Transport (MHT)
-  !!                  Components for GSOP intercomparison
-  !!                  PARTIAL STEPS
+  !!======================================================================
+  !!                     ***  PROGRAM  cdfmht_gsop  ***
+  !!=====================================================================
+  !!  **  Purpose  :  Compute the Meridional Heat Transport (MHT) components
+  !!                  GSOP intercomparison project.
   !!  
-  !!  **  Method   :  The MHT is computed from the V velocity field and T temperature field, integrated
-  !!                  from the bottom to the surface.
-  !!                  The MHT is decomposed into 3 components : BT, SH, AG.
-  !!                  Results are saved on gsopmht.nc file with variables name respectively
-  !!                  zomhtatl, zobtmhta, zoshmhta, zoagmhta
+  !!  **  Method   :  The MHT is computed from the V velocity field and T temperature field,
+  !!                  integrated from the bottom to the surface. The velocity field is 
+  !!                  decomposed into 3 components : Barotropic (BT), Shear geostrophic(SH)
+  !!                  and Ageostrophic (AG). The program computes the corresponding MHT, thus
+  !!                  saving 4 variables : Total, BT, SH, and AG MHT component.
   !!
   !!
-  !! history ;
-  !!  Original :  J.M. Molines (jul. 2005) 
-  !!              G.C. Smith ( Sep 2007) Added MOC decomposition following :
-  !!                 Lee & Marotzke (1998), Baehr, Hirschi, Beismann, &  Marotzke (2004), Cabanes, Lee, & Fu (2007),
-  !!                  Koehl & Stammer (2007).
-  !!                 See also the powerpoint presentation by Tony Lee at the third CLIVAR-GSOP intercomparison
-  !!    available at : http://www.clivar.org/organization/gsop/synthesis/mit/talks/lee_MOC_comparison.ppt
+  !! History : 2.0  : 07/2005 : J.M. Molines    : original MHT code
+  !!                : 09/2007 : G.C. Smith      : Added MOC decomposition following :
+  !!                : 12/2008 : A. Lecointre    : Replaced by a MHT decomposition
+  !!         : 4.0  : 03/2017 : J.M. Molines    : rewriting at cdftools 4 standards
   !!
-  !!              A. Lecointre (Dec 2008) Replaced by a MHT decomposition
-  !!
-  !!-------------------------------------------------------------------
-  !!  $Rev$
-  !!  $Date$
-  !!  $Id$
-  !!--------------------------------------------------------------
-
-  !! * Modules used
+  !! References :  Lee & Marotzke (1998), Baehr, Hirschi, Beismann, &  Marotzke (2004),
+  !!               Cabanes, Lee, & Fu (2007),  Koehl & Stammer (2007).
+  !!----------------------------------------------------------------------
+  !!----------------------------------------------------------------------
+  !!   routines      : description
+  !!   varchk2       : check if variable is candidate for square mean
+  !!   varchk3       : check if variable is candidate for cubic mean
+  !!   zeromean      : substract mean value from input field
+  !!----------------------------------------------------------------------
   USE cdfio
+  USE modcdfnames
   USE eos
-
-  !! * Local variables
+  !!----------------------------------------------------------------------
+  !! CDFTOOLS_4.0 , MEOM 2017 
+  !! $Id$
+  !! Copyright (c) 2017, J.-M. Molines 
+  !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class transport
+  !!-----------------------------------------------------------------------------
   IMPLICIT NONE
-  INTEGER   :: jpbasins  ! =5 modif Alb 29/11/08 pour fonctionner avec MERA
-  INTEGER, PARAMETER :: jpgsop=4
-  INTEGER   :: jgsop, jbasin, jj, jk ,ji                  !: dummy loop index
-  INTEGER   :: ierr                                !: working integer
-  INTEGER   :: narg, iargc                         !: command line 
-  INTEGER   :: npiglo,npjglo, npk                  !: size of the domain
-  INTEGER   :: ncout, np
-  INTEGER   :: numout=10
-  INTEGER, DIMENSION(:), ALLOCATABLE ::  ipk, id_varout         ! 
-  INTEGER, DIMENSION(jpgsop) ::  ipk_gsop, id_varout_gsop         !
-  INTEGER, DIMENSION(2)          ::  iloc
 
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  e1u, e1v, e3v, gphiv, zv !:  metrics, velocity
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  Hdep, vbt
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  btht
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  zt,zt_v,zsal,tmask,umask,vmask, vgeoz
-  REAL(KIND=8), DIMENSION (:,:),     ALLOCATABLE ::  zsig0
-  REAL(KIND=4), DIMENSION (:,:,:),   ALLOCATABLE ::  vgeo,vgeosh,vageosh,vfull,tfull,vmaskz,tmaskz
-  REAL(KIND=4)   ::  rau0, grav, f0, fcor, zmsv, zphv, rpi
-  !  REAL(KIND=4)   ::  grav, f0, fcor, zmsv, zphv, rpi
-  REAL(KIND=4), DIMENSION (:,:,:),   ALLOCATABLE ::  e3vz
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlon              !: dummy longitude = 0.
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  dumlat              !: latitude for i = north pole
-  REAL(KIND=4), DIMENSION (:),       ALLOCATABLE ::  deptht, gdepw       !: deptw
-  REAL(KIND=4), DIMENSION (:,:,:),   ALLOCATABLE ::  zmask               !:  jpbasins x npiglo x npjglo
-  REAL(KIND=4), DIMENSION (:,:),     ALLOCATABLE ::  zzmask              !:  npiglo x npjglo
-  REAL(KIND=4), DIMENSION (1)                    ::  tim
+  INTEGER(KIND=4), PARAMETER                  :: jpgsop=4                   ! number of output variable
+  INTEGER(KIND=4)                             :: nbasins                    ! number of basins to deal with
+  INTEGER(KIND=4)                             :: jgsop, jbasin, jj, jk ,ji  ! dummy loop index
+  INTEGER(KIND=4)                             :: ierr                       ! working integer
+  INTEGER(KIND=4)                             :: narg, iargc, ijarg         ! command line 
+  INTEGER(KIND=4)                             :: npiglo,npjglo, npk, npt    ! size of the domain
+  INTEGER(KIND=4)                             :: ncout, np
+  INTEGER(KIND=4)                             :: numout=10                  ! logical unit
+  INTEGER(KIND=4), DIMENSION(jpgsop)          :: ipk_gsop, id_varout_gsop   ! netcdf output
+  INTEGER(KIND=4), DIMENSION(2)               :: iloc
 
-  REAL(KIND=8) ,DIMENSION(:,:) , ALLOCATABLE ::  zomht                 !: jpbasins x npjglo
-  REAL(KIND=8) ,DIMENSION(:,:) , ALLOCATABLE ::  zomht_gsop            !: jpgsop x npjglo
-  REAL(KIND=8) ,DIMENSION(:,:) , ALLOCATABLE ::  zomht_geos_full       !: npjglo x npk
-  REAL(KIND=8) ,DIMENSION(:,:) , ALLOCATABLE ::  zomht_ageos_full      !: npjglo x npk
-  REAL(KIND=8) ,DIMENSION(:,:,:) , ALLOCATABLE ::  zomhtfull           !: jpbasin x npjglo x npk
+  REAL(KIND=4)                                :: rho0=1000.,   rcp=4000.    ! rau0 en kg x m-3 et rcp en m2 x s-2 x degC-1
+  REAL(KIND=4)                                :: rau0, grav, f0, fcor       ! physical parameters
+  REAL(KIND=4)                                :: zmsv, zphv, rpi            !
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdept, gdepw               ! deptht, deptw
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1u, e1v, e3v, gphiv, zv   !  metrics, velocity
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: hdep, vbt
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: btht
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zt,zt_v,zsal
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: tmask,umask,vmask
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: vgeoz
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: zsig0
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rlon                      ! dummy longitude = 0.
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rlat                      ! latitude for i = north pole
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zzmask                    ! npiglo x npjglo
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: zmask                     ! nbasins x npiglo x npjglo
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: vgeo,vgeosh,vageosh       ! npiglo x npjglo x npk
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: vfull,tfull               ! npiglo x npjglo x npk
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: vmaskz,tmaskz             ! npiglo x npjglo x npk
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: e3vz                      ! npiglo x npjglo x npk
 
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dzomht                    ! nbasins x npjglo
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dzomht_gsop               ! jpgsop x npjglo
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dzomht_geos_full          ! npjglo x npk
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dzomht_ageos_full         ! npjglo x npk
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dzomhtfull                ! nbasins x npjglo x npk
 
-  CHARACTER(LEN=256) :: cfilet, cfilev , cfileoutnc='gsopmht.nc'
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cbasinmask='new_maskglo.nc'
-  CHARACTER(LEN=256) ,DIMENSION(jpgsop)     :: cvarname_gsop              !: array of var name for output
-  TYPE(variable), DIMENSION(jpgsop) :: stypvar       !: modif Alb 26/11/08 structure for attributes
-  LOGICAL    :: llglo = .false.                            !: indicator for presence of new_maskglo.nc file
-  INTEGER    :: istatus
+  CHARACTER(LEN=256)                          :: cf_tfil
+  CHARACTER(LEN=256)                          :: cf_vfil 
+  CHARACTER(LEN=256)                          :: cf_out='gsopmht.nc'
+  CHARACTER(LEN=256)                          :: cldum
 
-  ! constants
-  REAL(KIND=4),PARAMETER   ::  rho0=1000.,   rcp=4000.   ! rau0 en kg x m-3 et rcp en m2 x s-2 x degC-1
+  TYPE(variable), DIMENSION(jpgsop)           :: stypvar       
 
-  !!  Read command line and output usage message if not compliant.
+  LOGICAL                                     :: llglo = .FALSE.            ! indicator for presence of new_maskglo.nc file
+  LOGICAL                                     :: lchk  = .FALSE.            ! missing files flag
+  !!-----------------------------------------------------------------------------
+  CALL ReadCdfNames()
+
   narg= iargc()
+
   IF ( narg == 0 ) THEN
-     PRINT *,' Usage : cdfmht_gsop  V file Tfile'
-     PRINT *,' Compute the MHT for atlantic basin'
-     PRINT *,' PARTIAL CELLS VERSION'
-     PRINT *,' Files mesh_hgr.nc, mesh_zgr.nc ,new_maskglo.nc ,mask.nc '
-     PRINT *,'  must be in the current directory'
-     PRINT *,' Output on gsopmht.nc: '
-     PRINT *,'      variables zomhtatl  : MHT Atlantic Ocean '
-     PRINT *,'      variables zobtmhta  : Barotropic component '
-     PRINT *,'      variables zoshmhta  : Vertical shear geostrophic component '
-     PRINT *,'      variables zoagmhta  : vertical shear ageostrophic component (Ekman + residu)'
+     PRINT *,' usage :  cdfmht_gsop -v V-file -t T-file [-o OUT-file]'
+     PRINT *,'      '
+     PRINT *,'     PURPOSE :'
+     PRINT *,'       Compute the meridional heat transport(MHT) for the Atlantic basin.'
+     PRINT *,'       Compute 3 components of the MHT :'
+     PRINT *,'          - Barotropic component'
+     PRINT *,'          - Vertical shear geostrophic component '
+     PRINT *,'          - Vertical shear ageostrophic component (Ekman + residual)'
+     PRINT *,'      '
+     PRINT *,'     REMARKS :'
+     PRINT *,'       This program has been ported to CDFTOOLS4, without major changes.'
+     PRINT *,'       It should work as before but is not optimized for memory (lot of'
+     PRINT *,'       3D arrays declared). '
+     PRINT *,'      '
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       -v V-file : name of the meridional velocity file.' 
+     PRINT *,'       -t T-file : name of the temperatture file.'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
+     PRINT *,'       [-o OUT-file] : output file name instead of ',TRIM(cf_out)
+     PRINT *,'      '
+     PRINT *,'     REQUIRED FILES :'
+     PRINT *,'       ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fbasins) 
+     PRINT *,'      '
+     PRINT *,'     OUTPUT : '
+     PRINT *,'       netcdf file : ', TRIM(cf_out) 
+     PRINT *,'         variables :  zomhtatl  : MHT Atlantic Ocean '
+     PRINT *,'                      zobtmhta  : Barotropic component '
+     PRINT *,'                      zoshmhta  : Vertical shear geostrophic component '
+     PRINT *,'                      zoagmhta  : vertical shear ageostrophic component'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'       cdfmhst (compute MHT without decomposition), cdfmoc' 
+     PRINT *,'      '
      STOP
   ENDIF
 
-  CALL getarg (1, cfilev)
-  npiglo= getdim (cfilev,'x')
-  npjglo= getdim (cfilev,'y')
-  npk   = getdim (cfilev,'depth')
-  CALL getarg (2, cfilet)
+  ijarg = 1 
+  DO WHILE ( ijarg <= narg )
+     CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
+     SELECT CASE ( cldum )
+     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
+        ! option
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
+     END SELECT
+  ENDDO
+
+  lchk = lchk .OR. chkfile(cn_fzgr)
+  lchk = lchk .OR. chkfile(cn_fhgr)
+  lchk = lchk .OR. chkfile(cn_fmsk)
+  lchk = lchk .OR. chkfile(cn_fbasins)
+  lchk = lchk .OR. chkfile(cf_vfil )
+  lchk = lchk .OR. chkfile(cf_tfil )
+  IF ( lchk ) STOP 1
+
+  npiglo= getdim (cf_vfil,cn_x)
+  npjglo= getdim (cf_vfil,cn_y)
+  npk   = getdim (cf_vfil,cn_z)
 
   ! Detects newmaskglo file modif Alb 29/11/08 pour MERA
-  INQUIRE( FILE='new_maskglo.nc', EXIST=llglo )
-  IF (llglo) THEN
-     jpbasins = 5
-  ELSE
-     jpbasins = 1
+  INQUIRE( FILE=cn_fbasins, EXIST=llglo )
+  IF (llglo) THEN ; nbasins = 5
+  ELSE            ; nbasins = 1
   ENDIF
 
-  ! define new variables for output
-
-  stypvar(1)%cname= 'zobtmhta'
-  stypvar(1)%cunits='PetaWatt'
-  stypvar(1)%rmissing_value=99999.
-  stypvar(1)%valid_min= -1000.
-  stypvar(1)%valid_max= 1000.
-  stypvar(1)%scale_factor= 1.
-  stypvar(1)%add_offset= 0.
-  stypvar(1)%savelog10= 0.
-  stypvar(1)%clong_name='Barotropic_Merid_HeatTransport'
-  stypvar(1)%cshort_name='zobtmhta'
-  stypvar(1)%conline_operation='N/A'
-  stypvar(1)%caxis='TY'
-
-  stypvar(2)%cname= 'zoshmhta'
-  stypvar(2)%cunits='PetaWatt'
-  stypvar(2)%rmissing_value=99999.
-  stypvar(2)%valid_min= -1000.
-  stypvar(2)%valid_max= 1000.
-  stypvar(2)%scale_factor= 1.
-  stypvar(2)%add_offset= 0.
-  stypvar(2)%savelog10= 0.
-  stypvar(2)%clong_name='GeoShear_Merid_HeatTransport'
-  stypvar(2)%cshort_name='zoshmhta'
-  stypvar(2)%conline_operation='N/A'
-  stypvar(2)%caxis='TY'
-
-  stypvar(3)%cname= 'zoagmhta'
-  stypvar(3)%cunits='PetaWatt'
-  stypvar(3)%rmissing_value=99999.
-  stypvar(3)%valid_min= -1000.
-  stypvar(3)%valid_max= 1000.
-  stypvar(3)%scale_factor= 1.
-  stypvar(3)%add_offset= 0.
-  stypvar(3)%savelog10= 0.
-  stypvar(3)%clong_name='Ageo_Merid_HeatTransport'
-  stypvar(3)%cshort_name='zoagmhta'
-  stypvar(3)%conline_operation='N/A'
-  stypvar(3)%caxis='TY'
-
-  stypvar(4)%cname= 'zomhtatl'
-  stypvar(4)%cunits='PetaWatt'
-  stypvar(4)%rmissing_value=99999.
-  stypvar(4)%valid_min= -1000.
-  stypvar(4)%valid_max= 1000.
-  stypvar(4)%scale_factor= 1.
-  stypvar(4)%add_offset= 0.
-  stypvar(4)%savelog10= 0.
-  stypvar(4)%clong_name='Meridional_HeatTransport_Atlantic'
-  stypvar(4)%cshort_name='zomhtatl'
-  stypvar(4)%conline_operation='N/A'
-  stypvar(4)%caxis='TY'
-
-  ipk_gsop(1) = npk
-  ipk_gsop(2) = npk
-  ipk_gsop(3) = npk
-  ipk_gsop(4) = npk
-
   ! Allocate arrays
-  ALLOCATE ( zmask(jpbasins,npiglo,npjglo) )
+  ALLOCATE ( zmask(nbasins,npiglo,npjglo) )
   ALLOCATE ( tmask(npiglo,npjglo) )
   ALLOCATE ( tmaskz(npiglo,npjglo,npk) )
   ALLOCATE ( umask(npiglo,npjglo) )
@@ -184,68 +170,59 @@ PROGRAM cdfmht_gsop
   ALLOCATE ( zt(npiglo,npjglo), zt_v(npiglo,npjglo) ) ! temperature au point T et au point V
   ALLOCATE ( tfull(npiglo,npjglo,npk) )  ! temperature au point V
   ALLOCATE ( e1u(npiglo,npjglo),e1v(npiglo,npjglo),e3v(npiglo,npjglo), gphiv(npiglo,npjglo) ,gdepw(npk) )
-  ALLOCATE ( Hdep(npiglo,npjglo), vbt(npiglo,npjglo) )
+  ALLOCATE ( hdep(npiglo,npjglo), vbt(npiglo,npjglo) )
   ALLOCATE ( e3vz(npiglo,npjglo,npk) )
-  ALLOCATE ( zomhtfull(jpbasins,npjglo,npk) )
-  ALLOCATE ( zomht(jpbasins, npjglo) )
-  ALLOCATE ( zomht_gsop(jpgsop, npjglo) )
+  ALLOCATE ( dzomhtfull(nbasins,npjglo,npk) )
+  ALLOCATE ( dzomht(nbasins, npjglo) )
+  ALLOCATE ( dzomht_gsop(jpgsop, npjglo) )
   ALLOCATE ( btht(npjglo,npk) )
   ALLOCATE ( zsal(npiglo,npjglo), zsig0(npiglo,npjglo) )
-  ALLOCATE ( deptht(npk) )
-  ALLOCATE ( dumlon(1,npjglo) , dumlat(1,npjglo))
+  ALLOCATE ( gdept(npk) )
+  ALLOCATE ( rlon(1,npjglo) , rlat(1,npjglo))
   ALLOCATE ( zzmask(npiglo,npjglo) )
   ALLOCATE ( vgeo(npiglo,npjglo,npk) )
   ALLOCATE ( vgeoz(npiglo,npjglo) )
   ALLOCATE ( vgeosh(npiglo,npjglo,npk) )
-  ALLOCATE ( zomht_geos_full(npjglo,npk) )
+  ALLOCATE ( dzomht_geos_full(npjglo,npk) )
   ALLOCATE ( vageosh(npiglo,npjglo,npk) )
-  ALLOCATE ( zomht_ageos_full(npjglo,npk) )
+  ALLOCATE ( dzomht_ageos_full(npjglo,npk) )
 
-  e1v(:,:) = getvar(coordhgr, 'e1v', 1,npiglo,npjglo) 
-  e1u(:,:) = getvar(coordhgr, 'e1u', 1,npiglo,npjglo) 
-  gphiv(:,:) = getvar(coordhgr, 'gphiv', 1,npiglo,npjglo)
-  deptht(:) = getvare3(coordzgr, 'gdept',npk)
-  gdepw(:) = getvare3(coordzgr, 'gdepw',npk)
+  e1v(:,:) = getvar(cn_fhgr, cn_ve1v, 1,npiglo,npjglo) 
+  e1u(:,:) = getvar(cn_fhgr, cn_ve1u, 1,npiglo,npjglo) 
+  gphiv(:,:) = getvar(cn_fhgr, cn_gphiv, 1,npiglo,npjglo)
+  gdept(:) = getvare3(cn_fzgr, cn_gdept,npk)
+  gdepw(:) = getvare3(cn_fzgr, cn_gdepw,npk)
   gdepw(:) = -1.*  gdepw(:)
 
-  iloc=maxloc(gphiv)
-  dumlat(1,:) = gphiv(iloc(1),:)
-  dumlon(:,:) = 0.   ! set the dummy longitude to 0
+  iloc=MAXLOC(gphiv)
+  rlat(1,:) = gphiv(iloc(1),:)
+  rlon(:,:) = 0.   ! set the dummy longitude to 0
 
-  ! create output fileset
-  ncout =create(cfileoutnc, cfilev,1,npjglo,1,cdep='depthw')
-  ierr= createvar(ncout ,stypvar,jpgsop, ipk_gsop,id_varout_gsop )
-  ierr= putheadervar(ncout, cfilev,1, npjglo,1,pnavlon=dumlon,pnavlat=dumlat,pdep=gdepw)
-  tim=getvar1d(cfilev,'time_counter',1)
-  ierr=putvar1d(ncout,tim,1,'T')
+  CALL CreateOutput
 
   ! reading the masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
 
   zmask=0
-  zmask(1,:,:)=getvar('mask.nc','vmask',1,npiglo,npjglo)
+  zmask(1,:,:)=getvar(cn_fmsk,cn_vmask,1,npiglo,npjglo)
 
   IF (llglo) THEN
-
-     zmask(2,:,:)=getvar(cbasinmask,'tmaskatl',1,npiglo,npjglo)
-     zmask(4,:,:)=getvar(cbasinmask,'tmaskind',1,npiglo,npjglo)
-     zmask(5,:,:)=getvar(cbasinmask,'tmaskpac',1,npiglo,npjglo)
+     zmask(2,:,:)=getvar(cn_fbasins,cn_tmaskatl,1,npiglo,npjglo)
+     zmask(4,:,:)=getvar(cn_fbasins,cn_tmaskind,1,npiglo,npjglo)
+     zmask(5,:,:)=getvar(cn_fbasins,cn_tmaskpac,1,npiglo,npjglo)
      zmask(3,:,:)=zmask(5,:,:)+zmask(4,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
-
   ELSE
-
-     zmask(2,:,:)=getvar('mask.nc','tmask',1,npiglo,npjglo)
-
+     zmask(2,:,:)=getvar(cn_fmsk, cn_tmask,1,npiglo,npjglo)
   ENDIF
 
   ! initialize mht to 0
-  zomht(:,:) = 0.
-  zomhtfull(:,:,:) = 0.
-  zomht_gsop(:,:) = 0.
+  dzomht(:,:) = 0.
+  dzomhtfull(:,:,:) = 0.
+  dzomht_gsop(:,:) = 0.
   vbt(:,:) = 0.0
-  Hdep(:,:) = 0.0
+  hdep(:,:) = 0.0
   btht(:,:) = 0.0
   vgeo(:,:,:)=0.0
   vfull(:,:,:)=0.0
@@ -254,26 +231,22 @@ PROGRAM cdfmht_gsop
   ! Constants for geostrophic calc
   rau0 = 1025.0
   grav = 9.81
-  rpi = 3.14159
+  rpi = ACOS(-1.)
   f0 = 2.0*(2.0*rpi)/(24.0*3600.0)
 
   ! Get velocities v and temperature T and e3v_ps and masks at all levels
   DO jk = 1,npk
-     vmask(:,:)=getvar('mask.nc','vmask',jk,npiglo,npjglo)
-     vmaskz(:,:,jk) = vmask(:,:)
-     tmask(:,:)=getvar('mask.nc','tmask',jk,npiglo,npjglo)
-     tmaskz(:,:,jk) = tmask(:,:)
-     zv(:,:)= getvar(cfilev, 'vomecrty',  jk ,npiglo,npjglo)  ! au point V
-     vfull(:,:,jk) = zv(:,:)                                  ! au point V
-     zt(:,:)= getvar(cfilet, 'votemper', jk,npiglo,npjglo)    ! au point T
-     DO ji = 1,npiglo                                       ! mettre la temperature au point V
+     vmask(:,:)=getvar(cn_fmsk, cn_vmask,    jk,npiglo,npjglo) ; vmaskz(:,:,jk) = vmask(:,:)
+     tmask(:,:)=getvar(cn_fmsk, cn_tmask,    jk,npiglo,npjglo) ; tmaskz(:,:,jk) = tmask(:,:)
+     zv(:,:)  = getvar(cf_vfil, cn_vomecrty, jk,npiglo,npjglo) ; vfull(:,:,jk) = zv(:,:)
+     zt(:,:)  = getvar(cf_tfil, cn_votemper, jk,npiglo,npjglo)  ! au point T
+     DO ji = 1,npiglo   ! mettre la temperature au point V
         DO jj = 1,npjglo-1
            zt_v(ji,jj)= ((zt(ji,jj) + zt(ji,jj+1)) * tmask(ji,jj) * tmask(ji,jj+1))/2
         END DO
      END DO
      tfull(:,:,jk)= zt_v(:,:)                                ! au point V
-     e3v(:,:) = getvar(coordzgr, 'e3v_ps', jk,npiglo,npjglo)
-     e3vz(:,:,jk) = e3v(:,:)
+     e3v(:,:) = getvar(cn_fzgr, cn_ve3v, jk,npiglo,npjglo) ; e3vz(:,:,jk) = e3v(:,:)
   ENDDO
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -285,9 +258,9 @@ PROGRAM cdfmht_gsop
      ! integrates 'zonally' (along i-coordinate)
      DO ji=1,npiglo
         ! For all basins 
-        DO jbasin = 1, jpbasins
+        DO jbasin = 1, nbasins
            DO jj=1,npjglo
-              zomhtfull(jbasin,jj,jk) = zomhtfull(jbasin,jj,jk) + vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(jbasin,ji,jj)*vfull(ji,jj,jk)*tfull(ji,jj,jk)*rho0*rcp/1.e15
+              dzomhtfull(jbasin,jj,jk) = dzomhtfull(jbasin,jj,jk) + vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(jbasin,ji,jj)*vfull(ji,jj,jk)*tfull(ji,jj,jk)*rho0*rcp/1.d15
            ENDDO ! loop to next latitude
         END DO  ! loop to next basin
      END DO    ! loop to next longitude
@@ -295,10 +268,10 @@ PROGRAM cdfmht_gsop
 
   ! integrates vertically from bottom to surface the total MHT
   DO jk=npk , 1 , -1 
-     zomht(:,:) = zomht(:,:) + zomhtfull(:,:,jk)
+     dzomht(:,:) = dzomht(:,:) + dzomhtfull(:,:,jk)
   END DO  ! loop to next level
-  ! Save variable in zomht_gsop
-  zomht_gsop(4,:) = zomht(2,:)
+  ! Save variable in dzomht_gsop
+  dzomht_gsop(4,:) = dzomht(2,:)
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
   ! CALCUL OF THE BAROTROPIC MHT
@@ -309,7 +282,7 @@ PROGRAM cdfmht_gsop
      DO ji=1,npiglo
         DO jj=1,npjglo
            vbt(ji,jj) = vbt(ji,jj) + e3vz(ji,jj,jk)*zmask(2,ji,jj)*vfull(ji,jj,jk)*vmaskz(ji,jj,jk)  ! hardwire to jbasin=2
-           Hdep(ji,jj) = Hdep(ji,jj) + e3vz(ji,jj,jk)*zmask(2,ji,jj)*vmaskz(ji,jj,jk)
+           hdep(ji,jj) = hdep(ji,jj) + e3vz(ji,jj,jk)*zmask(2,ji,jj)*vmaskz(ji,jj,jk)
         ENDDO ! loop to next latitude
      ENDDO   ! loop to next longitude
   ENDDO      ! loop to next level
@@ -317,11 +290,11 @@ PROGRAM cdfmht_gsop
   ! Normalize Barotropic velocity
   DO ji=1,npiglo
      DO jj=1,npjglo
-        IF ( Hdep(ji,jj) > 0.0 ) THEN
-           vbt(ji,jj) = vbt(ji,jj)/Hdep(ji,jj)
+        IF ( hdep(ji,jj) > 0.0 ) THEN
+           vbt(ji,jj) = vbt(ji,jj)/hdep(ji,jj)
         ELSE
            IF ( vbt(ji,jj) /= 0.0 ) THEN
-              print *, 'Is something wrong?, ji,jj=',ji,jj
+              PRINT *, 'Is something wrong?, ji,jj=',ji,jj
            ENDIF
            vbt(ji,jj) = 0.0
         ENDIF
@@ -332,14 +305,14 @@ PROGRAM cdfmht_gsop
   DO jk=1, npk 
      DO jj=1,npjglo
         DO ji=1,npiglo
-           btht(jj,jk) = btht(jj,jk) + vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(2,ji,jj)*vbt(ji,jj)*tfull(ji,jj,jk)*rho0*rcp/1.e15
+           btht(jj,jk) = btht(jj,jk) + vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(2,ji,jj)*vbt(ji,jj)*tfull(ji,jj,jk)*rho0*rcp/1.d15
         ENDDO
      ENDDO
   ENDDO
 
   ! Now Integrate vertically to get Barotropic Meridional Heat Transport
   DO jk=npk , 1 , -1 
-     zomht_gsop(1,:)=zomht_gsop(1,:) + btht(:,jk)
+     dzomht_gsop(1,:)=dzomht_gsop(1,:) + btht(:,jk)
   END DO  ! loop to next level
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -350,14 +323,14 @@ PROGRAM cdfmht_gsop
   zt(:,:)=0.0
   DO jk = 1,npk-1 
      ! Calculate density !! attention, density est au point U, il faut la mettre au point V
-     zsal(:,:) = getvar(cfilet, 'vosaline',  jk ,npiglo, npjglo)
-     zt(:,:)= getvar(cfilet, 'votemper', jk,npiglo,npjglo)    ! au point T
+     zsal(:,:) = getvar(cf_tfil, cn_vosaline,  jk ,npiglo, npjglo)
+     zt(:,:)= getvar(cf_tfil, cn_votemper, jk,npiglo,npjglo)    ! au point T
 
      zzmask=1
      WHERE(zsal(:,:)* zmask(2,:,:) == 0 ) zzmask = 0
      ! geostrophic calculation must use in situ density gradient
      ! la il faut prendre la temperature au point T
-     zsig0(:,:) = sigmai ( zt,zsal,deptht(jk),npiglo,npjglo )* zzmask(:,:)
+     zsig0(:,:) = sigmai ( zt,zsal,gdept(jk),npiglo,npjglo )* zzmask(:,:)
 
      ! Calculate Geostrophic velocity
      ! value at v points is average of values at u points
@@ -394,8 +367,8 @@ PROGRAM cdfmht_gsop
            vgeoz(ji,jj) = vgeoz(ji,jj) + vgeo(ji,jj,jk)*zmask(2,ji,jj)*e3vz(ji,jj,jk)*vmaskz(ji,jj,jk)
         ENDDO
         ! Remove total depth to get vertical mean
-        IF ( Hdep(ji,jj) > 0.0 ) THEN
-           vgeoz(ji,jj) = vgeoz(ji,jj)/Hdep(ji,jj)
+        IF ( hdep(ji,jj) > 0.0 ) THEN
+           vgeoz(ji,jj) = vgeoz(ji,jj)/hdep(ji,jj)
         ELSE
            vgeoz(ji,jj) = 0.0
         ENDIF
@@ -406,18 +379,18 @@ PROGRAM cdfmht_gsop
      ENDDO  ! loop to next latitude
   ENDDO    ! loop to next longitude
   ! Calculate vertical shear MHT - integrate over x
-  zomht_geos_full(:,:) = 0.0
+  dzomht_geos_full(:,:) = 0.0
   DO jk=1, npk 
      DO jj=1,npjglo
         DO ji=1,npiglo
-           zomht_geos_full(jj,jk) = zomht_geos_full(jj,jk) + &
+           dzomht_geos_full(jj,jk) = dzomht_geos_full(jj,jk) + &
                 & vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(2,ji,jj)*vgeosh(ji,jj,jk)*tfull(ji,jj,jk)*rho0*rcp/1.e15
         END DO
      ENDDO
   ENDDO
   ! Integrate vertically the geostrophic MHT
   DO jk=npk , 1 , -1 
-     zomht_gsop(2,:) = zomht_gsop(2,:) + zomht_geos_full(:,jk)
+     dzomht_gsop(2,:) = dzomht_gsop(2,:) + dzomht_geos_full(:,jk)
   END DO  ! loop to next level
 
 !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
@@ -431,87 +404,28 @@ PROGRAM cdfmht_gsop
   END DO
 
   ! Calculate vertical shear ageostrophique streamfunction - integrate over x
-  zomht_ageos_full(:,:) = 0.0
+  dzomht_ageos_full(:,:) = 0.0
   DO jk=1, npk 
      DO jj=1,npjglo
         DO ji=1,npiglo
-           zomht_ageos_full(jj,jk) = zomht_ageos_full(jj,jk) + vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(2,ji,jj)*vageosh(ji,jj,jk)*tfull(ji,jj,jk)*rho0*rcp/1.e15
+           dzomht_ageos_full(jj,jk) = dzomht_ageos_full(jj,jk) + vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(2,ji,jj)*vageosh(ji,jj,jk)*tfull(ji,jj,jk)*rho0*rcp/1.e15
         END DO
      ENDDO
   ENDDO
 
   ! Now Integrate vertically to get streamfunction AGEOSTROPHIE
   DO jk=npk , 1 , -1 
-     zomht_gsop(3,:) = zomht_gsop(3,:) + zomht_ageos_full(:,jk)
+     dzomht_gsop(3,:) = dzomht_gsop(3,:) + dzomht_ageos_full(:,jk)
   END DO  ! loop to next level
-
-
-
-
-  ! ! integrates vertically from bottom to surface the total MHT
-  !  DO jk=npk-1 , 1 , -1 
-  !     zomht(:,:,jk) = zomht(:,:,jk+1) + zomht(:,:,jk)
-  !  END DO  ! loop to next level
-
-  !  ! Normalize Barotropic velocity
-  !  DO ji=1,npiglo
-  !    DO jj=1,npjglo
-  !      IF ( Hdep(ji,jj) > 0.0 ) THEN
-  !        vbt(ji,jj) = vbt(ji,jj)/Hdep(ji,jj)
-  !      ELSE
-  !        IF ( vbt(ji,jj) /= 0.0 ) THEN
-  !         print *, 'Is something wrong?, ji,jj=',ji,jj
-  !        ENDIF
-  !        vbt(ji,jj) = 0.0
-  !      ENDIF
-  !    END DO 
-  !  ENDDO
-
-  !  ! Calculate Barotropic Meridional Heat Transport - integrate over x
-  !  DO jk=1, npk 
-  !    DO jj=1,npjglo
-  !      DO ji=1,npiglo
-  !        btht(jj,jk) = btht(jj,jk) - vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(2,ji,jj)*vbt(ji,jj)*ztfull(ji,jj,jk)/1.e15
-  !      END DO 
-  !    ENDDO
-  !  ENDDO 
-
-  ! Now Integrate vertically to get Barotropic Meridional Heat Transport
-  !  DO jk=npk-1 , 1 , -1 
-  !     btht(:,jk) = btht(:,jk+1) + btht(:,jk)
-  !  END DO  ! loop to next level
-
-  !  ! Calculate Vageostrophique au point V
-  !  DO jk=1,npk
-  !  vageosh(:,:,jk)=vfull(:,:,jk)-vgeosh(:,:,jk)-vbt(:,:)
-  !  END DO
-
-  !  ! Calculate vertical shear ageostrophique streamfunction - integrate over x
-  !  DO jk=1, npk 
-  !    DO jj=1,npjglo
-  !      DO ji=1,npiglo
-  !        zomht_gsop(3,jj,jk) = zomht_gsop(3,jj,jk) - vmaskz(ji,jj,jk)*e1v(ji,jj)*e3vz(ji,jj,jk)*zmask(2,ji,jj)*vageosh(ji,jj,jk)*ztfull(ji,jj,jk)/1.e15
-  !      END DO 
-  !    ENDDO
-  !  ENDDO 
-
-  !  ! Now Integrate vertically to get streamfunction AGEOSTROPHIE
-  !  DO jk=npk-1 , 1 , -1 
-  !     zomht_gsop(3,:,jk) = zomht_gsop(3,:,jk+1) + zomht_gsop(3,:,jk)
-  !  END DO  ! loop to next level
-
-  !  ! Save variables in zomht_gsop
-  !  zomht_gsop(1,:,:) = btht(:,:)
-  !  zomht_gsop(4,:,:) = zomht(2,:,:)
 
   jj = 190
   FIND26: DO jj=1,npjglo
-     IF ( dumlat(1,jj) > 26.0 ) EXIT FIND26
+     IF ( rlat(1,jj) > 26.0 ) EXIT FIND26
   ENDDO FIND26
-  print *, 'MHT:zomht_gsop(4,jj) = ', zomht_gsop(4,jj)
-  print *, 'BT:zomht_gsop(1,jj) = ', zomht_gsop(1,jj)
-  print *, 'SH:zomht_gsop(2,jj) = ', zomht_gsop(2,jj)
-  print *, 'AG:zomht_gsop(3,jj) = ', zomht_gsop(3,jj)
+  PRINT *, 'MHT:dzomht_gsop(4,jj) = ', dzomht_gsop(4,jj)
+  PRINT *, 'BT:dzomht_gsop(1,jj) = ', dzomht_gsop(1,jj)
+  PRINT *, 'SH:dzomht_gsop(2,jj) = ', dzomht_gsop(2,jj)
+  PRINT *, 'AG:dzomht_gsop(3,jj) = ', dzomht_gsop(3,jj)
 
   !---------------------------------
   ! netcdf output 
@@ -519,9 +433,83 @@ PROGRAM cdfmht_gsop
 
   !print *, 'Writing netcdf...'
   DO jgsop = 1, jpgsop
-     ierr = putvar (ncout, id_varout_gsop(jgsop),REAL(zomht_gsop(jgsop,:)), 1,1,npjglo)
+     ierr = putvar (ncout, id_varout_gsop(jgsop),REAL(dzomht_gsop(jgsop,:)), 1,1,npjglo)
   ENDDO
 
   ierr = closeout(ncout)
+
+CONTAINS
+
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk_gsop(:) = npk
+
+    stypvar(1)%cname= 'zobtmhta'
+    stypvar(1)%cunits='PetaWatt'
+    stypvar(1)%rmissing_value=99999.
+    stypvar(1)%valid_min= -1000.
+    stypvar(1)%valid_max= 1000.
+    stypvar(1)%scale_factor= 1.
+    stypvar(1)%add_offset= 0.
+    stypvar(1)%savelog10= 0.
+    stypvar(1)%clong_name='Barotropic_Merid_HeatTransport'
+    stypvar(1)%cshort_name='zobtmhta'
+    stypvar(1)%conline_operation='N/A'
+    stypvar(1)%caxis='TY'
+
+    stypvar(2)%cname= 'zoshmhta'
+    stypvar(2)%cunits='PetaWatt'
+    stypvar(2)%rmissing_value=99999.
+    stypvar(2)%valid_min= -1000.
+    stypvar(2)%valid_max= 1000.
+    stypvar(2)%scale_factor= 1.
+    stypvar(2)%add_offset= 0.
+    stypvar(2)%savelog10= 0.
+    stypvar(2)%clong_name='GeoShear_Merid_HeatTransport'
+    stypvar(2)%cshort_name='zoshmhta'
+    stypvar(2)%conline_operation='N/A'
+    stypvar(2)%caxis='TY'
+
+    stypvar(3)%cname= 'zoagmhta'
+    stypvar(3)%cunits='PetaWatt'
+    stypvar(3)%rmissing_value=99999.
+    stypvar(3)%valid_min= -1000.
+    stypvar(3)%valid_max= 1000.
+    stypvar(3)%scale_factor= 1.
+    stypvar(3)%add_offset= 0.
+    stypvar(3)%savelog10= 0.
+    stypvar(3)%clong_name='Ageo_Merid_HeatTransport'
+    stypvar(3)%cshort_name='zoagmhta'
+    stypvar(3)%conline_operation='N/A'
+    stypvar(3)%caxis='TY'
+
+    stypvar(4)%cname= 'zomhtatl'
+    stypvar(4)%cunits='PetaWatt'
+    stypvar(4)%rmissing_value=99999.
+    stypvar(4)%valid_min= -1000.
+    stypvar(4)%valid_max= 1000.
+    stypvar(4)%scale_factor= 1.
+    stypvar(4)%add_offset= 0.
+    stypvar(4)%savelog10= 0.
+    stypvar(4)%clong_name='Meridional_HeatTransport_Atlantic'
+    stypvar(4)%cshort_name='zomhtatl'
+    stypvar(4)%conline_operation='N/A'
+    stypvar(4)%caxis='TY'
+
+    ! create output fileset
+    ncout =create(cf_out, cf_vfil,1,npjglo,1,cdep=cn_vdepthw)
+    ierr= createvar(ncout ,stypvar,jpgsop, ipk_gsop,id_varout_gsop )
+    ierr= putheadervar(ncout, cf_vfil,1, npjglo,1,pnavlon=rlon,pnavlat=rlat,pdep=gdepw)
+    tim=getvar1d(cf_vfil,cn_vtimec,1)
+    ierr=putvar1d(ncout,tim,1,'T')
+
+  END SUBROUTINE CreateOutput
 
 END PROGRAM cdfmht_gsop
