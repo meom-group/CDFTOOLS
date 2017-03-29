@@ -88,6 +88,7 @@ PROGRAM cdfsigtrp
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dsigma_lev           ! built array with sigma levels
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de3                  ! vertical metrics
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: ddepu                ! depth of vel points
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: ddepw                ! depth of W  points
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dsig                 ! density
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dhiso                ! depth of isopycns
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dwtrp, dwtrpbin      ! transport arrays
@@ -336,8 +337,10 @@ PROGRAM cdfsigtrp
   IF ( lfull ) ALLOCATE ( e3t1d(npk), e3w1d(npk))
 
   ! read gdept, gdepw : it is OK even in partial cells, as we never use the bottom gdep
-  gdept(:) = getvare3(cn_fzgr, cn_gdept, npk)
-  gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+  IF ( .NOT. lbrk ) THEN
+    gdept(:) = getvare3(cn_fzgr, cn_gdept, npk)
+    gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+  ENDIF
 
   IF ( lfull )  THEN 
      e3t1d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
@@ -364,7 +367,7 @@ PROGRAM cdfsigtrp
      ENDIF
 
      ALLOCATE ( zu(npts,npk), zt(npts,npk), zs(npts,npk), zz(npts,npk), dsig(npts,0:npk)  )
-     ALLOCATE ( eu(npts), de3(npts,npk), ddepu(npts, 0:npk), zmask(npts,npk) )
+     ALLOCATE ( eu(npts), de3(npts,npk), ddepu(npts, 0:npk), ddepw(npts,0:npk),zmask(npts,npk) )
      ALLOCATE ( tmpm(1,npts), tmpz(npts,1)                                   )
      ALLOCATE ( dwtrp(npts, nbins+1), dhiso(npts,nbins+1), dwtrpbin(npts,nbins) )
      ALLOCATE ( rlonlat(npts,1) )
@@ -438,7 +441,8 @@ PROGRAM cdfsigtrp
               ENDDO
            ELSE
              de3(  :,:    ) = getvarxz(cn_fe3v, cn_ve3v,     ijmin,   npts, npk, kimin=iimin+1 )
-             ddepu(:,1:npk) = getvarxz(cf_brk,  cn_gdept,    ijmin,   npts, npk, kimin=iimin+1 )
+             ddepu(:,1:npk) = getvarxz(cf_brk,  cn_depu3d,   ijmin,   npts, npk, kimin=iimin+1 )
+             ddepw(:,1:npk) = getvarxz(cf_brk,  cn_depw3d,   ijmin,   npts, npk, kimin=iimin+1 )
            ENDIF
            zu(   :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
            zt(   :,:) = getvarxz(cf_vfil, cn_votemper, ijmin,   npts, npk, kimin=iimin+1 )
@@ -518,7 +522,8 @@ PROGRAM cdfsigtrp
         dsigma=dsigma_lev(jiso)
 !!!  REM : I and K loop can be inverted if necessary
         DO ji=1,npts
-           dhiso(ji,jiso) = gdept(npk)
+!           dhiso(ji,jiso) = gdept(npk)  ! for broken line it is easier to use ddepu. Impact ?
+            dhiso(ji,jiso) = ddepu(ji,npk)
            DO jk=1,nk 
               IF ( dsig(ji,jk) < dsigma ) THEN
               ELSE
@@ -540,6 +545,7 @@ PROGRAM cdfsigtrp
         dsigma=dsigma_lev(jiso)
         DO ji=1,npts
            dwtrp(ji,jiso) = 0.d0
+           IF ( lbrk ) gdepw(:) = ddepw(ji,1:npk)   ! in broken line gdepw is not available as 1d array
            DO jk=1, nk-1
               IF ( gdepw(jk+1) < dhiso(ji,jiso) ) THEN
                  dwtrp(ji,jiso)= dwtrp(ji,jiso) + eu(ji)*de3(ji,jk)*zu(ji,jk)*1.d0

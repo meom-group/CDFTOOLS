@@ -42,9 +42,10 @@ PROGRAM cdf_xtract_brokenline
   INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax      ! ending points of a leg in model I J
   INTEGER(KIND=4) :: ii, ij, ii1, ij1, ipoint        ! working integer
   INTEGER(KIND=4) :: ierr                            ! Netcdf error and ncid
-  INTEGER(KIND=4) :: nvar = 16                       ! number of output variables (modified after if options)
+  INTEGER(KIND=4) :: nvar = 18                       ! number of output variables (modified after if options)
   INTEGER(KIND=4) :: np_tem, np_sal, np_una, np_vna  ! index for output variable
   INTEGER(KIND=4) :: np_isec, np_jsec, np_e2vn       !  "
+  INTEGER(KIND=4) :: np_depu, np_depw                !  "
   INTEGER(KIND=4) :: np_e1vn, np_e3un, np_e3vn       !  "
   INTEGER(KIND=4) :: np_vmod, np_e1v,  np_e3v        !  "
   INTEGER(KIND=4) :: np_vmsk, np_baro, np_bat        !  "
@@ -71,11 +72,13 @@ PROGRAM cdf_xtract_brokenline
   REAL(KIND=4)                              :: ztmp
   REAL(KIND=4)                              :: xmin, xmax, ymin, ymax !
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! Model time array
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdept               ! Model deptht levels
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rxx, ryy            ! leg i j index of F points
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonsta, rlatsta    ! Geographic position defining legs
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1v, e3v            ! V point relevant metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2u, e3u            ! U point relevant metric
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3w,e3uup, e3vup    ! W point relevant metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: hdepw               ! model bathymetry
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rmbat               ! model bathymetry (levels)
 
@@ -93,6 +96,7 @@ PROGRAM cdf_xtract_brokenline
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: ricethicksec, ricefrasec
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rlonsec, rlatsec, risec, rjsec
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e3usec, e3vsec
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdepusec, rdepwsec
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: batsec
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: vmasksec
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: e1vsec, e2usec  ! 3rd dimension for sections
@@ -102,6 +106,7 @@ PROGRAM cdf_xtract_brokenline
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE   :: dbarot  ! for barotropic transport computation
 
   CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
+  CHARACTER(LEN=255) :: cf_wfil                      ! input W file (vvl case)
   CHARACTER(LEN=255) :: cf_bath                      ! bathy file 
   CHARACTER(LEN=255) :: cf_ifil                      ! input ice file
   CHARACTER(LEN=255) :: cf_root=''                   ! root name used as prefix
@@ -144,8 +149,8 @@ PROGRAM cdf_xtract_brokenline
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdf_xtrac_brokenline -t T-file -u U-file -v V-file [-i ICE-file] ...'
      PRINT *,'         ... [-b BAT-file] [-f section_filei,sec_file2,..] [-l LST-sections]...'
-     PRINT *,'         ... [-ssh] [-mld] [-ice] [-vt] [-vecrot] [-vvl] [-o ROOT_name] ...'
-     PRINT *,'         ... [-verbose]'
+     PRINT *,'         ... [-ssh] [-mld] [-vt] [-vecrot] [-vvl W-file] [-o ROOT_name] ...'
+     PRINT *,'         ... [-ice] [-verbose]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'      This tool extracts model variables from model files for a geographical' 
@@ -202,8 +207,10 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'      [-i ICE-file] : also save ice properties (concentration, thickness)'
      PRINT *,'             extracted from ICE-file along the broken line.'
      PRINT *,'      [-vt]      : also save products vt and vs along the broken line.'
-     PRINT *,'      [-vvl]     : use time-varying vertical metrics'
-     PRINT *,'      [-o ROOT-name] : specified the prefix to be used for the output file name.'
+     PRINT *,'      [-vvl W-file]  : use time-varying vertical metrics. Specify a W-file in '
+     PRINT *,'             order to read  time-varying e3w needed in the computation of '
+     PRINT *,'             ',TRIM(cn_depu3d),'.'
+     PRINT *,'      [-o ROOT-name]: specified the prefix to be used for the output file name.'
      PRINT *,'             Note that it may be a good idea to include a separator character'
      PRINT *,'             such as ''_'' at the end of the ROOT_name.'
      PRINT *,'      [-vecrot] : also save normal and tangent velocities along the broken line'
@@ -271,6 +278,7 @@ PROGRAM cdf_xtract_brokenline
   IF ( lg_vvl   ) THEN
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil
+     cn_fe3w = cf_wfil
   ENDIF
 
   IF ( lice ) THEN 
@@ -368,7 +376,8 @@ PROGRAM cdf_xtract_brokenline
   ALLOCATE(uzonal(npiglo,npjglo), vmerid(npiglo,npjglo))
   ALLOCATE(e1v(npiglo,npjglo))
   ALLOCATE(e2u(npiglo,npjglo))
-  ALLOCATE(e3u(npiglo,npjglo), e3v(npiglo,npjglo))
+  ALLOCATE(e3u(npiglo,npjglo), e3v(npiglo,npjglo), e3w(npiglo,npjglo) )
+  ALLOCATE(e3uup(npiglo,npjglo), e3vup(npiglo,npjglo) )
   ALLOCATE(hdepw(npiglo,npjglo), rmbat(npiglo, npjglo))
   IF ( lssh ) ALLOCATE (ssh (npiglo, npjglo))
   IF ( lmld ) ALLOCATE (rmld(npiglo, npjglo))
@@ -379,7 +388,9 @@ PROGRAM cdf_xtract_brokenline
   ALLOCATE ( iilegs(nstamax-1, npiglo+npjglo, nfiles), ijlegs(nstamax-1, npiglo+npjglo, nfiles) )
   ALLOCATE ( norm_u(nstamax-1, nfiles) , norm_v(nstamax-1, nfiles) )
   ALLOCATE ( rxx(npiglo+npjglo, nfiles), ryy(npiglo+npjglo, nfiles) )
-  ALLOCATE ( tim (npt) )
+  ALLOCATE ( tim (npt), gdept(npk) )
+
+  gdept(:) = getvar1d(cf_tfil, cn_vdeptht, npk )
 
   iilegs = 0  ; ijlegs = 0 ; npsec(:) = 0
 
@@ -466,10 +477,11 @@ PROGRAM cdf_xtract_brokenline
   IF ( lvecrot ) ALLOCATE ( urotsec(npsecmax-1,npk), vrotsec(npsecmax-1,npk) )
 
   ! Next arrays are initialized outside the vertical loop and thus require a section index
-  ALLOCATE ( iisec    (npsecmax,nfiles),     ijsec(npsecmax,nfiles) ) 
-  ALLOCATE ( normu_sec(npsecmax,nfiles), normv_sec(npsecmax,nfiles) ) 
-  ALLOCATE ( e2usec   (npsecmax-1,1,nfiles), e3usec(npsecmax-1,npk) )
-  ALLOCATE ( e1vsec   (npsecmax-1,1,nfiles), e3vsec(npsecmax-1,npk) )
+  ALLOCATE ( iisec    (npsecmax,nfiles),     ijsec(  npsecmax,nfiles) ) 
+  ALLOCATE ( normu_sec(npsecmax,nfiles), normv_sec(  npsecmax,nfiles) ) 
+  ALLOCATE ( e2usec   (npsecmax-1,1,nfiles), e3usec(  npsecmax-1,npk) )
+  ALLOCATE ( e1vsec   (npsecmax-1,1,nfiles), e3vsec(  npsecmax-1,npk) )
+  ALLOCATE ( rdepusec (npsecmax-1,npk), rdepwsec(npsecmax-1,npk) )
 
   ! 3. : Extraction along the legs
   ! ------------------------------
@@ -617,8 +629,17 @@ PROGRAM cdf_xtract_brokenline
            vrot = uzonala * SIN(alfa) + vmerida * COS(alfa)
         ENDIF
 
+        ! save upper layer thicness, used to compute depht of w points
+        IF ( jk == 1 ) THEN
+          e3uup(:,:) = 0. ; e3vup(:,:) = 0.
+        ELSE
+          e3uup(:,:) = e3u(:,:)
+          e3vup(:,:) = e3v(:,:)
+        ENDIF
+
         e3u(:,:)    = getvar(cn_fe3u, cn_ve3u,     jk, npiglo, npjglo, ktime = it, ldiom=.NOT.lg_vvl )
         e3v(:,:)    = getvar(cn_fe3v, cn_ve3v,     jk, npiglo, npjglo, ktime = it, ldiom=.NOT.lg_vvl )
+        e3w(:,:)    = getvar(cn_fe3w, cn_ve3w,     jk, npiglo, npjglo, ktime = it, ldiom=.NOT.lg_vvl )
 
         ll_ssh = ( lssh .AND. jk == 1 )
         ll_mld = ( lmld .AND. jk == 1 )
@@ -667,6 +688,11 @@ PROGRAM cdf_xtract_brokenline
                     ENDIF
                     vmeridsec(jipt,jk) = vmerid(ii+1,ij) * normv_sec(jipt,jsec)
                     e3vsec   (jipt,jk) = e3v   (ii+1,ij)
+                    IF ( jk == 1 ) THEN ; rdepusec(jipt,jk) = gdept(jk)
+                       ;                ; rdepwsec(jipt,jk) = 0.
+                    ELSE                ; rdepusec(jipt,jk) = rdepusec(jipt,jk-1) + MIN ( e3w(ii+1,ij)  ,e3w(ii+1,ij+1)   )
+                       ;                ; rdepwsec(jipt,jk) = rdepwsec(jipt,jk-1) + MIN ( e3vup(ii+1,ij),e3vup(ii+1,ij+1) )
+                    ENDIF
 
                  ELSE ! westward
 
@@ -696,7 +722,11 @@ PROGRAM cdf_xtract_brokenline
                     ENDIF
                     vmeridsec(jipt,jk) = vmerid(ii,ij) * normv_sec(jipt,jsec)
                     e3vsec   (jipt,jk) = e3v   (ii,ij)
-
+                    IF ( jk == 1 ) THEN ; rdepusec(jipt,jk) = gdept(jk)
+                       ;                ; rdepwsec(jipt,jk) = 0.
+                    ELSE                ; rdepusec(jipt,jk) = rdepusec(jipt,jk-1) + MIN ( e3w(  ii,ij)  ,e3w(ii,ij+1) )
+                       ;                ; rdepwsec(jipt,jk) = rdepwsec(jipt,jk-1) + MIN ( e3vup(ii,ij),e3vup(ii,ij+1) )
+                    ENDIF
                  ENDIF
               ELSEIF ( ii1 == ii ) THEN ! vertical segment
                  vmeridsec(jipt,jk) = 0.
@@ -729,6 +759,11 @@ PROGRAM cdf_xtract_brokenline
                     ENDIF
                     uzonalsec(jipt,jk) = uzonal(ii,ij) * normu_sec(jipt,jsec)
                     e3usec   (jipt,jk) = e3u   (ii,ij)
+                    IF ( jk == 1 ) THEN ; rdepusec(jipt,jk) = gdept(jk)
+                       ;                ; rdepwsec(jipt,jk) = 0.
+                    ELSE                ; rdepusec(jipt,jk) = rdepusec(jipt,jk-1) + MIN ( e3w(  ii,ij)  ,e3w(ii+1,ij) )
+                       ;                ; rdepwsec(jipt,jk) = rdepwsec(jipt,jk-1) + MIN ( e3uup(ii,ij),e3uup(ii+1,ij) )
+                    ENDIF
 
                  ELSE ! northward
 
@@ -758,7 +793,11 @@ PROGRAM cdf_xtract_brokenline
                     ENDIF
                     uzonalsec(jipt,jk) = uzonal(ii,ij+1) * normu_sec(jipt,jsec)
                     e3usec   (jipt,jk) = e3u   (ii,ij+1)
-
+                    IF ( jk == 1 ) THEN ; rdepusec(jipt,jk) = gdept(jk)
+                       ;                ; rdepwsec(jipt,jk) = 0.
+                    ELSE                ; rdepusec(jipt,jk) = rdepusec(jipt,jk-1) + MIN ( e3w(  ii,ij+1)  ,e3w(ii+1,ij+1) )
+                       ;                ; rdepwsec(jipt,jk) = rdepwsec(jipt,jk-1) + MIN ( e3uup(ii,ij+1),e3uup(ii+1,ij+1) )
+                    ENDIF
                  ENDIF
 
               ELSE
@@ -780,6 +819,7 @@ PROGRAM cdf_xtract_brokenline
            ierr = putvar (ncout(jsec), id_varout(np_sal), salinesec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
            ierr = putvar (ncout(jsec), id_varout(np_una), uzonalsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
            ierr = putvar (ncout(jsec), id_varout(np_vna), vmeridsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
+
            ! along-track normal velocity, horiz. and vert. resolution, and mask
            zvmod(:,1)= uzonalsec(:,jk) + vmeridsec(:,jk)
            ierr = putvar (ncout(jsec), id_varout(np_vmod    ), zvmod(:,1),                jk, npsec(jsec)-1, 1, ktime=jt ) 
@@ -794,6 +834,8 @@ PROGRAM cdf_xtract_brokenline
               ierr = putvar (ncout(jsec), id_varout(np_urot), urotsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
               ierr = putvar (ncout(jsec), id_varout(np_vrot), vrotsec(:,jk), jk, npsec(jsec)-1, 1, ktime=jt )
            ENDIF
+           ierr = putvar (ncout(jsec), id_varout(np_depu), rdepusec (:,jk),             jk, npsec(jsec)-1, 1 , ktime=it )  ! use it for vvl
+           ierr = putvar (ncout(jsec), id_varout(np_depw), rdepwsec (:,jk),             jk, npsec(jsec)-1, 1 , ktime=it )  ! use it for vvl
 
            IF ( jt == 1 ) THEN   ! output of time independent variables at first time step only
               ! save a mask of the section
@@ -946,6 +988,28 @@ CONTAINS
     stypvar(ivar)%cshort_name = cn_vomecrty
     stypvar(ivar)%caxis       = 'TZX'
     ipk(ivar)                 =  npk
+    ivar = ivar + 1
+
+    np_depu = ivar
+    stypvar(ivar)%cname       = cn_depu3d
+    stypvar(ivar)%cunits      = 'm'
+    stypvar(ivar)%valid_min   = 0.
+    stypvar(ivar)%valid_max   = 1000000.
+    stypvar(ivar)%clong_name  = 'Local depth U along '//TRIM(csection(ksec))//' section'
+    stypvar(ivar)%cshort_name = cn_depu3d
+    stypvar(ivar)%caxis       = 'TZX'
+    ipk(ivar)                 = npk
+    ivar = ivar + 1
+
+    np_depw = ivar
+    stypvar(ivar)%cname       = cn_depw3d
+    stypvar(ivar)%cunits      = 'm'
+    stypvar(ivar)%valid_min   = 0.
+    stypvar(ivar)%valid_max   = 1000000.
+    stypvar(ivar)%clong_name  = 'Local depth W along '//TRIM(csection(ksec))//' section'
+    stypvar(ivar)%cshort_name = cn_depw3d
+    stypvar(ivar)%caxis       = 'TZX'
+    ipk(ivar)                 = npk
     ivar = ivar + 1
 
     np_e1v = ivar
@@ -1105,10 +1169,10 @@ CONTAINS
     ENDIF
 
     ! create output fileset
-    ncout(ksec) = create      (cf_out, cf_tfil, npsec(ksec),  1, npk, cdep='deptht'                      )
+    ncout(ksec) = create      (cf_out, cf_tfil, npsec(ksec),  1, npk, cdep=cn_vdeptht                    )
     ierr  = createvar   (ncout(ksec),  stypvar, nvar,  ipk, id_varout                                    )
     ierr  = putheadervar(ncout(ksec),  cf_tfil, npsec(ksec)-1,  1, npk, pnavlon=rlonsec, pnavlat=rlatsec )
-    tim   = getvar1d    (cf_tfil, 'time_counter', npt                                                    )
+    tim   = getvar1d    (cf_tfil, cn_vtimec, npt                                                    )
     ierr  = putvar1d    (ncout(ksec), tim, npt, 'T'                                                      )
 
   END SUBROUTINE CreateOutputFile

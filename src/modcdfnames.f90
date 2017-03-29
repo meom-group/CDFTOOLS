@@ -44,6 +44,8 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_gdept='gdept', cn_gdepw='gdepw'   !: 1d dep variable
   CHARACTER(LEN=256) :: cn_hdept='hdept', cn_hdepw='hdepw'   !: 2d dep variable
 
+  CHARACTER(LEN=256) :: cn_depu3d='depu3d', cn_depw3d='depw3d' !: Local depth U and W in broken line extraction
+
   CHARACTER(LEN=256) :: cn_glamt='glamt', cn_gphit='gphit'   !:  glam gphi
   CHARACTER(LEN=256) :: cn_glamu='glamu', cn_gphiu='gphiu'   !:  glam gphi
   CHARACTER(LEN=256) :: cn_glamv='glamv', cn_gphiv='gphiv'   !:  glam gphi
@@ -200,6 +202,8 @@ MODULE modCdfNames
     !        mesh_zgr
     NAMELIST/nammetrics/ cn_gdept, cn_gdepw
     NAMELIST/nammetrics/ cn_hdept, cn_hdepw
+    !
+    NAMELIST/nambroken/ cn_depu3d, cn_depw3d
 
     ! variables 
     NAMELIST/namvars/ cn_votemper, cn_vosaline
