@@ -283,7 +283,7 @@ PROGRAM cdfmoy
         ! skip these variable
      ELSE
         PRINT *,' Working with ', TRIM(cv_nam(jvar)), ipk(jvar)
-        DO jk = 1, ipk(jvar)
+          DO jk = 1, ipk(jvar)
            PRINT *,'level ',jk
            dtab(:,:) = 0.d0 ; dtab2(:,:) = 0.d0 ; dtotal_time = 0.
            rmask2d(:,:) = 1.
@@ -502,10 +502,10 @@ CONTAINS
     cv_nam(:) = getvarname(cf_in,nvars,stypvar)
     IF ( lvar ) THEN
        DO jv=1,nvars
-         IF ( cv_nam(jv) /= cv_single ) cv_nam(jv)='none'
+          IF ( cv_nam(jv) /= cv_single ) cv_nam(jv)='none'
        ENDDO
     ENDIF
-    
+
 
     ! choose chunk size for output ... not easy not used if lnc4=.false. but anyway ..
     DO jv = 1, nvars
@@ -527,88 +527,88 @@ CONTAINS
 
     DO jvar = 1, nvars
        ! variables that will not be computed or stored are named 'none'
-      IF (cv_nam(jvar) /= 'none' ) THEN
-       IF ( varchk2 ( cv_nam(jvar) ) ) THEN 
-          cv_nam2(jvar)                    = TRIM(cv_nam(jvar))//'_sqd'
-          stypvar2(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_sqd'         ! name
-          stypvar2(jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')^2'    ! unit
-          stypvar2(jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
-          stypvar2(jvar)%valid_min         = 0.                                        ! valid_min = zero
-          stypvar2(jvar)%valid_max         = stypvar(jvar)%valid_max**2                ! valid_max *valid_max
-          stypvar2(jvar)%scale_factor      = 1.
-          stypvar2(jvar)%add_offset        = 0.
-          stypvar2(jvar)%savelog10         = 0.
-          stypvar2(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_Squared'  ! 
-          stypvar2(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_sqd'     !
-          stypvar2(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation) 
-          stypvar2(jvar)%caxis             = TRIM(stypvar(jvar)%caxis) 
-       ELSE
-          cv_nam2(jvar) = 'none'
-       END IF
-
-       ! check for cubic average
-       IF ( lcubic ) THEN
-          IF ( varchk3 ( cv_nam(jvar) ) ) THEN 
-             cv_nam3(jvar)                    = TRIM(cv_nam(jvar))//'_cub'
-             stypvar3(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_cub'         ! name
-             stypvar3(jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')^3'    ! unit
-             stypvar3(jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
-             stypvar3(jvar)%valid_min         = 0.                                        ! valid_min = zero
-             stypvar3(jvar)%valid_max         = stypvar(jvar)%valid_max**3                ! valid_max *valid_max
-             stypvar3(jvar)%scale_factor      = 1.
-             stypvar3(jvar)%add_offset        = 0.
-             stypvar3(jvar)%savelog10         = 0.
-             stypvar3(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_Cubed'   ! 
-             stypvar3(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_cub'    !
-             stypvar3(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation) 
-             stypvar3(jvar)%caxis             = TRIM(stypvar(jvar)%caxis) 
-
-             stypvar3(jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+       IF (cv_nam(jvar) /= 'none' ) THEN
+          IF ( varchk2 ( cv_nam(jvar) ) ) THEN 
+             cv_nam2(jvar)                    = TRIM(cv_nam(jvar))//'_sqd'
+             stypvar2(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_sqd'         ! name
+             stypvar2(jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')^2'    ! unit
+             stypvar2(jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
+             stypvar2(jvar)%valid_min         = 0.                                        ! valid_min = zero
+             stypvar2(jvar)%valid_max         = stypvar(jvar)%valid_max**2                ! valid_max *valid_max
+             stypvar2(jvar)%scale_factor      = 1.
+             stypvar2(jvar)%add_offset        = 0.
+             stypvar2(jvar)%savelog10         = 0.
+             stypvar2(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_Squared'  ! 
+             stypvar2(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_sqd'     !
+             stypvar2(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation) 
+             stypvar2(jvar)%caxis             = TRIM(stypvar(jvar)%caxis) 
           ELSE
-             cv_nam3(jvar) = 'none'
+             cv_nam2(jvar) = 'none'
           END IF
-       ENDIF
 
-       IF ( lmax ) THEN
-          cv_nam4(jvar)                    = TRIM(cv_nam(jvar))//'_max'
-          stypvar4(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_max'         ! name
-          stypvar4(jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')'      ! unit
-          stypvar4(jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
-          stypvar4(jvar)%valid_min         = 0.                                        ! valid_min = zero
-          stypvar4(jvar)%valid_max         = stypvar(jvar)%valid_max                   ! valid_max *valid_max
-          stypvar4(jvar)%scale_factor      = 1.
-          stypvar4(jvar)%add_offset        = 0.
-          stypvar4(jvar)%savelog10         = 0.
-          stypvar4(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_max'   ! 
-          stypvar4(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_max'  !
-          stypvar4(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
-          stypvar4(jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
+          ! check for cubic average
+          IF ( lcubic ) THEN
+             IF ( varchk3 ( cv_nam(jvar) ) ) THEN 
+                cv_nam3(jvar)                    = TRIM(cv_nam(jvar))//'_cub'
+                stypvar3(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_cub'         ! name
+                stypvar3(jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')^3'    ! unit
+                stypvar3(jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
+                stypvar3(jvar)%valid_min         = 0.                                        ! valid_min = zero
+                stypvar3(jvar)%valid_max         = stypvar(jvar)%valid_max**3                ! valid_max *valid_max
+                stypvar3(jvar)%scale_factor      = 1.
+                stypvar3(jvar)%add_offset        = 0.
+                stypvar3(jvar)%savelog10         = 0.
+                stypvar3(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_Cubed'   ! 
+                stypvar3(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_cub'    !
+                stypvar3(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation) 
+                stypvar3(jvar)%caxis             = TRIM(stypvar(jvar)%caxis) 
 
-          stypvar4(jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+                stypvar3(jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+             ELSE
+                cv_nam3(jvar) = 'none'
+             END IF
+          ENDIF
 
-          cv_nam4(nvars+jvar)                    = TRIM(cv_nam(jvar))//'_min'
-          stypvar4(nvars+jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_min'         ! name
-          stypvar4(nvars+jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')'      ! unit
-          stypvar4(nvars+jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
-          stypvar4(nvars+jvar)%valid_min         = 0.                                        ! valid_min = zero
-          stypvar4(nvars+jvar)%valid_max         = stypvar(jvar)%valid_max                   ! valid_max *valid_max
-          stypvar4(nvars+jvar)%scale_factor      = 1.
-          stypvar4(nvars+jvar)%add_offset        = 0.
-          stypvar4(nvars+jvar)%savelog10         = 0.
-          stypvar4(nvars+jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_min'   ! 
-          stypvar4(nvars+jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_min'  !
-          stypvar4(nvars+jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
-          stypvar4(nvars+jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
+          IF ( lmax ) THEN
+             cv_nam4(jvar)                    = TRIM(cv_nam(jvar))//'_max'
+             stypvar4(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_max'         ! name
+             stypvar4(jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')'      ! unit
+             stypvar4(jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
+             stypvar4(jvar)%valid_min         = 0.                                        ! valid_min = zero
+             stypvar4(jvar)%valid_max         = stypvar(jvar)%valid_max                   ! valid_max *valid_max
+             stypvar4(jvar)%scale_factor      = 1.
+             stypvar4(jvar)%add_offset        = 0.
+             stypvar4(jvar)%savelog10         = 0.
+             stypvar4(jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_max'   ! 
+             stypvar4(jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_max'  !
+             stypvar4(jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
+             stypvar4(jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
 
-          stypvar4(nvars+jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
-       ENDIF
+             stypvar4(jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
 
-      ELSE
+             cv_nam4(nvars+jvar)                    = TRIM(cv_nam(jvar))//'_min'
+             stypvar4(nvars+jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_min'         ! name
+             stypvar4(nvars+jvar)%cunits            = '('//TRIM(stypvar(jvar)%cunits)//')'      ! unit
+             stypvar4(nvars+jvar)%rmissing_value    = stypvar(jvar)%rmissing_value              ! missing_value
+             stypvar4(nvars+jvar)%valid_min         = 0.                                        ! valid_min = zero
+             stypvar4(nvars+jvar)%valid_max         = stypvar(jvar)%valid_max                   ! valid_max *valid_max
+             stypvar4(nvars+jvar)%scale_factor      = 1.
+             stypvar4(nvars+jvar)%add_offset        = 0.
+             stypvar4(nvars+jvar)%savelog10         = 0.
+             stypvar4(nvars+jvar)%clong_name        = TRIM(stypvar(jvar)%clong_name)//'_min'   ! 
+             stypvar4(nvars+jvar)%cshort_name       = TRIM(stypvar(jvar)%cshort_name)//'_min'  !
+             stypvar4(nvars+jvar)%conline_operation = TRIM(stypvar(jvar)%conline_operation)
+             stypvar4(nvars+jvar)%caxis             = TRIM(stypvar(jvar)%caxis)
+
+             stypvar4(nvars+jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
+          ENDIF
+
+       ELSE
           cv_nam2(jvar)='none'
           IF (lcubic) cv_nam3(       jvar)='none'
           IF (lmax  ) cv_nam4(       jvar)='none'
           IF (lmax  ) cv_nam4(nvars+ jvar)='none'
-      ENDIF
+       ENDIF
     END DO
 
     id_var(:)  = (/(jv, jv=1,nvars)/)
@@ -621,16 +621,11 @@ CONTAINS
        WHERE( ipk4 == 0 ) cv_nam4='none'
     ENDIF
     stypvar (:)%cname = cv_nam
-     stypvar2(:)%cname = cv_nam2
-     IF ( lcubic ) stypvar3(:)%cname = cv_nam3
-     IF ( lmax   ) stypvar4(:)%cname = cv_nam4
+    stypvar2(:)%cname = cv_nam2
+    IF ( lcubic ) stypvar3(:)%cname = cv_nam3
+    IF ( lmax   ) stypvar4(:)%cname = cv_nam4
 
     ! create output file taking the sizes in cf_in
-    DO jv=1,nvars   !JMM DBG
-      PRINT *,jv,' ...1 ',TRIM(stypvar(jv)%cname)
-      PRINT *,jv,' ...2 ',TRIM(stypvar2(jv)%cname)
-      IF (lmax) PRINT *,jv,' ...4 ',TRIM(stypvar4(jv+nvars)%cname)
-    ENDDO
     ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
     ierr   = createvar   (ncout ,  stypvar,  nvars,  ipk,    id_varout       , ld_nc4=lnc4)
     ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep      )
