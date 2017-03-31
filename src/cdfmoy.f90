@@ -83,6 +83,7 @@ PROGRAM cdfmoy
   CHARACTER(LEN=256)                            :: cf_out3 = 'cdfmoy3.nc' ! output file for squared average
   CHARACTER(LEN=256)                            :: cf_out4 = 'cdfmoy_minmax.nc'  ! output file for min/max
   CHARACTER(LEN=256)                            :: cf_e3              ! file name for reading vertical metrics (vvl)
+  CHARACTER(LEN=256)                            :: cv_single          ! name of the single variable to process ( -var option)
   CHARACTER(LEN=256)                            :: cv_dep             ! depth dimension name
   CHARACTER(LEN=256)                            :: cv_e3              ! name of e3t variable for vvl
   CHARACTER(LEN=256)                            :: cldum              ! dummy string argument
@@ -103,6 +104,7 @@ PROGRAM cdfmoy
   LOGICAL                                       :: lcubic  = .FALSE.  ! 3rd momment computation
   LOGICAL                                       :: lzermean= .FALSE.  ! flag for zero-mean process
   LOGICAL                                       :: lmax    = .FALSE.  ! flag for min/max computation
+  LOGICAL                                       :: lvar    = .FALSE.  ! fkag for single variable processing
   LOGICAL                                       :: lchk    = .FALSE.  ! flag for missing files
   LOGICAL                                       :: lnc4    = .FALSE.  ! flag for netcdf4 output
   LOGICAL                                       :: ll_vvl             ! working flag: vvl AND ipk(jvar) > 1
@@ -113,7 +115,7 @@ PROGRAM cdfmoy
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy -l LST-files [-spval0] [-cub] [-zeromean] [-max] [-mskmiss] ...'
-     PRINT *,'            ... [-vvl] [-o OUT-rootname] [-nc4]'
+     PRINT *,'            ... [-var VAR-name] [-vvl] [-o OUT-rootname] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the ''time average'' of a list of files given as arguments.' 
@@ -155,6 +157,7 @@ PROGRAM cdfmoy
      PRINT *,'              value at any gridpoint where the variable contains a  missing'
      PRINT *,'              value for at least one timestep. You should combine with option'
      PRINT *,'              -spval0 if missing values are not 0 in all the input files.'
+     PRINT *,'       [-var VAR-name] : Only process VAR-name, instead of all variables.'
      PRINT *,'       [-vvl ] : take into account the time varying vertical scale factor.'
      PRINT *,'       [-o OUT-rootname] : Define output root-name instead of ', TRIM(cf_root) 
      PRINT *,'       [-nc4 ]: Use netcdf4 output with chunking and deflation level 1..'
@@ -190,9 +193,11 @@ PROGRAM cdfmoy
      CASE ( '-zeromean' ) ; lzermean = .TRUE.
      CASE ( '-max'      ) ; lmax     = .TRUE.
      CASE ( '-mskmiss'  ) ; lmskmiss = .TRUE.  
-     CASE ( '-nc4'      ) ; lnc4     = .TRUE.
+     CASE ( '-var'      ) ; lvar     = .TRUE.  
+        ;                   CALL getarg (ijarg, cv_single) ; ijarg = ijarg + 1
      CASE ( '-vvl'      ) ; lg_vvl   = .TRUE.
-     CASE ( '-o'        ) ; CALL getarg (ijarg, cf_root) ; ijarg = ijarg + 1
+     CASE ( '-o'        ) ; CALL getarg (ijarg, cf_root  ) ; ijarg = ijarg + 1
+     CASE ( '-nc4'      ) ; lnc4     = .TRUE.
      CASE DEFAULT         ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
@@ -273,7 +278,8 @@ PROGRAM cdfmoy
      ll_vvl = lg_vvl .AND.  (ipk(jvar) > 1)
      iwght=0
      IF ( cv_nam(jvar) == cn_vlon2d .OR. &     ! nav_lon
-          cv_nam(jvar) == cn_vlat2d ) THEN     ! nav_lat
+          cv_nam(jvar) == cn_vlat2d .OR. &     ! nav_lon
+          cv_nam(jvar) == 'none'    ) THEN     ! nav_lat
         ! skip these variable
      ELSE
         PRINT *,' Working with ', TRIM(cv_nam(jvar)), ipk(jvar)
@@ -494,6 +500,12 @@ CONTAINS
 
     ! get list of variable names and collect attributes in stypvar (optional)
     cv_nam(:) = getvarname(cf_in,nvars,stypvar)
+    IF ( lvar ) THEN
+       DO jv=1,nvars
+         IF ( cv_nam(jv) /= cv_single ) cv_nam(jv)='none'
+       ENDDO
+    ENDIF
+    
 
     ! choose chunk size for output ... not easy not used if lnc4=.false. but anyway ..
     DO jv = 1, nvars
@@ -515,6 +527,7 @@ CONTAINS
 
     DO jvar = 1, nvars
        ! variables that will not be computed or stored are named 'none'
+      IF (cv_nam(jvar) /= 'none' ) THEN
        IF ( varchk2 ( cv_nam(jvar) ) ) THEN 
           cv_nam2(jvar)                    = TRIM(cv_nam(jvar))//'_sqd'
           stypvar2(jvar)%cname             = TRIM(stypvar(jvar)%cname)//'_sqd'         ! name
@@ -590,7 +603,12 @@ CONTAINS
           stypvar4(nvars+jvar)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
        ENDIF
 
-
+      ELSE
+          cv_nam2(jvar)='none'
+          IF (lcubic) cv_nam3(       jvar)='none'
+          IF (lmax  ) cv_nam4(       jvar)='none'
+          IF (lmax  ) cv_nam4(nvars+ jvar)='none'
+      ENDIF
     END DO
 
     id_var(:)  = (/(jv, jv=1,nvars)/)
@@ -603,11 +621,16 @@ CONTAINS
        WHERE( ipk4 == 0 ) cv_nam4='none'
     ENDIF
     stypvar (:)%cname = cv_nam
-    stypvar2(:)%cname = cv_nam2
-    IF ( lcubic ) stypvar3(:)%cname = cv_nam3
-    IF ( lmax   ) stypvar4(:)%cname = cv_nam4
+     stypvar2(:)%cname = cv_nam2
+     IF ( lcubic ) stypvar3(:)%cname = cv_nam3
+     IF ( lmax   ) stypvar4(:)%cname = cv_nam4
 
     ! create output file taking the sizes in cf_in
+    DO jv=1,nvars   !JMM DBG
+      PRINT *,jv,' ...1 ',TRIM(stypvar(jv)%cname)
+      PRINT *,jv,' ...2 ',TRIM(stypvar2(jv)%cname)
+      IF (lmax) PRINT *,jv,' ...4 ',TRIM(stypvar4(jv+nvars)%cname)
+    ENDDO
     ncout  = create      (cf_out,  cf_in,    npiglo, npjglo, npk, cdep=cv_dep, ld_nc4=lnc4)
     ierr   = createvar   (ncout ,  stypvar,  nvars,  ipk,    id_varout       , ld_nc4=lnc4)
     ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep      )
