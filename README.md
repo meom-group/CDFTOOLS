@@ -3,6 +3,8 @@
 
   CDFTOOLS is an open source package and contributions from other group are welcomed. The Git workflow policy is still to be defined.
 
+  Actual version of CDFTOOLS is known as version 4. (See changes in paragraph *New features in version 4*, below).
+
 ## Using CDFTOOLS
 
 #### Cloning the git repository
@@ -83,4 +85,23 @@ Example:
 
 ##### Improving/modifying existing tool
  It is possible to improve (of course !) or modify any tools, but <u>one important law to respect</u> is that the modified tool should still be able to be used with previous syntax, in order to avoid breaking of existing scripts using CDFTOOLS. If for some reason, this is not possible, then a discussion must be done to reach to a common decision. Eventually, some old options must be documented as osbolete in the usage message, which means that they may be removed from a future release. 
+
+## New features in version 4
+#### Modified user interface
+ * All arguments are passed with a `-key` switch. No more `free` arguments. Example `cdfmoy -l fich1.nc fich2.nc`
+ * Add `-o` and `-nc4` options in all tools (when relevant). With `-o` the default output name can be changed, allowing easier paralellisation. With `-nc4` output file will use NetCdf4/Hdf5 format with chunking and deflation level 1.
+
+#### Support for vvl simulations
+ * When relevant, the switch `-vvl` indicates that the vertical metrics is time-varying. Therefore, CDFTOOLS assume that the vertical metrics is saved in the same file than the data.
+
+#### Simplification
+ * The codes have been cleaned for obsolescences. Coding rules were reinforced.
+ * Obsolete tools were removed or merged as options in more generic tools. 
+
+#### Improved documentation.
+ * Gathering the `usage` message into man pages still works (`make man`). Readibility of the man pages is improved by grouping the tools by category. The `usage` messages have been reviewed in order to give better information.
+ * The man pages are automaticaly translated to an html document that can be vizualized from any browser.
+
+#### Back to release 3:
+ * The last version 3's release has been tagged as v3.0.1. Use this tag if you want to stay at version 3.
 
