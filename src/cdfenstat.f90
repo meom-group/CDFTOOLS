@@ -104,7 +104,6 @@ PROGRAM cdfenstat
      STOP
   ENDIF
 
-  ALLOCATE ( cf_lst(narg) )
   ! look for -spval0 option and set up cf_lst, nfiles 
   ijarg = 1 
   nfiles = 0
