@@ -3023,8 +3023,8 @@ CONTAINS
     IF ( chkvar (cn_fzgr, clvar, .false.) ) THEN  ! use quiet mode
          cg_zgr_ver='v2.0'
     ELSE
-      IF ( getvdim (cn_fzgr, clvar) == 2 ) THEN
-         cg_zgr_ver='v0.0'
+      IF ( getvdim (cn_fzgr, clvar) == 1 ) THEN
+         cg_zgr_ver='v3.0'
       ELSE
          cg_zgr_ver='v3.6'
       ENDIF
