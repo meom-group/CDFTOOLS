@@ -82,12 +82,12 @@ PROGRAM cdfsigi
 
   ijarg=1
   DO WHILE ( ijarg <= narg ) 
-     CALL getarg (1, cldum ) ; ijarg=ijarg+1
+     CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t'   ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
-     CASE ( '-r'   ) ; CALL getarg (1, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ref_dep
+     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ( '-r'   ) ; CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ref_dep
         ! options
-     CASE ( '-o'   ) ; CALL getarg (1, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
