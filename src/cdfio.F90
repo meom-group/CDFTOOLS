@@ -376,13 +376,13 @@ CONTAINS
     !!             OUTPUT:
     !!                 kidvo = arrays with the varid of the variables just created.
     !!----------------------------------------------------------------------
-    INTEGER(KIND=4),                  INTENT(in) :: kout    ! ncid of output file
-    TYPE (variable), DIMENSION(kvar) ,INTENT(in) :: sdtyvar ! variable structure
-    INTEGER(KIND=4),                  INTENT(in) :: kvar    ! number of variable
-    INTEGER(KIND=4), DIMENSION(kvar), INTENT(in) :: kpk     ! number of level/var
-    INTEGER(KIND=4), DIMENSION(kvar), INTENT(out):: kidvo   ! varid's of output var
-    CHARACTER(LEN=*), OPTIONAL,       INTENT(in) :: cdglobal! Global Attribute
-    LOGICAL         , OPTIONAL,       INTENT(in) :: ld_nc4  ! user chunking and deflation
+    INTEGER(KIND=4),                  INTENT(in   ) :: kout    ! ncid of output file
+    TYPE (variable), DIMENSION(kvar) ,INTENT(inout) :: sdtyvar ! variable structure
+    INTEGER(KIND=4),                  INTENT(in   ) :: kvar    ! number of variable
+    INTEGER(KIND=4), DIMENSION(kvar), INTENT(in   ) :: kpk     ! number of level/var
+    INTEGER(KIND=4), DIMENSION(kvar), INTENT(out  ) :: kidvo   ! varid's of output var
+    CHARACTER(LEN=*), OPTIONAL,       INTENT(in   ) :: cdglobal! Global Attribute
+    LOGICAL         , OPTIONAL,       INTENT(in   ) :: ld_nc4  ! user chunking and deflation
 
     INTEGER(KIND=4)               :: jv             ! dummy loop index
     INTEGER(KIND=4)               :: idims, istatus 
@@ -425,6 +425,7 @@ CONTAINS
                           iprecision = NF90_FLOAT
              IF ( sdtyvar(jv)%scale_factor /= 1. .OR. sdtyvar(jv)%add_offset /= 0. ) THEN
                           iprecision = NF90_SHORT
+                          sdtyvar(jv)%cprecision='i2' 
              ENDIF
           END SELECT
 
