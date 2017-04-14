@@ -281,8 +281,7 @@ PROGRAM cdfcurl
         IF ( loverf ) THEN
            WHERE (dl_ff /= 0.d0) drotn=drotn/dl_ff
         ENDIF
-
-        ierr = putvar(ncout, id_varout(1), drotn, nilev(jk), npiglo, npjglo, ktime=jt)
+        ierr = putvar(ncout, id_varout(1), drotn, jk, npiglo, npjglo, ktime=jt)
      ENDDO
   END DO
   ierr = closeout(ncout)
