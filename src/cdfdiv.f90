@@ -51,7 +51,7 @@ PROGRAM cdfdiv
 
   CHARACTER(LEN=256)                        :: cf_ufil, cf_vfil   ! file names
   CHARACTER(LEN=256)                        :: cf_tfil            ! T-file for vvl e3t metrics
-  CHARACTER(LEN=256)                        :: cf_out = 'curl.nc' ! output file name
+  CHARACTER(LEN=256)                        :: cf_out = 'div.nc' ! output file name
   CHARACTER(LEN=256)                        :: cv_u, cv_v         ! variable names
   CHARACTER(LEN=256)                        :: cldum              ! dummy string
 
@@ -89,7 +89,7 @@ PROGRAM cdfdiv
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-8]: save in double precision instead of standard simple precision.'
      PRINT *,'       [-surf] : work with single level C-grid (not forcing)'
-     PRINT *,'       [-overf]: store the ratio curl/f where f is the coriolis parameter'
+     PRINT *,'       [-overf]: store the ratio div/f where f is the coriolis parameter'
      PRINT *,'       [-full] : in case of full step configuration. Default is partial step.'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out) 
      PRINT *,'       [-nc4]  : Use netcdf4 output with chunking and deflation level 1.'
@@ -220,7 +220,7 @@ PROGRAM cdfdiv
   IF ( lforcing .OR. lsurf ) THEN
      gdep(1)=0.
   ELSE
-     zdep(:) = getvar1d(cf_ufil, cn_vdeptht, npk )
+     zdep(:) = getvar1d(cf_ufil, cn_vdepthu, npk )
      DO jk=1,nlev
         gdep(jk) = zdep( nilev(jk) )
      ENDDO
@@ -287,7 +287,7 @@ PROGRAM cdfdiv
            WHERE (dl_ff /= 0.d0) dhdivn=dhdivn/dl_ff
         ENDIF
 
-        ierr = putvar(ncout, id_varout(1), dhdivn, nilev(jk), npiglo, npjglo, ktime=jt)
+        ierr = putvar(ncout, id_varout(1), dhdivn, jk, npiglo, npjglo, ktime=jt)
      ENDDO
   END DO
   ierr = closeout(ncout)
@@ -416,7 +416,7 @@ CONTAINS
     ipk(1) = nlev  !  nlevel so far
 
     ! create output fileset
-    ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev, cdep=cn_vdeptht, ld_nc4=lnc4 )
+    ncout = create      (cf_out, cf_ufil, npiglo, npjglo, nlev, cdep=cn_vdepthu, ld_nc4=lnc4 )
     ierr  = createvar   (ncout ,   stypvar, 1 ,   ipk,    id_varout,             ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  'dummy', npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
 
