@@ -23,9 +23,10 @@ PROGRAM cdf2matlab
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                           :: ji, jj              ! dummy loop index
+  INTEGER(KIND=4)                           :: ji, jj, jt          ! dummy loop index
   INTEGER(KIND=4)                           :: narg, iargc,ijarg   ! 
   INTEGER(KIND=4)                           :: npiglo, npjglo, npk ! size of the domain
+  INTEGER(KIND=4)                           :: npt                 ! number of time frame
   INTEGER(KIND=4)                           :: npiglox2            ! new model size in x
   INTEGER(KIND=4)                           :: ilev, iindex, itmp
   INTEGER(KIND=4)                           :: ncout
@@ -36,7 +37,7 @@ PROGRAM cdf2matlab
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlonout, zlatout    ! output arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlonwork, zlatwork  ! working arrays arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvarout, zvarwork   ! working arrays arrays
-  REAL(KIND=4), DIMENSION(1)                :: tim
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim
 
   CHARACTER(LEN=256)                        :: cf_in               ! input file name
   CHARACTER(LEN=256)                        :: cf_out='output.nc'  ! output file name
@@ -95,20 +96,23 @@ PROGRAM cdf2matlab
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)
   npk    = getdim (cf_in,cn_z)
+  npt    = getdim (cf_in,cn_t)
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
+  PRINT *, 'npt    = ', npt
   npiglox2 = 2 * npiglo
 
-  ALLOCATE( zvar(npiglo,npjglo), zlon(npiglo,npjglo), zlat(npiglo,npjglo) )
+  ALLOCATE( zvar(npiglo,npjglo), zlon(npiglo,npjglo), zlat(npiglo,npjglo), tim(npt)  )
   ALLOCATE( zvarout(npiglox2,npjglo), zlonout(npiglox2,npjglo), zlatout(npiglox2,npjglo) )
 
   CALL CreateOutput
-
   zlon(:,:) = getvar(cf_in, cn_vlon2d, 1,    npiglo, npjglo)
   zlat(:,:) = getvar(cf_in, cn_vlat2d, 1,    npiglo, npjglo)
-  zvar(:,:) = getvar(cf_in, cv_in,     ilev, npiglo, npjglo)
+  DO jt=1, npt
+
+  zvar(:,:) = getvar(cf_in, cv_in,     ilev, npiglo, npjglo, ktime=jt )
 
   DO jj=1,npjglo
      iindex = MINLOC( ABS(zlon(:,jj) + 180 ),1 ) ! find the discontinuity in lon array
@@ -155,9 +159,10 @@ PROGRAM cdf2matlab
 
   ENDIF
 
-  ierr = putvar(ncout,id_varout(1), zlonout, 1, npiglox2, npjglo)
-  ierr = putvar(ncout,id_varout(2), zlatout, 1, npiglox2, npjglo)
-  ierr = putvar(ncout,id_varout(3), zvarout, 1, npiglox2, npjglo)
+  ierr = putvar(ncout,id_varout(1), zlonout, 1, npiglox2, npjglo, ktime=jt)
+  ierr = putvar(ncout,id_varout(2), zlatout, 1, npiglox2, npjglo, ktime=jt)
+  ierr = putvar(ncout,id_varout(3), zvarout, 1, npiglox2, npjglo, ktime=jt)
+  ENDDO
 
   ierr = closeout(ncout)
 
@@ -208,8 +213,8 @@ CONTAINS
     ncout = create    (cf_out,   cf_in,   npiglox2, npjglo, 1         , ld_nc4=lnc4 )
     ierr  = createvar (ncout,    stypvar, 3,        ipk,    id_varout , ld_nc4=lnc4 )
 
-    tim  = getvar1d(cf_in, cn_vtimec, 1     )
-    ierr = putvar1d(ncout, tim,       1, 'T')
+    tim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, tim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 
