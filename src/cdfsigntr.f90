@@ -81,9 +81,9 @@ PROGRAM cdfsigntr
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t'   ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg=ijarg+1
         ! options
-     CASE ( '-o'   ) ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
