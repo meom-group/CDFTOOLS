@@ -47,7 +47,7 @@ PROGRAM cdfgradT
 
   CHARACTER(LEN=256)                         :: cldum               ! dummy character variable
   CHARACTER(LEN=256)                         :: cf_tfil             ! input file name for T and S
-  CHARACTER(LEN=256)                         :: cf_sfil             ! input file name for S (optional)
+  CHARACTER(LEN=256)                         :: cf_sfil=''          ! input file name for S (optional)
   CHARACTER(LEN=256)                         :: cf_out = 'gradT.nc' ! output file name
   CHARACTER(LEN=256)                         :: cf_e3w              ! file with e3w metrics in case of vvl
 
