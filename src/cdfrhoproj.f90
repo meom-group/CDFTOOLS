@@ -377,7 +377,7 @@ CONTAINS
     INTEGER  :: ji
     INTEGER  :: inchar,  i1=1, ival
     !!----------------------------------------------------------------------
-    CALL getarg(ijarg, cldum)
+    CALL getarg(ijarg, cldum); ijarg=ijarg+1
     inchar = LEN(TRIM(cldum))
     ival  = 1
     lsingle = .TRUE.  ! this flag tells the program that no rholev file is
