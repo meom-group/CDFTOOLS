@@ -110,14 +110,14 @@ PROGRAM cdfets
 
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-     CALL getarg (1, cldum) ; ijarg=ijarg+1
+     CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-f'   ) ; CALL getarg (1, cf_tfil) ; ijarg=ijarg+1
+     CASE ( '-f'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
         ! options
-     CASE ( '-o'   ) ; CALL getarg (1, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
-        ;              CALL getarg (1, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
+        ;              CALL getarg (ijarg, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
