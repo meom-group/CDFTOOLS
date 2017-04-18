@@ -77,7 +77,7 @@ PROGRAM cdfcmp
      SELECT CASE ( cldum )
      CASE ( '-f1' ) ; CALL getarg(ijarg, cf1_in) ; ijarg = ijarg + 1
      CASE ( '-f2' ) ; CALL getarg(ijarg, cf2_in) ; ijarg = ijarg + 1
-     CASE ( '-var') ; CALL getarg(ijarg, cv_in ) ; ijarg = ijarg + 1
+     CASE ( '-v'  ) ; CALL getarg(ijarg, cv_in ) ; ijarg = ijarg + 1
      CASE ( '-lev') ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
         ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
      CASE ('-zoom') ; CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
