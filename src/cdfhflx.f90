@@ -101,12 +101,12 @@ PROGRAM cdfhflx
 
   ijarg = 1
   DO WHILE ( ijarg <= narg )
-     CALL getarg (1, cldum ) ; ijarg=ijarg+1
+     CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum)
-     CASE ( '-f' ) ; CALL getarg (1, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-f' ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg=ijarg+1
         ! options
-     CASE ( '-o' ) ; CALL getarg (1, cf_outnc) ; ijarg=ijarg+1
-     CASE ( '-ot') ; CALL getarg (1, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-o' ) ; CALL getarg (ijarg, cf_outnc) ; ijarg=ijarg+1
+     CASE ( '-ot') ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.' ; STOP
      END SELECT
   ENDDO
