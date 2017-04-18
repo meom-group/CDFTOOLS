@@ -277,7 +277,7 @@ PROGRAM cdfmax
   ENDDO
 
 9000 FORMAT(a)
-9002 FORMAT(I5, x,i4,9x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5, 6x, i5,f8.2, i5, f7.2, i5, f8.2, e14.5 )
+9002 FORMAT(I5, x,i4,7x, i5,f8.2, i4, f7.2, i4, f8.2, e14.5, 4x, i5,f9.2, i4, f8.2, i4, f8.2, e14.5 )
 9003 FORMAT(I5, x,i5,1x,f7.2,5x,i5,f8.2, i5, f7.2, e14.5, 5x,i5,f8.2, i5, f7.2, e14.5)
 
 CONTAINS
