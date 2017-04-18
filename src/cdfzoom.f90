@@ -110,7 +110,7 @@ PROGRAM cdfzoom
      IF ( niz == 1  ) THEN ! y/z slab
      ELSE IF ( njz == 1 ) THEN ! x/z slab
      ELSE
-        PRINT *, 'Either niz or njz must me  one'
+        PRINT *, 'Either niz or njz must be  one'
         STOP
      ENDIF
   ENDIF
