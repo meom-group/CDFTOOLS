@@ -90,6 +90,9 @@ PROGRAM cdfcensus
   DATA zsmin, zsmax, zds /25.0, 40.0, 0.02/
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  ii1=-1 ; ii2=-1
+  ij1=-1 ; ij2=-1
+  ik1=-1 ; ik2=-1
 
   narg = iargc()
   IF ( narg == 0 ) THEN
@@ -142,14 +145,14 @@ PROGRAM cdfcensus
      CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
      CASE ( '-t'     ) ; CALL getarg(ijarg,cf_tfil) ; ijarg = ijarg+1
-     CASE ( '-zoom'  ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii1   
-        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii2  
-        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ij1  
-        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ij2 
-     CASE ( '-klim'  ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ik1  
-        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ik2  
-     CASE ( '-srange') ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsmin 
-        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsmax 
+     CASE ( '-zoom'  ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii1
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii2
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ij1
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ij2
+     CASE ( '-klim'  ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ik1
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ik2
+     CASE ( '-srange') ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsmin
+        ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsmax
         ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zds   
      CASE ( '-trange') ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ztmin 
         ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ztmax 
@@ -193,9 +196,12 @@ PROGRAM cdfcensus
   e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk              )  ! used in full step case
 
   ! default is full domain, full depth
-  ii1 = 1 ; ii2 = npiglo
-  ij1 = 1 ; ij2 = npjglo
-  ik1 = 1 ; ik2 = npk
+  IF ( ii1 == -1 ) ii1 = 1 
+  IF ( ii2 == -1 ) ii2 = npiglo
+  IF ( ij1 == -1 ) ij1 = 1 
+  IF ( ij2 == -1 ) ij2 = npjglo
+  IF ( ik1 == -1 ) ik1 = 1 
+  IF ( ik2 == -1 ) ik2 = npk
 
   ! Extra checking for over bound
   ii1 = MAX(ii1,1) ; ii2 = MIN(ii2,npiglo)
