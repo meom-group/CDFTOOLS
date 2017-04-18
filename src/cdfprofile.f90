@@ -90,8 +90,8 @@ PROGRAM cdfprofile
      SELECT CASE ( cldum )
      CASE ( '-f'   ) ; CALL getarg (ijarg, cf_in ) ; ijarg = ijarg+1  
      CASE ( '-v'   ) ; CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  
-     CASE ( '-IJ'  ) ; CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  ; READ(cldum,*) iilook
-        ;              CALL getarg (ijarg, cv_in ) ; ijarg = ijarg+1  ; READ(cldum,*) ijlook
+     CASE ( '-IJ'  ) ; CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1  ; READ(cldum,*) iilook
+        ;              CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1  ; READ(cldum,*) ijlook
         ! options
      CASE ( '-dep' ) ; CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1  ; READ(cldum,*) rdep ; l_vert_interp = .TRUE.
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg+1
