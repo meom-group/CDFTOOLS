@@ -96,6 +96,8 @@ PROGRAM cdfstatcoord
   zmask = getvar(cf_msk, cv_msk,  1, npiglo, npjglo)
 
   rlat = pp_latmin + pp_binsize/2.
+     PRINT '(a)', 'Latitude       e1mean         e2mean           e1/e2    npoints'
+     PRINT '(a)', '-----------------------------------------------------------------'
   DO WHILE ( rlat <= pp_latmax ) 
      rlat1 = rlat - pp_binsize/2. ; rlat2 = rlat + pp_binsize/2.
      lgood = .FALSE.
