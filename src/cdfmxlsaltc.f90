@@ -47,6 +47,7 @@ PROGRAM cdfmxlsaltc
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dmxlsaltc           ! heat content
 
   CHARACTER(LEN=256)                            :: cf_tfil             ! input file name
+  CHARACTER(LEN=256)                            :: cf_mfil             ! input file name with mld
   CHARACTER(LEN=256)                            :: cf_out='mxlsaltc.nc'! output file
   CHARACTER(LEN=256)                            :: cv_out='somxlsaltc' ! input file name
   CHARACTER(LEN=256)                            :: cglobal             ! global attribute
@@ -62,7 +63,8 @@ PROGRAM cdfmxlsaltc
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmxlsaltc -f T-file [-full] [-o OUT-file] [-nc4] [-vvl]'
+     PRINT *,' usage : cdfmxlsaltc -f T-file [-mxlf MXL-file] [-full] [-vvl] ...'
+     PRINT *,'                 ...   [-o OUT-file] [-nc4] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the salt content in the mixed layer.' 
@@ -71,6 +73,7 @@ PROGRAM cdfmxlsaltc
      PRINT *,'       -f T-file : netcdf input file with salinity and mld (gridT).' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-mxlf MXL-file]: netcdf input file with mld if not in T-file.' 
      PRINT *,'       [-full ] : for full step configurations, default is partial step.' 
      PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out) 
      PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
@@ -92,13 +95,14 @@ PROGRAM cdfmxlsaltc
      STOP
   ENDIF
 
+  cf_mfil='none'
   ijarg = 1
-  
   DO WHILE ( ijarg <= narg )
     CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 
     SELECT CASE ( cldum )
     CASE ( '-f'       ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1
     ! options
+    CASE ( '-mxlf'    ) ; CALL getarg (ijarg, cf_mfil  ) ; ijarg = ijarg + 1
     CASE ( '-full'    ) ; lfull  = .TRUE.
     CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
@@ -107,9 +111,11 @@ PROGRAM cdfmxlsaltc
     END SELECT
   END DO
 
-  lchk = chkfile (cn_fzgr)
-  lchk = chkfile (cn_fmsk) .OR. lchk
+  IF ( cf_mfil == 'none' ) cf_mfil = cf_tfil 
+  lchk = chkfile (cn_fzgr  )
+  lchk = chkfile (cn_fmsk  ) .OR. lchk
   lchk = chkfile (cf_tfil  ) .OR. lchk
+  lchk = chkfile (cf_mfil  ) .OR. lchk
   IF ( lchk ) STOP ! missing files
   IF ( lg_vvl ) cn_fe3t = cf_tfil
 
@@ -144,7 +150,7 @@ PROGRAM cdfmxlsaltc
      ENDIF
      dmxlsaltc(:,:) = 0.d0
      dvol           = 0.d0
-     zmxl( :,:) = getvar(cf_tfil, cn_somxl010, 1,  npiglo, npjglo, ktime=jt)
+     zmxl( :,:) = getvar(cf_mfil, cn_somxl010, 1,  npiglo, npjglo, ktime=jt)
 
      DO jk = 1, npk
         zs(   :,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)

@@ -186,7 +186,7 @@ PROGRAM cdfvsig
   ! | ndep [ u x sigma ] +   ndep [ sigma ]  +  2 [ u, u2 ] |
   nfieldu = ndep + ndep * COUNT ( (/lsigo /)  ) + 2 * COUNT ( (/luvo/) )
   nfieldv = nfieldu
-  nfieldw = 2 * COUNT ( (/lwo /)) * nfieldu
+  nfieldw = COUNT ( (/lwo /)) * nfieldu
 
   ctag = ctag_lst(1)
   cf_tfil = SetFileName ( config, ctag, 'T')
@@ -575,7 +575,7 @@ CONTAINS
        ENDIF
 
        ncoutw = create      (cf_outw, cl_refw,  npiglo, npjglo, npk                                 , ld_nc4=lnc4)
-       ierr   = createvar   (ncoutw,  stypvarw, nfieldw,      ipku,   id_varoutw, cdglobal=cl_global, ld_nc4=lnc4)
+       ierr   = createvar   (ncoutw,  stypvarw, nfieldw,      ipkw,   id_varoutw, cdglobal=cl_global, ld_nc4=lnc4)
        ierr   = putheadervar(ncoutw,  cl_refw,  npiglo, npjglo, npk        )
     ENDIF
 
