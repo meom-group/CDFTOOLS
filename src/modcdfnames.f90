@@ -95,6 +95,7 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_sowaflup='sowaflup' !: Fresh Water Flux
   CHARACTER(LEN=256) :: cn_sowaflcd='sowaflcd' !: Concentration Dilution water flux
   CHARACTER(LEN=256) :: cn_sowafldp='sowafldp' !: SSS damping water Flux
+  CHARACTER(LEN=256) :: cn_sorunoff='sorunoff' !: River Run-off
   CHARACTER(LEN=256) :: cn_iowaflup='iowaflup' !: Ice Ocean Water flux ( + = freezing, - = melting)
   CHARACTER(LEN=256) :: cn_soicecov='soicecov' !: Ice cover
 

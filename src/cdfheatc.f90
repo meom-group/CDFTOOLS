@@ -58,6 +58,7 @@ PROGRAM cdfheatc
   TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar          ! structure for attributes
 
   CHARACTER(LEN=256)                        :: cf_tfil             ! input gridT file
+  CHARACTER(LEN=256)                        :: cf_mfil             ! input MXL file
   CHARACTER(LEN=256)                        :: cf_out='heatc.nc'   ! netcdf output file
   CHARACTER(LEN=256)                        :: cldum               ! dummy character variable
   CHARACTER(LEN=256)                        :: cv_msk='tmask'      ! variable for masking
@@ -69,7 +70,7 @@ PROGRAM cdfheatc
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfheatc  -f T-file [-mxloption option] ...'
+     PRINT *,' usage :  cdfheatc  -f T-file [-mxloption option] -[mxlf MXL-file] ...'
      PRINT *,'     [-zoom imin imax jmin jmax kmin kmax] [-full] [-o OUT-file]'
      PRINT *,'     [-M MSK-file VAR-mask ] [-vvl ]'
      PRINT *,'      '
@@ -90,6 +91,8 @@ PROGRAM cdfheatc
      PRINT *,'       [-mxloption option]: option= 1 : compute only in the mixed layer,'
      PRINT *,'                            option=-1 : exclude mixed layer in the computation'
      PRINT *,'                            option= 0 : [Default], do not take care of mxl.'
+     PRINT *,'       [-mxlf MXL-file ]: give name where MLD is found, if not in T-file.'
+     PRINT *,'                  Only usefull if mxl option is not 0.'
      PRINT *,'       [-o OUT-file ] : specify netcdf output filename instead of ',TRIM(cf_out)
      PRINT *,'       [-M MSK-file VAR-mask] : Allow the use of a non standard mask file '
      PRINT *,'              with VAR-mask, instead of ',TRIM(cn_fmsk),' and ',TRIM(cv_msk) 
@@ -103,7 +106,7 @@ PROGRAM cdfheatc
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : heatc.nc unless -o option is used.'
      PRINT *,'              variables: heatc3d (Joules)'
-     PRINT *,'                       : heatc(dep) (Joules) '
+     PRINT *,'                       : heatc2d(dep) (Joules) '
      PRINT *,'                       : heatc3dpervol (Joules/m3) '
      PRINT *,'       Standard output'
      PRINT *,'       '
@@ -112,6 +115,7 @@ PROGRAM cdfheatc
      STOP
   ENDIF
 
+  cf_mfil='none'
   ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1
@@ -120,7 +124,8 @@ PROGRAM cdfheatc
      CASE ( '-full'    ) ; lfull = .true.
      CASE ( '-vvl'     ) ; lg_vvl = .true.
      CASE ('-mxloption') ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) mxloption
-     CASE ( '-o   '    ) ; CALL getarg ( ijarg, cf_out)    ; ijarg = ijarg + 1 
+     CASE ( '-mxlf'    ) ; CALL getarg ( ijarg, cf_mfil) ; ijarg = ijarg + 1
+     CASE ( '-o   '    ) ; CALL getarg ( ijarg, cf_out)  ; ijarg = ijarg + 1 
      CASE ( '-zoom'    ) ; CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
         ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
         ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
@@ -133,10 +138,13 @@ PROGRAM cdfheatc
      END SELECT
   END DO
 
+  IF ( cf_mfil == 'none' ) cf_mfil = cf_tfil
+
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
+  lchk = chkfile(cf_mfil) .OR. lchk
   IF ( lchk ) STOP ! missing files
 
   IF ( lg_vvl ) cn_fe3t = cf_tfil
@@ -189,7 +197,7 @@ PROGRAM cdfheatc
      dvol = 0.d0
      dsum = 0.d0
      PRINT * ,'TIME : ', tim(jt)
-     IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
+     IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_mfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
 
      DO jk = 1,nvpk
         ik = jk + ikmin -1

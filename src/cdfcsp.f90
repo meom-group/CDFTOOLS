@@ -56,6 +56,7 @@ PROGRAM cdfcsp
      PRINT *,'     PURPOSE :'
      PRINT *,'       Replace missing_values by 0 and update attribute.' 
      PRINT *,'       This program is not working properly with NETCDF4/HDF5 files!'
+     PRINT *,'       Even more : problem when **compiled**  with NETCDF4.'
      PRINT *,'      '
      PRINT *,'     CAUTION :'
      PRINT *,'      ################################'

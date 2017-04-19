@@ -48,6 +48,7 @@ PROGRAM cdfwflx
   REAL(KIND=4)                               :: Lv=2.5e6         ! latent HF <--> evap conversion
 
   CHARACTER(LEN=256)                         :: cf_tfil          ! input gridT file name
+  CHARACTER(LEN=256)                         :: cf_ffil          ! input flxT file name
   CHARACTER(LEN=256)                         :: cf_rnf           ! input runoff file name
   CHARACTER(LEN=256)                         :: cf_out='wflx.nc' ! output file
   CHARACTER(LEN=256)                         :: cldum            ! working char variable
@@ -61,7 +62,7 @@ PROGRAM cdfwflx
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfwflx -t T-file -r RNF-file [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfwflx -t T-file -r RNF-file [-f FLX-file] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the water fluxes components. Suitable for annual means files.'
@@ -72,6 +73,7 @@ PROGRAM cdfwflx
      PRINT *,'       -r RNF-file : file with the climatological runoff on the model grid.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-f FLX-file]: model output file with water fluxes if not in T-file.'
      PRINT *,'       [-o OUT-file]: specify output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
@@ -82,9 +84,11 @@ PROGRAM cdfwflx
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'       variables : soevap, soprecip, sorunoff, sowadmp, sowaflux'
+     PRINT *,'      '
      STOP
   ENDIF
 
+  cf_ffil='none'
   ijarg=1
   DO WHILE ( ijarg <= narg) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
@@ -92,11 +96,14 @@ PROGRAM cdfwflx
      CASE( '-t'  ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
      CASE( '-r'  ) ; CALL getarg(ijarg, cf_rnf ) ; ijarg=ijarg+1
         ! options
+     CASE( '-f'  ) ; CALL getarg(ijarg, cf_ffil) ; ijarg=ijarg+1
      CASE( '-o'  ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE( '-nc4') ; lnc4 = .TRUE.
      CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
+
+  IF (cf_ffil =='none' ) cf_ffil=cf_tfil
 
   lchk = lchk .OR. chkfile ( cf_tfil)
   lchk = lchk .OR. chkfile ( cf_rnf )
@@ -119,10 +126,10 @@ PROGRAM cdfwflx
      ! read vosaline for masking purpose
      zwk(:,:)    =  getvar(cf_tfil, cn_vosaline,  1 ,npiglo,npjglo, ktime=jt )
      zmask       =  1. ; WHERE ( zwk == 0 ) zmask = 0.
-     evap(:,:)   = -1.* getvar(cf_tfil, cn_solhflup, 1 ,npiglo, npjglo, ktime=jt )/Lv*86400. *zmask(:,:)  ! mm/days
-     wdmp(:,:)   =      getvar(cf_tfil, cn_sowafldp, 1 ,npiglo, npjglo, ktime=jt )   *86400. *zmask(:,:)  ! mm/days
-     runoff(:,:) =      getvar(cf_rnf,  'sorunoff',  1 ,npiglo, npjglo, ktime=jt )   *86400. *zmask(:,:)  ! mm/days
-     zwk(:,:)    =      getvar(cf_tfil, cn_sowaflup, 1 ,npiglo, npjglo, ktime=jt )   *86400. *zmask(:,:)  ! mm/days
+     evap(:,:)   = -1.* getvar(cf_ffil, cn_solhflup, 1 ,npiglo, npjglo, ktime=jt )/Lv*86400. *zmask(:,:)  ! mm/days
+     wdmp(:,:)   =      getvar(cf_ffil, cn_sowafldp, 1 ,npiglo, npjglo, ktime=jt )   *86400. *zmask(:,:)  ! mm/days
+     runoff(:,:) =      getvar(cf_rnf,  cn_sorunoff, 1 ,npiglo, npjglo, ktime=jt )   *86400. *zmask(:,:)  ! mm/days
+     zwk(:,:)    =      getvar(cf_ffil, cn_sowaflup, 1 ,npiglo, npjglo, ktime=jt )   *86400. *zmask(:,:)  ! mm/days
      precip(:,:)= evap(:,:) - runoff(:,:) + wdmp(:,:) - zwk(:,:)                                          ! mm/day
 
      ierr = putvar(ncout, id_varout(1), evap,   1, npiglo, npjglo, ktime=jt )

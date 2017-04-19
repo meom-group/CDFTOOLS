@@ -96,7 +96,7 @@ PROGRAM cdfbuoyflx
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfbuoyflx  -t T-file [-r RNF-file] [-f FLX-file ] [-sss SSS-name]'
-     PRINT *,'     ... [-sst SST-name] [-nc4] [-o output_file] [-short ]'
+     PRINT *,'     ... [-sst SST-name] [-nc4] [-o OUT-file] [-short ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute (or read) the heat and water fluxes components.'
@@ -120,7 +120,7 @@ PROGRAM cdfbuoyflx
      PRINT *,'       [-nc4 ] Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'               This option is effective only if cdftools are compiled with'
      PRINT *,'               a netcdf library supporting chunking and deflation.'
-     PRINT *,'       [-o output_file ] Default is ', TRIM(cf_out)
+     PRINT *,'       [-o OUT-file ] Default is ', TRIM(cf_out)
      PRINT *,'       [-short ] With this option only save the buoyancy flux without '
      PRINT *,'                  all the components of the flux.'
      PRINT *,'      '

@@ -269,7 +269,7 @@ PROGRAM cdfdegrad
   IF ( ll_pt .OR. ll_pw .OR. ll_pu )  e2(:,:) = getvar  (cn_fhgr, cv_e2,  1,  npiglo, npjglo, kimin=iimin, kjmin=ijmin)
 
   IF ( lfull )  e31d(:) = getvare3(cn_fzgr, cv_e31d, npk)
-  zdep(:) = getvare3(cn_fzgr, cv_dep, npk)
+  zdep(:) = getvare3(cf_in, cv_dep, npk)
   gdep(:) = zdep(  1  :npk)
 
   ALLOCATE ( stypvar( 2 ), ipk( 2 ), id_varout( 2 ) )

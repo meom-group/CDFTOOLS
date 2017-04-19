@@ -127,10 +127,12 @@ PROGRAM cdfhflx
   PRINT *, 'npt    = ', npt
 
   !  Detects newmaskglo file 
-  lglo = .NOT. ( chkfile(cn_fbasins) )
+  lglo = .NOT. ( chkfile(cn_fbasins, ld_verbose=.FALSE.) )
+  
 
   IF (lglo) THEN ; npbasins = 5
   ELSE           ; npbasins = 1
+                 ; PRINT *,' No ',TRIM(cn_fbasins),' found : only global MHT is computed.'
   ENDIF
 
   ! Allocate arrays

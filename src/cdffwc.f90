@@ -71,7 +71,7 @@ PROGRAM cdffwc
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdffwc -f T-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]'
+     PRINT *,' usage : cdffwc -t T-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]'
      PRINT *,'                [-full] [-accum] [-ssh] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -80,7 +80,7 @@ PROGRAM cdffwc
      PRINT *,'       can be changed with -sref option.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        -f T-file   : netcdf input file holding salinity (in general a gridT).' 
+     PRINT *,'        -t T-file   : netcdf input file holding salinity (in general a gridT).' 
      PRINT *,'        -bv BASIN-var1,var2,.. : Comma separated list of sub-basin variables'
      PRINT *,'                to process. E.g.: -bv tmaskatl,tmaskind '
      PRINT *,'      '
@@ -88,7 +88,7 @@ PROGRAM cdffwc
      PRINT *,'        -full  : for full step computation ' 
      PRINT *,'        -accum : compute accumulated content from top to bottom' 
      PRINT *,'        -ssh   : take ssh into account for surface layer' 
-     PRINT *,'        -sref  : reference salinity (',TRIM(cdefault),' by default)'
+     PRINT *,'        -sref REFSAL : reference salinity (',TRIM(cdefault),' by default)'
      PRINT *,'        -vvl   : use time-varying vertical metrics'
      PRINT *,'        -o OUT-file :  use specified output file instead of ', TRIM(cf_out)
      PRINT *,'        -b SUBAS-file :  use specified subbasin file instead of ', TRIM(cf_subbas)
@@ -109,7 +109,7 @@ PROGRAM cdffwc
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
-     CASE ( '-f'    ) ; CALL getarg (ijarg, cf_in    ) ; ijarg = ijarg + 1
+     CASE ( '-t'    ) ; CALL getarg (ijarg, cf_in    ) ; ijarg = ijarg + 1
      CASE ( '-bv'   ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; CALL ParseVars(cldum)
         ! options
      CASE ( '-full' ) ; lfull  = .TRUE. 
