@@ -178,10 +178,11 @@ PROGRAM cdfmxl
   ALLOCATE (gdepw(0:npk), gdept(npk), tim(npt)                              )
 
   ! read mbathy and gdepw use real rtem(:,:) as template (getvar is used for real only)
-  IF ( chkfile( cn_fbathylev)  ) THEN
+  IF ( chkfile( cn_fbathylev,ld_verbose=.FALSE.)  ) THEN
      PRINT *, 'Read mbathy in ', TRIM(cn_fzgr),' ...'
      rtem(:,:) = getvar(cn_fzgr,      'mbathy',    1, npiglo, npjglo)
   ELSE
+     PRINT *, 'Read mbathy in ', TRIM(cn_bathylev),' ...'
      rtem(:,:) = getvar(cn_fbathylev, cn_bathylev, 1, npiglo, npjglo)
   ENDIF
 

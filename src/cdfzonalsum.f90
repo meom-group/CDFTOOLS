@@ -407,7 +407,7 @@ CONTAINS
              IF ( lpdeg ) THEN
                 cf_out = cf_pdeg
                 stypvaro(ivar)%cunits            = stypvari(jvar)%cunits//'.m2.degree-1'
-                stypvaro(ivar)%clong_name        = 'Zonal_Integral_per_pegree_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
+                stypvaro(ivar)%clong_name        = 'Zonal_Integral_per_degree_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )
              ELSE
                 stypvaro(ivar)%cunits            = stypvari(jvar)%cunits//'.m2'
                 stypvaro(ivar)%clong_name        = 'Zonal_Integral_'//TRIM(stypvari(jvar)%clong_name)//TRIM(cbasin(jbasin) )

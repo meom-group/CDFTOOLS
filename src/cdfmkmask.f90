@@ -77,6 +77,11 @@ PROGRAM cdfmkmask
      PRINT *,'     PURPOSE :'
      PRINT *,'       Builds a mask file from vosaline array read from the input file.' 
      PRINT *,'       It assumes that land salinity values are set to 0.'
+     PRINT *,'       '
+     PRINT *,'       Additional criteria can be added such as geographical limits, model'
+     PRINT *,'       limits, bathymetric limits and variable range limits.'
+     PRINT *,'       '
+     PRINT *,'       Any combination of the criteria is valid.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f T-file : netcdf file with salinity.' 
@@ -211,7 +216,7 @@ PROGRAM cdfmkmask
   CALL CreateOutput
 
   !! Allocate only usefull variable and read only usefull variable
-  ALLOCATE (tmask(npiglo,npjglo), zmask(npiglo,npjglo), tim(nt))
+  ALLOCATE (tmask(npiglo,npjglo), zmask(npiglo,npjglo))
 
   IF ( lmbathy ) THEN
      ALLOCATE (mbathy(npiglo,npjglo))
