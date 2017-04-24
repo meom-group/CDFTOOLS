@@ -640,10 +640,10 @@ CONTAINS
     CHARACTER(LEN=1), DIMENSION (3)  :: cvarname
     !!----------------------------------------------------------------------
     npk    = getdim (cf_vfil,cn_z)
-    PRINT*, 'cf_vfil = ', cf_vfil
-    PRINT*, 'cf_tfil = ', cf_tfil
-    PRINT*, 'cf_sfil = ', cf_sfil
-    PRINT*, 'cf_ufil = ', cf_ufil
+    PRINT*, 'cf_vfil = ', TRIM(cf_vfil)
+    PRINT*, 'cf_tfil = ', TRIM(cf_tfil)
+    PRINT*, 'cf_sfil = ', TRIM(cf_sfil)
+    PRINT*, 'cf_ufil = ', TRIM(cf_ufil)
     npt    = getdim (cf_vfil,cn_t)
     ! 1) look for integer indices corresponding to the section characteristics
     CALL cdf_findij ( rp_lonw_rapid,  rp_lone_rapid, rp_lat_rapid, rp_lat_rapid, &

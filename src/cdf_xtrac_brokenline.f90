@@ -109,6 +109,7 @@ PROGRAM cdf_xtract_brokenline
   CHARACTER(LEN=255) :: cf_wfil                      ! input W file (vvl case)
   CHARACTER(LEN=255) :: cf_bath                      ! bathy file 
   CHARACTER(LEN=255) :: cf_ifil                      ! input ice file
+  CHARACTER(LEN=255) :: cf_mfil                      ! input MLD file
   CHARACTER(LEN=255) :: cf_root=''                   ! root name used as prefix
   CHARACTER(LEN=255) :: cf_out                       ! output file
   CHARACTER(LEN=255) :: cf_secdat                    ! output section file (suitable for cdftransport or cdfsigtrp)
@@ -142,15 +143,14 @@ PROGRAM cdf_xtract_brokenline
   ! --------------------
   CALL ReadCdfNames()
 
-  cf_bath='none'
 
   ! check argument number and show usage if necessary
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdf_xtrac_brokenline -t T-file -u U-file -v V-file [-i ICE-file] ...'
-     PRINT *,'         ... [-b BAT-file] [-f section_filei,sec_file2,..] [-l LST-sections]...'
-     PRINT *,'         ... [-ssh] [-mld] [-vt] [-vecrot] [-vvl W-file] [-o ROOT_name] ...'
-     PRINT *,'         ... [-ice] [-verbose]'
+     PRINT *,'         ... [-b BAT-file] [-mxl MXL-file] [-f section_filei,sec_file2,..] ...'
+     PRINT *,'         ... [-l LST-sections] [-ssh] [-mld] [-vt] [-vecrot] [-vvl W-file] ...'
+     PRINT *,'         ... [-o ROOT_name] [-ice] [-verbose]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'      This tool extracts model variables from model files for a geographical' 
@@ -201,6 +201,8 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'              easier to parse when using a big number of files.'
      PRINT *,'      [-b BAT-file] : Specify a bathymetric file in case the ocean bathymetry'
      PRINT *,'              is not in ',TRIM(cn_fzgr),' (variable ',TRIM(cn_hdepw),').'
+     PRINT *,'      [-mxl MXL-file] : Give the name of the file containing the MLD if it is'
+     PRINT *,'              not in T-file.'
      PRINT *,'      [-verbose] : increase verbosity  ' 
      PRINT *,'      [-ssh]     : also save ssh along the broken line.'
      PRINT *,'      [-mld]     : also save mld along the broken line.'
@@ -234,7 +236,9 @@ PROGRAM cdf_xtract_brokenline
      STOP
   ENDIF
 
-  ! Decode command line
+  ! Parse command line
+  cf_bath='none'
+  cf_mfil='none'
   ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
@@ -246,6 +250,7 @@ PROGRAM cdf_xtract_brokenline
      CASE ( '-i'       ) ; CALL getarg(ijarg, cf_ifil ) ; ijarg=ijarg+1 ; lice = .TRUE. ;  nvar=nvar+2
      CASE ( '-o '      ) ; CALL getarg(ijarg, cf_root ) ; ijarg=ijarg+1
      CASE ( '-b '      ) ; CALL getarg(ijarg, cf_bath ) ; ijarg=ijarg+1
+     CASE ( '-mxl'     ) ; CALL getarg(ijarg, cf_mfil ) ; ijarg=ijarg+1
      CASE ( '-l'       ) ; CALL GetFileList ;  lsecfile=.TRUE.
      CASE ( '-verbose' ) ; lverbose=.TRUE.  ; cverb='y'
      CASE ( '-ssh'     ) ; lssh    =.TRUE.  ; nvar=nvar+1  ! 
@@ -261,6 +266,8 @@ PROGRAM cdf_xtract_brokenline
 
   IF ( cf_bath == 'none') THEN ; cf_bath = cn_fzgr ; cv_bath = cn_hdepw 
   ELSE                         ;                   ; cv_bath = cn_bathymet
+  ENDIF
+  IF ( cf_mfil == 'none') THEN ; cf_mfil = cf_tfil
   ENDIF
   ! check file existence
   lchk = chkfile(cn_fhgr )
@@ -592,7 +599,7 @@ PROGRAM cdf_xtract_brokenline
      ENDIF
      dbarot(:) = 0.d0    ! reset barotropic transport  for all sections
      IF ( lssh ) ssh (:,:)      = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime = jt)
-     IF ( lmld ) rmld(:,:)      = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime = jt)
+     IF ( lmld ) rmld(:,:)      = getvar(cf_mfil, cn_somxl010, 1, npiglo, npjglo, ktime = jt)
      IF ( lice ) ricethick(:,:) = getvar(cf_ifil, cv_iicethic, 1, npiglo, npjglo, ktime = jt)
      IF ( lice ) ricefra(:,:)   = getvar(cf_ifil, cv_ileadfra, 1, npiglo, npjglo, ktime = jt)
 

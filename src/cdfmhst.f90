@@ -152,7 +152,7 @@ PROGRAM cdfmhst
      PRINT *,'       ASCII files : ', TRIM(cf_outh),' : Meridional Heat Transport'
      PRINT *,'                     ', TRIM(cf_outs),' : Meridional Salt Transport'
      PRINT *,'       netcdf file : ', TRIM(cf_outnc),' unless -o option is used.'
-     PRINT *,'           variables : ( [... ] : MST option ) '
+     PRINT *,'           variables : ( [... ] : -MST option ) '
      PRINT *,'                       ', TRIM(cv_zomht),cbasin(1),' : Meridional Heat Transport (global)'
      PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(1),' : Meridional Salt Transport (global) ] '
      PRINT *,'       If ',TRIM(cn_fbasins),' is available, per basin meridional transport '
@@ -181,7 +181,7 @@ PROGRAM cdfmhst
      CASE ( '-v'    ) ; CALL getarg(ijarg, cf_vfil   ) ; ijarg = ijarg+1
      CASE ( '-t'    ) ; CALL getarg(ijarg, cf_tfil   ) ; ijarg = ijarg+1
      CASE ( '-s'    ) ; CALL getarg(ijarg, cf_sfil   ) ; ijarg = ijarg+1
-     CASE ( 'MST' )   ; npvar    = 2
+     CASE ( '-MST'  ) ; npvar    = 2
      CASE ( '-full' ) ; lfull    = .TRUE.
      CASE ( '-Zdim' ) ; lzdim    = .TRUE.
      CASE ( '-b'    ) ; CALL getarg(ijarg, cn_fbasins) ; ijarg = ijarg+1
@@ -199,13 +199,14 @@ PROGRAM cdfmhst
      lchk = lchk .OR. chkfile( cf_tfil )
      IF ( lchk ) STOP 'Missing V-file of T-file '
      IF ( TRIM(cf_sfil) == 'none' ) cf_sfil = cf_tfil
+     
   ENDIF
 
   ! check for missing files
   lchk = lchk .OR. chkfile( cn_fhgr )
   lchk = lchk .OR. chkfile( cn_fzgr )
   lchk = lchk .OR. chkfile( cn_fmsk )
-  lchk = lchk .OR. chkfile( cf_vtfil)
+  lchk = lchk .OR. chkfile( cf_vtfil)   ! chkfile is returning F when input file name is 'none'
   IF ( lsepf ) THEN
      lchk = lchk .OR. chkfile( cf_tfil)
      lchk = lchk .OR. chkfile( cf_sfil)
@@ -226,6 +227,7 @@ PROGRAM cdfmhst
      nbasinso = 1
   ENDIF
 
+  IF ( lsepf ) cf_vtfil=cf_vfil   ! needed only to read the dimension of the domain
   npiglo = getdim (cf_vtfil, cn_x)
   npjglo = getdim (cf_vtfil, cn_y)
   npk    = getdim (cf_vtfil, cn_z)

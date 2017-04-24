@@ -155,7 +155,7 @@ PROGRAM cdfisopsi
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
 
-  ALLOCATE ( prof(npk)         , tim(npt)           )
+  ALLOCATE ( prof(0:npk)         , tim(npt)           )
   ALLOCATE ( e1t(npiglo,npjglo), e2t(npiglo,npjglo) )
 
   e1t(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo)
@@ -226,7 +226,7 @@ PROGRAM cdfisopsi
         ztemp3(:,:,jk) = getvar(cf_tfil, cn_votemper, jk ,npiglo, npjglo, ktime=jt)
      ENDDO
 
-     CALL ProjectOverIso ( ztemp3, ztempint, prof, zint )
+     CALL ProjectOverIso ( ztemp3, ztempint, prof(1:npk), zint )
 
      zpint = zint / 10. ! pressure on the isopycnal layer = depth / 10.
 
@@ -277,10 +277,12 @@ PROGRAM cdfisopsi
         zmask (:,:) = 1.
         WHERE( zsal == zspval ) zmask = 0.
 
-        zsiginsitu(:,:) = sigmai ( ztemp,  zsal,  prof(jk), npiglo, npjglo ) * zmask(:,:) ! in-situ density
-        zsig0(:,:)      = sigmai ( ztemp0, zsal0, prof(jk), npiglo, npjglo ) * zmask(:,:) ! density of reference profile
+        zsiginsitu(:,:) = sigmai ( ztemp,  zsal,  prof(jk), npiglo, npjglo )  ! in-situ density
+        zsig0(:,:)      = sigmai ( ztemp0, zsal0, prof(jk), npiglo, npjglo )  ! density of reference profile
+!        zsiginsitu(:,:) = sigmai ( ztemp,  zsal,  prof(jk), npiglo, npjglo ) * zmask(:,:) ! in-situ density
+!        zsig0(:,:)      = sigmai ( ztemp0, zsal0, prof(jk), npiglo, npjglo ) * zmask(:,:) ! density of reference profile
 
-        zsva3(:,:,jk)    = ( 1. / zsiginsitu(:,:) ) - ( 1. / zsig0(:,:) )
+        zsva3(:,:,jk)    = ( 1. / zsiginsitu(:,:) ) - ( 1. / zsig0(:,:) ) *zmask(:,:)
      ENDDO
 
      DEALLOCATE( zsiginsitu, zsig0, ztemp0, zsal0 )
@@ -435,6 +437,7 @@ CONTAINS
     ierr  = putheadervar(ncout,  cf_tfil, npiglo,  npjglo, npk                     )
 
     prof(:) = getvar1d(cf_tfil, cn_vdeptht, npk     )
+    prof(0) = 0.  ! used  for vertical integration later on
     tim     = getvar1d(cf_tfil, cn_vtimec,  npt     )
     ierr    = putvar1d(ncout,   tim,        npt, 'T')
   END SUBROUTINE CreateOutput
@@ -456,7 +459,9 @@ CONTAINS
     LOGICAL :: ll_1d = .FALSE.
     LOGICAL :: ll_good
     !!----------------------------------------------------------------------
-    IF ( PRESENT (ptab1d) ) ll_1d=.TRUE.
+    IF ( PRESENT (ptab1d) ) THEN ; ll_1d=.TRUE.
+    ELSE                         ; ll_1d=.FALSE.
+    ENDIF
      DO ji=1,npiglo
         DO jj=1,npjglo
            ! ik0 is retrieved from alpha, taking the integer part.
