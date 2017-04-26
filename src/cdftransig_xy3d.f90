@@ -189,6 +189,10 @@ PROGRAM cdftransig_xy3d
   CASE DEFAULT                ; PRINT *, ' This depcode :',TRIM(cldepcode),' is not available.' ; STOP 
   END SELECT
 
+  lchk = lchk .OR. chkfile (cn_fzgr)
+  lchk = lchk .OR. chkfile (cn_fhgr)
+  IF ( lchk ) STOP ! missing files
+
   ds1scalmin = MIN ( ds1scalmin, ds1scal )
   IF ( lprint ) THEN
      PRINT *,' DEP REF  : ', pref, ' m'

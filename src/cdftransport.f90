@@ -209,7 +209,7 @@ PROGRAM cdftransport
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdftransport -u U-file -v V-file [-t T-file] [-vt VT-file] ...'
      PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... '
-     PRINT *,'                  ... [-full] [-time jt] [-vvl] [-time jt] [-self] ...'
+     PRINT *,'                  ... [-full] [-time jt] [-vvl] [-self] ...'
      PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix]'
      PRINT *,'      '
      PRINT *,'    PURPOSE :'
@@ -321,10 +321,12 @@ PROGRAM cdftransport
   ENDIF
 
   IF ( l_self ) THEN
-     cn_fzgr = cf_vfil
-     cn_fhgr = cf_vfil
-     cn_fe3u = cf_vfil
-     cn_fe3v = cf_vfil
+     cn_fzgr  = cf_vfil
+     cn_fhgr  = cf_vfil
+     cn_fe3u  = cf_vfil
+     cn_fe3v  = cf_vfil
+     cf_vtfil = cf_vfil
+     cf_tfil  = cf_vfil
   ENDIF
 
   ! checking if all required files are available
@@ -359,10 +361,10 @@ PROGRAM cdftransport
   ALLOCATE ( ilev0(nclass), ilev1(nclass), rclass(nclass) )
   rclass=(/(jclass, jclass=1,nclass)/)
 
-  npiglo = getdim (cf_ufil,cn_x)
-  npjglo = getdim (cf_ufil,cn_y)
-  npk    = getdim (cf_ufil,cn_z)
-  npt    = getdim (cf_ufil,cn_t)
+  npiglo = getdim (cf_vfil,cn_x)
+  npjglo = getdim (cf_vfil,cn_y)
+  npk    = getdim (cf_vfil,cn_z)
+  npt    = getdim (cf_vfil,cn_t)
 
   PRINT *, 'npiglo =', npiglo
   PRINT *, 'npjglo =', npjglo
@@ -524,10 +526,17 @@ PROGRAM cdftransport
                  zt(:,:) = 0. ; zs(:,:) = 0.
                  zt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
                  zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
+                 IF  (l_self ) THEN
+                 zut(:,:) = 0.
+                 zus(:,:) = 0.
+                 zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zt(1:npiglo,1:npjglo)
+                 zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zs(1:npiglo,1:npjglo)
+                 ELSE
                  zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo  ))
                  zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo  ))
                  zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  2:npjglo+1))
                  zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  2:npjglo+1))
+                 ENDIF
               ELSE
                  IF ( l_self ) THEN
                     zut(:,:) = 0.
