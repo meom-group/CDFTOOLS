@@ -133,10 +133,10 @@ PROGRAM cdfsigtrp
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file -smin sigma_min ...'
-     PRINT *,'              ...  -smax sigma_max -nbins nbins [-print ] [-xtra] ...'
-     PRINT *,'              ... [-full ] [-vvl W-file] [-refdep ref_depth] [-neutral ] ...'
-     PRINT *,'              ... [-section file ] [-temp] [-help]'
+     PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file [-brk BRK-file] ...'
+     PRINT *,'              ... -smin sigma_min -smax sigma_max -nbins nbins [-print] ...'
+     PRINT *,'              ... [-xtra] [-full ] [-vvl W-file] [-refdep ref_depth] ...'
+     PRINT *,'              ... [-neutral ] [-section file ] [-temp] [-help]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute density class transports, according to the density class' 
@@ -283,8 +283,8 @@ PROGRAM cdfsigtrp
   ! define global attribute with command line
   CALL SetGlobalAtt( cglobal)
 
-  ! get the attribute iweight from vozocrtx
-  iweight = getatt(cf_ufil, cn_vozocrtx, 'iweight')
+  ! get the attribute iweight from vomecrty
+  iweight = getatt(cf_ufil, cn_vomecrty, 'iweight')
   IF ( iweight == 0 ) iweight = 1  ! if 0 means that it is not defined.
 
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
@@ -450,8 +450,9 @@ PROGRAM cdfsigtrp
            zmask(:,:) = getvarxz(cf_vfil, cn_vmask,    ijmin,   npts, npk, kimin=iimin+1 )
            ! limitation to 'wet' points
            DO jk = 1, npk
-              IF ( SUM(zmask(:,jk)) == 0 ) THEN
+              IF ( SUM(zmask(:,jk)) /= 0 ) THEN
                 nk=jk
+              ELSE
                 EXIT
               ENDIF
            ENDDO
@@ -572,7 +573,7 @@ PROGRAM cdfsigtrp
      PRINT *,' Total transport in all bins :',TRIM(csection(jsec)),' ',SUM(dtrpbin(jsec,:) )/1.d6
 
      ! free memory for the next section
-     DEALLOCATE ( zu, zt, zs, zz, dsig, ddepu, dhiso, dwtrp, dwtrpbin )
+     DEALLOCATE ( zu, zt, zs, zz, dsig, ddepu, ddepw, dhiso, dwtrp, dwtrpbin )
      DEALLOCATE ( eu, de3, tmpm, tmpz, zmask, rlonlat             )
 
   END DO   ! next section
