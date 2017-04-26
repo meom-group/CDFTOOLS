@@ -268,9 +268,9 @@ PROGRAM cdfsigtrp
   IF ( lchk ) STOP ! missing file
 
   IF ( lg_vvl )  THEN
-    cn_fe3u = cf_ufil
-    cn_fe3v = cf_vfil
-    cn_fe3w = cf_wfil
+     cn_fe3u = cf_ufil
+     cn_fe3v = cf_vfil
+     cn_fe3w = cf_wfil
   ENDIF
 
   IF ( ltemp)  THEN  ! temperature decrease downward. Change sign and swap min/max
@@ -300,11 +300,11 @@ PROGRAM cdfsigtrp
   ! Initialise sections from file 
   ! first call to get nsection and allocate arrays 
   IF ( lbrk ) THEN 
-      npiglo = getdim (cf_brk, cn_x)
-      nsection = 1 ; iimina=1 ; iimaxa=npiglo ; ijmina=1 ; ijmaxa=1
+     npiglo = getdim (cf_brk, cn_x)
+     nsection = 1 ; iimina=1 ; iimaxa=npiglo ; ijmina=1 ; ijmaxa=1
   ELSE             
-      nsection = 0 
-      CALL section_init(cf_section, csection,cvarname,clongname,iimina, iimaxa, ijmina, ijmaxa, nsection)
+     nsection = 0 
+     CALL section_init(cf_section, csection,cvarname,clongname,iimina, iimaxa, ijmina, ijmaxa, nsection)
   ENDIF
   ALLOCATE ( csection(nsection), cvarname(nsection), clongname(nsection) )
   ALLOCATE ( iimina(nsection), iimaxa(nsection), ijmina(nsection),ijmaxa(nsection) )
@@ -338,8 +338,8 @@ PROGRAM cdfsigtrp
 
   ! read gdept, gdepw : it is OK even in partial cells, as we never use the bottom gdep
   IF ( .NOT. lbrk ) THEN
-    gdept(:) = getvare3(cn_fzgr, cn_gdept, npk)
-    gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
+     gdept(:) = getvare3(cn_fzgr, cn_gdept, npk)
+     gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
   ENDIF
 
   IF ( lfull )  THEN 
@@ -425,7 +425,6 @@ PROGRAM cdfsigtrp
         zz(:,:) = getvaryz(cf_tfil, cn_votemper, iimin+1, npts, npk, kjmin=ijmin+1 )
         zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
 
-
      ELSE                   ! zonal section at j=ijmin=ijmax ( include BRK-line sections)
 
         tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
@@ -440,9 +439,9 @@ PROGRAM cdfsigtrp
                  de3(ji,:) = e3t1d(:)
               ENDDO
            ELSE
-             de3(  :,:    ) = getvarxz(cn_fe3v, cn_ve3v,     ijmin,   npts, npk, kimin=iimin+1 )
-             ddepu(:,1:npk) = getvarxz(cf_brk,  cn_depu3d,   ijmin,   npts, npk, kimin=iimin+1 )
-             ddepw(:,1:npk) = getvarxz(cf_brk,  cn_depw3d,   ijmin,   npts, npk, kimin=iimin+1 )
+              de3(  :,:    ) = getvarxz(cn_fe3v, cn_ve3v,     ijmin,   npts, npk, kimin=iimin+1 )
+              ddepu(:,1:npk) = getvarxz(cf_brk,  cn_depu3d,   ijmin,   npts, npk, kimin=iimin+1 )
+              ddepw(:,1:npk) = getvarxz(cf_brk,  cn_depw3d,   ijmin,   npts, npk, kimin=iimin+1 )
            ENDIF
            zu(   :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
            zt(   :,:) = getvarxz(cf_vfil, cn_votemper, ijmin,   npts, npk, kimin=iimin+1 )
@@ -451,58 +450,59 @@ PROGRAM cdfsigtrp
            ! limitation to 'wet' points
            DO jk = 1, npk
               IF ( SUM(zmask(:,jk)) /= 0 ) THEN
-                nk=jk
+                 nk=jk
               ELSE
-                EXIT
+                 EXIT
               ENDIF
            ENDDO
+           
         ELSE
 
-        ! use zt and zs as temporary variable for e3w
-        IF ( lfull ) THEN
-           DO ji=1, npts
-              de3(ji,:) = e3t1d(:)
-              zt( ji,:) = e3w1d(:)
-              zs( ji,:) = e3w1d(:)
-           ENDDO
-        ELSE
-           de3(:,:) = getvarxz(cn_fe3v, cn_ve3v, ijmin,   npts, npk, kimin=iimin+1 )
-           zt( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin,   npts, npk, kimin=iimin+1 )
-           zs( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin+1, npts, npk, kimin=iimin+1 )
-        ENDIF
-
-        DO ji=1, npts
-           ddepu(ji,1) = gdept(1)
-        ENDDO
-
-        DO jk=2, npk
-           DO ji=1,npts
-              ddepu(ji,jk) = ddepu(ji,jk-1) +MIN (zt(ji,jk), zs(ji,jk) )
-           ENDDO
-        ENDDO
-
-        ! normal velocity
-        zu( :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
-
-        ! salinity and deduce umask for the section
-        zs( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
-        zt( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin+1, npts, npk, kimin=iimin+1 )
-        zmask(:,:) = zs(:,:) * zt(:,:)
-        WHERE ( zmask(:,:) /= 0 ) zmask(:,:)=1
-        zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
-
-        ! limitation to 'wet' points
-        DO jk = 1, npk
-           IF ( SUM(zs(:,jk)) == 0 ) THEN
-              nk=jk
-              EXIT
+           ! use zt and zs as temporary variable for e3w
+           IF ( lfull ) THEN
+              DO ji=1, npts
+                 de3(ji,:) = e3t1d(:)
+                 zt( ji,:) = e3w1d(:)
+                 zs( ji,:) = e3w1d(:)
+              ENDDO
+           ELSE
+              de3(:,:) = getvarxz(cn_fe3v, cn_ve3v, ijmin,   npts, npk, kimin=iimin+1 )
+              zt( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin,   npts, npk, kimin=iimin+1 )
+              zs( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin+1, npts, npk, kimin=iimin+1 )
            ENDIF
-        ENDDO
 
-        ! temperature
-        zt(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin  , npts, npk, kimin=iimin+1 )
-        zz(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin+1, npts, npk, kimin=iimin+1 )
-        zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
+           DO ji=1, npts
+              ddepu(ji,1) = gdept(1)
+           ENDDO
+
+           DO jk=2, npk
+              DO ji=1,npts
+                 ddepu(ji,jk) = ddepu(ji,jk-1) +MIN (zt(ji,jk), zs(ji,jk) )
+              ENDDO
+           ENDDO
+
+           ! normal velocity
+           zu( :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
+
+           ! salinity and deduce umask for the section
+           zs( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
+           zt( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin+1, npts, npk, kimin=iimin+1 )
+           zmask(:,:) = zs(:,:) * zt(:,:)
+           WHERE ( zmask(:,:) /= 0 ) zmask(:,:)=1
+           zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
+
+           ! limitation to 'wet' points
+           DO jk = 1, npk
+              IF ( SUM(zs(:,jk)) == 0 ) THEN
+                 nk=jk
+                 EXIT
+              ENDIF
+           ENDDO
+
+           ! temperature
+           zt(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin  , npts, npk, kimin=iimin+1 )
+           zz(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin+1, npts, npk, kimin=iimin+1 )
+           zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
         ENDIF
      ENDIF
 
@@ -523,8 +523,8 @@ PROGRAM cdfsigtrp
         dsigma=dsigma_lev(jiso)
 !!!  REM : I and K loop can be inverted if necessary
         DO ji=1,npts
-!           dhiso(ji,jiso) = gdept(npk)  ! for broken line it is easier to use ddepu. Impact ?
-            dhiso(ji,jiso) = ddepu(ji,npk)
+           !           dhiso(ji,jiso) = gdept(npk)  ! for broken line it is easier to use ddepu. Impact ?
+           dhiso(ji,jiso) = ddepu(ji,npk)
            DO jk=1,nk 
               IF ( dsig(ji,jk) < dsigma ) THEN
               ELSE
@@ -670,12 +670,12 @@ CONTAINS
        READ(inum,'(a)') cline
        ii = 0
        cldum(:) = 'none'
-       ipos = index(cline,' ')
+       ipos = INDEX(cline,' ')
        DO WHILE ( ipos > 1 ) 
           ii = ii + 1
           cldum(ii) = cline(1:ipos - 1 )
           cline = TRIM ( cline(ipos+1:) )
-          ipos  = index( cline,' ' ) 
+          ipos  = INDEX( cline,' ' ) 
           IF ( ii >= 3 ) EXIT
        END DO
        cdsection(jsec) = TRIM(cldum(1) )
@@ -915,67 +915,67 @@ CONTAINS
     INTEGER(KIND=4), INTENT(in) :: ksec  ! section index
     !!----------------------------------------------------------------------
 
-     IF ( cvarname(ksec) /= 'none' ) THEN
-        csuffixvarname='_'//TRIM(cvarname(ksec))
-     ELSE
-        csuffixvarname=''
-     ENDIF
-     IF ( clongname(ksec) /= 'none' ) THEN
-        cprefixlongname=TRIM(clongname(ksec))//'_'
-     ELSE
-        cprefixlongname=''
-     ENDIF
+    IF ( cvarname(ksec) /= 'none' ) THEN
+       csuffixvarname='_'//TRIM(cvarname(ksec))
+    ELSE
+       csuffixvarname=''
+    ENDIF
+    IF ( clongname(ksec) /= 'none' ) THEN
+       cprefixlongname=TRIM(clongname(ksec))//'_'
+    ELSE
+       cprefixlongname=''
+    ENDIF
 
-     stypvar%rmissing_value    = 99999.
-     stypvar%scale_factor      = 1.
-     stypvar%add_offset        = 0.
-     stypvar%savelog10         = 0.
-     stypvar%iwght             = iweight
-     stypvar%conline_operation = 'N/A'
-     stypvar%caxis             = 'ZT'
+    stypvar%rmissing_value    = 99999.
+    stypvar%scale_factor      = 1.
+    stypvar%add_offset        = 0.
+    stypvar%savelog10         = 0.
+    stypvar%iwght             = iweight
+    stypvar%conline_operation = 'N/A'
+    stypvar%caxis             = 'ZT'
 
-     IF ( ltemp ) THEN
-        stypvar(1)%cname          = 'temp_class'
-        stypvar(1)%cunits         = '[]'
-        stypvar(1)%valid_min      = 0.
-        stypvar(1)%valid_max      = 100.
-        stypvar(1)%clong_name     = 'class of potential temperature'
-        stypvar(1)%cshort_name    = 'temp_class'
+    IF ( ltemp ) THEN
+       stypvar(1)%cname          = 'temp_class'
+       stypvar(1)%cunits         = '[]'
+       stypvar(1)%valid_min      = 0.
+       stypvar(1)%valid_max      = 100.
+       stypvar(1)%clong_name     = 'class of potential temperature'
+       stypvar(1)%cshort_name    = 'temp_class'
 
-        stypvar(2)%cname          = 'temptrp'//TRIM(csuffixvarname)
-        stypvar(2)%cunits         = 'Sv'
-        stypvar(2)%valid_min      = -1000.
-        stypvar(2)%valid_max      = 1000.
-        stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in temperature class'
-        stypvar(2)%cshort_name    = 'temptrp'
-     ELSE
-        stypvar(1)%cname          = 'sigma_class'
-        stypvar(1)%cunits         = '[]'
-        stypvar(1)%valid_min      = 0.
-        stypvar(1)%valid_max      = 100.
-        stypvar(1)%clong_name     = 'class of potential density'
-        stypvar(1)%cshort_name    = 'sigma_class'
+       stypvar(2)%cname          = 'temptrp'//TRIM(csuffixvarname)
+       stypvar(2)%cunits         = 'Sv'
+       stypvar(2)%valid_min      = -1000.
+       stypvar(2)%valid_max      = 1000.
+       stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in temperature class'
+       stypvar(2)%cshort_name    = 'temptrp'
+    ELSE
+       stypvar(1)%cname          = 'sigma_class'
+       stypvar(1)%cunits         = '[]'
+       stypvar(1)%valid_min      = 0.
+       stypvar(1)%valid_max      = 100.
+       stypvar(1)%clong_name     = 'class of potential density'
+       stypvar(1)%cshort_name    = 'sigma_class'
 
-        stypvar(2)%cname          = 'sigtrp'//TRIM(csuffixvarname)
-        stypvar(2)%cunits         = 'Sv'
-        stypvar(2)%valid_min      = -1000.
-        stypvar(2)%valid_max      = 1000.
-        stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in sigma class'
-        stypvar(2)%cshort_name    = 'sigtrp'
-     ENDIF
+       stypvar(2)%cname          = 'sigtrp'//TRIM(csuffixvarname)
+       stypvar(2)%cunits         = 'Sv'
+       stypvar(2)%valid_min      = -1000.
+       stypvar(2)%valid_max      = 1000.
+       stypvar(2)%clong_name     = TRIM(cprefixlongname)//'transport in sigma class'
+       stypvar(2)%cshort_name    = 'sigtrp'
+    ENDIF
 
-     ! create output fileset
-     IF (ltemp) THEN  ; cf_outnc = TRIM(csection(ksec))//'_trptemp.nc'
-     ELSE             ; cf_outnc = TRIM(csection(ksec))//'_trpsig.nc'
-     ENDIF
+    ! create output fileset
+    IF (ltemp) THEN  ; cf_outnc = TRIM(csection(ksec))//'_trptemp.nc'
+    ELSE             ; cf_outnc = TRIM(csection(ksec))//'_trpsig.nc'
+    ENDIF
 
-     ncout = create      (cf_outnc, 'none',  ikx,      iky, nbins, cdep=cv_dep               )
-     ierr  = createvar   (ncout,    stypvar, nboutput, ipk, id_varout, cdglobal=TRIM(cglobal))
-     ierr  = putheadervar(ncout,    cf_tfil, ikx,      iky, nbins, &
-          &   pnavlon=rdumlon, pnavlat=rdumlat, pdep=REAL(dsigma_lev), cdep=cv_dep           )
+    ncout = create      (cf_outnc, 'none',  ikx,      iky, nbins, cdep=cv_dep               )
+    ierr  = createvar   (ncout,    stypvar, nboutput, ipk, id_varout, cdglobal=TRIM(cglobal))
+    ierr  = putheadervar(ncout,    cf_tfil, ikx,      iky, nbins, &
+         &   pnavlon=rdumlon, pnavlat=rdumlat, pdep=REAL(dsigma_lev), cdep=cv_dep           )
 
-     tim  = getvar1d(cf_tfil, cn_vtimec, 1     )
-     ierr = putvar1d(ncout,   tim,       1, 'T')
+    tim  = getvar1d(cf_tfil, cn_vtimec, 1     )
+    ierr = putvar1d(ncout,   tim,       1, 'T')
 
   END SUBROUTINE CreateOutput
 
