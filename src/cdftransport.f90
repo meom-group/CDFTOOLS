@@ -527,15 +527,15 @@ PROGRAM cdftransport
                  zt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
                  zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
                  IF  (l_self ) THEN
-                 zut(:,:) = 0.
-                 zus(:,:) = 0.
-                 zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zt(1:npiglo,1:npjglo)
-                 zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zs(1:npiglo,1:npjglo)
+                    zut(:,:) = 0.
+                    zus(:,:) = 0.
+                    zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zt(1:npiglo,1:npjglo)
+                    zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zs(1:npiglo,1:npjglo)
                  ELSE
-                 zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo  ))
-                 zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo  ))
-                 zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  2:npjglo+1))
-                 zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  2:npjglo+1))
+                    zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo  ))
+                    zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo  ))
+                    zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  2:npjglo+1))
+                    zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  2:npjglo+1))
                  ENDIF
               ELSE
                  IF ( l_self ) THEN
@@ -641,12 +641,12 @@ PROGRAM cdftransport
      READ(*,'(a)') cline
      ii = 0
      cldumt(:) = 'none'
-     ipos = index(cline,' ')
+     ipos = INDEX(cline,' ')
      DO WHILE ( ipos > 1 )
         ii = ii + 1
         cldumt(ii) = cline(1:ipos - 1 )
         cline = TRIM ( cline(ipos+1:) )
-        ipos  = index( cline,' ' )
+        ipos  = INDEX( cline,' ' )
         IF ( ii >= 3 ) EXIT
      END DO
      csection = TRIM(cldumt(1) )
