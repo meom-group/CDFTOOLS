@@ -229,10 +229,10 @@
   <li><a href="#TRANSPORT">TRANSPORT</a>
     <ul>
       <li><a href="#cdf_xtrac_brokenline">cdf_xtrac_brokenline</a></li>
-      <li><a href="#cdf_xtrac_pedro">cdf_xtrac_pedro</a></li>
       <li><a href="#cdfisopsi">cdfisopsi</a></li>
       <li><a href="#cdfmaxmoc">cdfmaxmoc</a></li>
       <li><a href="#cdfmhst">cdfmhst</a></li>
+      <li><a href="#cdfmht_gsop">cdfmht_gsop</a></li>
       <li><a href="#cdfmoc">cdfmoc</a></li>
       <li><a href="#cdfmocsig">cdfmocsig</a></li>
       <li><a href="#cdfpsi">cdfpsi</a></li>
@@ -990,9 +990,9 @@
       OPTIONS :
         [-8]: save in double precision instead of standard simple precision.
         [-surf] : work with single level C-grid (not forcing)
-        [-overf]: store the ratio curl/f where f is the coriolis parameter
+        [-overf]: store the ratio div/f where f is the coriolis parameter
         [-full] : in case of full step configuration. Default is partial step.
-        [-o OUT-file] : specify output file name instead of curl.nc
+        [-o OUT-file] : specify output file name instead of div.nc
         [-nc4]  : Use netcdf4 output with chunking and deflation level 1.
                  This option is effective only if cdftools are compiled with
                  a netcdf library supporting chunking and deflation.
@@ -1002,7 +1002,7 @@
          mesh_hgr.nc mesh_zgr.nc
        
       OUTPUT : 
-        netcdf file : curl.nc unless -o option is used.
+        netcdf file : div.nc unless -o option is used.
           variables : div units : s^-1
                 or divoverf, no units (if -overf option)
        </code></pre>
@@ -1133,9 +1133,8 @@
        
       PURPOSE :
         Compute the geostrophic velocity components from the pressure gradient
-        induced by SSH and in-situ density (T,S of input file), using the therma
- l
-        wind equation.
+        induced by SSH and in-situ density (T,S of input file), using the 
+        thermal wind equation.
        
       WARNING : USE AT YOUR OWN RISKS. 
        
@@ -1556,7 +1555,8 @@
           In case of FULL STEP configuration, bathy_level.nc is also required.
        
       OUTPUT : 
-        netcdf file : zisot.nc unless option -o is used.</code></pre>
+        netcdf file : zisot.nc unless option -o is used.
+       </code></pre>
 
 <h1 id="ENERGY-DIAGNOSTICS">ENERGY DIAGNOSTICS</h1>
 
@@ -2339,6 +2339,7 @@
       PURPOSE :
         Replace missing_values by 0 and update attribute.
         This program is not working properly with NETCDF4/HDF5 files!
+        Even more : problem when **compiled**  with NETCDF4.
        
       CAUTION :
        ################################
@@ -2476,7 +2477,7 @@
 <h2 id="cdfbuoyflx">cdfbuoyflx</h2>
 
 <pre><code>  usage : cdfbuoyflx  -t T-file [-r RNF-file] [-f FLX-file ] [-sss SSS-name]
-      ... [-sst SST-name] [-nc4] [-o output_file] [-short ]
+      ... [-sst SST-name] [-nc4] [-o OUT-file] [-short ]
        
       PURPOSE :
         Compute (or read) the heat and water fluxes components.
@@ -2500,7 +2501,7 @@
         [-nc4 ] Use netcdf4 output with chunking and deflation level 1.
                 This option is effective only if cdftools are compiled with
                 a netcdf library supporting chunking and deflation.
-        [-o output_file ] Default is buoyflx.nc
+        [-o OUT-file ] Default is buoyflx.nc
         [-short ] With this option only save the buoyancy flux without 
                    all the components of the flux.
        
@@ -2546,7 +2547,7 @@
 
 <h2 id="cdfwflx">cdfwflx</h2>
 
-<pre><code>  usage : cdfwflx -t T-file -r RNF-file [-o OUT-file] [-nc4]
+<pre><code>  usage : cdfwflx -t T-file -r RNF-file [-f FLX-file] [-o OUT-file] [-nc4]
        
       PURPOSE :
         Compute the water fluxes components. Suitable for annual means files.
@@ -2557,6 +2558,7 @@
         -r RNF-file : file with the climatological runoff on the model grid.
        
       OPTIONS :
+        [-f FLX-file]: model output file with water fluxes if not in T-file.
         [-o OUT-file]: specify output file name instead of wflx.nc
         [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.
              This option is effective only if cdftools are compiled with
@@ -2566,7 +2568,8 @@
        
       OUTPUT : 
         netcdf file : wflx.nc unless -o option is used.
-        variables : soevap, soprecip, sorunoff, sowadmp, sowaflux</code></pre>
+        variables : soevap, soprecip, sorunoff, sowadmp, sowaflux
+       </code></pre>
 
 <h1 id="ICE-DIAGNOSTICS">ICE DIAGNOSTICS</h1>
 
@@ -2828,7 +2831,7 @@
 
 <h2 id="cdffwc">cdffwc</h2>
 
-<pre><code>  usage : cdffwc -f T-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]
+<pre><code>  usage : cdffwc -t T-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]
                  [-full] [-accum] [-ssh] [-vvl]
        
       PURPOSE :
@@ -2837,7 +2840,7 @@
         can be changed with -sref option.
        
       ARGUMENTS :
-         -f T-file   : netcdf input file holding salinity (in general a gridT).
+         -t T-file   : netcdf input file holding salinity (in general a gridT).
          -bv BASIN-var1,var2,.. : Comma separated list of sub-basin variables
                  to process. E.g.: -bv tmaskatl,tmaskind 
        
@@ -2845,7 +2848,7 @@
          -full  : for full step computation 
          -accum : compute accumulated content from top to bottom
          -ssh   : take ssh into account for surface layer
-         -sref  : reference salinity ( 34.7 by default)
+         -sref REFSAL : reference salinity ( 34.7 by default)
          -vvl   : use time-varying vertical metrics
          -o OUT-file :  use specified output file instead of fwc.nc
          -b SUBAS-file :  use specified subbasin file instead of subbasins.nc
@@ -2861,7 +2864,7 @@
 
 <h2 id="cdfheatc">cdfheatc</h2>
 
-<pre><code>  usage :  cdfheatc  -f T-file [-mxloption option] ...
+<pre><code>  usage :  cdfheatc  -f T-file [-mxloption option] -[mxlf MXL-file] ...
       [-zoom imin imax jmin jmax kmin kmax] [-full] [-o OUT-file]
       [-M MSK-file VAR-mask ] [-vvl ]
        
@@ -2882,6 +2885,8 @@
         [-mxloption option]: option= 1 : compute only in the mixed layer,
                              option=-1 : exclude mixed layer in the computation
                              option= 0 : [Default], do not take care of mxl.
+        [-mxlf MXL-file ]: give name where MLD is found, if not in T-file.
+                   Only usefull if mxl option is not 0.
         [-o OUT-file ] : specify netcdf output filename instead of heatc.nc
         [-M MSK-file VAR-mask] : Allow the use of a non standard mask file 
                with VAR-mask, instead of mask.nc and tmask
@@ -2895,7 +2900,7 @@
       OUTPUT : 
         netcdf file : heatc.nc unless -o option is used.
                variables: heatc3d (Joules)
-                        : heatc(dep) (Joules) 
+                        : heatc2d(dep) (Joules) 
                         : heatc3dpervol (Joules/m3) 
         Standard output
         
@@ -3325,6 +3330,11 @@
       PURPOSE :
         Builds a mask file from vosaline array read from the input file.
         It assumes that land salinity values are set to 0.
+        
+        Additional criteria can be added such as geographical limits, model
+        limits, bathymetric limits and variable range limits.
+        
+        Any combination of the criteria is valid.
        
       ARGUMENTS :
         -f T-file : netcdf file with salinity.
@@ -3571,7 +3581,8 @@
 
 <h2 id="cdfmxlheatc">cdfmxlheatc</h2>
 
-<pre><code>  usage : cdfmxlheatc -f T-file [-full] [-o OUT-file] [-nc4] [-vvl]
+<pre><code>  usage : cdfmxlheatc -f T-file [-mxlf MXL-file] [-full] [-vvl] ...
+                  ...   [-o OUT-file] [-nc4] 
        
       PURPOSE :
         Compute the heat content in the mixed layer (Joules/m2).
@@ -3580,6 +3591,7 @@
         -f T-file : netcdf input file with temperature and mld (gridT).
        
       OPTIONS :
+        [-mxlf MXL-file] : netcdf input file with  mld if not in T-file.
         [-full ] : for full step configurations, default is partial step.
         [-o OUT-file ] : specify output file instead of mxlheatc.nc
         [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.
@@ -3601,7 +3613,8 @@
 
 <h2 id="cdfmxlsaltc">cdfmxlsaltc</h2>
 
-<pre><code>  usage : cdfmxlsaltc -f T-file [-full] [-o OUT-file] [-nc4] [-vvl]
+<pre><code>  usage : cdfmxlsaltc -f T-file [-mxlf MXL-file] [-full] [-vvl] ...
+                  ...   [-o OUT-file] [-nc4] [-vvl]
        
       PURPOSE :
         Compute the salt content in the mixed layer.
@@ -3610,6 +3623,7 @@
         -f T-file : netcdf input file with salinity and mld (gridT).
        
       OPTIONS :
+        [-mxlf MXL-file]: netcdf input file with mld if not in T-file.
         [-full ] : for full step configurations, default is partial step.
         [-o OUT-file ] : specify output file instead of mxlsaltc.nc
         [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.
@@ -4260,7 +4274,7 @@
 <h2 id="cdfmoy">cdfmoy</h2>
 
 <pre><code>  usage : cdfmoy -l LST-files [-spval0] [-cub] [-zeromean] [-max] [-mskmiss] ...
-             ... [-vvl] [-o OUT-rootname] [-nc4]
+             ... [-var VAR-name] [-vvl] [-o OUT-rootname] [-nc4]
        
       PURPOSE :
         Compute the &#39;time average&#39; of a list of files given as arguments.
@@ -4306,6 +4320,7 @@
                value at any gridpoint where the variable contains a  missing
                value for at least one timestep. You should combine with option
                -spval0 if missing values are not 0 in all the input files.
+        [-var VAR-name] : Only process VAR-name, instead of all variables.
         [-vvl ] : take into account the time varying vertical scale factor.
         [-o OUT-rootname] : Define output root-name instead of cdfmoy
         [-nc4 ]: Use netcdf4 output with chunking and deflation level 1..
@@ -4465,9 +4480,9 @@
 <h2 id="cdf_xtrac_brokenline">cdf_xtrac_brokenline</h2>
 
 <pre><code>  usage :  cdf_xtrac_brokenline -t T-file -u U-file -v V-file [-i ICE-file] ...
-          ... [-b BAT-file] [-f section_filei,sec_file2,..] [-l LST-sections]...
-          ... [-ssh] [-mld] [-ice] [-vt] [-vecrot] [-vvl] [-o ROOT_name] ...
-          ... [-verbose]
+          ... [-b BAT-file] [-mxl MXL-file] [-f section_filei,sec_file2,..] ...
+          ... [-l LST-sections] [-ssh] [-mld] [-vt] [-vecrot] [-vvl W-file] ...
+          ... [-o ROOT_name] [-ice] [-verbose]
        
       PURPOSE :
        This tool extracts model variables from model files for a geographical
@@ -4518,15 +4533,18 @@
                easier to parse when using a big number of files.
        [-b BAT-file] : Specify a bathymetric file in case the ocean bathymetry
                is not in mesh_zgr.nc (variable hdepw).
+       [-mxl MXL-file] : Give the name of the file containing the MLD if it is
+               not in T-file.
        [-verbose] : increase verbosity  
        [-ssh]     : also save ssh along the broken line.
        [-mld]     : also save mld along the broken line.
        [-i ICE-file] : also save ice properties (concentration, thickness)
               extracted from ICE-file along the broken line.
        [-vt]      : also save products vt and vs along the broken line.
-       [-vvl]     : use time-varying vertical metrics
-       [-o ROOT-name] : specified the prefix to be used for the output file name
- .
+       [-vvl W-file]  : use time-varying vertical metrics. Specify a W-file in 
+              order to read  time-varying e3w needed in the computation of 
+              depu3d.
+       [-o ROOT-name]: specified the prefix to be used for the output file name.
               Note that it may be a good idea to include a separator character
               such as &#39;_&#39; at the end of the ROOT_name.
        [-vecrot] : also save normal and tangent velocities along the broken line
@@ -4547,8 +4565,6 @@
       SEE ALSO :
          cdftransport, cdfmoc, cdfmocsig. This tool replaces cdfovide.
        </code></pre>
-
-<h2 id="cdf_xtrac_pedro">cdf_xtrac_pedro</h2>
 
 <h2 id="cdfisopsi">cdfisopsi</h2>
 
@@ -4679,7 +4695,7 @@
         ASCII files : zonal_heat_trp.dat : Meridional Heat Transport
                       zonal_salt_trp.dat : Meridional Salt Transport
         netcdf file : mhst.nc unless -o option is used.
-            variables : ( [... ] : MST option ) 
+            variables : ( [... ] : -MST option ) 
                         zomht_glo  : Meridional Heat Transport (global)
                       [ zomst_glo  : Meridional Salt Transport (global) ] 
         If new_maskglo.nc is available, per basin meridional transport 
@@ -4698,6 +4714,43 @@
        
                         zomht_inp0 : Meridional Heat Transport
                       [ zomst_inp0 : Meridional Salt Transport ]
+       </code></pre>
+
+<h2 id="cdfmht_gsop">cdfmht_gsop</h2>
+
+<pre><code>  usage :  cdfmht_gsop -v V-file -t T-file [-o OUT-file]
+       
+      PURPOSE :
+        Compute the meridional heat transport(MHT) for the Atlantic basin.
+        Compute 3 components of the MHT :
+           - Barotropic component
+           - Vertical shear geostrophic component 
+           - Vertical shear ageostrophic component (Ekman + residual)
+       
+      REMARKS :
+        This program has been ported to CDFTOOLS4, without major changes.
+        It should work as before but is not optimized for memory (lot of
+        3D arrays declared). 
+       
+      ARGUMENTS :
+        -v V-file : name of the meridional velocity file.
+        -t T-file : name of the temperatture file.
+       
+      OPTIONS :
+        [-o OUT-file] : output file name instead of gsopmht.nc
+       
+      REQUIRED FILES :
+        mesh_hgr.nc, mesh_zgr.nc and new_maskglo.nc
+       
+      OUTPUT : 
+        netcdf file : gsopmht.nc
+          variables :  zomhtatl  : MHT Atlantic Ocean 
+                       zobtmhta  : Barotropic component 
+                       zoshmhta  : Vertical shear geostrophic component 
+                       zoagmhta  : vertical shear ageostrophic component
+       
+      SEE ALSO :
+        cdfmhst (compute MHT without decomposition), cdfmoc
        </code></pre>
 
 <h2 id="cdfmoc">cdfmoc</h2>
@@ -4844,7 +4897,8 @@
 <h2 id="cdfpsi">cdfpsi</h2>
 
 <pre><code>  usage : cdfpsi -u U-file -v V-file [-V] [-full] [-mask] [-mean] [-nc4] ...
-           ... [-ssh T-file] [-open] [-ref iref jref] [-o OUT-file] [-vvl]
+           ... [-ssh T-file] [-open] [-ref iref jref] [-o OUT-file] [-vvl] ...
+           ... [-lev]
        
       PURPOSE :
         Compute the barotropic stream function (a proxy) as the integral of 
@@ -4871,6 +4925,11 @@
         [-o  OUT-file ] : specify output file name instead of default psi.nc
         [-nc4  ] : use netcdf4 output files with chunking and deflation
         [-vvl  ] : use time-varying vertical metrics
+        [-lev] : This option is still experimental. It has been added to cdfpsi
+             in order to mimic former &#39;cdfpsi_level&#39;, now removed. 
+             With this option, integral of transports is saved at every level,
+             giving a &#39;pseudo&#39; stream-function. It works only for global
+             configurations, so far.
        
       REQUIRED FILES :
         mesh_hgr.nc and mesh_zgr.nc.
@@ -4886,10 +4945,10 @@
 
 <h2 id="cdfsigtrp">cdfsigtrp</h2>
 
-<pre><code>  usage :  cdfsigtrp -t T-file -u U-file -v V-file -smin sigma_min ...
-               ...  -smax sigma_max -nbins nbins [-print ] [-xtra] ...
-               ... [-full ] [-vvl W-file] [-refdep ref_depth] [-neutral ] ...
-               ... [-section file ] [-temp] [-help]
+<pre><code>  usage :  cdfsigtrp -t T-file -u U-file -v V-file [-brk BRK-file] ...
+               ... -smin sigma_min -smax sigma_max -nbins nbins [-print] ...
+               ... [-xtra] [-full ] [-vvl W-file] [-refdep ref_depth] ...
+               ... [-neutral ] [-section file ] [-temp] [-help]
        
       PURPOSE :
         Compute density class transports, according to the density class
@@ -4905,15 +4964,27 @@
         integer values (imin imax jmin jmax), relative to the model grid.
         Only  zonal or meridional sections are allowed.
        
+        This program also offer the possibilty to read &#39;broken-line&#39; files,
+        holding already extracted data along a pseudo zonal section. In this 
+        particular case, (&#39;-brk&#39; switch), no additional information about the
+        section is required, nor metric files, as it is already available in the
+        input file.
+       
         This program can also be used to compute transport by temperatures
         classes, provided the temperatures decrease monotonically downward.
         In this case, use -temp option and of course specify sigma_min, 
         sigma_max as temperatures.
        
       ARGUMENTS :
+        Input data file can be specified either using the 3 following switches:
         -t T-file : netcdf file with temperature and salinity
         -u U-file : netcdf file with zonal velocity component
         -v V-file : netcdf file with meridional velocity component
+        Or, using the &#39;-brk&#39; switch.
+         -brk BRK-file : specify a &#39;broken-line&#39; file produced by the tool
+               cdf_xtrac_brokenline, which is considered already as a pseudo
+               zonal section, holding all the relevant metrics for the section.
+             
         -smin sigma_min : minimum density for binning
         -smax sigma_max : maximum density for binning
         -nbins nbins : number of bins. This will fix the bin &#39;width&#39; 
@@ -4937,6 +5008,8 @@
        
       REQUIRED FILES :
         mesh_hgr.nc, mesh_zgr.nc and dens_section.dat
+          If option &#39;-brk&#39; is used, there is no need for these files, the 
+          metrics being already embarked into this section file.
        
       OUTPUT : 
         Netcdf file : There is 1 netcdf file per section. File name is build
@@ -5083,7 +5156,7 @@
 
 <pre><code>  usage : cdftransport -u U-file -v V-file [-t T-file] [-vt VT-file] ...
                    ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... 
-                   ... [-full] [-time jt] [-vvl] [-time jt] [-self] ...
+                   ... [-full] [-time jt] [-vvl] [-self] ...
                    ... [-zlimit dep_list] [-sfx suffix]
        
      PURPOSE :
@@ -5257,7 +5330,7 @@
 
 <p>Project headed by Jean-Marc Molines, (IGE, Grenoble - France)</p>
 
-<p>Contributors (alphabetic order ) : C.Q. Akuetevi, M. Balmaseda, E. Behrens, F. Castruccio, M. Chekki, P. Colombo, J. Deshayes, N. Djath, N. Ducousso, C. Dufour, R. Dussin, N. Ferry, F. Hernandez, M. Juza, A. Lecointre, S. Leroux, G. Mainsant, P. Mathiot, A. Melet, X. Meunier, G. Moreau, N. Merino, W. Rath, J. Regidor, M. Scheinert, A.M. Treguier</p>
+<p>Contributors (alphabetic order ) : C.Q. Akuetevi, M. Balmaseda, E. Behrens, F. Castruccio, M. Chekki, P. Colombo, J. Deshayes, N. Djath, N. Ducousso, C. Dufour, R. Dussin, N. Ferry, F. Hernandez, M. Juza, A. Lecointre, S. Leroux, C. Lique, x G. Mainsant, P. Mathiot, A. Melet, X. Meunier, G. Moreau, N. Merino, W. Rath, J. Regidor, M. Scheinert, A.M. Treguier</p>
 
 <h1 id="LICENSE-AND-COPYRIGHT">LICENSE AND COPYRIGHT</h1>
 
