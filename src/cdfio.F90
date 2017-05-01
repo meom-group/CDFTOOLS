@@ -1312,9 +1312,9 @@ CONTAINS
         END SELECT
       ELSE IF ( clvar == cn_ve3w ) THEN
         SELECT CASE ( cg_zgr_ver )
-        CASE ( 'v2.0' ) ; clvar = 'e3v_ps'
-        CASE ( 'v3.0' ) ; clvar = 'e3v'
-        CASE ( 'v3.6' ) ; clvar = 'e3v_0'
+        CASE ( 'v2.0' ) ; clvar = 'e3w_ps'
+        CASE ( 'v3.0' ) ; clvar = 'e3w'
+        CASE ( 'v3.6' ) ; clvar = 'e3w_0'
         END SELECT
       ENDIF
     ENDIF
