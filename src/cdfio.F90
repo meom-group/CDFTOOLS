@@ -1978,7 +1978,7 @@ CONTAINS
     !!-------------------------------------------------------------------------
     istart(:) = 1
     icount(:) = 1
-    icount(1) = kk
+    icount(3) = kk
     clvar=cdvar
 
     istatus=NF90_OPEN(cdfile,NF90_NOWRITE,incid)
@@ -1989,11 +1989,17 @@ CONTAINS
     !   e3t(time,z,y_a,x_a)            e3t_0(t,z)      e3t_1d(t,z)
     !   e3w(time,z,y_a,x_a)            e3w_0(t,z)      e3w_1d(t,z)
 
-    SELECT CASE ( cg_zgr_ver ) 
-    CASE ( 'v2.0') ; icount(1)=1  ; icount(3)=kk
-    CASE ( 'v3.0') ; icount(1)=kk ; icount(3)=1
-    CASE ( 'v3.6') ; icount(1)=kk ; icount(3)=1
-    END SELECT
+    ! change icount for 1D variables in mesh_zgr only
+    IF (    clvar == cn_gdept .OR. &
+          & clvar == cn_gdepw .OR. &
+          & clvar == cn_ve3t  .OR. &
+          & clvar == cn_ve3w       ) THEN
+       SELECT CASE ( cg_zgr_ver ) 
+       CASE ( 'v2.0') ; icount(1)=1  ; icount(3)=kk
+       CASE ( 'v3.0') ; icount(1)=kk ; icount(3)=1
+       CASE ( 'v3.6') ; icount(1)=kk ; icount(3)=1
+       END SELECT
+    ENDIF
    
     IF ( clvar == cn_gdept) THEN
     SELECT CASE ( cg_zgr_ver )
