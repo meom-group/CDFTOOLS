@@ -188,7 +188,7 @@ PROGRAM cdftransport
   CHARACTER(LEN=512)                          :: cglobal             ! global attribute
   CHARACTER(LEN=256)                          :: cldum               ! dummy char variable
   CHARACTER(LEN=256)                          :: cline               ! dummy char variable
-  CHARACTER(LEN=256)                          :: csfx='transport'    ! suffix for the netcdf outputfile
+  CHARACTER(LEN=256)                          :: csfx='transports'   ! suffix for the netcdf outputfile
   CHARACTER(LEN=256), DIMENSION(3)            :: cldumt              ! dummy char variable
 
   LOGICAL                                     :: ltest   = .FALSE.   ! flag for test case
