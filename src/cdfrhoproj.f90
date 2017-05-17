@@ -212,6 +212,7 @@ PROGRAM cdfrhoproj
   ALLOCATE( zsig(npiglo,npjglo,npk), alpha(npiglo, npjglo, npsig)            )  ! 3D arrays !!
   ALLOCATE( v2dint(npiglo, npjglo), v2d(npiglo,npjglo), zint(npiglo,npjglo)  )
   ALLOCATE( tim(npt), h1d(npk)                                               )
+alpha=0.
 
   tim(:)=getvar1d(cf_rhofil, cn_vtimec,  npt)
   h1d(:)=getvar1d(cf_rhofil, cn_vdeptht, npk)
@@ -230,7 +231,7 @@ PROGRAM cdfrhoproj
         DO jsig=1,npsig
            !  Assume that rho (z) is increasing downward (no inversion)
            !     Caution with sigma0 at great depth !
-           DO WHILE (zi(jsig) >=  zsig(ji,jj,ijk) .AND. ijk <= npk &
+           DO WHILE (zi(jsig) >=  zsig(ji,jj,ijk) .AND. ijk < npk &
                 &   .AND. zsig(ji,jj,ijk) /=  zspvali )
               ijk=ijk+1
            END DO
@@ -334,7 +335,7 @@ PROGRAM cdfrhoproj
                  ! The remnant is alpha. 
                  ik0    = INT(alpha(ji,jj,jsig))
                  zalpha =     alpha(ji,jj,jsig) - ik0
-                 IF (ik0 /= 0) THEN
+                 IF (ik0 > 0 .AND. ik0 < npk ) THEN
                     P1 = zsig(ji,jj,ik0  )
                     P2 = zsig(ji,jj,ik0+1)
                     IF (P1 /= zspvali .AND. P2 /= zspvali) THEN
