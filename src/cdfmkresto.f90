@@ -45,6 +45,20 @@ PROGRAM cdfmkresto
   CHARACTER(LEN=255)                         :: cv_out = 'resto'
   CHARACTER(LEN=255)                         :: cldum
 
+  TYPE                                       :: patch
+    CHARACTER(1) :: ctyp
+    REAL(KIND=4) :: rlon1 
+    REAL(KIND=4) :: rlon2 
+    REAL(KIND=4) :: rlat1 
+    REAL(KIND=4) :: rlat2 
+    REAL(KIND=4) :: rim
+    REAL(KIND=4) :: radius
+    REAL(KIND=4) :: tresto
+    REAL(KIND=4) :: rdep1
+    REAL(KIND=4) :: rdep2
+  END TYPE patch
+
+  TYPE (patch )  , DIMENSION(:), ALLOCATABLE :: spatch
   TYPE (variable), DIMENSION(1)              :: stypvar            ! structure for attributes
 
   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
@@ -100,7 +114,7 @@ PROGRAM cdfmkresto
      SELECT CASE ( cldum )
      CASE ( '-c'   ) ; CALL getarg(ijarg, cf_coord ) ; ijarg=ijarg+1
      CASE ( '-i'   ) ; CALL getarg(ijarg, cf_cfg   ) ; ijarg=ijarg+1
-        ;            ; CALL ReadCfg  ; stop
+        ;            ; CALL ReadCfg  ; print *,spatch(1) ;stop
         ! option
      CASE ( '-h'   ) ; CALL PrintCfgInfo             ; STOP 0
      CASE ( '-d'   ) ; CALL getarg(ijarg, cf_dep   ) ; ijarg=ijarg+1
@@ -234,13 +248,27 @@ CONTAINS
     !!----------------------------------------------------------------------
     INTEGER(KIND=4)    :: inum ! logical unit for configuration file
     INTEGER(KIND=4)    :: ierr ! error flag
-    REAL(KIND=4)       :: zlon1, zlon2, zlat1, zlat2, zradius,zrim, ztim, z1, z2
     CHARACTER(LEN=255) :: cline, cltyp
 
     OPEN(inum, FILE=cf_cfg)
-    ! count the number of patches
+    ! count the number of patches and allocate spatch
     ierr=0
     npatch=0
+    DO WHILE ( ierr == 0 )
+      READ(inum,'(a)', iostat=ierr) cline
+      IF ( ierr == 0 ) THEN
+        IF ( cline(1:1) /= '#' ) THEN
+          npatch=npatch+1
+        ENDIF
+      ENDIF
+    ENDDO
+    PRINT *,' NPATCH = ', npatch
+    ALLOCATE ( spatch(npatch) )
+
+    ! read again to fill the patch structure
+    REWIND(inum)
+    ierr = 0
+    npatch = 0
     DO WHILE ( ierr == 0 )
       READ(inum,'(a)', iostat=ierr) cline
       IF ( ierr == 0 ) THEN
@@ -249,15 +277,20 @@ CONTAINS
           PRINT *,'   Patch ',npatch,' :  ',TRIM(cline)
           READ(cline,*) cltyp
           SELECT CASE (cltyp)
-          CASE ( 'R', 'r' ) ; READ(cline,*) cltyp, zlon1, zlon2, zlat1, zlat2, zrim, ztim, z1, z2
-                            ; PRINT *, zlon1, zlon2, zlat1, zlat2, zrim, ztim, z1, z2
-          CASE ( 'C', 'c' ) ; READ(cline,*) cltyp, zlon1,zlat1, zradius, ztim, z1, z2
-                            ; PRINT *, zlon1,zlat1, zradius, ztim, z1, z2
+          CASE ( 'R', 'r' ) ; READ(cline,*) spatch(npatch)%ctyp ,                &
+                                & spatch(npatch)%rlon1, spatch(npatch)%rlon2,    &
+                                & spatch(npatch)%rlat1, spatch(npatch)%rlat2,    &
+                                & spatch(npatch)%rim, spatch(npatch)%tresto,     &
+                                & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
+          CASE ( 'C', 'c' ) ; READ(cline,*) spatch(npatch)%ctyp ,                &
+                                & spatch(npatch)%rlon1, spatch(npatch)%rlat1,    &
+                                & spatch(npatch)%radius, spatch(npatch)%tresto,  &
+                                & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
           END SELECT
         ENDIF
       ENDIF
     ENDDO
-    PRINT *,' NPATCH = ', npatch
+
 
   END SUBROUTINE ReadCfg
   
