@@ -42,15 +42,17 @@ PROGRAM cdfmkresto
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: gphit, glamt
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: resto
 
-  CHARACTER(LEN=255)                         :: cf_coord
-  CHARACTER(LEN=255)                         :: cf_cfg
-  CHARACTER(LEN=255)                         :: cf_out = 'damping_coef.nc'
-  CHARACTER(LEN=255)                         :: cf_dep 
-  CHARACTER(LEN=255)                         :: cv_out = 'resto'
-  CHARACTER(LEN=255)                         :: cldum
+  CHARACTER(LEN=255)                         :: cf_coord  ! coordinate file
+  CHARACTER(LEN=255)                         :: cf_cfg    ! config file (txt)
+  CHARACTER(LEN=255)                         :: cf_out = 'damping_coef.nc' ! default output name
+  CHARACTER(LEN=255)                         :: cf_dep    ! depth file (txt)
+  CHARACTER(LEN=255)                         :: cf_resto  ! Previous resto file for appending new zones
+  CHARACTER(LEN=255)                         :: cv_resto  ! Previous resto variable in cf_resto
+  CHARACTER(LEN=255)                         :: cv_out = 'resto' ! output variable name
+  CHARACTER(LEN=255)                         :: cldum     ! dummy character variable
 
-  TYPE                                       :: patch
-     CHARACTER(1) :: ctyp
+  TYPE                                       :: patch     ! Structure handling a patch
+     CHARACTER(1) :: ctyp         ! type ( R or C)
      REAL(KIND=4) :: rlon1 
      REAL(KIND=4) :: rlon2 
      REAL(KIND=4) :: rlat1 
@@ -67,6 +69,7 @@ PROGRAM cdfmkresto
 
   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
   LOGICAL                                    :: lfdep     = .TRUE.      ! flag for ascii depth file
+  LOGICAL                                    :: lprev     = .FALSE.     ! flag for previous restoring file
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -74,7 +77,7 @@ PROGRAM cdfmkresto
 
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfmkresto -c COORD-file -i CFG-file [-d DEP-file] [-o DMP-file]...'
-     PRINT *,'                  ...  [-nc4] [-h]'
+     PRINT *,'                  ... [-prev RESTO-file RESTO-var ]  [-nc4] [-h]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create a file with a 3D damping coefficient suitable for the NEMO'
@@ -96,8 +99,11 @@ PROGRAM cdfmkresto
      PRINT *,'       [-d DEP-file]: name on an ASCII file with gdept_1d, if ',TRIM(cn_fzgr)
      PRINT *,'                is not available. This file is just a list of the deptht, in'
      PRINT *,'                one column.'
+     PRINT *,'       [ -prev RESTO-file RESTO-var] : Use RESTO-file and RESTO-var for the'
+     PRINT *,'                initialization of the restoring coefficient. Units MUST be'
+     PRINT *,'                days^-1 !!! '
      PRINT *,'       [-o DMP-file]: name of the output file instead of ',TRIM(cf_out),'.'
-     PRINT *,'       [ -nc4] : Use netcdf4 output with chunking and deflation level 1'
+     PRINT *,'       [-nc4]  : Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
      PRINT *,'      '
@@ -124,11 +130,17 @@ PROGRAM cdfmkresto
      CASE ( '-h'   ) ; CALL PrintCfgInfo             ; STOP 0
      CASE ( '-d'   ) ; CALL getarg(ijarg, cf_dep   ) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out   ) ; ijarg=ijarg+1
+     CASE ( '-prev') ; CALL getarg(ijarg, cf_resto ) ; ijarg=ijarg+1
+        ;            ; CALL getarg(ijarg, cv_resto ) ; ijarg=ijarg+1
+        ;            ; lprev= .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
      END SELECT
   ENDDO
 
+  IF ( lprev ) THEN
+        IF ( chkfile(cf_resto) ) STOP
+  ENDIF
   IF ( chkfile(cf_dep, ld_verbose=.FALSE.) ) THEN
      ! look for cn_fzgr file
      lfdep=.FALSE.
@@ -140,7 +152,14 @@ PROGRAM cdfmkresto
 
   CALL GetCoord ! read model horizontal coordinates and vertical levels
   ALLOCATE ( resto(npiglo, npjglo, npk) )
-  resto(:,:,:) = 0.
+
+  IF ( lprev ) THEN 
+    DO jk=1,npk
+      resto(:,:,jk) = getvar(cf_resto,cv_resto, jk, npiglo, npjglo) 
+    ENDDO
+  ELSE
+    resto(:,:,:) = 0.
+  ENDIF
 
   CALL CreateOutput ! prepare netcdf output file 
 
