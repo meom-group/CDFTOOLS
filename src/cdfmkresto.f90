@@ -26,7 +26,7 @@ PROGRAM cdfmkresto
   !! @class preprocessing
   !!----------------------------------------------------------------------
   IMPLICIT NONE
-  
+
   INTEGER(KIND=4), PARAMETER                 :: wp=4
   INTEGER(KIND=4)                            :: jjpat, jk
   INTEGER(KIND=4)                            :: npiglo, npjglo, npk
@@ -36,13 +36,11 @@ PROGRAM cdfmkresto
   INTEGER(KIND=4)                            :: ncout, ierr
   INTEGER(KIND=4), DIMENSION(1)              :: id_varout, ipk
 
-  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: resto
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: gphit, glamt
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: gdept_1d, tim
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: rlon1, rlon2, rlat1, rlat2
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: rbw, rtmax, rz1, rz2
   REAL(KIND=4)                               :: ra    = 6371229.   !: earth radius
   REAL(KIND=4)                               :: rad = 3.141592653589793 / 180.
+  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: gdept_1d, tim
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: gphit, glamt
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: resto
 
   CHARACTER(LEN=255)                         :: cf_coord
   CHARACTER(LEN=255)                         :: cf_cfg
@@ -52,16 +50,16 @@ PROGRAM cdfmkresto
   CHARACTER(LEN=255)                         :: cldum
 
   TYPE                                       :: patch
-    CHARACTER(1) :: ctyp
-    REAL(KIND=4) :: rlon1 
-    REAL(KIND=4) :: rlon2 
-    REAL(KIND=4) :: rlat1 
-    REAL(KIND=4) :: rlat2 
-    REAL(KIND=4) :: rim
-    REAL(KIND=4) :: radius
-    REAL(KIND=4) :: tresto
-    REAL(KIND=4) :: rdep1
-    REAL(KIND=4) :: rdep2
+     CHARACTER(1) :: ctyp
+     REAL(KIND=4) :: rlon1 
+     REAL(KIND=4) :: rlon2 
+     REAL(KIND=4) :: rlat1 
+     REAL(KIND=4) :: rlat2 
+     REAL(KIND=4) :: rim
+     REAL(KIND=4) :: radius
+     REAL(KIND=4) :: tresto
+     REAL(KIND=4) :: rdep1
+     REAL(KIND=4) :: rdep2
   END TYPE patch
 
   TYPE (patch )  , DIMENSION(:), ALLOCATABLE :: spatch
@@ -115,7 +113,7 @@ PROGRAM cdfmkresto
      PRINT *,'      '
      STOP
   ENDIF
-  
+
   ijarg = 1 
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
@@ -139,7 +137,7 @@ PROGRAM cdfmkresto
   IF ( chkfile(cf_coord) .OR. chkfile(cf_cfg) ) STOP ! missing file
 
   CALL ReadCfg  ! read configuration file and set variables
-  
+
   CALL GetCoord ! read model horizontal coordinates and vertical levels
   ALLOCATE ( resto(npiglo, npjglo, npk) )
   resto(:,:,:) = 0.
@@ -147,12 +145,10 @@ PROGRAM cdfmkresto
   CALL CreateOutput ! prepare netcdf output file 
 
   DO jjpat =1, npatch
-!     CALL resto_patch ( rlon1(jjpat), rlon2(jjpat), rlat1(jjpat), rlat2(jjpat), &
-!          &             rbw(jjpat), rtmax(jjpat), resto, rz1(jjpat), rz2(jjpat) )
      CALL resto_patch ( spatch(jjpat), resto  )
   ENDDO
   DO jk = 1, npk
-    ierr = putvar( ncout, id_varout(1), resto(:,:,jk), jk, npiglo, npjglo)
+     ierr = putvar( ncout, id_varout(1), resto(:,:,jk), jk, npiglo, npjglo)
   ENDDO
   ierr = closeout(ncout)
 
@@ -258,7 +254,7 @@ CONTAINS
     ncout = create      (cf_out, 'none',  npiglo, npjglo, npk  ,cdep='deptht', ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, npk ,  &
-                              pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
+         pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
 
     ALLOCATE (tim(1) )
     tim(1)= 0.
@@ -284,12 +280,12 @@ CONTAINS
     ierr=0
     npatch=0
     DO WHILE ( ierr == 0 )
-      READ(inum,'(a)', iostat=ierr) cline
-      IF ( ierr == 0 ) THEN
-        IF ( cline(1:1) /= '#' ) THEN
-          npatch=npatch+1
-        ENDIF
-      ENDIF
+       READ(inum,'(a)', iostat=ierr) cline
+       IF ( ierr == 0 ) THEN
+          IF ( cline(1:1) /= '#' ) THEN
+             npatch=npatch+1
+          ENDIF
+       ENDIF
     ENDDO
     PRINT *,' NPATCH = ', npatch
     ALLOCATE ( spatch(npatch) )
@@ -299,30 +295,30 @@ CONTAINS
     ierr = 0
     npatch = 0
     DO WHILE ( ierr == 0 )
-      READ(inum,'(a)', iostat=ierr) cline
-      IF ( ierr == 0 ) THEN
-        IF ( cline(1:1) /= '#' ) THEN
-          npatch=npatch+1
-          PRINT *,'   Patch ',npatch,' :  ',TRIM(cline)
-          READ(cline,*) cltyp
-          SELECT CASE (cltyp)
-          CASE ( 'R', 'r' ) ; READ(cline,*) spatch(npatch)%ctyp ,                &
-                                & spatch(npatch)%rlon1, spatch(npatch)%rlon2,    &
-                                & spatch(npatch)%rlat1, spatch(npatch)%rlat2,    &
-                                & spatch(npatch)%rim, spatch(npatch)%tresto,     &
-                                & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
-          CASE ( 'C', 'c' ) ; READ(cline,*) spatch(npatch)%ctyp ,                &
-                                & spatch(npatch)%rlon1, spatch(npatch)%rlat1,    &
-                                & spatch(npatch)%radius, spatch(npatch)%tresto,  &
-                                & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
-          END SELECT
-        ENDIF
-      ENDIF
+       READ(inum,'(a)', iostat=ierr) cline
+       IF ( ierr == 0 ) THEN
+          IF ( cline(1:1) /= '#' ) THEN
+             npatch=npatch+1
+             PRINT *,'   Patch ',npatch,' :  ',TRIM(cline)
+             READ(cline,*) cltyp
+             SELECT CASE (cltyp)
+             CASE ( 'R', 'r' ) ; READ(cline,*) spatch(npatch)%ctyp, &
+                  & spatch(npatch)%rlon1, spatch(npatch)%rlon2,     &
+                  & spatch(npatch)%rlat1, spatch(npatch)%rlat2,     &
+                  & spatch(npatch)%rim, spatch(npatch)%tresto,      &
+                  & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
+             CASE ( 'C', 'c' ) ; READ(cline,*) spatch(npatch)%ctyp, &
+                  & spatch(npatch)%rlon1, spatch(npatch)%rlat1,     &
+                  & spatch(npatch)%radius, spatch(npatch)%tresto,   &
+                  & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
+             END SELECT
+          ENDIF
+       ENDIF
     ENDDO
 
 
   END SUBROUTINE ReadCfg
-  
+
   SUBROUTINE GetCoord
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE GetCoord  ***
@@ -336,14 +332,14 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
     INTEGER(KIND=4) :: inum=11, ieof=0, ilev=0
-    
-     npiglo = getdim(cf_coord,cn_x)
-     npjglo = getdim(cf_coord,cn_y)
-     ALLOCATE (glamt(npiglo,npjglo), gphit(npiglo,npjglo) )
-     glamt(:,:)=getvar(cf_coord,cn_glamt, 1,npiglo,npjglo)
-     gphit(:,:)=getvar(cf_coord,cn_gphit, 1,npiglo,npjglo)
-     ! now deal with vertical levels ( suppose z or zps ! )
-     IF ( lfdep ) THEN
+    !!----------------------------------------------------------------------
+    npiglo = getdim(cf_coord,cn_x)
+    npjglo = getdim(cf_coord,cn_y)
+    ALLOCATE (glamt(npiglo,npjglo), gphit(npiglo,npjglo) )
+    glamt(:,:)=getvar(cf_coord,cn_glamt, 1,npiglo,npjglo)
+    gphit(:,:)=getvar(cf_coord,cn_gphit, 1,npiglo,npjglo)
+    ! now deal with vertical levels ( suppose z or zps ! )
+    IF ( lfdep ) THEN
        OPEN(inum, FILE=cf_dep)
        ! first read to look for number of levels
        DO WHILE ( ieof == 0 )
@@ -354,160 +350,129 @@ CONTAINS
        ALLOCATE(gdept_1d(npk))
        REWIND(inum)
        DO jk=1,npk
-         READ(inum,*) gdept_1d(jk)
+          READ(inum,*) gdept_1d(jk)
        ENDDO
        CLOSE(inum)
-     ELSE
+    ELSE
        npk = getdim(cn_fzgr,'z')   ! depth dimension in mesh_zgr is 'z' 
        ALLOCATE( gdept_1d(npk) )
        gdept_1d(:) =  getvare3(cn_fzgr, cn_gdept, npk)
-     ENDIF
+    ENDIF
 
   END SUBROUTINE GetCoord
-  
 
-   SUBROUTINE resto_patch ( sd_patch, presto )
-      !!------------------------------------------------------------------------
-      !!                 ***  Routine resto_patch  ***
-      !!
-      !! ** Purpose :   modify resto array on a geographically defined zone.
-      !!
-      !! ** Method  :  Use glamt, gphit arrays. If the defined zone is outside 
-      !!              the domain, resto is unchanged. If pz1 and pz2 are provided
-      !!              then plon1, plat1 is taken as the position of a the center
-      !!              of a circle with decay radius is pbw (in km) 
-      !!
-      !! ** Action  : IF not present pz1, pz2 : 
-      !!              - plon1, plon2 : min and max longitude of the zone (Deg)
-      !!              - plat1, plat2 : min and max latitude of the zone (Deg)
-      !!              - pbw : band width of the linear decaying restoring (Deg)
-      !!              - ptmax : restoring time scale for the inner zone (days)
-      !!              IF present pz1 pz2
-      !!              - plon1, plat1 : position of the center of the circle
-      !!              - pbw = radius (km) of the restoring circle
-      !!              - ptmax = time scale at maximum restoring
-      !!              - pz1, pz2 : optional: if used, define the depth range (m)
-      !!                          for restoring. If not all depths are considered
-      !!------------------------------------------------------------------------
-      TYPE (patch),               INTENT(in )   :: sd_patch
-      REAL(wp), DIMENSION(:,:,:), INTENT(inout) :: presto 
-      !
-      REAL(wp)          :: plon1, plon2, plat1, plat2, pbw, ptmax
-      REAL(wp)          :: pz1, pz2
-      !!
-      INTEGER :: ji,jj, jk    ! dummy loop index
-      INTEGER :: ik1, ik2     ! limiting vertical index corresponding to pz1,pz2
-      INTEGER :: ij0, ij1, iiO, ii1
-      INTEGER, DIMENSION(1)           :: iloc 
 
-      REAL(wp) :: zv1, zv2, zv3, zv4, zcoef, ztmp, zdist, zradius2, zcoef2
-      REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zpatch
-      REAL(wp), DIMENSION(:)  , ALLOCATABLE :: zmask
+  SUBROUTINE resto_patch ( sd_patch, presto )
+    !!------------------------------------------------------------------------
+    !!                 ***  Routine resto_patch  ***
+    !!
+    !! ** Purpose :   modify resto array on a geographically defined zone.
+    !!                The restoring can be limited on the vertical.
+    !!
+    !! ** Method  :  Use glamt, gphit arrays. If the defined zone is outside 
+    !!              the domain, resto is unchanged. Reactangular and Circulat
+    !!              patches can be used.
+    !!
+    !!------------------------------------------------------------------------
+    TYPE (patch),               INTENT(in )   :: sd_patch
+    REAL(wp), DIMENSION(:,:,:), INTENT(inout) :: presto 
+    !
+    REAL(wp)          :: zlon1, zlon2, zlat1, zlat2, zbw, ztmax
+    REAL(wp)          :: zz1, zz2
+    !!
+    INTEGER :: ji,jj, jk    ! dummy loop index
+    INTEGER :: ik1, ik2     ! limiting vertical index corresponding to zz1,zz2
+    INTEGER :: ij0, ij1, iiO, ii1
+    INTEGER, DIMENSION(1)           :: iloc 
 
-      CHARACTER(LEN=1) :: cl_typ
-      !!------------------------------------------------------------------------
-      ALLOCATE ( zpatch(npiglo,npjglo), zmask(npk) )
+    REAL(wp) :: zv1, zv2, zv3, zv4, zcoef, ztmp, zdist, zradius2, zcoef2
+    REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zpatch
+    REAL(wp), DIMENSION(:)  , ALLOCATABLE :: zmask
 
-      cl_typ = sd_patch%ctyp
-      plon1=sd_patch%rlon1
-      plon2=sd_patch%rlon2
-      plat1=sd_patch%rlat1
-      plat2=sd_patch%rlat2
-      pbw  =sd_patch%rim
-      zradius2  =sd_patch%radius*sd_patch%radius
-      ptmax=sd_patch%tresto
-      pz1  =sd_patch%rdep1
-      pz2  =sd_patch%rdep2
+    CHARACTER(LEN=1) :: cl_typ
+    !!------------------------------------------------------------------------
+    ALLOCATE ( zpatch(npiglo,npjglo), zmask(npk) )
 
-      zpatch = 0._wp
-      zcoef  = 1._wp/ptmax/86400._wp
+    cl_typ   = sd_patch%ctyp
+    zlon1    = sd_patch%rlon1
+    zlon2    = sd_patch%rlon2
+    zlat1    = sd_patch%rlat1
+    zlat2    = sd_patch%rlat2
+    zbw      = sd_patch%rim
+    zradius2 = sd_patch%radius*sd_patch%radius
+    ztmax    = sd_patch%tresto
+    zz1      = sd_patch%rdep1
+    zz2      = sd_patch%rdep2
 
-      SELECT CASE ( cl_typ )
-      CASE ( 'C', 'c' ) 
-        ! horizontal extent
-!        zradius2 = pbw * pbw !  radius squared
-        DO jj = 1, npjglo
+    zpatch = 0._wp
+    zcoef  = 1._wp/ztmax/86400._wp
+
+    SELECT CASE ( cl_typ )
+    CASE ( 'C', 'c' )   ! Circular patch 
+       !  mask for horizontal extent
+       DO jj = 1, npjglo
           DO ji = 1 , npiglo
-            zpatch(ji,jj) =  sin(gphit(ji,jj)*rad)* sin(plat1*rad)  &
-       &                         + cos(gphit(ji,jj)*rad)* cos(plat1*rad)  &
-       &                         * cos(rad*(plon1-glamt(ji,jj)))
+             zpatch(ji,jj) =  SIN(gphit(ji,jj)*rad)* SIN(zlat1*rad)  &
+                  &         + COS(gphit(ji,jj)*rad)* COS(zlat1*rad)  &
+                  &         * COS(rad*(zlon1-glamt(ji,jj)))
           ENDDO
-        ENDDO
+       ENDDO
 
-        WHERE ( abs (zpatch ) > 1 ) zpatch = 1.
-        DO jj = 1, npjglo
+       WHERE ( ABS (zpatch ) > 1 ) zpatch = 1.
+       ! applying spatial horizontal variation
+       DO jj = 1, npjglo
           DO ji= 1, npiglo 
              ztmp = zpatch(ji,jj)
-             zdist = atan(sqrt( (1.-ztmp)/(1+ztmp)) )*2.*ra/1000.
-             zpatch(ji,jj) = exp( - zdist*zdist/zradius2 )
+             zdist = ATAN(SQRT( (1.-ztmp)/(1+ztmp)) )*2.*ra/1000.
+             zpatch(ji,jj) = EXP( - zdist*zdist/zradius2 )
           ENDDO
-        ENDDO
-        ! clean cut off
-        WHERE (ABS(zpatch) < 0.01 ) zpatch = 0.
-        ! Vertical limitation
-        zmask(:) = 1.
-        IF ( pz1 /= pz2 ) THEN
-        WHERE ( gdept_1d < pz1 .OR. gdept_1d > pz2 ) zmask = 0.
-        ! look for first 1
-        iloc=MAXLOC(zmask) ; ik1 = iloc(1)
-        ! now look for first 0
-        zmask(1:ik1) = 1.
-        iloc=MINLOC(zmask) ; ik2 = iloc(1) - 1
-        IF (ik2 > 2 ) THEN
-          zmask = 0._wp
-          zmask(ik1       ) = 0.25_wp
-          zmask(ik1+1     ) = 0.75_wp
-          zmask(ik1+2:ik2-2) = 1.0_wp
-          zmask(ik2-1     ) = 0.75_wp
-          zmask(ik2       ) = 0.25_wp
-        ELSE
-          zmask = 1.   ! all the water column is restored the same
-        ENDIF
-        ENDIF
+       ENDDO
+       ! clean cut off
+       WHERE (ABS(zpatch) < 0.01 ) zpatch = 0.
 
-        ! JMM : eventually add some checking to avoid locally large resto.
+       ! JMM : eventually add some checking to avoid locally large resto.
 
-      CASE ( 'R','r' )
-        ! horizontal extent
-        zcoef2=1./(pbw +1.e-20 ) ! to avoid division by 0
-        DO jj=1,npjglo
+    CASE ( 'R','r' )
+       ! horizontal extent
+       zcoef2=1./(zbw +1.e-20 ) ! to avoid division by 0
+       DO jj=1,npjglo
           DO ji=1,npiglo
-             zv1=MAX(0., zcoef2*( glamt(ji,jj) - plon1)  )
-             zv2=MAX(0., zcoef2*( plon2 - glamt(ji,jj))  )
-             zv3=MAX(0., zcoef2*( gphit(ji,jj) - plat1)  )
-             zv4=MAX(0., zcoef2*( plat2 - gphit(ji,jj))  )
+             zv1=MAX(0., zcoef2*( glamt(ji,jj) - zlon1)  )
+             zv2=MAX(0., zcoef2*( zlon2 - glamt(ji,jj))  )
+             zv3=MAX(0., zcoef2*( gphit(ji,jj) - zlat1)  )
+             zv4=MAX(0., zcoef2*( zlat2 - gphit(ji,jj))  )
              zpatch(ji,jj)= MIN( 1., MIN( 1., zv1,zv2,zv3,zv4 ) )
           ENDDO
-        ENDDO
-      END SELECT
+       ENDDO
+    END SELECT
 
-        ! Vertical limitation same treatment for both types
-        zmask(:) = 1.
-        IF ( pz1 /= pz2 ) THEN
-        WHERE ( gdept_1d < pz1 .OR. gdept_1d > pz2 ) zmask = 0.
-        ! look for first 1
-        iloc=MAXLOC(zmask) ; ik1 = iloc(1)
-        ! now look for first 0
-        zmask(1:ik1) = 1.
-        iloc=MINLOC(zmask) ; ik2 = iloc(1) - 1
-        IF (ik2 > 2 ) THEN
-          zmask = 0._wp
-          zmask(ik1       ) = 0.25_wp
-          zmask(ik1+1     ) = 0.75_wp
+    ! Vertical limitation same treatment for both types
+    zmask(:) = 1.
+    IF ( zz1 /= zz2 ) THEN
+       WHERE ( gdept_1d < zz1 .OR. gdept_1d > zz2 ) zmask = 0.
+       ! look for first 1
+       iloc=MAXLOC(zmask) ; ik1 = iloc(1)
+       ! now look for first 0
+       zmask(1:ik1) = 1.
+       iloc=MINLOC(zmask) ; ik2 = iloc(1) - 1
+
+       zmask = 0._wp
+       IF (ik2-ik1 > 4 ) THEN ! vertical ramp
+          zmask(ik1        ) = 0.25_wp
+          zmask(ik1+1      ) = 0.75_wp
           zmask(ik1+2:ik2-2) = 1.0_wp
-          zmask(ik2-1     ) = 0.75_wp
-          zmask(ik2       ) = 0.25_wp
-        ELSE
-          zmask = 1.   ! all the water column is restored the same
-        ENDIF
-        ENDIF
+          zmask(ik2-1      ) = 0.75_wp
+          zmask(ik2        ) = 0.25_wp
+       ELSE
+          zmask(ik1:ik2) = 1. ! all the water column in zz1-zz2 is restored the same
+       ENDIF
+    ENDIF
 
-        DO jk=1, npk
-          presto(:,:,jk)= MAX(presto(:,:,jk),zpatch * zcoef * zmask(jk) )
-        ENDDO
-
-      !
-      DEALLOCATE ( zmask, zpatch )
-      !
-   END SUBROUTINE resto_patch
+    DO jk=1, npk
+       presto(:,:,jk)= MAX(presto(:,:,jk),zpatch * zcoef * zmask(jk) )
+    ENDDO
+    !
+    DEALLOCATE ( zmask, zpatch )
+    !
+  END SUBROUTINE resto_patch
 END PROGRAM cdfmkresto
