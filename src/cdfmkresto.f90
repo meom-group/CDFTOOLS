@@ -68,7 +68,7 @@ PROGRAM cdfmkresto
   TYPE (variable), DIMENSION(1)              :: stypvar            ! structure for attributes
 
   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
-  LOGICAL                                    :: lfdep     = .FALSE.     ! flag for ascii depth file
+  LOGICAL                                    :: lfdep     = .TRUE.      ! flag for ascii depth file
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -122,7 +122,6 @@ PROGRAM cdfmkresto
      SELECT CASE ( cldum )
      CASE ( '-c'   ) ; CALL getarg(ijarg, cf_coord ) ; ijarg=ijarg+1
      CASE ( '-i'   ) ; CALL getarg(ijarg, cf_cfg   ) ; ijarg=ijarg+1
-        ;            ; CALL ReadCfg  ; print *,spatch(1) ;stop
         ! option
      CASE ( '-h'   ) ; CALL PrintCfgInfo             ; STOP 0
      CASE ( '-d'   ) ; CALL getarg(ijarg, cf_dep   ) ; ijarg=ijarg+1
@@ -131,9 +130,10 @@ PROGRAM cdfmkresto
      CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
      END SELECT
   ENDDO
-  IF ( chkfile(cf_dep) ) THEN
+
+  IF ( chkfile(cf_dep, ld_verbose=.FALSE.) ) THEN
      ! look for cn_fzgr file
-     lfdep=.TRUE.
+     lfdep=.FALSE.
      IF ( chkfile(cn_fzgr) ) STOP
   ENDIF
   IF ( chkfile(cf_coord) .OR. chkfile(cf_cfg) ) STOP ! missing file
@@ -141,7 +141,8 @@ PROGRAM cdfmkresto
   CALL ReadCfg  ! read configuration file and set variables
   
   CALL GetCoord ! read model horizontal coordinates and vertical levels
-  ALLOCATE ( resto(npiglo, npjglo, npk) , gdept_1d(npk))
+  ALLOCATE ( resto(npiglo, npjglo, npk) )
+  resto(:,:,:) = 0.
 
   CALL CreateOutput ! prepare netcdf output file 
 
@@ -150,7 +151,6 @@ PROGRAM cdfmkresto
 !          &             rbw(jjpat), rtmax(jjpat), resto, rz1(jjpat), rz2(jjpat) )
      CALL resto_patch ( spatch(jjpat), resto  )
   ENDDO
-
   DO jk = 1, npk
     ierr = putvar( ncout, id_varout(1), resto(:,:,jk), jk, npiglo, npjglo)
   ENDDO
@@ -244,8 +244,8 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-    ipk(1)                       = npk
-    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    ipk(1)                    = npk
+    stypvar(1)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
     stypvar(1)%cname          = cv_out
     stypvar(1)%cunits         = '[days^1]'
     stypvar(1)%rmissing_value = 1.e+20
@@ -255,11 +255,12 @@ CONTAINS
     stypvar(1)%clong_name     = 'Restoring coefficent'
     stypvar(1)%cshort_name    = cv_out
 
-    ncout = create      (cf_out, cf_coord,  npiglo, npjglo, 1  ,cdep='deptht', ld_nc4=lnc4 )
+    ncout = create      (cf_out, 'none',  npiglo, npjglo, npk  ,cdep='deptht', ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, npk ,  &
                               pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
 
+    ALLOCATE (tim(1) )
     tim(1)= 0.
     ierr   = putvar1d(ncout, tim, 1   , 'T'  )
 
@@ -359,7 +360,7 @@ CONTAINS
      ELSE
        npk = getdim(cn_fzgr,'z')   ! depth dimension in mesh_zgr is 'z' 
        ALLOCATE( gdept_1d(npk) )
-       gdept_1d(:) =  getvar1d(cn_fzgr, cn_gdept, npk)
+       gdept_1d(:) =  getvare3(cn_fzgr, cn_gdept, npk)
      ENDIF
 
   END SUBROUTINE GetCoord
@@ -425,7 +426,7 @@ CONTAINS
       SELECT CASE ( cl_typ )
       CASE ( 'C', 'c' ) 
         ! horizontal extent
-        zradius2 = pbw * pbw !  radius squared
+!        zradius2 = pbw * pbw !  radius squared
         DO jj = 1, npjglo
           DO ji = 1 , npiglo
             zpatch(ji,jj) =  sin(gphit(ji,jj)*rad)* sin(plat1*rad)  &
