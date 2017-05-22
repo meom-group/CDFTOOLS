@@ -366,7 +366,6 @@ CONTAINS
   END SUBROUTINE GetCoord
   
 
-!   SUBROUTINE resto_patch ( plon1, plon2, plat1, plat2, pbw ,ptmax, presto, pz1, pz2 )
    SUBROUTINE resto_patch ( sd_patch, presto )
       !!------------------------------------------------------------------------
       !!                 ***  Routine resto_patch  ***
@@ -446,13 +445,14 @@ CONTAINS
         ! clean cut off
         WHERE (ABS(zpatch) < 0.01 ) zpatch = 0.
         ! Vertical limitation
-        zmask = 1.
+        zmask(:) = 1.
+        IF ( pz1 /= pz2 ) THEN
         WHERE ( gdept_1d < pz1 .OR. gdept_1d > pz2 ) zmask = 0.
+        ! look for first 1
         iloc=MAXLOC(zmask) ; ik1 = iloc(1)
+        ! now look for first 0
         zmask(1:ik1) = 1.
-        iloc=MAXLOC(zmask) ; ik2 = iloc(1) - 1
-        zmask(1:ik1) = 1.
-        iloc=MAXLOC(zmask) ; ik2 = iloc(1) - 1
+        iloc=MINLOC(zmask) ; ik2 = iloc(1) - 1
         IF (ik2 > 2 ) THEN
           zmask = 0._wp
           zmask(ik1       ) = 0.25_wp
@@ -463,10 +463,8 @@ CONTAINS
         ELSE
           zmask = 1.   ! all the water column is restored the same
         ENDIF
+        ENDIF
 
-        DO jk=1, npk
-          presto(:,:,jk)= presto(:,:,jk) + zpatch * zcoef * zmask(jk) 
-        ENDDO
         ! JMM : eventually add some checking to avoid locally large resto.
 
       CASE ( 'R','r' )
@@ -481,13 +479,33 @@ CONTAINS
              zpatch(ji,jj)= MIN( 1., MIN( 1., zv1,zv2,zv3,zv4 ) )
           ENDDO
         ENDDO
-          ! resto all over the water column
-          presto(:,:,1)= presto(:,:,1) + zpatch *zcoef
-          WHERE (zpatch /= 0 ) presto(:,:,1) = MIN( presto(:,:,1), zcoef )
-          DO jk=2, npk
-             presto(:,:,jk)=presto(:,:,1)
-          ENDDO
       END SELECT
+
+        ! Vertical limitation same treatment for both types
+        zmask(:) = 1.
+        IF ( pz1 /= pz2 ) THEN
+        WHERE ( gdept_1d < pz1 .OR. gdept_1d > pz2 ) zmask = 0.
+        ! look for first 1
+        iloc=MAXLOC(zmask) ; ik1 = iloc(1)
+        ! now look for first 0
+        zmask(1:ik1) = 1.
+        iloc=MINLOC(zmask) ; ik2 = iloc(1) - 1
+        IF (ik2 > 2 ) THEN
+          zmask = 0._wp
+          zmask(ik1       ) = 0.25_wp
+          zmask(ik1+1     ) = 0.75_wp
+          zmask(ik1+2:ik2-2) = 1.0_wp
+          zmask(ik2-1     ) = 0.75_wp
+          zmask(ik2       ) = 0.25_wp
+        ELSE
+          zmask = 1.   ! all the water column is restored the same
+        ENDIF
+        ENDIF
+
+        DO jk=1, npk
+          presto(:,:,jk)= MAX(presto(:,:,jk),zpatch * zcoef * zmask(jk) )
+        ENDDO
+
       !
       DEALLOCATE ( zmask, zpatch )
       !
