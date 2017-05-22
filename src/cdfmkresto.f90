@@ -10,6 +10,11 @@ PROGRAM cdfmkresto
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
   !!   routines      : description
+  !!   PrintCfgInfo  : Give details on the format for input cfg file
+  !!   resto_patch   : Drakkar/Nemo routine used for building a local patch
+  !!   ReadCfg       : Read Config file to feed the patch structure
+  !!   GetCoord      : Read Config file to feed the patch structure
+  !!   CreateOutput  : Create output file
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
@@ -33,10 +38,11 @@ PROGRAM cdfmkresto
 
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: resto
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: gphit, glamt
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: gdept_1d
+  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: gdept_1d, tim
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: rlon1, rlon2, rlat1, rlat2
   REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: rbw, rtmax, rz1, rz2
-  REAL(KIND=4)                               :: ra, rad
+  REAL(KIND=4)                               :: ra    = 6371229.   !: earth radius
+  REAL(KIND=4)                               :: rad = 3.141592653589793 / 180.
 
   CHARACTER(LEN=255)                         :: cf_coord
   CHARACTER(LEN=255)                         :: cf_cfg
@@ -62,6 +68,7 @@ PROGRAM cdfmkresto
   TYPE (variable), DIMENSION(1)              :: stypvar            ! structure for attributes
 
   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
+  LOGICAL                                    :: lfdep     = .FALSE.     ! flag for ascii depth file
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -89,7 +96,8 @@ PROGRAM cdfmkresto
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-h ]: print a detailed description of the configuration file.'
      PRINT *,'       [-d DEP-file]: name on an ASCII file with gdept_1d, if ',TRIM(cn_fzgr)
-     PRINT *,'                is not available.'
+     PRINT *,'                is not available. This file is just a list of the deptht, in'
+     PRINT *,'                one column.'
      PRINT *,'       [-o DMP-file]: name of the output file instead of ',TRIM(cf_out),'.'
      PRINT *,'       [ -nc4] : Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'            This option is effective only if cdftools are compiled with'
@@ -123,19 +131,24 @@ PROGRAM cdfmkresto
      CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
      END SELECT
   ENDDO
-
+  IF ( chkfile(cf_dep) ) THEN
+     ! look for cn_fzgr file
+     lfdep=.TRUE.
+     IF ( chkfile(cn_fzgr) ) STOP
+  ENDIF
   IF ( chkfile(cf_coord) .OR. chkfile(cf_cfg) ) STOP ! missing file
 
   CALL ReadCfg  ! read configuration file and set variables
   
-! CALL GetCoord ! read model horizontal coordinates
+  CALL GetCoord ! read model horizontal coordinates and vertical levels
   ALLOCATE ( resto(npiglo, npjglo, npk) , gdept_1d(npk))
 
   CALL CreateOutput ! prepare netcdf output file 
 
   DO jjpat =1, npatch
-     CALL resto_patch ( rlon1(jjpat), rlon2(jjpat), rlat1(jjpat), rlat2(jjpat), &
-          &             rbw(jjpat), rtmax(jjpat), resto, rz1(jjpat), rz2(jjpat) )
+!     CALL resto_patch ( rlon1(jjpat), rlon2(jjpat), rlat1(jjpat), rlat2(jjpat), &
+!          &             rbw(jjpat), rtmax(jjpat), resto, rz1(jjpat), rz2(jjpat) )
+     CALL resto_patch ( spatch(jjpat), resto  )
   ENDDO
 
   DO jk = 1, npk
@@ -159,7 +172,7 @@ CONTAINS
     PRINT *,'#   FORMAT OF THE CONFIGURATION FILE FOR cdfmkresto TOOL.'
     PRINT *,'       '
     PRINT *,'## CONTEXT:      '
-    PRINT *,'      The restoring zone is defined by a series of patches defined in the'
+    PRINT *,'      The restoring zone is defined by a series of patches described in the'
     PRINT *,'    configuration file, and that can have either a rectangular or a circular'
     PRINT *,'    shape. Overlapping patches uses the maximum between the patches.'
     PRINT *,'       '
@@ -169,7 +182,7 @@ CONTAINS
     PRINT *,'      There are as many lines as patches in the configuration files. No blank'
     PRINT *,'    lines are allowed but lines starting with a # are skipped.'
     PRINT *,'      Each line starts with either R or C to indicate either a Rectangular'
-    PRINT *,'    patch or a Circular patch. Remaining fields on the line depends on the type'
+    PRINT *,'    patch or a Circular patch. Remaining fields on the line depend on the type'
     PRINT *,'    of patch:'
     PRINT *,'###   Case of rectangular patches: the line looks like:'
     PRINT *,'       R lon1 lon2 lat1 lat2 band_width tresto z1 z2'
@@ -188,11 +201,11 @@ CONTAINS
     PRINT *,'     degrees  and its radius in km. ''tresto'' represents the restoring time'
     PRINT *,'     scale at the center of the circle. The damping coefficient decays to zero'
     PRINT *,'     outside the defined circle. As in the rectangular case, z1 and z2 define a'
-    PRINT *,'     depth range for  limiting the restoring. If z1=z2, the restoring is applied'
-    PRINT *,'     to the full water column.'
+    PRINT *,'     depth range for  limiting the restoring. If z1=z2, the restoring is '
+    PRINT *,'     applied to the full water column.'
     PRINT *,'       '
     PRINT *,'##  EXAMPLE:  '
-    PRINT *,'       The standard DRAKKAR restoring procedure correspond to the following '
+    PRINT *,'       The standard DRAKKAR restoring procedure corresponds to the following '
     PRINT *,'     configuration file:  '
     PRINT *,'    '
     PRINT *,'# DRAKKAR restoring configuration file'
@@ -231,9 +244,24 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  ncout = create      (cf_out,   cf_coord,  npiglo, npjglo, 1        , ld_nc4=lnc4 )
-  ierr  = createvar   (ncout ,   stypvar ,  nvar,   ipk,    id_varout, ld_nc4=lnc4 )
+    ipk(1)                       = npk
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname          = cv_out
+    stypvar(1)%cunits         = '[days^1]'
+    stypvar(1)%rmissing_value = 1.e+20
+    stypvar(1)%caxis          = 'TZYX'
+    stypvar(1)%valid_min      = 0.
+    stypvar(1)%valid_max      = 500.
+    stypvar(1)%clong_name     = 'Restoring coefficent'
+    stypvar(1)%cshort_name    = cv_out
+
+    ncout = create      (cf_out, cf_coord,  npiglo, npjglo, 1  ,cdep='deptht', ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, npk ,  &
+                              pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
+
+    tim(1)= 0.
+    ierr   = putvar1d(ncout, tim, 1   , 'T'  )
 
   END SUBROUTINE CreateOutput
 
@@ -246,7 +274,7 @@ CONTAINS
     !! ** Method  :  read and fill in corresponding variables
     !!
     !!----------------------------------------------------------------------
-    INTEGER(KIND=4)    :: inum ! logical unit for configuration file
+    INTEGER(KIND=4)    :: inum = 10! logical unit for configuration file
     INTEGER(KIND=4)    :: ierr ! error flag
     CHARACTER(LEN=255) :: cline, cltyp
 
@@ -294,8 +322,51 @@ CONTAINS
 
   END SUBROUTINE ReadCfg
   
+  SUBROUTINE GetCoord
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE GetCoord  ***
+    !!
+    !! ** Purpose :  Read glamt, gphit from horizontal grid information
+    !!               Read vertical grid information  
+    !!
+    !! ** Method  :  Open cf_coord file for horizontal grid.
+    !!               Read vertical information from eiher mesh_zgr.nc
+    !!               or cf_gdep ascii file
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4) :: inum=11, ieof=0, ilev=0
+    
+     npiglo = getdim(cf_coord,cn_x)
+     npjglo = getdim(cf_coord,cn_y)
+     ALLOCATE (glamt(npiglo,npjglo), gphit(npiglo,npjglo) )
+     glamt(:,:)=getvar(cf_coord,cn_glamt, 1,npiglo,npjglo)
+     gphit(:,:)=getvar(cf_coord,cn_gphit, 1,npiglo,npjglo)
+     ! now deal with vertical levels ( suppose z or zps ! )
+     IF ( lfdep ) THEN
+       OPEN(inum, FILE=cf_dep)
+       ! first read to look for number of levels
+       DO WHILE ( ieof == 0 )
+          READ(inum,*,iostat=ieof)
+          ilev=ilev+1
+       ENDDO
+       npk=ilev - 1
+       ALLOCATE(gdept_1d(npk))
+       REWIND(inum)
+       DO jk=1,npk
+         READ(inum,*) gdept_1d(jk)
+       ENDDO
+       CLOSE(inum)
+     ELSE
+       npk = getdim(cn_fzgr,'z')   ! depth dimension in mesh_zgr is 'z' 
+       ALLOCATE( gdept_1d(npk) )
+       gdept_1d(:) =  getvar1d(cn_fzgr, cn_gdept, npk)
+     ENDIF
 
-   SUBROUTINE resto_patch ( plon1, plon2, plat1, plat2, pbw ,ptmax, presto, pz1, pz2 )
+  END SUBROUTINE GetCoord
+  
+
+!   SUBROUTINE resto_patch ( plon1, plon2, plat1, plat2, pbw ,ptmax, presto, pz1, pz2 )
+   SUBROUTINE resto_patch ( sd_patch, presto )
       !!------------------------------------------------------------------------
       !!                 ***  Routine resto_patch  ***
       !!
@@ -318,9 +389,11 @@ CONTAINS
       !!              - pz1, pz2 : optional: if used, define the depth range (m)
       !!                          for restoring. If not all depths are considered
       !!------------------------------------------------------------------------
-      REAL(wp),                   INTENT(in   ) :: plon1, plon2, plat1, plat2, pbw, ptmax
+      TYPE (patch),               INTENT(in )   :: sd_patch
       REAL(wp), DIMENSION(:,:,:), INTENT(inout) :: presto 
-      REAL(wp), OPTIONAL, INTENT(in) :: pz1, pz2
+      !
+      REAL(wp)          :: plon1, plon2, plat1, plat2, pbw, ptmax
+      REAL(wp)          :: pz1, pz2
       !!
       INTEGER :: ji,jj, jk    ! dummy loop index
       INTEGER :: ik1, ik2     ! limiting vertical index corresponding to pz1,pz2
@@ -330,13 +403,27 @@ CONTAINS
       REAL(wp) :: zv1, zv2, zv3, zv4, zcoef, ztmp, zdist, zradius2, zcoef2
       REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zpatch
       REAL(wp), DIMENSION(:)  , ALLOCATABLE :: zmask
+
+      CHARACTER(LEN=1) :: cl_typ
       !!------------------------------------------------------------------------
       ALLOCATE ( zpatch(npiglo,npjglo), zmask(npk) )
- 
+
+      cl_typ = sd_patch%ctyp
+      plon1=sd_patch%rlon1
+      plon2=sd_patch%rlon2
+      plat1=sd_patch%rlat1
+      plat2=sd_patch%rlat2
+      pbw  =sd_patch%rim
+      zradius2  =sd_patch%radius*sd_patch%radius
+      ptmax=sd_patch%tresto
+      pz1  =sd_patch%rdep1
+      pz2  =sd_patch%rdep2
+
       zpatch = 0._wp
       zcoef  = 1._wp/ptmax/86400._wp
 
-      IF (PRESENT (pz1) ) THEN 
+      SELECT CASE ( cl_typ )
+      CASE ( 'C', 'c' ) 
         ! horizontal extent
         zradius2 = pbw * pbw !  radius squared
         DO jj = 1, npjglo
@@ -381,7 +468,7 @@ CONTAINS
         ENDDO
         ! JMM : eventually add some checking to avoid locally large resto.
 
-      ELSE
+      CASE ( 'R','r' )
         ! horizontal extent
         zcoef2=1./(pbw +1.e-20 ) ! to avoid division by 0
         DO jj=1,npjglo
@@ -399,7 +486,7 @@ CONTAINS
           DO jk=2, npk
              presto(:,:,jk)=presto(:,:,1)
           ENDDO
-      ENDIF
+      END SELECT
       !
       DEALLOCATE ( zmask, zpatch )
       !
