@@ -81,17 +81,18 @@ PROGRAM cdfpvor
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE   :: stypvar              ! structure for attribute
 
-  LOGICAL                                     :: lfull  = .FALSE.     ! flag for full step
-  LOGICAL                                     :: lertel = .TRUE.      ! flag for large scale pv
-  LOGICAL                                     :: lchk   = .FALSE.     ! flag for missing files
-  LOGICAL                                     :: lnc4   = .FALSE.     ! flag for netcdf4 chunking and deflation
+  LOGICAL                                     :: lfull   = .FALSE.    ! flag for full step
+  LOGICAL                                     :: lertel  = .TRUE.     ! flag for large scale pv
+  LOGICAL                                     :: lchk    = .FALSE.    ! flag for missing files
+  LOGICAL                                     :: lnc4    = .FALSE.    ! flag for netcdf4 chunking and deflation
+  LOGICAL                                     :: l_metric= .TRUE.     ! flag for netcdf4 chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfpvor -t T-file  -u U-file -v V-file [-full] [-lspv] ...'
-     PRINT *,'           ... [-o OUT-file] [-nc4] [-vvl W-file]'
+     PRINT *,'           ... [-nometric] [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Ertel potential vorticity and save the relative  ' 
@@ -113,6 +114,8 @@ PROGRAM cdfpvor
      PRINT *,'       [-o OUT-file] : use output file instead of default ',TRIM(cf_out)
      PRINT *,'       [-vvl W-file] : use time-varying vertical metrics. W-file holds the'
      PRINT *,'                  time-varying e3w vertical metrics.'
+     PRINT *,'       [-nometric] : Do not use metrics for computing the vorticity.'
+     PRINT *,'                 Assume all metrics to be 1, arbitrary.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ', TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -139,22 +142,27 @@ PROGRAM cdfpvor
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-t'    ) ; CALL getarg( ijarg, cf_tfil) ; ijarg = ijarg + 1
-     CASE ( '-u'    ) ; CALL getarg( ijarg, cf_ufil) ; ijarg = ijarg + 1
-     CASE ( '-v'    ) ; CALL getarg( ijarg, cf_vfil) ; ijarg = ijarg + 1
+     CASE ( '-t'      ) ; CALL getarg( ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-u'      ) ; CALL getarg( ijarg, cf_ufil) ; ijarg = ijarg + 1
+     CASE ( '-v'      ) ; CALL getarg( ijarg, cf_vfil) ; ijarg = ijarg + 1
       ! options
-     CASE ( '-full' ) ; lfull  = .TRUE.
-     CASE ( '-lspv' ) ; lertel = .FALSE. ; nvar = 1  ; cf_out = 'lspv.nc'
-     CASE ( '-nc4'  ) ; lnc4   = .TRUE.
-     CASE ( '-o'    ) ; CALL getarg( ijarg, cf_out ) ; ijarg = ijarg + 1
-     CASE ( '-vvl'  ) ; lg_vvl = .TRUE.
-        ;               CALL getarg( ijarg, cf_e3w ) ; ijarg = ijarg + 1
-     CASE DEFAULT     ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE ( '-full'   ) ; lfull  = .TRUE.
+     CASE ( '-lspv'   ) ; lertel = .FALSE. ; nvar = 1  ; cf_out = 'lspv.nc'
+     CASE ( '-nc4'    ) ; lnc4   = .TRUE.
+     CASE ( '-o'      ) ; CALL getarg( ijarg, cf_out ) ; ijarg = ijarg + 1
+     CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
+        ;                 CALL getarg( ijarg, cf_e3w ) ; ijarg = ijarg + 1
+     CASE ('-nometric') ; l_metric   = .FALSE.
+        ;               ; cf_out = 'pvor_grid.nc'
+     CASE DEFAULT       ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
 
-  lchk = lchk .OR. chkfile( cn_fzgr)
-  lchk = lchk .OR. chkfile( cn_fhgr)
+  IF ( l_metric ) THEN
+    lchk = lchk .OR. chkfile( cn_fzgr)
+    lchk = lchk .OR. chkfile( cn_fhgr)
+  ENDIF
+
   lchk = lchk .OR. chkfile( cf_tfil)
   IF ( lertel ) THEN
      lchk = lchk .OR. chkfile( cf_ufil)
@@ -190,11 +198,19 @@ PROGRAM cdfpvor
   ENDIF
   IF ( lfull ) ALLOCATE ( e31d(npk)                       )
 
-  e1u   = getvar(cn_fhgr, cn_ve1u,  1, npiglo, npjglo)
-  e1t   = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo)
-  e2v   = getvar(cn_fhgr, cn_ve2v,  1, npiglo, npjglo)
-  e2t   = getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo)
-  gphit = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
+  IF ( l_metric ) THEN
+    e1u   = getvar(cn_fhgr, cn_ve1u,  1, npiglo, npjglo)
+    e1t   = getvar(cn_fhgr, cn_ve1t,  1, npiglo, npjglo)
+    e2v   = getvar(cn_fhgr, cn_ve2v,  1, npiglo, npjglo)
+    e2t   = getvar(cn_fhgr, cn_ve2t,  1, npiglo, npjglo)
+    gphit = getvar(cn_fhgr, cn_gphit, 1, npiglo, npjglo)
+  ELSE
+    e1u   = 1.
+    e1t   = 1.
+    e2v   = 1.
+    e2t   = 1.
+    gphit = 10.  ! will give a constant value for f (10 deg N, arbitrary)
+  ENDIF
 
   rau0sg      = 1020./9.81
   zpi         = ACOS(-1.)
@@ -215,7 +231,13 @@ PROGRAM cdfpvor
   ! create output fileset
   CALL CreateOutput
 
-  IF ( lfull ) e31d = getvare3( cn_fzgr, cn_ve3w, npk )
+  IF ( lfull  ) THEN
+    IF ( l_metric ) THEN
+      e31d = getvare3( cn_fzgr, cn_ve3w, npk )
+    ELSE
+      e31d = 1.
+    ENDIF
+  ENDIF
 
   DO jt=1,npt
      IF ( lg_vvl ) THEN ; it=jt
@@ -256,9 +278,13 @@ PROGRAM cdfpvor
            zsal(:,:,iup)  = getvar(cf_tfil, cn_vosaline, jk-1 ,npiglo, npjglo, ktime=jt)
            WHERE(zsal(:,:,idown) == 0 ) tmask = 0
 
-           IF ( lfull ) THEN ; e3w(:,:) = e31d(jk)
-           ELSE              ; e3w(:,:) = getvar(cn_fe3w, cn_ve3w, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+           IF ( l_metric ) THEN
+              IF ( lfull ) THEN ; e3w(:,:) = e31d(jk)
+              ELSE              ; e3w(:,:) = getvar(cn_fe3w, cn_ve3w, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+              ENDIF
+           ELSE                 ; e3w(:,:) = 1.
            ENDIF
+              
 
            WHERE (e3w == 0 ) e3w = 1.
 

@@ -59,7 +59,8 @@ PROGRAM cdfcurl
   LOGICAL                                   :: ldblpr   = .FALSE. ! flag for dble precision output
   LOGICAL                                   :: lsurf    = .FALSE. ! flag for 1 lev on C grid.
   LOGICAL                                   :: loverf   = .FALSE. ! flag for 1 lev on C grid.
-  LOGICAL                                   :: lnc4=.FALSE.       ! flag for netcdf4 output with chunking and deflation
+  LOGICAL                                   :: lnc4     = .FALSE. ! flag for netcdf4 output with chunking and deflation
+  LOGICAL                                   :: l_metric  =.TRUE.  ! flag for using metric files
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames() 
@@ -67,7 +68,7 @@ PROGRAM cdfcurl
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfcurl -u U-file U-var -v V-file V-var -l LST-level [-T] [-8]...'
-     PRINT *,'           ... [-surf] [-overf] [-o OUT-file] [-nc4]'
+     PRINT *,'           ... [-nometric] [-surf] [-overf] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the curl of a vector field, at a specified level. If level is'  
@@ -88,6 +89,7 @@ PROGRAM cdfcurl
      PRINT *,'       [-T] : compute curl at T point instead of default F-point'
      PRINT *,'       [-8] : save in double precision instead of standard simple precision.'
      PRINT *,'       [-surf] : work with single level C-grid (not forcing)'
+     PRINT *,'       [-nometric] : Do not use metric files. Assume arbitrary 1m.'
      PRINT *,'       [-overf]: store the ratio curl/f where f is the coriolis parameter.'
      PRINT *,'              This option is not compatible with -T option.'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out) 
@@ -108,19 +110,21 @@ PROGRAM cdfcurl
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-u'    ) ; CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
-        ;              CALL getarg(ijarg, cv_u   ) ; ijarg=ijarg+1
-     CASE ('-v'    ) ; CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
-        ;              CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
-     CASE ('-l'    ) ; CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
-        ;              CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
-     CASE ( '-nc4' ) ; lnc4    = .TRUE.
-     CASE ('-T'    ) ; ltpoint = .TRUE.
-     CASE ('-8'    ) ; ldblpr  = .TRUE.
-     CASE ('-surf' ) ; lsurf   = .TRUE.
-     CASE ('-overf') ; loverf  = .TRUE.
-     CASE ('-o'    ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE ('-u'       ) ; CALL getarg(ijarg, cf_ufil) ; ijarg=ijarg+1
+        ;               ; CALL getarg(ijarg, cv_u   ) ; ijarg=ijarg+1
+     CASE ('-v'       ) ; CALL getarg(ijarg, cf_vfil) ; ijarg=ijarg+1
+        ;               ; CALL getarg(ijarg, cv_v   ) ; ijarg=ijarg+1
+     CASE ('-l'       ) ; CALL getarg(ijarg, cldum) ; ijarg=ijarg+1 
+        ;               ; CALL ParseLevel(cldum)  ! fills in array nilev(nlev)
+     CASE ( '-nc4'    ) ; lnc4    = .TRUE.
+     CASE ('-T'       ) ; ltpoint = .TRUE.
+     CASE ('-8'       ) ; ldblpr  = .TRUE.
+     CASE ('-surf'    ) ; lsurf   = .TRUE.
+     CASE ('-overf'   ) ; loverf  = .TRUE.
+     CASE ('-nometric') ; l_metric= .FALSE.
+       ;                ; cf_out = 'curl_grid.nc'
+     CASE ('-o'       ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   ENDDO
 
@@ -129,7 +133,7 @@ PROGRAM cdfcurl
      STOP
   ENDIF
 
-  lchk = chkfile(cn_fhgr ) .OR. lchk
+  IF ( l_metric ) lchk = chkfile(cn_fhgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
   IF ( lchk ) STOP ! missing files
@@ -161,7 +165,8 @@ PROGRAM cdfcurl
   ENDIF
 
   ! if forcing field 
-  IF ( nilev(1) == 0 .AND. npk==0 ) THEN
+  !IF ( nilev(1) == 0 .AND. npk==0 ) THEN
+  IF ( nilev(1) == 0 ) THEN
      lforcing=.TRUE.
      npk = 1 ; nilev(1)=1
      PRINT *, 'npk =0, assume 1'
@@ -191,14 +196,25 @@ PROGRAM cdfcurl
 
   IF ( ltpoint) ALLOCATE (dl_rotn(npiglo,npjglo) )
 
-  e1u =  getvar(cn_fhgr, cn_ve1u, 1, npiglo, npjglo)
-  e1f =  getvar(cn_fhgr, cn_ve1f, 1, npiglo, npjglo)
-  e2v =  getvar(cn_fhgr, cn_ve2v, 1, npiglo, npjglo)
-  e2f =  getvar(cn_fhgr, cn_ve2f, 1, npiglo, npjglo)
+  IF ( l_metric ) THEN
+    e1u =  getvar(cn_fhgr, cn_ve1u, 1, npiglo, npjglo)
+    e1f =  getvar(cn_fhgr, cn_ve1f, 1, npiglo, npjglo)
+    e2v =  getvar(cn_fhgr, cn_ve2v, 1, npiglo, npjglo)
+    e2f =  getvar(cn_fhgr, cn_ve2f, 1, npiglo, npjglo)
+  ELSE
+    e1u =  1.
+    e1f =  1.
+    e2v =  1.
+    e2f =  1.
+    zun = 10.
+    zvn = 10.
+  ENDIF
 
   ! use zun and zvn to store f latitude and longitude for output
+  IF ( l_metric ) THEN
   zun = getvar(cn_fhgr, cn_glamf, 1, npiglo, npjglo)
   zvn = getvar(cn_fhgr, cn_gphif, 1, npiglo, npjglo)
+  ENDIF
 
   IF ( loverf ) THEN
      ALLOCATE (dl_ff(npiglo,npjglo) )
@@ -226,6 +242,7 @@ PROGRAM cdfcurl
      IF (MOD(jt,100)==0 ) PRINT *, jt,'/',npt
      DO jk = 1, nlev
         ! if files are forcing fields
+        print *, TRIM(cf_ufil),' ',TRIM(cv_u),' ', jk, nilev(jk), npiglo, npjglo, jt
         zun(:,:) =  getvar(cf_ufil, cv_u, nilev(jk) ,npiglo,npjglo, ktime=jt)
         zvn(:,:) =  getvar(cf_vfil, cv_v, nilev(jk) ,npiglo,npjglo, ktime=jt)
 
