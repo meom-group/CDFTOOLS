@@ -103,7 +103,7 @@ PROGRAM cdfnorth_unfold
   
   ijarg=1
   DO WHILE ( ijarg <= narg )
-      CALL getarg (2, cldum )
+      CALL getarg (ijarg, cldum )
       SELECT CASE ( cldum )
       CASE ( '-f'     ) ; CALL getarg (ijarg, cf_in ) ; ijarg=ijarg+1
       CASE ( '-jatl'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijatl
@@ -113,7 +113,7 @@ PROGRAM cdfnorth_unfold
       ! options
       CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
       CASE ( '-nc4'   ) ; lnc4 = .TRUE.
-      CASE DEFAULt      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
       END SELECT
   ENDDO
 
