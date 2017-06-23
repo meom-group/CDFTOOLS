@@ -103,7 +103,8 @@ PROGRAM cdfnorth_unfold
   
   ijarg=1
   DO WHILE ( ijarg <= narg )
-      CALL getarg (ijarg, cldum )
+      CALL getarg (ijarg, cldum )  ; ijarg=ijarg+1
+      print *, TRIM(cldum), ijarg, narg
       SELECT CASE ( cldum )
       CASE ( '-f'     ) ; CALL getarg (ijarg, cf_in ) ; ijarg=ijarg+1
       CASE ( '-jatl'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijatl
