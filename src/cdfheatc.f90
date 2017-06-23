@@ -70,7 +70,7 @@ PROGRAM cdfheatc
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfheatc  -f T-file [-mxloption option] -[mxlf MXL-file] ...'
+     PRINT *,' usage :  cdfheatc  -f T-file [-mxloption option] [-mxlf MXL-file] ...'
      PRINT *,'     [-zoom imin imax jmin jmax kmin kmax] [-full] [-o OUT-file]'
      PRINT *,'     [-M MSK-file VAR-mask ] [-vvl ]'
      PRINT *,'      '

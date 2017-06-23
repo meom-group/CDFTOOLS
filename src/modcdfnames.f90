@@ -197,9 +197,6 @@ MODULE modCdfNames
     NAMELIST/nammetrics/ cn_vff
     NAMELIST/nammetrics/ cn_glamt, cn_glamu, cn_glamv, cn_glamf
     NAMELIST/nammetrics/ cn_gphit, cn_gphiu, cn_gphiv, cn_gphif
-    ! mask variables
-    NAMELIST/nammask/ cn_tmask, cn_umask, cn_vmask, cn_fmask, cn_polymask, cn_tmaskutil
-    NAMELIST/nammask/ cn_tmaskatl, cn_tmaskpac, cn_tmaskind, cn_tmaskant, cn_tmaskmed
     !        mesh_zgr
     NAMELIST/nammetrics/ cn_gdept, cn_gdepw
     NAMELIST/nammetrics/ cn_hdept, cn_hdepw
@@ -231,6 +228,9 @@ MODULE modCdfNames
 
     ! name of mesh_mask files
     NAMELIST/nammeshmask/ cn_fzgr, cn_fe3t, cn_fe3u, cn_fe3v, cn_fe3w, cn_fhgr, cn_fmsk, cn_fcoo, cn_fbasins
+    ! mask variables
+    NAMELIST/nammask/ cn_tmask, cn_umask, cn_vmask, cn_fmask, cn_polymask, cn_tmaskutil
+    NAMELIST/nammask/ cn_tmaskatl, cn_tmaskpac, cn_tmaskind, cn_tmaskant, cn_tmaskmed
 
     ! Bathymetry
     NAMELIST/nambathy/ cn_fbathymet, cn_fbathylev, cn_bathymet, cn_bathylev, cn_mbathy
