@@ -71,7 +71,7 @@ PROGRAM cdfgeo_uv
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [-nc4] [-C option]'
+     PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [-ssh SSH-var] [-nc4] [-C option]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'         Compute the geostrophic velocity components from the gradient of the'
@@ -97,6 +97,7 @@ PROGRAM cdfgeo_uv
      PRINT *,'           option = 2 : Ugeo and Vgeo are interpolated on the C-grid after'
      PRINT *,'              derivation.'
      PRINT *,'              Both options should give very similar results...'
+     PRINT *,'      [-ssh SSH-var ]: give the name of the SSH variable if not ',TRIM(cn_sossheig)
      PRINT *,'  '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -118,13 +119,14 @@ PROGRAM cdfgeo_uv
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ('-f'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1 
+     CASE ('-f'   ) ; CALL getarg(ijarg, cf_tfil     ) ; ijarg = ijarg + 1 
         ! options
-     CASE ('-o'   ) ; CALL getarg(ijarg, cf_uout ) ; ijarg = ijarg + 1
-        ;             CALL getarg(ijarg, cf_vout ) ; ijarg = ijarg + 1
+     CASE ('-o'   ) ; CALL getarg(ijarg, cf_uout     ) ; ijarg = ijarg + 1
+        ;             CALL getarg(ijarg, cf_vout     ) ; ijarg = ijarg + 1
      CASE ('-nc4' ) ; lnc4 = .TRUE.
-     CASE ('-C'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1
+     CASE ('-C'   ) ; CALL getarg(ijarg, cldum       ) ; ijarg = ijarg + 1
         ;             READ(cldum, * ) ioption
+     CASE ('-ssh' ) ; CALL getarg(ijarg, cn_sossheig ) ; ijarg = ijarg + 1 
      CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' :  unknown option.' ; STOP
      END SELECT
   ENDDO
