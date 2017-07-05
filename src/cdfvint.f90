@@ -129,7 +129,7 @@ PROGRAM cdfvint
          SELECT CASE ( ij)
          CASE ( 1 ) ; cf_in = cldum
          CASE ( 2 ) ; cv_in = cldum
-         CASE DEFAULT ; PRINT *, ' ERROR: Too many arguments ! ' ; STOP
+         CASE DEFAULT ; PRINT *, ' ERROR: Too many arguments ! ' ; STOP 99
          END SELECT
       END SELECT
    END DO
@@ -139,7 +139,7 @@ PROGRAM cdfvint
    lchk = chkfile ( cn_fmsk ) .OR. lchk
    lchk = chkfile ( cn_fhgr ) .OR. lchk
    lchk = chkfile ( cn_fzgr ) .OR. lchk
-   IF ( lchk ) STOP ! missing files
+   IF ( lchk ) STOP 99 ! missing files
   
    IF ( ltmean .AND. cv_in == cn_vosaline ) THEN
        PRINT *,' WARNING : flag -tmean is useless with variable', TRIM(cv_in)
@@ -178,7 +178,7 @@ PROGRAM cdfvint
    ELSE
       PRINT *,'  ERROR: Variable ', TRIM(cv_in), ' not pre-defined ...'
       PRINT *,'     Accepted variables are ', TRIM(cn_votemper),' and ',TRIM(cn_vosaline)
-      STOP
+      STOP 99
    ENDIF
 
    ! log information so far

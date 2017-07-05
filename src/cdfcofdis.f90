@@ -96,7 +96,7 @@ PROGRAM cdfcofdis
   lchk =           chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_tfil )
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   iarg = 4 
   DO WHILE ( iarg <= narg )
@@ -108,7 +108,7 @@ PROGRAM cdfcofdis
        lsurf = .true.
     CASE DEFAULT
        PRINT *,' unknown option : ', TRIM(cldum)
-       STOP
+       STOP 99
     END SELECT
   END DO
 
@@ -121,7 +121,7 @@ PROGRAM cdfcofdis
     jpk = getdim(cf_tfil,'z')
     IF ( jpk == 0 ) THEN
       PRINT *,' ERROR in determining jpk form gridT file ....'
-      STOP
+      STOP 99
     ENDIF
   ENDIF
 

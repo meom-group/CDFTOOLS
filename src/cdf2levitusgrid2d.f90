@@ -120,7 +120,7 @@ PROGRAM cdf2levitusgrid2d
    lchk = chkfile (cn_fmsk)         .OR. lchk
    lchk = chkfile (cf_levitus_mask) .OR. lchk
    lchk = chkfile (cf_in)           .OR. lchk
-   IF ( lchk ) STOP ! missing files
+   IF ( lchk ) STOP 99 ! missing files
 
    npiglo = getdim(cf_in,cn_x)
    npjglo = getdim(cf_in,cn_y)
@@ -431,7 +431,7 @@ PROGRAM cdf2levitusgrid2d
 
          CASE DEFAULT 
             PRINT *, ' METHOD ', imethod ,'is not recognized in this program'
-            STOP
+            STOP 99
 
          END SELECT  ! imethod
          IF ( ALLOCATED(z_fill) ) DEALLOCATE( z_fill )

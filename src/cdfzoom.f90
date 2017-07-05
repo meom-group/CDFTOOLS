@@ -99,11 +99,11 @@ PROGRAM cdfzoom
         CALL getarg(ijarg,cv_in) ; ijarg = ijarg + 1
      CASE DEFAULT
         PRINT *, TRIM(cldum),' : unknown option '
-        STOP
+        STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile (cf_in) ) STOP ! missing file
+  IF ( chkfile (cf_in) ) STOP 99 ! missing file
   !
   ni=0 ; nj=0 ; nk=0 ; nt=0 
   niz  = iimax - iimin + 1
@@ -117,7 +117,7 @@ PROGRAM cdfzoom
      ELSE IF ( njz == 1 ) THEN ! x/z slab
      ELSE
         PRINT *, 'Either niz or njz must me  one'
-        STOP
+        STOP 99
      ENDIF
   ENDIF
 
@@ -125,7 +125,7 @@ PROGRAM cdfzoom
   IF ( ierr == 1 ) THEN 
      ni = getdim(cf_in, 'lon', cldum, ierr)
      IF ( ierr == 1 ) THEN
-        PRINT *,' No X or lon dim found ' ; STOP
+        PRINT *,' No X or lon dim found ' ; STOP 99
      ENDIF
   ENDIF
 
@@ -133,7 +133,7 @@ PROGRAM cdfzoom
   IF ( ierr == 1 ) THEN 
      nj = getdim(cf_in, 'lat', cldum, ierr)
      IF ( ierr == 1 ) THEN
-        PRINT *,' No y or lat dim found ' ; STOP
+        PRINT *,' No y or lat dim found ' ; STOP 99
      ENDIF
   ENDIF
 
@@ -164,7 +164,7 @@ PROGRAM cdfzoom
 
   IF ( itmax > nt ) THEN 
      PRINT *,' Not enough time steps in this file' 
-     STOP
+     STOP 99
   ENDIF
 
   IF (nk == 0 ) THEN ; nk = 1 ; ikext = 1 ; ENDIF  ! assume a 2D variable

@@ -117,7 +117,7 @@ PROGRAM cdfovide
   lchk = chkfile(cfilet ) .OR. lchk
   lchk = chkfile(cfileu ) .OR. lchk
   lchk = chkfile(cfilev ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! R. Dussin : Location of leg points that define the 3 legs of OVIDE section
   !rlonsta(1) = -43.00 ; rlatsta(1) = 60.60    ! Greenland
@@ -217,7 +217,10 @@ PROGRAM cdfovide
         PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc)&
              &               , iloc, jloc 
         PRINT *,' Algorithme ne converge pas ', rdis 
-        IF ( niter >=  1 ) STOP ' pas de convergence apres iteration'
+        IF ( niter >=  1 ) THEN
+           PRINT *, ' pas de convergence apres iteration'
+           STOP 99
+        ENDIF
         lagain = .TRUE.
         jloc = npjglo
         niter = niter +1
@@ -252,7 +255,10 @@ PROGRAM cdfovide
         PRINT 9000, 'Long= ',glamfound,' Lat = ',gphi(iloc,jloc) &
              &               , iloc, jloc
         PRINT *,' Algorithme ne converge pas ', rdis
-        IF ( niter >= 1 ) STOP ' pas de convergence avres iteration'
+        IF ( niter >= 1 ) THEN
+           PRINT *, ' pas de convergence avres iteration'
+           STOP 99
+        ENDIF
         lagain = .TRUE.
         jloc  = npjglo
         niter = niter +1
@@ -334,7 +340,10 @@ PROGRAM cdfovide
         ! ... compute the nearest j point on the line crossing at i
         DO i=i0,i1
            n=n+1
-           IF (n > jpseg) STOP 'n > jpseg !'
+           IF (n > jpseg) THEN
+              PRINT *, 'n > jpseg !'
+              STOP 99
+           ENDIF
            j=NINT(aj*i + bj )
            yypt(n) = CMPLX(i,j)
         END DO
@@ -359,7 +368,10 @@ PROGRAM cdfovide
         ! ... compute the nearest i point on the line crossing at j
         DO j=j0,j1
            n=n+1
-           IF (n > jpseg) STOP 'n>jpseg !'
+           IF (n > jpseg) THEN
+              PRINT *, 'n>jpseg !'
+              STOP 99
+           ENDIF
            i=NINT(ai*j + bi)
            yypt(n) = CMPLX(i,j)
         END DO
@@ -379,12 +391,18 @@ PROGRAM cdfovide
         IF ( d > 1 ) THEN
            CALL interm_pt(yypt,kk,ai,bi,aj,bj,yypti)
            nn=nn+1
-           IF (nn > jpseg) STOP 'nn>jpseg !'
+           IF (nn > jpseg) THEN
+              PRINT *, 'nn>jpseg !'
+              STOP 99
+           ENDIF
            rxx(nn)=REAL(yypti)
            ryy(nn)=IMAG(yypti)
         END IF
         nn=nn+1
-        IF (nn > jpseg) STOP 'nn>jpseg !'
+        IF (nn > jpseg) THEN
+           PRINT *, 'nn>jpseg !'
+           STOP 99
+        ENDIF
         rxx(nn)=REAL(yypt(kk))
         ryy(nn)=IMAG(yypt(kk))
      END DO

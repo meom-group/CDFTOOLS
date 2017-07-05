@@ -117,7 +117,7 @@ PROGRAM cdfeddyscale_pass1
    lchk = chkfile(cn_fhgr ) .OR. lchk
    lchk = chkfile(cf_ufil ) .OR. lchk
    lchk = chkfile(cf_vfil ) .OR. lchk
-   IF ( lchk ) STOP ! missing files
+   IF ( lchk ) STOP 99 ! missing files
 
    ! load the dimension
    npiglo = getdim(cf_ufil,cn_x)
@@ -134,7 +134,7 @@ PROGRAM cdfeddyscale_pass1
    !test if lev exists
    IF ( (npk==0) .AND. (ilev > 1) ) THEN
       PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
-      STOP
+      STOP 99
    ELSE
       npk = 1
    END IF

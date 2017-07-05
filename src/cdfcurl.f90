@@ -133,7 +133,7 @@ PROGRAM cdfcurl
   lchk = chkfile(cn_fhgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
 
   ! define new variables for output
@@ -174,7 +174,7 @@ PROGRAM cdfcurl
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
      PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
      PRINT *, '  Use -surf option is dealing with single level file on C grid '
-     STOP
+     STOP 99
   END IF
 
   ! case of 1 level on C-grid

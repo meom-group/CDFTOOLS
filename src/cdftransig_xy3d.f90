@@ -175,10 +175,10 @@ PROGRAM cdftransig_xy3d
   CASE ( 'none'                 ) 
       ! in this case check that all parameters are set individually
       IF ( iset /= 3  ) THEN 
-         PRINT *, ' You must set depref, nbins, sigmin  individually' ; STOP
+         PRINT *, ' You must set depref, nbins, sigmin  individually' ; STOP 99
       ENDIF
   CASE DEFAULT 
-      PRINT *, ' this depcode :',TRIM(cldepcode),' is not available.' ; STOP
+      PRINT *, ' this depcode :',TRIM(cldepcode),' is not available.' ; STOP 99
   END SELECT
 
   ds1scalmin = MIN ( ds1scalmin, ds1scal )
@@ -193,7 +193,7 @@ PROGRAM cdftransig_xy3d
   ! use first tag to look for file dimension
   CALL getarg (istag, ctag)
   cf_vfil = SetFileName (config, ctag, 'V' )
-  IF ( chkfile(cf_vfil) ) STOP ! missing file
+  IF ( chkfile(cf_vfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_vfil, cn_x)
   npjglo = getdim (cf_vfil, cn_y)
@@ -320,7 +320,7 @@ PROGRAM cdftransig_xy3d
         lchk =           chkfile ( cf_tfil) 
         lchk = lchk .OR. chkfile ( cf_ufil) 
         lchk = lchk .OR. chkfile ( cf_vfil) 
-        IF ( lchk ) STOP ! missing file
+        IF ( lchk ) STOP 99 ! missing file
         
         IF (jk== 1 ) THEN
            npt = getdim (cf_tfil, cn_t)  ! assuming all files (U V ) contains same number of time frame

@@ -90,7 +90,7 @@ PROGRAM cdfbti
 
   lchk = chkfile (cn_fhgr )
   lchk = lchk .OR. chkfile (cf_uvwtfil )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo  = getdim(cf_uvwtfil,cn_x)
   npjglo  = getdim(cf_uvwtfil,cn_y)

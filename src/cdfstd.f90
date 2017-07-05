@@ -129,7 +129,7 @@ PROGRAM cdfstd
      END SELECT
   END DO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -231,7 +231,7 @@ PROGRAM cdfstd
               CASE DEFAULT
                  cf_in=cldum
               END SELECT
-              IF ( chkfile(cf_in) ) STOP ! missing file
+              IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
               IF ( lcaltmean )  THEN
                  npt = getdim (cf_in, cn_t)

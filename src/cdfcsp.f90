@@ -63,7 +63,7 @@ PROGRAM cdfcsp
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   CALL getarg (1, cf_in)
-  IF ( chkfile (cf_in) ) STOP ! missing file
+  IF ( chkfile (cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -95,7 +95,7 @@ PROGRAM cdfcsp
 
   DO jf = 1, narg
      CALL getarg (jf, cf_in)
-     IF ( chkfile (cf_in) ) STOP ! missing file
+     IF ( chkfile (cf_in) ) STOP 99 ! missing file
      PRINT *, 'Change spval on file ', cf_in
      ncid = ncopen(cf_in)
      npt  = getdim (cf_in,cn_t)

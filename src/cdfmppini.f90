@@ -94,12 +94,12 @@ PROGRAM cdfmppini
         SELECT CASE ( ireq )
         CASE ( 1 ) ; READ(cldum,*) jpni
         CASE ( 2 ) ; READ(cldum,*) jpnj
-        CASE DEFAULT ; PRINT *,' Too many arguments.'; STOP
+        CASE DEFAULT ; PRINT *,' Too many arguments.'; STOP 99
         END SELECT
      END SELECT
   END DO
 
-  IF ( chkfile (cf_msk ))  STOP ! missing file
+  IF ( chkfile (cf_msk ))  STOP 99 ! missing file
   
   jpiglo = getdim (cf_msk,cn_x)
   jpjglo = getdim (cf_msk,cn_y)

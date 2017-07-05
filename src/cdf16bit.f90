@@ -85,7 +85,7 @@ PROGRAM cdf16bit
   !!
   ijarg = 1
   CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
-  IF ( chkfile(cf_in)  ) STOP ! missing file
+  IF ( chkfile(cf_in)  ) STOP 99 ! missing file
 
   ! Check for options and reflect options on logical flags
   DO WHILE ( ijarg <= narg)  
@@ -97,7 +97,7 @@ PROGRAM cdf16bit
      CASE ( '-verbose' )          ! information will be given level by level
         l_chk=.true. ; l_verbose=.true.
      CASE DEFAULT
-        PRINT *,' OPTION ',TRIM(cldum),' not supported.' ; STOP
+        PRINT *,' OPTION ',TRIM(cldum),' not supported.' ; STOP 99
      END SELECT
   END DO
 
@@ -108,7 +108,10 @@ PROGRAM cdf16bit
 
   IF (ierr /= 0 ) THEN
      npk   = getdim (cf_in,'z',kstatus=ierr)
-     IF (ierr /= 0 ) STOP 'depth dimension name not suported'
+     IF (ierr /= 0 ) THEN
+        PRINT *, 'depth dimension name not suported'
+        STOP 99
+     ENDIF
   ENDIF
   npt    = getdim (cf_in, cn_t)
 

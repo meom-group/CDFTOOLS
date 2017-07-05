@@ -148,10 +148,10 @@ PROGRAM cdfzonalmeanvT
    IF ( npbasins /=1 ) THEN
       lchk = lchk .OR. chkfile (cf_basins  )
    ENDIF
-   IF ( lchk ) STOP ! missing files
+   IF ( lchk ) STOP 99 ! missing files
 
    cf_tfil = SetFileName( confcase, cldum, 'T')  ! look in first T file for dimensions
-   IF ( chkfile (cf_tfil) ) STOP 
+   IF ( chkfile (cf_tfil) ) STOP 99
 
    npiglo = getdim (cf_tfil,cn_x)
    npjglo = getdim (cf_tfil,cn_y)
@@ -186,11 +186,11 @@ PROGRAM cdfzonalmeanvT
    IF ( ldebug ) PRINT *, 'done.'
 
    ! initialization of 2D time independant fields
-   zmask(1,:,:) = getvar(cn_fmsk, 'tmask', 1, npiglo, npjglo)
+   zmask(1,:,:) = getvar(cn_fmsk, cn_tmask, 1, npiglo, npjglo)
    IF ( cf_basins /= 'none' ) THEN
-      zmask(2,:,:) = getvar(cf_basins, 'tmaskatl', 1, npiglo, npjglo )
-      zmask(4,:,:) = getvar(cf_basins, 'tmaskind', 1, npiglo, npjglo )
-      zmask(5,:,:) = getvar(cf_basins, 'tmaskpac', 1, npiglo, npjglo )
+      zmask(2,:,:) = getvar(cf_basins, cn_tmaskatl, 1, npiglo, npjglo )
+      zmask(4,:,:) = getvar(cf_basins, cn_tmaskind, 1, npiglo, npjglo )
+      zmask(5,:,:) = getvar(cf_basins, cn_tmaskpac, 1, npiglo, npjglo )
       zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
       ! ensure that there are no overlapping on the masks
       WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
@@ -232,7 +232,7 @@ PROGRAM cdfzonalmeanvT
             ztem(:,:) = getvar(cf_tfil,  cn_votemper, jk, npiglo, npjglo, ktime=jt )
             zvel(:,:) = getvar(cf_vfil,  cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
             ! do not read e3 metrics at level jk ( to do as in cdfzonal mean ... JMM : to be improved !
-            zvmask(:,:) = getvar(cn_fmsk, 'vmask',    jk ,npiglo, npjglo          )
+            zvmask(:,:) = getvar(cn_fmsk, cn_vmask,    jk ,npiglo, npjglo          )
 
             ! put T and S at V points
             ztem(:,1:npjglo-1) = 0.5 * ( ztem(:,1:npjglo-1) + ztem(:,2:npjglo) ) * zvmask(:,1:npjglo-1)

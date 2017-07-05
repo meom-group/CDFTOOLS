@@ -124,7 +124,7 @@ PROGRAM cdfeke
   IF ( nfree /= 3 .AND. nfree /= 5 ) THEN
     PRINT *, ' +++ ERROR : not the correct number of free arguments'
     PRINT *, '            Likely a wrong option or missing file name'
-    STOP
+    STOP 99
   ENDIF
 
   ! ( 2 )
@@ -162,7 +162,7 @@ PROGRAM cdfeke
     lchk = lchk .OR. chkfile (cf_v2fil)
   ENDIF
 
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim (cf_ufil,cn_x)
   npjglo = getdim (cf_ufil,cn_y)
@@ -240,8 +240,8 @@ PROGRAM cdfeke
       uc(:,:) = getvar(cf_ufil,  cn_vozocrtx,               jk, npiglo, npjglo, ktime=jt )
       vc(:,:) = getvar(cf_vfil,  cn_vomecrty,               jk, npiglo, npjglo, ktime=jt )
       IF ( leke ) THEN
-        u2(:,:) = getvar(cf_u2fil, TRIM(cn_vozocrtx)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
-        v2(:,:) = getvar(cf_v2fil, TRIM(cn_vomecrty)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
+        u2(:,:) = getvar(cf_u2fil, TRIM(cn_vozocrtx2), jk ,npiglo, npjglo, ktime=jt )
+        v2(:,:) = getvar(cf_v2fil, TRIM(cn_vomecrty2), jk ,npiglo, npjglo, ktime=jt )
       ENDIF
 
       ua = 0. ; va = 0. ; eke(:,:) = 0.

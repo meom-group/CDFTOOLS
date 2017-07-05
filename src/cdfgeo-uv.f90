@@ -128,7 +128,7 @@ PROGRAM cdfgeo_uv
          cl_global=' (Ugeo, Vgeo ) are on ( U, V ) points of the C-grid (velocity interp)'
        ELSE
          PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++'
-         STOP
+         STOP 99
        ENDIF
     CASE DEFAULT
        PRINT *, '  +++ ERROR: Argument ',TRIM(cl_dum),' not supported. +++'
@@ -138,7 +138,7 @@ PROGRAM cdfgeo_uv
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim(cf_tfil, cn_x)
   npjglo = getdim(cf_tfil, cn_y)

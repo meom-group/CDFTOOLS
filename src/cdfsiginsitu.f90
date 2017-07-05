@@ -101,12 +101,12 @@ PROGRAM cdfsiginsitu
          cf_tfil = cldum
       ELSE
          PRINT *,' option ',TRIM(cldum),' not understood'
-         STOP
+         STOP 99
       ENDIF
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) ) STOP ! missing file
+  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)

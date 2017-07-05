@@ -64,7 +64,7 @@ PROGRAM cdfscale
   CALL getarg(2, cv_inout) 
   CALL getarg(3, cldum)  ; READ(cldum,*) vscale
 
-  IF ( chkfile (cf_inout) )  STOP ! missing file
+  IF ( chkfile (cf_inout) )  STOP 99 ! missing file
 
   npiglo = getdim (cf_inout, cn_x              )
   npjglo = getdim (cf_inout, cn_y              )

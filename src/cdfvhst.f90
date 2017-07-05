@@ -85,7 +85,7 @@ PROGRAM cdfvhst
      END SELECT
   END DO
 
-  IF ( chkfile(cf_vtfil) ) STOP ! missing file
+  IF ( chkfile(cf_vtfil) ) STOP 99 ! missing file
 
   npiglo= getdim (cf_vtfil,cn_x )
   npjglo= getdim (cf_vtfil,cn_y )

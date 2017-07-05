@@ -57,7 +57,7 @@ PROGRAM cdfkempemekeepe
 
   CALL getarg(1, cf_uvwtfil)
 
-  IF (chkfile(cf_uvwtfil) ) STOP ! missing file
+  IF (chkfile(cf_uvwtfil) ) STOP 99 ! missing file
   npiglo = getdim(cf_uvwtfil, cn_x)
   npjglo = getdim(cf_uvwtfil, cn_y)
   npk    = getdim(cf_uvwtfil, cn_z)

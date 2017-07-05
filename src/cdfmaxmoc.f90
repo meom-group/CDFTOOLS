@@ -94,7 +94,7 @@ PROGRAM cdfmaxmoc
   CALL getarg(5, cldum ) ; READ(cldum,*) rdepmin  ! searching window : depth min
   CALL getarg(6, cldum ) ; READ(cldum,*) rdepmax  ! searching window : depth max
   
-  IF ( chkfile(cf_moc) ) STOP ! missing file
+  IF ( chkfile(cf_moc) ) STOP 99 ! missing file
 
   npjglo = getdim(cf_moc, cn_y)
   npk    = getdim(cf_moc, cn_z)
@@ -109,7 +109,7 @@ PROGRAM cdfmaxmoc
   CASE ('pac') ; cv_in=cn_zomsfpac
   CASE ('inp') ; cv_in=cn_zomsfinp
   CASE ('ind') ; cv_in=cn_zomsfind
-  CASE DEFAULT ; STOP 'basin not found'
+  CASE DEFAULT ; PRINT *, 'basin not found' ; STOP 99
   END SELECT
 
   ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )

@@ -101,7 +101,7 @@ PROGRAM cdfrichardson
      SELECT CASE (cldum)
      CASE ('W','w') ; l_w   = .TRUE.
      CASE ('-full') ; lfull = .TRUE. ; cglobal = 'full step computation'
-     CASE DEFAULT   ; PRINT *,' Option not understood :', TRIM(cldum) ; STOP
+     CASE DEFAULT   ; PRINT *,' Option not understood :', TRIM(cldum) ; STOP 99
      END SELECT
   END DO
 
@@ -109,7 +109,7 @@ PROGRAM cdfrichardson
   lchk = lchk .OR. chkfile (cf_tfil  )
   lchk = lchk .OR. chkfile (cf_ufil  )
   lchk = lchk .OR. chkfile (cf_vfil  )
-  IF ( lchk  ) STOP  ! missing files 
+  IF ( lchk  ) STOP 99 ! missing files 
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

@@ -1,0 +1,12 @@
+# module load cray-netcdf cray-hdf5 
+
+LIBS = -L/opt/cray/netcdf-hdf5parallel/4.3.2/CRAY/83/lib -L/opt/cray/hdf5-parallel/1.8.13/CRAY/83/lib -lhdf5 -lhdf5_fortran -lnetcdf -lnetcdff -lhdf5_hl -lhdf5hl_fortran -lz
+NC4 = -D key_netcdf4 -D key_CMIP6
+
+F90=ftn -e F # force preprocessor irrespective of capitalization of file name
+             # extension
+FFLAGS= $(NC4) -O2  $(NCDF) $(LIBS)
+LMPI=-lmpich
+
+INSTALL=$(HOME)/bin/
+

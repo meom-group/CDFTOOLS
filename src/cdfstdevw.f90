@@ -48,7 +48,8 @@ PROGRAM cdfstdevw
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
-  cv_in = cn_vovecrtz
+  cv_in  = cn_vovecrtz
+  cv_in2 = cn_vovecrtz2
 
   narg= iargc()
   IF ( narg == 0 ) THEN
@@ -96,7 +97,7 @@ PROGRAM cdfstdevw
         CASE ( 2 ) ; cf_in2 = cldum
         CASE ( 3 ) ; cv_in  = cldum ; cf_out='rms_var.nc'
         CASE DEFAULT
-           PRINT *, ' Too many variables ' ; STOP
+           PRINT *, ' Too many variables ' ; STOP 99
         END SELECT
      END SELECT
   ENDDO
@@ -104,7 +105,7 @@ PROGRAM cdfstdevw
   ! check existence of files
   lchk = lchk .OR. chkfile(cf_in )
   lchk = lchk .OR. chkfile(cf_in2)
-  IF (lchk ) STOP ! missing file
+  IF (lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -138,7 +139,6 @@ PROGRAM cdfstdevw
   ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
   ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
-  cv_in2 = TRIM(cv_in)//'_sqd'
   DO jt = 1, npt
      DO jk = 1, npk
         zvbar(:,:) = getvar(cf_in,  cv_in,  jk, npiglo, npjglo, ktime=jt)

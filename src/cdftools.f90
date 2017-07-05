@@ -89,7 +89,7 @@ CONTAINS
 
     IF ( .NOT. ALLOCATED (dl_glam) ) THEN 
 
-    IF (chkfile (clcoo) ) STOP ! missing file
+    IF (chkfile (clcoo) ) STOP 99 ! missing file
 
     ipiglo= getdim (clcoo, cn_x)
     ipjglo= getdim (clcoo, cn_y)
@@ -356,7 +356,10 @@ CONTAINS
        ! ... compute the nearest ji point on the line crossing at ji
        DO ji=ii0, ii1
           ipts=ipts+1
-          IF (ipts > kpi+kpj) STOP 'ipts > kpi+kpj !'
+          IF (ipts > kpi+kpj) THEN
+             PRINT *, 'ipts > kpi+kpj !'
+             STOP 96
+          ENDIF
           ij=NINT(zaj*ji + zbj )
           ylpt(ipts) = CMPLX(ji,ij)
        END DO
@@ -379,7 +382,10 @@ CONTAINS
        ! ... compute the nearest ji point on the line crossing at jj
        DO jj=ij0,ij1
           ipts=ipts+1
-          IF (ipts > kpi+kpj) STOP 'ipts > kpi+kpj !'
+          IF (ipts > kpi+kpj) THEN
+             PRINT *, 'ipts > kpi+kpj !'
+             STOP 96
+          ENDIF
           ii=NINT(zai*jj + zbi)
           ylpt(ipts) = CMPLX(ii,jj)
        END DO
@@ -398,12 +404,18 @@ CONTAINS
        IF ( zd > 1 ) THEN
           CALL interm_pt(ylpt, jk, zai, zbi, zaj, zbj, ylpti)
           knn=knn+1
-          IF (knn > kpi+kpj) STOP 'knn>kpi+kpj !'
+          IF (knn > kpi+kpj) THEN
+             PRINT *, 'knn>kpi+kpj !'
+             STOP 96
+          ENDIF
           pxx(knn) = REAL(ylpti)
           pyy(knn) = IMAG(ylpti)
        END IF
        knn=knn+1
-       IF (knn > kpi+kpj) STOP 'knn>kpi+kpj !'
+       IF (knn > kpi+kpj) THEN
+          PRINT *, 'knn>kpi+kpj !'
+          STOP 96
+       ENDIF
        pxx(knn) = REAL(ylpt(jk))
        pyy(knn) = IMAG(ylpt(jk))
     END DO

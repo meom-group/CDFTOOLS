@@ -111,11 +111,11 @@ PROGRAM cdfmax
         lforcexy = .TRUE.
      CASE DEFAULT
         PRINT *, cldum,' : unknown option '
-        STOP
+        STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   ni=0 ; nj=0; nk=0; nt=0 
 
@@ -123,7 +123,7 @@ PROGRAM cdfmax
   IF ( istatus == 1 ) THEN 
      ni = getdim(cf_in, 'lon', cldum, istatus)
      IF ( istatus == 1 ) THEN
-        PRINT *,' No X or lon dim found ' ; STOP
+        PRINT *,' No X or lon dim found ' ; STOP 99
      ENDIF
   ENDIF
   IF ( iimax == 0 ) iimax = ni
@@ -132,7 +132,7 @@ PROGRAM cdfmax
   IF ( istatus == 1 ) THEN 
      nj = getdim(cf_in, 'lat', cldum, istatus)
      IF ( istatus == 1 ) THEN
-        PRINT *,' No y or lat dim found ' ; STOP
+        PRINT *,' No y or lat dim found ' ; STOP 99
      ENDIF
   ENDIF
   IF ( ijmax == 0 ) ijmax = nj
@@ -282,7 +282,7 @@ PROGRAM cdfmax
         END SELECT
 
      CASE DEFAULT
-        PRINT *,' ntype = ',ntype, '  is not defined ' ; STOP
+        PRINT *,' ntype = ',ntype, '  is not defined ' ; STOP 99
      END SELECT ! ntype
   ENDDO
 

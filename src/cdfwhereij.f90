@@ -78,24 +78,24 @@ PROGRAM cdfwhereij
         CASE ( 3 ) ; READ(cldum,*) ijmin
         CASE ( 4 ) ; READ(cldum,*) ijmax
         CASE DEFAULT
-           PRINT *,' Too many arguments !' ; STOP
+           PRINT *,' Too many arguments !' ; STOP 99
         END SELECT
      END SELECT
   END DO
 
-  IF ( chkfile(clcoo) ) STOP ! missing file
+  IF ( chkfile(clcoo) ) STOP 99 ! missing file
 
   npiglo = getdim (clcoo, cn_x)
   npjglo = getdim (clcoo, cn_y)
 
   IF ( iimax > npiglo ) THEN
      PRINT *,' ERROR : imax is greater than the maximum size ', iimax, npiglo
-     STOP
+     STOP 99
   ENDIF
 
   IF ( ijmax > npjglo ) THEN
      PRINT *,' ERROR : jmax is greater than the maximum size ', ijmax, npjglo
-     STOP
+     STOP 99
   END IF
 
   ALLOCATE (glam(npiglo,npjglo), gphi(npiglo,npjglo) )

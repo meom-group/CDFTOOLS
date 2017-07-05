@@ -172,7 +172,7 @@ PROGRAM cdfmhst
 
   ! security check
   SELECT CASE (ifile )
-  CASE ( 0 ) ; PRINT *, ' You must provide at least 1 file name (VT) ' ; STOP
+  CASE ( 0 ) ; PRINT *, ' You must provide at least 1 file name (VT) ' ; STOP 99
   CASE ( 1 ) ; lsepf = .false.; 
   CASE ( 2 ) ; lsepf = .true. ; cf_vfil = cf_vtfil ; cf_sfil = cf_tfil
   CASE ( 3 ) ; lsepf = .true. ; cf_vfil = cf_vtfil 
@@ -188,7 +188,7 @@ PROGRAM cdfmhst
      lchk = lchk .OR. chkfile( cf_sfil)
   ENDIF
 
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! check for sub basin file and set appropriate variables
   IF ( .NOT. chkfile(cn_fbasins ) ) THEN
@@ -349,21 +349,21 @@ PROGRAM cdfmhst
         IF ( llglo ) THEN
            ! Zonal mean with mask
            ! Atlantic 
-           zmask(:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
+        zmask(:,:) = getvar(cn_fbasins, cn_tmaskatl, 1, npiglo, npjglo)
            DO jj=1,npjglo
               dzonal_heat_atl(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
               dzonal_salt_atl(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
            END DO
 
            ! Pacific
-           zmask(:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+        zmask(:,:) = getvar(cn_fbasins, cn_tmaskpac, 1, npiglo, npjglo)
            DO jj=1,npjglo
               dzonal_heat_pac(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
               dzonal_salt_pac(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )
            END DO
 
            ! Indian
-           zmask(:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
+        zmask(:,:) = getvar(cn_fbasins, cn_tmaskind, 1, npiglo, npjglo)
            DO jj=1,npjglo
               dzonal_heat_ind(jj) = SUM( dtrph(:,jj)*zmask(:,jj) )
               dzonal_salt_ind(jj) = SUM( dtrps(:,jj)*zmask(:,jj) )

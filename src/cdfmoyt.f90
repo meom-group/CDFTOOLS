@@ -130,7 +130,7 @@ PROGRAM cdfmoyt
   ! time counter can be different for each file in the list. It is read in the
   ! loop for files
 
-  IF ( chkfile (cf_list(1)) ) STOP ! missing file
+  IF ( chkfile (cf_list(1)) ) STOP 99 ! missing file
 
   cf_in  = cf_list(1)
   npiglo = getdim (cf_in,cn_x)
@@ -158,14 +158,14 @@ PROGRAM cdfmoyt
   ! check that all files have the same number of time frames
   ierr = 0
   DO jfil = 1, nfil
-     IF (  chkfile (cf_list(jfil)      ) ) STOP ! missing file
+     IF (  chkfile (cf_list(jfil)      ) ) STOP 99 ! missing file
      inpt = getdim (cf_list(jfil), cn_t)
      IF ( inpt /= npt ) THEN
         PRINT *, 'File ',TRIM(cf_list(jfil) ),' has ',inpt,' time frames instead of ', npt
         ierr = ierr + 1
      ENDIF
   ENDDO
-  IF ( ierr /= 0 ) STOP ! frame numbers mismatch
+  IF ( ierr /= 0 ) STOP 99 ! frame numbers mismatch
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo

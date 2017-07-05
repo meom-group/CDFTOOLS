@@ -92,7 +92,7 @@ PROGRAM cdfspeed
        END DO
      CASE ( '-t' ) 
        CALL getarg(ijarg, cf_tfil ) ; ijarg = ijarg + 1
-       IF ( chkfile (cf_tfil) ) STOP ! missing file
+       IF ( chkfile (cf_tfil) ) STOP 99 ! missing file
      CASE ( '-nc4' ) 
        lnc4=.true.
      CASE ( '-o' ) 
@@ -100,7 +100,7 @@ PROGRAM cdfspeed
      CASE DEFAULT
        cf_ufil = cldum
        CALL getarg(ijarg, cf_vfil ) ; ijarg = ijarg + 1
-       IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) ) STOP ! missing file
+       IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) ) STOP 99 ! missing file
        CALL getarg(ijarg, cv_u ) ; ijarg = ijarg + 1
        CALL getarg(ijarg, cv_v ) ; ijarg = ijarg + 1
      END SELECT 
@@ -121,7 +121,7 @@ PROGRAM cdfspeed
      IF ( TRIM(cf_tfil) == 'none' ) THEN
        PRINT *,'  ERROR: you must specify a griT file as fifth argument '
        PRINT *,'     This is for the proper header of output file '
-       STOP
+       STOP 99
      ENDIF
   END IF
 

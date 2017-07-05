@@ -46,7 +46,8 @@ PROGRAM cdfrmsssh
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
-  cv_in = cn_sossheig
+  cv_in  = cn_sossheig
+  cv_in2 = cn_sossheig2
 
   narg= iargc()
   IF ( narg < 2 ) THEN
@@ -95,7 +96,7 @@ PROGRAM cdfrmsssh
         CASE ( 1 ) ; cf_in  = cldum
         CASE ( 2 ) ; cf_in2 = cldum
         CASE DEFAULT
-           PRINT *, ' Too many variables ' ; STOP
+           PRINT *, ' Too many variables ' ; STOP 99
         END SELECT
      END SELECT
   ENDDO
@@ -103,7 +104,7 @@ PROGRAM cdfrmsssh
   ! check existence of files
   lchk = lchk .OR. chkfile(cf_in  )
   lchk = lchk .OR. chkfile(cf_in2 )
-  IF (lchk ) STOP ! missing file
+  IF (lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -134,7 +135,6 @@ PROGRAM cdfrmsssh
   ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
   ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk                     )
 
-  cv_in2 = TRIM(cv_in)//'_sqd'
   DO jt = 1, npt
      zvbar(:,:) = getvar(cf_in,  cv_in,  1, npiglo, npjglo, ktime=jt)
      zvba2(:,:) = getvar(cf_in2, cv_in2, 1, npiglo, npjglo, ktime=jt)

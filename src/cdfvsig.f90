@@ -452,8 +452,8 @@ CONTAINS
        stypvaru(ivaru)%cname      = cn_vozocrtx      ; stypvaru(ivaru)%cunits        = 'm/s'
        stypvaru(ivaru)%clong_name = 'Mean zonal vel' ; stypvaru(ivaru)%cshort_name   = cn_vozocrtx
        ivaru = ivaru + 1 
-       stypvaru(ivaru)%cname      = TRIM(cn_vozocrtx)//'_sqd'      ; stypvaru(ivaru)%cunits        = '(m/s)^2'
-       stypvaru(ivaru)%clong_name = 'Mean zonal vel squared' ; stypvaru(ivaru)%cshort_name   = TRIM(cn_vozocrtx)//'_sqd' 
+       stypvaru(ivaru)%cname      = TRIM(cn_vozocrtx2)      ; stypvaru(ivaru)%cunits        = '(m/s)^2'
+       stypvaru(ivaru)%clong_name = 'Mean zonal vel squared' ; stypvaru(ivaru)%cshort_name   = TRIM(cn_vozocrtx2)
     ENDIF
 
     ! create output fileset
@@ -489,8 +489,8 @@ CONTAINS
        stypvarv(ivarv)%cname      = cn_vomecrty      ; stypvarv(ivarv)%cunits        = 'm/s'
        stypvarv(ivarv)%clong_name = 'Mean merid vel' ; stypvarv(ivarv)%cshort_name   = cn_vomecrty
        ivarv = ivarv + 1 
-       stypvarv(ivarv)%cname      = TRIM(cn_vomecrty)//'_sqd'      ; stypvarv(ivarv)%cunits  = '(m/s)^2'
-       stypvarv(ivarv)%clong_name = 'Mean merid vel squared' ; stypvarv(ivarv)%cshort_name   = TRIM(cn_vomecrty)//'_sqd'
+       stypvarv(ivarv)%cname      = TRIM(cn_vomecrty2)      ; stypvarv(ivarv)%cunits  = '(m/s)^2'
+       stypvarv(ivarv)%clong_name = 'Mean merid vel squared' ; stypvarv(ivarv)%cshort_name   = TRIM(cn_vomecrty2)
     ENDIF
 
     ncoutv = create      (cf_outv, cl_refv,  npiglo, npjglo, npk        )
@@ -525,8 +525,8 @@ CONTAINS
           stypvarw(ivarw)%cname      = cn_vovecrtz      ; stypvarw(ivarw)%cunits        = 'm/s'
           stypvarw(ivarw)%clong_name = 'Mean vert. vel' ; stypvarw(ivarw)%cshort_name   = cn_vovecrtz
           ivarw = ivarw + 1
-          stypvarw(ivarw)%cname      = TRIM(cn_vovecrtz)//'_sqd' ; stypvarw(ivarw)%cunits       = '(m/s)^2'
-          stypvarw(ivarw)%clong_name = 'Mean vert. vel squared' ; stypvarw(ivarw)%cshort_name   = TRIM(cn_vovecrtz)//'_sqd'
+          stypvarw(ivarw)%cname      = TRIM(cn_vovecrtz2) ; stypvarw(ivarw)%cunits       = '(m/s)^2'
+          stypvarw(ivarw)%clong_name = 'Mean vert. vel squared' ; stypvarw(ivarw)%cshort_name   = TRIM(cn_vovecrtz2)
        ENDIF
 
        ncoutw = create      (cf_outw, cl_refw,  npiglo, npjglo, npk        )

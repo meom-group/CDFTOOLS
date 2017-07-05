@@ -129,11 +129,20 @@ PROGRAM cdfbuoyflx
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : 25 variables (2D) or 1 variable in case of -short option'
      PRINT *,'      '
+     PRINT *,'     WARNING : '
+     PRINT *,'         cdfbuoyflx is not working yet with CMIP6 output' 
      PRINT *,'     SEE ALSO :'
      PRINT *,'      '
      PRINT *,'      '
      STOP
   ENDIF
+
+  IF (TRIM(cn_output) == 'CMIP6') THEN
+      PRINT *, 'cdfbuoyflx is not working yet with CMIP6 output'
+      STOP 99
+  END IF
+
+
   ijarg   = 1
   cf_flxfil='none'
   cf_rnfil='none'
@@ -164,10 +173,10 @@ PROGRAM cdfbuoyflx
         lsho = .true. ; np_varout = 1
      CASE DEFAULT
         PRINT *, " Option ", TRIM(cldum)," not supported "
-        STOP
+        STOP 99
      END SELECT
   ENDDO
-  IF (lchk ) STOP ! missing files
+  IF (lchk ) STOP 99 ! missing files
 
   IF ( cf_flxfil == 'none' ) THEN
     cf_flxfil = cf_tfil

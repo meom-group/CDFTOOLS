@@ -110,7 +110,7 @@ PROGRAM cdfvFWov
   lchk = lchk .OR. chkfile ( cf_hgr  )
   lchk = lchk .OR. chkfile ( cf_mask )
 
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   !! get dimensions of input file containing data
   npiglo = getdim(cf_vfil, cn_x)
@@ -126,7 +126,7 @@ PROGRAM cdfvFWov
   IF ( npjglo /= 2 ) THEN
      PRINT *,' ERROR : This program works with section files.'
      PRINT *,'       all data should have j dimension equal to 2 '
-     STOP
+     STOP 99
   ENDIF
 
   ALLOCATE ( dnetvFW(npt), dtotvFW(npt), dovFW(npt), dtime(npt) )

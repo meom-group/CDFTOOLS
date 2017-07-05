@@ -97,7 +97,7 @@ PROGRAM cdfets
 
   CALL getarg (1, cf_tfil)
   lchk = ( chkfile (cf_tfil) .OR. chkfile( cn_fhgr ) .OR. chkfile( cn_fzgr) )
-  IF ( lchk )  STOP ! missing file
+  IF ( lchk )  STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)

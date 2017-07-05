@@ -87,7 +87,7 @@ PROGRAM cdfbottomsig
   cv_sig = 'sobotsig0'
   cref=''
   CALL getarg (1, cf_tfil)
-  IF ( chkfile(cf_tfil) ) STOP ! missing file
+  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
 
   IF ( narg == 2 ) THEN
      CALL getarg (2, cldum) 

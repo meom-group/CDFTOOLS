@@ -95,11 +95,11 @@ PROGRAM cdfpolymask
      CASE ( '-r'   ) ; lreverse = .TRUE.
      CASE DEFAULT
         PRINT *,' unknown optional argument (', TRIM(cldum),' )'
-        STOP
+        STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_poly) .OR. chkfile(cf_ref) ) STOP ! missing files
+  IF ( chkfile(cf_poly) .OR. chkfile(cf_ref) ) STOP 99 ! missing files
 
   npiglo = getdim (cf_ref, cn_x)
   npjglo = getdim (cf_ref, cn_y)

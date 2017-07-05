@@ -108,7 +108,7 @@ PROGRAM cdfbotpressure
          ij = ij + 1
          SELECT CASE ( ij)
          CASE ( 1 ) ; cf_in = cldum
-         CASE DEFAULT ; PRINT *, ' ERROR: Too many arguments ! ' ; STOP
+         CASE DEFAULT ; PRINT *, ' ERROR: Too many arguments ! ' ; STOP 99
          END SELECT
       END SELECT
    END DO
@@ -119,7 +119,7 @@ PROGRAM cdfbotpressure
    lchk = chkfile ( cf_in   )
    lchk = chkfile ( cn_fmsk ) .OR. lchk
    lchk = chkfile ( cn_fzgr ) .OR. lchk
-   IF ( lchk ) STOP ! missing files
+   IF ( lchk ) STOP 99 ! missing files
 
    ! log information so far
    cf_out = 'botpressure.nc'

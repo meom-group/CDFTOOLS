@@ -8,10 +8,12 @@
 NCDF = -I/opt/netcdf-4.1/include -I /opt/hdf5-1.8.4/include -L /opt/hdf5-1.8.4/lib -L/opt/netcdf-4.1/lib -lnetcdf -lhdf5_hl -lhdf5 -lz
 
 NC4= -D key_netcdf4
+#CMIP6=  -D key_CMIP6
+CMIP6=
  
 F90=ifort
 MPF90=mpif90
-FFLAGS= -O  $(NCDF) $(NC4) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
 #FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian 
 LMPI=-lmpich
 

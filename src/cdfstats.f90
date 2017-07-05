@@ -135,7 +135,7 @@ PROGRAM cdfstats
          CASE ( 5 ) ; cv_name2 = cldum
          CASE DEFAULT
             PRINT *, ' Too many arguments ...'
-            STOP
+            STOP 99
          END SELECT
       END SELECT
     END DO
@@ -147,7 +147,7 @@ PROGRAM cdfstats
    lchk = chkfile ( cf_ref ) .OR. lchk
    lchk = chkfile ( cf_msk ) .OR. lchk
    lchk = chkfile ( cf_hgr ) .OR. lchk
-   IF (lchk ) STOP ! missing files
+   IF (lchk ) STOP 99 ! missing files
 
    ! log arguments do far
    PRINT *,'IN-file   : ', TRIM(cf_in )

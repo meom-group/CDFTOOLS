@@ -120,7 +120,7 @@ PROGRAM cdfpdf
      END SELECT
   ENDDO
 
-  IF (  chkfile ( cf_ifil) ) STOP  ! some compulsory files are missing
+  IF (  chkfile ( cf_ifil) ) STOP 99 ! some compulsory files are missing
 
   ! set domain size from input ile
   npiglo = getdim (cf_ifil,cn_x)

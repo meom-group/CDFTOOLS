@@ -143,12 +143,12 @@ PROGRAM cdfmxl
       CASE ( 2 ) ; cf_sfil = cldum                      ! second free name ( if any) is a gridS file name
       CASE DEFAULT 
         PRINT *, ' +++ ERROR : Too many files in input !'
-        STOP
+        STOP 99
       END SELECT
     END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cf_sfil)  ) STOP ! missing file
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cf_sfil)  ) STOP 99 ! missing file
 
   ! read dimensions 
   npiglo = getdim (cf_tfil,cn_x)

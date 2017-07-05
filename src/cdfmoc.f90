@@ -198,7 +198,7 @@ PROGRAM cdfmoc
         CASE ( 4 ) ; cf_ufil = cldum
         CASE DEFAULT
            PRINT*, 'ERROR : Too many arguments ...'
-           STOP
+           STOP 99
         END SELECT
      END SELECT
   END DO
@@ -208,12 +208,12 @@ PROGRAM cdfmoc
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_vfil )
   IF ( ldec ) lchk = lchk .OR. chkfile ( TRIM(cf_tfil) ) 
-  IF ( lchk ) STOP  ! missing file(s)
+  IF ( lchk ) STOP 99 ! missing file(s)
 
   IF ( lrap ) THEN 
      ! all the work will be done in a separated routine for RAPID-MOCHA section
      CALL rapid_amoc 
-     STOP  ! program stops here in this case
+     STOP 99 ! program stops here in this case
   ENDIF
 
   npiglo = getdim (cf_vfil,cn_x)
@@ -294,11 +294,11 @@ PROGRAM cdfmoc
   CALL CreateOutput
 
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
-  ibmask(npglo,:,:) = getvar(cn_fmsk,   'vmask', 1, npiglo, npjglo)
+  ibmask(npglo,:,:) = getvar(cn_fmsk,   cn_vmask, 1, npiglo, npjglo)
   IF ( lbas ) THEN
-     ibmask(npatl,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
-     ibmask(npind,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
-     ibmask(nppac,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+     ibmask(npatl,:,:) = getvar(cn_fbasins, cn_tmaskatl, 1, npiglo, npjglo)
+     ibmask(npind,:,:) = getvar(cn_fbasins, cn_tmaskind, 1, npiglo, npjglo)
+     ibmask(nppac,:,:) = getvar(cn_fbasins, cn_tmaskpac, 1, npiglo, npjglo)
      ibmask(npinp,:,:) = ibmask(nppac,:,:) + ibmask(npind,:,:)  ! indo pacific mask
      ! ensure that there are no overlapping on the masks
      WHERE(ibmask(npinp,:,:) > 0 ) ibmask(npinp,:,:) = 1

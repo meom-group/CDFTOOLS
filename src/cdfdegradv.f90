@@ -126,7 +126,7 @@ PROGRAM cdfdegradv
         CASE ( 6 ) ; READ(cldum,*) ijmin
         CASE DEFAULT
           PRINT *, ' ERROR : Too many arguments ...'
-          STOP
+          STOP 99
         END SELECT
      END SELECT
   END DO
@@ -135,7 +135,7 @@ PROGRAM cdfdegradv
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_vfil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   cv_dep = 'none'
   npiglo = getdim (cf_vfil, cn_x)
@@ -162,11 +162,11 @@ PROGRAM cdfdegradv
   IF (npk   == 0 ) THEN ; npk = 1;  ENDIF ! no depth dimension ==> 1 level
   IF (iimin < 2 )  THEN
      PRINT *,'iimin value is too low'
-     STOP
+     STOP 99
   END IF
   IF (ijmin  < 1 ) THEN
      PRINT *,'ijmin value is too low'
-     STOP
+     STOP 99
   END IF
   npiglo = ( (npiglo - iimin ) / nri )*nri
   npjglo = ( (npjglo - ijmin - 1 ) / nrj )*nrj + 1

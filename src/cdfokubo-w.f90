@@ -86,7 +86,7 @@
   lchk = chkfile(cn_fmsk ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! define new variables for output
   stypvar(1)%cname             = 'sokubow'
@@ -115,7 +115,7 @@
   !test if lev exists
   IF ( (npk==0) .AND. (ilev > 0) ) THEN
      PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
-     STOP
+     STOP 99
   END IF
 
   ! if forcing field 

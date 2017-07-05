@@ -92,14 +92,14 @@ PROGRAM cdfmxlheatc
     SELECT CASE ( cldum )
     CASE ( '-full'    ) ; lfull = .true.
     CASE ( '-o' )     ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
-    CASE DEFAULT  ; PRINT *, TRIM(cldum),' : unknown option' ; STOP
+    CASE DEFAULT  ; PRINT *, TRIM(cldum),' : unknown option' ; STOP 99
     END SELECT
   END DO
 
   lchk = chkfile (cn_fzgr)
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   CALL SetGlobalAtt( cglobal) 
 
@@ -150,7 +150,7 @@ PROGRAM cdfmxlheatc
   DO jt=1,npt
      dmxlheatc(:,:) = 0.d0
      dvol           = 0.d0
-     zmxl( :,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
+     zmxl( :,:) = getvar(cf_tfil, cn_somxldep, 1, npiglo, npjglo, ktime=jt)
      DO jk = 1, npk
         ! Get temperatures at jk
         zt(   :,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)

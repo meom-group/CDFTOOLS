@@ -103,13 +103,13 @@ PROGRAM cdfmaskdmp
 
   IF ( narg > 2 .AND. narg < 9 ) THEN
      PRINT *,'wrong number of arguments'
-     STOP
+     STOP 99
   ENDIF
 
   CALL getarg (1, cf_tfil)
   CALL getarg (2, cf_sfil)
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) .OR. chkfile(cn_fmsk) ) STOP ! missing files
+  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) .OR. chkfile(cn_fmsk) ) STOP 99 ! missing files
 
   IF ( narg == 9 ) THEN
      CALL getarg (3, cldum) ; READ(cldum,*) ref_dep

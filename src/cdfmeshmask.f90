@@ -167,7 +167,7 @@ PROGRAM cdfmeshmask
   lchk = lchk .OR. chkfile(cf_nam) 
   lchk = lchk .OR. chkfile(cf_bat) 
   lchk = lchk .OR. chkfile(cf_coo) 
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_coo, cn_x)
   npjglo = getdim(cf_coo, cn_y)
@@ -362,12 +362,12 @@ CONTAINS
           END DO
           IF ( ik == 1 ) THEN
              ierr = NF90_PUT_VAR( ncmsk, id_tmsku, tmask(:,:,1),    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ;  STOP 99 ;
              ENDIF
           ENDIF
        ENDDO
        ierr = NF90_PUT_VAR( ncmsk, id_tmsk, tmask,    start=(/1,1,nkbloct(jbloc),1/), count=(/npiglo,npjglo,nbloc_sz,1/) )
-       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; 
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ;  STOP 99 ; 
        ENDIF
        DEALLOCATE ( tmask )
     ENDDO ! bloc
@@ -393,12 +393,12 @@ CONTAINS
           ENDDO
           IF ( ik == 1 ) THEN
              ierr = NF90_PUT_VAR( ncmsk, id_umsku, umask(:,:,1),    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
              ENDIF
           ENDIF
        ENDDO
        ierr = NF90_PUT_VAR( ncmsk, id_umsk, umask,    start=(/1,1,nkbloct(jbloc),1/), count=(/npiglo,npjglo,nbloc_sz,1/) )
-       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
        ENDIF
        DEALLOCATE ( tmask , umask)
     ENDDO
@@ -424,12 +424,12 @@ CONTAINS
           ENDDO
           IF ( ik == 1 ) THEN
              ierr = NF90_PUT_VAR( ncmsk, id_vmsku, vmask(:,:,1),    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
              ENDIF
           ENDIF
        ENDDO
        ierr = NF90_PUT_VAR( ncmsk, id_vmsk, vmask,    start=(/1,1,nkbloct(jbloc),1/), count=(/npiglo,npjglo,nbloc_sz,1/) )
-       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
        ENDIF
        DEALLOCATE ( tmask , vmask)
     ENDDO
@@ -457,12 +457,12 @@ CONTAINS
           ENDDO
           IF ( ik == 1 ) THEN
              ierr = NF90_PUT_VAR( ncmsk, id_fmsku, fmask(:,:,1),    start=(/1,1,1/), count=(/npiglo,npjglo,1/) )
-             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+             IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
              ENDIF
           ENDIF
        ENDDO
        ierr = NF90_PUT_VAR( ncmsk, id_fmsk, fmask,    start=(/1,1,nkbloct(jbloc),1/), count=(/npiglo,npjglo,nbloc_sz,1/) )
-       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+       IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
        ENDIF
        DEALLOCATE ( tmask , fmask)
     ENDDO
@@ -669,7 +669,7 @@ CONTAINS
     ELSE
        PRINT *, '    e r r o r'
        PRINT *, '    parameter , nperio = ', nperio
-       STOP ' '
+        STOP 99
     ENDIF
 
     ! write mbathy to file mesh_zgr
@@ -769,74 +769,74 @@ CONTAINS
     !	byte fmask(t, z, y, x) ;
 
     ierr= NF90_CREATE(cf_msk, or(NF90_CLOBBER,NF90_NETCDF4), ncmsk) 
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr= NF90_DEF_DIM(ncmsk, 'x', npiglo, idx)
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr= NF90_DEF_DIM(ncmsk, 'y', npjglo, idy)
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr= NF90_DEF_DIM(ncmsk, 'z', jpk,    idz)
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr= NF90_DEF_DIM(ncmsk, 't', NF90_UNLIMITED,  idt)
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
 
     ierr=NF90_DEF_VAR(ncmsk, 'nav_lon',       NF90_FLOAT, (/idx,idy/), id_navlon )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'nav_lat',       NF90_FLOAT, (/idx,idy/), id_navlat )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'nav_lev',       NF90_FLOAT, (/idz/)    , id_navlev )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'time_counter',  NF90_FLOAT, (/idt/)    , id_time   )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
 
     ierr=NF90_DEF_VAR(ncmsk, 'tmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_tmsku )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'umaskutil',    NF90_BYTE, (/idx,idy,idt/), id_umsku )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'vmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_vmsku )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'fmaskutil',    NF90_BYTE, (/idx,idy,idt/), id_fmsku )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
 
     ierr=NF90_DEF_VAR(ncmsk, 'tmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_tmsk )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; 
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ; 
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'umask',         NF90_BYTE, (/idx,idy,idz,idt/), id_umsk )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'vmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_vmsk )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr=NF90_DEF_VAR(ncmsk, 'fmask',         NF90_BYTE, (/idx,idy,idz,idt/), id_fmsk )
 
     ierr = NF90_ENDDEF(ncmsk)
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ; 
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ; 
     ENDIF
     ! put dimension related variables
 
     ierr = NF90_PUT_VAR(ncmsk, id_navlon, rlon)
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr = NF90_PUT_VAR(ncmsk, id_navlat, rlat)
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr = NF90_PUT_VAR(ncmsk, id_navlev, gdept_1d )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
     ierr = NF90_PUT_VAR(ncmsk, id_time  , (/0./) )
-    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP ;
+    IF ( ierr /= NF90_NOERR ) THEN  ; PRINT *, NF90_STRERROR(ierr) ; STOP 99 ;
     ENDIF
 
   END SUBROUTINE CreateMaskFile

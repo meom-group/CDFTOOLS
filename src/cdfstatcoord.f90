@@ -66,7 +66,7 @@ PROGRAM cdfstatcoord
   CALL getarg (2, cf_msk)
   IF ( narg == 3 ) CALL getarg(3, cv_msk)
   
-  IF ( chkfile(cf_coo) .OR. chkfile(cf_msk) ) STOP ! missing files
+  IF ( chkfile(cf_coo) .OR. chkfile(cf_msk) ) STOP 99 ! missing files
 
   npiglo= getdim (cf_coo, cn_x)
   npjglo= getdim (cf_coo, cn_y)

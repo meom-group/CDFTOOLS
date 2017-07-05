@@ -155,7 +155,7 @@ PROGRAM cdfmkmask
          !
       CASE DEFAULT
          PRINT *, 'ERROR : unknown option :', TRIM(cldum)
-         STOP
+         STOP 99
       END SELECT
    ENDDO
 
@@ -174,10 +174,10 @@ PROGRAM cdfmkmask
       cf_tfil = 'bathylevel.nc'
       cn_z    = 'z'
       lmbathy = .TRUE.
-      IF ( chkfile(cn_fzgr) ) STOP ! missing file
+      IF ( chkfile(cn_fzgr) ) STOP 99 ! missing file
    END IF
 
-   IF ( chkfile(cf_tfil) ) STOP ! missing file
+   IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
 
    npiglo = getdim (cf_tfil,cn_x)
    npjglo = getdim (cf_tfil,cn_y)
@@ -261,7 +261,7 @@ PROGRAM cdfmkmask
    ENDIF
 
    IF ( lzoombat ) THEN
-      IF ( chkfile(cn_fzgr) ) STOP ! missing file
+      IF ( chkfile(cn_fzgr) ) STOP 99 ! missing file
       ALLOCATE ( rbat  (npiglo,npjglo) )
       rbat(:,:)= getvar(cn_fzgr, cn_hdepw,  1 ,npiglo, npjglo)
    END IF

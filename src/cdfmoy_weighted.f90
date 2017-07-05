@@ -113,7 +113,7 @@
      CASE DEFAULT
         ixtra = ixtra + 1
         cf_in = cldum
-        IF ( chkfile (cldum ) ) STOP ! missing file
+        IF ( chkfile (cldum ) ) STOP 99 ! missing file
      END SELECT
   ENDDO
 
@@ -121,7 +121,7 @@
   IF ( lold5d .OR. lmonth ) THEN
      IF ( ixtra /= 12 ) THEN 
         PRINT *,' +++ ERROR : exactly 12 monthly files are required for -old5d/-month options.'
-        STOP
+        STOP 99
      ENDIF
   ENDIF
 

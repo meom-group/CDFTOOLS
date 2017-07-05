@@ -39,6 +39,7 @@ PROGRAM cdfstdevts
   CHARACTER(LEN=256)                         :: cv_in, cv_in2     ! input variable names
   CHARACTER(LEN=256)                         :: cldum             ! dummy character variable
   CHARACTER(LEN=256), DIMENSION(2)           :: cv_namesi         ! input variable names
+  CHARACTER(LEN=256), DIMENSION(2)           :: cv_namesi2        ! input variable names
 
   TYPE(variable), DIMENSION(2)               :: stypvaro          ! output data structure
 
@@ -46,8 +47,10 @@ PROGRAM cdfstdevts
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
-  cv_namesi(1) = cn_votemper
-  cv_namesi(2) = cn_vosaline
+  cv_namesi(1)  = cn_votemper
+  cv_namesi(2)  = cn_vosaline
+  cv_namesi2(1) = cn_votemper2
+  cv_namesi2(2) = cn_vosaline2
 
   narg= iargc()
   IF ( narg /= 2 ) THEN
@@ -84,7 +87,7 @@ PROGRAM cdfstdevts
         CASE ( 1 ) ; cf_in  = cldum
         CASE ( 2 ) ; cf_in2 = cldum
         CASE DEFAULT
-           PRINT *, ' Too many variables ' ; STOP
+           PRINT *, ' Too many variables ' ; STOP 99
         END SELECT
      END SELECT
   ENDDO
@@ -92,7 +95,7 @@ PROGRAM cdfstdevts
   ! check existence of files
   lchk = lchk .OR. chkfile(cf_in )
   lchk = lchk .OR. chkfile(cf_in2)
-  IF (lchk ) STOP ! missing file
+  IF (lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -135,7 +138,7 @@ PROGRAM cdfstdevts
 
   DO jvar = 1, 2
   cv_in  = cv_namesi(jvar)
-  cv_in2 = TRIM(cv_in)//'_sqd'
+  cv_in2 = cv_namesi2(jvar)
   DO jt = 1, npt
      DO jk = 1, npk
         zvbar(:,:) = getvar(cf_in,  cv_in,  jk, npiglo, npjglo, ktime=jt)

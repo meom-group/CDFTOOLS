@@ -114,7 +114,7 @@ PROGRAM cdfconvert
   cf_dimgt   = TRIM(confcase)//'_T_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgt )
   cf_dimgs   = TRIM(confcase)//'_S_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgs )
   cf_dimg2d  = TRIM(confcase)//'_2D_' //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimg2d)
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   cf_dimgssh = TRIM(confcase)//'_SSH_'//TRIM(ctag)//'.dimg'
   cf_dimguu  = TRIM(confcase)//'_UU_' //TRIM(ctag)//'.dimg'
@@ -404,13 +404,13 @@ PROGRAM cdfconvert
 
   IF ( lexist ) THEN
   ipk(jvar)      = npk
-  stypvar(jvar)%cname             = TRIM(cn_vozocrtx)//'_sqd'
+  stypvar(jvar)%cname             = TRIM(cn_vozocrtx2)
   stypvar(jvar)%cunits            = 'm2/s2'
   stypvar(jvar)%rmissing_value    = 0.
   stypvar(jvar)%valid_min         = 0.
   stypvar(jvar)%valid_max         = 100.
   stypvar(jvar)%clong_name        = 'MS_Zonal_Velocity'
-  stypvar(jvar)%cshort_name       = TRIM(cn_vozocrtx)//'_sqd'
+  stypvar(jvar)%cshort_name       = TRIM(cn_vozocrtx2)
   stypvar(jvar)%conline_operation = 'N/A'
   stypvar(jvar)%caxis             = 'TZYX'
   ENDIF
@@ -490,13 +490,13 @@ PROGRAM cdfconvert
 
   IF ( lexist ) THEN
   ipk(jvar)                       = npk
-  stypvar(jvar)%cname             = TRIM(cn_vomecrty)//'_sqd'
+  stypvar(jvar)%cname             = TRIM(cn_vomecrty2)
   stypvar(jvar)%cunits            = 'm2/s2'
   stypvar(jvar)%rmissing_value    = 0.
   stypvar(jvar)%valid_min         = 0.
   stypvar(jvar)%valid_max         = 100.
   stypvar(jvar)%clong_name        = 'MS_Meridional_Velocity'
-  stypvar(jvar)%cshort_name       = TRIM(cn_vomecrty)//'_sqd'
+  stypvar(jvar)%cshort_name       = TRIM(cn_vomecrty2)
   stypvar(jvar)%conline_operation = 'N/A'
   stypvar(jvar)%caxis             = 'TZYX'
   ENDIF

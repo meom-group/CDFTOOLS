@@ -139,7 +139,7 @@ PROGRAM cdfheatc
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -192,7 +192,7 @@ PROGRAM cdfheatc
      dvol = 0.d0
      dsum = 0.d0
      PRINT * ,'TIME : ', tim(jt)
-     IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_tfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
+     IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_tfil, cn_somxldep, 1, npiglo, npjglo, ktime=jt)
 
      DO jk = 1,nvpk
         ik = jk + ikmin -1

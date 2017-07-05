@@ -154,7 +154,7 @@ REAL*8,ALLOCATABLE,DIMENSION(:) :: d, X1
   do i=1,Nsec+1
     if ( (lon(i).lt.0.0).or.(lonref.lt.0.0) ) then
       PRINT *, '**!/# ERROR : longitudes must be between 0 and 360'
-      STOP
+      STOP 99
     endif
   enddo
    
@@ -896,7 +896,7 @@ SUBROUTINE erreur(iret, lstop, chaine)
     WRITE(*,*) 'ERREUR: ', iret
     message=NF90_STRERROR(iret)
     WRITE(*,*) 'THIS MEANS :',TRIM(message)
-    IF ( lstop ) STOP
+    IF ( lstop ) STOP 99
   ENDIF
   !
 END SUBROUTINE erreur

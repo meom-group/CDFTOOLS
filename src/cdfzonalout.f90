@@ -64,7 +64,7 @@ PROGRAM cdfzonalout
   ENDIF
 
   CALL getarg (1, cf_zonal)
-  IF ( chkfile(cf_zonal) ) STOP ! missing file
+  IF ( chkfile(cf_zonal) ) STOP 99 ! missing file
 
   nvarin  = getnvar(cf_zonal)
   ALLOCATE ( cv_names(nvarin), ipki(nvarin), id_varin(nvarin), stypvar(nvarin)  )

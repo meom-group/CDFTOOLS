@@ -130,11 +130,11 @@ PROGRAM cdffixtime
         lkeep=.true.
      CASE DEFAULT 
          PRINT *,' Option ',TRIM(cldum),' unknown'
-         STOP
+         STOP 99
      END SELECT
   END DO
   
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
   PRINT *,' Changing time on file :', TRIM(cf_in)
 
   ! if ctag = none, try to find it from the file name.

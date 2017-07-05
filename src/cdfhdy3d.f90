@@ -85,7 +85,7 @@ PROGRAM cdfhdy3d
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
   
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP ! missing files
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP 99 ! missing files
 
   ipk(:)                       = npk
   stypvar(1)%cname             = cv_out

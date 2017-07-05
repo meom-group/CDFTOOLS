@@ -55,7 +55,7 @@ PROGRAM cdfprobe
   CALL getarg(3, cldum ) ; READ(cldum,*) ijlook
   CALL getarg(4, cv_in ) 
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   IF ( narg == 5 ) THEN
      CALL getarg(5, cldum) ;  READ(cldum,*) ilevel

@@ -123,7 +123,7 @@ PROGRAM cdfmxlhcsc
   lchk = chkfile (cn_fzgr) .OR. lchk
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! read dimensions 
   npiglo = getdim (cf_tfil, cn_x)
@@ -145,7 +145,7 @@ PROGRAM cdfmxlhcsc
      !
   CASE DEFAULT
      PRINT *,TRIM(criteria),' : criteria not understood'
-     STOP
+     STOP 99
   END SELECT
 
   stypvar(1)%cname       = TRIM(cldum)
@@ -236,7 +236,7 @@ PROGRAM cdfmxlhcsc
         ENDDO
         !
      CASE DEFAULT
-        PRINT *,' ERROR: Criterium on ', TRIM(criteria),' not suported' ; STOP
+        PRINT *,' ERROR: Criterium on ', TRIM(criteria),' not suported' ; STOP 99
         !
      END SELECT
 

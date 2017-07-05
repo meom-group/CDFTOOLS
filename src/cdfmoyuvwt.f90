@@ -132,7 +132,7 @@ PROGRAM cdfmoyuvwt
      WRITE(cf_ufil,'(a,"_",a,"_gridU.nc")') TRIM(config),TRIM(ctag)
      IF ( chkfile (cf_ufil ) ) THEN 
         WRITE(cf_ufil,'(a,"_",a,"_grid_U.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_ufil ) ) STOP ! missing gridU or grid_U file
+        IF ( chkfile (cf_ufil ) ) STOP 99 ! missing gridU or grid_U file
         llnam_nemo=.TRUE. ! assume all files are nemo style ...
      ENDIF
 
@@ -140,21 +140,21 @@ PROGRAM cdfmoyuvwt
      WRITE(cf_vfil,'(a,"_",a,"_gridV.nc")') TRIM(config),TRIM(ctag)
      IF ( chkfile (cf_vfil ) ) THEN 
         WRITE(cf_vfil,'(a,"_",a,"_grid_V.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_vfil ) ) STOP ! missing gridV or grid_V file
+        IF ( chkfile (cf_vfil ) ) STOP 99 ! missing gridV or grid_V file
      ENDIF
 
      ! check W-file
      WRITE(cf_wfil,'(a,"_",a,"_gridW.nc")') TRIM(config),TRIM(ctag)
      IF ( chkfile (cf_wfil ) ) THEN 
         WRITE(cf_wfil,'(a,"_",a,"_grid_W.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_wfil ) ) STOP ! missing gridW or grid_W file
+        IF ( chkfile (cf_wfil ) ) STOP 99 ! missing gridW or grid_W file
      ENDIF
 
      ! check T-file
      WRITE(cf_tfil,'(a,"_",a,"_gridT.nc")') TRIM(config),TRIM(ctag)
      IF ( chkfile (cf_tfil ) ) THEN 
         WRITE(cf_tfil,'(a,"_",a,"_grid_T.nc")') TRIM(config),TRIM(ctag)
-        IF ( chkfile (cf_tfil ) ) STOP ! missing gridT or grid_T file
+        IF ( chkfile (cf_tfil ) ) STOP 99 ! missing gridT or grid_T file
      ENDIF
   END DO
 

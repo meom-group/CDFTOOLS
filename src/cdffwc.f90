@@ -123,7 +123,7 @@ PROGRAM cdffwc
          SELECT CASE ( ij)
          CASE ( 1 ) ; cf_in = cldum
          CASE ( 2 ) ; CALL ParseVars(cldum)
-         CASE DEFAULT ; PRINT *, ' ERROR: Too many arguments ! ' ; STOP
+         CASE DEFAULT ; PRINT *, ' ERROR: Too many arguments ! ' ; STOP 99
          END SELECT
       END SELECT
    END DO
@@ -134,7 +134,7 @@ PROGRAM cdffwc
    lchk = chkfile ( cn_fhgr ) .OR. lchk
    lchk = chkfile ( cn_fzgr ) .OR. lchk
    lchk = chkfile (cf_subbas) .OR. lchk
-   IF ( lchk ) STOP ! missing files
+   IF ( lchk ) STOP 99 ! missing files
 
    sclf      = 1.
 
@@ -165,7 +165,7 @@ PROGRAM cdffwc
 
   ! just chck if var exist in file 
   DO jvar = 1, nvaro
-     IF ( chkvar( cf_subbas, cv_in(jvar)) ) STOP  ! message is written in cdfio.chkvar
+     IF ( chkvar( cf_subbas, cv_in(jvar)) ) STOP 99 ! message is written in cdfio.chkvar
   ENDDO
 
    

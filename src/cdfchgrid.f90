@@ -119,11 +119,11 @@ PROGRAM cdfchgrid
         ldbg = .TRUE.
      CASE DEFAULT
         PRINT *, TRIM(cldum),' : unknown option '
-        STOP
+        STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_in) .OR. chkfile(cf_ref) ) STOP  ! missing files
+  IF ( chkfile(cf_in) .OR. chkfile(cf_ref) ) STOP 99 ! missing files
 
   ! get domain dimension from input file
   npiglo = getdim (cf_in, cn_x)

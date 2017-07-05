@@ -116,7 +116,7 @@ PROGRAM cdfmltmask
     END SELECT
   ENDDO
 
-  IF ( chkfile (cf_in) .OR. chkfile(cf_msk) ) STOP ! missing files
+  IF ( chkfile (cf_in) .OR. chkfile(cf_msk) ) STOP 99 ! missing files
 
   ! append _masked to input file name and copy initial file to new file, which will be modified
   !  using dd more efficient than cp for big files
@@ -200,7 +200,7 @@ PROGRAM cdfmltmask
      cv_msk='polymask'
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
-     STOP
+     STOP 99
   END SELECT
   ENDIF
 
@@ -236,7 +236,7 @@ PROGRAM cdfmltmask
   DO jvar = 1, nvar 
      ierr = getvaratt (cf_in, cv_in(jvar), cunits, zspval, clname, csname)
      IF ( csname == "" ) csname=TRIM( cv_in(jvar) )
-!    ierr = cvaratt   (cf_out, cv_in(jvar), cunits, zspv0,  clname, csname)
+     ierr = cvaratt   (cf_out, cv_in(jvar), cunits, zspv0,  clname, csname)
   END DO
 
 CONTAINS

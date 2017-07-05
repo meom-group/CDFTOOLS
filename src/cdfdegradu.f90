@@ -135,7 +135,7 @@ PROGRAM cdfdegradu
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_ufil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   cv_dep = 'none'
   npiglo = getdim (cf_ufil, cn_x)
@@ -162,11 +162,11 @@ PROGRAM cdfdegradu
   IF (npk   == 0 ) THEN ; npk = 1;  ENDIF ! no depth dimension ==> 1 level
   IF (iimin < 1 )  THEN
      PRINT *,'iimin value is too low'
-     STOP
+     STOP 99
   END IF
   IF (ijmin  < 2 ) THEN
      PRINT *,'ijmin value is too low'
-     STOP
+     STOP 99
   END IF
   npiglo = ( (npiglo - iimin - 1 ) / nri )*nri + 1
   npjglo = ( (npjglo - ijmin ) / nrj )*nrj

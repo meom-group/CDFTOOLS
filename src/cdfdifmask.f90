@@ -61,7 +61,7 @@ PROGRAM cdfdifmask
 
   lchk =           chkfile ( cf_msk1 )
   lchk = lchk .OR. chkfile ( cf_msk2 )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_msk1, cn_x)
   npjglo = getdim (cf_msk1, cn_y)

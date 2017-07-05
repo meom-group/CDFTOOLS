@@ -89,7 +89,7 @@ PROGRAM cdfisopsi
   CALL getarg (2, cldum) ; READ (cldum,*) zsigmaref
   CALL getarg (3, cf_tfil)
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cn_fhgr) ) STOP  ! missing file
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cn_fhgr) ) STOP 99 ! missing file
 
   PRINT *, 'Potential density referenced at ', refdepth , ' meters'
   PRINT *, 'Isopycn for projection is ', zsigmaref

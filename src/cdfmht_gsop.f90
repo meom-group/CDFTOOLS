@@ -70,7 +70,6 @@ PROGRAM cdfmht_gsop
 
 
   CHARACTER(LEN=256) :: cfilet, cfilev , cfileoutnc='gsopmht.nc'
-  CHARACTER(LEN=256) :: coordhgr='mesh_hgr.nc',  coordzgr='mesh_zgr.nc',cbasinmask='new_maskglo.nc'
   CHARACTER(LEN=256) ,DIMENSION(jpgsop)     :: cvarname_gsop              !: array of var name for output
   TYPE(variable), DIMENSION(jpgsop) :: stypvar       !: modif Alb 26/11/08 structure for attributes
   LOGICAL    :: llglo = .false.                            !: indicator for presence of new_maskglo.nc file
@@ -197,12 +196,12 @@ PROGRAM cdfmht_gsop
   ALLOCATE ( vageosh(npiglo,npjglo,npk) )
   ALLOCATE ( zomht_ageos_full(npjglo,npk) )
 
-  e1v(:,:) = getvar(coordhgr, 'e1v', 1,npiglo,npjglo) 
-  e1u(:,:) = getvar(coordhgr, 'e1u', 1,npiglo,npjglo) 
-  gphiv(:,:) = getvar(coordhgr, 'gphiv', 1,npiglo,npjglo)
-  deptht(:) = getvare3(coordzgr, 'gdept',npk)
-  gdepw(:) = getvare3(coordzgr, 'gdepw',npk)
-  gdepw(:) = -1.*  gdepw(:)
+  e1v(:,:)   = getvar(cn_hzgr, 'e1v', 1,npiglo,npjglo) 
+  e1u(:,:)   = getvar(cn_hzgr, 'e1u', 1,npiglo,npjglo) 
+  gphiv(:,:) = getvar(cn_fzgr, 'gphiv', 1,npiglo,npjglo)
+  deptht(:)  = getvare3(cn_fzgr, 'gdept',npk)
+  gdepw(:)   = getvare3(cn_fzgr, 'gdepw',npk)
+  gdepw(:)   = -1.*  gdepw(:)
 
   iloc=maxloc(gphiv)
   dumlat(1,:) = gphiv(iloc(1),:)
@@ -212,27 +211,27 @@ PROGRAM cdfmht_gsop
   ncout =create(cfileoutnc, cfilev,1,npjglo,1,cdep='depthw')
   ierr= createvar(ncout ,stypvar,jpgsop, ipk_gsop,id_varout_gsop )
   ierr= putheadervar(ncout, cfilev,1, npjglo,1,pnavlon=dumlon,pnavlat=dumlat,pdep=gdepw)
-  tim=getvar1d(cfilev,'time_counter',1)
+  tim=getvar1d(cfilev,cn_vtimec,1)
   ierr=putvar1d(ncout,tim,1,'T')
 
   ! reading the masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
 
 zmask=0
-zmask(1,:,:)=getvar('mask.nc','vmask',1,npiglo,npjglo)
+zmask(1,:,:)=getvar(cn_fmsk,'vmask',1,npiglo,npjglo)
 
 IF (llglo) THEN
 
-  zmask(2,:,:)=getvar(cbasinmask,'tmaskatl',1,npiglo,npjglo)
-  zmask(4,:,:)=getvar(cbasinmask,'tmaskind',1,npiglo,npjglo)
-  zmask(5,:,:)=getvar(cbasinmask,'tmaskpac',1,npiglo,npjglo)
+  zmask(2,:,:)=getvar(cn_fbasins,cn_tmaskatl,1,npiglo,npjglo)
+  zmask(4,:,:)=getvar(cn_fbasins,cn_tmaskind,1,npiglo,npjglo)
+  zmask(5,:,:)=getvar(cn_fbasins,cn_tmaskpac,1,npiglo,npjglo)
   zmask(3,:,:)=zmask(5,:,:)+zmask(4,:,:)
   ! ensure that there are no overlapping on the masks
   WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1
 
 ELSE
 
-zmask(2,:,:)=getvar('mask.nc','tmask',1,npiglo,npjglo)
+zmask(2,:,:)=getvar(cn_fmsk,'tmask',1,npiglo,npjglo)
 
 ENDIF
 

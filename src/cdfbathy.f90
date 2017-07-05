@@ -217,7 +217,7 @@ PROGRAM cdfbathy
      END SELECT
   END DO
   
-  IF ( lchk ) STOP  ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   IF ( lmodif .AND. .NOT. loverwrite) THEN
      ! creating a working copy of the file indexed by iversion

@@ -95,7 +95,7 @@ PROGRAM cdfhflx
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -175,12 +175,12 @@ PROGRAM cdfhflx
 
   ! reading the masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif
-  zmask(1,:,:)= getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
+  zmask(1,:,:)= getvar(cn_fmsk, cn_vmask, 1, npiglo, npjglo)
 
   IF (lglo) THEN
-     zmask(2,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
-     zmask(4,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
-     zmask(5,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+     zmask(2,:,:) = getvar(cn_fbasins, cn_tmaskatl, 1, npiglo, npjglo)
+     zmask(4,:,:) = getvar(cn_fbasins, cn_tmaskind, 1, npiglo, npjglo)
+     zmask(5,:,:) = getvar(cn_fbasins, cn_tmaskpac, 1, npiglo, npjglo)
      zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1

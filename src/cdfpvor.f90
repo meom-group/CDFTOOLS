@@ -144,7 +144,7 @@ PROGRAM cdfpvor
         CASE ( 2 ) ; cf_ufil = cldum
         CASE ( 3 ) ; cf_vfil = cldum
         CASE DEFAULT
-           PRINT *,' Too many arguments '; STOP
+           PRINT *,' Too many arguments '; STOP 99
         END SELECT
      END SELECT
   END DO
@@ -156,7 +156,7 @@ PROGRAM cdfpvor
      lchk = lchk .OR. chkfile( cf_ufil)
      lchk = lchk .OR. chkfile( cf_vfil)
   ENDIF
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

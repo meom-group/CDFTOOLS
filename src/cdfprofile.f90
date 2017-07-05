@@ -97,7 +97,7 @@ PROGRAM cdfprofile
    END SELECT
   ENDDO
       
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)

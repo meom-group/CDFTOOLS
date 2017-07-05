@@ -80,7 +80,7 @@ PROGRAM cdfwflx
 
   lchk = lchk .OR. chkfile ( cf_tfil)
   lchk = lchk .OR. chkfile ( cf_rnf )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo= getdim (cf_tfil, cn_x)
   npjglo= getdim (cf_tfil, cn_y)

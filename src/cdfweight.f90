@@ -125,7 +125,7 @@ PROGRAM cdfweight
   llchk = llchk .OR. chkfile(cf_in)
   llchk = llchk .OR. chkfile(cf_coord)
   IF ( .NOT. ll2d ) llchk = llchk .OR. chkfile(cn_fzgr)
-  IF ( llchk ) STOP ! missing files
+  IF ( llchk ) STOP 99 ! missing files
 
   npiglo = getdim (cf_coord,cn_x)
   npjglo = getdim (cf_coord,cn_y)

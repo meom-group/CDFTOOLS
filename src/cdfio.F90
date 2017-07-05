@@ -32,7 +32,8 @@
   !!   getipk        : get the vertical dimension of the variable
   !!   getnvar       : get the number of variable in a file
   !!   getspval      : get spval of a given variable
-  !!   getvar1d      : read 1D variable (eg depth, time_counter) from a file
+  !!   getvar1d      : read 1D real*4 variable (eg depth, time_counter) from a file
+  !!   getvar1d8     : read 1D real*8 variable (eg depth, time_counter) from a file
   !!   getvar3d      : read 3D variable  at once
   !!   getvaratt     : read variable attributes
   !!   gettimeatt    : get time attributes
@@ -50,13 +51,15 @@
   !!   putheadervar  : write header variables such as nav_lon, nav_lat etc ... from a file taken
   !!                 : as template
   !!   putvar0d      : write a 0d variable (constant)
-  !!   putvar1d4     : write a 1d variable
+  !!   putvar1d4     : write a 1d real*4 variable
+  !!   putvar1d8     : write a 1d real*8 variable
   !!   putvari2      : write a 2d Integer*2 variable
   !!   putvarr4      : write a 2d Real*4 variable
   !!   putvarr8      : write a 2d Real*8 variable
   !!   putvarzo      : write a zonally integrated/mean field
   !!   reputvarr4    : re-write a real*4 variable
-  !!   reputvar1d4   : re-write a real*4 1d variable 
+  !!   reputvar1d4   : re-write a real*4 1d variable
+  !!   reputvar1d8   : re-write a real*8 1d variable
   !!------------------------------------------------------------------------------------------------------
   USE netcdf        
   USE modcdfnames
@@ -64,7 +67,7 @@
   IMPLICIT NONE
 
   PRIVATE 
-  INTEGER(KIND=4) :: nid_x, nid_y, nid_z, nid_t, nid_lat, nid_lon, nid_dep, nid_tim
+  INTEGER(KIND=4) :: nid_x, nid_y, nid_z, nid_t, nid_lat, nid_lon, nid_dep, nid_tim, nid_timb, nid_b
   INTEGER(KIND=4) :: nid_lon1d, nid_lat1d
   LOGICAL         :: l_mbathy=.false.
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mbathy         !: for reading e3._ps in nemo3.x
@@ -151,7 +154,7 @@
   END INTERFACE
 
   INTERFACE putvar1d   
-     MODULE PROCEDURE putvar1d4, reputvar1d4
+     MODULE PROCEDURE putvar1d4, reputvar1d4, putvar1d8, reputvar1d8
   END INTERFACE
 
   INTERFACE putvar0d   
@@ -166,7 +169,8 @@
   PUBLIC :: copyatt, create, createvar, getvaratt, cvaratt, gettimeatt
   PUBLIC :: putatt, putheadervar, putvar, putvar1d, putvar0d, atted, puttimeatt
   PUBLIC :: getatt, getdim, getvdim, getdimvar,getipk, getnvar, getvarname, getvarid
-  PUBLIC :: getvar, getvarxz, getvaryz, getvar1d, getvare3, getvar3d, getvar3dt, getvar4d, getspval
+  PUBLIC :: getvar, getvarxz, getvaryz, getvar1d, getvar1d8, getvare3, getvar3d, getvar3dt, getvar4d, getspval
+  PUBLIC :: getvar1d_bounds, putvar1d_bounds
   PUBLIC :: gettimeseries
   PUBLIC :: closeout, ncopen
   PUBLIC :: ERR_HDL
@@ -219,7 +223,7 @@ CONTAINS
           istatus=NF90_PUT_ATT(kcout, kidvar, 'valid_max',  90.          )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'long_name','Latitude'     )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'nav_model', 'Default grid')
-       CASE ('time_counter', 'time', 't' )
+       CASE ('time_counter', 'time', 't', 'time_centered', 'time_instant')
           istatus=NF90_PUT_ATT(kcout, kidvar, 'calendar',   calendar     )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'units',      ctime_units  )
           istatus=NF90_PUT_ATT(kcout, kidvar, 'time_origin',ctime_origin )
@@ -405,7 +409,7 @@ CONTAINS
              iidims(1) = nid_t 
           ELSE
              PRINT *,' ERROR: ipk = ',kpk(jv), jv , sdtyvar(jv)%cname
-             STOP
+             STOP 98
           ENDIF
     
           SELECT CASE ( sdtyvar(jv)%cprecision ) ! check the precision of the variable to create
@@ -552,22 +556,22 @@ CONTAINS
 
     puttimeatt=NF90_INQ_VARID(kout, cdvartime, ivarid)
     IF (puttimeatt /= 0 ) THEN 
-      PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt var does not exist'
+      PRINT *, NF90_STRERROR(puttimeatt)  ; PRINT *, 'puttimeatt var does not exist' ; STOP 98
     ENDIF
    
     puttimeatt = NF90_REDEF(kout)
     puttimeatt=NF90_PUT_ATT(kout,ivarid,'calendar',ctcalendar)
-    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt calendar'; ENDIF
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; PRINT *, 'puttimeatt calendar'  ; STOP 98 ; ENDIF
     puttimeatt=NF90_PUT_ATT(kout,ivarid,'title',cttitle)
-    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt title'; ENDIF
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; PRINT *, 'puttimeatt title'     ; STOP 98 ; ENDIF
     puttimeatt=NF90_PUT_ATT(kout,ivarid,'long_name',ctlong_name)
-    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt long_name'; ENDIF
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; PRINT *, 'puttimeatt long_name' ; STOP 98 ; ENDIF
     puttimeatt=NF90_PUT_ATT(kout,ivarid,'axis',ctaxis)
-    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt axis'; ENDIF
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; PRINT *, 'puttimeatt axis'      ; STOP 98 ; ENDIF
     puttimeatt=NF90_PUT_ATT(kout,ivarid,'units',ctunits)
-    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt units'; ENDIF
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; PRINT *, 'puttimeatt units'     ; STOP 98 ; ENDIF
     puttimeatt=NF90_PUT_ATT(kout,ivarid,'time_origin',cttime_origin)
-    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; STOP 'puttimeatt time_origin'; ENDIF
+    IF (puttimeatt /= 0 ) THEN ;PRINT *, NF90_STRERROR(puttimeatt)  ; PRINT *,'puttimeatt time_origin'; STOP 98 ; ENDIF
 
     puttimeatt=NF90_ENDDEF(kout)
 
@@ -620,7 +624,7 @@ CONTAINS
     CHARACTER(LEN=*), OPTIONAL, INTENT(in) :: cdglobal   !: global attribute
     !!----------------------------------------------------------------------
     putatt=NF90_PUT_ATT(kout,kid,'units',sdtyvar%cunits) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt units'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt units'; STOP 98; ENDIF
 
     ! With netcdf4, missing value must have the same precision than the variable. Need to convert
     ! to sdtyvar%cprecision previous PUT_ATT
@@ -630,35 +634,35 @@ CONTAINS
     CASE ( 'by' ) ; putatt=NF90_PUT_ATT(kout,kid,cn_missing_value, INT(sdtyvar%rmissing_value,1) )  
     CASE DEFAULT  ; putatt=NF90_PUT_ATT(kout,kid,cn_missing_value,REAL(sdtyvar%rmissing_value,4) )
     END SELECT
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt missing value'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt missing value'; STOP 98; ENDIF
 
     putatt=NF90_PUT_ATT(kout,kid,'valid_min',sdtyvar%valid_min) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_min'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt valid_min'    ; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'valid_max',sdtyvar%valid_max)
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt valid_max'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt valid_max'    ; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'long_name',sdtyvar%clong_name)
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt longname'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt longname'     ; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'short_name',sdtyvar%cshort_name) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt short name'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt short name'   ; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'iweight',sdtyvar%iwght) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt iweight'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt iweight'      ; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'online_operation',sdtyvar%conline_operation) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt online oper'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt online oper'  ; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'axis',sdtyvar%caxis) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt axis'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt axis'         ; STOP 98; ENDIF
 
     ! Optional attributes (scale_factor, add_offset )
     putatt=NF90_PUT_ATT(kout,kid,'scale_factor',sdtyvar%scale_factor) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt scale fact'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt scale fact'; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'add_offset',sdtyvar%add_offset) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt add offset'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt add offset'; STOP 98; ENDIF
     putatt=NF90_PUT_ATT(kout,kid,'savelog10',sdtyvar%savelog10) 
-    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt savelog0'; ENDIF
+    IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt savelog0'  ; STOP 98; ENDIF
 
     ! Global attribute
     IF ( PRESENT(cdglobal) ) THEN
       putatt=NF90_PUT_ATT(kout,NF90_GLOBAL,'history',cdglobal)
-      IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; STOP 'putatt global'; ENDIF
+      IF (putatt /= NF90_NOERR ) THEN ;PRINT *, NF90_STRERROR(putatt)  ; PRINT *, 'putatt global'  ; STOP 98; ENDIF
     ENDIF
 
   END FUNCTION putatt
@@ -718,7 +722,7 @@ CONTAINS
     istatus = NF90_INQ_VARID(incid, cdvar, idvar)
     IF ( istatus /= NF90_NOERR ) THEN
        PRINT *, NF90_STRERROR(istatus),' in atted ( inq_varid)'
-       STOP
+       STOP 98
     ENDIF
     istatus = NF90_INQUIRE_ATTRIBUTE(incid, idvar, cdatt, xtype=ityp )
     IF ( istatus /= NF90_NOERR ) THEN
@@ -733,7 +737,7 @@ CONTAINS
          atted_char = istatus
        ELSE
          PRINT *, ' Mismatch in attribute type in atted_char'
-         STOP
+         STOP 98
        ENDIF
     ENDIF
     istatus=NF90_CLOSE(incid)
@@ -761,7 +765,7 @@ CONTAINS
     istatus = NF90_INQ_VARID(incid, cdvar, idvar)
     IF ( istatus /= NF90_NOERR ) THEN
        PRINT *, NF90_STRERROR(istatus),' in atted ( inq_varid)'
-       STOP
+       STOP 98
     ENDIF
     istatus = NF90_INQUIRE_ATTRIBUTE(incid, idvar, cdatt, xtype=ityp )
     IF ( istatus /= NF90_NOERR ) THEN
@@ -776,7 +780,7 @@ CONTAINS
          atted_r4 = istatus
        ELSE
          PRINT *, ' Mismatch in attribute type in atted_r4'
-         STOP
+         STOP 98
        ENDIF
     ENDIF
     istatus=NF90_CLOSE(incid)
@@ -1312,31 +1316,31 @@ CONTAINS
 
              istatus=NF90_INQ_VARID (incid,'mbathy', id_var)
              IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no mbathy found !' ; STOP
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no mbathy found !' ; STOP 98
              ENDIF
              istatus=NF90_GET_VAR(incid,id_var, mbathy, start=(/1,1,1/), count=(/ii,ij,1/) )
              !
              istatus=NF90_INQ_VARID (incid,'e3t_ps', id_var)
              IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_ps found !' ; STOP
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_ps found !' ; STOP 98
              ENDIF
              istatus=NF90_GET_VAR(incid,id_var,e3t_ps, start=(/1,1,1/), count=(/ii,ij,1/) )
              !
              istatus=NF90_INQ_VARID (incid,'e3w_ps', id_var)
              IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_ps found !' ; STOP
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_ps found !' ; STOP 98
              ENDIF
              istatus=NF90_GET_VAR(incid,id_var,e3w_ps, start=(/1,1,1/), count=(/ii,ij,1/) )
              !
              istatus=NF90_INQ_VARID (incid,'e3t_0', id_var)
              IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_0 found !' ; STOP
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3t_0 found !' ; STOP 98
              ENDIF
              istatus=NF90_GET_VAR(incid,id_var,e3t_0, start=(/1,1/), count=(/ik0,1/) )
              !
              istatus=NF90_INQ_VARID (incid,'e3w_0', id_var)
              IF ( istatus /=  NF90_NOERR ) THEN
-               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_0 found !' ; STOP
+               PRINT *, 'Problem reading mesh_zgr.nc v3 : no e3w_0 found !' ; STOP 98
              ENDIF
              istatus=NF90_GET_VAR(incid,id_var,e3w_0, start=(/1,1/), count=(/ik0,1/) )
              DO ji=1,ii
@@ -1557,7 +1561,7 @@ CONTAINS
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar for ', TRIM(clvar)
        CALL ERR_HDL(istatus)
-       STOP
+       STOP 98
     ENDIF
 
     ! Caution : order does matter !
@@ -1663,7 +1667,7 @@ CONTAINS
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar3d for ', TRIM(cdvar)
        CALL ERR_HDL(istatus)
-       STOP
+       STOP 98
     ENDIF
 
     ! Caution : order does matter !
@@ -1768,7 +1772,7 @@ CONTAINS
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar3dt for ', TRIM(cdvar)
        CALL ERR_HDL(istatus)
-       STOP
+       STOP 98
     ENDIF
 
     ! Caution : order does matter !
@@ -1878,7 +1882,7 @@ CONTAINS
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvar4d for ', TRIM(cdvar)
        CALL ERR_HDL(istatus)
-       STOP
+       STOP 98
     ENDIF
 
     ! Caution : order does matter !
@@ -1982,7 +1986,7 @@ CONTAINS
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvarxz for ', TRIM(cdvar)
        CALL ERR_HDL(istatus)
-       STOP
+       STOP 98
     ENDIF
 
     ! Caution : order does matter !
@@ -2087,7 +2091,7 @@ CONTAINS
     IF ( istatus /= 0 ) THEN
        PRINT *,' Problem in getvaryz for ', TRIM(cdvar)
        CALL ERR_HDL(istatus)
-       STOP
+       STOP 98
     ENDIF
 
     ! Caution : order does matter !
@@ -2134,6 +2138,74 @@ CONTAINS
 
   END FUNCTION getvar1d
 
+  FUNCTION  getvar1d8 (cdfile, cdvar, kk, kstatus)
+    !!-------------------------------------------------------------------------
+    !!                  ***  FUNCTION  getvar1d8  ***
+    !!
+    !! ** Purpose :  return 1D variable cdvar from cdfile, of size kk
+    !!
+    !!-------------------------------------------------------------------------
+    CHARACTER(LEN=*),           INTENT(in) :: cdfile   ! file name to work with
+    CHARACTER(LEN=*),           INTENT(in) :: cdvar    ! variable name to work with
+    INTEGER(KIND=4),            INTENT(in) :: kk       ! size of 1D vector to be returned
+    INTEGER(KIND=4), OPTIONAL, INTENT(out) :: kstatus  ! return status concerning the variable existence
+    REAL(KIND=8), DIMENSION(kk)            :: getvar1d8 ! real returned vector
+
+    INTEGER(KIND=4), DIMENSION(1) :: istart, icount
+    INTEGER(KIND=4) :: incid, id_var
+    INTEGER(KIND=4) :: istatus
+    !!-------------------------------------------------------------------------
+    istart(:) = 1
+    icount(1)=kk
+    IF ( PRESENT(kstatus) ) kstatus = 0
+
+    istatus=NF90_OPEN(cdfile,NF90_NOWRITE,incid)
+    istatus=NF90_INQ_VARID ( incid,cdvar,id_var)
+    IF ( istatus == NF90_NOERR ) THEN
+       istatus=NF90_GET_VAR(incid,id_var,getvar1d8,start=istart,count=icount)
+    ELSE
+       IF ( PRESENT(kstatus) ) kstatus= istatus
+       getvar1d8=99999999999.
+    ENDIF
+
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION getvar1d8
+
+  FUNCTION  getvar1d_bounds (cdfile, cdvar, kk, kstatus)
+    !!-------------------------------------------------------------------------
+    !!                  ***  FUNCTION  getvar1d  ***
+    !!
+    !! ** Purpose :  return 1D variable cdvar from cdfile, of size kk
+    !!
+    !!-------------------------------------------------------------------------
+    CHARACTER(LEN=*),           INTENT(in) :: cdfile   ! file name to work with
+    CHARACTER(LEN=*),           INTENT(in) :: cdvar    ! variable name to work with
+    INTEGER(KIND=4),            INTENT(in) :: kk       ! size of 1D vector to be returned
+    INTEGER(KIND=4), OPTIONAL, INTENT(out) :: kstatus  ! return status concerning the variable existence
+    REAL(KIND=4), DIMENSION(kk,2)          :: getvar1d_bounds ! real returned vector
+
+    INTEGER(KIND=4), DIMENSION(2) :: istart, icount
+    INTEGER(KIND=4) :: incid, id_var
+    INTEGER(KIND=4) :: istatus
+    !!-------------------------------------------------------------------------
+    istart(:) = 1
+    icount(1)=2; icount(2)=kk
+
+    IF ( PRESENT(kstatus) ) kstatus = 0
+
+    istatus=NF90_OPEN(cdfile,NF90_NOWRITE,incid)
+    istatus=NF90_INQ_VARID ( incid,cdvar,id_var)
+    IF ( istatus == NF90_NOERR ) THEN
+       istatus=NF90_GET_VAR(incid,id_var,getvar1d_bounds,start=istart,count=icount)
+    ELSE
+       IF ( PRESENT(kstatus) ) kstatus= istatus
+       getvar1d_bounds(:,:)=99999999999.
+    ENDIF
+
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION getvar1d_bounds
 
   FUNCTION  getvare3 (cdfile,cdvar,kk)
     !!-------------------------------------------------------------------------
@@ -2200,7 +2272,7 @@ CONTAINS
        PRINT *,' Problem in getvare3 for ', TRIM(cdvar)
        PRINT *,TRIM(cdfile), kk
        CALL ERR_HDL(istatus)
-       STOP
+       STOP 98
     ENDIF
 
     istatus=NF90_CLOSE(incid)
@@ -2313,7 +2385,7 @@ CONTAINS
              END DO
              IF (jj == jpdep +1 ) THEN
                 PRINT *,' No depth variable found in ', TRIM(cdfile)
-                STOP
+                STOP 98
              ENDIF
           ENDIF
        ENDIF
@@ -2637,6 +2709,77 @@ CONTAINS
 
   END FUNCTION putvar1d4
 
+  INTEGER(KIND=4) FUNCTION putvar1d8(kout, dtab, kk, cdtype)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION putvar1d8  ***
+    !!
+    !! ** Purpose :  Copy 1D variable (size kk) hold in ptab,  with id 
+    !!               kid, into file id kout 
+    !!
+    !! ** Method  : cdtype is either T (time_counter) or D (depth.)
+    !!                         LON (1D longitude) or LAT (1D latitude)
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4),            INTENT(in) :: kout   ! ncid of output file
+    REAL(KIND=8), DIMENSION(kk),INTENT(in) :: dtab   ! 1D array to write in file
+    INTEGER(KIND=4),            INTENT(in) :: kk     ! number of elements in ptab
+    CHARACTER(LEN=1),           INTENT(in) :: cdtype ! either T or D LON or LAT
+
+    INTEGER(KIND=4)               :: istatus, iid
+    INTEGER(KIND=4), DIMENSION(1) :: istart, icount
+    !!----------------------------------------------------------------------
+    SELECT CASE ( cdtype )
+    CASE ('T', 't' ) 
+       iid = nid_tim
+    CASE ('D', 'd' )
+       iid = nid_dep
+    CASE ('X', 'x' )
+       iid = nid_lon1d
+    CASE ('Y', 'y' )
+       iid = nid_lat1d
+    END SELECT
+
+    istart(:) = 1
+    icount(:) = kk
+    istatus=NF90_PUT_VAR(kout,iid, dtab, start=istart,count=icount)
+    putvar1d8=istatus
+
+  END FUNCTION putvar1d8
+
+  INTEGER(KIND=4) FUNCTION putvar1d_bounds(kout, ptab, kk, cdtype)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION putvar1d4  ***
+    !!
+    !! ** Purpose :  Copy 1D variable (size kk) hold in ptab,  with id 
+    !!               kid, into file id kout 
+    !!
+    !! ** Method  : cdtype is either T (time_counter) or D (depth.)
+    !!                         LON (1D longitude) or LAT (1D latitude)
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4),            INTENT(in) :: kout   ! ncid of output file
+    REAL(KIND=4), DIMENSION(kk,2),INTENT(in) :: ptab   ! 1D array to write in file
+    INTEGER(KIND=4),            INTENT(in) :: kk     ! number of elements in ptab
+    CHARACTER(LEN=1),           INTENT(in) :: cdtype ! either T or D LON or LAT
+
+    INTEGER(KIND=4)               :: istatus, iid
+    INTEGER(KIND=4), DIMENSION(2) :: istart, icount
+    !!----------------------------------------------------------------------
+    SELECT CASE ( cdtype )
+    CASE ('T', 't' )
+       iid = nid_timb
+    CASE DEFAULT
+       PRINT *, 'E R R O R: CASE ',cdtype,' do not coded'
+       STOP 98
+    END SELECT
+
+    istart(:) = 1
+    icount(1) = 2; icount(2)=kk
+    istatus=NF90_PUT_VAR(kout,iid, ptab, start=istart,count=icount)
+    putvar1d_bounds=istatus
+  END FUNCTION putvar1d_bounds
+
+
   INTEGER(KIND=4) FUNCTION reputvar1d4(cdfile, cdvar, ptab, kk )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION reputvar1d4  ***
@@ -2661,6 +2804,32 @@ CONTAINS
     istatus = NF90_CLOSE(incid)
 
   END FUNCTION reputvar1d4
+
+  INTEGER(KIND=4) FUNCTION reputvar1d8(cdfile, cdvar, dtab, kk )
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION reputvar1d8  ***
+    !!
+    !! ** Purpose : Copy 1d variable cdfvar in cdfile, an already existing file
+    !!              ptab is the 1d array to write and kk the size of ptab
+    !!
+    !! ** Method  :   
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*),            INTENT(in) :: cdfile      ! filename
+    CHARACTER(LEN=*),            INTENT(in) :: cdvar       ! variable name
+    REAL(KIND=8), DIMENSION(kk), INTENT(in) :: dtab        ! 1D array to write in file
+    INTEGER(KIND=4),             INTENT(in) :: kk          ! number of elements in ptab
+
+    INTEGER                                 :: istatus, incid, id
+    !!-----------------------------------------------------------
+    istatus = NF90_OPEN(cdfile, NF90_WRITE, incid)
+    istatus = NF90_INQ_VARID(incid, cdvar, id )
+    istatus = NF90_PUT_VAR(incid, id, dtab, start=(/1/), count=(/kk/) )
+    reputvar1d8 = istatus
+    istatus = NF90_CLOSE(incid)
+
+  END FUNCTION reputvar1d8
+
 
   INTEGER(KIND=4) FUNCTION putvar0dt(kout, kid, pvalue, ktime)
     !!---------------------------------------------------------------------
@@ -2790,7 +2959,7 @@ CONTAINS
     IF (kstatus /=  NF90_NOERR ) THEN
        PRINT *, 'ERROR in NETCDF routine, status=',kstatus
        PRINT *,NF90_STRERROR(kstatus)
-       STOP 1
+       STOP 98
     END IF
 
   END SUBROUTINE ERR_HDL
@@ -2866,7 +3035,7 @@ CONTAINS
     ELSE 
        PRINT *,'  ERROR : variable ',TRIM(cdvar),' has ', indim, &
             &       ' dimensions !. Only 3 or 4 supported'
-       STOP
+       STOP 98
     ENDIF
 
     ! convert to physical values
@@ -2894,7 +3063,7 @@ CONTAINS
     !!               Do nothing is filename is 'none'
     !!
     !! ** Method  : Doing it this way allow statements such as
-    !!              IF ( chkfile( cf_toto) ) STOP  ! missing file
+    !!              IF ( chkfile( cf_toto) ) STOP 99 ! missing file
     !!
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*),  INTENT(in) :: cd_file
@@ -2932,7 +3101,7 @@ CONTAINS
     !!               Do nothing is varname is 'none'
     !!
     !! ** Method  : Doing it this way allow statements such as
-    !!              IF ( chkvar( cf_toto, cv_toto) ) STOP  ! missing var
+    !!              IF ( chkvar( cf_toto, cv_toto) ) STOP 99 ! missing var
     !!
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*), INTENT(in) :: cd_file
@@ -3083,7 +3252,7 @@ CONTAINS
           IF ( GetNcFile%idimids(jvar,4) /= GetNcFile%iunlim ) THEN
              PRINT *, ' 4D variables must have an unlimited time dimension ...'
              PRINT *, ' Cannot process this file :', TRIM(cd_file)
-             STOP
+             STOP 98
           ENDIF
           idt = GetNcFile%idimids(jvar,4) 
        ENDIF
@@ -3097,7 +3266,7 @@ CONTAINS
 
     IF ( idx == -1 .OR. idy == -1 ) THEN 
        PRINT *, ' ERROR : no x, y dimensions found'
-       STOP
+       STOP 98
     ENDIF
 
     ! get dimensions

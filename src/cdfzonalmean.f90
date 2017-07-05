@@ -152,7 +152,7 @@ PROGRAM cdfzonalmean
                  npbasins   = 5
                  lchk       = chkfile (cf_basins)
       CASE DEFAULT 
-        PRINT *,' Too many arguments ...' ; STOP
+        PRINT *,' Too many arguments ...' ; STOP 99
       END SELECT
     END SELECT
   END DO
@@ -171,7 +171,7 @@ PROGRAM cdfzonalmean
   lchk = lchk .OR. chkfile (cn_fzgr)
   lchk = lchk .OR. chkfile (cn_fmsk)
   lchk = lchk .OR. chkfile (cf_in  )
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! set the metrics according to C grid point
   SELECT CASE (ctyp)
@@ -196,7 +196,7 @@ PROGRAM cdfzonalmean
      cv_depi = cn_gdepw   ; cv_depo = cn_vdepthw
      cv_phi  = cn_gphit   ; cv_msk  = 'tmask'
   CASE DEFAULT
-     PRINT *, ' C grid:', TRIM(ctyp),' point not known!' ; STOP
+     PRINT *, ' C grid:', TRIM(ctyp),' point not known!' ; STOP 99
   END SELECT
 
   nvarin  = getnvar(cf_in)   ! number of input variables in file
@@ -352,9 +352,9 @@ PROGRAM cdfzonalmean
   IF ( lndep_in ) ik = npk   ! some model are numbered from the bottom
   zmask(1,:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo)
   IF ( cf_basins /= 'none' ) THEN
-     zmask(2,:,:) = getvar(cf_basins, 'tmaskatl', ik, npiglo, npjglo )
-     zmask(4,:,:) = getvar(cf_basins, 'tmaskind', ik, npiglo, npjglo )
-     zmask(5,:,:) = getvar(cf_basins, 'tmaskpac', ik, npiglo, npjglo )
+     zmask(2,:,:) = getvar(cf_basins, cn_tmaskatl, ik, npiglo, npjglo )
+     zmask(4,:,:) = getvar(cf_basins, cn_tmaskind, ik, npiglo, npjglo )
+     zmask(5,:,:) = getvar(cf_basins, cn_tmaskpac, ik, npiglo, npjglo )
      zmask(3,:,:) = zmask(5,:,:) + zmask(4,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(zmask(3,:,:) > 0 ) zmask(3,:,:) = 1

@@ -224,7 +224,7 @@ PROGRAM cdfsigtrp
          CASE ( 5 ) ; READ(cldum,*) dsigma_max
          CASE ( 6 ) ; READ(cldum,*) nbins
          CASE DEFAULT 
-            PRINT *,' Too many arguments ' ; STOP
+            PRINT *,' Too many arguments ' ; STOP 99
          END SELECT
       END SELECT
    END DO
@@ -236,7 +236,7 @@ PROGRAM cdfsigtrp
    lchk = lchk .OR. chkfile( cf_tfil    )
    lchk = lchk .OR. chkfile( cf_ufil    )
    lchk = lchk .OR. chkfile( cf_vfil    )
-   IF ( lchk ) STOP ! missing file
+   IF ( lchk ) STOP 99 ! missing file
    IF ( ltemp)  THEN  ! temperature decrease downward. Change sign and swap min/max
       refdep = -10. ! flag value
       dltsig     = dsigma_max  ! use dltsig as dummy variable for swapping
@@ -321,7 +321,7 @@ PROGRAM cdfsigtrp
       IF (l_merid ) THEN   ! meridional section at i=iimin=iimax  ! use getvaryz
          tmpm(:,:)    = getvar(cn_fhgr, cn_ve2u,   1, 1, npts, kimin=iimin, kjmin=ijmin+1)
          eu(:)        = tmpm(1,:)  ! metrics varies only horizontally
-         tmpm(:,:)    = getvar(cn_fhgr, cn_vlat2d, 1, 1, npts, kimin=iimin, kjmin=ijmin+1)
+         tmpm(:,:)    = getvar(cn_fhgr, cn_gphiu, 1, 1, npts, kimin=iimin, kjmin=ijmin+1)
          rlonlat(:,1) = tmpm(1,:)  ! latitude in this case
 
          ! use zt and zs as temporaty variable for e3w
@@ -373,7 +373,7 @@ PROGRAM cdfsigtrp
       ELSE                   ! zonal section at j=ijmin=ijmax
          tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
          eu(:)        = tmpz(:,1)
-         tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin, kjmin=ijmin)
+         tmpz(:,:)    = getvar(cn_fhgr, cn_glamv, 1, npts, 1, kimin=iimin, kjmin=ijmin)
          rlonlat(:,1) = tmpz(:,1)  ! longitude in this case
 
          ! use zt and zs as temporaty variable for e3w

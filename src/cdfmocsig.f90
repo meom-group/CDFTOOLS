@@ -190,7 +190,8 @@ PROGRAM cdfmocsig
              CASE DEFAULT                 ; READ(cldum,*) pref
              END SELECT
         CASE DEFAULT
-           STOP 'ERROR : Too many arguments ...'
+           PRINT *, 'ERROR : Too many arguments ...'
+           STOP 99
         END SELECT
      END SELECT
   END DO
@@ -201,7 +202,7 @@ PROGRAM cdfmocsig
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_vfil )
   lchk = lchk .OR. chkfile ( cf_tfil )
-  IF ( lchk ) STOP  ! missing file(s)
+  IF ( lchk ) STOP 99  ! missing file(s)
 
   ! re-use lchk for binning control : TRUE if no particular binning specified
   lchk = lbin(1) .OR. lbin(2) .OR. lbin(3) 
@@ -260,7 +261,7 @@ PROGRAM cdfmocsig
           PRINT *,' This value of depth_ref (',pref,') is not implemented as standard'
           PRINT *,' You must use the -sigmin, -sigstp and -nbins options to precise'
           PRINT *,' the density bining you want to use.'
-          STOP
+          STOP 99
        END SELECT
      ENDIF
   ENDIF
@@ -320,12 +321,12 @@ PROGRAM cdfmocsig
   CALL CreateOutputFiles
 
   ! reading the masks
-  ibmask(npglo,:,:) = getvar(cn_fmsk, 'vmask', 1, npiglo, npjglo)
+  ibmask(npglo,:,:) = getvar(cn_fmsk, cn_vmask, 1, npiglo, npjglo)
 
   IF ( lbas ) THEN
-     ibmask(npatl,:,:) = getvar(cn_fbasins, 'tmaskatl', 1, npiglo, npjglo)
-     ibmask(npind,:,:) = getvar(cn_fbasins, 'tmaskind', 1, npiglo, npjglo)
-     ibmask(nppac,:,:) = getvar(cn_fbasins, 'tmaskpac', 1, npiglo, npjglo)
+     ibmask(npatl,:,:) = getvar(cn_fbasins, cn_tmaskatl, 1, npiglo, npjglo)
+     ibmask(npind,:,:) = getvar(cn_fbasins, cn_tmaskind, 1, npiglo, npjglo)
+     ibmask(nppac,:,:) = getvar(cn_fbasins, cn_tmaskpac, 1, npiglo, npjglo)
      ibmask(npinp,:,:) = ibmask(nppac,:,:) + ibmask(npind,:,:)
      ! ensure that there are no overlapping on the masks
      WHERE(ibmask(npinp,:,:) > 0 ) ibmask(npinp,:,:) = 1

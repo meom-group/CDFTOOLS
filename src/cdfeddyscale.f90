@@ -95,7 +95,7 @@ PROGRAM cdfeddyscale
   CALL getarg(1, cf_meanfil)
 
   lchk = chkfile(cf_meanfil ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_meanfil,cn_x)
   npjglo = getdim(cf_meanfil,cn_y)

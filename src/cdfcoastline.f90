@@ -58,7 +58,7 @@ PROGRAM cdfcofpoint
   IF (narg > 3 ) THEN
     IF ( narg /= 5 ) THEN
        PRINT *, ' ERROR : You must give 6 optional values (imin imax jmin jmax kmin kmax)'
-       STOP
+       STOP 99
     ELSE
     ! input optional imin imax jmin jmax
       CALL getarg ( 2,cldum) ; READ(cldum,*) imin

@@ -64,7 +64,7 @@ PROGRAM cdfsigntr
   ENDIF
 
   CALL getarg (1, cf_tfil)
-  IF (chkfile(cf_tfil) ) STOP ! missing file
+  IF (chkfile(cf_tfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

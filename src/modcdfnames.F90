@@ -10,6 +10,10 @@ MODULE modCdfNames
   IMPLICIT NONE
 
   PUBLIC
+#if defined key_CMIP6
+  INCLUDE 'modcdfnames_CMIP6.h90'
+#else
+  CHARACTER(LEN=256) :: cn_output = 'default'
 
   ! Dimension name : cn_. [ 1 letter only ]
   CHARACTER(LEN=256) :: cn_x='x'               !: longitude, I dimension
@@ -50,6 +54,13 @@ MODULE modCdfNames
   ! Mask variables
   CHARACTER(LEN=256) :: cn_tmask='tmask', cn_umask='umask'   !:  tmask, umask
   CHARACTER(LEN=256) :: cn_vmask='vmask', cn_fmask='fmask'   !:  tmask, umask
+  CHARACTER(LEN=256) :: cn_polymask='polymask'               !:  polymask
+  CHARACTER(LEN=256) :: cn_tmaskutil='tmaskutil'             !:  tmaskutil
+  CHARACTER(LEN=256) :: cn_tmaskatl='tmaskatl'
+  CHARACTER(LEN=256) :: cn_tmaskind='tmaskind'
+  CHARACTER(LEN=256) :: cn_tmaskpac='tmaskpac'  
+  CHARACTER(LEN=256) :: cn_tmaskant='tmaskant'               !:  austral mask in cn_fbasins
+  CHARACTER(LEN=256) :: cn_tmaskmed='tmaskmed'               !:  mediterranean mask in cn_fbasins
 
   ! Generic mesh-mask file names  cn_f...
   CHARACTER(LEN=256) :: cn_fzgr='mesh_zgr.nc'
@@ -61,11 +72,18 @@ MODULE modCdfNames
   ! Variable name  : cn_v... [ starts with cn_v ]
   CHARACTER(LEN=256) :: cn_votemper='votemper' !: temperature
   CHARACTER(LEN=256) :: cn_vosaline='vosaline' !: salinity
+  CHARACTER(LEN=256) :: cn_votemper2='votemper_sqd' !: temperature
+  CHARACTER(LEN=256) :: cn_vosaline2='vosaline_sqd' !: salinity
   CHARACTER(LEN=256) :: cn_vozocrtx='vozocrtx' !: zonal velocity
   CHARACTER(LEN=256) :: cn_vomecrty='vomecrty' !: meridional velocity
+  CHARACTER(LEN=256) :: cn_vozocrtx2='vozocrtx_sqd' !: squared velocity
+  CHARACTER(LEN=256) :: cn_vomecrty2='vomecrty_sqd' !: squared velocity
   CHARACTER(LEN=256) :: cn_vomeeivv='vomeeivv' !: meridional Eddy Induced Velocity
   CHARACTER(LEN=256) :: cn_vovecrtz='vovecrtz' !: vertical velocity
+  CHARACTER(LEN=256) :: cn_vovecrtz2='vovecrtz_sqd' !: squared vertical velocity
   CHARACTER(LEN=256) :: cn_sossheig='sossheig' !: Sea Surface Height
+  CHARACTER(LEN=256) :: cn_sossheig2='sossheig_sqd' !: Sea Surface Height
+  CHARACTER(LEN=256) :: cn_somxldep='somxl010' !: Mixed layer depth
   CHARACTER(LEN=256) :: cn_somxl010='somxl010' !: Mixed layer depth (density criterium)
   CHARACTER(LEN=256) :: cn_somxlt02='somxlt02' !: Mixed layer depth (temperature criterium)
   CHARACTER(LEN=256) :: cn_sozotaux='sozotaux' !: Zonal wind stress
@@ -152,6 +170,7 @@ MODULE modCdfNames
   CHARACTER(LEN=15), DIMENSION(jp_cubvarmax) :: cn_cubvar = &
       & (/'sossheig','votemper',('        ', ji=3,jp_cubvarmax) /)
 
+#endif
 ! INTERFACE  
 !    SUBROUTINE fdate( cldate)
 !    CHARACTER(LEN=24) :: cldate
@@ -181,7 +200,8 @@ MODULE modCdfNames
     NAMELIST/nammetrics/ cn_glamt, cn_glamu, cn_glamv, cn_glamf
     NAMELIST/nammetrics/ cn_gphit, cn_gphiu, cn_gphiv, cn_gphif
     ! mask variables
-    NAMELIST/nammask/ cn_tmask, cn_umask, cn_vmask, cn_fmask
+    NAMELIST/nammask/ cn_tmask, cn_umask, cn_vmask, cn_fmask, cn_polymask, cn_tmaskutil
+    NAMELIST/nammask/ cn_tmaskatl, cn_tmaskpac, cn_tmaskind, cn_tmaskant, cn_tmaskmed
     !        mesh_zgr
     NAMELIST/nammetrics/ cn_gdept, cn_gdepw
     NAMELIST/nammetrics/ cn_hdept, cn_hdepw
@@ -189,12 +209,12 @@ MODULE modCdfNames
     ! variables 
     NAMELIST/namvars/ cn_votemper, cn_vosaline
     NAMELIST/namvars/ cn_vozocrtx, cn_vomecrty, cn_vomeeivv, cn_vovecrtz
-    NAMELIST/namvars/ cn_sossheig, cn_somxl010, cn_somxlt02
+    NAMELIST/namvars/ cn_sossheig, cn_somxl010, cn_somxlt02, cn_somxldep
     NAMELIST/namvars/ cn_sohefldo, cn_solhflup, cn_sosbhfup
     NAMELIST/namvars/ cn_solwfldo, cn_soshfldo
     NAMELIST/namvars/ cn_sowaflup, cn_sowaflcd, cn_sowafldp, cn_iowaflup
-    NAMELIST/namvars/ cn_zomsfatl, cn_zomsfglo, cn_zomsfpac, cn_zomsfinp, cn_zomsfind
-    NAMELIST/namvars/ cn_zoisoatl, cn_zoisoglo, cn_zoisopac, cn_zoisoinp, cn_zoisoind
+    NAMELIST/namvars/ cn_zomsfatl, cn_zomsfglo, cn_zomsfpac, cn_zomsfinp, cn_zomsfind, cn_zomsfinp0
+    NAMELIST/namvars/ cn_zoisoatl, cn_zoisoglo, cn_zoisopac, cn_zoisoinp, cn_zoisoind, cn_zoisoinp0
     NAMELIST/namvars/ cn_vozout, cn_vomevt, cn_vozous, cn_vomevs
     NAMELIST/namvars/ cn_sozout, cn_somevt, cn_sozous, cn_somevs
     NAMELIST/namvars/ cn_sozoutrp, cn_somevtrp
@@ -276,7 +296,8 @@ CONTAINS
     READ(inam, namvars    )
     READ(inam, nambathy   )
     READ(inam, namsqdvar  )
-    READ(inam, nammeshmask  )
+    READ(inam, namcubvar  )
+    READ(inam, nammeshmask     )
     CLOSE ( inam ) 
 
   END SUBROUTINE ReadCdfNames

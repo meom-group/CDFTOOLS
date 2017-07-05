@@ -121,7 +121,7 @@ PROGRAM cdfhgradb
      CASE DEFAULT
        PRINT *, 'Option ',TRIM(cldum),' not understood !'
        PRINT *, 'Check usage with cdfhgradb (no argument).'
-       STOP
+       STOP 99
      END SELECT
    ENDDO
 
@@ -130,7 +130,7 @@ PROGRAM cdfhgradb
    lchk = ( lchk .OR. chkfile(cn_fhgr) )
    lchk = ( lchk .OR. chkfile(cn_fzgr) )
    lchk = ( lchk .OR. chkfile(cn_fmsk) )
-   IF (lchk ) STOP ! missing file
+   IF (lchk ) STOP 99 ! missing file
 
    npiglo = getdim (cf_tfil, cn_x)
    npjglo = getdim (cf_tfil, cn_y)

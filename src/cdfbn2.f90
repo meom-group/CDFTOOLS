@@ -89,13 +89,13 @@ PROGRAM cdfbn2
      SELECT CASE (cldum)
      CASE ('W','w') ; l_w   = .true.
      CASE ('-full') ; lfull = .true. ; cglobal = 'full step computation'
-     CASE DEFAULT   ; PRINT *,' Option not understood :', TRIM(cldum) ; STOP
+     CASE DEFAULT   ; PRINT *,' Option not understood :', TRIM(cldum) ; STOP 99
      END SELECT
   END DO
 
   lchk = chkfile (cn_fzgr )
   lchk = lchk .OR. chkfile (cf_tfil  )
-  IF ( lchk  ) STOP  ! missing files 
+  IF ( lchk  ) STOP 99 ! missing files 
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

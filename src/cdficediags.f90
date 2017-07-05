@@ -164,7 +164,7 @@ PROGRAM cdficediag
   lchk = lchk .OR. chkfile(cn_fmsk)
   lchk = lchk .OR. chkfile(cf_ifil)
 
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_ifil,cn_x)
   npjglo = getdim (cf_ifil,cn_y)
@@ -250,7 +250,7 @@ PROGRAM cdficediag
      tmask(:,npjglo)=0.
   CASE DEFAULT
      PRINT *,' Nperio=', nperio,' not yet coded'
-     STOP
+     STOP 99
   END SELECT
 
   ricethick(:,:)=0.
@@ -269,7 +269,7 @@ PROGRAM cdficediag
      PRINT *,' '
   END IF
 
-  IF (chkvar(cf_ifil, cn_ileadfra)) STOP
+  IF (chkvar(cf_ifil, cn_ileadfra)) STOP 99
   !
   DO jt = 1, npt
      IF (TRIM(cn_iicethic) .NE. 'missing') ricethick(:,:) = getvar(cf_ifil, cn_iicethic, 1, npiglo, npjglo, ktime=jt)

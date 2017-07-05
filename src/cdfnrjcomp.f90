@@ -70,7 +70,7 @@ PROGRAM cdfnrjcomp
 
   CALL getarg(1, cf_in)
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim(cf_in,cn_x)
   npjglo = getdim(cf_in,cn_y)

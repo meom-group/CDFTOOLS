@@ -165,7 +165,7 @@ PROGRAM cdfrhoproj
 
   lchk = chkfile(cf_rhofil)
   IF ( .NOT. lsingle ) lchk = lchk .OR. chkfile(cf_rholev)
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   IF ( .NOT.  lsingle ) THEN
      OPEN(numlev,FILE=cf_rholev)
@@ -278,7 +278,7 @@ PROGRAM cdfrhoproj
      END DO
      ierr = putvar1d(ncout, tim, 1, 'T')
      ierr = closeout(ncout    )
-     STOP ' -isodep option in use: only compute depth of isopycnal surfaces.'
+     PRINT *, ' -isodep option in use: only compute depth of isopycnal surfaces.' ; STOP 99
   ENDIF
 
   !! ** Loop on the scalar files to project on choosen isopycnics surfaces
@@ -292,7 +292,7 @@ PROGRAM cdfrhoproj
      IF (npt /= 1 ) THEN
         PRINT *,' This program has to be modified for multiple'
         PRINT *,' time frames.'
-        STOP ' Error : npt # 1'
+        PRINT *, ' Error : npt # 1' ; STOP 99
      ENDIF
      tim(:)=getvar1d(cf_dta, cn_vtimec, 1)
  
@@ -439,7 +439,7 @@ PROGRAM cdfrhoproj
          sigstp = 0.
       ELSE
          PRINT *,' Error in -s0 option : either -s0 val  or -s0 sigmin,sigstp,nbins'
-         STOP
+         STOP 99
       ENDIF
 
       ALLOCATE ( zi(npsig) )

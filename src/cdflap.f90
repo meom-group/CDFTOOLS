@@ -123,7 +123,7 @@ PROGRAM cdflap
         CASE ( 3 ) ; ct_in = cldum
         CASE DEFAULT
           PRINT *,' Too many free arguments ...'
-          STOP
+          STOP 99
         END SELECT
      END SELECT
   ENDDO
@@ -137,7 +137,7 @@ PROGRAM cdflap
     lchk = chkfile (cn_fmsk) .OR. lchk
   ENDIF
   lchk = chkfile (cf_in  ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_in,cn_x)
   npjglo = getdim(cf_in,cn_y)
@@ -225,7 +225,7 @@ PROGRAM cdflap
       cv_lat  =cn_gphif
   CASE DEFAULT
       PRINT *, ' TYPE ', TRIM(ct_in),' unknown on C-grid'
-      STOP
+      STOP 99
   END SELECT
       
 

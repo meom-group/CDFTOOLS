@@ -162,7 +162,7 @@ PROGRAM cdfgeostrophy
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim(cf_tfil, cn_x)
   npjglo = getdim(cf_tfil, cn_y)

@@ -118,7 +118,7 @@ PROGRAM cdfvertmean
         CASE ( 4 ) ; READ(cldum,*) rdep_up
         CASE ( 5 ) ; READ(cldum,*) rdep_down
         CASE DEFAULT
-           PRINT *,' Too many arguments ...' ; STOP
+           PRINT *,' Too many arguments ...' ; STOP 99
         END SELECT
      END SELECT
   ENDDO
@@ -126,13 +126,13 @@ PROGRAM cdfvertmean
   lchk = chkfile (cn_fzgr)
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_in  ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   CALL SetGlobalAtt (cglobal)
 
   IF (rdep_down < rdep_up ) THEN
      PRINT *,'Give depth limits in increasing order !'
-     STOP
+     STOP 99
   ENDIF
 
   npiglo = getdim (cf_in,cn_x)
@@ -152,7 +152,7 @@ PROGRAM cdfvertmean
 
   ! just chck if var exist in file 
   DO jvar = 1, nvaro
-     IF ( chkvar( cf_in, cv_in(jvar)) ) STOP  ! message is written in cdfio.chkvar
+     IF ( chkvar( cf_in, cv_in(jvar)) ) STOP 99 ! message is written in cdfio.chkvar
   ENDDO
 
   ! Allocate arrays
@@ -192,7 +192,7 @@ PROGRAM cdfvertmean
   CASE( 'U','u');  cv_dep=cn_gdepw ; cv_e3='e3u_ps' ; cv_e31d=cn_ve3t 
   CASE( 'V','v');  cv_dep=cn_gdepw ; cv_e3='e3v_ps' ; cv_e31d=cn_ve3t 
   CASE( 'W','w');  cv_dep=cn_gdept ; cv_e3='e3w_ps' ; cv_e31d=cn_ve3w
-  CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP
+  CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP 99
   END SELECT
 
                gdep(:) = getvare3(cn_fzgr, cv_dep,  npk)

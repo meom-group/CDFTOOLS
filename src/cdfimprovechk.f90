@@ -85,7 +85,7 @@ PROGRAM cdfimprovechk
   CALL getarg (3, cf_ref)
   CALL getarg (4, cf_tst)
 
-  IF ( chkfile(cf_obs) .OR. chkfile(cf_ref) .OR. chkfile(cf_tst) ) STOP ! missing files
+  IF ( chkfile(cf_obs) .OR. chkfile(cf_ref) .OR. chkfile(cf_tst) ) STOP 99 ! missing files
 
   npiglo = getdim(cf_ref, cn_x)
   npjglo = getdim(cf_ref, cn_y)

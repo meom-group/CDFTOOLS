@@ -74,7 +74,7 @@ PROGRAM cdfzisot
 
   ! get input gridT filename
   CALL getarg (1, cf_tfil)
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) ) STOP ! missing file
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) ) STOP 99 ! missing file
 
   ! get reference temperature
   CALL getarg (2, cdum)
@@ -87,7 +87,7 @@ PROGRAM cdfzisot
   ENDIF
   IF ( rtref > 50 .OR. rtref < -3. ) THEN
      PRINT*,'Sea Water temperature on Earth, not Pluton ! ',rtref
-     STOP
+     STOP 99
   ENDIF
 
   ! get (optional) output file name
