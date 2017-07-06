@@ -39,6 +39,7 @@ PROGRAM cdfmean
   INTEGER(KIND=4)                            :: nvpk               ! vertical levels in working variable
   INTEGER(KIND=4)                            :: numout=10          ! logical unit for mean output file
   INTEGER(KIND=4)                            :: numvar=11          ! logical unit for variance output file
+  INTEGER(KIND=4)                            :: numsum=12          ! logical unit for sum output file
   INTEGER(KIND=4)                            :: ikx=1, iky=1       ! dims of netcdf output file
   INTEGER(KIND=4)                            :: nvars              ! number of values to write in cdf output
   INTEGER(KIND=4)                            :: ncout, ierr        ! for netcdf output
@@ -77,6 +78,7 @@ PROGRAM cdfmean
   CHARACTER(LEN=256)                         :: cf_in              ! input file name
   CHARACTER(LEN=256)                         :: cf_out   = 'cdfmean.txt' ! ASCII output file for mean
   CHARACTER(LEN=256)                         :: cf_var   = 'cdfvar.txt'  ! ASCII output file for variance
+  CHARACTER(LEN=256)                         :: cf_sum   = 'cdfsum.txt'  ! ASCII output file for variance
   CHARACTER(LEN=256)                         :: cf_ncout = 'cdfmean.nc'  ! NCDF output file
   CHARACTER(LEN=256)                         :: cf_zerom = 'zeromean.nc' ! NCDF output file with zeromean field
   CHARACTER(LEN=256)                         :: ctype              ! type of C-grid point to work with
@@ -106,12 +108,15 @@ PROGRAM cdfmean
      PRINT *,' usage : cdfmean -f IN-file -v IN-var -p C-point  ...'
      PRINT *,'       ... [-w imin imax jmin jmax kmin kmax] [-full] [-var] [-zeromean]...'
      PRINT *,'       ... [-M MSK-file VAR-mask ] [-o OUT-file] [ -ot OUTASCII-file] ...'
-     PRINT *,'       ... [-oz ZEROMEAN-file] [-ov VAR-file] [ -vvl ] [-S]'
+     PRINT *,'       ... [-oz ZEROMEAN-file] [-ov VAR-file] [-os SUM-file][ -vvl ] [-S]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the mean value of the field (3D, weighted). For 3D fields,'
      PRINT *,'        a horizontal mean for each level is also given. If a spatial window'
      PRINT *,'        is specified, the mean value is computed only in this window.'
+     PRINT *,'      '
+     PRINT *,'        If -S option is used, the weighted sum of the fields at each level '
+     PRINT *,'        is also saved, as well as the global weighted sum.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file : input netcdf file.'
@@ -142,6 +147,8 @@ PROGRAM cdfmean
      PRINT *,'                   option -zeromean, instead of ', TRIM(cf_zerom)
      PRINT *,'       [-ov VAR-file] : specify the name of the output text file for option '
      PRINT *,'                   -var, instead of ', TRIM(cf_var)
+     PRINT *,'       [-os SUM-file] : specify the name of the output text file for option '
+     PRINT *,'                   -S, instead of ', TRIM(cf_sum)
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
      PRINT *,'       [-S ] : save the weighted sum of the fields in addition to the mean '
      PRINT *,'               values. (Replace somehow cdfsum)'
@@ -153,11 +160,16 @@ PROGRAM cdfmean
      PRINT *,'       - netcdf file : ', TRIM(cf_ncout)
      PRINT *,'           variables : mean_<IN-var>, mean_3D_<IN-var> '
      PRINT *,'                    [var_<IN-VAR>, var_3D_<IN-var>, in case of -var]'
+     PRINT *,'                    [sum_<IN-VAR>, sum_3D_<IN-var>, in case of -S]'
      PRINT *,'       - netcdf file : ', TRIM(cf_zerom),' [ in case of -zeromean option]'
      PRINT *,'           variables : <IN-var>'
      PRINT *,'       - ASCII files : ', TRIM(cf_out) 
      PRINT *,'                       [ ',TRIM(cf_var),', in case of -var ]'
+     PRINT *,'                       [ ',TRIM(cf_sum),', in case of -S ]'
      PRINT *,'       - all output on ASCII files are also sent to standard output.'
+     PRINT *,'      '
+     PRINT *,'     SEE ALSO :'
+     PRINT *,'         cdfsum  (obsolete, better use -S option in cdfmean)'
      PRINT *,'      '
      STOP
   ENDIF
@@ -188,6 +200,7 @@ PROGRAM cdfmean
      CASE ('-o'        ) ; CALL getarg(ijarg, cf_ncout ) ; ijarg = ijarg + 1
      CASE ('-oz'       ) ; CALL getarg(ijarg, cf_zerom ) ; ijarg = ijarg + 1
      CASE ('-ov'       ) ; CALL getarg(ijarg, cf_var   ) ; ijarg = ijarg + 1
+     CASE ('-os'       ) ; CALL getarg(ijarg, cf_sum   ) ; ijarg = ijarg + 1
      CASE ('-ot'       ) ; CALL getarg(ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ('-M'        ) ; CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1
         ;                  CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
@@ -327,6 +340,7 @@ PROGRAM cdfmean
 
   OPEN(numout,FILE=cf_out)
   IF ( lvar ) OPEN(numvar,FILE=cf_var)
+  IF ( lsum ) OPEN(numsum,FILE=cf_sum)
   IF ( lg_vvl ) cf_e3 = cf_in
 
   DO jt=1,npt
@@ -364,6 +378,9 @@ PROGRAM cdfmean
               WRITE(6,*)' Variance value at level ',ik,'(',gdep(jk),' m) ',dvariance(jk), 'surface = ',dsurf/1.e6,' km^2'
               WRITE(numvar,9004) gdep(jk), ik, dvariance(jk)
            ENDIF
+           IF ( lsum ) THEN
+              WRITE(numsum,9004) gdep(jk), ik, dvol2d
+           ENDIF
         ELSE
            WRITE(6,*) ' No points in the water at level ',ik,'(',gdep(jk),' m) '
            dvmeanout(jk) = 99999.
@@ -384,18 +401,21 @@ PROGRAM cdfmean
 
      dvmeanout3d(jt) = dsum / dvol
      WRITE(6,*) ' Mean value over the ocean: ', dvmeanout3d(jt), jt
+     WRITE(numout,*) ' Mean value over the ocean: ', dvmeanout3d(jt), jt
      rdummy(:,:) = dvmeanout3d(jt)
      ierr = putvar0d(ncout, id_varout(n_mean3d), rdummy, ktime=jt )
 
      IF ( lvar ) THEN
         dvariance3d(jt) = dvar/dvol - dsum / dvol * dsum / dvol
         WRITE(6,*) ' Variance over the ocean: ', dvariance3d(jt), jt
+        WRITE(numvar,*) ' Variance over the ocean: ', dvariance3d(jt), jt
         rdummy(:,:) = dvariance3d(jt)
         ierr = putvar0d(ncout, id_varout(n_var3d), rdummy, ktime=jt )
      ENDIF
      
      IF ( lsum ) THEN
         WRITE(6,*) ' Sum over the ocean: ', dsum, jt
+        WRITE(numsum,*) ' Sum over the ocean: ', dsum, jt
         rdummy(:,:) = dsum
         ierr = putvar0d(ncout, id_varout(n_sum3d), rdummy, ktime=jt )
      ENDIF
@@ -501,14 +521,14 @@ CONTAINS
     ENDIF
     IF ( lsum ) THEN
        ivar=ivar+1 ; n_sum=ivar
-       stypvar(n_sum)%cunits         = TRIM(clunits)
+       stypvar(n_sum)%cunits         = TRIM(clunits)//'.m^3'
        stypvar(n_sum)%cname          = 'sum_'//TRIM(cv_nam)
        stypvar(n_sum)%clong_name     = 'sum_'//TRIM(cllong_name)
        stypvar(n_sum)%cshort_name    = 'sum_'//TRIM(clshort_name)
        stypvar(n_sum)%caxis          = 'ZT'
 
        ivar=ivar+1 ; n_sum3d=ivar
-       stypvar(n_sum3d)%cunits         = TRIM(clunits)
+       stypvar(n_sum3d)%cunits         = TRIM(clunits)//'.m^3'
        stypvar(n_sum3d)%cname          = 'sum_3D'//TRIM(cv_nam)
        stypvar(n_sum3d)%clong_name     = 'sum_3D'//TRIM(cllong_name)
        stypvar(n_sum3d)%cshort_name    = 'sum_3D'//TRIM(clshort_name)
