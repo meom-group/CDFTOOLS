@@ -42,7 +42,7 @@ PROGRAM cdfmean
   INTEGER(KIND=4)                            :: nvars, nvars_bas   ! number of values to write in cdf output
   INTEGER(KIND=4)                            :: ncout, ierr        ! for netcdf output
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
-  INTEGER(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: bmask          ! nbasin x npiglo x npjglo
+  INTEGER(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: ibmask          ! nbasin x npiglo x npjglo
 
   REAL(KIND=4)                               :: zspval             ! missing value
   REAL(KIND=4), DIMENSION(1,1)               :: rdummy             ! dummy variable
@@ -266,7 +266,7 @@ PROGRAM cdfmean
   WRITE(6, *) 'depth dim name is ', TRIM(cv_dep)
 
   ! Allocate arrays
-  ALLOCATE ( bmask(nbasin,npiglo,npjglo) )
+  ALLOCATE ( ibmask(nbasin,npiglo,npjglo) )
   ALLOCATE ( zmask(npiglo,npjglo) )
   ALLOCATE ( zv   (npiglo,npjglo) )
   ALLOCATE ( e1   (npiglo,npjglo), e2(npiglo,npjglo), e3(npiglo,npjglo) )
@@ -399,10 +399,10 @@ PROGRAM cdfmean
   ! Get the basin masks
   IF ( lbas ) THEN
     DO jbasin = 1, nbasin
-       bmask(jbasin,:,:) = getvar(cn_fbasins, cbasins(jbasin), 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+       ibmask(jbasin,:,:) = getvar(cn_fbasins, cbasins(jbasin), 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
     END DO
   ELSE
-     bmask(1,:,:) = 1
+     ibmask(1,:,:) = 1
   ENDIF
 
   OPEN(numout,FILE=cf_out)
@@ -433,11 +433,11 @@ PROGRAM cdfmean
         DO jbasin = 1, nbasin
            ivarb = nvars_bas * (jbasin - 1)
 
-           dsurf        = SUM(DBLE(          e1 * e2      * zmask * bmask(jbasin,:,:)))
-           dvol2d       = SUM(DBLE(          e1 * e2 * e3 * zmask * bmask(jbasin,:,:)))
+           dsurf        = SUM(DBLE(          e1 * e2      * zmask * ibmask(jbasin,:,:)))
+           dvol2d       = SUM(DBLE(          e1 * e2 * e3 * zmask * ibmask(jbasin,:,:)))
            dvol(jbasin) = dvol(jbasin) + dvol2d
-           dsum2d       = SUM(DBLE(zv      * e1 * e2 * e3 * zmask * bmask(jbasin,:,:)))
-           dvar2d       = SUM(DBLE(zv * zv * e1 * e2 * e3 * zmask * bmask(jbasin,:,:)))
+           dsum2d       = SUM(DBLE(zv      * e1 * e2 * e3 * zmask * ibmask(jbasin,:,:)))
+           dvar2d       = SUM(DBLE(zv * zv * e1 * e2 * e3 * zmask * ibmask(jbasin,:,:)))
            dsum(jbasin) = dsum(jbasin) + dsum2d
            dvar(jbasin) = dvar(jbasin) + dvar2d
 
@@ -499,10 +499,10 @@ PROGRAM cdfmean
   !           This replaces exactly the cdfzeromean tool
   !           The mean value which is used here is eventually computed on a reduced region
   IF ( lzeromean )  THEN
-    DEALLOCATE ( zv, zmask, bmask, id_varout, ipk )
+    DEALLOCATE ( zv, zmask, ibmask, id_varout, ipk )
     npiglo = npiglo_fi ; npjglo = npjglo_fi
     ALLOCATE (zv(npiglo,npjglo), zvzm(npiglo,npjglo), zmask(npiglo,npjglo) )
-    ALLOCATE ( bmask(nbasin,npiglo,npjglo) )
+    ALLOCATE ( ibmask(nbasin,npiglo,npjglo) )
 
     ! re-read file and rest mean value from the variable and store on file
     nvars = getnvar(cf_in)
@@ -546,10 +546,10 @@ PROGRAM cdfmean
   ! Get the basin masks
   IF ( lbas ) THEN
     DO jbasin = 1, nbasin
-       bmask(jbasin,:,:) = getvar(cn_fbasins, cbasins(jbasin), 1, npiglo, npjglo)
+       ibmask(jbasin,:,:) = getvar(cn_fbasins, cbasins(jbasin), 1, npiglo, npjglo)
     END DO
   ELSE
-     bmask(1,:,:) = 1
+     ibmask(1,:,:) = 1
   ENDIF
 
   DO jt=1,npt
@@ -558,7 +558,7 @@ PROGRAM cdfmean
         zv   (:,:) = getvar(cf_in,   cv_nam,   ik, npiglo, npjglo, ktime=jt)
         zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo)
         DO jbasin = 1, nbasin
-           zvzm(:,:) = (zv(:,:) - dvmeanout3d(jbasin,jt)) * zmask(:,:) * bmask(jbasin,:,:)
+           zvzm(:,:) = (zv(:,:) - dvmeanout3d(jbasin,jt)) * zmask(:,:) * ibmask(jbasin,:,:)
            ierr = putvar(ncout, id_varout(jbasin), zvzm, ik, npiglo, npjglo, ktime=jt )
         END DO
      END DO
