@@ -43,6 +43,9 @@ PROGRAM cdfmean
   INTEGER(KIND=4)                            :: nvars              ! number of values to write in cdf output
   INTEGER(KIND=4)                            :: ncout, ierr        ! for netcdf output
   INTEGER(KIND=4)                            :: idep, idep_max     ! possible depth index, maximum
+  INTEGER(KIND=4)                            :: n_sum,n_sum3d      ! index of sum, sum3d in id_varout
+  INTEGER(KIND=4)                            :: n_mean,n_mean3d    ! index of mean, mean3d in id_varout
+  INTEGER(KIND=4)                            :: n_var,n_var3d      ! index of var, var3d in id_varout
 
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
 
@@ -91,6 +94,7 @@ PROGRAM cdfmean
 
   LOGICAL                                    :: lfull     = .FALSE.! full step  flag
   LOGICAL                                    :: lvar      = .FALSE.! variance  flag
+  LOGICAL                                    :: lsum      = .FALSE.! sum  flag
   LOGICAL                                    :: lzeromean = .FALSE.! zero mean  flag
   LOGICAL                                    :: lnodep    = .FALSE.! no depth flag
   LOGICAL                                    :: lchk               ! flag for missing files
@@ -102,7 +106,7 @@ PROGRAM cdfmean
      PRINT *,' usage : cdfmean -f IN-file -v IN-var -p C-point  ...'
      PRINT *,'       ... [-w imin imax jmin jmax kmin kmax] [-full] [-var] [-zeromean]...'
      PRINT *,'       ... [-M MSK-file VAR-mask ] [-o OUT-file] [ -ot OUTASCII-file] ...'
-     PRINT *,'       ... [-oz ZEROMEAN-file] [-ov VAR-file] [ -vvl ]'
+     PRINT *,'       ... [-oz ZEROMEAN-file] [-ov VAR-file] [ -vvl ] [-S]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the mean value of the field (3D, weighted). For 3D fields,'
@@ -139,6 +143,8 @@ PROGRAM cdfmean
      PRINT *,'       [-ov VAR-file] : specify the name of the output text file for option '
      PRINT *,'                   -var, instead of ', TRIM(cf_var)
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
+     PRINT *,'       [-S ] : save the weighted sum of the fields in addition to the mean '
+     PRINT *,'               values. (Replace somehow cdfsum)'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       Files ', TRIM(cn_fhgr),', ', TRIM(cn_fzgr),', ', TRIM(cn_fmsk)
@@ -185,6 +191,7 @@ PROGRAM cdfmean
      CASE ('-ot'       ) ; CALL getarg(ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ('-M'        ) ; CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1
         ;                  CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
+     CASE ('-S'        ) ; lsum = .TRUE.
      CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
@@ -308,6 +315,8 @@ PROGRAM cdfmean
   IF ( lvar ) THEN ; nvars = 4  ! space for variance too
   ELSE             ; nvars = 2  ! default value
   ENDIF
+  IF ( lsum ) THEN ; nvars = nvars + 2  ! add sum and sum3d
+  ENDIF
 
   ALLOCATE ( stypvar(nvars), ipk(nvars), id_varout(nvars) )
   ALLOCATE ( rdumlon(ikx,iky), rdumlat(ikx,iky), rdummymean(ikx,iky) )
@@ -362,23 +371,33 @@ PROGRAM cdfmean
         ENDIF
 
         rdummymean(1,1) = dvmeanout(jk)
-        ierr            = putvar(ncout, id_varout(1), rdummymean, jk, ikx, iky, ktime=jt )
+        ierr            = putvar(ncout, id_varout(n_mean), rdummymean, jk, ikx, iky, ktime=jt )
         IF ( lvar ) THEN
            rdummymean(1,1) = dvariance(jk)
-           ierr            = putvar(ncout, id_varout(3), rdummymean, jk, ikx, iky, ktime=jt )
+           ierr            = putvar(ncout, id_varout(n_var), rdummymean, jk, ikx, iky, ktime=jt )
+        ENDIF
+        IF ( lsum ) THEN
+           rdummymean(1,1) = dsum2d
+           ierr            = putvar(ncout, id_varout(n_sum), rdummymean, jk, ikx, iky, ktime=jt )
         ENDIF
      END DO
 
      dvmeanout3d(jt) = dsum / dvol
      WRITE(6,*) ' Mean value over the ocean: ', dvmeanout3d(jt), jt
      rdummy(:,:) = dvmeanout3d(jt)
-     ierr = putvar0d(ncout, id_varout(2), rdummy, ktime=jt )
+     ierr = putvar0d(ncout, id_varout(n_mean3d), rdummy, ktime=jt )
 
      IF ( lvar ) THEN
         dvariance3d(jt) = dvar/dvol - dsum / dvol * dsum / dvol
         WRITE(6,*) ' Variance over the ocean: ', dvariance3d(jt), jt
         rdummy(:,:) = dvariance3d(jt)
-        ierr = putvar0d(ncout, id_varout(4), rdummy, ktime=jt )
+        ierr = putvar0d(ncout, id_varout(n_var3d), rdummy, ktime=jt )
+     ENDIF
+     
+     IF ( lsum ) THEN
+        WRITE(6,*) ' Sum over the ocean: ', dsum, jt
+        rdummy(:,:) = dsum
+        ierr = putvar0d(ncout, id_varout(n_sum3d), rdummy, ktime=jt )
      ENDIF
 
   END DO  ! time loop
@@ -429,6 +448,8 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
+    INTEGER(KIND=4) :: ivar   ! variable counter in id_varout
+    !!----------------------------------------------------------------------
     rdumlon(:,:) = 0.
     rdumlat(:,:) = 0.
 
@@ -451,28 +472,48 @@ CONTAINS
     stypvar%savelog10         = 0.
     stypvar%conline_operation = 'N/A'
 
-    stypvar(1)%cname          = 'mean_'//TRIM(cv_nam)
-    stypvar(1)%clong_name     = 'mean_'//TRIM(cllong_name)
-    stypvar(1)%cshort_name    = 'mean_'//TRIM(clshort_name)
-    stypvar(1)%caxis          = 'ZT'
+    ivar=1 ; n_mean=ivar
+    stypvar(n_mean)%cname          = 'mean_'//TRIM(cv_nam)
+    stypvar(n_mean)%clong_name     = 'mean_'//TRIM(cllong_name)
+    stypvar(n_mean)%cshort_name    = 'mean_'//TRIM(clshort_name)
+    stypvar(n_mean)%caxis          = 'ZT'
 
-    stypvar(2)%cname          = 'mean_3D'//TRIM(cv_nam)
-    stypvar(2)%clong_name     = 'mean_3D'//TRIM(cllong_name)
-    stypvar(2)%cshort_name    = 'mean_3D'//TRIM(clshort_name)
-    stypvar(2)%caxis          = 'T'
+    ivar=ivar+1 ; n_mean3d=ivar
+    stypvar(n_mean3d)%cname          = 'mean_3D'//TRIM(cv_nam)
+    stypvar(n_mean3d)%clong_name     = 'mean_3D'//TRIM(cllong_name)
+    stypvar(n_mean3d)%cshort_name    = 'mean_3D'//TRIM(clshort_name)
+    stypvar(n_mean3d)%caxis          = 'T'
 
     IF ( lvar) THEN
-       stypvar(3)%cunits         = TRIM(clunits)//'^2'
-       stypvar(3)%cname          = 'var_'//TRIM(cv_nam)
-       stypvar(3)%clong_name     = 'var_'//TRIM(cllong_name)
-       stypvar(3)%cshort_name    = 'var_'//TRIM(clshort_name)
-       stypvar(3)%caxis          = 'ZT'
+       ivar=ivar+1 ; n_var=ivar
+       stypvar(n_var)%cunits         = TRIM(clunits)//'^2'
+       stypvar(n_var)%cname          = 'var_'//TRIM(cv_nam)
+       stypvar(n_var)%clong_name     = 'var_'//TRIM(cllong_name)
+       stypvar(n_var)%cshort_name    = 'var_'//TRIM(clshort_name)
+       stypvar(n_var)%caxis          = 'ZT'
 
-       stypvar(4)%cunits         = TRIM(clunits)//'^2'
-       stypvar(4)%cname          = 'var_3D'//TRIM(cv_nam)
-       stypvar(4)%clong_name     = 'var_3D'//TRIM(cllong_name)
-       stypvar(4)%cshort_name    = 'var_3D'//TRIM(clshort_name)
-       stypvar(4)%caxis          = 'T'
+       ivar=ivar+1 ; n_var3d=ivar
+       stypvar(n_var3d)%cunits         = TRIM(clunits)//'^2'
+       stypvar(n_var3d)%cname          = 'var_3D'//TRIM(cv_nam)
+       stypvar(n_var3d)%clong_name     = 'var_3D'//TRIM(cllong_name)
+       stypvar(n_var3d)%cshort_name    = 'var_3D'//TRIM(clshort_name)
+       stypvar(n_var3d)%caxis          = 'T'
+    ENDIF
+    IF ( lsum ) THEN
+       ivar=ivar+1 ; n_sum=ivar
+       stypvar(n_sum)%cunits         = TRIM(clunits)
+       stypvar(n_sum)%cname          = 'sum_'//TRIM(cv_nam)
+       stypvar(n_sum)%clong_name     = 'sum_'//TRIM(cllong_name)
+       stypvar(n_sum)%cshort_name    = 'sum_'//TRIM(clshort_name)
+       stypvar(n_sum)%caxis          = 'ZT'
+
+       ivar=ivar+1 ; n_sum3d=ivar
+       stypvar(n_sum3d)%cunits         = TRIM(clunits)
+       stypvar(n_sum3d)%cname          = 'sum_3D'//TRIM(cv_nam)
+       stypvar(n_sum3d)%clong_name     = 'sum_3D'//TRIM(cllong_name)
+       stypvar(n_sum3d)%cshort_name    = 'sum_3D'//TRIM(clshort_name)
+       stypvar(n_sum3d)%caxis          = 'T'
+
     ENDIF
 
     ! create output fileset
