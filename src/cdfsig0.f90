@@ -34,6 +34,7 @@ PROGRAM cdfsig0
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsig0              ! sigma-0
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
+  REAL(KIND=4)                              :: zsps               ! Missing value for salinity
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
   CHARACTER(LEN=256)                        :: cf_out='sig0.nc'   ! output file name
@@ -98,6 +99,8 @@ PROGRAM cdfsig0
   ENDDO
  
   IF (chkfile(cf_tfil) ) STOP 99 ! missing file
+  ! Look for Missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -145,8 +148,7 @@ PROGRAM cdfsig0
         ztemp(:,:)= getvar(cf_tfil, cv_tem, jk, npiglo, npjglo, ktime=jt)
         zsal(:,:) = getvar(cf_tfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
 
-        ! assuming spval is 0
-        WHERE( zsal <= 0 ) zmask = 0
+        WHERE( zsal == zsps ) zmask = 0.
 
         zsig0(:,:) = sigma0 (ztemp, zsal, npiglo, npjglo )* zmask(:,:)
 

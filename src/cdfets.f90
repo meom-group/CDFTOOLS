@@ -51,7 +51,8 @@ PROGRAM cdfets
   REAL(KIND=4)                                :: rau0  = 1000.             ! density of water
   REAL(KIND=4)                                :: grav  = 9.81              ! Gravity
   REAL(KIND=4)                                :: spval = -1000.            ! special value
-  REAL(KIND=4)                                :: zpi
+  REAL(KIND=4)                                :: zpi                       ! 3.14159.. (acos(-1.))
+  REAL(KIND=4)                                :: zsps                      ! missing value for salinity
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: ztemp, zsal, zwk          ! Array to read 2 layer of data
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zn2                       ! Brunt Vaissala Frequency (N2)
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zmask, ff                 ! mask coriolis.
@@ -98,6 +99,9 @@ PROGRAM cdfets
   CALL getarg (1, cf_tfil)
   lchk = ( chkfile (cf_tfil) .OR. chkfile( cn_fhgr ) .OR. chkfile( cn_fzgr) )
   IF ( lchk )  STOP 99 ! missing file
+
+  ! Look for missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -193,7 +197,7 @@ PROGRAM cdfets
 
         ! build tmask at level jk
         zmask(:,:)=1.
-        WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
+        WHERE(zsal(:,:,idown) == zsps ) zmask = 0.
 
         ! get depthw and e3w at level jk
         e3w(:,:)   = getvar(cn_fzgr, 'e3w_ps', jk,npiglo,npjglo,ldiom=.TRUE.)
@@ -202,7 +206,7 @@ PROGRAM cdfets
         ! zwk will hold N2 at W level
         zwk(:,:,iup) = eosbn2 ( ztemp,zsal,gdepw(jk),e3w,npiglo,npjglo, iup, idown )   ! not masked 
         WHERE( zwk(:,:,iup) < 0 ) zwk(:,:,iup) = 0.                         ! when < 0 set N2 = 0
-        WHERE( zmask == 0 ) zwk(:,:,iup) = spval                            ! set to spval on land
+        WHERE( zmask == 0. ) zwk(:,:,iup) = spval                            ! set to spval on land
 
         ! now put zn2 at T level (k )
         WHERE ( zwk(:,:,idown) == spval ) 
@@ -212,7 +216,7 @@ PROGRAM cdfets
         END WHERE
 
         ! Only the square root is used in this program (work for ocean points only)
-        WHERE (zmask == 1 ) 
+        WHERE (zmask == 1. ) 
            zn2=SQRT(zn2)
         ELSEWHERE
            zn2=spval

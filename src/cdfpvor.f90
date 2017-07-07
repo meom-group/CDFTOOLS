@@ -62,6 +62,7 @@ PROGRAM cdfpvor
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim                  ! time counter
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: e31d                 ! metric for full step
   REAL(KIND=4)                                :: zpi, zomega, rau0sg  ! physical constant
+  REAL(KIND=4)                                :: zsps                 ! Missing value for salinity
 
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dun, dvn             ! velocity component and flx
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: drotn                ! curl of the velocity
@@ -157,6 +158,9 @@ PROGRAM cdfpvor
      lchk = lchk .OR. chkfile( cf_vfil)
   ENDIF
   IF ( lchk ) STOP 99 ! missing file
+
+  ! Look for MissingValue for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -278,7 +282,7 @@ PROGRAM cdfpvor
            tmask(:,:)=1.
            ztemp(:,:,iup) = getvar(cf_tfil, cn_votemper, jk-1 ,npiglo, npjglo, ktime=jt)
            zsal(:,:,iup)  = getvar(cf_tfil, cn_vosaline, jk-1 ,npiglo, npjglo, ktime=jt)
-           WHERE(zsal(:,:,idown) == 0 ) tmask = 0
+           WHERE(zsal(:,:,idown) == zsps ) tmask = 0.
            IF ( lfull ) THEN
               e3w(:,:) = e31d(jk)
            ELSE

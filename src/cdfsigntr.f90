@@ -33,6 +33,7 @@ PROGRAM cdfsigntr
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsigntr            ! sigma-0
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
+  REAL(KIND=4)                              :: zsps               ! missing value for salinity
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
   CHARACTER(LEN=256)                        :: cf_out='signtr.nc'   ! output file name
@@ -65,6 +66,9 @@ PROGRAM cdfsigntr
 
   CALL getarg (1, cf_tfil)
   IF (chkfile(cf_tfil) ) STOP 99 ! missing file
+
+  ! Look for missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -109,7 +113,7 @@ PROGRAM cdfsigntr
         zsal(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
         ! assuming spval is 0
-        WHERE( zsal == 0 ) zmask = 0
+        WHERE( zsal == zsps ) zmask = 0.0
 
         zsigntr(:,:) = sigmantr (ztemp, zsal, npiglo, npjglo )* zmask(:,:)
 

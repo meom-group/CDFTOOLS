@@ -36,6 +36,7 @@ PROGRAM cdfrichardson
 
   REAL(KIND=4)                                 :: zpi                      ! 3.14...
   REAL(KIND=4)                                 :: rspval=0.                ! missing_value
+  REAL(KIND=4)                                 :: zsps                     ! missing_value for salinity
   REAL(KIND=4)                                 :: zcoef, zdku, zdkv, zzri  ! working real
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: zu, zv                   ! Array to read 2 layer of velocities
@@ -110,6 +111,9 @@ PROGRAM cdfrichardson
   lchk = lchk .OR. chkfile (cf_ufil  )
   lchk = lchk .OR. chkfile (cf_vfil  )
   IF ( lchk  ) STOP 99 ! missing files 
+  
+  ! Look for Missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -173,7 +177,7 @@ PROGRAM cdfrichardson
         PRINT *,'level ',jk
         zmask(:,:)=1.
         ztemp(:,:,iup)= getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jt)
-        WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
+        WHERE(zsal(:,:,idown) == zsps ) zmask = 0.0
         zsal(:,:,iup) = getvar(cf_tfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
         zu( :,:,iup)  = getvar(cf_ufil, cn_vozocrtx, jk-1, npiglo, npjglo, ktime=jt)
         zv( :,:,iup)  = getvar(cf_vfil, cn_vomecrty, jk-1, npiglo, npjglo, ktime=jt)

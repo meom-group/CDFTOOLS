@@ -64,6 +64,7 @@ PROGRAM cdfbuoyflx
   REAL(KIND=4)                              :: Rho = 1026.                       ! reference density
   REAL(KIND=4)                              :: Grav = 9.81                       ! Gravity
 
+  REAL(KIND=4)                              :: zsps                              ! Missing value for salinity
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim, zdep                         ! time counter, deptht
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask, zcoefq, zcoefw             ! work array
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zalbet, zbeta                     ! work array
@@ -186,6 +187,9 @@ PROGRAM cdfbuoyflx
     cf_rnfil = cf_flxfil
   ENDIF
 
+  ! Look for Missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
+
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
   npt    = getdim (cf_tfil,cn_t)
@@ -214,7 +218,7 @@ PROGRAM cdfbuoyflx
   DO jt = 1, npt
      ! read sss for masking purpose and sst
      zsss(:,:) = getvar(cf_tfil, cv_sss, 1, npiglo, npjglo, ktime=jt)
-     zmask=1. ; WHERE ( zsss == 0 ) zmask=0.
+     zmask=1. ; WHERE ( zsss == zsps ) zmask=0.
      zsst(:,:) = getvar(cf_tfil, cv_sst, 1, npiglo, npjglo, ktime=jt)
 
      ! total water flux (emps)

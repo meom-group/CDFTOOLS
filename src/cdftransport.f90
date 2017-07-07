@@ -126,6 +126,7 @@ PROGRAM cdftransport
    REAL(KIND=4)                                :: udum, vdum     ! dummy velocity components for tests
    REAL(KIND=4)                                :: rau0=1000      ! density of pure water (kg/m3)
    REAL(KIND=4)                                :: rcp=4000.      ! heat capacity (J/kg/K)
+   REAL(KIND=4)                                :: zspu, zspv     ! missing values for u and v
 
    ! at every model point
    REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwku,  dwkv    ! volume transport at each cell boundary
@@ -192,6 +193,8 @@ PROGRAM cdftransport
    LOGICAL                                     :: lchk    = .FALSE.   ! flag for missing files
    LOGICAL                                     :: lpm     = .FALSE.   ! flag for plus/minus transport
    LOGICAL                                     :: lobc    = .FALSE.   ! flag for obc input files
+   LOGICAL                                     :: lspu    = .FALSE.   ! flag for spvalu /= 0 
+   LOGICAL                                     :: lspv    = .FALSE.   ! flag for spvalv /= 0 
    LOGICAL                                     :: l_merid = .FALSE.   ! flag for meridional obc
    LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
    LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
@@ -335,6 +338,12 @@ PROGRAM cdftransport
       ENDIF
    ENDIF
    IF ( lchk ) STOP 99 ! missing files
+   ! Look for missingValue for u and v
+   zspu = getspval(cf_ufil,cn_vozocrtx)
+   zspv = getspval(cf_vfil,cn_vomecrty)
+   ! set flags to true if spval /= 0
+   IF ( zspu /= 0. ) lspu=.TRUE.
+   IF ( zspv /= 0. ) lspv=.TRUE.
 
    ! adjust the number of output variables according to options
    IF ( nclass > 1 ) THEN
@@ -509,6 +518,8 @@ PROGRAM cdftransport
             IF      ( l_zonal ) THEN ; zu(:,1)=zuobc(:,jk) ; zv(:,1)=zvobc(:,jk) 
             ELSE IF ( l_merid ) THEN ; zu(1,:)=zuobc(:,jk) ; zv(1,:)=zvobc(:,jk) 
             ENDIF
+            IF ( lspu ) WHERE ( zu == zspu ) zu = 0.
+            IF ( lspv ) WHERE ( zv == zspv ) zv = 0.
          ELSE
             IF ( l_self ) THEN
                zu(:,:) = 0.
@@ -516,6 +527,8 @@ PROGRAM cdftransport
                zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
             ENDIF
             zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
+            IF ( lspu ) WHERE ( zu == zspu ) zu = 0.
+            IF ( lspv ) WHERE ( zv == zspv ) zv = 0.
             IF (lheat) THEN
                IF ( l_tsfil ) THEN
                  zt(:,:) = 0. ; zs(:,:) = 0.

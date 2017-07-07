@@ -73,6 +73,7 @@ PROGRAM cdfmocsig
   REAL(KIND=4)                                    :: pref=0.              ! depth reference for pot. density 
   REAL(KIND=4)                                    :: sigmin               ! minimum density for bining
   REAL(KIND=4)                                    :: sigstp               ! density step for bining
+  REAL(KIND=4)                                    :: zsps                 ! Salinity Missing value
 
   REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dmoc                 ! nbasins x npjglo x npk
   REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: depi                 ! Zonal mean of depths of isopycnal
@@ -203,6 +204,9 @@ PROGRAM cdfmocsig
   lchk = lchk .OR. chkfile ( cf_vfil )
   lchk = lchk .OR. chkfile ( cf_tfil )
   IF ( lchk ) STOP 99  ! missing file(s)
+
+  ! Look for salinity spval
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   ! re-use lchk for binning control : TRUE if no particular binning specified
   lchk = lbin(1) .OR. lbin(2) .OR. lbin(3) 
@@ -365,7 +369,7 @@ PROGRAM cdfmocsig
         !
         !  finds density 
         itmask =  1
-        WHERE ( zs == 0 ) itmask = 0
+        WHERE ( zs == zsps ) itmask = 0
         IF ( lntr ) THEN
            dens  = sigmantr(zt, zs,     npiglo, npjglo)
         ELSE

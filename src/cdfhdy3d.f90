@@ -34,6 +34,7 @@ PROGRAM cdfhdy3d
   INTEGER(KIND=4), DIMENSION(1)             :: ipk              ! outptut variables : number of levels,
   INTEGER(KIND=4), DIMENSION(1)             :: id_varout        ! ncdf varid's
 
+  REAL(KIND=4)                              :: zsps             ! Missing value for salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp, zsal       ! Temperature and salinity at current level
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp0, zsal0     ! reference temperature and salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask            ! 2D mask at current level
@@ -86,6 +87,9 @@ PROGRAM cdfhdy3d
   npt    = getdim (cf_tfil,cn_t)
   
   IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP 99 ! missing files
+
+  ! Look for Missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   ipk(:)                       = npk
   stypvar(1)%cname             = cv_out
@@ -154,7 +158,7 @@ PROGRAM cdfhdy3d
         !
         dterm = ( ( 1.d0 / ( drau0 + dsig(:,:) ) ) - ( 1.d0 / ( drau0 + dsig0(:,:) ) ) ) * 10000.d0 * rdep / dgrav
         ! in land, it seems appropriate to stop the computation
-        WHERE(zsal == 0 ) dterm = 0
+        WHERE(zsal == zsps ) dterm = 0.d0
 
         dhdy(:,:) = dhdy(:,:) + dterm(:,:)
         ! masked

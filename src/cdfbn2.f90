@@ -35,6 +35,7 @@ PROGRAM cdfbn2
   INTEGER(KIND=4), DIMENSION(2)                :: ipk, id_varout           ! level and id of output variables
 
   REAL(KIND=4)                                 :: zpi                      ! 3.14...
+  REAL(KIND=4)                                 :: zsps                     ! Missing value for salinity
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zn2                      ! Brunt Vaissala Frequency (N2)
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zmask, e3w               ! mask and metric
@@ -96,6 +97,9 @@ PROGRAM cdfbn2
   lchk = chkfile (cn_fzgr )
   lchk = lchk .OR. chkfile (cf_tfil  )
   IF ( lchk  ) STOP 99 ! missing files 
+  
+  ! Look for missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -152,8 +156,8 @@ PROGRAM cdfbn2
         PRINT *,'level ',jk
         zmask(:,:)=1.
         ztemp(:,:,iup)= getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jt)
-        WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
         zsal(:,:,iup) = getvar(cf_tfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
+        WHERE(zsal(:,:,idown) == zsps ) zmask = 0.0
 
         IF ( lfull ) THEN
            e3w(:,:) = e3w1d(jk)
