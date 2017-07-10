@@ -213,7 +213,7 @@ PROGRAM cdffwc
    area(:,:)   = area(:,:) * zt(:,:)                             ! ..
 
    ! Read vertical axis in full-step-case
-   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
+   IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
    ! Read sub-basin masks (2D) and keep them for all layers
    DO jvar = 1,nvaro          ! Loop through sub-basins

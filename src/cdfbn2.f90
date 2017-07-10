@@ -143,7 +143,7 @@ PROGRAM cdfbn2
   tim  = getvar1d(cf_tfil, cn_vtimec, npt   )
   ierr = putvar1d(ncout,  tim,       npt,'T')
 
-  IF ( lfull )  e3w1d(:) = getvare3(cn_fzgr, cn_ve3w, npk)
+  IF ( lfull )  e3w1d(:) = getvare3(cn_fzgr, cn_ve3w1d, npk)
 
   gdep(:) = getvare3(cn_fzgr, cn_gdepw, npk)
   DO jt=1,npt

@@ -188,10 +188,10 @@ PROGRAM cdfvertmean
   ierr = putvar1d(ncout, tim,       npt, 'T')
 
   SELECT CASE ( ctype)
-  CASE( 'T','t');  cv_dep=cn_gdepw ; cv_e3='e3t_ps' ; cv_e31d=cn_ve3t 
-  CASE( 'U','u');  cv_dep=cn_gdepw ; cv_e3='e3u_ps' ; cv_e31d=cn_ve3t 
-  CASE( 'V','v');  cv_dep=cn_gdepw ; cv_e3='e3v_ps' ; cv_e31d=cn_ve3t 
-  CASE( 'W','w');  cv_dep=cn_gdept ; cv_e3='e3w_ps' ; cv_e31d=cn_ve3w
+  CASE( 'T','t');  cv_dep=cn_gdepw ; cv_e3='e3t_ps' ; cv_e31d=cn_ve3t1d 
+  CASE( 'U','u');  cv_dep=cn_gdepw ; cv_e3='e3u_ps' ; cv_e31d=cn_ve3t1d 
+  CASE( 'V','v');  cv_dep=cn_gdepw ; cv_e3='e3v_ps' ; cv_e31d=cn_ve3t1d 
+  CASE( 'W','w');  cv_dep=cn_gdept ; cv_e3='e3w_ps' ; cv_e31d=cn_ve3w1d
   CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP 99
   END SELECT
 

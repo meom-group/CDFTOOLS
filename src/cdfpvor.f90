@@ -243,7 +243,7 @@ PROGRAM cdfpvor
      ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, pdep=gdepw            )
   ENDIF
 
-  IF ( lfull ) e31d = getvare3( cn_fzgr, cn_ve3w, npk )
+  IF ( lfull ) e31d = getvare3( cn_fzgr, cn_ve3w1d, npk )
 
   tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
   ierr = putvar1d(ncout,   tim,       npt, 'T' )

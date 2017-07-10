@@ -197,7 +197,7 @@ PROGRAM cdfdegradt
   cv_e1    = cn_ve1t
   cv_e2    = cn_ve2t
   cv_e3    = 'e3t_ps'
-  cv_e31d  = cn_ve3t
+  cv_e31d  = cn_ve3t1d
   cv_msk   = 'tmask'
   cv_dep   = cn_gdept
  

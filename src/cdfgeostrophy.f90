@@ -265,7 +265,7 @@ PROGRAM cdfgeostrophy
          !! 1. First we compute integrated pressure from the surface to current level
 
          ! Thickness
-         e3  = getvar(cn_fzgr, cn_ve3t, jk, npiglo, npjglo)
+         e3  = getvar(cn_fzgr, cn_ve3t1d, jk, npiglo, npjglo)
          ! MAXVAL is used to avoid partial steps
          zhlevel     = MAXVAL(e3)
          zhhalflevel = 0.5 * MAXVAL(e3)

@@ -171,7 +171,7 @@ PROGRAM cdfvtrp
 
   e1v(:,:) = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
   e2u(:,:) = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
-  IF ( lfull )  e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk )
+  IF ( lfull )  e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk )
 
   IF ( lbathy ) THEN  ! read extra metrics
     e1u(:,:)   = getvar(cn_fhgr, cn_ve1u,  1, npiglo, npjglo)

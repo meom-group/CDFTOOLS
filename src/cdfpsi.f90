@@ -251,7 +251,7 @@ PROGRAM cdfpsi
      WHERE ( zmask >= 2 ) zmask = 1
   ENDIF
 
-  IF ( lfull) e31d(:)    = getvare3(cn_fzgr, cn_ve3t, npk )
+  IF ( lfull) e31d(:)    = getvare3(cn_fzgr, cn_ve3t1d, npk )
   ! get rid of the free-slip/no-slip condition
 
   DO jt = 1, npt

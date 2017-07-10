@@ -40,7 +40,7 @@ MODULE modCdfNames
   CHARACTER(LEN=256) :: cn_ve1u='e1u', cn_ve2u='e2u'   !: e.u
   CHARACTER(LEN=256) :: cn_ve1v='e1v', cn_ve2v='e2v'   !: e.v
   CHARACTER(LEN=256) :: cn_ve1f='e1f', cn_ve2f='e2f'   !: e.v
-  CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3.
+  CHARACTER(LEN=256) :: cn_ve3t1d='e3t', cn_ve3w1d='e3w'   !: e3.
   CHARACTER(LEN=256) :: cn_vff='ff'
 
   CHARACTER(LEN=256) :: cn_gdept='gdept', cn_gdepw='gdepw'   !: 1d dep variable
@@ -195,7 +195,7 @@ MODULE modCdfNames
     ! metrics in coordinates, mesh_hgr
     NAMELIST/nammetrics/ cn_ve1t, cn_ve1u, cn_ve1v, cn_ve1f
     NAMELIST/nammetrics/ cn_ve2t, cn_ve2u, cn_ve2v, cn_ve2f
-    NAMELIST/nammetrics/ cn_ve3t, cn_ve3w
+    NAMELIST/nammetrics/ cn_ve3t1d, cn_ve3w1d
     NAMELIST/nammetrics/ cn_vff
     NAMELIST/nammetrics/ cn_glamt, cn_glamu, cn_glamv, cn_glamf
     NAMELIST/nammetrics/ cn_gphit, cn_gphiu, cn_gphiv, cn_gphif

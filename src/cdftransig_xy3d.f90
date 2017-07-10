@@ -282,7 +282,7 @@ PROGRAM cdftransig_xy3d
 
   IF ( lfull ) THEN 
      ALLOCATE ( e31d(npk) )
-     e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk              )
+     e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk              )
   ENDIF
 
   ! create output fileset

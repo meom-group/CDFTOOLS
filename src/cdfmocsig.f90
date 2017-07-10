@@ -305,7 +305,7 @@ PROGRAM cdfmocsig
 
   e1v(:,:)   = getvar(cn_fhgr,   cn_ve1v,  1, npiglo, npjglo) 
 
-  IF ( lfull  ) e31d(:) = getvare3(cn_fzgr, cn_ve3t,  npk )
+  IF ( lfull  ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d,  npk )
   IF ( lisodep) gdep(:) = -getvare3(cn_fzgr, cn_gdept, npk )  ! take negative value
                                                               ! to be compliant with zonal mean
 

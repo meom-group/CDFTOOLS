@@ -186,7 +186,7 @@ PROGRAM cdfmxlhcsc
   mbathy(:,:)  = rtem(:,:)
   gdepw(0)     = 999999.  ! dummy values normaly always masked
   gdepw(1:npk) = getvare3(cn_fzgr, cn_gdepw, npk) 
-  IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t, npk )
+  IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t1d, npk )
 
   ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1           )
   ierr  = createvar   (ncout,  stypvar, 3,      ipk,    id_varout   )

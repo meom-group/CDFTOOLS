@@ -143,7 +143,7 @@ PROGRAM cdfmxlheatc
 
            gdepw(0)     = 99999. ! dummy value always masked
            gdepw(1:npk) = getvare3(cn_fzgr, cn_gdepw, npk)
-  IF ( lfull ) e31d( :) = getvare3(cn_fzgr, cn_ve3t,  npk)
+  IF ( lfull ) e31d( :) = getvare3(cn_fzgr, cn_ve3t1d,  npk)
 
 
 

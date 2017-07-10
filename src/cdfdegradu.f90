@@ -195,7 +195,7 @@ PROGRAM cdfdegradu
 
   cv_e1    = cn_ve1u
   cv_e3    = 'e3t_ps'
-  cv_e31d  = cn_ve3t
+  cv_e31d  = cn_ve3t1d
   cv_msk = 'umask'
   cv_dep   = cn_gdept
  

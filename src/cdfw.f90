@@ -145,7 +145,7 @@ PROGRAM cdfw
 
   ! Read the depth of the w points (in the file, it is not a vector but a 1x1xnpk array)
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
-  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
+  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   ! create output fileset
   ncout = create      (cf_out, cf_ufil, npiglo, npjglo, npk, cdep=cn_vdepthw     )

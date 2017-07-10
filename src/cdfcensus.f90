@@ -165,7 +165,7 @@ PROGRAM cdfcensus
   ! Read metrics
   e1t(:,:) = getvar  (cn_fhgr, cn_ve1t, 1, npiglo, npjglo)
   e2t(:,:) = getvar  (cn_fhgr, cn_ve2t, 1, npiglo, npjglo)
-  e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk              )  ! used in full step case
+  e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk              )  ! used in full step case
 
   ! default is full domain, full depth
   ii1 = 1 ; ii2 = npiglo

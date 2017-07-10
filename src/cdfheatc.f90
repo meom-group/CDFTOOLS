@@ -184,7 +184,7 @@ PROGRAM cdfheatc
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw,  npk)
   tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
   
-  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
+  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   CALL CreateOutput
 

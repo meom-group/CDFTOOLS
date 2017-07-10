@@ -452,7 +452,7 @@ PROGRAM cdftransport
      gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1,npiglo, npjglo)
 
      gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
-     e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk) ! used only for full step
+     e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d,  npk) ! used only for full step
    ENDIF
 
    ! look for nearest level to imeter and setup ilev0 and ilev1 (t-index of class limit)

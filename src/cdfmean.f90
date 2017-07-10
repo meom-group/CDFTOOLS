@@ -280,35 +280,35 @@ PROGRAM cdfmean
      cv_e1    = cn_ve1t
      cv_e2    = cn_ve2t
      cv_e3    = 'e3t_ps'
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = 'tmask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'U' )
      cv_e1    = cn_ve1u
      cv_e2    = cn_ve2u
      cv_e3    = 'e3t_ps'
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = 'umask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'V' )
      cv_e1    = cn_ve1v
      cv_e2    = cn_ve2v
      cv_e3    = 'e3t_ps'
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = 'vmask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'F' )
      cv_e1    = cn_ve1f
      cv_e2    = cn_ve2f
      cv_e3    = 'e3t_ps'
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = 'fmask' ;  ENDIF
      cv_dep   = cn_gdept
   CASE ( 'W' )
      cv_e1    = cn_ve1t
      cv_e2    = cn_ve2t
      cv_e3    = 'e3w_ps'
-     cv_e31d  = cn_ve3w
+     cv_e31d  = cn_ve3w1d
      IF (cv_msk   == '' ) THEN ; cv_msk = 'tmask' ;  ENDIF
      cv_dep   = cn_gdepw
   CASE DEFAULT

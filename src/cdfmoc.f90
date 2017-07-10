@@ -279,7 +279,7 @@ PROGRAM cdfmoc
 
   IF ( ldec  ) gdept(:) = getvare3(cn_fzgr, cn_gdept, npk             )
   IF ( ldec  ) e1u(:,:) = getvar  (cn_fhgr, cn_ve1u,  1, npiglo,npjglo)
-  IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
+  IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   DO jk= 1, npk
      ! save e3v masked with vmask as 3d array
@@ -648,7 +648,7 @@ PROGRAM cdfmoc
        rdumlon(:,:) = 0.0
        rdumlat(:,:) = zwk(1,1)
 
-       IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk )
+       IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk )
 
        DO jk = 1, npk
           IF ( lfull ) THEN
