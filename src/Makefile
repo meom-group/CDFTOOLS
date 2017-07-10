@@ -503,8 +503,8 @@ cdftools.o: cdfio.o cdftools.f90
 modpoly.o: modpoly.f90
 	$(F90) -c modpoly.f90 $(FFLAGS)
 
-modcdfnames.o: modcdfnames.f90
-	$(F90) -c modcdfnames.f90 $(FFLAGS)
+modcdfnames.o: modcdfnames.F90 modcdfnames_CMIP6.h90
+	$(F90) -c modcdfnames.F90 $(FFLAGS)
 
 modutils.o: cdfio.o modutils.f90
 	$(F90) -c modutils.f90 $(FFLAGS)
