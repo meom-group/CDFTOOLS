@@ -13,7 +13,14 @@ F90=g95
 MPF90=mpif90
 OMP=
 #OMP=-fopenmp
-FFLAGS= -O  $(NCDF) -fno-second-underscore -fendian=big -ffixed-line-length-132 $(OMP)
+
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -fno-second-underscore -fendian=big -ffixed-line-length-132 $(OMP)
 LMPI=-lmpich
 
 #INSTALL=$(HOME)/bin

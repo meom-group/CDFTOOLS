@@ -6,6 +6,13 @@ LIBS = $(NETCDF_F90_LIB) $(HDF5_F90_LIB)
 F90=gfortran
 OMP=
 #OMP=-fopenmp
-FFLAGS= -O $(INCS) $(LIBS) -fno-second-underscore -ffree-line-length-256 $(OMP)
+
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6=
+FFLAGS= -O $(INCS) $(LIBS)  $(NC4) $(CMIP6) -fno-second-underscore -ffree-line-length-256 $(OMP)
 
 INSTALL=$(HOME)/local/bin
+INSTALL_MAN=$(HOME)/local/man

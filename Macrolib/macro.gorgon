@@ -6,4 +6,9 @@ INCDIR = -I/usr/local/Cluster-Apps/netcdf/pgi/3.6.1/include
 F90=pgf90
 #OMP=-mp
 OMP=
-FFLAGS = -fast $(NCDF) -byteswapio $(OMP)
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+FFLAGS = -fast $(NCDF) $(NC4) $(CMIP6) -byteswapio $(OMP)

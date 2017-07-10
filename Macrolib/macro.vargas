@@ -10,9 +10,15 @@ F90=xlf90
 MPF90=mpxlf90_r
 #OMP= qsmp=omp
 OMP=
-#FFLAGS= -O4  -qsuffix=f=f90   $(NCDF)  -q64 -qsave $(OMP)
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+#FFLAGS= -O4   $(NC4) $(CMIP6) -qsuffix=f=f90   $(NCDF)  -q64 -qsave $(OMP)
 FDATE_FLAG= -brename:.fdate,.fdate_
-FFLAGS= -O4  -qsuffix=f=f90   $(NCDF)  -q64  $(OMP)
+FFLAGS= -O4   $(NC4) $(CMIP6) -qsuffix=f=f90   $(NCDF)  -q64  $(OMP)
 
 INSTALL=./
  

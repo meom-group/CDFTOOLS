@@ -6,7 +6,14 @@
 #
 NCDF = -I/home/nymphea/services/bibli/netcdf-3.6.0/include -L/home/nymphea/services/bibli/netcdf-3.6.0/lib -lnetcdf
 
+OMP = 
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
 F90=f90
-FFLAGS= -convert big_endian -assume byterecl $(NCDF)
+FFLAGS=  $(NC4) $(CMIP6) -convert big_endian -assume byterecl $(NCDF) $(OMP)
 
 INSTALL=$(HOME)/bin

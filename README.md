@@ -27,6 +27,10 @@ in the make.macro file, otherwise set
 
 ```NC4= ```
 
+In order to activate CMIP6 variable namimg convention (for input files), you need to set:
+
+```CMIP6=-Dkey_CMIP6 ```
+
 Then using `make` (or even `make -j n` if you can compile on n cores), you will have the cdftools programs executable available in the bin/ sub directory. The executable files are ignore by git.
 
 

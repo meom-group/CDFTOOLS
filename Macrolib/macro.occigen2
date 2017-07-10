@@ -8,6 +8,8 @@ NCDF = -I$(NETCDF_INCDIR) -I$(NETCDFF_INCDIR) $(NETCDF_LDFLAGS) $(NETCDFF_LDFLAG
 
 #NC4=
 NC4=-Dkey_netcdf4
+#CMIP6 = -D key_CMIP6
+CMIP6 =
  
 F90=ifort
 MPF90=mpif90
@@ -17,8 +19,8 @@ OMP=
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian $(OMP)
 
-FFLAGS= -O  $(NCDF) $(NC4) -fp-model precise $(OMP)
-#FFLAGS= -O  $(NCDF) $(NC4) -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g $(OMP)
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -fp-model precise $(OMP)
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g $(OMP)
 
 LMPI=-lmpich
 

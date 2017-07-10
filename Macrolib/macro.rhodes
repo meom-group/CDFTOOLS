@@ -10,7 +10,12 @@ F90=f90
 MPF90=f90
 
 OMP=
-FFLAGS= -O2  -mips4 -bytereclen $(NCDF) -bytereclen $(OMP)
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+FFLAGS= -O2  $(NC4) $(CMIP6) -mips4 -bytereclen $(NCDF) -bytereclen $(OMP)
 
 INSTALL=$(HOME_BIS)/CDFTOOLS-2.1/
  

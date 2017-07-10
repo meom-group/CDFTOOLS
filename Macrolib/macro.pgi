@@ -11,6 +11,12 @@ MPF90=pgf90
 OMP=
 #OMP=-mp
 
-FFLAGS = -fast $(NCDF) -byteswapio $(OMP)
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+FFLAGS = -fast $(NCDF)  $(NC4) $(CMIP6)-byteswapio $(OMP)
 
 INSTALL=/usr/local/bin

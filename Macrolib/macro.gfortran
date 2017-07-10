@@ -8,6 +8,8 @@ NETCDF_ROOT=/usr
 NCDF = -I$(NETCDF_ROOT)/include -L$(NETCDF_ROOT)/lib -lnetcdff -lnetcdf
 
 NC4= -D key_netcdf4
+#CMIP6 = -D key_CMIP6
+CMIP6 =
 
 
 #F90=gfortran -v
@@ -15,7 +17,8 @@ F90=gfortran
 MPF90=
 #OMP=-fopenmp
 OMP=
-FFLAGS= -O  $(NCDF)  -fno-second-underscore -ffree-line-length-256 $(OMP)
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6)  -fno-second-underscore -ffree-line-length-256 $(OMP)
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin
+INSTALL_MAN=$(HOME)/man

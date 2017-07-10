@@ -4,7 +4,6 @@
 #
 # (Linked dynamically!)
 
-INSTALL = $(HOME)/bin
 
 # libs
 LIBS = \
@@ -15,4 +14,13 @@ LIBS = \
 F90 = ifort
 OMP=
 #OMP=-openmp
-FFLAGS = -O -assume byterecl -convert big_endian $(LIBS)  $(OMP)
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+FFLAGS = -O  $(NC4) $(CMIP6) -assume byterecl -convert big_endian $(LIBS)  $(OMP)
+
+INSTALL = $(HOME)/bin
+INSTALL_MAN =  $(HOME)/man

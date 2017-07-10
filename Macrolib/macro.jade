@@ -14,14 +14,19 @@ F90=ifort
 MPF90=mpif90
 #OMP= -openmp
 OMP=
+#NC4 = -D key_netcdf4
+NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
 
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
-#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
 
-FFLAGS= -static -O2  $(NCDF)  -assume byterecl -convert big_endian $(OMP)
-#FFLAGS= -O2 -xSSE4.1 -ip -ftz -fpe3 -fno-alias -sox $(NCDF)  -assume byterecl -convert big_endian 
-#FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian -g -traceback -fpe0 -ftrapuv -CB
-#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian -g -traceback -fpe0 -ftrapuv -CB
+FFLAGS= -static -O2  $(NCDF) $(NC4) $(CMIP6)  -assume byterecl -convert big_endian $(OMP)
+#FFLAGS= -O2 $(NC4) $(CMIP6) -xSSE4.1 -ip -ftz -fpe3 -fno-alias -sox $(NCDF)  -assume byterecl -convert big_endian 
+#FFLAGS= -static $(NC4) $(CMIP6) -O  $(NCDF) -assume byterecl -convert big_endian -g -traceback -fpe0 -ftrapuv -CB
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -assume byterecl -convert big_endian -g -traceback -fpe0 -ftrapuv -CB
 
 LMPI=-lmpich
 
