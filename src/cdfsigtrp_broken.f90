@@ -266,8 +266,8 @@ PROGRAM cdfsigtrp_broken
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
 
   IF ( lfull )  THEN 
-     e3t1d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
-     e3w1d(:) = getvare3(cn_fzgr, cn_ve3w, npk)
+     e3t1d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
+     e3w1d(:) = getvare3(cn_fzgr, cn_ve3w1d, npk)
   ENDIF
 
   !! *  Main loop on sections

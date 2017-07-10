@@ -198,7 +198,7 @@ PROGRAM cdfsigintegr
 
      gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
 
-     IF (lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
+     IF (lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
      h1d(:) = getvar1d(cf_rho, cn_vdeptht, npk)
 

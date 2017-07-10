@@ -199,7 +199,7 @@ PROGRAM cdfmxlhcsc
   mbathy(:,:)  = rtem(:,:)
   gdepw(0)     = 999999.  ! dummy values normaly always masked
   gdepw(1:npk) = getvare3(cn_fzgr, cn_gdepw, npk) 
-  IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t, npk )
+  IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t1d, npk )
 
   ! read surface tmask
   tmask_surf(:,:) = getvar(cn_fmsk, cn_tmask, 1, npiglo, npjglo)

@@ -142,7 +142,7 @@ PROGRAM cdfmxlsaltc
 
   IF ( lfull ) ALLOCATE ( e31d(npk)                          )
                gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
-  IF ( lfull ) e31d( :) = getvare3(cn_fzgr, cn_ve3t,  npk)
+  IF ( lfull ) e31d( :) = getvare3(cn_fzgr, cn_ve3t1d,  npk)
 
   DO jt=1,npt
      IF ( lg_vvl ) THEN ; it=jt

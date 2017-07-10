@@ -298,7 +298,7 @@ PROGRAM cdfmoc
 
   IF ( ldec  ) gdept(:) = getvare3(cn_fzgr, cn_gdept, npk             )
   IF ( ldec  ) e1u(:,:) = getvar  (cn_fhgr, cn_ve1u,  1, npiglo,npjglo)
-  IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
+  IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   iloc=MAXLOC(gphiv)
   rdumlat(1,:) = gphiv(iloc(1),:)
@@ -675,7 +675,7 @@ CONTAINS
     rdumlon(:,:) = 0.0
     rdumlat(:,:) = zwk(1,1)
 
-    IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk )
+    IF ( lfull ) e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk )
 
     zwk(:,:)   = getvar (cn_fhgr, cn_ve1v, 1, npiglo, 1, kimin=iiw,kjmin=ijrapid )
     de1rapid(:) = zwk(:,1)

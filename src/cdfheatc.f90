@@ -186,7 +186,7 @@ PROGRAM cdfheatc
   e2t(:,:) = getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw,  npk)
 
-  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
+  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   CALL CreateOutput
 

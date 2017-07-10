@@ -136,7 +136,7 @@ PROGRAM cdfvhst
   ! read level independent metrics
   e1v(:,:) = getvar(cn_fhgr,   cn_ve1v, 1, npiglo, npjglo)
   e2u(:,:) = getvar(cn_fhgr,   cn_ve2u, 1, npiglo, npjglo)
-  e31d(:)  = getvare3(cn_fzgr, cn_ve3t, npk              ) ! used only for full step
+  e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk              ) ! used only for full step
 
   DO jt=1, npt
      IF ( lg_vvl ) THEN ; it =jt

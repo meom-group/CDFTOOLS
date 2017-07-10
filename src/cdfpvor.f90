@@ -233,7 +233,7 @@ PROGRAM cdfpvor
 
   IF ( lfull  ) THEN
     IF ( l_metric ) THEN
-      e31d = getvare3( cn_fzgr, cn_ve3w, npk )
+      e31d = getvare3( cn_fzgr, cn_ve3w1d, npk )
     ELSE
       e31d = 1.
     ENDIF

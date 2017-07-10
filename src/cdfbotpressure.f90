@@ -260,7 +260,7 @@ CONTAINS
 
     ! Initialize output file
     gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk )
-    e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk )
+    e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d,  npk )
 
     ncout = create      (cf_out, cf_in, npiglo, npjglo, 1                      , ld_nc4=lnc4  )
     ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )

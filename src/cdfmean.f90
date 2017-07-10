@@ -307,7 +307,7 @@ PROGRAM cdfmean
      cv_e2    = cn_ve2t
      cf_e3    = cn_fe3t
      cv_e3    = cn_ve3t
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = cn_tmask ;
      ENDIF
      cv_dep   = cn_gdept
@@ -316,7 +316,7 @@ PROGRAM cdfmean
      cv_e2    = cn_ve2u
      cf_e3    = cn_fe3u
      cv_e3    = cn_ve3u
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = cn_umask ;
      ENDIF
      cv_dep   = cn_gdept
@@ -325,7 +325,7 @@ PROGRAM cdfmean
      cv_e2    = cn_ve2v
      cf_e3    = cn_fe3v
      cv_e3    = cn_ve3v
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = cn_vmask ;
      ENDIF
      cv_dep   = cn_gdept
@@ -334,7 +334,7 @@ PROGRAM cdfmean
      cv_e2    = cn_ve2f
      cf_e3    = cn_fe3t
      cv_e3    = cn_ve3t
-     cv_e31d  = cn_ve3t
+     cv_e31d  = cn_ve3t1d
      IF (cv_msk   == '' ) THEN ; cv_msk = cn_fmask ;
      ENDIF
      cv_dep   = cn_gdept

@@ -156,7 +156,7 @@ PROGRAM cdfdynh_anom
   zsal0(:,:)  = 35.
 
   zssh(:,:)  = getvar(cf_tfil,  cn_sossheig, 1,  npiglo, npjglo)
-  e3t_1d(:)  = getvare3(cn_fzgr, cn_ve3t, npk)
+  e3t_1d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   DO jt = 1, npt
      IF ( lg_vvl ) THEN ; it=jt

@@ -276,7 +276,7 @@ PROGRAM cdfmhst
      gdep(:)    = 0.  ! dummy depth for netcdf output
   ENDIF
 
-  IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t, npk )
+  IF ( lfull ) e31d = getvare3(cn_fzgr, cn_ve3t1d, npk )
 
   iloc         = MAXLOC( gphiv )
   rdumlat(1,:) = gphiv(iloc(1),:)

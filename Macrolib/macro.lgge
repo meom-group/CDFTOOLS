@@ -8,7 +8,8 @@
 NCDF = -I/opt/netcdf-4.1/include -I /opt/hdf5-1.8.4/include -L /opt/hdf5-1.8.4/lib -L/opt/netcdf-4.1/lib -lnetcdf -lhdf5_hl -lhdf5 -lz
 
 NC4= -D key_netcdf4
-CMIP6= -D key_CMIP6
+#CMIP6= -D key_CMIP6
+CMIP6=
  
 F90=ifort
 MPF90=mpif90

@@ -222,7 +222,7 @@ PROGRAM cdfvint
 
   ! Initialize output file
   gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk )
-  e31d(:)  = getvare3(cn_fzgr, cn_ve3t,  npk )
+  e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d,  npk )
 
   IF ( lgsop ) THEN
      gdepo(:) = (/100.,300.,500.,700.,800.,2000.,6000./) ! GEOP standard levs

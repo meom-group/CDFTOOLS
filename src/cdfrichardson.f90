@@ -162,7 +162,7 @@ PROGRAM cdfrichardson
 
   CALL CreateOutput
 
-  IF ( lfull )  e3w1d(:) = getvare3(cn_fzgr, cn_ve3w, npk)
+  IF ( lfull )  e3w1d(:) = getvare3(cn_fzgr, cn_ve3w1d, npk)
 
   gdep(:) = getvare3(cn_fzgr, cn_gdepw, npk)
 

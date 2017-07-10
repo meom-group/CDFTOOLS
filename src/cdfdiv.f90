@@ -225,7 +225,7 @@ PROGRAM cdfdiv
         gdep(jk) = zdep( nilev(jk) )
      ENDDO
   ENDIF
-  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t, npk)
+  IF ( lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   ! look for  E-W periodicity
   IF ( zun(1,1) == zun(npiglo-1,1) ) lperio = .TRUE.
