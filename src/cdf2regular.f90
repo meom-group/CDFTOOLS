@@ -128,7 +128,7 @@ PROGRAM cdf2regular
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdf2levitus2d (a particular case)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -141,14 +141,14 @@ PROGRAM cdf2regular
      CASE ( '-r'  ) ; CALL getarg( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rlev_resol
      CASE ( '-360') ; l360 = .TRUE. ; rlon0 = 0.
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   lchk = chkfile (cn_fhgr)
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_in  ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_in,cn_x)
   npjglo = getdim(cf_in,cn_y)
@@ -433,7 +433,7 @@ PROGRAM cdf2regular
               ENDDO
            CASE DEFAULT 
               PRINT *, ' METHOD ', imethod ,'is not recognized in this program'
-              STOP
+              STOP 99
 
            END SELECT  ! imethod
            IF ( ALLOCATED(z_fill) ) DEALLOCATE( z_fill )

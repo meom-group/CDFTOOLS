@@ -233,7 +233,7 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'     SEE ALSO :'
      PRINT *,'        cdftransport, cdfmoc, cdfmocsig. This tool replaces cdfovide.' 
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! Parse command line
@@ -260,7 +260,7 @@ PROGRAM cdf_xtract_brokenline
      CASE ( '-vecrot'  ) ; lvecrot =.TRUE.  ; nvar = nvar + 2  !
      CASE ( '-f'       ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg + 1 ; lsecfile=.TRUE.
         ;                  CALL ParseFiles(cldum)  ! many section files can be given separated with comma
-     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -281,7 +281,7 @@ PROGRAM cdf_xtract_brokenline
         lchk = chkfile(cf_lst(jsec) ) .OR. lchk
      ENDDO
   ENDIF
-  IF ( lchk     ) STOP ! missing files
+  IF ( lchk     ) STOP 99 ! missing files
   IF ( lg_vvl   ) THEN
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil

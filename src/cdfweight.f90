@@ -112,7 +112,7 @@ PROGRAM cdfweight
      PRINT *,'     SEE ALSO : '
      PRINT *,'        cdfcoloc'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   iarg=1
@@ -125,14 +125,14 @@ PROGRAM cdfweight
      CASE ('-p' ) ; CALL getarg(iarg, ctype   ) ; iarg=iarg+1 
      CASE ('-2d') ; ll2d    = .TRUE.
      CASE ('-v' ) ; lldebug = .TRUE.
-     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP 99
      END SELECT
   END DO
 
   llchk = llchk .OR. chkfile(cf_in)
   llchk = llchk .OR. chkfile(cf_coord)
   IF ( .NOT. ll2d ) llchk = llchk .OR. chkfile(cn_fzgr)
-  IF ( llchk ) STOP ! missing files
+  IF ( llchk ) STOP 99 ! missing files
 
   npiglo = getdim (cf_coord,cn_x)
   npjglo = getdim (cf_coord,cn_y)

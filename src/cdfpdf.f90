@@ -93,7 +93,7 @@ PROGRAM cdfpdf
      PRINT *,'              netdf variable is <IN-var>_pdf'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -116,11 +116,11 @@ PROGRAM cdfpdf
         ;              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) vmax
         ;              CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nbin
         ;              l_norange = .FALSE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF (  chkfile ( cf_ifil) ) STOP  ! some compulsory files are missing
+  IF (  chkfile ( cf_ifil) ) STOP 99  ! some compulsory files are missing
 
   ! set domain size from input ile
   npiglo = getdim (cf_ifil,cn_x)

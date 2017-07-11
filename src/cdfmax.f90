@@ -83,7 +83,7 @@ PROGRAM cdfmax
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       output is done on standard output.'
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -102,11 +102,11 @@ PROGRAM cdfmax
      CASE ( '-time' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
         ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
      CASE ( '-xy'   ) ; lforcexy = .TRUE.
-     CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   ni=0 ; nj=0; nk=0; nt=0 
 
@@ -114,7 +114,7 @@ PROGRAM cdfmax
   IF ( istatus == 1 ) THEN 
      ni = getdim(cf_in, 'lon', cldum, istatus)
      IF ( istatus == 1 ) THEN
-        PRINT *,' No X or lon dim found ' ; STOP
+        PRINT *,' No X or lon dim found ' ; STOP 99
      ENDIF
   ENDIF
   IF ( iimax == 0 ) iimax = ni
@@ -123,7 +123,7 @@ PROGRAM cdfmax
   IF ( istatus == 1 ) THEN 
      nj = getdim(cf_in, 'lat', cldum, istatus)
      IF ( istatus == 1 ) THEN
-        PRINT *,' No y or lat dim found ' ; STOP
+        PRINT *,' No y or lat dim found ' ; STOP 99
      ENDIF
   ENDIF
   IF ( ijmax == 0 ) ijmax = nj
@@ -272,7 +272,7 @@ PROGRAM cdfmax
         END SELECT
 
      CASE DEFAULT
-        PRINT *,' ntype = ',ntype, '  is not defined ' ; STOP
+        PRINT *,' ntype = ',ntype, '  is not defined ' ; STOP 99
      END SELECT ! ntype
   ENDDO
 

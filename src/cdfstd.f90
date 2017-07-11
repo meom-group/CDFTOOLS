@@ -118,7 +118,7 @@ PROGRAM cdfstd
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'        cdfmoy, cdfrmsssh, cdfstdevw'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -134,13 +134,13 @@ PROGRAM cdfstd
      CASE ('-o'      ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ('-m'      ) ; CALL getarg (ijarg, cf_moy ) ; ijarg=ijarg+1
      CASE ('-nc4'    ) ; lnc4     = .TRUE.
-     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
   cf_in = cf_lst(1)
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -199,7 +199,7 @@ PROGRAM cdfstd
            DO jfil = 1, nfiles
               cf_in=cf_lst(jfil)
 
-              IF ( chkfile(cf_in) ) STOP ! missing file
+              IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
               IF ( lcaltmean )  THEN
                  npt = getdim (cf_in, cn_t)

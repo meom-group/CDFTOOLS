@@ -101,7 +101,7 @@ PROGRAM cdffwc
      PRINT *,'         variables :  fwc_BASIN, where BASIN was set by argument BASIN-var*'
      PRINT *,'                      (cAsE sensitive !)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! browse command line
@@ -119,7 +119,7 @@ PROGRAM cdffwc
      CASE ( '-ssh'  ) ; lssh   = .TRUE. 
      CASE ( '-vvl'  ) ; lg_vvl = .TRUE. 
      CASE ( '-b'    ) ; CALL getarg (ijarg, cf_subbas) ; ijarg = ijarg + 1
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown options.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown options.' ; STOP 99
      END SELECT
   END DO
 
@@ -129,7 +129,7 @@ PROGRAM cdffwc
   lchk = chkfile ( cn_fhgr ) .OR. lchk
   lchk = chkfile ( cn_fzgr ) .OR. lchk
   lchk = chkfile (cf_subbas) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) cn_fe3t = cf_in
 
@@ -159,7 +159,7 @@ PROGRAM cdffwc
 
   ! just chck if var exist in file 
   DO jvar = 1, nvaro
-     IF ( chkvar( cf_subbas, cv_in(jvar)) ) STOP  ! message is written in cdfio.chkvar
+     IF ( chkvar( cf_subbas, cv_in(jvar)) ) STOP 99  ! message is written in cdfio.chkvar
   ENDDO
 
   ! Allocate arrays

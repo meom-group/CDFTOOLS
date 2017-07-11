@@ -98,7 +98,7 @@ PROGRAM cdfeddyscale
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfeddyscale_pass1 '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -109,12 +109,12 @@ PROGRAM cdfeddyscale
         ! option
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99
      END SELECT
   ENDDO
 
   lchk = chkfile(cf_meanfil ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_meanfil,cn_x)
   npjglo = getdim(cf_meanfil,cn_y)

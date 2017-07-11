@@ -183,7 +183,7 @@ PROGRAM cdfsigtrp_broken
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdftransport, cdfsigintegr, cdfsigtrp, cdf_xtrac_brokenline '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! browse command line
@@ -203,7 +203,7 @@ PROGRAM cdfsigtrp_broken
      CASE ( '-refdep' ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) refdep
      CASE ( '-section') ; CALL getarg(ijarg, cf_section ) ; ijarg=ijarg+1 
      CASE ( '-neutral') ; lneutral = .TRUE.
-     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -211,7 +211,7 @@ PROGRAM cdfsigtrp_broken
   lchk = lchk .OR. chkfile( cn_fzgr    )
   lchk = lchk .OR. chkfile( cf_section )
   lchk = lchk .OR. chkfile( cf_brfi    )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   IF ( ltemp)  THEN  ! temperature decrease downward. Change sign and swap min/max
      refdep = -10. ! flag value

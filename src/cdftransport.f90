@@ -281,7 +281,7 @@ PROGRAM cdftransport
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfsigtrp cdf_xtrac_brokenline'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   itime  = 1
@@ -312,7 +312,7 @@ PROGRAM cdftransport
      CASE ( '-self' ) ; l_self = .TRUE.
      CASE ('-zlimit') ; CALL GetZlimit  ! Parse arguments of -zlimit to build rz_lst array
      CASE ('-sfx'   ) ; CALL getarg (ijarg, csfx   ) ; ijarg = ijarg + 1
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -347,7 +347,7 @@ PROGRAM cdftransport
         lchk = lchk .OR. chkfile(cf_vtfil)
      ENDIF
   ENDIF
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! Look for missingValue for u and v
   zspu = getspval(cf_ufil,cn_vozocrtx)
@@ -749,7 +749,7 @@ PROGRAM cdftransport
         ! ... compute the nearest ji point on the line crossing at ji
         DO ji=ii0, ii1
            np=np+1
-           IF (np > jpseg) THEN ; PRINT *, 'np > jpseg !' ; STOP 
+           IF (np > jpseg) THEN ; PRINT *, 'np > jpseg !' ; STOP 99 
            ENDIF
            ij=NINT(aj*ji + bj )
            yypt(np) = CMPLX(ji,ij)
@@ -773,7 +773,7 @@ PROGRAM cdftransport
         ! ... compute the nearest ji point on the line crossing at jj
         DO jj=ij0,ij1
            np=np+1
-           IF (np > jpseg) THEN ; PRINT *, 'np > jpseg !' ; STOP 
+           IF (np > jpseg) THEN ; PRINT *, 'np > jpseg !' ; STOP 99 
            ENDIF
            ii=NINT(ai*jj + bi)
            yypt(np) = CMPLX(ii,jj)
@@ -794,13 +794,13 @@ PROGRAM cdftransport
         IF ( rd > 1 ) THEN
            CALL interm_pt(yypt, jk, ai, bi, aj, bj, yypti)
            nn=nn+1
-           IF (nn > jpseg) THEN ; PRINT *, 'nn > jpseg !' ; STOP 
+           IF (nn > jpseg) THEN ; PRINT *, 'nn > jpseg !' ; STOP 99 
            ENDIF
            rxx(nn) = REAL(yypti)
            ryy(nn) = IMAG(yypti)
         END IF
         nn=nn+1
-        IF (nn > jpseg) THEN ; PRINT *, 'nn > jpseg !' ; STOP 
+        IF (nn > jpseg) THEN ; PRINT *, 'nn > jpseg !' ; STOP 99 
         ENDIF
         rxx(nn) = REAL(yypt(jk))
         ryy(nn) = IMAG(yypt(jk))

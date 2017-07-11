@@ -62,7 +62,7 @@ PROGRAM cdfinfo
      PRINT *,'        On standard ouput, gives the size of the domain, the depth '
      PRINT *,'        dimension name, the number of variables.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -72,11 +72,11 @@ PROGRAM cdfinfo
      CASE ( '-f'   ) ; CALL getarg (ijarg, cf_in) ;  ijarg=ijarg+1
         ! options
      CASE ( '-dep' ) ; CALL getarg (ijarg, cldum) ;  ijarg=ijarg+1 ; READ(cldum,*) zdep ;  ldep =.TRUE.
-     CASE DEFAULT   ; PRINT *, 'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *, 'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)

@@ -112,7 +112,7 @@ PROGRAM cdfheatc
      PRINT *,'       '
      PRINT *,'      SEE ALSO: '
      PRINT *,'          cdfpolymask '
-     STOP
+     STOP 
   ENDIF
 
   cf_mfil='none'
@@ -134,7 +134,7 @@ PROGRAM cdfheatc
         ;                  CALL getarg ( ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
      CASE ( '-M'       ) ; CALL getarg ( ijarg, cn_fmsk) ; ijarg = ijarg + 1 
         ;                    CALL getarg ( ijarg, cv_msk ) ; ijarg = ijarg + 1
-     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -145,7 +145,7 @@ PROGRAM cdfheatc
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
   lchk = chkfile(cf_mfil) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) cn_fe3t = cf_tfil
 

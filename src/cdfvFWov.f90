@@ -108,7 +108,7 @@ PROGRAM cdfvFWov
      PRINT *,'       Degenerated dimensions can be removed with :'
      PRINT *,'           ncwga -a x,y,depthw ',TRIM(cf_out), ' -o out.nc'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -123,7 +123,7 @@ PROGRAM cdfvFWov
         ! options
      CASE ( '-o'   ) ; CALL getarg( ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -133,7 +133,7 @@ PROGRAM cdfvFWov
   lchk = lchk .OR. chkfile ( cf_hgr  )
   lchk = lchk .OR. chkfile ( cf_mask )
 
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
   IF ( lg_vvl ) cn_fe3v = cf_vfil
 
   !! get dimensions of input file containing data
@@ -150,7 +150,7 @@ PROGRAM cdfvFWov
   IF ( npjglo /= 2 ) THEN
      PRINT *,' ERROR : This program works with section files.'
      PRINT *,'       all data should have j dimension equal to 2 '
-     STOP
+     STOP 99
   ENDIF
 
   ALLOCATE ( dnetvFW(npt), dtotvFW(npt), dovFW(npt), dtime(npt) )

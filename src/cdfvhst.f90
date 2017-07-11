@@ -82,7 +82,7 @@ PROGRAM cdfvhst
      PRINT *,'     OUTPUT : '
      PRINT *,'         Netcdf file : ',TRIM(cf_out), ' unless -o option is used.'
      PRINT *,'         Variables : ', TRIM(cn_somevt),', ',TRIM(cn_somevs),', ',TRIM(cn_sozout),' and  ',TRIM(cn_sozous)
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -95,7 +95,7 @@ PROGRAM cdfvhst
      CASE ( '-vvl'  ) ;  lg_vvl = .TRUE.
      CASE ( '-o'    ) ;  CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg+1
      CASE ( '-nc4'  ) ;  lnc4   = .TRUE.
-     CASE DEFAULT     ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.'  ; STOP
+     CASE DEFAULT     ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.'  ; STOP 99
      END SELECT
   END DO
 
@@ -103,13 +103,13 @@ PROGRAM cdfvhst
   lchk = lchk .AND. chkfile(cn_fzgr  )
   lchk = lchk .AND. chkfile(cf_vtfil )
 
-  IF ( lchk  ) STOP ! missing file
+  IF ( lchk  ) STOP 99 ! missing file
   IF ( lg_vvl) THEN 
      cn_fe3u = cf_vtfil 
      cn_fe3v = cf_vtfil 
      lchkvar = lchkvar .AND.chkvar( cn_fe3u, cn_ve3u)
      lchkvar = lchkvar .AND.chkvar( cn_fe3v, cn_ve3v)
-     IF ( lchkvar ) THEN ; PRINT *,'no vertical metrics for vvl' ; STOP ! missing e3 metrics in VT file 
+     IF ( lchkvar ) THEN ; PRINT *,'no vertical metrics for vvl' ; STOP 99 ! missing e3 metrics in VT file 
      ENDIF
   ENDIF
 

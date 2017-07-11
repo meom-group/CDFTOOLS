@@ -77,7 +77,7 @@ PROGRAM cdfmppini
      PRINT *,'     OUTPUT : '
      PRINT *,'       - Standard output'
      PRINT *,'       - ASCII file ', TRIM(cf_out)
-     STOP
+     STOP 
   ENDIF
 
   cf_msk = cn_fmsk ; cv_in=cn_tmask
@@ -92,11 +92,11 @@ PROGRAM cdfmppini
      CASE( '-b'      ) ; cf_msk = cn_fbathymet  ; cv_in = cn_bathymet
      CASE( '-z'      ) ; cf_msk = cn_fzgr       ; cv_in = cn_mbathy
      CASE( '-jperio' ) ; CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) jperio
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile (cf_msk ))  STOP ! missing file
+  IF ( chkfile (cf_msk ))  STOP 99 ! missing file
 
   jpiglo = getdim (cf_msk,cn_x)
   jpjglo = getdim (cf_msk,cn_y)

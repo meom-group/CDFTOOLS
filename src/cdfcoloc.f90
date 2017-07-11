@@ -151,7 +151,7 @@ PROGRAM cdfcoloc
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfweight '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   iarg = 1
@@ -168,7 +168,7 @@ PROGRAM cdfcoloc
      CASE ('-d'   ) ; CALL getarg ( iarg, cf_diag        ) ; iarg = iarg + 1
      CASE ('-b'   ) ; CALL getarg ( iarg, cf_bathy       ) ; iarg = iarg + 1
      CASE ('-h'   ) ; CALL help_message 
-     CASE DEFAULT   ; PRINT *,TRIM(cldum),' : option not available.' ; STOP
+     CASE DEFAULT   ; PRINT *,TRIM(cldum),' : option not available.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -190,13 +190,13 @@ PROGRAM cdfcoloc
 
   IF ( cf_bathy /= 'none' ) THEN ! dealing with special case of etopo file
      llchk = llchk .OR. chkfile(cf_bathy    )
-     IF (llchk ) STOP ! missing files
+     IF (llchk ) STOP 99 ! missing files
      npiglo = getdim (cf_bathy,'lon')
      npjglo = getdim (cf_bathy,'lat')
      npk    = 1
   ELSE
      llchk = llchk .OR. chkfile(cn_fmsk    )
-     IF (llchk ) STOP ! missing files
+     IF (llchk ) STOP 99 ! missing files
      npiglo = getdim (cn_fmsk,cn_x)
      npjglo = getdim (cn_fmsk,cn_y)
      npk    = getdim (cn_fmsk,cn_z)
@@ -299,7 +299,7 @@ PROGRAM cdfcoloc
         dscale    = 100.d0  ! to be in % in the output
         llchk = llchk .OR. chkfile(cn_fcoo    )
         llchk = llchk .OR. chkfile(cn_fzgr    )
-        IF ( llchk ) STOP 
+        IF ( llchk ) STOP 99 
         ! Sx is the i-slope of bottom topog: read adequate metric
         !   and compute it on v3d(:,:,1)
         de(:,:)  = getvar(cn_fcoo, cn_ve1u,  1, npiglo, npjglo)     
@@ -316,7 +316,7 @@ PROGRAM cdfcoloc
         dscale    = 100.d0  ! to be in % in the output
         llchk = llchk .OR. chkfile(cn_fcoo    )
         llchk = llchk .OR. chkfile(cn_fzgr    )
-        IF ( llchk ) STOP 
+        IF ( llchk ) STOP 99 
         ! Sy is the j-slope of bottom topog: read adequate metric
         !   and compute it on v3d(:,:,1)
         de(:,:)  = getvar(cn_fcoo, cn_ve2v,  1, npiglo, npjglo)
@@ -340,7 +340,7 @@ PROGRAM cdfcoloc
         dscale    = 1.d0
      END SELECT
 
-     IF (chkfile (cf_weight) .OR. chkfile( cf_in) )  STOP ! missing file
+     IF (chkfile (cf_weight) .OR. chkfile( cf_in) )  STOP 99 ! missing file
 
      ! Now enter the generic processing
      PRINT *,'START coloc for ', TRIM(cctyp)
@@ -577,7 +577,7 @@ CONTAINS
        ENDDO
        IF ( jt == jptyp + 1 ) THEN
           PRINT *, 'ERROR in field list :', TRIM(cltype(jtyp) ),' not supported'
-          STOP
+          STOP 99
        ENDIF
     ENDDO
 
@@ -594,12 +594,12 @@ CONTAINS
     IF ( nSx * nSy < 0 ) THEN 
        PRINT *, ' You must specify both Sx and Sy'
        PRINT *, ' in order to perform rotation'
-       STOP
+       STOP 99
     ENDIF
     IF ( nU  * nV  < 0 ) THEN 
        PRINT *, ' You must specify both U and V'
        PRINT *, ' in order to perform rotation'
-       STOP
+       STOP 99
     ENDIF
 
     ! build output file name
@@ -674,7 +674,7 @@ CONTAINS
     PRINT *,''
 9001 FORMAT (a15,x,a25,x,a15)
 9002 FORMAT (57("-") )
-    STOP
+    STOP 99
 
   END SUBROUTINE help_message
 

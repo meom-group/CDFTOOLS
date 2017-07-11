@@ -105,7 +105,7 @@ PROGRAM cdfbotpressure
      PRINT *,'     SEE ALSO :'
      PRINT *,'        cdfvint'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
   ! browse command line
   ijarg = 1   ; nvar = 1
@@ -120,7 +120,7 @@ PROGRAM cdfbotpressure
      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
      CASE ( '-o'    ) ; CALL getarg( ijarg,cf_out) ; ijarg = ijarg + 1
      CASE ( '-nc4'  ) ; lnc4  = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.'  ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.'  ; STOP 99
      END SELECT
   END DO
 
@@ -131,7 +131,7 @@ PROGRAM cdfbotpressure
   lchk = chkfile ( cf_in   )
   lchk = chkfile ( cn_fmsk ) .OR. lchk
   lchk = chkfile ( cn_fzgr ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) cn_fe3t = cf_in
 

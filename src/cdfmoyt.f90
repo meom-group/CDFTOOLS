@@ -122,7 +122,7 @@ PROGRAM cdfmoyt
      PRINT *,'       netcdf file : ', TRIM(cf_root),'.nc and ',TRIM(cf_root),'2.nc'
      PRINT *,'       Variables name are the same than in the input files. '
      PRINT *,'       For squared averages ''_sqd'' is appended to the original variable name.'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -134,8 +134,8 @@ PROGRAM cdfmoyt
      CASE ( '-spval0' ) ; lspval0 = .TRUE.
      CASE ( '-o'      ) ; CALL getarg(ijarg, cf_root) ; ijarg=ijarg+1
      CASE ( '-nc4'    ) ; lnc4    = .TRUE.
-     CASE ( '-vvl'    ) ; lg_vvl  = .TRUE. ; PRINT *, ' vvl not yet supported' ; STOP
-     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE ( '-vvl'    ) ; lg_vvl  = .TRUE. ; PRINT *, ' vvl not yet supported' ; STOP 99
+     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -146,7 +146,7 @@ PROGRAM cdfmoyt
   DO jfil=1,nfiles
      lchk = lchk .OR. chkfile (cf_lst(jfil) )
   ENDDO
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   ! Initialisation from  1rst file (all file are assumed to have the same geometry)
   cf_in  = cf_lst(1)
@@ -172,14 +172,14 @@ PROGRAM cdfmoyt
   ! check that all files have the same number of time frames
   ierr = 0
   DO jfil = 1, nfiles
-     IF (  chkfile (cf_lst(jfil)      ) ) STOP ! missing file
+     IF (  chkfile (cf_lst(jfil)      ) ) STOP 99 ! missing file
      inpt = getdim (cf_lst(jfil), cn_t)
      IF ( inpt /= npt ) THEN
         PRINT *, 'File ',TRIM(cf_lst(jfil) ),' has ',inpt,' time frames instead of ', npt
         ierr = ierr + 1
      ENDIF
   ENDDO
-  IF ( ierr /= 0 ) STOP ! frame numbers mismatch
+  IF ( ierr /= 0 ) STOP 99 ! frame numbers mismatch
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo

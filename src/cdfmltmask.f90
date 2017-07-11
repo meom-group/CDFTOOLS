@@ -95,7 +95,7 @@ PROGRAM cdfmltmask
      PRINT *,'       the requested variable masked.'
      PRINT *,'       netcdf file : IN-file_masked unless specified with -o '
      PRINT *,'         variables : IN-var (same as input).'
-     STOP
+     STOP 
   ENDIF
 
   zspv0 = 0.
@@ -114,11 +114,11 @@ PROGRAM cdfmltmask
     CASE ( '-nc4' ) ; lnc4 = .FALSE. ; PRINT *,' Option -nc4 actually ignored, sorry !, proceed ...'
     CASE ( '-noup') ; lupd = .FALSE.
     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out )  ; ijarg = ijarg + 1 ; lout=.TRUE.
-    CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+    CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
     END SELECT
   ENDDO
 
-  IF ( chkfile (cf_in) .OR. chkfile(cf_msk) ) STOP ! missing files
+  IF ( chkfile (cf_in) .OR. chkfile(cf_msk) ) STOP 99 ! missing files
 
   ! append _masked to input file name and copy initial file to new file, which will be modified
   !  using dd more efficient than cp for big files
@@ -194,7 +194,7 @@ PROGRAM cdfmltmask
   CASE ( 'F' ) ; cv_msk = cn_fmask
   CASE ( 'W' ) ; cv_msk = cn_tmask
   CASE ( 'P' ) ; cv_msk = cn_polymask  ! for polymask
-  CASE DEFAULT ; PRINT *, 'this type of variable is not known :', TRIM(cvartype) ; STOP
+  CASE DEFAULT ; PRINT *, 'this type of variable is not known :', TRIM(cvartype) ; STOP 99
   END SELECT
   ENDIF
 

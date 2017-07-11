@@ -76,7 +76,7 @@ PROGRAM cdfsig0
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfsigi, cdfsigintu, signtr'
-     STOP
+     STOP 
   ENDIF
 
   cv_sal=cn_vosaline
@@ -90,11 +90,11 @@ PROGRAM cdfsig0
      CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
      CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF (chkfile(cf_tfil) ) STOP ! missing file
+  IF (chkfile(cf_tfil) ) STOP 99 ! missing file
 
   ! Look for missing value for salinity
   zsps = getspval(cf_tfil, cn_vosaline)

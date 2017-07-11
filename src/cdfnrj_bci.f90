@@ -81,7 +81,7 @@ PROGRAM cdfnrj_bci
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfuvwt, cdfnrj_bti, cdfnrj_components, cdfnrj_transfert '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -92,11 +92,11 @@ PROGRAM cdfnrj_bci
         ! option
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99
      END SELECT
   ENDDO
 
-  IF (chkfile(cf_in) .OR. chkfile (cn_fhgr) ) STOP
+  IF (chkfile(cf_in) .OR. chkfile (cn_fhgr) ) STOP 99
 
   npiglo = getdim(cf_in, cn_x)
   npjglo = getdim(cf_in, cn_y)

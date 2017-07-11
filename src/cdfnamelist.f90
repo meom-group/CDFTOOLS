@@ -61,7 +61,7 @@ PROGRAM cdfnamelist
      PRINT *,'     OUTPUT : '
      PRINT *,'       with option -p, print a template namelist : PrintCdfNames.namlist'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1

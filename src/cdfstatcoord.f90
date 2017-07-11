@@ -63,7 +63,7 @@ PROGRAM cdfstatcoord
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Standard output'
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -73,11 +73,11 @@ PROGRAM cdfstatcoord
      CASE ( '-c' ) ; CALL getarg (ijarg, cf_coo) ; ijarg=ijarg+1
      CASE ( '-m' ) ; CALL getarg (ijarg, cf_msk) ; ijarg=ijarg+1
      CASE ( '-v' ) ; CALL getarg (ijarg, cv_msk) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_coo) .OR. chkfile(cf_msk) ) STOP ! missing files
+  IF ( chkfile(cf_coo) .OR. chkfile(cf_msk) ) STOP 99 ! missing files
 
   npiglo= getdim (cf_coo, cn_x)
   npjglo= getdim (cf_coo, cn_y)

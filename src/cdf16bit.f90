@@ -90,7 +90,7 @@ PROGRAM cdf16bit
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : same names than in input file'
-     STOP
+     STOP 
   ENDIF
   !!
   ijarg = 1
@@ -104,11 +104,11 @@ PROGRAM cdf16bit
         ;                 l_verbose =.TRUE.
      CASE ( '-o'      ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE ( '-nc4'    ) ; lnc4      =.TRUE.
-     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_in)  ) STOP ! missing file
+  IF ( chkfile(cf_in)  ) STOP 99 ! missing file
 
   ! get domain dimension from input file
   npiglo = getdim (cf_in, cn_x)
@@ -117,7 +117,7 @@ PROGRAM cdf16bit
 
   IF (ierr /= 0 ) THEN
      npk   = getdim (cf_in,'z',kstatus=ierr)
-     IF (ierr /= 0 ) THEN ;  'print depth dimension name not suported' ; STOP
+     IF (ierr /= 0 ) THEN ;  'print depth dimension name not suported' ; STOP 99
      ENDIF
   ENDIF
   npt    = getdim (cf_in, cn_t)

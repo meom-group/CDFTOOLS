@@ -81,7 +81,7 @@ PROGRAM cdfnan
      PRINT *,'       netcdf file : input file is rewritten without NaN.' 
      PRINT *,'         variables : same name as input.' 
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   rabsmax=HUGE(0.0)
@@ -94,12 +94,12 @@ PROGRAM cdfnan
         ! options
      CASE ('-value'  ) ; CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; READ(cldum,*) replace ; l_replace=.TRUE.
      CASE ('-absmax' ) ; CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; READ(cldum,*) rabsmax 
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
   cf_inout = cf_lst(1)
-  IF ( chkfile (cf_inout) )  STOP ! missing file
+  IF ( chkfile (cf_inout) )  STOP 99 ! missing file
 
   npiglo = getdim (cf_inout, cn_x              )
   npjglo = getdim (cf_inout, cn_y              )

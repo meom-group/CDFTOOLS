@@ -167,7 +167,7 @@ PROGRAM cdfgeostrophy
      PRINT *,'       - netcdf file : ', TRIM(cf_vout) 
      PRINT *,'           variables : ', TRIM(cn_vomecrty)
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -180,7 +180,7 @@ PROGRAM cdfgeostrophy
         ;              CALL getarg(ijarg, cf_vout) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -188,7 +188,7 @@ PROGRAM cdfgeostrophy
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   IF ( lg_vvl ) cn_fe3t = cf_tfil
 

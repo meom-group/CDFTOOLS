@@ -110,7 +110,7 @@ PROGRAM cdfvint
      PRINT *,'     SEE ALSO :'
      PRINT *,'        cdfvertmean, cdfheatc, cdfmxlhcsc and  cdfmxlheatc'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! default values
@@ -132,7 +132,7 @@ PROGRAM cdfvint
      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
      CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
      CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -141,7 +141,7 @@ PROGRAM cdfvint
   lchk = chkfile ( cn_fmsk ) .OR. lchk
   lchk = chkfile ( cn_fhgr ) .OR. lchk
   lchk = chkfile ( cn_fzgr ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   IF (lg_vvl ) cn_fe3t = cf_in
 
@@ -181,7 +181,7 @@ PROGRAM cdfvint
   ELSE
      PRINT *,'  ERROR: Variable ', TRIM(cv_in), ' not pre-defined ...'
      PRINT *,'     Accepted variables are ', TRIM(cn_votemper),' and ',TRIM(cn_vosaline)
-     STOP
+     STOP 99
   ENDIF
 
   ! log information so far

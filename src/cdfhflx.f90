@@ -96,7 +96,7 @@ PROGRAM cdfhflx
      PRINT *,'       ASCII file  : ', TRIM(cf_out  )
      PRINT *,'       netcdf file : ', TRIM(cf_outnc) 
      PRINT *,'         variables : hflx_glo, [hflx_atl, hflx_inp, hflx_pac, hflx_ind]'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -107,14 +107,14 @@ PROGRAM cdfhflx
         ! options
      CASE ( '-o' ) ; CALL getarg (ijarg, cf_outnc) ; ijarg=ijarg+1
      CASE ( '-ot') ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,'ERROR : ',TRIM(cldum), ': unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)

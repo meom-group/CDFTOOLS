@@ -120,7 +120,7 @@ PROGRAM cdfzonalmeanvT
      PRINT *,'                       A suffix _bas is append to variable name oin order to'
      PRINT *,'                     indicate the basin (atl, inp, ind, pac) or glo for global'
      PRINT *,'         '
-     STOP
+     STOP 
   ENDIF
 
   ! decode command line
@@ -135,7 +135,7 @@ PROGRAM cdfzonalmeanvT
      CASE ( '-debug'  ) ; ldebug   =.TRUE.
      CASE ( '-b'      ) ; CALL getarg( ijarg, cf_basins) ; ijarg=ijarg+1 ; npbasins = 5
      CASE ( '-o'      ) ; CALL getarg( ijarg, cf_out   ) ; ijarg=ijarg+1 
-     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -153,10 +153,10 @@ PROGRAM cdfzonalmeanvT
   IF ( npbasins /=1 ) THEN
      lchk = lchk .OR. chkfile (cf_basins  )
   ENDIF
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   cf_tfil = SetFileName( confcase, cldum, 'T')  ! look in first T file for dimensions
-  IF ( chkfile (cf_tfil) ) STOP 
+  IF ( chkfile (cf_tfil) ) STOP 99 
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)

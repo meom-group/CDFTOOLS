@@ -162,7 +162,7 @@ PROGRAM cdfmhst
         PRINT *,'                     [ ', TRIM(cv_zomst),cbasin(jbasins),' : Meridional Salt Transport ]'
      PRINT *,'      '
      END DO
-     STOP
+     STOP 
   ENDIF
 
   cf_vtfil='none'
@@ -187,7 +187,7 @@ PROGRAM cdfmhst
      CASE ( '-b'    ) ; CALL getarg(ijarg, cn_fbasins) ; ijarg = ijarg+1
      CASE ( '-o'    ) ; CALL getarg(ijarg, cf_outnc  ) ; ijarg = ijarg+1
      CASE ( '-vvl'  ) ; lg_vvl   = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -197,7 +197,7 @@ PROGRAM cdfmhst
   IF ( lsepf ) THEN  ! need to have cf_vfil and cf_tfil at least
      lchk = chkfile ( cf_vfil )
      lchk = lchk .OR. chkfile( cf_tfil )
-     IF ( lchk ) STOP   ! Missing files
+     IF ( lchk ) STOP 99   ! Missing files
      IF ( TRIM(cf_sfil) == 'none' ) cf_sfil = cf_tfil
      
   ENDIF
@@ -212,7 +212,7 @@ PROGRAM cdfmhst
      lchk = lchk .OR. chkfile( cf_sfil)
   ENDIF
 
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
   IF ( lg_vvl ) cn_fe3v = cf_vtfil  ! REM: in case of vvl e3v is either in VT file or in V file 
 
   ! check for sub basin file and set appropriate variables

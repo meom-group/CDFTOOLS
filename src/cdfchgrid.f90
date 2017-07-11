@@ -103,7 +103,7 @@ PROGRAM cdfchgrid
      PRINT *,'     SEE ALSO : '
      PRINT *,'       cdf2regular cdfdegrad'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
   !!
   ijarg = 1
@@ -118,11 +118,11 @@ PROGRAM cdfchgrid
      CASE ( '-o'  ) ; CALL getarg(ijarg,cf_out ) ; ijarg = ijarg + 1
      CASE ( '-nc4') ; lnc4 = .TRUE.
      CASE ( '-d'  ) ; ldbg = .TRUE.
-     CASE DEFAULT   ; PRINT * ,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT * ,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_in) .OR. chkfile(cf_ref) ) STOP  ! missing files
+  IF ( chkfile(cf_in) .OR. chkfile(cf_ref) ) STOP 99  ! missing files
 
   ! get domain dimension from input file
   npiglo = getdim (cf_in, cn_x)

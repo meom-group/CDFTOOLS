@@ -121,7 +121,7 @@ PROGRAM cdfmkmask
      PRINT *,'         variables : tmask, umask, vmask, fmask'
      PRINT *,'                fmask can differ from standard fmask because it does not'
      PRINT *,'                reflect the slip/noslip lateral condition.'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -158,7 +158,7 @@ PROGRAM cdfmkmask
      CASE ( '-o'    )  ! change output file name
         CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
         !
-     CASE DEFAULT  ; PRINT *, ' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *, ' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -177,10 +177,10 @@ PROGRAM cdfmkmask
      cf_tfil = 'bathylevel.nc'
      cn_z    = 'z'
      lmbathy = .TRUE.
-     IF ( chkfile(cn_fzgr) ) STOP ! missing file
+     IF ( chkfile(cn_fzgr) ) STOP 99 ! missing file
   END IF
 
-  IF ( chkfile(cf_tfil) ) STOP ! missing file
+  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -229,7 +229,7 @@ PROGRAM cdfmkmask
   ENDIF
 
   IF ( lzoombat ) THEN
-     IF ( chkfile(cn_fzgr) ) STOP ! missing file
+     IF ( chkfile(cn_fzgr) ) STOP 99 ! missing file
      ALLOCATE ( rbat  (npiglo,npjglo) )
      rbat(:,:)= getvar(cn_fzgr, cn_hdepw,  1 ,npiglo, npjglo)
   END IF

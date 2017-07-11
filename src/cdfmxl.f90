@@ -129,7 +129,7 @@ PROGRAM cdfmxl
      PRINT *,'                     somxl030z10 = mld on density criterion 0.03 ref. 10m'
      PRINT *,'                     somxl125z10 = mld on density criterion 0.125 ref. 10m'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1  ; cf_sfil='none'
@@ -142,13 +142,13 @@ PROGRAM cdfmxl
         ! options
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg (ijarg,cf_out  ) ; ijarg = ijarg + 1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum) ,' :  unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum) ,' :  unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cf_sfil)  ) STOP ! missing file
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cf_sfil)  ) STOP 99 ! missing file
 
   ! read dimensions 
   npiglo = getdim (cf_tfil,cn_x)

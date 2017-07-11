@@ -122,7 +122,7 @@ PROGRAM cdfdegrad
      PRINT *,'          variables : degraded_<IN-VAR> '
      PRINT *,'                      flsdc : fluid subdomain counter '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cglobal = 'Partial step computation'
@@ -142,7 +142,7 @@ PROGRAM cdfdegrad
      CASE ('-start') ; lstart = .TRUE.
         ;              CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
         ;              CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option !' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option !' ; STOP 99
      END SELECT
   END DO
 
@@ -150,7 +150,7 @@ PROGRAM cdfdegrad
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_in  ) .OR. lchk
-  IF ( lchk   ) STOP ! missing file
+  IF ( lchk   ) STOP 99 ! missing file
 
   SELECT CASE ( ctyp )
   CASE ( 'T' )
@@ -189,7 +189,7 @@ PROGRAM cdfdegrad
      cv_e3    = cn_ve3w
      cv_e31d  = cn_ve3w
      cv_msk   = cn_tmask
-  CASE DEFAULT ; PRINT *,' ERROR : C-grid point ', TRIM(ctyp),' not recognized' ; STOP
+  CASE DEFAULT ; PRINT *,' ERROR : C-grid point ', TRIM(ctyp),' not recognized' ; STOP 99
   END SELECT
 
   IF ( lg_vvl ) cf_e3 = cf_in  
@@ -222,24 +222,24 @@ PROGRAM cdfdegrad
 
   SELECT CASE ( ctyp )
   CASE ( 'T' , 'W' ) 
-     IF (iimin < 2  ) THEN ; PRINT *,'iimin value is too low' ; STOP ; ENDIF
-     IF (ijmin < 2  ) THEN ; PRINT *,'ijmin value is too low' ; STOP ; ENDIF
+     IF (iimin < 2  ) THEN ; PRINT *,'iimin value is too low' ; STOP 99 ; ENDIF
+     IF (ijmin < 2  ) THEN ; PRINT *,'ijmin value is too low' ; STOP 99 ; ENDIF
      npiglo = ( (npiglo - iimin ) / nri )*nri
      npjglo = ( (npjglo - ijmin ) / nrj )*nrj
      ikx = npiglo / nri
      iky = npjglo / nrj
      ALLOCATE (e1(npiglo,npjglo), e2(npiglo,npjglo), e3(npiglo,npjglo) )
   CASE ( 'U' ) 
-     IF (iimin < 1  ) THEN ; PRINT *,'iimin value is too low' ; STOP ; ENDIF
-     IF (ijmin < 2  ) THEN ; PRINT *,'ijmin value is too low' ; STOP ; ENDIF
+     IF (iimin < 1  ) THEN ; PRINT *,'iimin value is too low' ; STOP 99 ; ENDIF
+     IF (ijmin < 2  ) THEN ; PRINT *,'ijmin value is too low' ; STOP 99 ; ENDIF
      npiglo = ( (npiglo - iimin - 1 ) / nri )*nri + 1
      npjglo = ( (npjglo - ijmin ) / nrj )*nrj
      ikx = ( npiglo - 1 ) / nri + 1
      iky = ( npjglo     ) / nrj
      ALLOCATE (e2(npiglo,npjglo), e3(npiglo,npjglo) )
   CASE ( 'V' ) 
-     IF (iimin < 2  ) THEN ; PRINT *,'iimin value is too low' ; STOP ; ENDIF
-     IF (ijmin < 1  ) THEN ; PRINT *,'ijmin value is too low' ; STOP ; ENDIF
+     IF (iimin < 2  ) THEN ; PRINT *,'iimin value is too low' ; STOP 99 ; ENDIF
+     IF (ijmin < 1  ) THEN ; PRINT *,'ijmin value is too low' ; STOP 99 ; ENDIF
      npiglo = ( (npiglo - iimin ) / nri )*nri
      npjglo = ( (npjglo - ijmin - 1 ) / nrj )*nrj + 1
      ikx = ( npiglo     ) / nri

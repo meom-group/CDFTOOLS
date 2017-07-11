@@ -94,7 +94,7 @@ PROGRAM cdfnrj_bti
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfuvwt, cdfnrj_bci, cdfnrj_components, cdfnrj_transfert'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -105,13 +105,13 @@ PROGRAM cdfnrj_bti
         ! option
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99
      END SELECT
   ENDDO
 
   lchk = chkfile (cn_fhgr )
   lchk = lchk .OR. chkfile (cf_uvwtfil )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo  = getdim(cf_uvwtfil,cn_x)
   npjglo  = getdim(cf_uvwtfil,cn_y)

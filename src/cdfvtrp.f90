@@ -100,7 +100,7 @@ PROGRAM cdfvtrp
      PRINT *,'           ', TRIM(cv_soastrp),' : along slope transport'
      PRINT *,'           ', TRIM(cv_socstrp),' : cross slope transport'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! scan command line and set flags
@@ -116,7 +116,7 @@ PROGRAM cdfvtrp
      CASE ('-o'     ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ('-nc4'   ) ; lnc4   = .TRUE.
      CASE ('-bathy' ) ; lbathy = .TRUE. ; nvarout = 4
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
   
@@ -126,7 +126,7 @@ PROGRAM cdfvtrp
   lchk = lchk .OR. chkfile ( cf_ufil )
   lchk = lchk .OR. chkfile ( cf_vfil )
   IF ( lbathy ) lchk = lchk .OR. chkfile ( cn_fmsk )
-  IF ( lchk ) STOP   ! missing files
+  IF ( lchk ) STOP 99   ! missing files
 
   IF ( lg_vvl) THEN
      cn_fe3u = cf_ufil

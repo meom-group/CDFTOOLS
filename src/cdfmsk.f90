@@ -48,12 +48,12 @@ PROGRAM cdfmsk
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Standard output'
-     STOP
+     STOP 
   ENDIF
 
   CALL getarg (1, cf_msk)
 
-  IF ( chkfile(cf_msk) ) STOP ! missing file
+  IF ( chkfile(cf_msk) ) STOP 99 ! missing file
 
   ! in mask file cn_z is 'z'
   cn_z='z'  ! ugly fix

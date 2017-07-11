@@ -94,7 +94,7 @@ PROGRAM cdfeke
      PRINT *,'         variables : voeke (m2/s)'
      PRINT *,'         variables : vomke (m2/s) if required'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
@@ -131,7 +131,7 @@ PROGRAM cdfeke
      lchk = lchk .OR. chkfile (cf_v2fil)
   ENDIF
 
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim (cf_ufil,cn_x)
   npjglo = getdim (cf_ufil,cn_y)

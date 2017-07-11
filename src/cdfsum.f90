@@ -123,7 +123,7 @@ PROGRAM cdfsum
      PRINT *,'      '
      PRINT *,'     SEE ALSO: '
      PRINT *,'       cdfmean '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -149,7 +149,7 @@ PROGRAM cdfsum
      CASE ( '-M'    ) ;    lfmsk =.TRUE.
         ;               CALL getarg(ijarg, cn_fmsk ) ; ijarg=ijarg+1 
         ;               CALL getarg(ijarg, cl_vmsk ) ; ijarg=ijarg+1 
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
   
@@ -165,13 +165,13 @@ PROGRAM cdfsum
      PRINT *,' You must specify a point type with -p option'
      lerror= lerror .OR. .TRUE. 
   ENDIF
-  IF (lerror ) STOP
+  IF (lerror ) STOP 99
 
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_in  ) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in,cn_x )
   npjglo = getdim (cf_in,cn_y )
@@ -252,7 +252,7 @@ PROGRAM cdfsum
      cdep   = cn_vdepthw
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
-     STOP
+     STOP 99
   END SELECT
 
   IF ( lg_vvl ) cf_e3 = cf_in

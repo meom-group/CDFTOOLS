@@ -115,7 +115,7 @@ PROGRAM cdfeddyscale_pass1
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
      PRINT *,'        cdfmoy, cdfeddyscale'
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -130,14 +130,14 @@ PROGRAM cdfeddyscale_pass1
         ! option
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99
      END SELECT
   ENDDO
 
   lchk = chkfile(cn_fhgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! load the dimension
   npiglo = getdim(cf_ufil,cn_x)

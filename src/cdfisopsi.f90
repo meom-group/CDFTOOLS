@@ -121,7 +121,7 @@ PROGRAM cdfisopsi
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfhdy '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -138,7 +138,7 @@ PROGRAM cdfisopsi
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cn_fhgr) ) STOP  ! missing file
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cn_fhgr) ) STOP 99  ! missing file
 
   IF ( lg_vvl ) cn_fe3t = cf_tfil
 

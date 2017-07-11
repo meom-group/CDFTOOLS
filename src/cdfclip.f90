@@ -94,7 +94,7 @@ PROGRAM cdfclip
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out),' This can be changed using -o option'
      PRINT *,'         variables : same as input variables.'
-     STOP
+     STOP 
   ENDIF
   !!
   ijarg=1 
@@ -110,11 +110,11 @@ PROGRAM cdfclip
         ;             CALL getarg(ijarg,cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
      CASE ('-o'   ) ; CALL getarg(ijarg,cf_out) ; ijarg = ijarg + 1 
      CASE ('-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknwn option.';  STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknwn option.';  STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile (cf_in ) ) STOP ! missing file
+  IF ( chkfile (cf_in ) ) STOP 99 ! missing file
 
   ! set global attribute for output file
   IF ( ikmin > 0 ) THEN
@@ -149,7 +149,7 @@ PROGRAM cdfclip
         IF (ierr /= 0 ) THEN
            PRINT *,' assume file with no depth'
            IF ( ikmin > 0 ) THEN
-              PRINT *,' You cannot specify limits on k level !' ; STOP
+              PRINT *,' You cannot specify limits on k level !' ; STOP 99
            ENDIF
            npk=0  ! means no dim level in file (implicitly 1 level)
         ENDIF
@@ -183,7 +183,7 @@ PROGRAM cdfclip
   IF (npkk > npk ) THEN
      PRINT *,' It seems that you want levels that are not represented '
      PRINT *,' in any of the variables that are in the file ',TRIM(cf_in)
-     STOP
+     STOP 99
   ENDIF
 
   ALLOCATE( v2d(npiglo,npjglo),rlon(npiglo,npjglo), rlat(npiglo,npjglo), rdepg(npk) , rdep(npkk))

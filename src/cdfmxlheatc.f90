@@ -92,7 +92,7 @@ PROGRAM cdfmxlheatc
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfmxl, cdfmxlhcsc and  cdfmxlsaltc.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cf_mfil='none'
@@ -107,7 +107,7 @@ PROGRAM cdfmxlheatc
     CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
     CASE ( '-vvl'     ) ; lg_vvl = .TRUE.
-    CASE DEFAULT  ; PRINT *, 'ERROR: ', TRIM(cldum),' : unknown option.' ; STOP
+    CASE DEFAULT  ; PRINT *, 'ERROR: ', TRIM(cldum),' : unknown option.' ; STOP 99
     END SELECT
   END DO
 
@@ -117,7 +117,7 @@ PROGRAM cdfmxlheatc
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_tfil) .OR. lchk
   lchk = chkfile (cf_mfil) .OR. lchk
-  IF ( lchk   ) STOP ! missing files
+  IF ( lchk   ) STOP 99 ! missing files
   IF ( lg_vvl ) cn_fe3t = cf_tfil
 
   CALL SetGlobalAtt( cglobal) 

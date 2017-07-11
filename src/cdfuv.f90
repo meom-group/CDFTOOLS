@@ -104,7 +104,7 @@ PROGRAM cdfuv
      PRINT *,'                   ',TRIM(cn_vomecrty)//'_t : Mean V at T point'
      PRINT *,'                   ',TRIM(cn_vouv)//'_prime : Mean U''.V'' at T point'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -117,7 +117,7 @@ PROGRAM cdfuv
      CASE ( '-opt') ; lopt = .TRUE.
      CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 

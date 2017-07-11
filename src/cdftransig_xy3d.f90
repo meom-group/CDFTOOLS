@@ -146,7 +146,7 @@ PROGRAM cdftransig_xy3d
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdfsigtrp ' 
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! browse command line according to options
@@ -168,7 +168,7 @@ PROGRAM cdftransig_xy3d
      CASE ( '-vvl'     ) ; lg_vvl = .TRUE. 
      CASE ( '-o'       ) ; CALL getarg(ijarg, cf_out    ) ; ijarg=ijarg+1 
      CASE ( '-nc4'     ) ; lnc4   = .TRUE.
-     CASE DEFAULT        ; PRINT *,' ERROR : ', TRIM(cldum),' : unkown option.' ; STOP
+     CASE DEFAULT        ; PRINT *,' ERROR : ', TRIM(cldum),' : unkown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -184,14 +184,14 @@ PROGRAM cdftransig_xy3d
       pref = 2000. ; nbins = 174 ; ds1min = 29.0d0 ; ds1scal = 0.05d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_2'
   CASE ( 'none'                 ) 
       ! in this case check that all parameters are set individually
-      IF ( iset /= 3  ) THEN  ; PRINT *, ' You must set depref, nbins, sigmin  individually'    ; STOP 
+      IF ( iset /= 3  ) THEN  ; PRINT *, ' You must set depref, nbins, sigmin  individually'    ; STOP 99 
       ENDIF
-  CASE DEFAULT                ; PRINT *, ' This depcode :',TRIM(cldepcode),' is not available.' ; STOP 
+  CASE DEFAULT                ; PRINT *, ' This depcode :',TRIM(cldepcode),' is not available.' ; STOP 99 
   END SELECT
 
   lchk = lchk .OR. chkfile (cn_fzgr)
   lchk = lchk .OR. chkfile (cn_fhgr)
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ds1scalmin = MIN ( ds1scalmin, ds1scal )
   IF ( lprint ) THEN
@@ -206,7 +206,7 @@ PROGRAM cdftransig_xy3d
   ctag=ctag_lst(1)
   cf_vfil = SetFileName (config, ctag, 'V' )
 
-  IF ( chkfile(cf_vfil) ) STOP ! missing file
+  IF ( chkfile(cf_vfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_vfil, cn_x)
   npjglo = getdim (cf_vfil, cn_y)
@@ -315,7 +315,7 @@ PROGRAM cdftransig_xy3d
         lchk = lchk .OR. chkfile ( cf_ufil) 
         lchk = lchk .OR. chkfile ( cf_vfil) 
         IF ( lg_vvl ) lchk = lchk .OR. chkfile ( cf_vfil) 
-        IF ( lchk ) STOP ! missing file
+        IF ( lchk ) STOP 99 ! missing file
         
         IF (jk== 1 ) THEN
            npt = getdim (cf_tfil, cn_t)  ! assuming all files (U V ) contains same number of time frame

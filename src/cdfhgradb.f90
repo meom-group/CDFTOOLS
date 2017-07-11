@@ -106,7 +106,7 @@ PROGRAM cdfhgradb
      PRINT *,'     SEE ALSO :'
      PRINT *,'        cdfbuoyflx  '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg =1 
@@ -122,7 +122,7 @@ PROGRAM cdfhgradb
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg+1
      CASE ( '-sal' ) ; CALL getarg (ijarg, cv_sal ) ; ijarg = ijarg+1
      CASE ( '-tem' ) ; CALL getarg (ijarg, cv_tem ) ; ijarg = ijarg+1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -131,7 +131,7 @@ PROGRAM cdfhgradb
   lchk = ( lchk .OR. chkfile(cn_fhgr) )
   lchk = ( lchk .OR. chkfile(cn_fzgr) )
   lchk = ( lchk .OR. chkfile(cn_fmsk) )
-  IF (lchk ) STOP ! missing file
+  IF (lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

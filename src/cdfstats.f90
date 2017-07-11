@@ -109,7 +109,7 @@ PROGRAM cdfstats
      PRINT *,'               rrat   : Signal to noise ratio '
      PRINT *,'               srat   : Signal ratio (stdev ratio) '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! default values
@@ -134,7 +134,7 @@ PROGRAM cdfstats
      CASE ( '-v2' ) ; CALL getarg (ijarg, cv_name2) ; ijarg=ijarg+1 
      CASE ( '-o ' ) ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -143,7 +143,7 @@ PROGRAM cdfstats
   lchk = chkfile ( cf_ref ) .OR. lchk
   lchk = chkfile ( cf_msk ) .OR. lchk
   lchk = chkfile ( cf_hgr ) .OR. lchk
-  IF (lchk ) STOP ! missing files
+  IF (lchk ) STOP 99 ! missing files
 
   ! log arguments do far
   PRINT *,'IN-file   : ', TRIM(cf_in )

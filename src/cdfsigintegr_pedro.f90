@@ -138,7 +138,7 @@ PROGRAM cdfsigintegr_pedro
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdfsigtrp, cdfisopycdep'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
   pi=ACOS(-1.)
   !ijarg = 1 ; ireq = 0 ; nfiles = 0
@@ -160,7 +160,7 @@ PROGRAM cdfsigintegr_pedro
         CASE DEFAULT 
            !nfiles=nfiles+1
            !IF ( nfiles == 1 ) istrt_arg = ijarg - 1
-           PRINT *,' Too many arguments ' ; STOP
+           PRINT *,' Too many arguments ' ; STOP 99
         END SELECT
      END SELECT
   END DO
@@ -174,7 +174,7 @@ PROGRAM cdfsigintegr_pedro
   lchk = lchk .OR. chkfile (cf_rho    )
   lchk = lchk .OR. chkfile (cf_ufil   )
   lchk = lchk .OR. chkfile (cf_vfil   )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   ! Read rho level between which the integral is being performed
   OPEN(numin,file=cf_rholev)
@@ -194,7 +194,7 @@ PROGRAM cdfsigintegr_pedro
   zspvalz=getspval(cf_rho, cn_vosigma0)
 
   !CALL getarg(istrt_arg, cf_ufil)
-  !IF ( chkfile ( cf_ufil ) ) STOP ! missing file
+  !IF ( chkfile ( cf_ufil ) ) STOP 99 ! missing file
 
   nvars=getnvar(cf_vfil)
   ALLOCATE(cv_names(nvars), stypzvar(nvars))
@@ -380,8 +380,8 @@ PROGRAM cdfsigintegr_pedro
   !DO jfich=1, nfiles
 
      !CALL getarg(jfich+istrt_arg-1, cf_ufil)
-     !IF ( chkfile (cf_ufil) ) STOP ! missing file
-     !IF ( chkfile (cf_vfil) ) STOP ! missing file
+     !IF ( chkfile (cf_ufil) ) STOP 99 ! missing file
+     !IF ( chkfile (cf_vfil) ) STOP 99 ! missing file
      PRINT *,'working with ', TRIM(cf_ufil)
      PRINT *,'working with ', TRIM(cf_vfil)
 

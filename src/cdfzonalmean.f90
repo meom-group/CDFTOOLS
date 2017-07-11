@@ -132,7 +132,7 @@ PROGRAM cdfzonalmean
      PRINT *,'              If option -max is used, then <IN-var>_max  and <IN-var>_min'
      PRINT *,'              variables are created.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1  
@@ -151,7 +151,7 @@ PROGRAM cdfzonalmean
         ;                 CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1 ; CALL ParseVars(cldum) 
      CASE ( '-o'      ) ; CALL getarg( ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-debug'  ) ; ldebug   = .TRUE.
-     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -170,7 +170,7 @@ PROGRAM cdfzonalmean
   lchk = lchk .OR. chkfile (cn_fzgr)
   lchk = lchk .OR. chkfile (cn_fmsk)
   lchk = lchk .OR. chkfile (cf_in  )
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! set the metrics according to C grid point
   SELECT CASE (ctyp)
@@ -195,7 +195,7 @@ PROGRAM cdfzonalmean
      cv_depi = cn_gdepw   ; cv_depo = cn_vdepthw
      cv_phi  = cn_gphit   ; cv_msk  = cn_tmask
   CASE DEFAULT
-     PRINT *, ' C grid:', TRIM(ctyp),' point not known!' ; STOP
+     PRINT *, ' C grid:', TRIM(ctyp),' point not known!' ; STOP 99
   END SELECT
 
   nvarin  = getnvar(cf_in)   ! number of input variables in file

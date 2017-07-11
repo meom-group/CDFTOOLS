@@ -112,7 +112,7 @@ PROGRAM cdfgeo_uv
      PRINT *,'           Unless -C option is used : '
      PRINT *,'             *** CAUTION:  this variable is located on U-point ***'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -127,7 +127,7 @@ PROGRAM cdfgeo_uv
      CASE ('-C'   ) ; CALL getarg(ijarg, cldum       ) ; ijarg = ijarg + 1
         ;             READ(cldum, * ) ioption
      CASE ('-ssh' ) ; CALL getarg(ijarg, cn_sossheig ) ; ijarg = ijarg + 1 
-     CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' :  unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' :  unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -135,13 +135,13 @@ PROGRAM cdfgeo_uv
   CASE ( 0 )   ; PRINT *,' *** UGEO on V-point, VGEO on U-point ***' ; cl_global=' (Ugeo, Vgeo) are on (V,U) points of the C-grid'
   CASE ( 1 )   ; PRINT *,' *** Use SSH interpolation ***'            ; cl_global=' (Ugeo, Vgeo) are on (U,V) points of the C-grid (SSH interp)'
   CASE ( 2 )   ; PRINT *,' *** Use Ugeo Vgeo interpolation ***'      ; cl_global=' (Ugeo, Vgeo) are on (U,V) points of the C-grid (velocity interp)'
-  CASE DEFAULT ;  PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++' ; STOP
+  CASE DEFAULT ;  PRINT *, ' +++ ERROR: -C can use only option 1 or 2 +++' ; STOP 99
   END SELECT
   
   lchk = chkfile(cn_fhgr)
   lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cf_tfil) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim(cf_tfil, cn_x)
   npjglo = getdim(cf_tfil, cn_y)

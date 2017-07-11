@@ -83,7 +83,7 @@ PROGRAM cdfstdevw
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfstd, cdfrmsssh, cdfstdevts, cdfstats.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1  
@@ -96,14 +96,14 @@ PROGRAM cdfstdevw
      CASE ( '-v'   ) ; CALL getarg(ijarg, cv_in ) ; ijarg=ijarg+1 ; cf_out='rms_'//TRIM(cv_in)//'.nc'
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   ! check existence of files
   lchk = lchk .OR. chkfile(cf_in )
   lchk = lchk .OR. chkfile(cf_in2)
-  IF (lchk ) STOP ! missing file
+  IF (lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)

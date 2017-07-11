@@ -66,7 +66,7 @@ PROGRAM cdfdifmask
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'       variables : ',TRIM(cn_tmask),' ', TRIM(cn_umask),' ',TRIM(cn_vmask),' ',TRIM(cn_fmask)
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -78,13 +78,13 @@ PROGRAM cdfdifmask
         ! options
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
   lchk =           chkfile ( cf_msk1 )
   lchk = lchk .OR. chkfile ( cf_msk2 )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_msk1, cn_x)
   npjglo = getdim (cf_msk1, cn_y)

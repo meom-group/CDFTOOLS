@@ -148,7 +148,7 @@ PROGRAM cdfrhoproj
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfmocsig'
      PRINT *,'       '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -169,13 +169,13 @@ PROGRAM cdfrhoproj
      CASE ('-rholev') ; CALL getarg( ijarg, cf_rholev) ; ijarg=ijarg+1
      CASE ( '-o'    ) ; CALL getarg( ijarg, cf_iso   ) ; ijarg=ijarg+1
      CASE ( '-nc4'  ) ; lnc4    = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
   lchk = chkfile(cf_rhofil)
   IF ( .NOT. lsingle ) lchk = lchk .OR. chkfile(cf_rholev)
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   IF ( .NOT.  lsingle ) THEN
      OPEN(numlev,FILE=cf_rholev)
@@ -282,7 +282,7 @@ alpha=0.
      END DO
      ierr = closeout(ncout    )
      PRINT *,' -isodep option in use: only compute depth of isopycnic surfaces.'
-     STOP 
+     STOP 99 
   ENDIF
   DEALLOCATE ( tim) 
 
@@ -405,7 +405,7 @@ CONTAINS
        sigstp = 0.
     ELSE
        PRINT *,' Error in -s0 option : either -s0 val  or -s0 sigmin,sigstp,nsig'
-       STOP
+       STOP 99
     ENDIF
 
     ALLOCATE ( zi(npsig) )

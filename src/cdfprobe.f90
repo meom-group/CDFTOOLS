@@ -51,7 +51,7 @@ PROGRAM cdfprobe
      PRINT *,'     OUTPUT : '
      PRINT *,'       2 columns ( time , value ) ASCII output on display'
      PRINT *,'       time are given in days since the begining of the run.'
-     STOP
+     STOP 
   ENDIF
 
   ! Browse command line
@@ -65,11 +65,11 @@ PROGRAM cdfprobe
      CASE ( '-i' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) iilook
      CASE ( '-j' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) ijlook
      CASE ( '-k' ) ; CALL getarg(ijarg,cldum) ; ijarg=ijarg+1 ; READ(cldum,*) iklook
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
      CALL gettimeseries(cf_in, cv_in, iilook, ijlook, klev=iklook)
 

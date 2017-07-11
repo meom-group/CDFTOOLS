@@ -214,7 +214,7 @@ PROGRAM cdfsigtrp
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdftransport, cdfsigintegr '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! browse command line
@@ -237,17 +237,17 @@ PROGRAM cdfsigtrp
      CASE ( '-xtra'   ) ; lxtra  = .TRUE.
      CASE ( '-print'  ) ; lprint = .TRUE.
      CASE ( '-temp'   ) ; ltemp  = .TRUE. 
-     CASE ( '-help'   ) ; CALL file_example ; STOP
+     CASE ( '-help'   ) ; CALL file_example ; STOP 99
      CASE ( '-refdep' ) ; CALL getarg(ijarg, cldum      ) ; ijarg=ijarg+1 ; READ(cldum,*) refdep
      CASE ( '-section') ; CALL getarg(ijarg, cf_section ) ; ijarg=ijarg+1 
      CASE ( '-neutral') ; lntr   = .TRUE.
-     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
   IF ( ireq /= nreq ) THEN
      PRINT *,' ERROR :  not enough input arguments. See the usage message and correct.' 
-     STOP
+     STOP 99
   ENDIF
 
   IF ( lbrk ) THEN
@@ -266,7 +266,7 @@ PROGRAM cdfsigtrp
   lchk = lchk .OR. chkfile( cf_tfil    )
   lchk = lchk .OR. chkfile( cf_ufil    )
   lchk = lchk .OR. chkfile( cf_vfil    )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
    ! Look for missing value for salinity, U and V
    zsps = getspval(cf_tfil, cn_vosaline )

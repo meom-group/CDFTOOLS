@@ -133,7 +133,7 @@ PROGRAM cdfmxlhcsc
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfmxl, cdfmxlheatc and  cdfmxlsaltc.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
 
@@ -152,7 +152,7 @@ PROGRAM cdfmxlhcsc
      CASE ( '-mld'   ) ; CALL getarg (ijarg, cf_mld   ) ; ijarg = ijarg + 1
         ;                CALL getarg (ijarg, cv_mld   ) ; ijarg = ijarg + 1 
         ;                lmld = .FALSE.
-     CASE DEFAULT  ; PRINT *, ' ERROR : Option ',TRIM(cldum),' unknown !' ; STOP
+     CASE DEFAULT  ; PRINT *, ' ERROR : Option ',TRIM(cldum),' unknown !' ; STOP 99
      END SELECT
   ENDDO
 
@@ -161,7 +161,7 @@ PROGRAM cdfmxlhcsc
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_tfil) .OR. lchk
   IF ( .NOT. lmld ) lchk = chkfile (cf_mld) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
   IF ( lg_vvl ) cn_fe3t = cf_tfil 
 
   ! read dimensions 
@@ -175,7 +175,7 @@ PROGRAM cdfmxlhcsc
      SELECT CASE ( criteria)
      CASE ( 'Temperature', 'temperature', 't', 'T' ) ; WRITE(cv_mld,'(a,i2.2)' ) 'somxlt', INT(ABS(val)*10)
      CASE ( 'Density',     'density',     'd', 'D' ) ; WRITE(cv_mld,'(a,i3.3)' ) 'somxl' , INT((val)*1000)
-     CASE DEFAULT  ; PRINT *,'ERROR: ',TRIM(criteria),' : criteria not understood' ; STOP
+     CASE DEFAULT  ; PRINT *,'ERROR: ',TRIM(criteria),' : criteria not understood' ; STOP 99
      END SELECT
   ENDIF
 

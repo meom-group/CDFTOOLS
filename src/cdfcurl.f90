@@ -103,7 +103,7 @@ PROGRAM cdfcurl
      PRINT *,'         variables : socurl or socurlt (if -T option), units : s^-1'
      PRINT *,'            or socurloverf, no units (if -overf option)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -124,19 +124,19 @@ PROGRAM cdfcurl
      CASE ('-nometric') ; l_metric= .FALSE.
        ;                ; cf_out = 'curl_grid.nc'
      CASE ('-o'       ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
-     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   IF ( ltpoint .AND. loverf ) THEN
      PRINT *,' ERROR : You might choose only one of -T or -overf option !' 
-     STOP
+     STOP 99
   ENDIF
 
   IF ( l_metric ) lchk = chkfile(cn_fhgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_ufil,cn_x)
   npjglo = getdim(cf_ufil,cn_y)
@@ -151,9 +151,9 @@ PROGRAM cdfcurl
 
   !test if lev exists
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
-     PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
+     PRINT *, 'Problem : npk = 0 and lev > 0 STOP 99'
      PRINT *, '  Use -surf option is dealing with single level file on C grid '
-     STOP
+     STOP 99
   END IF
 
   ! case of 1 level on C-grid

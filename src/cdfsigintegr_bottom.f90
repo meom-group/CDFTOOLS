@@ -127,7 +127,7 @@ PROGRAM cdfsigintegr_bottom
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdfsigtrp, cdfisopycdep'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 ; ireq = 0 ; nfiles = 0
@@ -161,7 +161,7 @@ PROGRAM cdfsigintegr_bottom
   lchk = lchk .OR. chkfile (cn_fhgr   )
   lchk = lchk .OR. chkfile (cf_rholev )
   lchk = lchk .OR. chkfile (cf_rho    )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   ! Read rho level between which the integral is being performed
   OPEN(numin,file=cf_rholev)
@@ -181,7 +181,7 @@ PROGRAM cdfsigintegr_bottom
   zspvalz=getspval(cf_rho, cn_vosigma0)
 
   CALL getarg(istrt_arg, cf_in)
-  IF ( chkfile ( cf_in ) ) STOP ! missing file
+  IF ( chkfile ( cf_in ) ) STOP 99 ! missing file
 
   nvars=getnvar(cf_in)
   ALLOCATE(cv_names(nvars), stypzvar(nvars))
@@ -321,7 +321,7 @@ PROGRAM cdfsigintegr_bottom
   DO jfich=1, nfiles
 
      CALL getarg(jfich+istrt_arg-1, cf_in)
-     IF ( chkfile (cf_in) ) STOP ! missing file
+     IF ( chkfile (cf_in) ) STOP 99 ! missing file
      PRINT *,'working with ', TRIM(cf_in)
 
      ! create output file

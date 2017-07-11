@@ -106,7 +106,7 @@ PROGRAM cdfdynh_anom
      PRINT *,'     SEE ALSO :'
      PRINT *,'       replace old tools cdfhdy and cdfhdy3d.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -122,12 +122,12 @@ PROGRAM cdfdynh_anom
      CASE ( '-limit' ) ; limit = .TRUE.
         ;                CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev1
         ;                CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev2
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
   IF ( lout ) cf_out2d = cf_out  !  name of 2D file if -limit is used
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP ! missing files
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP 99 ! missing files
   IF ( lg_vvl ) cn_fe3t = cf_tfil
 
   ! Look for Missing value for salinity

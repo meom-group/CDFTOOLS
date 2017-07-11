@@ -83,7 +83,7 @@ PROGRAM cdfbottom
      PRINT *,'         variables :  same names than input file, long_name attribute is'
      PRINT *,'               prefixed by Bottom '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -93,22 +93,22 @@ PROGRAM cdfbottom
      CASE ( '-f'  ) ;  CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
         ! options
      CASE ( '-p'  ) ;  CALL getarg (ijarg, ctype) ; ijarg = ijarg + 1
-        IF ( chkfile (cn_fmsk )) STOP  ! missing files
+        IF ( chkfile (cn_fmsk )) STOP 99  ! missing files
         SELECT CASE ( ctype )
         CASE ( 'T', 't', 'S', 's' ) ; cv_msk=cn_tmask
         CASE ( 'U', 'u'           ) ; cv_msk=cn_umask
         CASE ( 'V', 'v'           ) ; cv_msk=cn_vmask
         CASE ( 'F', 'f'           ) ; cv_msk=cn_fmask
            ; PRINT *, 'Be carefull with fmask (think of shlat)... !!!'
-        CASE DEFAULT                ; PRINT *, ' ERROR : This type of point ', TRIM(ctype),' is not known !' ; STOP
+        CASE DEFAULT                ; PRINT *, ' ERROR : This type of point ', TRIM(ctype),' is not known !' ; STOP 99
         END SELECT
      CASE ( '-o'  ) ;  CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE ( '-nc4') ;  lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *, ' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_in) ) STOP  ! missing files
+  IF ( chkfile(cf_in) ) STOP 99  ! missing files
 
   npiglo = getdim (cf_in,cn_x)
   npjglo = getdim (cf_in,cn_y)

@@ -117,7 +117,7 @@ PROGRAM cdfmkresto
      PRINT *,'     SEE ALSO :'
      PRINT *,'         cdfmkdmp'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -134,19 +134,19 @@ PROGRAM cdfmkresto
         ;            ; CALL getarg(ijarg, cv_resto ) ; ijarg=ijarg+1
         ;            ; lprev= .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99 
      END SELECT
   ENDDO
 
   IF ( lprev ) THEN
-        IF ( chkfile(cf_resto) ) STOP
+        IF ( chkfile(cf_resto) ) STOP 99
   ENDIF
   IF ( chkfile(cf_dep, ld_verbose=.FALSE.) ) THEN
      ! look for cn_fzgr file
      lfdep=.FALSE.
-     IF ( chkfile(cn_fzgr) ) STOP
+     IF ( chkfile(cn_fzgr) ) STOP 99
   ENDIF
-  IF ( chkfile(cf_coord) .OR. chkfile(cf_cfg) ) STOP ! missing file
+  IF ( chkfile(cf_coord) .OR. chkfile(cf_cfg) ) STOP 99 ! missing file
 
   CALL ReadCfg  ! read configuration file and set variables
 

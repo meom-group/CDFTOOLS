@@ -168,7 +168,7 @@ PROGRAM cdfmocsig
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfmoc '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cglobal = 'Partial step computation'
@@ -191,11 +191,11 @@ PROGRAM cdfmocsig
      CASE ('-vvl'    ) ; lg_vvl  = .TRUE.
      CASE ('-isodep' ) ; lisodep = .TRUE.
      CASE ('-verbose') ; lprint  = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.'  ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.'  ; STOP 99
      END SELECT
   END DO
 
-  IF ( ii /= 3 ) THEN ; PRINT *,' ERROR : mandatory arguments missing, see usage please !'  ; STOP
+  IF ( ii /= 3 ) THEN ; PRINT *,' ERROR : mandatory arguments missing, see usage please !'  ; STOP 99
   ENDIF
 
   ! check file existence
@@ -204,7 +204,7 @@ PROGRAM cdfmocsig
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_vfil )
   lchk = lchk .OR. chkfile ( cf_tfil )
-  IF ( lchk ) STOP  ! missing file(s)
+  IF ( lchk ) STOP 99  ! missing file(s)
 
   ! Look for salinity spval
   zsps = getspval(cf_tfil, cn_vosaline)
@@ -264,7 +264,7 @@ PROGRAM cdfmocsig
            PRINT *,' This value of depth_ref (',pref,') is not implemented as standard'
            PRINT *,' You must use the -sigmin, -sigstp and -nbins options to precise'
            PRINT *,' the density bining you want to use.'
-           STOP
+           STOP 99
         END SELECT
      ENDIF
   ENDIF

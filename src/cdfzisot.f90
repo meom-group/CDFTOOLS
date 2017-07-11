@@ -82,7 +82,7 @@ PROGRAM cdfzisot
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -94,11 +94,11 @@ PROGRAM cdfzisot
         ! options
      CASE ( '-o'  ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) ) STOP ! missing file
+  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) ) STOP 99 ! missing file
 
   ! read dimensions 
   npiglo = getdim (cf_tfil,cn_x)

@@ -137,7 +137,7 @@ PROGRAM cdfpsi
      PRINT *,'                     ', TRIM(cv_outssh),' (m3/s ) : contribution of SSH'
      PRINT *,'                     ', TRIM(cv_outotal),' (m3/s ) : total BSF'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   CALL SetGlobalAtt (cglobal)
@@ -163,7 +163,7 @@ PROGRAM cdfpsi
         ;             CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ijref
      CASE ('-vvl')  ; lg_vvl = .TRUE.
      CASE ('-lev')  ; llev   = .TRUE. ; cv_out='vobarstf'
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -174,23 +174,23 @@ PROGRAM cdfpsi
   lchk = lchk .OR. chkfile( cf_ufil )
   lchk = lchk .OR. chkfile( cf_vfil )
 
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
   IF ( lg_vvl ) THEN 
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil
   ENDIF
   ! check option compatibility
   IF ( llev .AND. lopen) THEN
-     PRINT *,' +++ error : cannot use both -lev and -open options.' ; STOP 
+     PRINT *,' +++ error : cannot use both -lev and -open options.' ; STOP 99 
   ENDIF
   IF ( llev .AND. lssh) THEN
-     PRINT *,' +++ error : cannot use both -lev and -ssh options.' ; STOP 
+     PRINT *,' +++ error : cannot use both -lev and -ssh options.' ; STOP 99 
   ENDIF
   IF ( llev .AND. lmean) THEN
-     PRINT *,' +++ error : cannot use both -lev and -mean options.' ; STOP 
+     PRINT *,' +++ error : cannot use both -lev and -mean options.' ; STOP 99 
   ENDIF
   IF ( llev .AND. lmask) THEN
-     PRINT *,' +++ error : cannot use both -lev and -mask options.' ; STOP 
+     PRINT *,' +++ error : cannot use both -lev and -mask options.' ; STOP 99 
   ENDIF
 
   npiglo = getdim (cf_ufil, cn_x)

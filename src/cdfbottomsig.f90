@@ -93,7 +93,7 @@ PROGRAM cdfbottomsig
      PRINT *,'         variables : sobotsig0 or sobotsigi ( kg/m3 - 1000 )' 
      PRINT *,'                     or sobotsigntr (kg/m3)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cv_sig = 'sobotsig0'
@@ -113,11 +113,11 @@ PROGRAM cdfbottomsig
         ;             WRITE(cref,'("_Neutral")')
      CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out ) ;  ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4     = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_tfil) ) STOP ! missing file
+  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
   ! look for MissingValue for salinity
   zsps = getspval(cf_tfil, cn_vosaline)
 

@@ -68,7 +68,7 @@ PROGRAM cdfzonalout
      PRINT *,'     SEE ALSO :'
      PRINT *,'         cdfzonalmean, cdfzonalmeanvT, cdfzonalsum'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -76,11 +76,11 @@ PROGRAM cdfzonalout
      CALL getarg(ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum)
      CASE ( 'f' ) ; CALL getarg (ijarg, cf_zonal) ; ijarg=ijarg+1
-     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_zonal) ) STOP ! missing file
+  IF ( chkfile(cf_zonal) ) STOP 99 ! missing file
 
   nvarin  = getnvar(cf_zonal)
   ALLOCATE ( cv_names(nvarin), ipki(nvarin), id_varin(nvarin), stypvar(nvarin)  )

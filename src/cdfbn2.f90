@@ -92,7 +92,7 @@ PROGRAM cdfbn2
      PRINT *,'      '
      PRINT *,'    SEE ALSO :'
      PRINT *,'       cdfsig0, cdfsigi, cdfsiginsitu, cdfsigntr '
-     STOP
+     STOP 
   ENDIF
 
   cglobal = 'Partial step computation'
@@ -109,14 +109,14 @@ PROGRAM cdfbn2
      CASE ( '-nc4'  ) ; lnc4    = .TRUE.
      CASE ( '-vvl'  ) ; lg_vvl  = .TRUE. 
         ; CALL getarg(ijarg, cf_e3w ) ; ijarg = ijarg + 1
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
   lchk = chkfile (cn_fzgr )
   lchk = lchk .OR. chkfile (cf_tfil  )
   IF (lg_vvl ) lchk = lchk .OR. chkfile (cf_e3w) 
-  IF ( lchk  ) STOP  ! missing files 
+  IF ( lchk  ) STOP 99  ! missing files 
   ! Look for missing value for salinity
   zsps = getspval(cf_tfil, cn_vosaline)
 

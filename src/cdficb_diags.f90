@@ -80,7 +80,7 @@ PROGRAM cdficb_diags
      PRINT *,'               S = southern hemisphere'
      PRINT *,'       standard output'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -91,7 +91,7 @@ PROGRAM cdficb_diags
         ! options
      CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ('-jperio') ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) nperio
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -99,7 +99,7 @@ PROGRAM cdficb_diags
   lchk = lchk .OR. chkfile(cn_fmsk) 
   lchk = lchk .OR. chkfile(cf_ifil)
 
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_ifil,cn_x)
   npjglo = getdim (cf_ifil,cn_y)
@@ -136,12 +136,12 @@ PROGRAM cdficb_diags
      tmask(:,npjglo)=0.
   CASE DEFAULT
      PRINT *,' Nperio=', nperio,' not yet coded'
-     STOP
+     STOP 99
   END SELECT
 
-  IF (chkvar(cf_ifil, cn_iicbmass)) STOP
+  IF (chkvar(cf_ifil, cn_iicbmass)) STOP 99
 
-  IF (chkvar(cf_ifil, cn_iicbmelt)) STOP
+  IF (chkvar(cf_ifil, cn_iicbmelt)) STOP 99
   !
   DO jt = 1, npt
      IF (TRIM(cn_iicbmass) /= 'missing') THEN ; ricbmass(:,:) = getvar(cf_ifil, cn_iicbmass, 1, npiglo, npjglo, ktime=jt)

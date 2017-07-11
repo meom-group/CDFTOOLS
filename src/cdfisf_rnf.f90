@@ -114,7 +114,7 @@ PROGRAM cdfisf_rnf
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfisf_fill, cdfisf_forcing, cdfisf_poolchk'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -131,7 +131,7 @@ PROGRAM cdfisf_rnf
      CASE ('-vi') ; CALL getarg(ijarg,cv_isfdr  ) ; ijarg=ijarg+1
      CASE ('-nc4'); lnc4 = .TRUE.
      CASE ('-o' ) ; CALL getarg(ijarg,cf_out    ) ; ijarg=ijarg+1
-     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -141,7 +141,7 @@ PROGRAM cdfisf_rnf
   lchk = lchk .OR. chkfile (cf_isfdr  )
   lchk = lchk .OR. chkfile (cn_fhgr   )
 
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_fill, cn_x)
   npjglo = getdim (cf_fill, cn_y)

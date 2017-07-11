@@ -68,7 +68,7 @@ PROGRAM cdfcmp
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       output is done on standard output.'
-     STOP
+     STOP 
   ENDIF
   !!
   ijarg  = 1
@@ -84,12 +84,12 @@ PROGRAM cdfcmp
         ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
         ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
         ;             CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf1_in) .OR. chkfile(cf2_in) ) STOP ! missing file
-  IF ( chkvar(cf1_in, cv_in) .OR. chkvar(cf2_in, cv_in) ) STOP  ! missing var
+  IF ( chkfile(cf1_in) .OR. chkfile(cf2_in) ) STOP 99 ! missing file
+  IF ( chkvar(cf1_in, cv_in) .OR. chkvar(cf2_in, cv_in) ) STOP 99  ! missing var
 
   npiglo = getdim (cf1_in, cn_x)
   npjglo = getdim (cf1_in, cn_y)

@@ -94,7 +94,7 @@ PROGRAM cdfw
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.'
      PRINT *,'         variables : ', TRIM(cn_vovecrtz),' (m/s)'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -111,7 +111,7 @@ PROGRAM cdfw
         ;               lg_vvl = .TRUE. 
      CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ;  ijarg = ijarg + 1
      CASE ( '-nc4'  ) ; lnc4   = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -119,7 +119,7 @@ PROGRAM cdfw
   lchk = chkfile (cn_fzgr) .OR. lchk
   lchk = chkfile (cf_ufil) .OR. lchk
   lchk = chkfile (cf_vfil) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) THEN 
      cn_fe3u = cf_ufil

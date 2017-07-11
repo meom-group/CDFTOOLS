@@ -109,7 +109,7 @@ PROGRAM cdflap
      PRINT *,'         variables : lap<var> (unit/m2)'
      PRINT *,'       if option -overf2 is used, netcdf file is lapoverf2.nc and '
      PRINT *,'       variable is lap<var>overf2'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -126,7 +126,7 @@ PROGRAM cdflap
         ;                  cf_out   = 'lapgrid.nc'
      CASE ( '-o'       ) ; CALL getarg(ijarg,cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4'     ) ; lnc4     = .TRUE.
-     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.'; STOP
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.'; STOP 99
      END SELECT
   ENDDO
   PRINT *, ' TYP ', ct_in
@@ -139,7 +139,7 @@ PROGRAM cdflap
      lchk = chkfile (cn_fmsk) .OR. lchk
   ENDIF
   lchk = chkfile (cf_in  ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_in,cn_x)
   npjglo = getdim(cf_in,cn_y)
@@ -211,7 +211,7 @@ PROGRAM cdflap
      cv_lat  =cn_gphif
   CASE DEFAULT
      PRINT *, ' TYPE ', TRIM(ct_in),' unknown on C-grid'
-     STOP
+     STOP 99
   END SELECT
 
   ! Allocate the memory

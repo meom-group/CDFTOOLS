@@ -137,7 +137,7 @@ PROGRAM cdfcensus
      PRINT *,'                       sigma0  (kg/m3 -1000 )'
      PRINT *,'                       sigma2  (kg/m3 -1000 )'
      PRINT *,'                       sigma3  (kg/m3 -1000 )'
-     STOP
+     STOP 
   ENDIF
   
   ijarg = 1  
@@ -162,7 +162,7 @@ PROGRAM cdfcensus
      CASE ( '-full'  ) ; lfull  = .TRUE.
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
   cglobal = 'Census computed from '//TRIM(cf_tfil)
@@ -170,7 +170,7 @@ PROGRAM cdfcensus
   lchk =           chkfile ( cn_fzgr )
   lchk = lchk .OR. chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cf_tfil  )
-  IF ( lchk ) STOP  ! some compulsory files are missing
+  IF ( lchk ) STOP 99  ! some compulsory files are missing
 
   PRINT *,' TS_FILE = ',TRIM(cf_tfil)
   PRINT *,' NLOG    = ', nlog

@@ -71,7 +71,7 @@ PROGRAM cdffracinv
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : ', TRIM(cv_out)
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -83,11 +83,11 @@ PROGRAM cdffracinv
      CASE ( '-inv' ) ; CALL getarg(ijarg, cv_inv) ; ijarg =ijarg + 1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out) ; ijarg =ijarg + 1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_trc) ) STOP ! missing file
+  IF ( chkfile(cf_trc) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_trc,cn_x)
   npjglo = getdim (cf_trc,cn_y)

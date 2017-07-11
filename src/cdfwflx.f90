@@ -85,7 +85,7 @@ PROGRAM cdfwflx
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'       variables : soevap, soprecip, sorunoff, sowadmp, sowaflux'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cf_ffil='none'
@@ -99,7 +99,7 @@ PROGRAM cdfwflx
      CASE( '-f'  ) ; CALL getarg(ijarg, cf_ffil) ; ijarg=ijarg+1
      CASE( '-o'  ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -107,7 +107,7 @@ PROGRAM cdfwflx
 
   lchk = lchk .OR. chkfile ( cf_tfil)
   lchk = lchk .OR. chkfile ( cf_rnf )
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo= getdim (cf_tfil, cn_x)
   npjglo= getdim (cf_tfil, cn_y)

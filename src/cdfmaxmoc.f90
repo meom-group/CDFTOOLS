@@ -94,7 +94,7 @@ PROGRAM cdfmaxmoc
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfmoc '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -109,11 +109,11 @@ PROGRAM cdfmaxmoc
         ;            CALL getarg(ijarg,cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) rdepmax
         ! options
      CASE ( '-o' ) ; CALL getarg(ijarg,cf_ncout  ) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_moc) ) STOP ! missing file
+  IF ( chkfile(cf_moc) ) STOP 99 ! missing file
 
   npjglo = getdim(cf_moc, cn_y)
   npk    = getdim(cf_moc, cn_z)
@@ -128,7 +128,7 @@ PROGRAM cdfmaxmoc
   CASE ('pac') ; cv_in=cn_zomsfpac
   CASE ('inp') ; cv_in=cn_zomsfinp
   CASE ('ind') ; cv_in=cn_zomsfind
-  CASE DEFAULT ; PRINT *, ' basin not found !'; STOP 
+  CASE DEFAULT ; PRINT *, ' basin not found !'; STOP 99 
   END SELECT
 
   ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )

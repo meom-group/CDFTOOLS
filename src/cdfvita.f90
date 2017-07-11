@@ -102,7 +102,7 @@ PROGRAM cdfvita
      PRINT *,'     SEE ALSO : '
      PRINT *,'        cdfspeed only computes the speed (velocity module).'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   nlev = 0
@@ -122,13 +122,13 @@ PROGRAM cdfvita
      CASE ('-cubic') ; lcub = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) .OR. chkfile(cf_tfil) ) STOP ! missing file
+  IF ( chkfile(cf_ufil) .OR. chkfile(cf_vfil) .OR. chkfile(cf_tfil) ) STOP 99 ! missing file
   IF ( lvertical ) THEN 
-     IF ( chkfile(cf_wfil) ) STOP ! missing file
+     IF ( chkfile(cf_wfil) ) STOP 99 ! missing file
   ENDIF
 
   npiglo = getdim (cf_ufil,cn_x)

@@ -98,7 +98,7 @@ PROGRAM cdfnorth_unfold
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : same name and units than in the input file.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
   
   ijarg=1
@@ -114,11 +114,11 @@ PROGRAM cdfnorth_unfold
       ! options
       CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
       CASE ( '-nc4'   ) ; lnc4 = .TRUE.
-      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
       END SELECT
   ENDDO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   WRITE(cglobal,9000) 'cdfnorth_unfold ',TRIM(cf_in), ijatl, ijpacif, TRIM(cpivot), TRIM(ctype)
 9000 FORMAT(a,a,2i5,a,1x,a)
@@ -216,7 +216,7 @@ CONTAINS
     !!----------------------------------------------------------------------
 
     IF ( ldchk ) THEN
-      PRINT *,' Full check not written yet ' ; STOP
+      PRINT *,' Full check not written yet ' ; STOP 99
     ELSE
     SELECT CASE ( cdpivot)
     CASE ( 'T','t')
@@ -232,7 +232,7 @@ CONTAINS
              IF ( ABS(zrat) /= 1. ) THEN
                 PRINT *, 'INCOHERENT value in T point ', TRIM(cv_names(jvar)), zrat
                 ierr = closeout(ncout)
-                STOP
+                STOP 99
              ELSE
                 chkisig = zrat
              ENDIF
@@ -247,7 +247,7 @@ CONTAINS
           IF ( ABS(zrat) /= 1. ) THEN
              PRINT *, 'INCOHERENT value in U point ', TRIM(cv_names(jvar)), zrat
              ierr = closeout(ncout)
-             STOP
+             STOP 99
           ELSE
              chkisig=zrat
           ENDIF
@@ -261,13 +261,13 @@ CONTAINS
           IF ( ABS(zrat) /= 1. ) THEN
              PRINT *, 'INCOHERENT value in V point ', TRIM(cv_names(jvar)), zrat
              ierr = closeout(ncout)
-             STOP
+             STOP 99
           ELSE
              chkisig=zrat
           ENDIF
        END SELECT
     CASE ( 'F','f')
-       PRINT *, 'F pivot not done yet ' ; STOP
+       PRINT *, 'F pivot not done yet ' ; STOP 99
     END SELECT
     ENDIF
 
@@ -330,7 +330,7 @@ CONTAINS
           ENDDO
        END SELECT
     CASE ('F','f')   ! pivot
-       PRINT * , ' Not yet done for F pivot ' ; STOP
+       PRINT * , ' Not yet done for F pivot ' ; STOP 99
     END SELECT
 
   END SUBROUTINE unfold

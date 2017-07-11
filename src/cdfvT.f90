@@ -100,7 +100,7 @@ PROGRAM cdfvT
      PRINT *,'                   ',TRIM(cn_vomevt),' time-mean ( V.T ) at V point.'
      PRINT *,'                   ',TRIM(cn_vomevs),' time-mean ( V.S ) at V point.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
@@ -114,7 +114,7 @@ PROGRAM cdfvT
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 

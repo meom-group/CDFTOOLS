@@ -98,7 +98,7 @@ PROGRAM cdflinreg
      PRINT *,'            - slope coefficient'
      PRINT *,'            - barycenter '
      PRINT *,'            - Pearson Coefficient'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -109,13 +109,13 @@ PROGRAM cdflinreg
         ! options
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   cf_in=cf_lst(1)  
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in,cn_x                             )
   npjglo = getdim (cf_in,cn_y                             )
@@ -170,7 +170,7 @@ PROGRAM cdflinreg
            DO jfil = 1, nfiles
               cf_in=cf_lst(jfil)
               IF ( jvar == 1 ) THEN
-                 IF ( chkfile(cf_in) ) STOP ! missing file
+                 IF ( chkfile(cf_in) ) STOP 99 ! missing file
               ENDIF
               npt = getdim (cf_in,cn_t)
               ntframe=ntframe+npt

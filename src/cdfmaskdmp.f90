@@ -107,7 +107,7 @@ PROGRAM cdfmaskdmp
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : wdmp'
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -126,7 +126,7 @@ PROGRAM cdfmaskdmp
         ;                CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatwidth
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ; lnc4 = .TRUE. 
-     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
   IF ( cf_sfil == 'none' ) cf_sfil =cf_tfil
@@ -134,7 +134,7 @@ PROGRAM cdfmaskdmp
   WRITE(cglobal,'(" cdfmaskdmp -t ",a," -s ",a," -refdep ",f6.0," -dens ",2f8.3," -dep ",2f5.0," -lat ",2f5.0," -o ",a)')  &
        & TRIM(cf_tfil), TRIM(cf_sfil), ref_dep, zsnmin,zswidth, hmin, hwidth, rlatmax, rlatwidth,TRIM(cf_out)
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) .OR. chkfile(cn_fmsk) ) STOP ! missing files
+  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) .OR. chkfile(cn_fmsk) ) STOP 99 ! missing files
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)

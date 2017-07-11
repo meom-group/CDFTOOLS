@@ -136,7 +136,7 @@ PROGRAM cdfpvor
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfcurl ( compute only the curl on 1 level)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -155,7 +155,7 @@ PROGRAM cdfpvor
         ;                 CALL getarg( ijarg, cf_e3w ) ; ijarg = ijarg + 1
      CASE ('-nometric') ; l_metric   = .FALSE.
         ;               ; cf_out = 'pvor_grid.nc'
-     CASE DEFAULT       ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT       ;  PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -172,7 +172,7 @@ PROGRAM cdfpvor
   IF ( lg_vvl ) THEN
      lchk = lchk .OR. chkfile( cf_e3w )
   ENDIF
-  IF ( lchk   ) STOP ! missing file
+  IF ( lchk   ) STOP 99 ! missing file
 
   ! Look for MissingValue for salinity
   zsps = getspval(cf_tfil, cn_vosaline)

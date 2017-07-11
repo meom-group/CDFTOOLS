@@ -94,7 +94,7 @@ PROGRAM cdfgradT
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfhgradb'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -121,7 +121,7 @@ PROGRAM cdfgradT
   lchk = ( lchk .OR. chkfile(cn_fzgr) )
   lchk = ( lchk .OR. chkfile(cn_fmsk) )
   IF (lg_vvl ) lchk = ( lchk .OR. chkfile(cf_e3w) )
-  IF (lchk ) STOP ! missing file
+  IF (lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

@@ -134,7 +134,7 @@ PROGRAM cdfbuoyflx
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
   ijarg   = 1
   cf_flxfil='none'
@@ -156,10 +156,10 @@ PROGRAM cdfbuoyflx
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE ('-short') ; lsho = .TRUE. ; np_varout = 1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
-  IF (lchk ) STOP ! missing files
+  IF (lchk ) STOP 99 ! missing files
 
   IF ( cf_flxfil == 'none' ) THEN
      cf_flxfil = cf_tfil

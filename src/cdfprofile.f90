@@ -80,7 +80,7 @@ PROGRAM cdfprofile
      PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.'
      PRINT *,'          variable : name given as argument.'
      PRINT *,'       Profile is also written on standard output.'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -95,11 +95,11 @@ PROGRAM cdfprofile
         ! options
      CASE ( '-dep' ) ; CALL getarg (ijarg, cldum ) ; ijarg = ijarg+1  ; READ(cldum,*) rdep ; l_vert_interp = .TRUE.
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg+1
-     CASE  DEFAULT   ; PRINT *,' ERROR :',TRIM(cldum),' : unknown option.' ; STOP
+     CASE  DEFAULT   ; PRINT *,' ERROR :',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)

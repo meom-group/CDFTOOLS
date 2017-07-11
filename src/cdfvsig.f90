@@ -152,7 +152,7 @@ PROGRAM cdfvsig
      PRINT *,'                   vosigu, vosigv, vosigw : mean sigma-0 at velocity point.'
      PRINT *,'                   ',TRIM(cn_vozocrtx),', ',TRIM(cn_vomecrty),', ',TRIM(cn_vovecrtz),' : mean velocity components.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
@@ -171,7 +171,7 @@ PROGRAM cdfvsig
      CASE ( '-T'     ) ; lTpt  =.TRUE.  
      CASE ( '-pref'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; CALL ParseRefDep(cldum)
         ;                 lpref =.TRUE.  
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
   

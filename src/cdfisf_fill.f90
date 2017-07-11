@@ -97,7 +97,7 @@ PROGRAM cdfisf_fill
      PRINT *,'     SEE ALSO : '
      PRINT *,'           cdfisf_forcing,  cdfisf_rnf , cdfisf_poolchk'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -109,11 +109,11 @@ PROGRAM cdfisf_fill
      CASE ( '-l' ) ; CALL getarg(ijarg, cf_isflist ) ; ijarg = ijarg + 1
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out     ) ; ijarg = ijarg + 1
      CASE ('-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.'; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.'; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile (cf_in) .OR. chkfile (cf_isflist)  ) STOP ! missing file
+  IF ( chkfile (cf_in) .OR. chkfile (cf_isflist)  ) STOP 99 ! missing file
 
   ipos = INDEX(cf_isflist,'.')
   cldum=cf_isflist(ipos+1:)

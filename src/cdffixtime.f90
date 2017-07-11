@@ -104,7 +104,7 @@ PROGRAM cdffixtime
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : Input file is modified (only attributes)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! parse command line 
@@ -122,11 +122,11 @@ PROGRAM cdffixtime
      CASE ( '-noleap' ) ; rpp_one_year = 365
                         ; lnoleap      = .TRUE.
      CASE ( '-keep'   ) ; lkeep        = .TRUE.
-     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' :  unknown options.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum),' :  unknown options.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_in) ) STOP ! missing file
+  IF ( chkfile(cf_in) ) STOP 99 ! missing file
   PRINT *,' Changing time on file :', TRIM(cf_in)
 
   ! if ctag = none, try to find it from the file name.
@@ -418,7 +418,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     ky = kiyyy
     ! ... Year 0 never existed ...
-    IF (ky == 0) STOP
+    IF (ky == 0) STOP 99
     !
     IF (ky < 0) ky = ky + 1
     IF (kmm > 2) THEN

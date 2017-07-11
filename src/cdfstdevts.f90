@@ -84,7 +84,7 @@ PROGRAM cdfstdevts
      PRINT *,'     SEA ALSO :'
      PRINT *,'       cdfstd, cdfrmsssh, cdfstdevw, cdfstats.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1  
@@ -103,7 +103,7 @@ PROGRAM cdfstdevts
   ! check existence of files
   lchk = lchk .OR. chkfile(cf_in )
   lchk = lchk .OR. chkfile(cf_in2)
-  IF (lchk ) STOP ! missing file
+  IF (lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)

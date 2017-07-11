@@ -83,7 +83,7 @@ PROGRAM cdfsiginsitu
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfsig0, cdfsigi, cdfsigntr '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cv_sal=cn_vosaline
@@ -98,11 +98,11 @@ PROGRAM cdfsiginsitu
      CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
      CASE ( '-dep' ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) dep 
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) ) STOP ! missing file
+  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)

@@ -131,7 +131,7 @@ PROGRAM cdfbathy
      PRINT 9999, '             a sequence number is added at the end of the input file name, to keep'
      PRINT 9999, '             modifications.'
      PRINT *,'            variables : same as input file'
-     STOP
+     STOP 
   ENDIF
 9999 FORMAT(5x,a)
 
@@ -175,11 +175,11 @@ PROGRAM cdfbathy
         ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
      CASE ('-nicedumpzone','-nd'); ldumpn =.TRUE.
         ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
-     CASE DEFAULT              ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT              ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( lchk ) STOP  ! missing files
+  IF ( lchk ) STOP 99  ! missing files
 
   IF ( lmodif .AND. .NOT. loverwrite) THEN
      ! creating a working copy of the file indexed by iversion

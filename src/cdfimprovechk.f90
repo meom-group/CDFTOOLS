@@ -91,7 +91,7 @@ PROGRAM cdfimprovechk
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : same as input variable.'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -105,11 +105,11 @@ PROGRAM cdfimprovechk
         ! options
      CASE ( '-o'  ) ; CALL getarg(ijarg,cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_obs) .OR. chkfile(cf_ref) .OR. chkfile(cf_tst) ) STOP ! missing files
+  IF ( chkfile(cf_obs) .OR. chkfile(cf_ref) .OR. chkfile(cf_tst) ) STOP 99 ! missing files
 
   npiglo = getdim(cf_ref, cn_x)
   npjglo = getdim(cf_ref, cn_y)

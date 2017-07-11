@@ -82,7 +82,7 @@ PROGRAM cdfpendep
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : pendep (m)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -96,11 +96,11 @@ PROGRAM cdfpendep
      CASE ('-vinv') ;  CALL getarg(ijarg, cv_inv   ) ; ijarg=ijarg+1
      CASE ('-vtrc') ;  CALL getarg(ijarg, cv_trc   ) ; ijarg=ijarg+1
      CASE ('-nc4' ) ;  lnc4 = .TRUE.
-     CASE DEFAULT  ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_trcfil) .OR. chkfile(cf_inv) ) STOP ! missing file
+  IF ( chkfile(cf_trcfil) .OR. chkfile(cf_inv) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_trcfil,cn_x)
   npjglo = getdim (cf_trcfil,cn_y)

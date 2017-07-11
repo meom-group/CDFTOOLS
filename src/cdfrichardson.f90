@@ -101,7 +101,7 @@ PROGRAM cdfrichardson
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
      PRINT *,'       variables : ', TRIM(cv_ric)
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cglobal = 'Partial step computation'
@@ -120,7 +120,7 @@ PROGRAM cdfrichardson
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE ( '-vvl' ) ; lg_vvl= .TRUE.
         ;              CALL getarg (ijarg, cf_e3w) ; ijarg = ijarg + 1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -131,7 +131,7 @@ PROGRAM cdfrichardson
   IF ( lg_vvl ) THEN
      lchk = lchk .OR. chkfile (cf_e3w  )
   ENDIF
-  IF ( lchk   ) STOP  ! missing files  
+  IF ( lchk   ) STOP 99  ! missing files  
 
   ! Look for Missing value for salinity
   zsps = getspval(cf_tfil, cn_vosaline)

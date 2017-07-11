@@ -186,7 +186,7 @@ PROGRAM cdfmean
      PRINT *,'     SEE ALSO :'
      PRINT *,'         cdfsum  (obsolete, better use -S option in cdfmean)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! Open standard output with recl=256 to avoid wrapping of long lines (ifort)
@@ -226,7 +226,7 @@ PROGRAM cdfmean
      CASE ( '-P' )
         ;                ; CALL getarg ( ijarg, cl_prefix) ; ijarg = ijarg + 1
 
-     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -242,7 +242,7 @@ PROGRAM cdfmean
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_in  ) .OR. lchk
   IF ( lbas ) lchk =  chkfile(cn_fbasins ) .OR. lchk
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   cv_dep   = 'none'
   npiglo = getdim (cf_in, cn_x)
@@ -349,7 +349,7 @@ PROGRAM cdfmean
      cv_dep   = cn_gdepw
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(ctype)
-     STOP
+     STOP 99
   END SELECT
 
   e1(:,:) = getvar  (cn_fhgr, cv_e1,  1,  npiglo, npjglo, kimin=iimin, kjmin=ijmin)
@@ -688,7 +688,7 @@ CONTAINS
     DO jbasin = 1, nbasin
        lchkv=lchkv .OR. chkvar(cn_fbasins,cbasins(jbasin))
     END DO
-    IF ( lchkv ) STOP 99 ! missing variables.
+    IF ( lchkv ) STOP 99 99 ! missing variables.
 
   END SUBROUTINE GetLstMask
 

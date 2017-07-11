@@ -199,7 +199,7 @@ PROGRAM cdfmoc
      PRINT *,'       Additional variables are also computed following CLIVAR-GODAE '
      PRINT *,'       reanalysis intercomparison project recommendations. '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   cglobal = 'Partial step computation'
@@ -222,7 +222,7 @@ PROGRAM cdfmoc
      CASE ('-decomp') ; ldec   = .TRUE.
      CASE ('-rapid' ) ; lrap   = .TRUE.
      CASE ('-vvl'   ) ; lg_vvl = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
   IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil
@@ -233,13 +233,13 @@ PROGRAM cdfmoc
   lchk = lchk .OR. chkfile ( cf_vfil )
   IF ( ldec  ) lchk = lchk .OR. chkfile (TRIM(cf_tfil)) .OR. chkfile (TRIM(cf_sfil)) 
   IF ( lrap  ) lchk = lchk .OR. chkfile (TRIM(cf_tfil)) .OR. chkfile (TRIM(cf_sfil)) .OR. chkfile(TRIM(cf_ufil)) 
-  IF ( lchk  ) STOP  ! missing file(s)
+  IF ( lchk  ) STOP 99  ! missing file(s)
   IF ( lg_vvl) cn_fe3v = cf_vfil
 
   IF ( lrap ) THEN 
      ! all the work will be done in a separated routine for RAPID-MOCHA section
      CALL rapid_amoc 
-     STOP  ! program stops here in this case
+     STOP 99  ! program stops here in this case
   ENDIF
 
   npiglo = getdim (cf_vfil,cn_x)

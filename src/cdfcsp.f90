@@ -77,7 +77,7 @@ PROGRAM cdfcsp
      PRINT *,'       netcdf file : same as input file (modified)'
      PRINT *,'         variables : same as input file'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   !! Initialisation from 1st file (all file are assume to have the same geometry)
@@ -88,12 +88,12 @@ PROGRAM cdfcsp
      CASE ( '-l' ) ; CALL GetFileList
         ! options
      CASE ( '-v' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1  ; READ(cldum,*) spval
-     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum) , ' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum) , ' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
   cf_in = cf_lst(1)
 
-  IF ( chkfile (cf_in) ) STOP ! missing file
+  IF ( chkfile (cf_in) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -125,7 +125,7 @@ PROGRAM cdfcsp
 
   DO jf = 1, nfiles
      cf_in = cf_lst(jf) 
-     IF ( chkfile (cf_in) ) STOP ! missing file
+     IF ( chkfile (cf_in) ) STOP 99 ! missing file
      PRINT *, 'Change spval on file ', cf_in
      ncid = ncopen(cf_in)
      npt  = getdim (cf_in, cn_t)

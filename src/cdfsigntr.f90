@@ -74,7 +74,7 @@ PROGRAM cdfsigntr
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfsig0, cdfsigi, cdfsiginsitu, cdfspice'
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -85,11 +85,11 @@ PROGRAM cdfsigntr
         ! options
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF (chkfile(cf_tfil) ) STOP ! missing file
+  IF (chkfile(cf_tfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

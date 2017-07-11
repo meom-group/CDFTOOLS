@@ -70,7 +70,7 @@ PROGRAM cdficb_clim
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : Mass  (Kg/m2 )'
      PRINT *,'                     Melt  (Kg/m2/s )'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -81,19 +81,19 @@ PROGRAM cdficb_clim
         ! options
      CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ', TRIM(cldum),' unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   IF ( nfiles /= 12 ) THEN 
-     PRINT *,' +++ ERROR : This program needs 12 monthly files in input.' ; STOP
+     PRINT *,' +++ ERROR : This program needs 12 monthly files in input.' ; STOP 99
   ENDIF
 
   DO jf=1, nfiles
      lchk = lchk .OR. chkfile(cf_lst(jf))
   ENDDO
 
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_lst(1),cn_x)
   npjglo = getdim (cf_lst(1),cn_y)

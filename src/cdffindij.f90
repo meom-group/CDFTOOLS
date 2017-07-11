@@ -100,7 +100,7 @@ PROGRAM cdffindij
      PRINT *,'     SEE ALSO : '
      PRINT *,'       cdfwhereij'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -118,7 +118,7 @@ PROGRAM cdffindij
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1 ;  l_file_ou=.true.
      CASE ( '-A' ) ;                                                l_append =.true.
      CASE ( '-l' ) ;                                                l_lonlat =.true.
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum),' unknown option.' ; STOP 99
      END SELECT
   END DO
 

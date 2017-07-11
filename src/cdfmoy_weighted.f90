@@ -113,7 +113,7 @@
      PRINT *,'     SEE ALSO : '
      PRINT *,'       cdfmoy, cdfmoyt, cdfmoy_freq'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! scan command line and check if files exist
@@ -130,7 +130,7 @@
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
      CASE ( '-o'     ) ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
      CASE ( '-skip'  ) ; CALL getarg ( ijarg, cv_skip) ; ijarg = ijarg +1
-     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
   
@@ -138,7 +138,7 @@
   DO jt = 1,nfiles
      lchk = lchk .OR. chkfile ( cf_lst(jt) )
   ENDDO
-  IF ( lchk ) STOP ! missing files  
+  IF ( lchk ) STOP 99 ! missing files  
  
   ! work with 1rst file for dimension lookup
   cf_in=cf_lst(1)
@@ -147,7 +147,7 @@
   IF ( lold5d .OR. lmonth ) THEN
      IF ( nfiles /= 12 ) THEN 
         PRINT *,' +++ ERROR : exactly 12 monthly files are required for -old5d/-month options.'
-        STOP
+        STOP 99
      ENDIF
   ENDIF
 

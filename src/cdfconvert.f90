@@ -105,7 +105,7 @@ PROGRAM cdfconvert
      PRINT *,'     SEE ALSO :'
      PRINT *,'       '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
   !!
   ijarg = 1
@@ -114,7 +114,7 @@ PROGRAM cdfconvert
      SELECT CASE ( cldum )
      CASE ( '-t' ) ; CALL getarg( ijarg, ctag    ) ; ijarg=ijarg+1
      CASE ( '-c' ) ; CALL getarg( ijarg, confcase) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum) ,' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ',TRIM(cldum) ,' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -127,7 +127,7 @@ PROGRAM cdfconvert
   cf_dimgt   = TRIM(confcase)//'_T_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgt )
   cf_dimgs   = TRIM(confcase)//'_S_'  //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimgs )
   cf_dimg2d  = TRIM(confcase)//'_2D_' //TRIM(ctag)//'.dimg' ; lchk = lchk .OR. chkfile(cf_dimg2d)
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   cf_dimgssh = TRIM(confcase)//'_SSH_'//TRIM(ctag)//'.dimg'
   cf_dimguu  = TRIM(confcase)//'_UU_' //TRIM(ctag)//'.dimg'

@@ -101,7 +101,7 @@ PROGRAM cdfenstat
      PRINT *,'       netcdf file : ', TRIM(cf_out), 'unless -o option in use'
      PRINT *,'       variables : are the same than in the input files. Standard Dev are '
      PRINT *,'        named  stdev_<variable>'
-     STOP
+     STOP 
   ENDIF
 
   ! look for -spval0 option and set up cf_lst, nfiles 
@@ -116,16 +116,16 @@ PROGRAM cdfenstat
      CASE ( '-nc4   ' ) ; lnc4    = .TRUE.
      CASE ( '-v4d  '  ) ; lv4d    = .TRUE.
      CASE ( '-o   '   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
   IF ( nfiles == 0 ) THEN 
-     PRINT *, ' ERROR : You must give a list of member files with -l option' ; STOP
+     PRINT *, ' ERROR : You must give a list of member files with -l option' ; STOP 99
   ENDIF
 
   ! Initialisation from  1rst file (all file are assume to have the same geometry)
-  IF ( chkfile (cf_lst(1)) ) STOP ! missing file
+  IF ( chkfile (cf_lst(1)) ) STOP 99 ! missing file
 
   cf_in  = cf_lst(1)
   npiglo = getdim (cf_in,cn_x)
@@ -150,14 +150,14 @@ PROGRAM cdfenstat
   ! check that all files have the same number of time frames
   ierr = 0
   DO jfil = 1, nfiles
-     IF (  chkfile (cf_lst(jfil)      ) ) STOP ! missing file
+     IF (  chkfile (cf_lst(jfil)      ) ) STOP 99 ! missing file
      inpt = getdim (cf_lst(jfil), cn_t)
      IF ( inpt /= npt ) THEN
         PRINT *, 'File ',TRIM(cf_lst(jfil) ),' has ',inpt,' time frames instead of ', npt
         ierr = ierr + 1
      ENDIF
   ENDDO
-  IF ( ierr /= 0 ) STOP ! frame numbers mismatch
+  IF ( ierr /= 0 ) STOP 99 ! frame numbers mismatch
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo

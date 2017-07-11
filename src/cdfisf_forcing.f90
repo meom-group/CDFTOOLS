@@ -105,7 +105,7 @@ PROGRAM cdfisf_forcing
      PRINT *,'      '
      PRINT *,'     SEE ALSO : cdfisf_fill, cdfisf_rnf, cdfisf_poolchk'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -121,7 +121,7 @@ PROGRAM cdfisf_forcing
      CASE ( '-m' ) ; CALL getarg(ijarg, cf_pool    ) ; ijarg = ijarg + 1
      CASE ( '-vm') ; CALL getarg(ijarg, cv_pool    ) ; ijarg = ijarg + 1
      CASE ('-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -131,7 +131,7 @@ PROGRAM cdfisf_forcing
   lchk = lchk .OR. chkfile (cf_pool   )
   lchk = lchk .OR. chkfile (cn_fzgr   )
   lchk = lchk .OR. chkfile (cn_fhgr   )
-  IF ( lchk  ) STOP ! missing file
+  IF ( lchk  ) STOP 99 ! missing file
 
   npiglo = getdim (cf_fill, cn_x)
   npjglo = getdim (cf_fill, cn_y)

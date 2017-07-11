@@ -107,7 +107,7 @@ PROGRAM cdf2levitusgrid2d
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : name given as second argument'
      PRINT *,'         variables : 2d_var_name'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 ; ireq = 0 
@@ -117,17 +117,17 @@ PROGRAM cdf2levitusgrid2d
      CASE ( '-f' ) ; CALL getarg(ijarg, cf_in ) ; ijarg = ijarg + 1 ; ireq=ireq+1
      CASE ( '-o' ) ; CALL getarg(ijarg, cf_out) ; ijarg = ijarg + 1 ; ireq=ireq+1
      CASE ( '-v' ) ; CALL getarg(ijarg, cv_nam) ; ijarg = ijarg + 1 ; ireq=ireq+1
-     CASE DEFAULT  ; PRINT *,', ERROR : ', TRIM(cldum), ' :  unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,', ERROR : ', TRIM(cldum), ' :  unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( ireq /= 3 ) THEN ; PRINT *, ' ERROR : missing arguments.'; STOP  ; ENDIF
+  IF ( ireq /= 3 ) THEN ; PRINT *, ' ERROR : missing arguments.'; STOP 99  ; ENDIF
 
   lchk = chkfile (cn_fhgr)
   lchk = chkfile (cn_fmsk)         .OR. lchk
   lchk = chkfile (cf_levitus_mask) .OR. lchk
   lchk = chkfile (cf_in)           .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   npiglo = getdim(cf_in,cn_x)
   npjglo = getdim(cf_in,cn_y)

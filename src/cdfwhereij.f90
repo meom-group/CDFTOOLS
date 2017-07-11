@@ -66,7 +66,7 @@ PROGRAM cdfwhereij
      PRINT *,'     SEE ALSO : '
      PRINT *,'      cdffindij '
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -80,23 +80,23 @@ PROGRAM cdfwhereij
         ! options
      CASE ( '-c' ) ; CALL getarg(ijarg, clcoo ) ; ijarg=ijarg+1
      CASE ( '-p' ) ; CALL getarg(ijarg, ctype ) ; ijarg=ijarg+1
-     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT  ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(clcoo) ) STOP ! missing file
+  IF ( chkfile(clcoo) ) STOP 99 ! missing file
 
   npiglo = getdim (clcoo, cn_x)
   npjglo = getdim (clcoo, cn_y)
 
   IF ( iimax > npiglo ) THEN
      PRINT *,' ERROR : imax is greater than the maximum size ', iimax, npiglo
-     STOP
+     STOP 99
   ENDIF
 
   IF ( ijmax > npjglo ) THEN
      PRINT *,' ERROR : jmax is greater than the maximum size ', ijmax, npjglo
-     STOP
+     STOP 99
   END IF
 
   ALLOCATE (glam(npiglo,npjglo), gphi(npiglo,npjglo) )

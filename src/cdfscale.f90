@@ -64,7 +64,7 @@ PROGRAM cdfscale
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : input file is rewritten ' 
      PRINT *,'         variables : same name as input.' 
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1 ; ireq=0
@@ -74,13 +74,13 @@ PROGRAM cdfscale
       CASE ( '-f'   ) ; CALL getarg(ijarg, cf_inout ) ; ijarg=ijarg+1  ; ireq=ireq+1
       CASE ( '-v'   ) ; CALL getarg(ijarg, cv_inout ) ; ijarg=ijarg+1  ; ireq=ireq+1
       CASE ( '-s'   ) ; CALL getarg(ijarg, cldum    ) ; ijarg=ijarg+1  ; ireq=ireq+1 ;  READ(cldum,*) vscale
-      CASE DEFAULT    ; PRINT *,' ERROR :', TRIM(cldum),' : unknown option.' ; STOP
+      CASE DEFAULT    ; PRINT *,' ERROR :', TRIM(cldum),' : unknown option.' ; STOP 99
       END SELECT
   ENDDO
   ! 3 arguments are mandatory : here ijarg must be 4
-  IF ( ireq /= 3 ) THEN ; PRINT *,' ERROR : need at least 3 arguments !' ; STOP ; ENDIF
+  IF ( ireq /= 3 ) THEN ; PRINT *,' ERROR : need at least 3 arguments !' ; STOP 99 ; ENDIF
 
-  IF ( chkfile (cf_inout) )  STOP ! missing file
+  IF ( chkfile (cf_inout) )  STOP 99 ! missing file
 
   npiglo = getdim (cf_inout, cn_x              )
   npjglo = getdim (cf_inout, cn_y              )

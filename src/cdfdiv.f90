@@ -105,7 +105,7 @@ PROGRAM cdfdiv
      PRINT *,'         variables : div units : s^-1'
      PRINT *,'               or divoverf, no units (if -overf option)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg=1
@@ -126,7 +126,7 @@ PROGRAM cdfdiv
      CASE ('-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ('-vvl'  ) ; lg_vvl = .TRUE.
         ;              CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1 
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
@@ -134,7 +134,7 @@ PROGRAM cdfdiv
   lchk = chkfile(cn_fzgr ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) THEN
      cn_fe3u = cf_ufil
@@ -155,9 +155,9 @@ PROGRAM cdfdiv
 
   !test if lev exists
   IF ( (npk==0) .AND. (nlev > 0) .AND. .NOT. lsurf ) THEN
-     PRINT *, 'Problem : npk = 0 and lev > 0 STOP'
+     PRINT *, 'Problem : npk = 0 and lev > 0 STOP 99'
      PRINT *, '  Use -surf option is dealing with single level file on C grid '
-     STOP
+     STOP 99
   END IF
 
   ! case of 1 level on C-grid

@@ -109,7 +109,7 @@ PROGRAM cdfvertmean
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : varin_vertmean (same units as input variable)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -127,20 +127,20 @@ PROGRAM cdfvertmean
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
      CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   lchk = chkfile (cn_fzgr)
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_in  ) .OR. lchk
-  IF ( lchk  ) STOP ! missing files
+  IF ( lchk  ) STOP 99 ! missing files
 
   CALL SetGlobalAtt (cglobal)
 
   IF (rdep_down < rdep_up ) THEN
      PRINT *,'Give depth limits in increasing order !'
-     STOP
+     STOP 99
   ENDIF
 
   npiglo = getdim (cf_in,cn_x)
@@ -160,7 +160,7 @@ PROGRAM cdfvertmean
 
   ! just chck if var exist in file 
   DO jvar = 1, nvaro
-     IF ( chkvar( cf_in, cv_in(jvar)) ) STOP  ! message is written in cdfio.chkvar
+     IF ( chkvar( cf_in, cv_in(jvar)) ) STOP 99  ! message is written in cdfio.chkvar
   ENDDO
 
   ! Allocate arrays
@@ -177,7 +177,7 @@ PROGRAM cdfvertmean
   CASE( 'U','u');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3u ; cv_e31d=cn_ve3t1d ;  cv_msk = cn_umask ; cf_e3 = cn_fe3u
   CASE( 'V','v');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3v ; cv_e31d=cn_ve3t1d ;  cv_msk = cn_vmask ; cf_e3 = cn_fe3v
   CASE( 'W','w');  cv_dep=cn_gdept ; cv_e3 = cn_ve3w ; cv_e31d=cn_ve3w ;  cv_msk = cn_tmask ; cf_e3 = cn_fe3w
-  CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP
+  CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP 99
   END SELECT
 
   IF ( lg_vvl) cf_e3 = cf_in

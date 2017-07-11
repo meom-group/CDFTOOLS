@@ -106,7 +106,7 @@ PROGRAM cdfuvwt
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfnrj_bti, cdfnrj_bci, cdfnrj_components and cdfnrj_transfert.' 
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   iimin=0 ; ijmin=0
@@ -125,7 +125,7 @@ PROGRAM cdfuvwt
         ;             CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) ijmax
      CASE ( '-o'  ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4') ; lnc4 = .TRUE.
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP
+     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP 99
      END SELECT
   END DO
 

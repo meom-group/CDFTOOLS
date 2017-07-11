@@ -106,7 +106,7 @@ PROGRAM cdfets
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out),' unless -o option is used.' 
      PRINT *,'         variables : voets (days)  and sorosrad (m)'
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -119,11 +119,11 @@ PROGRAM cdfets
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
         ;              CALL getarg (ijarg, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
   lchk = ( chkfile (cf_tfil) .OR. chkfile( cn_fhgr ) .OR. chkfile( cn_fzgr) )
-  IF ( lchk )  STOP ! missing file
+  IF ( lchk )  STOP 99 ! missing file
 
   ! Look for missing value for salinity
   zsps = getspval(cf_tfil, cn_vosaline)

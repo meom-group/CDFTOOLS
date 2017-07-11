@@ -134,7 +134,7 @@ PROGRAM cdfsigintegr
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfrhoproj, cdfsigtrp, cdfisopycdep'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 ; ireq = 0 ; nfiles = 0
@@ -151,11 +151,11 @@ PROGRAM cdfsigintegr
      CASE ( '-full '  ) ; lfull  = .TRUE.
      CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
      CASE ( '-nc4'    ) ; lnc4   = .TRUE.
-     CASE DEFAULT       ; PRINT *, ' ERROR : ', TRIM(cldum), 'unknown option.' ; STOP
+     CASE DEFAULT       ; PRINT *, ' ERROR : ', TRIM(cldum), 'unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP;
+  IF ( ireq /= 3 ) THEN ; PRINT *,' missing arguments. Look to usage message !' ; STOP 99;
   ENDIF
 
      CALL SetGlobalAtt( cglobal )
@@ -164,7 +164,7 @@ PROGRAM cdfsigintegr
      lchk = lchk .OR. chkfile (cn_fzgr   )
      lchk = lchk .OR. chkfile (cf_rholev )
      lchk = lchk .OR. chkfile (cf_rho    )
-     IF ( lchk ) STOP ! missing file
+     IF ( lchk ) STOP 99 ! missing file
 
      ! Read rho level between which the integral is being performed
      OPEN(numin,file=cf_rholev)
@@ -184,7 +184,7 @@ PROGRAM cdfsigintegr
      zspvalz=getspval(cf_rho, cn_vosigma0)
 
      cf_in =  cf_lst(1)
-     IF ( chkfile ( cf_in) ) STOP ! missing file
+     IF ( chkfile ( cf_in) ) STOP 99 ! missing file
 
      nvars=getnvar(cf_in )
      ALLOCATE(cv_names(nvars), stypzvar(nvars))
@@ -247,7 +247,7 @@ PROGRAM cdfsigintegr
      !! ** Loop on the scalar files to project on choosen isopycnics surfaces
      DO jfich=1, nfiles
         cf_in = cf_lst( jfich)
-        IF ( chkfile (cf_in) ) STOP ! missing file
+        IF ( chkfile (cf_in) ) STOP 99 ! missing file
         PRINT *,'working with ', TRIM(cf_in)
         ! JMM : not obvious to find file wirh correct e3t
         IF (lg_vvl ) cn_fe3t = cf_rho

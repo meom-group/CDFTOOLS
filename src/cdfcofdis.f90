@@ -95,7 +95,7 @@ PROGRAM cdfcofdis
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
      PRINT *,'         variables : ', TRIM(cv_out),' (m)'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1
@@ -110,14 +110,14 @@ PROGRAM cdfcofdis
      CASE ( '-surf'  ) ; lsurf = .TRUE.
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1 
      CASE ( '-nc4'   ) ; lnc4  = .TRUE.
-     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   lchk =           chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_tfil )
-  IF ( lchk ) STOP ! missing files
+  IF ( lchk ) STOP 99 ! missing files
 
   ! read domain dimensions in the mask file
   jpi = getdim(cf_tfil,cn_x)
@@ -128,7 +128,7 @@ PROGRAM cdfcofdis
      jpk = getdim(cf_tfil,'z')
      IF ( jpk == 0 ) THEN
         PRINT *,' ERROR in determining jpk form gridT file ....'
-        STOP
+        STOP 99
      ENDIF
   ENDIF
 

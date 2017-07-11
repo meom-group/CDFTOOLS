@@ -111,7 +111,7 @@ PROGRAM cdfmoy_freq
      PRINT *,'     SEE ALSO :'
      PRINT *,'      cdfmoy, cdfmoy_weighted'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ! parse command line
@@ -126,11 +126,11 @@ PROGRAM cdfmoy_freq
      CASE ( '-v4d' ) ; lv4d=.TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg = ijarg + 1
      CASE ( '-nc4' ) ; lnc4=.TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile ( cf_in ) ) STOP ! missing file
+  IF ( chkfile ( cf_in ) ) STOP 99 ! missing file
 
   ! parse the cfreqo to determine the output frequency. 
   ! Allowed syntax is nf<cfr_id> where nf is an integer >0, <cfr_id> is h, d, mo or y
@@ -151,12 +151,12 @@ PROGRAM cdfmoy_freq
   CASE ( 'd' ) 
      IF ( nf /= 1 .AND. nf/=5 ) THEN
         PRINT *, ' +++ ERROR : only 1d or 5d are acceptable !'
-        STOP
+        STOP 99
      ENDIF
   CASE ( 'y' )
      IF ( nf > 1 ) THEN
         PRINT *, ' +++ ERROR : Cannot have output freq > 1 y !'
-        STOP
+        STOP 99
      ENDIF
   END SELECT
 
@@ -190,7 +190,7 @@ PROGRAM cdfmoy_freq
      nhyr = ndyr*24 ! number of hours per leap year
      IF ( MOD( nhyr, npt ) /= 0 ) THEN
         PRINT *," +++ ERROR : npt do not fit in 365 nor 366 days "
-        STOP
+        STOP 99
      ELSE
         lleap=.TRUE.
      ENDIF
@@ -275,7 +275,7 @@ PROGRAM cdfmoy_freq
      PRINT *, ' +++ ERROR : Input and output frequency incompatible.'
      PRINT *, '         Input  : ',  nhfri,' hours '
      PRINT *, '         Output : ',  nf,' hours '
-     STOP
+     STOP 99
   ENDIF
 
   ALLOCATE( dtab(npiglo,npjglo), v2d(npiglo,npjglo) )

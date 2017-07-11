@@ -2747,7 +2747,7 @@ CONTAINS
     !!               Do nothing is filename is 'none'
     !!
     !! ** Method  : Doing it this way allow statements such as
-    !!              IF ( chkfile( cf_toto) ) STOP  ! missing file
+    !!              IF ( chkfile( cf_toto) ) STOP 99  ! missing file
     !!
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*),  INTENT(in) :: cd_file
@@ -2787,7 +2787,7 @@ CONTAINS
     !!               Do nothing is varname is 'none'
     !!
     !! ** Method  : Doing it this way allow statements such as
-    !!              IF ( chkvar( cf_toto, cv_toto) ) STOP  ! missing var
+    !!              IF ( chkvar( cf_toto, cv_toto) ) STOP 99  ! missing var
     !!
     !!----------------------------------------------------------------------
     CHARACTER(LEN=*),  INTENT(in) :: cd_file

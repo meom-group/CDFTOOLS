@@ -179,7 +179,7 @@ PROGRAM cdfmoy
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfmoy_weighted, cdfstdev'
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -198,7 +198,7 @@ PROGRAM cdfmoy
      CASE ( '-vvl'      ) ; lg_vvl   = .TRUE.
      CASE ( '-o'        ) ; CALL getarg (ijarg, cf_root  ) ; ijarg = ijarg + 1
      CASE ( '-nc4'      ) ; lnc4     = .TRUE.
-     CASE DEFAULT         ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT         ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
 
@@ -210,7 +210,7 @@ PROGRAM cdfmoy
   IF ( lzermean ) THEN
      lchk = lchk .OR. chkfile ( cn_fhgr )
      lchk = lchk .OR. chkfile ( cn_fmsk )
-     IF ( lchk ) STOP ! missing files
+     IF ( lchk ) STOP 99 ! missing files
   ENDIF
 
   ! Initialisation from  1rst file (all file are assume to have the same geometry)
@@ -218,7 +218,7 @@ PROGRAM cdfmoy
   ! loop for files
 
   cf_in = cf_lst(1)
-  IF ( chkfile (cf_in) ) STOP ! missing file
+  IF ( chkfile (cf_in) ) STOP 99 ! missing file
   !
   npiglo = getdim (cf_in, cn_x)
   npjglo = getdim (cf_in, cn_y)
@@ -300,7 +300,7 @@ PROGRAM cdfmoy
                  cf_e3=cf_in
               ENDIF
               IF ( jk == 1 ) THEN
-                 IF ( chkfile (cf_in) ) STOP ! missing file
+                 IF ( chkfile (cf_in) ) STOP 99 ! missing file
                  iwght=iwght+MAX(1,INT(getatt( cf_in, cv_nam(jvar), 'iweight')))
               ENDIF
 

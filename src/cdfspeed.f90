@@ -84,7 +84,7 @@ PROGRAM cdfspeed
      PRINT *,'    SEE ALSO :'
      PRINT *,'       cdfvita also computes the speed.'
      PRINT *,'    '
-     STOP
+     STOP 
   ENDIF
 
   nlev =0
@@ -102,14 +102,14 @@ PROGRAM cdfspeed
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-C'   ) ; lcgrid = .TRUE.
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP
+     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   IF ( cf_tfil /= 'none' ) lchk = lchk .OR. chkfile (cf_tfil)
   lchk = lchk .OR. chkfile (cf_ufil)
   lchk = lchk .OR. chkfile (cf_vfil)
-  IF ( lchk ) STOP ! missing file
+  IF ( lchk ) STOP 99 ! missing file
 
   npiglo = getdim (cf_vfil,cn_x)
   npjglo = getdim (cf_vfil,cn_y)
@@ -128,7 +128,7 @@ PROGRAM cdfspeed
      IF ( TRIM(cf_tfil) == 'none' ) THEN
         PRINT *,'  ERROR: you must specify a griT file as fifth argument '
         PRINT *,'     This is for the proper header of output file '
-        STOP
+        STOP 99
      ENDIF
   END IF
 

@@ -83,7 +83,7 @@ PROGRAM cdfpolymask
      PRINT *,'       netcdf file : ', TRIM(cf_out) 
      PRINT *,'         variables : ', TRIM(cn_polymask)
      PRINT *,'      '
-     STOP
+     STOP 
   ENDIF
 
   ijarg = 1 
@@ -95,11 +95,11 @@ PROGRAM cdfpolymask
      CASE ( '-ref' ) ; CALL getarg (ijarg, cf_ref  ) ; ijarg = ijarg + 1
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out  ) ; ijarg = ijarg + 1
      CASE ( '-r'   ) ; lreverse = .TRUE.
-     CASE DEFAULT    ; PRINT *,' unknown optional argument (', TRIM(cldum),' )' ; STOP
+     CASE DEFAULT    ; PRINT *,' unknown optional argument (', TRIM(cldum),' )' ; STOP 99
      END SELECT
   END DO
 
-  IF ( chkfile(cf_poly) .OR. chkfile(cf_ref) ) STOP ! missing files
+  IF ( chkfile(cf_poly) .OR. chkfile(cf_ref) ) STOP 99 ! missing files
 
   npiglo = getdim (cf_ref, cn_x)
   npjglo = getdim (cf_ref, cn_y)
