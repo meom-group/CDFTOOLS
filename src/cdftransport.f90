@@ -58,11 +58,10 @@ PROGRAM cdftransport
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
+  INTEGER(KIND=4), PARAMETER                  :: jpseg=10000    ! used for broken line algorithm
   INTEGER(KIND=4)                             :: jclass, jseg   ! dummy loop index
   INTEGER(KIND=4)                             :: ji, jj, jk     ! dummy loop index
   INTEGER(KIND=4)                             :: it             ! time index
-  INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ilev0, ilev1   ! limit in levels  (nclass)
-  INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipk, id_varout ! Netcdf output
   INTEGER(KIND=4)                             :: ipos           ! working integer (position of ' ' in strings)
   INTEGER(KIND=4)                             :: ncout, ierr    ! for netcdf output
   INTEGER(KIND=4)                             :: nvarout=12     ! number of values to write in cdf output
@@ -96,7 +95,6 @@ PROGRAM cdftransport
   INTEGER(KIND=4)                             :: ijmin, ijmax   ! j-limit of the section
   INTEGER(KIND=4)                             :: ivar, itime    ! working integer
   INTEGER(KIND=4)                             :: ii, ij, ik     ! working integer
-  INTEGER(KIND=4), PARAMETER                  :: jpseg=10000    ! used for broken line algorithm
   INTEGER(KIND=4)                             :: ii0, ij0       !  "        "             "
   INTEGER(KIND=4)                             :: ii1, ij1       !  "        "             "
   INTEGER(KIND=4)                             :: iitmp, ijtmp   !  "        "             "
@@ -104,7 +102,25 @@ PROGRAM cdftransport
   INTEGER(KIND=4)                             :: iist, ijst     ! local point offset for velocity
   INTEGER(KIND=4)                             :: norm_u, norm_v ! normalization factor (sign of normal transport)
   INTEGER(KIND=4)                             :: idirx, idiry   ! sense of description of the section
+  INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ilev0, ilev1   ! limit in levels  (nclass)
+  INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipk, id_varout ! Netcdf output
 
+  REAL(KIND=4)                                :: rxi0, ryj0     ! working variables
+  REAL(KIND=4)                                :: rxi1, ryj1     ! working variables
+  REAL(KIND=4)                                :: ai, bi         ! equation of line (y=ai.x +bi)
+  REAL(KIND=4)                                :: aj, bj         ! equation of line (x=aj.y +bj
+  REAL(KIND=4)                                :: rd, rd1, rd2   ! distance between point, between vertical layers
+  REAL(KIND=4)                                :: udum, vdum     ! dummy velocity components for tests
+  REAL(KIND=4)                                :: rau0=1000      ! density of pure water (kg/m3)
+  REAL(KIND=4)                                :: rcp=4000.      ! heat capacity (J/kg/K)
+  REAL(KIND=4)                                :: zspu, zspv     ! missing values for u and v
+  REAL(KIND=4), DIMENSION(2)                  :: gla, gphi      ! lon/lat of the begining/end of section (f point)
+  REAL(KIND=4), DIMENSION(jpseg)              :: rxx, ryy       ! working variables
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim            ! time counter
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw          ! depth at layer interface
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: e31d           ! vertical metric in case of full step
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: rclass         ! vertical metric in case of full step
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: rz_lst         ! limit beetween depth level, in m (nclass -1)
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1v, e2u       ! horizontal metric
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e3u, e3v       ! vertical metric
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: glamf          ! longitudes of F points
@@ -114,21 +130,7 @@ PROGRAM cdftransport
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zt, zs         ! temperature and salinity
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdum           ! dummy (1x1) array for ncdf output
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zuobc, zvobc   ! arrays for OBC files (vertical slice)
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim            ! time counter
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw          ! depth at layer interface
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: e31d           ! vertical metric in case of full step
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: rclass         ! vertical metric in case of full step
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: rz_lst         ! limit beetween depth level, in m (nclass -1)
-  REAL(KIND=4), DIMENSION(2)                  :: gla, gphi      ! lon/lat of the begining/end of section (f point)
-  REAL(KIND=4), DIMENSION(jpseg)              :: rxx, ryy       ! working variables
-  REAL(KIND=4)                                :: rxi0, ryj0     ! working variables
-  REAL(KIND=4)                                :: rxi1, ryj1     ! working variables
-  REAL(KIND=4)                                :: ai, bi         ! equation of line (y=ai.x +bi)
-  REAL(KIND=4)                                :: aj, bj         ! equation of line (x=aj.y +bj
-  REAL(KIND=4)                                :: rd, rd1, rd2   ! distance between point, between vertical layers
-  REAL(KIND=4)                                :: udum, vdum     ! dummy velocity components for tests
-  REAL(KIND=4)                                :: rau0=1000      ! density of pure water (kg/m3)
-  REAL(KIND=4)                                :: rcp=4000.      ! heat capacity (J/kg/K)
+
 
   ! at every model point
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwku,  dwkv    ! volume transport at each cell boundary
@@ -197,6 +199,8 @@ PROGRAM cdftransport
   LOGICAL                                     :: lchk    = .FALSE.   ! flag for missing files
   LOGICAL                                     :: lpm     = .FALSE.   ! flag for plus/minus transport
   LOGICAL                                     :: lobc    = .FALSE.   ! flag for obc input files
+  LOGICAL                                     :: lspu    = .FALSE.   ! flag for spvalu /= 0 
+  LOGICAL                                     :: lspv    = .FALSE.   ! flag for spvalv /= 0 
   LOGICAL                                     :: l_merid = .FALSE.   ! flag for meridional obc
   LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
   LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
@@ -344,6 +348,14 @@ PROGRAM cdftransport
      ENDIF
   ENDIF
   IF ( lchk ) STOP ! missing files
+
+  ! Look for missingValue for u and v
+  zspu = getspval(cf_ufil,cn_vozocrtx)
+  zspv = getspval(cf_vfil,cn_vomecrty)
+  ! set flags to true if spval /= 0
+  IF ( zspu /= 0. ) lspu=.TRUE.
+  IF ( zspv /= 0. ) lspv=.TRUE.
+
 
   ! adjust the number of output variables according to options
   IF ( nclass > 1 ) THEN
@@ -514,6 +526,8 @@ PROGRAM cdftransport
            IF      ( l_zonal ) THEN ; zu(:,1)=zuobc(:,jk) ; zv(:,1)=zvobc(:,jk) 
            ELSE IF ( l_merid ) THEN ; zu(1,:)=zuobc(:,jk) ; zv(1,:)=zvobc(:,jk) 
            ENDIF
+           IF ( lspu ) WHERE ( zu == zspu ) zu = 0.
+           IF ( lspv ) WHERE ( zv == zspv ) zv = 0.
         ELSE
            IF ( l_self ) THEN
               zu(:,:) = 0.
@@ -521,6 +535,8 @@ PROGRAM cdftransport
               zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
            ENDIF
            zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
+           IF ( lspu ) WHERE ( zu == zspu ) zu = 0.
+           IF ( lspv ) WHERE ( zv == zspv ) zv = 0.
            IF (lheat) THEN
               IF ( l_tsfil ) THEN
                  zt(:,:) = 0. ; zs(:,:) = 0.

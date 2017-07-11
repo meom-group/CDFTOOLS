@@ -31,12 +31,12 @@ PROGRAM cdfsig0
   INTEGER(KIND=4)                           :: ncout              ! ncid of output file
   INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout     ! level and  varid's
 
-  REAL(KIND=4)                              :: zspval             ! missing value for salinity
+  REAL(KIND=4)                              :: zsps               ! missing value for salinity
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp              ! temperature
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsal               ! salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsig0              ! sigma-0
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
   CHARACTER(LEN=256)                        :: cf_out='sig0.nc'   ! output file name
@@ -96,6 +96,9 @@ PROGRAM cdfsig0
 
   IF (chkfile(cf_tfil) ) STOP ! missing file
 
+  ! Look for missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
+
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
   npk    = getdim (cf_tfil, cn_z)
@@ -114,7 +117,7 @@ PROGRAM cdfsig0
   ALLOCATE (tim(npt) )
 
   CALL CreateOutput
-  zspval = getspval( cf_tfil, cn_vosaline )
+  zsps = getspval( cf_tfil, cn_vosaline )
 
   DO jt=1,npt
      PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
@@ -125,7 +128,7 @@ PROGRAM cdfsig0
         zsal(:,:) = getvar(cf_tfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
 
         ! assuming spval is 0
-        WHERE( zsal == zspval ) zmask = 0
+        WHERE( zsal == zsps ) zmask = 0
 
         zsig0(:,:) = sigma0 (ztemp, zsal, npiglo, npjglo )* zmask(:,:)
 

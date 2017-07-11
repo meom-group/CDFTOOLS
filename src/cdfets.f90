@@ -55,6 +55,7 @@ PROGRAM cdfets
   REAL(KIND=4)                                :: grav  = 9.81              ! Gravity
   REAL(KIND=4)                                :: spval = -1000.            ! special value
   REAL(KIND=4)                                :: zpi
+  REAL(KIND=4)                                :: zsps                      ! missing value for salinity
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: ztemp, zsal, zwk          ! Array to read 2 layer of data
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zn2                       ! Brunt Vaissala Frequency (N2)
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zmask, ff                 ! mask coriolis.
@@ -124,11 +125,13 @@ PROGRAM cdfets
   lchk = ( chkfile (cf_tfil) .OR. chkfile( cn_fhgr ) .OR. chkfile( cn_fzgr) )
   IF ( lchk )  STOP ! missing file
 
+  ! Look for missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
+
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
-
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -192,7 +195,7 @@ PROGRAM cdfets
 
         ! build tmask at level jk
         zmask(:,:)=1.
-        WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
+        WHERE(ztemp(:,:,idown) == zsps ) zmask = 0
 
         ! get depthw and e3w at level jk
         e3w(:,:)   = getvar(cn_fe3w, cn_ve3w, jk,npiglo,npjglo, ktime=it, ldiom=.NOT.lg_vvl )

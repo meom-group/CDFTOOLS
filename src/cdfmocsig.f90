@@ -60,6 +60,15 @@ PROGRAM cdfmocsig
   INTEGER(KIND=4), DIMENSION(:),      ALLOCATABLE :: ipk, id_varout       ! output variable levels and id
   INTEGER(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ibin                 ! remaping density in bin number
 
+  REAL(KIND=4), PARAMETER                         :: rp_spval=99999.      !
+  REAL(KIND=4)                                    :: pref=0.              ! depth reference for pot. density 
+  REAL(KIND=4)                                    :: sigmin               ! minimum density for bining
+  REAL(KIND=4)                                    :: sigstp               ! density step for bining
+  REAL(KIND=4)                                    :: zsps                 ! Salinity Missing value
+  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: sigma                ! density coordinate 
+  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: e31d                 ! vertical level (full step)
+  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: gdep                 ! depth of T layers ( full step)
+  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: tim                  ! time counter
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: e1v, gphiv           ! horizontal metrics, latitude
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zt, zs               ! temperature, salinity
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zv, zveiv            ! velocity and bolus velocity
@@ -68,22 +77,14 @@ PROGRAM cdfmocsig
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: rdumlat              ! latitude for i = north pole
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zttmp                ! arrays to call sigmai and mask it
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zarea                ! product e1v * e3v
-  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: sigma                ! density coordinate 
-  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: e31d                 ! vertical level (full step)
-  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: gdep                 ! depth of T layers ( full step)
-  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: tim                  ! time counter
-  REAL(KIND=4), PARAMETER                         :: rp_spval=99999.      !
-  REAL(KIND=4)                                    :: pref=0.              ! depth reference for pot. density 
-  REAL(KIND=4)                                    :: sigmin               ! minimum density for bining
-  REAL(KIND=4)                                    :: sigstp               ! density step for bining
 
-  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dmoc                 ! nbasins x npjglo x npk
-  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: depi                 ! Zonal mean of depths of isopycnal
-  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: wdep                 ! count array
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dens                 ! density
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dmoc_tmp             ! temporary transport array
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: depi_tmp             ! temporary cumulated depth array
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: wdep_tmp             ! temporary count array
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: dmoc                 ! nbasins x npjglo x npk
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: depi                 ! Zonal mean of depths of isopycnal
+  REAL(KIND=8), DIMENSION(:,:,:),     ALLOCATABLE :: wdep                 ! count array
 
   CHARACTER(LEN=256)                              :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                              :: cf_tfil              ! temperature/salinity file
@@ -204,6 +205,10 @@ PROGRAM cdfmocsig
   lchk = lchk .OR. chkfile ( cf_vfil )
   lchk = lchk .OR. chkfile ( cf_tfil )
   IF ( lchk ) STOP  ! missing file(s)
+
+  ! Look for salinity spval
+  zsps = getspval(cf_tfil, cn_vosaline)
+
   IF ( lg_vvl )  cn_fe3v = cf_vfil
 
   ! re-use lchk for binning control : TRUE if no particular binning specified
@@ -361,7 +366,7 @@ PROGRAM cdfmocsig
         !
         !  finds density 
         itmask =  1
-        WHERE ( zs == 0 ) itmask = 0
+        WHERE ( zs == zsps ) itmask = 0
         IF ( lntr ) THEN ; dens  = sigmantr(zt, zs,       npiglo, npjglo)
         ELSE             ; dens  = sigmai  (zt, zs, pref, npiglo, npjglo)
         ENDIF

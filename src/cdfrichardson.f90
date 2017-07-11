@@ -38,12 +38,13 @@ PROGRAM cdfrichardson
   INTEGER(KIND=4), DIMENSION(2)                :: ipk, id_varout           ! level and id of output variables
 
   REAL(KIND=4)                                 :: rspval=0.                ! missing_value
+  REAL(KIND=4)                                 :: zsps                     ! missing_value for salinity
   REAL(KIND=4)                                 :: zcoef, zdku, zdkv, zzri  ! working real
-  REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
-  REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: zu, zv                   ! Array to read 2 layer of velocities
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep, tim, e3w1d         ! depth and time
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zri                      ! Richardson number
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zmask, e3w               ! mask and metric
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep, tim, e3w1d         ! depth and time
+  REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
+  REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: zu, zv                   ! Array to read 2 layer of velocities
 
   CHARACTER(LEN=256)                           :: cldum                    ! dummy char variable
   CHARACTER(LEN=256)                           :: cf_tfil                  ! input T file name
@@ -132,6 +133,10 @@ PROGRAM cdfrichardson
   ENDIF
   IF ( lchk   ) STOP  ! missing files  
 
+  ! Look for Missing value for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
+
+
   IF ( lg_vvl ) cn_fe3w = cf_e3w
 
   npiglo = getdim (cf_tfil, cn_x)
@@ -179,9 +184,9 @@ PROGRAM cdfrichardson
 
      DO jk = npk-1, 2, -1 
         PRINT *,'level ',jk
-        zmask(:,:)=1.
+        zmask(:,:)=1.0
+        WHERE(zsal(:,:,idown) == zsps ) zmask = 0.0
         ztemp(:,:,iup)= getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jt)
-        WHERE(ztemp(:,:,idown) == 0 ) zmask = 0
         zsal(:,:,iup) = getvar(cf_tfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
         zu( :,:,iup)  = getvar(cf_ufil, cn_vozocrtx, jk-1, npiglo, npjglo, ktime=jt)
         zv( :,:,iup)  = getvar(cf_vfil, cn_vomecrty, jk-1, npiglo, npjglo, ktime=jt)

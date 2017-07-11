@@ -38,6 +38,7 @@ PROGRAM cdfbottomsig
 
   REAL(KIND=4)                               :: zsigmn, zsigmx ! value of min and max of sigmabot
   REAL(KIND=4)                               :: zref           ! value of min and max of sigmabot
+  REAL(KIND=4)                               :: zsps           ! Missing value for salinity
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ztemp, zsal    ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ztemp0, zsal0  ! temporary array to read temp, sal
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zsig           ! potential density 
@@ -117,6 +118,9 @@ PROGRAM cdfbottomsig
   END DO
 
   IF ( chkfile(cf_tfil) ) STOP ! missing file
+  ! look for MissingValue for salinity
+  zsps = getspval(cf_tfil, cn_vosaline)
+
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -144,9 +148,9 @@ PROGRAM cdfbottomsig
         zsal0(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
         ztemp0(:,:)= getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
         IF (jk == 1  )  THEN
-           WHERE( zsal0 == 0. ) zmask=0.
+           WHERE( zsal0 == zsps ) zmask=0.
         END IF
-        WHERE ( zsal0 /= 0 )
+        WHERE ( zsal0 /= zsps )
            zsal=zsal0 ; ztemp=ztemp0
         END WHERE
      ENDDO

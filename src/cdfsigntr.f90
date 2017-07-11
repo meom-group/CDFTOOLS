@@ -35,7 +35,7 @@ PROGRAM cdfsigntr
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsigntr            ! sigma-0
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
-  REAL(KIND=4)                              :: zspval             ! missing value for salinity
+  REAL(KIND=4)                              :: zsps               ! missing value for salinity
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
   CHARACTER(LEN=256)                        :: cldum              ! working variable
@@ -106,7 +106,7 @@ PROGRAM cdfsigntr
   ALLOCATE (tim(npt) )
 
   CALL CreateOutput
-  zspval = getspval( cf_tfil, cn_vosaline )
+  zsps = getspval( cf_tfil, cn_vosaline )
 
   DO jt=1,npt
      PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
@@ -117,7 +117,7 @@ PROGRAM cdfsigntr
         ztemp(:,:)= getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
         zsal(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
-        WHERE( zsal == zspval ) zmask = 0
+        WHERE( zsal == zsps ) zmask = 0.0
 
         zsigntr(:,:) = sigmantr (ztemp, zsal, npiglo, npjglo )* zmask(:,:)
 

@@ -69,6 +69,7 @@ PROGRAM cdfsigtrp
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk, id_varout       ! variable levels and id
 
   REAL(KIND=4)                                  :: refdep =0.e0         ! reference depth (m)
+  REAL(KIND=4)                                  :: zsps, zspu, zspv     ! Missing value for salinity, U and V
   REAL(KIND=4), DIMENSION(1)                    :: tim                  ! time counter
   REAL(KIND=4), DIMENSION(1)                    :: rdummy1, rdummy2     ! working variable
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdept, gdepw         ! depth of T and W points 
@@ -267,6 +268,12 @@ PROGRAM cdfsigtrp
   lchk = lchk .OR. chkfile( cf_vfil    )
   IF ( lchk ) STOP ! missing file
 
+   ! Look for missing value for salinity, U and V
+   zsps = getspval(cf_tfil, cn_vosaline )
+   zspu = getspval(cf_ufil, cn_vozocrtx )
+   zspv = getspval(cf_vfil, cn_vomecrty )
+
+
   IF ( lg_vvl )  THEN
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil
@@ -404,12 +411,14 @@ PROGRAM cdfsigtrp
         ENDDO
         ! normal velocity
         zu( :,:) = getvaryz(cf_ufil, cn_vozocrtx, iimin,   npts, npk, kjmin=ijmin+1 )
+        WHERE( zu == zspu ) zu = 0.0
 
         ! salinity and deduce umask for the section
         zs( :,:) = getvaryz(cf_tfil, cn_vosaline, iimin,   npts, npk, kjmin=ijmin+1 )
         zt( :,:) = getvaryz(cf_tfil, cn_vosaline, iimin+1, npts, npk, kjmin=ijmin+1 )
-        zmask(:,:) = zs(:,:) * zt(:,:)
-        WHERE ( zmask(:,:) /= 0 ) zmask(:,:)=1
+        zmask = 1.
+        WHERE ( zs == zsps .OR. zt == zsps ) zmask = 0.
+
         zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
 
         ! limitation to 'wet' points
@@ -483,12 +492,14 @@ PROGRAM cdfsigtrp
 
            ! normal velocity
            zu( :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
+           WHERE( zu == zspv ) zu = 0.0
 
            ! salinity and deduce umask for the section
            zs( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
            zt( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin+1, npts, npk, kimin=iimin+1 )
-           zmask(:,:) = zs(:,:) * zt(:,:)
-           WHERE ( zmask(:,:) /= 0 ) zmask(:,:)=1
+
+           zmask = 1.
+           WHERE ( zs == zsps .OR. zt == zsps ) zmask = 0.
            zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
 
            ! limitation to 'wet' points
