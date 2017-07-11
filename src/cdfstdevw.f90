@@ -50,11 +50,13 @@ PROGRAM cdfstdevw
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
-  cv_in = cn_vovecrtz
+  cv_in  = cn_vovecrtz
+  cv_in2 = TRIM(cn_vovecrtz)//'_sqd'
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfstdevw -w W-file -w2 W2-file [-v IN-var] [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfstdevw -w W-file -w2 W2-file  [-o OUT-file] [-nc4] ...'
+     PRINT *,'               .... [-var IN-var IN-var2]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the standard deviation of the vertical velocity from its mean'
@@ -67,11 +69,12 @@ PROGRAM cdfstdevw
      PRINT *,'       -w2 W2-file : netcdf file with mean squared values for w or <IN-var>' 
      PRINT *,'      '
      PRINT *,'     OPTIONS: '
-     PRINT *,'        [-v IN-var] : give name of variable if not ', TRIM(cn_vovecrtz)
      PRINT *,'        [-o OUT-file] : specify the name of the output file instead of ',TRIM(cf_out)
      PRINT *,'        [-nc4 ]   : Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'              This option is effective only if cdftools are compiled with'
      PRINT *,'              a netcdf library supporting chunking and deflation.'
+     PRINT *,'        [-var IN-var IN-var2] : give name of mean variable if not ', TRIM(cn_vovecrtz)
+     PRINT *,'              and ',TRIM(cn_vovecrtz)//'_sqd'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -93,9 +96,10 @@ PROGRAM cdfstdevw
      CASE ( '-w'   ) ; CALL getarg(ijarg, cf_in ) ; ijarg=ijarg+1
      CASE ( '-w2'  ) ; CALL getarg(ijarg, cf_in2) ; ijarg=ijarg+1
         ! options
-     CASE ( '-v'   ) ; CALL getarg(ijarg, cv_in ) ; ijarg=ijarg+1 ; cf_out='rms_'//TRIM(cv_in)//'.nc'
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE ( '-var' ) ; CALL getarg(ijarg, cv_in ) ; ijarg=ijarg+1 ; cf_out='rms_'//TRIM(cv_in)//'.nc'
+       ;             ; CALL getarg(ijarg, cv_in2) ; ijarg=ijarg+1
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
@@ -122,7 +126,6 @@ PROGRAM cdfstdevw
 
   ierr = getvaratt(cf_in, cv_in, cl_units, rmiss, cl_longname, cl_shortname )
 
-  cv_in2 = TRIM(cv_in)//'_sqd'
   DO jt = 1, npt
      DO jk = 1, npk
         zvbar(:,:) = getvar(cf_in,  cv_in,  jk, npiglo, npjglo, ktime=jt)

@@ -40,6 +40,8 @@ PROGRAM cdfrmsssh
   CHARACTER(LEN=256)                         :: cf_out = 'rms.nc' ! output file name
   CHARACTER(LEN=256)                         :: cv_in, cv_in2     ! input variable names
   CHARACTER(LEN=256)                         :: cldum             ! dummy character variable
+  CHARACTER(LEN=256)                         :: cl_sossheig       ! local name for ssh
+  CHARACTER(LEN=256)                         :: cl_sossheig2      ! local name for ssh2
 
   TYPE(variable), DIMENSION(1)               :: stypvaro          ! output data structure
 
@@ -48,11 +50,10 @@ PROGRAM cdfrmsssh
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
-  cv_in = cn_sossheig
-
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfrmsssh -t T-file -t2 T2-file [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfrmsssh -t T-file -t2 T2-file [-o OUT-file] [-nc4] ... '
+     PRINT *,'            ...  [-var VAR-ssh VAR-ssh2]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the standard deviation of the SSH from its mean value'
@@ -72,31 +73,41 @@ PROGRAM cdfrmsssh
      PRINT *,'       [-o OUT-file] : specify the name of the output file instead'
      PRINT *,'            of default name ', TRIM(cf_out)
      PRINT *,'       [-nc4] : use netcdf4 with chunking and deflation '
+     PRINT *,'       [-var VAR-ssh VAR-ssh2] : specify the variable name for mean and '
+     PRINT *,'             mean-squared ssh, if they differ from the standard names.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless option -o is used.'
-     PRINT *,'         variables : ', TRIM(cv_in)//'_rms, same unit than the input.'
+     PRINT *,'         variables : ', TRIM(cn_sossheig)//'_rms, same unit than the input.'
      PRINT *,'      '
      PRINT *,'     SEA ALSO :'
      PRINT *,'       cdfstd, cdfstdevw, cdfstdevts.'
      STOP 
   ENDIF
 
+  cl_sossheig  = cn_sossheig
+  cl_sossheig2 = TRIM(cn_sossheig)//'_sqd'
+
   ijarg = 1  
   DO WHILE ( ijarg <= narg) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_in  ) ; ijarg=ijarg+1
-     CASE ( '-t2'  ) ; CALL getarg(ijarg, cf_in2 ) ; ijarg=ijarg+1
+     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_in        ) ; ijarg=ijarg+1
+     CASE ( '-t2'  ) ; CALL getarg(ijarg, cf_in2       ) ; ijarg=ijarg+1
         ! options
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out       ) ; ijarg=ijarg+1
+     CASE ( '-var' ) ; CALL getarg(ijarg, cl_sossheig  ) ; ijarg=ijarg+1
+       ;             ; CALL getarg(ijarg, cl_sossheig2 ) ; ijarg=ijarg+1
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  cv_in  = cl_sossheig
+  cv_in2 = cl_sossheig2
 
   ! check existence of files
   lchk = lchk .OR. chkfile(cf_in  )
@@ -118,7 +129,6 @@ PROGRAM cdfrmsssh
 
   CALL CreateOutput
 
-  cv_in2 = TRIM(cv_in)//'_sqd'
   DO jt = 1, npt
      zvbar(:,:) = getvar(cf_in,  cv_in,  1, npiglo, npjglo, ktime=jt)
      zvba2(:,:) = getvar(cf_in2, cv_in2, 1, npiglo, npjglo, ktime=jt)
