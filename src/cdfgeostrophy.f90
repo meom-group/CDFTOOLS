@@ -190,7 +190,10 @@ PROGRAM cdfgeostrophy
   lchk = chkfile(cf_tfil) .OR. lchk
   IF ( lchk ) STOP 99 ! missing file
 
-  IF ( lg_vvl ) cn_fe3t = cf_tfil
+  IF ( lg_vvl ) THEN
+     cn_fe3t = cf_tfil
+     cn_ve3t = cn_ve3tvvl
+  ENDIF
 
   npiglo = getdim(cf_tfil, cn_x)
   npjglo = getdim(cf_tfil, cn_y)

@@ -120,7 +120,10 @@ PROGRAM cdfbn2
   ! Look for missing value for salinity
   zsps = getspval(cf_tfil, cn_vosaline)
 
-  IF ( lg_vvl ) cn_fe3w = cf_e3w
+  IF ( lg_vvl ) THEN
+    cn_fe3w = cf_e3w
+    cn_ve3w = cn_ve3wvvl
+  ENDIF
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)

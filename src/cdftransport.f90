@@ -321,6 +321,8 @@ PROGRAM cdftransport
      ! when vvl vertical metrics is stored in the data file with name cn_ve3u 
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil
+     cn_ve3u = cn_ve3uvvl
+     cn_ve3v = cn_ve3vvvl
      it      = itime
   ENDIF
 

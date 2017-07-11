@@ -308,6 +308,8 @@ PROGRAM cdftransig_xy3d
         IF ( lg_vvl ) THEN
           cn_fe3u = cf_ufil
           cn_fe3v = cf_vfil
+          cn_ve3u = cn_ve3uvvl
+          cn_ve3v = cn_ve3vvvl
         ENDIF
 
         ! check existence of files

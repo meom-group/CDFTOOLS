@@ -140,7 +140,10 @@ PROGRAM cdfisopsi
 
   IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cn_fhgr) ) STOP 99  ! missing file
 
-  IF ( lg_vvl ) cn_fe3t = cf_tfil
+  IF ( lg_vvl ) THEN
+     cn_fe3t = cf_tfil
+     cn_ve3t = cn_ve3t
+  ENDIF
 
   PRINT *, 'Potential density referenced at ', refdepth , ' meters'
   PRINT *, 'Isopycn for projection is ', zsigmaref

@@ -174,9 +174,13 @@ PROGRAM cdfvertmean
 
   SELECT CASE ( ctype)
   CASE( 'T','t');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3t ; cv_e31d=cn_ve3t1d ;  cv_msk = cn_tmask ; cf_e3 = cn_fe3t
+                   IF (lg_vvl ) cv_e3 = cn_ve3tvvl
   CASE( 'U','u');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3u ; cv_e31d=cn_ve3t1d ;  cv_msk = cn_umask ; cf_e3 = cn_fe3u
+                   IF (lg_vvl ) cv_e3 = cn_ve3uvvl
   CASE( 'V','v');  cv_dep=cn_gdepw ; cv_e3 = cn_ve3v ; cv_e31d=cn_ve3t1d ;  cv_msk = cn_vmask ; cf_e3 = cn_fe3v
+                   IF (lg_vvl ) cv_e3 = cn_ve3vvvl
   CASE( 'W','w');  cv_dep=cn_gdept ; cv_e3 = cn_ve3w ; cv_e31d=cn_ve3w1d ;  cv_msk = cn_tmask ; cf_e3 = cn_fe3w
+                   IF (lg_vvl ) cv_e3 = cn_ve3wvvl
   CASE DEFAULT ; PRINT *,'Point type ', TRIM(ctype),' not known! ' ; STOP 99
   END SELECT
 

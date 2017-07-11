@@ -29,6 +29,10 @@
   CHARACTER(LEN=256) :: cn_ve3w1d='e3w'                !: e3. (1D). 
   CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3. ( 3D). 
   CHARACTER(LEN=256) :: cn_ve3u='e3u', cn_ve3v='e3v'   !: e3.
+  ! VVL case [ In CPMIP so far, only one name is used. ]
+  CHARACTER(LEN=256) :: cn_ve3tvvl='thkcello', cn_ve3wvvl='thkcello'   !: e3. (3D). 
+  CHARACTER(LEN=256) :: cn_ve3uvvl='thkcello', cn_ve3vvvl='thkcello'   !: e3.
+
   CHARACTER(LEN=256) :: cn_vff='ff'
 
   CHARACTER(LEN=256) :: cn_gdept='gdept', cn_gdepw='gdepw'   !: 1d dep variable

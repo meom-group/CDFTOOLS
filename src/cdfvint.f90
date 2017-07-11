@@ -143,7 +143,10 @@ PROGRAM cdfvint
   lchk = chkfile ( cn_fzgr ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
 
-  IF (lg_vvl ) cn_fe3t = cf_in
+  IF (lg_vvl ) THEN
+     cn_fe3t = cf_in
+     cn_ve3t = cn_ve3tvvl
+  ENDIF
 
   IF ( ltmean .AND. cv_in == cn_vosaline ) THEN
      PRINT *,' WARNING : flag -tmean is useless with variable', TRIM(cv_in)

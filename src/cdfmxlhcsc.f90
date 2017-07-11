@@ -162,7 +162,10 @@ PROGRAM cdfmxlhcsc
   lchk = chkfile (cf_tfil) .OR. lchk
   IF ( .NOT. lmld ) lchk = chkfile (cf_mld) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
-  IF ( lg_vvl ) cn_fe3t = cf_tfil 
+  IF ( lg_vvl ) THEN
+     cn_fe3t = cf_tfil 
+     cn_ve3t = cn_ve3tvvl
+  ENDIF
 
   ! read dimensions 
   npiglo = getdim (cf_tfil, cn_x)

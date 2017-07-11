@@ -265,7 +265,8 @@ PROGRAM cdfmoy
   cv_e3 = 'none'
   IF ( lg_vvl ) THEN
      DO jvar = 1, nvars
-        IF ( INDEX(cv_nam(jvar), 'e3' ) /= 0 ) THEN
+        ! in case of CMIP6 names, cn_ve3tvvl is identical for U v W grid ... so far ! CAUTION if changed !
+        IF ( INDEX(cv_nam(jvar), 'e3') /= 0  .OR. INDEX(cv_nam(jvar), cn_ve3tvvl) /= 0 ) THEN
            cv_e3=cv_nam(jvar)
            EXIT
         ENDIF

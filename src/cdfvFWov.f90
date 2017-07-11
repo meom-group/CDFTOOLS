@@ -134,7 +134,10 @@ PROGRAM cdfvFWov
   lchk = lchk .OR. chkfile ( cf_mask )
 
   IF ( lchk ) STOP 99 ! missing files
-  IF ( lg_vvl ) cn_fe3v = cf_vfil
+  IF ( lg_vvl ) THEN
+     cn_fe3v = cf_vfil
+     cn_ve3v = cn_ve3vvvl
+  ENDIF
 
   !! get dimensions of input file containing data
   npiglo = getdim(cf_vfil, cn_x)

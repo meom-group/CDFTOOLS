@@ -133,7 +133,10 @@ PROGRAM cdfbotpressure
   lchk = chkfile ( cn_fzgr ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
 
-  IF ( lg_vvl ) cn_fe3t = cf_in
+  IF ( lg_vvl ) THEN 
+     cn_fe3t = cf_in
+     cn_ve3t = cn_ve3tvvl
+  ENDIF
 
   npiglo = getdim (cf_in, cn_x )
   npjglo = getdim (cf_in, cn_y )

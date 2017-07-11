@@ -162,6 +162,7 @@ PROGRAM cdfdegrad
      cv_e3    = cn_ve3t
      cv_e31d  = cn_ve3t1d
      cv_msk   = cn_tmask
+     IF (lg_vvl ) cv_e3 = cn_ve3tvvl
   CASE ( 'U' )
      ll_pu = .TRUE.
      IF ( .NOT. lstart ) THEN ; iimin=1 ; ijmin=2 ; ENDIF
@@ -171,6 +172,7 @@ PROGRAM cdfdegrad
      cv_e3    = cn_ve3u
      cv_e31d  = cn_ve3t1d
      cv_msk   = cn_umask
+     IF (lg_vvl ) cv_e3 = cn_ve3uvvl
   CASE ( 'V' )
      ll_pv = .TRUE.
      IF ( .NOT. lstart ) THEN ; iimin=2 ; ijmin=1 ; ENDIF
@@ -180,6 +182,7 @@ PROGRAM cdfdegrad
      cv_e3    = cn_ve3v
      cv_e31d  = cn_ve3t1d
      cv_msk   = cn_vmask
+     IF (lg_vvl ) cv_e3 = cn_ve3vvvl
   CASE ( 'W' )
      ll_pw = .TRUE.
      IF ( .NOT. lstart ) THEN ; iimin=2 ; ijmin=2 ; ENDIF
@@ -189,6 +192,7 @@ PROGRAM cdfdegrad
      cv_e3    = cn_ve3w
      cv_e31d  = cn_ve3w1d
      cv_msk   = cn_tmask
+     IF (lg_vvl ) cv_e3 = cn_ve3wvvl
   CASE DEFAULT ; PRINT *,' ERROR : C-grid point ', TRIM(ctyp),' not recognized' ; STOP 99
   END SELECT
 

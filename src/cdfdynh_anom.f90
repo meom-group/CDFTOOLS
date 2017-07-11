@@ -128,7 +128,10 @@ PROGRAM cdfdynh_anom
   IF ( lout ) cf_out2d = cf_out  !  name of 2D file if -limit is used
 
   IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP 99 ! missing files
-  IF ( lg_vvl ) cn_fe3t = cf_tfil
+  IF ( lg_vvl ) THEN 
+    cn_fe3t = cf_tfil
+    cn_ve3t = cn_ve3tvvl
+  ENDIF
 
   ! Look for Missing value for salinity
   zsps = getspval(cf_tfil, cn_vosaline)

@@ -213,7 +213,10 @@ PROGRAM cdfmhst
   ENDIF
 
   IF ( lchk ) STOP 99 ! missing files
-  IF ( lg_vvl ) cn_fe3v = cf_vtfil  ! REM: in case of vvl e3v is either in VT file or in V file 
+  IF ( lg_vvl ) THEN
+     cn_fe3v = cf_vtfil  ! REM: in case of vvl e3v is either in VT file or in V file 
+     cn_ve3v = cn_ve3vvvl
+  ENDIF
 
   ! check for sub basin file and set appropriate variables
   IF ( .NOT. chkfile(cn_fbasins ) ) THEN

@@ -250,7 +250,10 @@ PROGRAM cdfsigintegr
         IF ( chkfile (cf_in) ) STOP 99 ! missing file
         PRINT *,'working with ', TRIM(cf_in)
         ! JMM : not obvious to find file wirh correct e3t
-        IF (lg_vvl ) cn_fe3t = cf_rho
+        IF (lg_vvl )  THEN
+           cn_fe3t = cf_rho
+           cn_ve3t = cn_ve3tvvl
+        ENDIF
 
         ! create output file
         cf_out=TRIM(cf_in)//'.integr'

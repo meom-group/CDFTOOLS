@@ -118,7 +118,10 @@ PROGRAM cdfmxlheatc
   lchk = chkfile (cf_tfil) .OR. lchk
   lchk = chkfile (cf_mfil) .OR. lchk
   IF ( lchk   ) STOP 99 ! missing files
-  IF ( lg_vvl ) cn_fe3t = cf_tfil
+  IF ( lg_vvl ) THEN
+     cn_fe3t = cf_tfil
+     cn_ve3t = cn_ve3tvvl
+  ENDIF
 
   CALL SetGlobalAtt( cglobal) 
 

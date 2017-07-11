@@ -234,7 +234,10 @@ PROGRAM cdfmoc
   IF ( ldec  ) lchk = lchk .OR. chkfile (TRIM(cf_tfil)) .OR. chkfile (TRIM(cf_sfil)) 
   IF ( lrap  ) lchk = lchk .OR. chkfile (TRIM(cf_tfil)) .OR. chkfile (TRIM(cf_sfil)) .OR. chkfile(TRIM(cf_ufil)) 
   IF ( lchk  ) STOP 99  ! missing file(s)
-  IF ( lg_vvl) cn_fe3v = cf_vfil
+  IF ( lg_vvl) THEN
+     cn_fe3v = cf_vfil
+     cn_ve3v = cn_ve3vvvl
+  ENDIF
 
   IF ( lrap ) THEN 
      ! all the work will be done in a separated routine for RAPID-MOCHA section

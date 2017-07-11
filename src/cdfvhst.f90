@@ -107,6 +107,8 @@ PROGRAM cdfvhst
   IF ( lg_vvl) THEN 
      cn_fe3u = cf_vtfil 
      cn_fe3v = cf_vtfil 
+     cn_ve3u = cn_ve3uvvl
+     cn_ve3v = cn_ve3vvvl
      lchkvar = lchkvar .AND.chkvar( cn_fe3u, cn_ve3u)
      lchkvar = lchkvar .AND.chkvar( cn_fe3v, cn_ve3v)
      IF ( lchkvar ) THEN ; PRINT *,'no vertical metrics for vvl' ; STOP 99 ! missing e3 metrics in VT file 

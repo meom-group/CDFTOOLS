@@ -286,6 +286,9 @@ PROGRAM cdf_xtract_brokenline
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil
      cn_fe3w = cf_wfil
+     cn_ve3u = cn_ve3uvvl
+     cn_ve3v = cn_ve3vvvl
+     cn_ve3w = cn_ve3wvvl
   ENDIF
 
   IF ( lice ) THEN 

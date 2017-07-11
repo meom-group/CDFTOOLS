@@ -125,6 +125,10 @@ PROGRAM cdfw
      cn_fe3u = cf_ufil
      cn_fe3v = cf_vfil
      cn_fe3t = cf_tfil
+
+     cn_ve3u = cn_ve3uvvl
+     cn_ve3v = cn_ve3vvvl
+     cn_ve3t = cn_ve3tvvl
   ENDIF
 
   npiglo = getdim(cf_ufil,cn_x)

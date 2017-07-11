@@ -119,6 +119,7 @@ PROGRAM cdfets
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
         ;              CALL getarg (ijarg, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
+        ;              cn_ve3w = cn_ve3wvvl                         ! change default cn_ve3w
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO

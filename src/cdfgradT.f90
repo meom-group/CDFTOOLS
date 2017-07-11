@@ -113,7 +113,10 @@ PROGRAM cdfgradT
   ENDDO
 
   IF ( cf_sfil == '' ) cf_sfil = cf_tfil
-  IF ( lg_vvl        ) cn_fe3w = cf_e3w
+  IF ( lg_vvl        ) THEN
+     cn_fe3w = cf_e3w
+     cn_ve3w = cn_ve3wvvl
+  ENDIF
 
   lchk = ( lchk .OR. chkfile(cf_tfil) )
   lchk = ( lchk .OR. chkfile(cf_sfil) )

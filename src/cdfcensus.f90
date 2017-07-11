@@ -208,7 +208,10 @@ PROGRAM cdfcensus
   ij1 = MAX(ij1,1) ; ij2 = MIN(ij2,npjglo)
   ik1 = MAX(ik1,1) ; ik2 = MIN(ik2,npk   )
 
-  IF ( lg_vvl ) cn_fe3t=cf_tfil
+  IF ( lg_vvl ) THEN
+     cn_fe3t=cf_tfil
+     cn_ve3t=cn_ve3tvvl
+  ENDIF
 
   PRINT '(a,6i5)','indices:',ii1, ii2, ij1, ij2, ik1, ik2
 

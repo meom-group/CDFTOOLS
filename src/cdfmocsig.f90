@@ -209,7 +209,10 @@ PROGRAM cdfmocsig
   ! Look for salinity spval
   zsps = getspval(cf_tfil, cn_vosaline)
 
-  IF ( lg_vvl )  cn_fe3v = cf_vfil
+  IF ( lg_vvl )  THEN
+     cn_fe3v = cf_vfil
+     cn_ve3v = cn_ve3vvvl
+  ENDIF
 
   ! re-use lchk for binning control : TRUE if no particular binning specified
   lchk = lbin(1) .OR. lbin(2) .OR. lbin(3) 

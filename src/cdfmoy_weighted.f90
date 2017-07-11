@@ -188,7 +188,8 @@
   cv_e3 = 'none'
   IF ( lg_vvl ) THEN
     DO jvar = 1, nvars
-      IF ( INDEX(cv_names(jvar), 'e3' ) /= 0 ) THEN
+      ! Caution for CMIP6 if cn_ve3xxx differs from file to files... 
+      IF ( INDEX(cv_names(jvar), 'e3' ) /= 0 .OR. INDEX(cv_names(jvar), cn_ve3tvvl ) /= 0 ) THEN
          cv_e3=cv_names(jvar)
          EXIT
       ENDIF

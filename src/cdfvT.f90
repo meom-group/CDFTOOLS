@@ -130,6 +130,8 @@ PROGRAM cdfvT
 
   IF ( lg_vvl ) THEN
      nvaro = 6  ! UT US VT VS e3u, e3v
+     cn_ve3u = cn_ve3uvvl
+     cn_ve3v = cn_ve3vvvl
   ELSE
      nvaro = 4  ! UT US VT VS
   ENDIF

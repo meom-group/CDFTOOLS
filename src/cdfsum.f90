@@ -218,6 +218,7 @@ PROGRAM cdfsum
      cv_msk = cn_tmask
      cv_dep = cn_gdept
      cdep   = cn_vdeptht
+     IF (lg_vvl) cv_e3 = cn_ve3tvvl
   CASE ( 'U' )
      cv_e1  = cn_ve1u
      cv_e2  = cn_ve2u
@@ -226,6 +227,7 @@ PROGRAM cdfsum
      cv_msk = cn_umask
      cv_dep = cn_gdept
      cdep   = cn_vdepthu
+     IF (lg_vvl) cv_e3 = cn_ve3uvvl
   CASE ( 'V' )
      cv_e1  = cn_ve1v
      cv_e2  = cn_ve2v
@@ -234,6 +236,7 @@ PROGRAM cdfsum
      cv_msk = cn_vmask
      cv_dep = cn_gdept
      cdep   = cn_vdepthv
+     IF (lg_vvl) cv_e3 = cn_ve3vvvl
   CASE ( 'F' )
      cv_e1  = cn_ve1f
      cv_e2  = cn_ve2f
@@ -242,6 +245,7 @@ PROGRAM cdfsum
      cv_msk = cn_fmask
      cv_dep = cn_gdept
      cdep   = cn_vdeptht
+     IF (lg_vvl) cv_e3 = cn_ve3tvvl
   CASE ( 'W' )
      cv_e1  = cn_ve1t
      cv_e2  = cn_ve2t
@@ -250,6 +254,7 @@ PROGRAM cdfsum
      cv_msk = cn_tmask
      cv_dep = cn_gdepw
      cdep   = cn_vdepthw
+     IF (lg_vvl) cv_e3 = cn_ve3wvvl
   CASE DEFAULT
      PRINT *, 'this type of variable is not known :', TRIM(cvartype)
      STOP 99

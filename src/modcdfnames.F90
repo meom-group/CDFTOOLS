@@ -45,6 +45,10 @@ MODULE modCdfNames
   CHARACTER(LEN=255) :: cn_ve3w1d='e3w'                !: e3. (1D). 
   CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3. (3D). 
   CHARACTER(LEN=256) :: cn_ve3u='e3u', cn_ve3v='e3v'   !: e3.
+  ! VVL case
+  CHARACTER(LEN=256) :: cn_ve3tvvl='e3t', cn_ve3wvvl='e3w'   !: e3. (3D). 
+  CHARACTER(LEN=256) :: cn_ve3uvvl='e3u', cn_ve3vvvl='e3v'   !: e3.
+
   CHARACTER(LEN=256) :: cn_vff='ff'
 
   CHARACTER(LEN=256) :: cn_gdept='gdept', cn_gdepw='gdepw'   !: 1d dep variable
@@ -202,7 +206,8 @@ MODULE modCdfNames
     NAMELIST/nammetrics/ cn_ve1t, cn_ve1u, cn_ve1v, cn_ve1f
     NAMELIST/nammetrics/ cn_ve2t, cn_ve2u, cn_ve2v, cn_ve2f
     NAMELIST/nammetrics/ cn_ve3t1d, cn_ve3w1d
-    NAMELIST/nammetrics/ cn_ve3t, cn_ve3w, cn_ve3u, cn_ve3t
+    NAMELIST/nammetrics/ cn_ve3t, cn_ve3w, cn_ve3u, cn_ve3v
+    NAMELIST/nammetrics/ cn_ve3tvvl, cn_ve3wvvl, cn_ve3uvvl, cn_ve3vvvl
     NAMELIST/nammetrics/ cn_vff
     NAMELIST/nammetrics/ cn_glamt, cn_glamu, cn_glamv, cn_glamf
     NAMELIST/nammetrics/ cn_gphit, cn_gphiu, cn_gphiv, cn_gphif

@@ -131,7 +131,10 @@ PROGRAM cdffwc
   lchk = chkfile (cf_subbas) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
 
-  IF ( lg_vvl ) cn_fe3t = cf_in
+  IF ( lg_vvl ) THEN
+    cn_fe3t = cf_in
+    cn_ve3t = cn_ve3tvvl
+  ENDIF
 
   ! log information so far
   PRINT *,' OUTPUT FILE     : ' , TRIM(cf_out)
