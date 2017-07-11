@@ -688,7 +688,7 @@ CONTAINS
     DO jbasin = 1, nbasin
        lchkv=lchkv .OR. chkvar(cn_fbasins,cbasins(jbasin))
     END DO
-    IF ( lchkv ) STOP 99 99 ! missing variables.
+    IF ( lchkv ) STOP 99 ! missing variables.
 
   END SUBROUTINE GetLstMask
 

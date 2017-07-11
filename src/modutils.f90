@@ -140,7 +140,7 @@ CONTAINS
        iposm=INDEX(cldum2,'-')
        IF ( iposm == 0 ) THEN
           ksiz=ksiz+1 
-          IF (ksiz > jp_maxlist) THEN ; PRINT *'jp_maxlist too small in getlist ' ; STOP 97
+          IF (ksiz > jp_maxlist) THEN ; PRINT *, 'jp_maxlist too small in getlist ' ; STOP 97
           ENDIF
           READ(cldum2,* ) itmp(ksiz)
        ELSE
@@ -148,7 +148,7 @@ CONTAINS
           READ(cldum2(iposm+1:),* ) ik2
           DO jk = ik1,ik2
              ksiz=ksiz+1 
-             IF (ksiz > jp_maxlist) THEN ; PRINT *'jp_maxlist too small in getlist ' ; STOP 97
+             IF (ksiz > jp_maxlist) THEN ; PRINT *, 'jp_maxlist too small in getlist ' ; STOP 97
              ENDIF
              itmp(ksiz)=jk
           ENDDO

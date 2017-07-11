@@ -27,7 +27,7 @@ in the make.macro file, otherwise set
 
 ```NC4= ```
 
-In order to activate CMIP6 variable namimg convention (for input files), you need to set:
+In order to activate CMIP6 variable naming convention (for input files), you need to set:
 
 ```CMIP6=-Dkey_CMIP6 ```
 
@@ -94,9 +94,19 @@ Example:
 #### Modified user interface
  * All arguments are passed with a `-key` switch. No more `free` arguments. Example `cdfmoy -l fich1.nc fich2.nc`
  * Add `-o` and `-nc4` options in all tools (when relevant). With `-o` the default output name can be changed, allowing easier paralellisation. With `-nc4` output file will use NetCdf4/Hdf5 format with chunking and deflation level 1.
+ * Use of environment variable CDFT_xxx for overriding  the default names of auxiliary files such as mesh_hgr.nc, mask.nc etc...so far there is support for 
+
+   CDFT_MESH_HGR
+   CDFT_MESH_ZGR
+   CDFT_MASK
+   CDFT_BASINS
+   CDFT_COORD
 
 #### Support for vvl simulations
  * When relevant, the switch `-vvl` indicates that the vertical metrics is time-varying. Therefore, CDFTOOLS assume that the vertical metrics is saved in the same file than the data.
+
+#### Support for CMIP6 naming convention
+ * When the code is compiled with CPP key key_CMIP6 set, the default variable names are taken form modcdfnames_CMIP6.h90 instead of the standard DRAKKAR names.
 
 #### Simplification
  * The codes have been cleaned for obsolescences. Coding rules were reinforced.

@@ -117,7 +117,7 @@ PROGRAM cdf16bit
 
   IF (ierr /= 0 ) THEN
      npk   = getdim (cf_in,'z',kstatus=ierr)
-     IF (ierr /= 0 ) THEN ;  'print depth dimension name not suported' ; STOP 99
+     IF (ierr /= 0 ) THEN ;  PRINT *,' ERROR : depth dimension name not suported' ; STOP 99
      ENDIF
   ENDIF
   npt    = getdim (cf_in, cn_t)
