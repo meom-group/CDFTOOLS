@@ -2240,7 +2240,7 @@ CONTAINS
     istatus=NF90_INQ_VARID ( incid,'gdept_0',id_var)
     IF ( istatus == NF90_NOERR) THEN
      icount(1)=kk ; icount(3)=1
-     SELECT CASE (clvar)
+     SELECT CASE (cdvar)
         CASE ('gdepw') 
            clvar='gdepw_0'
         CASE ('gdept')
@@ -2254,7 +2254,7 @@ CONTAINS
     istatus=NF90_INQ_VARID ( incid,'gdept_1d',id_var)
     IF ( istatus == NF90_NOERR) THEN
      icount(1)=kk ; icount(3)=1
-     SELECT CASE (clvar)
+     SELECT CASE (cdvar)
         CASE ('gdepw') 
            clvar='gdepw_1d'
         CASE ('gdept')
