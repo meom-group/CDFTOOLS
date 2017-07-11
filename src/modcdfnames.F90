@@ -201,6 +201,7 @@ MODULE modCdfNames
     ! metrics in coordinates, mesh_hgr
     NAMELIST/nammetrics/ cn_ve1t, cn_ve1u, cn_ve1v, cn_ve1f
     NAMELIST/nammetrics/ cn_ve2t, cn_ve2u, cn_ve2v, cn_ve2f
+    NAMELIST/nammetrics/ cn_ve3t1d, cn_ve3w1d
     NAMELIST/nammetrics/ cn_ve3t, cn_ve3w, cn_ve3u, cn_ve3t
     NAMELIST/nammetrics/ cn_vff
     NAMELIST/nammetrics/ cn_glamt, cn_glamu, cn_glamv, cn_glamf

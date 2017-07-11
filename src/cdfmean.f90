@@ -343,7 +343,7 @@ PROGRAM cdfmean
      cv_e2    = cn_ve2t
      cf_e3    = cn_fe3t
      cv_e3    = cn_ve3w
-     cv_e31d  = cn_ve3w
+     cv_e31d  = cn_ve3w1d
      IF (cv_msk   == '' ) THEN ; cv_msk = cn_tmask ;
      ENDIF
      cv_dep   = cn_gdepw

@@ -25,7 +25,9 @@
   CHARACTER(LEN=256) :: cn_ve1u='e1u', cn_ve2u='e2u'   !: e.u
   CHARACTER(LEN=256) :: cn_ve1v='e1v', cn_ve2v='e2v'   !: e.v
   CHARACTER(LEN=256) :: cn_ve1f='e1f', cn_ve2f='e2f'   !: e.v
-  CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3. (1D or 3D). 
+  CHARACTER(LEN=256) :: cn_ve3t1d='e3t'                !: e3. (1D). 
+  CHARACTER(LEN=256) :: cn_ve3w1d='e3w'                !: e3. (1D). 
+  CHARACTER(LEN=256) :: cn_ve3t='e3t', cn_ve3w='e3w'   !: e3. ( 3D). 
   CHARACTER(LEN=256) :: cn_ve3u='e3u', cn_ve3v='e3v'   !: e3.
   CHARACTER(LEN=256) :: cn_vff='ff'
 

@@ -169,7 +169,7 @@ PROGRAM cdfdegrad
      cv_e1    = cn_ve1u
      cv_e2    = cn_ve2u
      cv_e3    = cn_ve3u
-     cv_e31d  = cn_ve3u
+     cv_e31d  = cn_ve3t1d
      cv_msk   = cn_umask
   CASE ( 'V' )
      ll_pv = .TRUE.
@@ -178,7 +178,7 @@ PROGRAM cdfdegrad
      cv_e1    = cn_ve1v
      cv_e2    = cn_ve2v
      cv_e3    = cn_ve3v
-     cv_e31d  = cn_ve3v
+     cv_e31d  = cn_ve3t1d
      cv_msk   = cn_vmask
   CASE ( 'W' )
      ll_pw = .TRUE.
@@ -187,7 +187,7 @@ PROGRAM cdfdegrad
      cv_e1    = cn_ve1t
      cv_e2    = cn_ve2t
      cv_e3    = cn_ve3w
-     cv_e31d  = cn_ve3w
+     cv_e31d  = cn_ve3w1d
      cv_msk   = cn_tmask
   CASE DEFAULT ; PRINT *,' ERROR : C-grid point ', TRIM(ctyp),' not recognized' ; STOP 99
   END SELECT
