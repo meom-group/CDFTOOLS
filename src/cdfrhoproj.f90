@@ -281,7 +281,8 @@ alpha=0.
         ierr = putvar(ncout, id_varout(1), zint , jsig, npiglo, npjglo)
      END DO
      ierr = closeout(ncout    )
-     STOP ' -isodep option in use: only compute depth of isopycnic surfaces.'
+     PRINT *,' -isodep option in use: only compute depth of isopycnic surfaces.'
+     STOP 
   ENDIF
   DEALLOCATE ( tim) 
 

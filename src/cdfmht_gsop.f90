@@ -136,7 +136,7 @@ PROGRAM cdfmht_gsop
      CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
         ! option
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
-     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
+     CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 
      END SELECT
   ENDDO
 
@@ -146,7 +146,7 @@ PROGRAM cdfmht_gsop
   lchk = lchk .OR. chkfile(cn_fbasins)
   lchk = lchk .OR. chkfile(cf_vfil )
   lchk = lchk .OR. chkfile(cf_tfil )
-  IF ( lchk ) STOP 1
+  IF ( lchk ) STOP 
 
   npiglo= getdim (cf_vfil,cn_x)
   npjglo= getdim (cf_vfil,cn_y)

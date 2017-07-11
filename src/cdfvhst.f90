@@ -109,7 +109,8 @@ PROGRAM cdfvhst
      cn_fe3v = cf_vtfil 
      lchkvar = lchkvar .AND.chkvar( cn_fe3u, cn_ve3u)
      lchkvar = lchkvar .AND.chkvar( cn_fe3v, cn_ve3v)
-     IF ( lchkvar ) STOP 'no vertical metrics for vvl' ! missing e3 metrics in VT file 
+     IF ( lchkvar ) THEN ; PRINT *,'no vertical metrics for vvl' ; STOP ! missing e3 metrics in VT file 
+     ENDIF
   ENDIF
 
   npiglo= getdim (cf_vtfil,cn_x )

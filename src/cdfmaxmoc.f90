@@ -128,7 +128,7 @@ PROGRAM cdfmaxmoc
   CASE ('pac') ; cv_in=cn_zomsfpac
   CASE ('inp') ; cv_in=cn_zomsfinp
   CASE ('ind') ; cv_in=cn_zomsfind
-  CASE DEFAULT ; STOP 'basin not found'
+  CASE DEFAULT ; PRINT *, ' basin not found !'; STOP 
   END SELECT
 
   ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )

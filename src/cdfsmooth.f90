@@ -143,7 +143,8 @@ PROGRAM cdfsmooth
      END SELECT
   ENDDO
 
-  IF ( ncut == 0 ) STOP ' cdfsmooth : ncut = 0 --> nothing to do !'
+  IF ( ncut == 0 ) THEN ; PRINT *, ' cdfsmooth : ncut = 0 --> nothing to do !' ; STOP
+  ENDIF
 
   IF ( chkfile(cf_in) ) STOP ! missing file
 

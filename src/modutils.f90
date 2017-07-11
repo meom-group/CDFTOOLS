@@ -100,7 +100,7 @@ CONTAINS
        WRITE(SetFileName,'(a,"_",a,"_grid_",a,".nc")') TRIM(cdconf), TRIM(cdtag), TRIM(cdgrid)
        IF ( chkfile( SetFileName, ld_verbose=.FALSE.) .AND. ll_stop  ) THEN
           PRINT *,' ERROR : missing grid',TRIM(cdgrid),'or even grid_',TRIM(cdgrid),' file '
-          STOP
+          STOP 97
        ENDIF
     ENDIF
   END FUNCTION SetFileName
@@ -139,13 +139,17 @@ CONTAINS
 
        iposm=INDEX(cldum2,'-')
        IF ( iposm == 0 ) THEN
-          ksiz=ksiz+1 ; IF (ksiz > jp_maxlist) STOP 'jp_maxlist too small in getlist '
+          ksiz=ksiz+1 
+          IF (ksiz > jp_maxlist) THEN ; PRINT *'jp_maxlist too small in getlist ' ; STOP 97
+          ENDIF
           READ(cldum2,* ) itmp(ksiz)
        ELSE
           READ(cldum2(1:iposm-1),*) ik1
           READ(cldum2(iposm+1:),* ) ik2
           DO jk = ik1,ik2
-             ksiz=ksiz+1 ; IF (ksiz > jp_maxlist) STOP 'jp_maxlist too small in getlist '
+             ksiz=ksiz+1 
+             IF (ksiz > jp_maxlist) THEN ; PRINT *'jp_maxlist too small in getlist ' ; STOP 97
+             ENDIF
              itmp(ksiz)=jk
           ENDDO
        ENDIF
@@ -210,7 +214,7 @@ CONTAINS
     ! check cdfs compliance
     IF ( cdfs(1:4)  /= 'fill' .AND. cdfs(1:6) /= 'smooth' ) THEN
        PRINT*, 'cdfs = ',cdfs ,' <> fill or smooth'
-       STOP
+       STOP 97
     ENDIF
     !
     ! ... Shapiro filter : 

@@ -664,7 +664,7 @@ SUBROUTINE zgr_bat_ctl
  ELSE
     PRINT *, '    e r r o r'
     PRINT *, '    parameter , nperio = ', nperio
-    STOP ' '
+    STOP 
  ENDIF
 
  ! write mbathy to file mesh_zgr

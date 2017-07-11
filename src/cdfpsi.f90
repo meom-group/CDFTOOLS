@@ -181,16 +181,16 @@ PROGRAM cdfpsi
   ENDIF
   ! check option compatibility
   IF ( llev .AND. lopen) THEN
-     PRINT *,' +++ error : cannot use both -lev and -open options.' ; STOP 1
+     PRINT *,' +++ error : cannot use both -lev and -open options.' ; STOP 
   ENDIF
   IF ( llev .AND. lssh) THEN
-     PRINT *,' +++ error : cannot use both -lev and -ssh options.' ; STOP 1
+     PRINT *,' +++ error : cannot use both -lev and -ssh options.' ; STOP 
   ENDIF
   IF ( llev .AND. lmean) THEN
-     PRINT *,' +++ error : cannot use both -lev and -mean options.' ; STOP 1
+     PRINT *,' +++ error : cannot use both -lev and -mean options.' ; STOP 
   ENDIF
   IF ( llev .AND. lmask) THEN
-     PRINT *,' +++ error : cannot use both -lev and -mask options.' ; STOP 1
+     PRINT *,' +++ error : cannot use both -lev and -mask options.' ; STOP 
   ENDIF
 
   npiglo = getdim (cf_ufil, cn_x)

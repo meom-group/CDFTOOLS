@@ -197,7 +197,7 @@ PROGRAM cdfmhst
   IF ( lsepf ) THEN  ! need to have cf_vfil and cf_tfil at least
      lchk = chkfile ( cf_vfil )
      lchk = lchk .OR. chkfile( cf_tfil )
-     IF ( lchk ) STOP 'Missing V-file of T-file '
+     IF ( lchk ) STOP   ! Missing files
      IF ( TRIM(cf_sfil) == 'none' ) cf_sfil = cf_tfil
      
   ENDIF

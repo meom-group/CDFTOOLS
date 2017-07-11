@@ -134,7 +134,7 @@ PROGRAM cdfmoyt
      CASE ( '-spval0' ) ; lspval0 = .TRUE.
      CASE ( '-o'      ) ; CALL getarg(ijarg, cf_root) ; ijarg=ijarg+1
      CASE ( '-nc4'    ) ; lnc4    = .TRUE.
-     CASE ( '-vvl'    ) ; lg_vvl  = .TRUE. ; STOP ' vvl not yet supported'
+     CASE ( '-vvl'    ) ; lg_vvl  = .TRUE. ; PRINT *, ' vvl not yet supported' ; STOP
      CASE DEFAULT       ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP
      END SELECT
   END DO
