@@ -34,7 +34,6 @@ PROGRAM cdfbn2
   INTEGER(KIND=4)                              :: ncout                    ! ncid of output file
   INTEGER(KIND=4), DIMENSION(2)                :: ipk, id_varout           ! level and id of output variables
 
-  REAL(KIND=4)                                 :: zpi                      ! 3.14...
   REAL(KIND=4)                                 :: zsps                     ! Missing value for salinity
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zn2                      ! Brunt Vaissala Frequency (N2)
@@ -137,8 +136,6 @@ PROGRAM cdfbn2
   ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk)
   ierr  = createvar   (ncout ,   stypvar,  1,      ipk,    id_varout, cdglobal=TRIM(cglobal))
   ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
-
-  zpi=ACOS(-1.)
 
   tim  = getvar1d(cf_tfil, cn_vtimec, npt   )
   ierr = putvar1d(ncout,  tim,       npt,'T')
