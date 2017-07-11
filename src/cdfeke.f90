@@ -47,6 +47,10 @@ PROGRAM cdfeke
   CHARACTER(LEN=256)                         :: cf_vfil, cf_v2fil   !   "
   CHARACTER(LEN=256)                         :: cf_tfil             !   "
   CHARACTER(LEN=256)                         :: cldum               ! dummy character variable
+  CHARACTER(LEN=256)                         :: cl_vozocrtx         ! local name of U component
+  CHARACTER(LEN=256)                         :: cl_vozocrtx2        ! local name of U2 component
+  CHARACTER(LEN=256)                         :: cl_vomecrty         ! local name of V component
+  CHARACTER(LEN=256)                         :: cl_vomecrty2        ! local name of V2 component
 
   TYPE(variable), DIMENSION(2)               :: stypvar             !
 
@@ -62,7 +66,7 @@ PROGRAM cdfeke
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfeke -u U-file [-u2 U2-file]  -v V-file [-v2 V2-file] -t T-file ...'
-     PRINT *,'            ... [-mke] [-o OUT-file] [-nc4]'
+     PRINT *,'            ... [-mke] [-o OUT-file] [-nc4] [-var VAR-u VAR-v VAR-u2 VAR-v2]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the Eddy Kinetic Energy from previously computed mean values'
@@ -85,6 +89,10 @@ PROGRAM cdfeke
      PRINT *,'       [-mke]  : output MKE field together with EKE. '
      PRINT *,'       [-nc4]  : allow netcdf4 output with compression and chunking.'
      PRINT *,'       [-o output file]: specify output file name instead of ', TRIM(cf_out)
+     PRINT *,'       [-var VAR-u VAR-v VAR-u2 VAR-v2]: specify the name of the mean and '
+     PRINT *,'            mean-squared velocity components if they differ from the standard'
+     PRINT *,'            names :',TRIM(cn_vozocrtx),', ',TRIM(cn_vozocrtx)//'_sqd, ' &
+       &                          ,TRIM(cn_vomecrty),', ',TRIM(cn_vomecrty)//'_sqd'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -99,6 +107,10 @@ PROGRAM cdfeke
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
   cf_u2fil='none' ; cf_v2fil='none'
+  cl_vozocrtx  = cn_vozocrtx
+  cl_vozocrtx2 = TRIM(cn_vozocrtx)//'sqd'
+  cl_vomecrty  = cn_vomecrty
+  cl_vomecrty2 = TRIM(cn_vomecrty)//'sqd'
   ip_eke=0        ; ip_mke=0
   ijarg = 1 
   DO WHILE ( ijarg <= narg )
@@ -112,6 +124,10 @@ PROGRAM cdfeke
      CASE ( '-mke' ) ; lmke = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out   ) ; ijarg = ijarg + 1
+     CASE ( '-var' ) ; CALL getarg(ijarg, cl_vozocrtx  ) ; ijarg = ijarg + 1
+       ;             ; CALL getarg(ijarg, cl_vomecrty  ) ; ijarg = ijarg + 1
+       ;             ; CALL getarg(ijarg, cl_vozocrtx2 ) ; ijarg = ijarg + 1
+       ;             ; CALL getarg(ijarg, cl_vomecrty2 ) ; ijarg = ijarg + 1
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.'
      END SELECT
   ENDDO
@@ -168,11 +184,11 @@ PROGRAM cdfeke
 
   DO jt = 1, npt  ! input file is likely to contain only one time frame but who knows ...
      DO jk = 1, npk
-        uc(:,:) = getvar(cf_ufil,  cn_vozocrtx,               jk, npiglo, npjglo, ktime=jt )
-        vc(:,:) = getvar(cf_vfil,  cn_vomecrty,               jk, npiglo, npjglo, ktime=jt )
+        uc(:,:) = getvar(cf_ufil,  cl_vozocrtx,               jk, npiglo, npjglo, ktime=jt )
+        vc(:,:) = getvar(cf_vfil,  cl_vomecrty,               jk, npiglo, npjglo, ktime=jt )
         IF ( leke ) THEN
-           u2(:,:) = getvar(cf_u2fil, TRIM(cn_vozocrtx)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
-           v2(:,:) = getvar(cf_v2fil, TRIM(cn_vomecrty)//'_sqd', jk ,npiglo, npjglo, ktime=jt )
+           u2(:,:) = getvar(cf_u2fil, cl_vozocrtx2, jk ,npiglo, npjglo, ktime=jt )
+           v2(:,:) = getvar(cf_v2fil, cl_vomecrty2, jk ,npiglo, npjglo, ktime=jt )
         ENDIF
 
         ua = 0. ; va = 0. ; eke(:,:) = 0.
