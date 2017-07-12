@@ -41,10 +41,11 @@ PROGRAM cdfvita
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout          ! output stuff
 
   REAL(KIND=4)                               :: pi                      ! pi
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                     ! time counter array
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdeptall, gdept         ! depths and selected depths
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: uc, vc                  ! velocity component on C grid
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ua, va, vmod, vdir      ! velocity component on A grid
+
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                    ! time counter array
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar                 ! data attributes
 
@@ -165,7 +166,7 @@ PROGRAM cdfvita
   ALLOCATE( uc(npiglo,npjglo), vc(npiglo,npjglo)  )
   ALLOCATE( ua(npiglo,npjglo), va(npiglo,npjglo)  )
   ALLOCATE( vmod(npiglo,npjglo), vdir(npiglo, npjglo)  )
-  ALLOCATE( tim(npt), gdeptall(npk) )
+  ALLOCATE( dtim(npt), gdeptall(npk) )
 
   gdeptall(:) = getvar1d(cf_tfil,cn_vdeptht, npk)
   DO jlev = 1, nlev
@@ -358,8 +359,8 @@ CONTAINS
     ierr  = createvar   (ncout ,   stypvar,  nvar,   ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, nlev,     pdep=gdept )
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,  tim,       npt, 'T')
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

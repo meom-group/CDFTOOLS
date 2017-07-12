@@ -38,15 +38,15 @@
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                 ! array of output var levels
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout           ! array of output var id's
 
-  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: v2d                 ! array to read a layer of data
-  REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: e3                  ! array to read vertical metrics
-  REAL(KIND=4), DIMENSION (:)  ,    ALLOCATABLE :: v1d                 ! array to read column of data
-  REAL(KIND=4), DIMENSION(1)                    :: timean, tim         ! time counter
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: v1d                 ! array to read column of data
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                 ! array to read a layer of data
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: e3                  ! array to read vertical metrics
 
-  REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dtab                ! array for cumulated values
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de3s                ! arrays for cumulated e3 (vvl)
-  REAL(KIND=8), DIMENSION (:)  ,    ALLOCATABLE :: dtab1d              ! array for cumulated values
   REAL(KIND=8)                                  :: dtotal_time, dsumw  ! cumulated times and weights
+  REAL(KIND=8), DIMENSION(1)                    :: dtimean, dtim       ! time counter
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtab1d              ! array for cumulated values
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab                ! array for cumulated values
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de3s                ! arrays for cumulated e3 (vvl)
 
   CHARACTER(LEN=256)                            :: cf_in               ! current input file name
   CHARACTER(LEN=256)                            :: cf_out='cdfmoy_weighted.nc' ! output file name
@@ -213,13 +213,13 @@
               cf_in = cf_lst(jt)
               iweight   = setweight(cf_in, jt, cv_names(jvar)) 
               dsumw     = dsumw + iweight
-              tim = getvar1d(cf_in, cn_vtimec, 1 )
-              dtotal_time = dtotal_time + iweight * tim(1)
+              dtim = getvar1d(cf_in, cn_vtimec, 1 )
+              dtotal_time = dtotal_time + iweight * dtim(1)
               v1d=getvare3(cf_in, cv_names(jvar), ipk(jvar) )
               dtab1d(:)=dtab1d(:) + iweight * v1d(:)
            ENDDO
-           timean(1) = dtotal_time/dsumw
-           ierr      = putvar1d(ncout, timean, 1, 'T')
+           dtimean(1)= dtotal_time/dsumw
+           ierr      = putvar1d(ncout, dtimean, 1, 'T')
            ierr      = putvar(ncout, id_varout(jvar), SNGL(dtab1d(:)/dsumw), ipk(jvar), 'vert', ktime=1 , kwght=INT(dsumw) )  ! module interface to putvare3
            DEALLOCATE (v1d, dtab1d)
         ELSE
@@ -244,8 +244,8 @@
               ENDIF
 
               IF (jk == 1 .AND. jvar == nvars )  THEN
-                 tim         = getvar1d(cf_in, cn_vtimec, 1 )
-                 dtotal_time = dtotal_time + iweight * tim(1)
+                 dtim        = getvar1d(cf_in, cn_vtimec, 1 )
+                 dtotal_time = dtotal_time + iweight * dtim(1)
               END IF
            END DO
 
@@ -257,8 +257,8 @@
              ierr = putvar(ncout, id_varout(jvar), SNGL(dtab(:,:)/dsumw), jk, npiglo, npjglo, kwght=INT(dsumw) )
            ENDIF
            IF (jk == 1 .AND. jvar == nvars )  THEN
-              timean(1) = dtotal_time/dsumw
-              ierr      = putvar1d(ncout, timean, 1, 'T')
+              dtimean(1) = dtotal_time/dsumw
+              ierr       = putvar1d(ncout, dtimean, 1, 'T')
            END IF
         END DO  ! loop to next level
         END IF ! 1D variable

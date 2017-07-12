@@ -51,12 +51,12 @@ PROGRAM cdfmoyt
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout          ! varid's of average vars
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout2         ! varid's of sqd average vars
 
-  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                ! array to read a layer of data
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zspval_in          ! input missing value
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                ! array to read a layer of data
 
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab, dtab2        ! arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtotal_time        ! to compute mean time
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab, dtab2        ! arrays for cumulated values
 
   CHARACTER(LEN=256)                            :: cf_in              ! input file names
   CHARACTER(LEN=256)                            :: cf_root = 'cdfmoyt'! root of the output file name
@@ -190,7 +190,7 @@ PROGRAM cdfmoyt
   PRINT *,' nvars = ', nvars
 
   ALLOCATE( dtab(npiglo,npjglo), dtab2(npiglo,npjglo), v2d(npiglo,npjglo) )
-  ALLOCATE( dtotal_time(npt), tim(npt) )
+  ALLOCATE( dtotal_time(npt), dtim(npt) )
   ALLOCATE (cv_nam(nvars), cv_nam2(nvars) )
   ALLOCATE (stypvar(nvars), stypvar2(nvars) )
   ALLOCATE (id_var(nvars), ipk(nvars), id_varout(nvars), id_varout2(nvars)  )
@@ -201,12 +201,12 @@ PROGRAM cdfmoyt
   dtotal_time(:) = 0.d0
   DO jfil = 1, nfiles 
      cf_in          = cf_lst(jfil)
-     tim(:)         = getvar1d(cf_in, cn_vtimec, npt)
-     dtotal_time(:) = dtotal_time(:) + tim (:)
+     dtim(:)        = getvar1d(cf_in, cn_vtimec, npt)
+     dtotal_time(:) = dtotal_time(:) + dtim (:)
   END DO
-  tim(:) = dtotal_time(:)/ nfiles
-  ierr   = putvar1d(ncout,  tim, npt, 'T')
-  ierr   = putvar1d(ncout2, tim, npt, 'T')
+  dtim(:)= dtotal_time(:)/ nfiles
+  ierr   = putvar1d(ncout,  dtim, npt, 'T')
+  ierr   = putvar1d(ncout2, dtim, npt, 'T')
 
   DO jrec = 1, npt
      DO jvar = 1,nvars

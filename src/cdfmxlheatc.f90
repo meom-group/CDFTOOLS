@@ -34,16 +34,16 @@ PROGRAM cdfmxlheatc
 
   REAL(KIND=4), PARAMETER                       :: rprho0=1020.        ! rho reference density
   REAL(KIND=4), PARAMETER                       :: rpcp=4000.          ! calorific capacity
+  REAL(KIND=4), DIMENSION(1)                    :: rdep                ! dummy depth output
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepw               ! vertical levels
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d                ! vertical metric full
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: e3                  ! metrics
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zt                  ! temperature in the MXL
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zmxl                ! depth of the MXL
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zmask               ! mask
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepw               ! vertical levels
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d                ! vertical metric full
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                 ! time counter
-  REAL(KIND=4), DIMENSION(1)                    :: rdep                ! dummy depth output
 
   REAL(KIND=8)                                  :: dvol                ! total volume
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dmxlheatc           ! heat content
 
   CHARACTER(LEN=256)                            :: cf_tfil             ! input file name
@@ -139,7 +139,7 @@ PROGRAM cdfmxlheatc
   ALLOCATE ( zmask(npiglo,npjglo), dmxlheatc(npiglo, npjglo) )
   ALLOCATE ( zt(npiglo,npjglo), zmxl(npiglo,npjglo)  )
   ALLOCATE ( e3(npiglo,npjglo) )
-  ALLOCATE ( gdepw(0:npk), tim(npt) )
+  ALLOCATE ( gdepw(0:npk), dtim(npt) )
 
   CALL CreateOutput
 
@@ -212,8 +212,8 @@ CONTAINS
   ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4 )
   ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
+  dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

@@ -31,7 +31,7 @@ PROGRAM cdfmkmask
   INTEGER(KIND=4)                           :: ji, jj, jk, jt           ! dummy loop index
   INTEGER(KIND=4)                           :: ierr                     ! working integer
   INTEGER(KIND=4)                           :: narg, iargc, ijarg       ! 
-  INTEGER(KIND=4)                           :: npiglo, npjglo, npk, nt  ! size of the domain
+  INTEGER(KIND=4)                           :: npiglo, npjglo, npk, npt ! size of the domain
   INTEGER(KIND=4)                           :: npkk                     ! handle case without vertical dim
   INTEGER(KIND=4)                           :: iimin, iimax             ! limit in i
   INTEGER(KIND=4)                           :: ijmin, ijmax             ! limit in j
@@ -43,11 +43,12 @@ PROGRAM cdfmkmask
   REAL(KIND=4)                              :: rlatmin, rlatmax         ! limit in latitude
   REAL(KIND=4)                              :: rbatmin, rbatmax         ! limit in latitude
   REAL(KIND=4)                              :: rvarmin, rvarmax         ! limit in variable
-  REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: tim                      ! time counter
   REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: rdep                     ! depth 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, zmask             ! 2D mask at current level
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat               ! latitude and longitude
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rbat                     ! bathymetry 
+
+  REAL(KIND=8), DIMENSION(:)  , ALLOCATABLE :: dtim                     ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil                  ! file name
   CHARACTER(LEN=256)                        :: cf_out = 'mask_sal.nc'   ! output file
@@ -190,29 +191,29 @@ PROGRAM cdfmkmask
   ELSE
      npk  = getdim (cf_tfil,cn_z)
   ENDIF
-  nt     = getdim (cf_tfil,cn_t)
+  npt    = getdim (cf_tfil,cn_t)
 
   PRINT *,' npiglo = ', npiglo
   PRINT *,' npjglo = ', npjglo
   PRINT *,' npk    = ', npk
-  PRINT *,' nt     = ', nt 
+  PRINT *,' npt    = ', npt
 
-  IF ( nt == 0 ) THEN
-     PRINT *,' nt is forced to 1'
-     nt = 1
+  IF ( npt == 0 ) THEN
+     PRINT *,' npt is forced to 1'
+     npt = 1
   ENDIF
 
-  IF ((nt > 1) .AND. (.NOT. ltime)) THEN 
-     PRINT *, "WARNING nt > 1"
+  IF ((npt > 1) .AND. (.NOT. ltime)) THEN 
+     PRINT *, "WARNING npt > 1"
      PRINT *, "we used only the first time step"
-     nt=1
+     npt=1
   END IF
 
   IF ( npk == 0 ) THEN ; npkk = 1
   ELSE                 ; npkk = npk
   ENDIF
 
-  ALLOCATE (tim(nt))
+  ALLOCATE (dtim(npt))
   CALL CreateOutput
 
   !! Allocate only usefull variable and read only usefull variable
@@ -239,8 +240,8 @@ PROGRAM cdfmkmask
   ENDIF
 
   !! Now compute the mask 
-  DO jt=1, nt
-     IF (MOD(jt,10)==0) PRINT *,jt,'/',nt,' ...'
+  DO jt=1, npt
+     IF (MOD(jt,10)==0) PRINT *,jt,'/',npt,' ...'
      DO jk=1, npkk
         ! tmask
         IF ( lmbathy ) THEN
@@ -360,8 +361,8 @@ CONTAINS
        ; ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=rdep, cdep='nav_lev')
     ELSE                ; ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk)
     ENDIF
-    tim(:) = 0.
-    ierr   = putvar1d(ncout, tim, nt,'T')
+    dtim = 0.d0
+    ierr = putvar1d(ncout, dtim, npt,'T')
 
   END SUBROUTINE CreateOutput
 

@@ -37,7 +37,8 @@ PROGRAM cdfnrj_transfert
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: wtxz
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: wbartbarxz
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: anowtxz
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim                ! time counter (dummy)
+
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim               ! time counter (dummy)
 
   CHARACTER(LEN=256)                          :: cf_uvwtfil         ! input file
   CHARACTER(LEN=256)                          :: cf_out='trf_t1t3.nc' ! output file
@@ -118,7 +119,7 @@ PROGRAM cdfnrj_transfert
   ALLOCATE ( wtxz(      npiglo,npk) )
   ALLOCATE ( anowtxz(   npiglo,npk) )
   ALLOCATE ( wbartbarxz(npiglo,npk) )  
-  ALLOCATE ( tim(npt)  )  
+  ALLOCATE ( dtim(npt)  )  
 
   CALL CreateOutput
 
@@ -187,8 +188,8 @@ CONTAINS
     ierr  = createvar   (ncout,    stypvar, 2,      ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,    cf_uvwtfil,   npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_uvwtfil, cn_vtimec, npt )
-    ierr = putvar1d(ncout, tim,       npt, 'T' )
+    dtim = getvar1d(cf_uvwtfil, cn_vtimec, npt )
+    ierr = putvar1d(ncout, dtim,      npt, 'T' )
 
   END SUBROUTINE CreateOutput
 

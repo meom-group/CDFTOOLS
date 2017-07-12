@@ -230,7 +230,7 @@ CONTAINS
     !!
     !! ** Method  :  Use global variables, defined in main 
     !!----------------------------------------------------------------------
-    REAL(KIND=4), DIMENSION(1) :: ztim
+    REAL(KIND=8), DIMENSION(1) :: dl_tim
     !!----------------------------------------------------------------------
     ! define new variables for output
     ipk(1) = 1  !  2D
@@ -251,8 +251,8 @@ CONTAINS
     ierr   = createvar   (ncout , stypvar, 1,  ipk,  id_varout,   ld_nc4=lnc4 )
     ierr   = putheadervar(ncout,  cn_fzgr, npiglo, npjglo, npk                )
    
-    ztim(1) = 0.
-    ierr = putvar1d( ncout, ztim,1 , 'T')
+    dl_tim(1) = 0.d0
+    ierr = putvar1d( ncout, dl_tim,1 , 'T')
 
   END SUBROUTINE CreateOutput
 

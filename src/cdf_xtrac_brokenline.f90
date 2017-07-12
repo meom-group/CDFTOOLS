@@ -71,7 +71,6 @@ PROGRAM cdf_xtract_brokenline
 
   REAL(KIND=4)                              :: ztmp
   REAL(KIND=4)                              :: xmin, xmax, ymin, ymax !
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! Model time array
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdept               ! Model deptht levels
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rxx, ryy            ! leg i j index of F points
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlonsta, rlatsta    ! Geographic position defining legs
@@ -103,6 +102,7 @@ PROGRAM cdf_xtract_brokenline
 
   REAL(KIND=8)                              :: dtmp    ! temporary cumulating variable
   REAL(KIND=8)                              :: dl_xmin, dl_xmax, dl_ymin, dl_ymax !
+  REAL(KIND=8), DIMENSION(:), ALLOCATABLE   :: dtim                ! Model time array
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE   :: dbarot  ! for barotropic transport computation
 
   CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
@@ -398,7 +398,7 @@ PROGRAM cdf_xtract_brokenline
   ALLOCATE ( iilegs(nstamax-1, npiglo+npjglo, nfiles), ijlegs(nstamax-1, npiglo+npjglo, nfiles) )
   ALLOCATE ( norm_u(nstamax-1, nfiles) , norm_v(nstamax-1, nfiles) )
   ALLOCATE ( rxx(npiglo+npjglo, nfiles), ryy(npiglo+npjglo, nfiles) )
-  ALLOCATE ( tim (npt), gdept(npk) )
+  ALLOCATE ( dtim (npt), gdept(npk) )
 
   gdept(:) = getvar1d(cf_tfil, cn_vdeptht, npk )
 
@@ -1182,8 +1182,8 @@ CONTAINS
     ncout(ksec) = create      (cf_out, cf_tfil, npsec(ksec),  1, npk, cdep=cn_vdeptht                    )
     ierr  = createvar   (ncout(ksec),  stypvar, nvar,  ipk, id_varout                                    )
     ierr  = putheadervar(ncout(ksec),  cf_tfil, npsec(ksec)-1,  1, npk, pnavlon=rlonsec, pnavlat=rlatsec )
-    tim   = getvar1d    (cf_tfil, cn_vtimec, npt                                                    )
-    ierr  = putvar1d    (ncout(ksec), tim, npt, 'T'                                                      )
+    dtim  = getvar1d    (cf_tfil, cn_vtimec, npt                                                         )
+    ierr  = putvar1d    (ncout(ksec), dtim, npt, 'T'                                                     )
 
   END SUBROUTINE CreateOutputFile
 

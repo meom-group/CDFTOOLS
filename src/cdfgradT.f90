@@ -37,11 +37,11 @@ PROGRAM cdfgradT
   INTEGER(KIND=4)                             :: itmp              ! working integer for swapping arrays
   INTEGER(KIND=4), DIMENSION(jp_varout)       :: ipk, id_varout    ! output variable
 
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim               ! time variable
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: umask, vmask, wmask ! relevant mask
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1u, e2v, e3w     ! metrics
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: zt, zs            ! Temperature Salinity on 2 levels
 
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim              ! time variable
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgradt_x, dgradt_y, dgradt_z  ! Temperature gradient component
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgrads_x, dgrads_y, dgrads_z  ! Salinity gradient component
 
@@ -137,7 +137,7 @@ PROGRAM cdfgradT
   PRINT *, 'npt    = ', npt
 
   !!  Allocate arrays
-  ALLOCATE (tim(npt) )
+  ALLOCATE (dtim(npt) )
   ALLOCATE (e1u  (npiglo,npjglo), e2v  (npiglo,npjglo), e3w  (npiglo,npjglo))
   ALLOCATE (umask(npiglo,npjglo), vmask(npiglo,npjglo), wmask(npiglo,npjglo))
   ALLOCATE (zt   (npiglo,npjglo,2), zs (npiglo,npjglo,2))
@@ -297,8 +297,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, jp_varout, ipk, id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,  tim,        npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

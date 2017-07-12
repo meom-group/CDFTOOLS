@@ -41,12 +41,12 @@ PROGRAM cdfstd
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk, id_varout      ! levels and varid's of output vars
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varoutm          ! varid's of mean var output (optional)
 
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zspval_in           ! [from SL]   
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                 ! 2d data array
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmask2d             ![from SL]  
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                 ! tim counter
-  REAL(KIND=4), DIMENSION(1)                    :: timean              ! mean time
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zspval_in           ! [from SL]   
 
+  REAL(KIND=8), DIMENSION(1)                    :: dtimean             ! mean time
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab, dtab2         ! cumulated values and squared values
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabprev, dtab2prev ! [from SL] keep value from the i-1 timestep
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dstd                ! standard deviation
@@ -203,10 +203,10 @@ PROGRAM cdfstd
 
               IF ( lcaltmean )  THEN
                  npt = getdim (cf_in, cn_t)
-                 ALLOCATE (tim(npt) )
-                 tim(:)      = getvar1d(cf_in, cn_vtimec, npt)
-                 dtotal_time = dtotal_time + SUM(DBLE(tim))
-                 DEALLOCATE ( tim ) 
+                 ALLOCATE (dtim(npt) )
+                 dtim(:)     = getvar1d(cf_in, cn_vtimec, npt)
+                 dtotal_time = dtotal_time + SUM(dtim)
+                 DEALLOCATE ( dtim ) 
               END IF
 
               DO jt=1,npt
@@ -260,9 +260,9 @@ PROGRAM cdfstd
            IF ( lsave ) ierr = putvar(ncou2, id_varoutm(jvar), REAL(dtab), jk, npiglo, npjglo, kwght=ntframe)
 
            IF ( lcaltmean )  THEN
-              timean(1) = dtotal_time / ntframe
-              ierr = putvar1d(ncout, timean, 1, 'T')
-              IF ( lsave ) ierr = putvar1d(ncou2, timean, 1, 'T')
+              dtimean(1) = dtotal_time / ntframe
+              ierr = putvar1d(ncout, dtimean, 1, 'T')
+              IF ( lsave ) ierr = putvar1d(ncou2, dtimean, 1, 'T')
               lcaltmean = .FALSE. ! tmean already computed 
            END IF
         END DO  ! loop to next level

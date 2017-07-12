@@ -42,7 +42,8 @@ PROGRAM cdfimprovechk
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztst              ! test array
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask             ! 2D mask at surface
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zchk              ! check index output
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim               ! time counter
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim              ! time counter
 
   CHARACTER(LEN=256)                        :: cf_obs            ! observation-file name
   CHARACTER(LEN=256)                        :: cf_ref            ! reference-file name
@@ -126,7 +127,7 @@ PROGRAM cdfimprovechk
   PRINT *, 'npt    = ', npt
 
   ALLOCATE (zobs(npiglo,npjglo), zref(npiglo,npjglo), ztst(npiglo,npjglo), zmask(npiglo,npjglo))
-  ALLOCATE (zchk(npiglo,npjglo), tim(npt) )
+  ALLOCATE (zchk(npiglo,npjglo), dtim(npt) )
 
   CALL CreateOutput
   zref  = 0. ;   zobs  = 0. ;  zmask = 1.
@@ -182,8 +183,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_ref,  npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_ref, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,  tim,       npt, 'T')
+    dtim = getvar1d(cf_ref, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

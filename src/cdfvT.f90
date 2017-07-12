@@ -42,9 +42,9 @@ PROGRAM cdfvT
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv               ! Velocity component
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zworku, zworkv       ! working arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3u, e3v             ! vertical metrics for vvl case
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter of individual files
-  REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
 
+  REAL(KIND=8), DIMENSION(1)                :: dtimean              ! mean time
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                 ! time counter of individual files
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulut, dcumulus   ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulvt, dcumulvs   ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumule3u, dcumule3v ! Arrays for cumulated vertical metrics (vvl case)
@@ -166,10 +166,10 @@ PROGRAM cdfvT
 
         npt = getdim (cf_tfil, cn_t)
         IF ( lcaltmean ) THEN
-           ALLOCATE ( tim(npt) )
-           tim = getvar1d(cf_tfil, cn_vtimec, npt)
-           dtotal_time = dtotal_time + SUM(tim(1:npt) )
-           DEALLOCATE( tim )
+           ALLOCATE ( dtim(npt) )
+           dtim        = getvar1d(cf_tfil, cn_vtimec, npt)
+           dtotal_time = dtotal_time + SUM(dtim(1:npt) )
+           DEALLOCATE( dtim )
         END IF
 
         ! assume U and V file have same time span ...
@@ -244,8 +244,8 @@ PROGRAM cdfvT
      ENDIF
 
      IF (lcaltmean )  THEN
-        timean(1) = dtotal_time/ntframe
-        ierr      = putvar1d(ncout, timean, 1, 'T')
+        dtimean(1) = dtotal_time/ntframe
+        ierr       = putvar1d(ncout, dtimean, 1, 'T')
      END IF
      lcaltmean=.FALSE. ! tmean already computed
 

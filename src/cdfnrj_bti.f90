@@ -36,13 +36,14 @@ PROGRAM cdfnrj_bti
   INTEGER(KIND=4)                           :: ncout, ierr            ! ncid of output file, error status
   INTEGER(KIND=4), DIMENSION(jp_varout)     :: ipk, id_varout         ! 
 
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2t, e1t, e1f, e2f     !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn, u2n, v2n, uvn  !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: fmask, umask, vmask    !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: anousqrt, anovsqrt     !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: anouv, bti             !
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: dudx, dudy, dvdx, dvdy !
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim
 
   CHARACTER(LEN=256)                        :: cf_out='bti.nc'        ! output file name
   CHARACTER(LEN=256)                        :: cf_uvwtfil             ! input file name
@@ -135,7 +136,7 @@ PROGRAM cdfnrj_bti
   ALLOCATE ( uvn(npiglo,npjglo) )
   ALLOCATE ( anousqrt(npiglo,npjglo) , anovsqrt(npiglo,npjglo)  )
   ALLOCATE ( anouv(npiglo,npjglo), bti(npiglo,npjglo) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
 
   CALL CreateOutput
 
@@ -303,8 +304,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar,    jp_varout, ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_uvwtfil, npiglo,    npjglo, npk       )
 
-    tim  = getvar1d(cf_uvwtfil, cn_vtimec, npt      )
-    ierr = putvar1d(ncout, tim,       npt, 'T' )
+    dtim = getvar1d(cf_uvwtfil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout, dtim,           npt, 'T' )
 
   END SUBROUTINE CreateOutput
 

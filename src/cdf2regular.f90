@@ -59,9 +59,9 @@ PROGRAM cdf2regular
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zbt
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: tmask              ! input mask
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: tmasklev           ! output mask
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdept              ! depth axis
 
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: d_out, d_n         ! output field and weighting field
 
   CHARACTER(LEN=256)                           :: cldum              ! dummy char variable
@@ -171,7 +171,7 @@ PROGRAM cdf2regular
   ALLOCATE ( d_out(npilev,npjlev) , d_n(npilev,npjlev) )
   ALLOCATE ( tmask(npiglo,npjglo) , tmasklev(npilev,npjlev))
   ALLOCATE ( rlonlev(npilev,npjlev), rlatlev(npilev,npjlev) )
-  ALLOCATE ( gdept(1), tim(npt) )
+  ALLOCATE ( gdept(1), dtim(npt) )
 
   ! Read the metrics from the mesh_hgr file
   e1t = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo)
@@ -557,8 +557,8 @@ CONTAINS
   ierr  = createvar   (ncout ,  stypvarout, 1,      ipkout,    id_varout                  , ld_nc4=lnc4 )
   ierr  = putheadervar(ncout ,  cf_in, npilev, npjlev, npk , pnavlon=rlonlev, pnavlat=rlatlev )
 
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
+  dtim = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   ierr = gettimeatt(cf_in, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )
   ierr = puttimeatt(ncout, cn_vtimec, ctcalendar, cttitle, ctlong_name, ctaxis, ctunits, cttime_origin )

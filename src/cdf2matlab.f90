@@ -37,7 +37,8 @@ PROGRAM cdf2matlab
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlonout, zlatout    ! output arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlonwork, zlatwork  ! working arrays arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvarout, zvarwork   ! working arrays arrays
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim
 
   CHARACTER(LEN=256)                        :: cf_in               ! input file name
   CHARACTER(LEN=256)                        :: cf_out='output.nc'  ! output file name
@@ -104,7 +105,7 @@ PROGRAM cdf2matlab
   PRINT *, 'npt    = ', npt
   npiglox2 = 2 * npiglo
 
-  ALLOCATE( zvar(npiglo,npjglo), zlon(npiglo,npjglo), zlat(npiglo,npjglo), tim(npt)  )
+  ALLOCATE( zvar(npiglo,npjglo), zlon(npiglo,npjglo), zlat(npiglo,npjglo), dtim(npt)  )
   ALLOCATE( zvarout(npiglox2,npjglo), zlonout(npiglox2,npjglo), zlatout(npiglox2,npjglo) )
 
   CALL CreateOutput
@@ -213,8 +214,8 @@ CONTAINS
     ncout = create    (cf_out,   cf_in,   npiglox2, npjglo, 1         , ld_nc4=lnc4 )
     ierr  = createvar (ncout,    stypvar, 3,        ipk,    id_varout , ld_nc4=lnc4 )
 
-    tim  = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,       npt, 'T')
+    dtim = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

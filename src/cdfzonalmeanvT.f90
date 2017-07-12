@@ -38,7 +38,6 @@ PROGRAM cdfzonalmeanvT
   INTEGER(KIND=4), DIMENSION(2)                :: ijloc               ! for maxloc
 
   REAL(KIND=4)                                 :: zspval=99999.       ! missing value 
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep                ! gdept or gdepw
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: e1, e2, gphi        ! metrics, latitude
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: ztem, zsal, zvel    ! temp, sal and velocity
@@ -48,6 +47,7 @@ PROGRAM cdfzonalmeanvT
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
 
   REAL(KIND=8)                                 :: dtotal_time         ! cumul of time in seconds
+  REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: dzovel, dzotem, dzosal  ! npjglo
   REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: darea, dl_tmp       ! npjglo
   REAL(KIND=8), DIMENSION (:,:,:,:), ALLOCATABLE :: dzovt, dzovs       ! 1xnpjglo x npk x npbasins
@@ -220,11 +220,11 @@ PROGRAM cdfzonalmeanvT
      ENDIF
 
      npt = getdim (cf_tfil,cn_t)   ! case of multiple time frames in a single file, assume identical of V file
-     ALLOCATE( tim(npt) ) 
-     tim = getvar1d(cf_tfil, cn_vtimec, npt)
-     IF ( ldebug ) PRINT *, 'TIME : ', tim(:)
-     dtotal_time = dtotal_time + SUM(tim(1:npt) )
-     DEALLOCATE( tim )
+     ALLOCATE( dtim(npt) ) 
+     dtim = getvar1d(cf_tfil, cn_vtimec, npt)
+     IF ( ldebug ) PRINT *, 'TIME : ', dtim(:)
+     dtotal_time = dtotal_time + SUM(dtim(1:npt) )
+     DEALLOCATE( dtim )
      dzovt = 0.d0
      dzovs = 0.d0
 
@@ -294,12 +294,12 @@ PROGRAM cdfzonalmeanvT
      dzovs(:,:,:,:) = zspval
   ENDWHERE
 
-  ALLOCATE ( tim(1) )
-  tim(1) = dtotal_time/ntframe
-  IF ( ldebug ) PRINT *, ' mean time ', tim(1), ntframe
+  ALLOCATE ( dtim(1) )
+  dtim(1) = dtotal_time/ntframe
+  IF ( ldebug ) PRINT *, ' mean time ', dtim(1), ntframe
 
   ! output file 
-  ierr   = putvar1d(ncout, tim, 1, 'T')
+  ierr   = putvar1d(ncout, dtim, 1, 'T')
   ivar = 0
   DO jbasin = 1, npbasins
      ivar = ivar + 1

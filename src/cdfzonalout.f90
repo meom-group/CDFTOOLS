@@ -31,9 +31,10 @@ PROGRAM cdfzonalout
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipki          ! input ipk variables
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varin      ! input variables id's
 
-  REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: tim           ! time counter
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zdumlat       ! latitude for i = north pole
   REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zv            ! data values
+
+  REAL(KIND=8), DIMENSION (:),      ALLOCATABLE :: dtim          ! time counter
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar       ! dummy structure
 
@@ -115,11 +116,11 @@ PROGRAM cdfzonalout
   WRITE(6,*)  'npt    =', npt
 
   ! Allocate arrays
-  ALLOCATE ( zv(1,npjglo,nvar), tim(npt)         )
+  ALLOCATE ( zv(1,npjglo,nvar), dtim(npt)         )
   ALLOCATE ( zdumlat(1,npjglo) )
 
   zdumlat(:,:) = getvar  (cf_zonal, cn_vlat2d, 1, 1, npjglo)
-  tim(:)       = getvar1d(cf_zonal, cn_vtimec, npt         )
+  dtim(:)      = getvar1d(cf_zonal, cn_vtimec, npt         )
 
   DO jt = 1, npt  ! time loop
      ! main elligible variable loop
@@ -128,7 +129,7 @@ PROGRAM cdfzonalout
         zv(:,:,jvar) = getvar(cf_zonal, cv_names(ivar), 1, 1, npjglo, ktime=jt)
      END DO ! next variable
 
-     WRITE(6,*) ' JT = ', jt, ' TIME = ', tim(jt)
+     WRITE(6,*) ' JT = ', jt, ' TIME = ', dtim(jt)
      WRITE(6,*) ' J  LAT ', (TRIM(cv_names(id_varin(jvar))),' ',jvar=1,nvar)
 
      DO jj=npjglo,1,-1

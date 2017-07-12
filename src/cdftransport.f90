@@ -116,7 +116,6 @@ PROGRAM cdftransport
   REAL(KIND=4)                                :: zspu, zspv     ! missing values for u and v
   REAL(KIND=4), DIMENSION(2)                  :: gla, gphi      ! lon/lat of the begining/end of section (f point)
   REAL(KIND=4), DIMENSION(jpseg)              :: rxx, ryy       ! working variables
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw          ! depth at layer interface
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: e31d           ! vertical metric in case of full step
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: rclass         ! vertical metric in case of full step
@@ -133,6 +132,7 @@ PROGRAM cdftransport
 
 
   ! at every model point
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim           ! time counter
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwku,  dwkv    ! volume transport at each cell boundary
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwkut, dwkvt   ! heat   transport at each cell boundary
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwkus, dwkvs   ! salt   transport at each cell boundary
@@ -441,7 +441,7 @@ PROGRAM cdftransport
   !
   ALLOCATE ( gphif(npiglo,npjglo) )
   ALLOCATE ( glamf(npiglo,npjglo) )
-  ALLOCATE ( gdepw(npk) , tim(npt)                       )
+  ALLOCATE ( gdepw(npk) , dtim(npt)                      )
   !
   ! read metrics and grid position
   e1v(:,:)   = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
@@ -685,8 +685,8 @@ PROGRAM cdftransport
      ncout    = create      (cf_outnc, 'none',    ikx,      iky, nclass, cdep='depth_class')
      ierr     = createvar   (ncout,    stypvar,   nvarout,  ipk, id_varout, cdglobal=TRIM(cglobal) )
      ierr     = putheadervar(ncout,    cf_ufil,   ikx, iky, nclass, pnavlon=rdum, pnavlat=rdum, pdep=rclass )
-     tim      = getvar1d    (cf_ufil,  cn_vtimec, npt     )
-     ierr     = putvar1d    (ncout,    tim(itime:itime),       1, 'T')
+     dtim     = getvar1d    (cf_ufil,  cn_vtimec, npt                )
+     ierr     = putvar1d    (ncout,    dtim(itime:itime),      1, 'T')
 
      PRINT *, ' Give iimin, iimax, ijmin, ijmax '
      READ(*,*) iimin, iimax, ijmin, ijmax

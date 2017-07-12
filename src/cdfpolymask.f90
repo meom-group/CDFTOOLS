@@ -37,7 +37,8 @@ PROGRAM cdfpolymask
   INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout         ! output var levels and varid 
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rpmask                 ! mask array
-  REAL(KIND=4), DIMENSION(1)                :: tim                    ! dummy time counter
+
+  REAL(KIND=8), DIMENSION(1)                :: dtim                   ! dummy time counter
 
   CHARACTER(LEN=256)                        :: cf_ref                 ! name of reference file
   CHARACTER(LEN=256)                        :: cf_poly                ! name of ascii poly file
@@ -143,8 +144,8 @@ CONTAINS
     ncout = create      (cf_out, cf_ref,  npiglo, npjglo, npk       )
     ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout )
     ierr  = putheadervar(ncout,  cf_ref,  npiglo, npjglo, npk       )
-    tim(:) = 0.
-    ierr   = putvar1d(ncout, tim, 1, 'T')
+    dtim(:) = 0.d0
+    ierr   = putvar1d(ncout, dtim, 1, 'T')
 
   END SUBROUTINE CreateOutput
 

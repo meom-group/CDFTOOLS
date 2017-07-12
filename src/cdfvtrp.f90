@@ -34,18 +34,18 @@ PROGRAM cdfvtrp
   INTEGER(KIND=4)                            :: nvarout = 2          ! number of output variables
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout       ! for variable output
 
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: e1u, e1v             ! horizontal metrics
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: e2u, e2v             !  "            "
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: e3u, e3v             ! vertical metrics
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: tmask, hdepw         ! tmask and bathymetry
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zdhdx, zdhdy         ! bottom slope
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zalpha               ! angle of rotation
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zu, zv               ! velocity components
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                  ! time counter
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: e31d                 ! e3t metrics (full step)
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: e1u, e1v             ! horizontal metrics
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: e2u, e2v             !  "            "
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: e3u, e3v             ! vertical metrics
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: tmask, hdepw         ! tmask and bathymetry
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zdhdx, zdhdy         ! bottom slope
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zalpha               ! angle of rotation
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zu, zv               ! velocity components
 
-  REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: dwku , dwkv          ! working arrays
-  REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: dtrpu, dtrpv         ! barotropic transport 
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                 ! time counter
+  REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dwku , dwkv          ! working arrays
+  REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dtrpu, dtrpv         ! barotropic transport 
 
   TYPE (variable), DIMENSION(:), ALLOCATABLE :: stypvar              ! structure for attribute
 
@@ -153,7 +153,7 @@ PROGRAM cdfvtrp
   ALLOCATE ( zu(npiglo,npjglo), zv(npiglo,npjglo)      )
   ALLOCATE ( dwku(npiglo,npjglo), dwkv(npiglo,npjglo)  )
   ALLOCATE ( dtrpu(npiglo,npjglo), dtrpv(npiglo,npjglo))
-  ALLOCATE ( e31d(npk), tim(npt)                       )
+  ALLOCATE ( e31d(npk), dtim(npt)                      )
 
   IF ( lbathy ) THEN ! allocate extra arrays
      ALLOCATE ( e1u(npiglo, npjglo), e2v(npiglo, npjglo))
@@ -288,8 +288,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nvarout, ipk,    id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 1                       )
   
-    tim   = getvar1d(cf_ufil, cn_vtimec, npt     )
-    ierr  = putvar1d(ncout,   tim,       npt, 'T')
+    dtim  = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,   dtim,      npt, 'T')
   END SUBROUTINE CreateOutput
 
 END PROGRAM cdfvtrp

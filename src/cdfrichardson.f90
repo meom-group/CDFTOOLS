@@ -40,11 +40,13 @@ PROGRAM cdfrichardson
   REAL(KIND=4)                                 :: rspval=0.                ! missing_value
   REAL(KIND=4)                                 :: zsps                     ! missing_value for salinity
   REAL(KIND=4)                                 :: zcoef, zdku, zdkv, zzri  ! working real
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep, tim, e3w1d         ! depth and time
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep, e3w1d              ! depth and metrics
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zri                      ! Richardson number
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zmask, e3w               ! mask and metric
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: zu, zv                   ! Array to read 2 layer of velocities
+
+  REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: dtim                     ! time
 
   CHARACTER(LEN=256)                           :: cldum                    ! dummy char variable
   CHARACTER(LEN=256)                           :: cf_tfil                  ! input T file name
@@ -156,7 +158,7 @@ PROGRAM cdfrichardson
   ALLOCATE (zu(npiglo,npjglo,2),      zv(npiglo,npjglo,2) )
   ALLOCATE (zwk(npiglo,npjglo,2), zmask(npiglo,npjglo)    )
   ALLOCATE (zri(npiglo,npjglo), e3w(npiglo,npjglo)        )
-  ALLOCATE (gdep(npk), tim(npt)               )
+  ALLOCATE (gdep(npk), dtim(npt)               )
   IF ( lfull ) ALLOCATE (e3w1d(npk) )
 
   zwk(:,:,:) = rspval
@@ -259,8 +261,8 @@ SUBROUTINE CreateOutput
  ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
  ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
 
- tim  = getvar1d(cf_tfil, cn_vtimec, npt   )
- ierr = putvar1d(ncout,  tim,       npt,'T')
+ dtim = getvar1d(cf_tfil, cn_vtimec, npt   )
+ ierr = putvar1d(ncout,  dtim,      npt,'T')
 
 END SUBROUTINE CreateOutput
 

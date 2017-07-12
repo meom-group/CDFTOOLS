@@ -55,7 +55,6 @@ PROGRAM cdfmxlhcsc
   REAL(KIND=4)                                 :: val             ! criteria value
   REAL(KIND=4)                                 :: hmin = 0.       ! minimum depth for vertical integration
   REAL(KIND=4), DIMENSION(1)                   :: rdep            ! dummy depth output
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim             ! time counter
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdepw           ! depth of w points
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d            ! vertical metrics (full step)
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rtem            ! temperature
@@ -68,6 +67,7 @@ PROGRAM cdfmxlhcsc
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: tmask           ! land sea mask of temperature
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e3              ! vertical metrics
 
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim            ! time counter
   REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dmxlheatc       ! mxl heat content
   REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dmxlsaltc       ! mxl salt content
 
@@ -189,7 +189,7 @@ PROGRAM cdfmxlhcsc
   ALLOCATE (nmln(npiglo,npjglo),hmld(npiglo,npjglo)          )
   ALLOCATE (dmxlheatc(npiglo,npjglo),dmxlsaltc(npiglo,npjglo))
   ALLOCATE (e3(npiglo,npjglo)                                )
-  ALLOCATE (gdepw(0:npk), tim(npt)                           )
+  ALLOCATE (gdepw(0:npk), dtim(npt)                          )
 
   CALL CreateOutput
 
@@ -336,8 +336,8 @@ CONTAINS
     ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1        , ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar, 3,      ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep           )
-    tim   = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr  = putvar1d(ncout,  tim,       npt, 'T')
+    dtim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout, dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

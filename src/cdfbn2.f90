@@ -41,7 +41,9 @@ PROGRAM cdfbn2
   REAL(KIND=4), DIMENSION (:,:,:), ALLOCATABLE :: ztemp, zsal, zwk         ! Array to read 2 layer of data
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zn2                      ! Brunt Vaissala Frequency (N2)
   REAL(KIND=4), DIMENSION (:,:),   ALLOCATABLE :: zmask, e3w               ! mask and metric
-  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep, tim, e3w1d         ! depth and time
+  REAL(KIND=4), DIMENSION (:),     ALLOCATABLE :: gdep,  e3w1d             ! depth and time
+
+  REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: dtim                     ! depth and time
 
   CHARACTER(LEN=256)                           :: cf_tfil, cldum, cv_dep   ! input file name, ...
   CHARACTER(LEN=256)                           :: cf_out = 'bn2.nc'        ! output file name
@@ -139,7 +141,7 @@ PROGRAM cdfbn2
   ALLOCATE (ztemp(npiglo,npjglo,2), zsal(npiglo,npjglo,2) )
   ALLOCATE (zwk(npiglo,npjglo,2), zmask(npiglo,npjglo)    )
   ALLOCATE (zn2(npiglo,npjglo), e3w(npiglo,npjglo)        )
-  ALLOCATE (gdep(npk), tim(npt)                           )
+  ALLOCATE (gdep(npk), dtim(npt)                          )
   IF ( lfull ) ALLOCATE (e3w1d(npk) )
 
   cv_dep=cn_gdept
@@ -220,8 +222,8 @@ CONTAINS
     ierr  = createvar   (ncout ,   stypvar,  1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt    )
-    ierr = putvar1d(ncout,  tim,        npt,'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt    )
+    ierr = putvar1d(ncout,  dtim,       npt,'T')
 
   END SUBROUTINE CreateOutput
 

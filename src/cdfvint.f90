@@ -36,17 +36,17 @@ PROGRAM cdfvint
 
   REAL(KIND=4), PARAMETER                   :: pprho0 = 1020.     ! water density (kg/m3)
   REAL(KIND=4), PARAMETER                   :: ppcp   = 4000.     ! calorific capacity (J/kg/m3)
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt                  ! working input variable
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! npiglo x npjglo
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepo               ! output depth 
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
   REAL(KIND=4)                              :: rdep1, rdep2        ! depth counters
   REAL(KIND=4)                              :: tol  = 1.0          ! tolerance 
   REAL(KIND=4)                              :: sclf = 1.0          ! scale factor
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepo               ! output depth 
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt                  ! working input variable
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! npiglo x npjglo
 
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_vint1, dl_vint2  ! verticall int quantity         
 
   CHARACTER(LEN=256)                        :: cf_in, cf_out       ! input/output file
@@ -214,7 +214,7 @@ PROGRAM cdfvint
   PRINT *, ' NPT    = ', npt
 
   ! Allocate arrays
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( tmask(npiglo,npjglo) )
   ALLOCATE ( zt(npiglo,npjglo)  )
   ALLOCATE ( e3t(npiglo,npjglo) )
@@ -323,8 +323,8 @@ CONTAINS
     ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout , ld_nc4=lnc4)
     ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, npko, pdep=gdepo,     ld_xycoo=.FALSE.)
 
-    tim   = getvar1d    (cf_in, cn_vtimec, npt     )
-    ierr  = putvar1d    (ncout, tim,       npt, 'T')
+    dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d    (ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

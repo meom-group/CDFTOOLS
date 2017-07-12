@@ -38,9 +38,11 @@ PROGRAM cdfmkresto
 
   REAL(KIND=4)                               :: ra    = 6371229.   !: earth radius
   REAL(KIND=4)                               :: rad = 3.141592653589793 / 180.
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE    :: gdept_1d, tim
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: gphit, glamt
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE:: gdept_1d
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE:: gphit, glamt
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: resto
+
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE:: dtim
 
   CHARACTER(LEN=255)                         :: cf_coord  ! coordinate file
   CHARACTER(LEN=255)                         :: cf_cfg    ! config file (txt)
@@ -275,9 +277,9 @@ CONTAINS
     ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, npk ,  &
          pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
 
-    ALLOCATE (tim(1) )
-    tim(1)= 0.
-    ierr   = putvar1d(ncout, tim, 1   , 'T'  )
+    ALLOCATE (dtim(1) )
+    dtim = 0.d0
+    ierr = putvar1d(ncout, dtim, 1   , 'T'  )
 
   END SUBROUTINE CreateOutput
 

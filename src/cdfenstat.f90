@@ -44,9 +44,9 @@ PROGRAM cdfenstat
 
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d                ! array to read a layer of data for all files
   REAL(KIND=4), DIMENSION(:,:,:,:), ALLOCATABLE :: v4d                ! array to read a layer of data for all files
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zspval_in          ! input missing value
 
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dtabn, dtab2n      ! arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dtabb, dtab2b      ! arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dtmp               ! temporary array
@@ -176,7 +176,7 @@ PROGRAM cdfenstat
   ALLOCATE (cv_nam(2*nvars) )
   ALLOCATE (stypvar(2*nvars))
   ALLOCATE (id_var(2*nvars), ipk(2*nvars), id_varout(2*nvars)  )
-  ALLOCATE( tim(npt) )
+  ALLOCATE( dtim(npt) )
 
   CALL CreateOutput
 
@@ -306,8 +306,8 @@ CONTAINS
     ierr   = putheadervar(ncout,   cf_in,    npiglo, npjglo, npk, cdep=cv_dep)
 
     ! all files shoud have the same time , take the first of the list !
-    tim(:) = getvar1d(cf_in, cn_vtimec, npt)
-    ierr   = putvar1d(ncout,  tim, npt, 'T')
+    dtim(:)= getvar1d(cf_in, cn_vtimec, npt)
+    ierr   = putvar1d(ncout, dtim, npt, 'T')
 
   END SUBROUTINE CreateOutput
 

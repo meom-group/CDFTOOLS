@@ -37,10 +37,11 @@ PROGRAM cdfprofile
   REAL(KIND=4)                                  :: rdep              ! vertical interpolation stuff
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdept, rprofile   ! depth and profile values
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepout           ! output depth array
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim               ! time counter
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, rlon, rlat   ! 2d data array, longitude, latitude
   REAL(KIND=4), DIMENSION(1,1)                  :: rdumlon, rdumlat  ! dummy array for output
   REAL(KIND=4), DIMENSION(1,1)                  :: rdummy            ! dummy array
+
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim              ! time counter
 
   CHARACTER(LEN=256)                            :: cldum             ! dummy character variable
   CHARACTER(LEN=256)                            :: cf_in             ! input file 
@@ -108,7 +109,7 @@ PROGRAM cdfprofile
   npt    = getdim (cf_in, cn_t)
 
   ! Allocate arrays
-  ALLOCATE ( v2d (npiglo,npjglo), gdept(npk), rprofile(npk), tim(npt) )
+  ALLOCATE ( v2d (npiglo,npjglo), gdept(npk), rprofile(npk), dtim(npt) )
   ALLOCATE ( stypvar_input(nvars) ,cv_names(nvars) )
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
   ALLOCATE ( rlon(npiglo,npjglo), rlat(npiglo,npjglo))
@@ -220,8 +221,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout            )
     ierr  = putheadervar(ncout,  cf_in,   ikx,      iky, ikz,     pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepout)
 
-    tim  = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,       npt, 'T')
+    dtim = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

@@ -42,7 +42,6 @@ PROGRAM cdfgeo_uv
 
   REAL(KIND=4)                              :: grav           ! gravity
   REAL(KIND=4)                              :: ffu, ffv       ! coriolis param f at U and V point
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1u, e2v, ff   ! horiz metrics, coriolis (f-point)
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2u, e1v       ! horiz metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamu, gphiu   ! longitude latitude u-point
@@ -52,6 +51,8 @@ PROGRAM cdfgeo_uv
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsshn          ! ssh
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zwrk           ! working array for interpolation
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: umask, vmask   ! mask at u and v points
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim           ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil        ! input file name
   CHARACTER(LEN=256)                        :: cf_uout='ugeo.nc' 
@@ -156,7 +157,7 @@ PROGRAM cdfgeo_uv
   ! Allocate the memory
   ALLOCATE ( e1u(npiglo,npjglo), e2v(npiglo,npjglo) )
   IF( ioption == 1 ) ALLOCATE ( e1v(npiglo,npjglo), e2u(npiglo,npjglo) )
-  ALLOCATE ( ff(npiglo,npjglo), tim(npt)  )
+  ALLOCATE ( ff(npiglo,npjglo), dtim(npt)  )
   ALLOCATE ( glamu(npiglo,npjglo), gphiu(npiglo,npjglo)  )
   ALLOCATE ( glamv(npiglo,npjglo), gphiv(npiglo,npjglo)  )
   ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo)  )
@@ -328,8 +329,8 @@ CONTAINS
        ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamu, pnavlat=gphiu)
     ENDIF
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncoutu,  tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncoutu,  dtim,      npt, 'T')
 
     ! V geo  ! @ U-point !
     ncoutv = create      (cf_vout, cf_tfil,  npiglo, npjglo, 0         , ld_nc4=lnc4                     )
@@ -341,8 +342,8 @@ CONTAINS
        ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, 0, pnavlon=glamv, pnavlat=gphiv)
     ENDIF
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncoutv,  tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncoutv,  dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutputUV
 

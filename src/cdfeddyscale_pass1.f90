@@ -40,13 +40,13 @@ PROGRAM cdfeddyscale_pass1
   INTEGER(KIND=4)                           :: ncout, ierr        ! browse command line
   INTEGER(KIND=4), DIMENSION(jp_nvar)       :: ipk, id_varout     ! output variable properties
 
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1f, e2f           ! F-grid metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1u, e2u           ! zonal horizontal metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1v, e2v           ! meridional horizontal metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn             ! velocity field
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: fmask              ! fmask
 
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_rotn, dl_rotn2  ! curl and square curl
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dxrotn, dyrotn     ! curl gradient components
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dxrotn2, dyrotn2   ! square curl gradient components
@@ -169,7 +169,7 @@ PROGRAM cdfeddyscale_pass1
   ALLOCATE ( e1f(npiglo,npjglo)       , e2f(npiglo,npjglo)       )
   ALLOCATE ( un(npiglo,npjglo)        , vn(npiglo,npjglo)        )
   ALLOCATE ( fmask(npiglo,npjglo)                                )
-  ALLOCATE ( tim(npt)                                            )
+  ALLOCATE ( dtim(npt)                                           )
   ALLOCATE ( dl_rotn(npiglo,npjglo)   , dl_rotn2(npiglo,npjglo)  )
   ALLOCATE ( dxrotn(npiglo,npjglo)    , dyrotn(npiglo,npjglo)    )
   ALLOCATE ( dxrotn2(npiglo,npjglo)   , dyrotn2(npiglo,npjglo)   )
@@ -375,8 +375,8 @@ CONTAINS
     ierr  = createvar   (ncout , stypvar, jp_nvar, ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_ufil, npiglo,  npjglo, 0, pnavlon=un, pnavlat=vn )
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
-    ierr = putvar1d(ncout,   tim,       npt,  'T')
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout,   dtim,      npt,  'T')
 
   END SUBROUTINE CreateOutputFile
 

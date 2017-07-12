@@ -42,12 +42,17 @@ PROGRAM cdfsigintegr_pedro
   INTEGER(KIND=4)                               :: ijk              ! layer index
   INTEGER(KIND=4)                               :: numin=10         ! logical unit for ascii input file
   INTEGER(KIND=4)                               :: ncout, ierr      ! ncid and status variable
+  INTEGER(KIND=4)                               :: nboutput=9       ! number of values to write in cdf output
   INTEGER(KIND=4), DIMENSION(9)                 :: ipk, id_varout   ! levels and id's of output variables
   !
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d              ! 3D v working array (npk)
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: u3d              ! 3D u working array (npk)
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: m3d              ! 3D modulus working array (npk)
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zint             ! pseudo 3D working array (2)
+  REAL(KIND=4)                                  :: zspval=999999.   ! output missing value
+  REAL(KIND=4)                                  :: zspvalz          ! missing value from rho file      
+  REAL(KIND=4)                                  :: maskvalue=0.     ! masked values for ocean velocity output
+  REAL(KIND=4)                                  :: pi               !pi 
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rho_lev          ! value of isopycnals
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: h1d              ! depth of rho points
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepw            ! depth of W points
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d             ! vertical metrics in full step
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d              ! 2D v working array
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: u2d              ! 2D u working array
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: e3               ! vertical metrics
@@ -59,17 +64,12 @@ PROGRAM cdfsigintegr_pedro
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zdum_v           ! dummy array for I/O for v
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zdum_m           ! dummy array for I/O for m
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zdum_a           ! dummy array for I/O for angle
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rho_lev          ! value of isopycnals
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim              ! time counter
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: h1d              ! depth of rho points
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepw            ! depth of W points
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d             ! vertical metrics in full step
-  REAL(KIND=4)                                  :: zspval=999999.   ! output missing value
-  REAL(KIND=4)                                  :: zspvalz          ! missing value from rho file      
-  REAL(KIND=4)                                  :: maskvalue=0.     ! masked values for ocean velocity output
-  INTEGER(KIND=4)                               :: nboutput=9       ! number of values to write in cdf output
-  REAL(KIND=4)                                  :: pi               !pi 
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d              ! 3D v working array (npk)
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: u3d              ! 3D u working array (npk)
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: m3d              ! 3D modulus working array (npk)
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zint             ! pseudo 3D working array (2)
 
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim             ! time counter
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dv2dint          ! interpolated value / int of v 
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: du2dint          ! int of u
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dm2dint          ! int of the modulus
@@ -394,10 +394,10 @@ PROGRAM cdfsigintegr_pedro
      ierr  = putheadervar(ncout,  cf_rho,  npiglo, npjglo, npiso, pdep=rho_lev         )
      ! copy time arrays in output file
      npt = getdim ( cf_ufil, cn_t)
-     ALLOCATE ( tim(npt) )
-     tim(:) = getvar1d(cf_ufil, cn_vtimec, npt     )
-     ierr   = putvar1d(ncout, tim,       npt, 'T')
-     DEALLOCATE ( tim )
+     ALLOCATE ( dtim(npt) )
+     dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
+     ierr = putvar1d(ncout, dtim,        npt, 'T')
+     DEALLOCATE ( dtim )
      DO jt =1, npt
         DO jk=1,npk
            v2d(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime = jt )

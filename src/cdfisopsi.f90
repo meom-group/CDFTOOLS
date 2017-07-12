@@ -38,8 +38,13 @@ PROGRAM cdfisopsi
   INTEGER(KIND=4), DIMENSION(jp_vars)         :: ipk              ! outptut variables : number of levels,
   INTEGER(KIND=4), DIMENSION(jp_vars)         :: id_varout        ! ncdf varid's
 
-  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: v3d, ztemp3         ! 3d array
-  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: zsal3, zsva3        ! 3d array
+  REAL(KIND=4)                                :: P1, P2
+  REAL(KIND=4)                                :: zspval            ! missing value
+  REAL(KIND=4)                                :: refdepth
+  REAL(KIND=4)                                :: zsigmaref      !
+  REAL(KIND=4)                                :: ztmean, zsmean  ! mean temperature and salinity on isopycnal
+  REAL(KIND=4)                                :: hmean, zpmean  ! mean isopycnal depth and mean pressure
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: prof              ! prof (m)
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: ztemp, zsal , zssh  ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: ztemp0, zsal0       ! Arrays for reference profile
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zsiginsitu          ! in-situ density
@@ -57,13 +62,10 @@ PROGRAM cdfisopsi
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: psi0
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: psi
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zsva2
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: prof, tim              ! prof (m) and time (sec)
-  REAL(KIND=4)                                :: P1, P2
-  REAL(KIND=4)                                :: zspval            ! missing value
-  REAL(KIND=4)                                :: refdepth
-  REAL(KIND=4)                                :: zsigmaref      !
-  REAL(KIND=4)                                :: ztmean, zsmean  ! mean temperature and salinity on isopycnal
-  REAL(KIND=4)                                :: hmean, zpmean  ! mean isopycnal depth and mean pressure
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: v3d, ztemp3         ! 3d array
+  REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: zsal3, zsva3        ! 3d array
+
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim                ! time (sec)
 
   CHARACTER(LEN=256) :: cf_tfil                              ! input gridT file
   CHARACTER(LEN=256) :: cf_out='isopsi.nc'                   ! output file name
@@ -158,7 +160,7 @@ PROGRAM cdfisopsi
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
 
-  ALLOCATE ( prof(0:npk)         , tim(npt)           )
+  ALLOCATE ( prof(0:npk)         , dtim(npt)           )
   ALLOCATE ( e1t(npiglo,npjglo), e2t(npiglo,npjglo) )
 
   e1t(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo)
@@ -169,7 +171,7 @@ PROGRAM cdfisopsi
   zspval   = getatt(cf_tfil, cn_vosaline, cn_missing_value )
   !---------------------------------------------------------------------------
   DO jt=1,npt
-     PRINT *,'time ',jt, tim(jt)/86400.,' days'
+     PRINT *,'time ',jt, dtim(jt)/86400.,' days'
      IF (lg_vvl ) THEN ; it = jt
      ELSE              ; it = 1
      ENDIF
@@ -441,8 +443,8 @@ CONTAINS
 
     prof(:) = getvar1d(cf_tfil, cn_vdeptht, npk     )
     prof(0) = 0.  ! used  for vertical integration later on
-    tim     = getvar1d(cf_tfil, cn_vtimec,  npt     )
-    ierr    = putvar1d(ncout,   tim,        npt, 'T')
+    dtim    = getvar1d(cf_tfil, cn_vtimec,  npt     )
+    ierr    = putvar1d(ncout,  dtim,        npt, 'T')
   END SUBROUTINE CreateOutput
 
   SUBROUTINE ProjectOverIso ( ptab3, ptabint, ptab1d, ptabint2 )

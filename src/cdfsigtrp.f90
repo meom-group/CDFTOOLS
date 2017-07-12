@@ -70,7 +70,6 @@ PROGRAM cdfsigtrp
 
   REAL(KIND=4)                                  :: refdep =0.e0         ! reference depth (m)
   REAL(KIND=4)                                  :: zsps, zspu, zspv     ! Missing value for salinity, U and V
-  REAL(KIND=4), DIMENSION(1)                    :: tim                  ! time counter
   REAL(KIND=4), DIMENSION(1)                    :: rdummy1, rdummy2     ! working variable
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdept, gdepw         ! depth of T and W points 
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: eu                   ! either e1v or e2u
@@ -86,6 +85,7 @@ PROGRAM cdfsigtrp
   REAL(KIND=8)                                  :: dsigma_min           ! minimum density for bining
   REAL(KIND=8)                                  :: dsigma_max, dltsig   ! maximum density for bining, step
   REAL(KIND=8)                                  :: dsigma, dalfa        ! working sigma, interpolation coeff.
+  REAL(KIND=8), DIMENSION(1)                    :: dtim                 ! time counter
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dsigma_lev           ! built array with sigma levels
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de3                  ! vertical metrics
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: ddepu                ! depth of vel points
@@ -785,8 +785,8 @@ CONTAINS
     ierr  = putheadervar(icout, cf_tfil,   npts, 1, nk, &
          &   pnavlon=rlonlat, pnavlat=rlonlat, cdep=cn_vdeptht                              )
 
-    !    tim  = getvar1d(cf_tfil, cn_vtimec, 1     )
-    !    ierr = putvar1d(icout,   tim,       1, 'T')
+    !    dtim = getvar1d(cf_tfil, cn_vtimec, 1     )
+    !    ierr = putvar1d(icout,   dtim,     1 , 'T')
 
     DO jk = 1, nk
        zdum(:,1)=zt(:,jk)   ; ierr = putvar ( icout, id_varout(1), zdum, jk, npts, 1 )
@@ -988,8 +988,8 @@ CONTAINS
     ierr  = putheadervar(ncout,    cf_tfil, ikx,      iky, nbins, &
          &   pnavlon=rdumlon, pnavlat=rdumlat, pdep=REAL(dsigma_lev), cdep=cv_dep           )
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, 1     )
-    ierr = putvar1d(ncout,   tim,       1, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, 1     )
+    ierr = putvar1d(ncout,   dtim,      1, 'T')
 
   END SUBROUTINE CreateOutput
 

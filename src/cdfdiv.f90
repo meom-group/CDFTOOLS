@@ -41,11 +41,12 @@ PROGRAM cdfdiv
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3u, e3v, e3t      ! vertical metrics
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn             ! velocity field
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zun, zvn           ! working arrays
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim, zdep, gdep    ! time counter
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: zdep, gdep         ! depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d               !  vertical metrics (full step)
   REAL(KIND=4)                              :: zmask              ! mask at T point for -T option
 
   REAL(KIND=8)                              :: dl_pi, dl_omega    ! 3.14159... and earth rotation rad/sec
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dhdivn             ! divergence
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_ff              ! Coriolis parameter at T point
 
@@ -200,7 +201,7 @@ PROGRAM cdfdiv
   ALLOCATE ( un(npiglo,npjglo)  , vn(npiglo,npjglo)  )
   ALLOCATE ( zun(npiglo,npjglo) , zvn(npiglo,npjglo) )
   ALLOCATE ( dhdivn(npiglo,npjglo) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( gdep(nlev) , zdep(npk))
   IF ( lfull ) ALLOCATE ( e31d (npk) )
 
@@ -424,8 +425,8 @@ CONTAINS
     ierr  = createvar   (ncout ,   stypvar, 1 ,   ipk,    id_varout,             ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  'dummy', npiglo, npjglo, nlev, pnavlon=zun, pnavlat=zvn, pdep=gdep)
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
-    ierr = putvar1d(ncout,   tim,       npt,  'T')
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout,   dtim,      npt,  'T')
 
   END SUBROUTINE CreateOutput
 

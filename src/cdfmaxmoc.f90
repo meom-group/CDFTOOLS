@@ -43,11 +43,12 @@ PROGRAM cdfmaxmoc
   REAL(KIND=4)                                :: ovtmax, ovtmin    ! max/ min of MOC ( Sv)
   REAL(KIND=4)                                :: rlatmin, rlatmax  ! latitude limits for searching
   REAL(KIND=4)                                :: rdepmin, rdepmax  ! depth limits for searching
-  REAL(KIND=4), DIMENSION(1)                  :: tim               ! time counter
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw             ! depth read in the header
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdumlon, rdumlat  ! dummy array for output
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rlat              ! latitude (1, npjglo)
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: rmoc              ! MOC (1, npjglo, jpk)
+  !
+  REAL(KIND=8), DIMENSION(1)                  :: dtim              ! time counter
   !
   TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar           ! structure of output
   !
@@ -235,8 +236,8 @@ CONTAINS
     ierr  = putheadervar(ncout,    cf_moc,  nx,      ny,  nz,      &
          &     pnavlon=rdumlon, pnavlat=rdumlat,   pdep=gdepw           )
 
-    tim  = getvar1d(cf_moc,cn_vtimec, 1     )
-    ierr = putvar1d(ncout, tim,       1, 'T')
+    dtim = getvar1d(cf_moc,cn_vtimec, 1     )
+    ierr = putvar1d(ncout, dtim,      1, 'T')
 
   END SUBROUTINE CreateOutput
 

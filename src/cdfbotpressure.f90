@@ -34,15 +34,15 @@ PROGRAM cdfbotpressure
 
   REAL(KIND=4), PARAMETER                   :: pp_grav = 9.81      ! Gravity
   REAL(KIND=4), PARAMETER                   :: pp_rau0 = 1035.e0   ! Reference density (as in NEMO)
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: hdept               ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt                  ! Temperature
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zs                  ! Salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! npiglo x npjglo
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
 
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_psurf            ! Surface pressure
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_bpres            ! Bottom pressure
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_sigi             ! insitu density
@@ -149,7 +149,7 @@ PROGRAM cdfbotpressure
   PRINT *, ' NPT    = ', npt
 
   ! Allocate arrays
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( tmask(npiglo,npjglo) )
   ALLOCATE ( zt(npiglo,npjglo)  )
   ALLOCATE ( zs(npiglo,npjglo)  )
@@ -269,8 +269,8 @@ CONTAINS
     ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
     ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, 1                                    )
 
-    tim   = getvar1d    (cf_in, cn_vtimec, npt     )
-    ierr  = putvar1d    (ncout, tim,       npt, 'T')
+    dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d    (ncout, dtim,      npt, 'T')
 
     PRINT *, 'Output files initialised ...'
 

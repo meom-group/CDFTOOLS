@@ -74,8 +74,8 @@ PROGRAM cdfmoc
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw           ! depthw
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdept           ! deptht
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: e31d            ! e3 1D : used if full step
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim             ! time counter array
 
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim            ! time counter array
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dmoc            ! nbasins x npjglo x npk
 
   CHARACTER(LEN=256)                          :: cf_vfil         ! meridional velocity file
@@ -273,7 +273,7 @@ PROGRAM cdfmoc
   ALLOCATE ( gphiv(npiglo,npjglo) )
   ALLOCATE ( rdumlon(1,npjglo), rdumlat(1,npjglo))
   ALLOCATE ( gdepw(npk), gdept(npk), e31d(npk) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( dmoc( nbasins, npjglo, npk   ) )
   ALLOCATE ( ivmask(npiglo, npjglo) )
 
@@ -672,7 +672,7 @@ CONTAINS
     ALLOCATE ( zwk(npiglo, 1), de1rapid(npiglo), dmv(npiglo), dmt(npiglo), dtaux(npiglo,1) )
     ALLOCATE ( damocrapid(1,1,npk), gdepw(npk), e31d(npk)  )
     ALLOCATE ( dtrp(1,1,1) )
-    ALLOCATE ( rdumlon(1,1), rdumlat(1,1), tim(npt) )
+    ALLOCATE ( rdumlon(1,1), rdumlat(1,1), dtim(npt) )
 
     zwk(:,:)     = getvar (cn_fhgr, cn_gphiv, 1, npiglo, 1, kimin=iiw,kjmin=ijrapid )
     rdumlon(:,:) = 0.0
@@ -981,8 +981,8 @@ CONTAINS
 
     END DO   ! time loop
 
-    tim  = getvar1d( cf_vfil, cn_vtimec, npt     )
-    ierr = putvar1d( ncout,   tim,       npt, 'T')
+    dtim = getvar1d( cf_vfil, cn_vtimec, npt     )
+    ierr = putvar1d( ncout,   dtim,      npt, 'T')
     ierr = closeout( ncout                       )
 
   END SUBROUTINE rapid_amoc
@@ -1166,8 +1166,8 @@ CONTAINS
     ncout = create      ( cf_moc,  'none',    1, npjglo, npk, cdep=cn_vdepthw )
     ierr  = createvar   ( ncout,   stypvar,   nvarout,   ipk, id_varout, cdglobal=TRIM(cglobal)           )
     ierr  = putheadervar( ncout,   cf_vfil,   1, npjglo, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdepw)
-    tim   = getvar1d    ( cf_vfil, cn_vtimec, npt                    )
-    ierr  = putvar1d    ( ncout,   tim,       npt, 'T')
+    dtim  = getvar1d    ( cf_vfil, cn_vtimec, npt                    )
+    ierr  = putvar1d    ( ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

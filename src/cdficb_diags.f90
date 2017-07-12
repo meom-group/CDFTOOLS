@@ -36,10 +36,10 @@ PROGRAM cdficb_diags
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: tmask, ff            ! npiglo x npjglo
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ricbmass, ricbmelt ! thickness, leadfrac (concentration)
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: rdumlon, rdumlat     ! dummy lon lat for output
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                  ! time counter
 
   REAL(KIND=8)                               :: dmasss, dmelts       ! volume, area extend South hemisphere
   REAL(KIND=8)                               :: dmassn, dmeltn       ! volume, area extend North hemisphere
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                 ! time counter
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar              ! structure of output
   !
@@ -109,7 +109,7 @@ PROGRAM cdficb_diags
   ALLOCATE ( ricbmass(npiglo,npjglo) )
   ALLOCATE ( ricbmelt(npiglo,npjglo) )
   ALLOCATE ( e1(npiglo,npjglo),e2(npiglo,npjglo) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
   ALLOCATE ( rdumlon(1,1), rdumlat(1,1) )
 
@@ -157,7 +157,7 @@ PROGRAM cdficb_diags
      dmasss    = SUM( ricbmass (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff < 0) )
      dmelts    = SUM( ricbmelt (:,:)* e1(:,:) * e2(:,:) * tmask (:,:), (ff < 0 )) 
 
-     PRINT *,' TIME = ', jt,' ( ',tim(jt),' )'
+     PRINT *,' TIME = ', jt,' ( ',dtim(jt),' )'
      PRINT *,' Northern Hemisphere ' 
      PRINT *,'          NMass (Kg)      ', dmassn
      PRINT *,'          NMelt (Kg/s)    ', dmeltn
@@ -222,8 +222,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout                                )
     ierr  = putheadervar(ncout,  cf_ifil, ikx,      iky, ikz,     pnavlon=rdumlon, pnavlat=rdumlat)
 
-    tim   = getvar1d(cf_ifil, cn_vtimec, npt     )
-    ierr  = putvar1d(ncout,   tim,       npt, 'T')
+    dtim  = getvar1d(cf_ifil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

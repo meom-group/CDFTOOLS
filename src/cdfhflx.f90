@@ -49,8 +49,8 @@ PROGRAM cdfhflx
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zflx                   ! fluxes read on file
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdumlon                ! dummy longitude = 0.
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdumlat                ! latitude for i = north pole
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim                    ! time counter
 
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim                   ! time counter
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dmht                   ! cumulated heat trp
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: dhtrp                  ! MHT from fluxes
 
@@ -142,7 +142,7 @@ PROGRAM cdfhflx
   ALLOCATE ( dhtrp (npbasins,npjglo) )
   ALLOCATE ( dmht(npbasins, npjglo) )
   ALLOCATE ( rdumlon(1,npjglo), rdumlat(1,npjglo) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
 
   ALLOCATE (stypvar(npbasins), ipk(npbasins), id_varout(npbasins))
 
@@ -179,7 +179,7 @@ PROGRAM cdfhflx
      ! initialize dmht
      dmht(:,:)  = 0.d0
      dhtrp(:,:) = 0.d0
-     WRITE(numout,*)' TIME =', jt, tim(jt)/86400.,' days'
+     WRITE(numout,*)' TIME =', jt, dtim(jt)/86400.,' days'
 
      ! Get fluxes
      zflx(:,:)= getvar(cf_tfil, cn_sohefldo, 1, npiglo, npjglo, ktime=jt)
@@ -264,8 +264,8 @@ CONTAINS
     ierr  = createvar   (ncout,    stypvar, npbasins, ipk,    id_varout                            )
     ierr  = putheadervar(ncout,    cf_tfil, ikx,      npjglo, npk, pnavlon=rdumlon, pnavlat=rdumlat)
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim,       npt, 'T')
+    dtim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

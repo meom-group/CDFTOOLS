@@ -36,20 +36,20 @@ PROGRAM cdflap
   INTEGER(KIND=4), DIMENSION(1)                :: ipk, id_varout     ! levels and varid's of output vars
   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: ipkin              ! ipk of all variables in input files
 
+  REAL(KIND=4)                                 :: rmissing           ! missing value or_FillValue of input variable
+  REAL(KIND=4)                                 :: grav=9.81          ! Gravity acceleration (m2/s)
+  REAL(KIND=4)                                 :: omega              ! earth rotation rate
+  REAL(KIND=4)                                 :: rpi                ! 3.14159...
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1_i1, e1_i2       ! along i horizontal metric
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e2_j1, e2_j2       ! along j horizontal metric
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rmski, rmskj       ! relevant mask
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: v2d                ! input variable
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: ff                 ! Coriolis
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: gphi               ! Coriolis
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim                ! time counter
-  REAL(KIND=4)                                 :: rmissing           ! missing value or_FillValue of input variable
-  REAL(KIND=4)                                 :: grav=9.81          ! Gravity acceleration (m2/s)
-  REAL(KIND=4)                                 :: omega              ! earth rotation rate
-  REAL(KIND=4)                                 :: rpi                ! 3.14159...
 
-  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dlap               ! output laplacian
   REAL(KIND=8)                                 :: dspval=99999.d0    ! output laplacian
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim               ! time counter
+  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dlap               ! output laplacian
 
   CHARACTER(LEN=256)                           :: cf_in              ! input file name
   CHARACTER(LEN=256)                           :: cv_in              ! input variable name
@@ -223,7 +223,7 @@ PROGRAM cdflap
   ENDIF
 
   ALLOCATE ( dlap(npiglo,npjglo), v2d(npiglo, npjglo)  )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
 
   ! Read the metrics from the mesh_hgr file
   IF ( l_metric ) THEN
@@ -331,8 +331,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_in, npiglo, npjglo, npk         )
 
-    tim  = getvar1d(cf_in , cn_vtimec, npt     )
-    ierr = putvar1d(ncout , tim      , npt, 'T')
+    dtim = getvar1d(cf_in , cn_vtimec, npt     )
+    ierr = putvar1d(ncout , dtim     , npt, 'T')
 
   END SUBROUTINE CreateOutput
 

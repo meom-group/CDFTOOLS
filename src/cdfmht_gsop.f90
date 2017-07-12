@@ -52,7 +52,6 @@ PROGRAM cdfmht_gsop
   REAL(KIND=4)                                :: rho0=1000.,   rcp=4000.    ! rau0 en kg x m-3 et rcp en m2 x s-2 x degC-1
   REAL(KIND=4)                                :: rau0, grav, f0, fcor       ! physical parameters
   REAL(KIND=4)                                :: zmsv, zphv, rpi            !
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdept, gdepw               ! deptht, deptw
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1u, e1v, e3v, gphiv, zv   !  metrics, velocity
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: hdep, vbt
@@ -70,6 +69,7 @@ PROGRAM cdfmht_gsop
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: vmaskz,tmaskz             ! npiglo x npjglo x npk
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: e3vz                      ! npiglo x npjglo x npk
 
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dzomht                    ! nbasins x npjglo
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dzomht_gsop               ! jpgsop x npjglo
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dzomht_geos_full          ! npjglo x npk
@@ -177,7 +177,7 @@ PROGRAM cdfmht_gsop
   ALLOCATE ( dzomht_gsop(jpgsop, npjglo) )
   ALLOCATE ( btht(npjglo,npk) )
   ALLOCATE ( zsal(npiglo,npjglo), zsig0(npiglo,npjglo) )
-  ALLOCATE ( gdept(npk) )
+  ALLOCATE ( gdept(npk) ,dtim(npt))
   ALLOCATE ( rlon(1,npjglo) , rlat(1,npjglo))
   ALLOCATE ( zzmask(npiglo,npjglo) )
   ALLOCATE ( vgeo(npiglo,npjglo,npk) )
@@ -504,11 +504,11 @@ CONTAINS
     stypvar(4)%caxis='TY'
 
     ! create output fileset
-    ncout =create(cf_out, cf_vfil,1,npjglo,1,cdep=cn_vdepthw)
-    ierr= createvar(ncout ,stypvar,jpgsop, ipk_gsop,id_varout_gsop )
-    ierr= putheadervar(ncout, cf_vfil,1, npjglo,1,pnavlon=rlon,pnavlat=rlat,pdep=gdepw)
-    tim=getvar1d(cf_vfil,cn_vtimec,1)
-    ierr=putvar1d(ncout,tim,1,'T')
+    ncout = create(cf_out, cf_vfil,1,npjglo,1,cdep=cn_vdepthw)
+    ierr  = createvar(ncout ,stypvar,jpgsop, ipk_gsop,id_varout_gsop )
+    ierr  = putheadervar(ncout, cf_vfil,1, npjglo,1,pnavlon=rlon,pnavlat=rlat,pdep=gdepw)
+    dtim  = getvar1d(cf_vfil,cn_vtimec,1)
+    ierr  = putvar1d(ncout,dtim,1,'T')
 
   END SUBROUTINE CreateOutput
 

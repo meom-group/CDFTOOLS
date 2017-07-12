@@ -45,20 +45,20 @@ PROGRAM cdfsigintegr
   INTEGER(KIND=4)                               :: ncout, ierr      ! ncid and status variable
   INTEGER(KIND=4), DIMENSION(4)                 :: ipk, id_varout   ! levels and id's of output variables
   !
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d              ! 3D working array (npk)
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zint             ! pseudo 3D working array (2)
+  REAL(KIND=4)                                  :: zspval=999999.   ! output missing value
+  REAL(KIND=4)                                  :: zspvalz          ! missing value from rho file      
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rho_lev          ! value of isopycnals
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: h1d              ! depth of rho points
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepw            ! depth of W points
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d             ! vertical metrics in full step
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d              ! 2D working array
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: e3               ! vertical metrics
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tmask            ! mask of t points from rho
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zdum             ! dummy array for I/O
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rho_lev          ! value of isopycnals
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim              ! time counter
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: h1d              ! depth of rho points
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepw            ! depth of W points
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d             ! vertical metrics in full step
-  REAL(KIND=4)                                  :: zspval=999999.   ! output missing value
-  REAL(KIND=4)                                  :: zspvalz          ! missing value from rho file      
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d              ! 3D working array (npk)
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zint             ! pseudo 3D working array (2)
 
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim             ! time counter
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dv2dint          ! interpolated value 
   REAL(KIND=8), DIMENSION(:,:,:),   ALLOCATABLE :: dalpha           ! 3D coefficient (npiso)
 
@@ -266,10 +266,10 @@ PROGRAM cdfsigintegr
 
         ! copy time arrays in output file
         npt = getdim ( cf_in, cn_t)
-        ALLOCATE ( tim(npt) )
-        tim(:) = getvar1d(cf_in, cn_vtimec, npt     )
-        ierr   = putvar1d(ncout, tim,       npt, 'T')
-        DEALLOCATE ( tim )
+        ALLOCATE ( dtim(npt) )
+        dtim = getvar1d(cf_in, cn_vtimec, npt     )
+        ierr = putvar1d(ncout, dtim,      npt, 'T')
+        DEALLOCATE ( dtim )
 
         DO jt =1, npt
            IF ( lg_vvl) THEN ; it=jt

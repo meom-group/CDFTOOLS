@@ -37,9 +37,11 @@ PROGRAM cdfpdf
   INTEGER(KIND=4), DIMENSION(1)             :: ipk , id_varout   ! output variable
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvar, zcount, ztimed, zlon
-  REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: vlim, ztimes
+  REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: vlim
   REAL(KIND=4)                              :: vmin, vmax, bin_siz
   REAL(KIND=4)                              :: below, above, spval
+
+  REAL(KIND=8), DIMENSION(:)  , ALLOCATABLE :: dtim
 
   CHARACTER(LEN=256)                        :: cf_ifil
   CHARACTER(LEN=256)                        :: cf_asc='pdf.txt'
@@ -177,7 +179,7 @@ PROGRAM cdfpdf
 
   ! Allocate memory
   ALLOCATE ( zcount(nbin,npt), vlim(nlim) )
-  ALLOCATE ( ztimes(npt), ztimed(nbin,npt) , zlon(nbin,npt))
+  ALLOCATE ( dtim(npt), ztimed(nbin,npt) , zlon(nbin,npt))
 
   DO ji=1, nlim 
      vlim(ji)= vmin + (ji-1)*bin_siz
@@ -185,13 +187,13 @@ PROGRAM cdfpdf
 
   OPEN (numout, FILE=cf_asc)   ! this file can be plotted easily with graph
   ! time in seconds read from file 
-  ztimes  = getvar1d(cf_ifil, cn_vtimec, npt )
+  dtim  = getvar1d(cf_ifil, cn_vtimec, npt )
 
   ! convert in time in days since the begining of the file
   ! this will be the dummy 'latitude' for the output file
 
   DO jt=1, npt
-     ztimed(:,jt) = (ztimes(jt) - ztimes(1) ) / 86400.
+     ztimed(:,jt) = (dtim(jt) - dtim(1) ) / 86400.
   ENDDO
 
   ! dummy longitude for the output file in the mean value of the bin

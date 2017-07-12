@@ -42,11 +42,12 @@ PROGRAM cdf16bit
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zmax, zmin         ! min and max of the field at level(jk)
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                ! time of file
   REAL(KIND=4)                                  :: sf, ao             ! scale_factor, add_offset
   REAL(KIND=4)                                  :: zchkmax, zchkmin   ! scale_factor, add_offset checking values
   REAL(KIND=4)                                  :: zzmax, zzmin       ! min and max of the full 3D field
   REAL(KIND=4)                                  :: spval              ! missing value, fill_value, spval ...
+
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim               ! time of file
 
   CHARACTER(LEN=256)                            :: cf_in              ! input file
   CHARACTER(LEN=256)                            :: cf_out='cdf16bit.nc' ! outputfile
@@ -124,7 +125,7 @@ PROGRAM cdf16bit
 
   ! Allocate memory 
   ALLOCATE( v2d(npiglo,npjglo), i2d(npiglo,npjglo), lmask(npiglo, npjglo) )
-  ALLOCATE( zmin(npk) , zmax(npk) , tim(npt))
+  ALLOCATE( zmin(npk) , zmax(npk) , dtim(npt))
 
   ! Get the number of variables held in the file, allocate arrays
   nvars = getnvar(cf_in)
@@ -578,8 +579,8 @@ CONTAINS
     ierr= putheadervar(ncout , cf_in, npiglo, npjglo, npk)
 
     ! Get time and write time
-    tim=getvar1d(cf_in,cn_vtimec,npt) 
-    ierr=putvar1d(ncout,tim,npt,'T')
+    dtim=getvar1d(cf_in,cn_vtimec,npt) 
+    ierr=putvar1d(ncout,dtim,npt,'T')
 
   END SUBROUTINE CreateOutput
 

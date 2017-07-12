@@ -45,7 +45,8 @@ PROGRAM cdfnorth_unfold
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tab                      ! output array
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tablon, tablat           ! output longitude and latitude
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                      ! Array to read a layer of data
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                      ! time counter
+
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                     ! time counter
 
   CHARACTER(LEN=256)                            :: cf_in                    ! input file name
   CHARACTER(LEN=256)                            :: cf_out='unfold.nc'       ! output file names 
@@ -156,7 +157,7 @@ PROGRAM cdfnorth_unfold
   PRINT *, 'npt    = ', npt
   PRINT *, 'npk    = ', npk , 'Dep name :' , TRIM(cv_dep)
 
-  ALLOCATE( tab(npiarctic, npjarctic),  v2d(npiglo,npjglo), tim(npt)   )
+  ALLOCATE( tab(npiarctic, npjarctic),  v2d(npiglo,npjglo), dtim(npt)  )
   ALLOCATE( tablon(npiarctic, npjarctic), tablat(npiarctic, npjarctic) )
 
   nvars = getnvar(cf_in)
@@ -365,8 +366,8 @@ CONTAINS
   ierr  = createvar   (ncout,  stypvar, nvars,     ipk,       id_varout, cdglobal=TRIM(cglobal)               , ld_nc4=lnc4)
   ierr  = putheadervar(ncout,  cf_in,   npiarctic, npjarctic, npk, pnavlon=tablon, pnavlat=tablat, cdep=cv_dep)
 
-  tim  = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, tim,       npt, 'T')
+  dtim = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

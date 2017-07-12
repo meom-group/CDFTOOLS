@@ -37,10 +37,11 @@ PROGRAM cdfeke
   INTEGER(KIND=4), DIMENSION(2)              :: ipk, id_varout      ! 
 
   REAL(KIND=4)                               :: ua, va              ! working arrays
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                 ! time variable
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: uc, vc, u2, v2      ! velocities etc...
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: eke                 ! velocities etc...
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: rmke                ! Mean Kinetic energy
+
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                ! time variable
 
   CHARACTER(LEN=256)                         :: cf_out='eke.nc'     ! file name
   CHARACTER(LEN=256)                         :: cf_ufil, cf_u2fil   ! file name
@@ -172,7 +173,7 @@ PROGRAM cdfeke
      ALLOCATE( rmke(npiglo,npjglo)  )
      rmke(:,:) = 0.e0
   ENDIF
-  ALLOCATE( tim(npt) )
+  ALLOCATE( dtim(npt) )
 
   CALL CreateOutput
   ! check for E_W periodicity
@@ -276,8 +277,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, ivar,   ipk,    id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk                     )
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim,       npt, 'T')
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

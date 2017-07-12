@@ -35,15 +35,15 @@ PROGRAM cdfhgradb
   INTEGER(KIND=4)                             :: ierr              ! error status
   INTEGER(KIND=4), DIMENSION(jp_varout)       :: ipk, id_varout    ! output variable
 
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim               ! time variable
+  REAL(KIND=4)                                :: zdep              ! temporary scalar
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdept             ! depth of Tlevels
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: umask, vmask, tmask ! relevant mask
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1u, e2v          ! metrics
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zt, zs            ! Temperature Salinity on 2 levels
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdept             ! depth of Tlevels
-  REAL(KIND=4)                                :: zdep              ! temporary scalar
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zalbet, zbeta         ! for alpha and beta
 
   REAL(KIND=8)                                :: dgrav=9.81d0
-
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim              ! time variable
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgradt_xu, dgradt_yv! Temperature gradient, native grid
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgrads_xu, dgrads_yv! Salinity gradient, native grid
 
@@ -53,7 +53,6 @@ PROGRAM cdfhgradb
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgradb_xt, dgradb_yt ! Buyoyancy gradient, t-point
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dgradb              ! norm of the buyoyancy gradient, t-point
 
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zalbet, zbeta         ! for alpha and beta
 
   CHARACTER(LEN=256)                         :: cf_tfil             ! input file name for T and S
   CHARACTER(LEN=256)                         :: cf_sfil             ! input file name for S (optional)
@@ -147,7 +146,7 @@ PROGRAM cdfhgradb
   IF ( npk == 0 ) npkk = 1
 
   !!  Allocate arrays
-  ALLOCATE (tim(npt) )
+  ALLOCATE (dtim(npt) )
   ALLOCATE (gdept(npkk) )
   ALLOCATE (e1u  (npiglo,npjglo), e2v  (npiglo,npjglo) )
   ALLOCATE (umask(npiglo,npjglo), vmask(npiglo,npjglo), tmask(npiglo,npjglo))
@@ -257,8 +256,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, jp_varout, ipk, id_varout, ld_nc4=lnc4    )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,  tim,        npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

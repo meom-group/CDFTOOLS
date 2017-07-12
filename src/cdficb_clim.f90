@@ -31,7 +31,8 @@ PROGRAM cdficb_clim
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
 
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ricbmass, ricbmelt   ! icbmass icbmelt
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                  ! time counter
+
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                 ! time counter
 
   TYPE(variable), DIMENSION(:),  ALLOCATABLE :: stypvar              ! structure of output
   !
@@ -101,7 +102,7 @@ PROGRAM cdficb_clim
 
   ALLOCATE ( ricbmass(npiglo,npjglo) )
   ALLOCATE ( ricbmelt(npiglo,npjglo) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
 
   CALL CreateOutput
@@ -164,8 +165,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout              , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_lst(1), npiglo,      npjglo, 1)
 
-    tim = (/(jt,jt=1,12)/)
-    ierr  = putvar1d(ncout, tim, npt, 'T')
+    dtim = (/(jt,jt=1,12)/)
+    ierr = putvar1d(ncout, dtim, npt, 'T')
 
 
   END SUBROUTINE CreateOutput

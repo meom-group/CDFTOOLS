@@ -31,9 +31,10 @@ PROGRAM cdfspeed
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: nklevel              ! requested levels
   INTEGER(KIND=4), DIMENSION(1)              :: ipk, id_varout       ! output variable vertical level, varid
 
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                  ! time counter array
   REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdept, gdeptall      ! deptht values for requested/all levels
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zu, zv, zspeed       ! working arrays, speed
+
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                 ! time counter array
 
   CHARACTER(LEN=256)                         :: cf_vfil, cf_ufil     ! file for u and v components
   CHARACTER(LEN=256)                         :: cf_tfil='none'       ! file for T point position
@@ -156,7 +157,7 @@ PROGRAM cdfspeed
   END IF
 
   ! Allocate arrays
-  ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), zspeed(npiglo,npjglo), tim(npt))
+  ALLOCATE ( zv(npiglo,npjglo), zu(npiglo,npjglo), zspeed(npiglo,npjglo), dtim(npt))
 
   CALL CreateOutput
 
@@ -231,8 +232,8 @@ CONTAINS
        ierr   = putheadervar(ncout,  cf_tfil, npiglo, npjglo, nlev,  pdep=gdept         )
     END IF
 
-    tim   = getvar1d(cf_vfil, cn_vtimec, npt     )
-    ierr=putvar1d(ncout, tim, npt, 'T')
+    dtim = getvar1d(cf_vfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,        npt, 'T')
 
   END SUBROUTINE CreateOutput
 

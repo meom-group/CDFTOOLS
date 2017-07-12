@@ -41,7 +41,6 @@ PROGRAM cdfcofdis
   REAL(KIND=4)            :: rad = 3.141592653589793 / 180.   !: conv. from degre into radian
   REAL(KIND=4)            :: ra  = 6371229.                   !: earth radius (meter)
 
-  REAL(KIND=4) ,DIMENSION(1)                :: timean
   ! to be read in mesh_hgr
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamt, glamu,glamv, glamf
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: gphit, gphiu,gphiv, gphif
@@ -49,6 +48,8 @@ PROGRAM cdfcofdis
   ! 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: pdct                       ! 2D only in this version
   ! It is a 3D arg in original cofdis
+  REAL(KIND=8) ,DIMENSION(1)                :: dtim
+
   CHARACTER(LEN=256)                        :: cf_out='dist.coast'
   CHARACTER(LEN=256)                        :: cf_tfil
   CHARACTER(LEN=256)                        :: cv_out='Tcoast'
@@ -358,8 +359,8 @@ CONTAINS
        !                                                ! ===============
     END DO                                              !   End of slab
     !                                                   ! ===============
-    timean(:)=0.
-    ierr=putvar1d(ncout,timean,1,'T')
+    dtim(:)=0.d0
+    ierr=putvar1d(ncout,dtim,1,'T')
     ierr = closeout(ncout)
 
   END SUBROUTINE cofdis

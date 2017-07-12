@@ -60,9 +60,9 @@ PROGRAM cdfets
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zn2                       ! Brunt Vaissala Frequency (N2)
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zmask, ff                 ! mask coriolis.
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1u, e2v, e3w             ! metrics
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim                       ! time counter
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw                     ! depth of w level
 
+  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: dtim                      ! time counter
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dbuoy, dbu, dbv           ! Double precision
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dlda, dM2, dets           ! Double precision
 
@@ -144,7 +144,7 @@ PROGRAM cdfets
   ALLOCATE (zn2(npiglo,npjglo), e1u(npiglo,npjglo), e2v(npiglo,npjglo) ,e3w(npiglo,npjglo))
   ALLOCATE (dbu(npiglo,npjglo), dbv(npiglo,npjglo),dlda(npiglo,npjglo) )
   ALLOCATE (dbuoy(npiglo,npjglo), dM2(npiglo,npjglo),dets(npiglo,npjglo) ,ff(npiglo,npjglo) )
-  ALLOCATE (gdepw(npk), tim(npt) )
+  ALLOCATE (gdepw(npk), dtim(npt) )
 
   CALL CreateOutput
 
@@ -313,8 +313,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar , 2,      ipk,    id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,  tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

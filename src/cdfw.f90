@@ -45,10 +45,11 @@ PROGRAM cdfw
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e3u, e3v, e3t      ! vertical metrics (partial steps)
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: glamt, gphit       ! T longitude latitude
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: un, vn             ! horizontal velocity component
-  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: hdivn              ! horizontal divergence
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdepw              ! depth of W points
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d               ! vertical metrics ( full step)
+
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim               ! time counter
+  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dhdivn             ! horizontal divergence
 
   CHARACTER(LEN=256)                           :: cf_ufil            ! U file name
   CHARACTER(LEN=256)                           :: cf_vfil            ! V file name
@@ -141,9 +142,9 @@ PROGRAM cdfw
   ALLOCATE ( e1t(npiglo,npjglo), e2t(npiglo,npjglo) )
   ALLOCATE ( e3u(npiglo,npjglo), e3v(npiglo,npjglo), e3t(npiglo,npjglo) )
   ALLOCATE ( glamt(npiglo,npjglo), gphit(npiglo,npjglo)  )
-  ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo), hdivn(npiglo,npjglo) )
+  ALLOCATE ( un(npiglo,npjglo), vn(npiglo,npjglo), dhdivn(npiglo,npjglo))
   ALLOCATE ( wn(npiglo,npjglo,2) )
-  ALLOCATE ( gdepw(npk), tim(npt) )
+  ALLOCATE ( gdepw(npk), dtim(npt) )
   IF ( lfull ) ALLOCATE ( e31d (npk) )
 
   ! Read the metrics from the mesh_hgr file
@@ -189,7 +190,7 @@ PROGRAM cdfw
         ! Compute divergence :
         DO jj = 2, npjglo -1
            DO ji = 2, npiglo -1
-              hdivn(ji,jj) =   &
+              dhdivn(ji,jj) =   &
                 &  (  e2u(ji,jj)*e3u(ji,jj) * un(ji,jj) - e2u(ji-1,jj  )*e3u(ji-1,jj  )  * un(ji-1,jj )     &       
                 &   + e1v(ji,jj)*e3v(ji,jj) * vn(ji,jj) - e1v(ji  ,jj-1)*e3v(ji  ,jj-1)  * vn(ji  ,jj-1)  ) &
                 & / ( e1t(ji,jj)*e2t(ji,jj) * e3t(ji,jj) )
@@ -197,7 +198,7 @@ PROGRAM cdfw
         END DO
 
         ! Computation from the bottom
-        wn(:,:,itop) = wn(:,:,ibot) - e3t(:,:) * hdivn(:,:)
+        wn(:,:,itop) = wn(:,:,ibot) - e3t(:,:) * dhdivn(:,:)
 
         ! write wn  on file at level jk (This coculd be epensive at it writes from the bottom ...
         ierr = putvar(ncout, id_varout(1), wn(:,:,itop), jk, npiglo, npjglo, ktime=jt)
@@ -239,8 +240,9 @@ CONTAINS
     ierr  = createvar   (ncout , stypvar,  1,      ipk,    id_varout,              ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  'dummy',  npiglo, npjglo, npk, glamt, gphit, gdepw            )
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,       npt, 'T')
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,        npt, 'T')
+
 
   END SUBROUTINE CreateOutput
 

@@ -30,10 +30,10 @@ PROGRAM cdfstdevw
   INTEGER(KIND=4)                            :: ierr              ! error status
   INTEGER(KIND=4), DIMENSION(1)              :: ipko, id_varout   ! output variable
 
-  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zvbar, zvba2      ! mean and mean2 variable
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim               ! time counter
   REAL(KIND=4)                               :: rmiss             ! missing value attribute
+  REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zvbar, zvba2      ! mean and mean2 variable
 
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim              ! time counter
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dsdev             ! standard deviation
 
   CHARACTER(LEN=256)                         :: cf_in             ! input mean file name
@@ -122,7 +122,7 @@ PROGRAM cdfstdevw
   CALL CreateOutput
 
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
-  ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
+  ALLOCATE( dsdev(npiglo,npjglo), dtim(npt)            )
 
   ierr = getvaratt(cf_in, cv_in, cl_units, rmiss, cl_longname, cl_shortname )
 
@@ -166,8 +166,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,       npt, 'T')
+    dtim = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

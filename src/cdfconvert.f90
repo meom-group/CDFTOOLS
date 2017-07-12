@@ -155,7 +155,7 @@ PROGRAM cdfconvert
        ( tim(jt), jt=1,npt)
 
   ! transform Clipper days to drakkar seconds ...
-  tim(:)=tim(:)*86400.
+  tim(:)=tim(:)*86400.d0
 
   !###############
   !# GRID T FILE #
@@ -370,7 +370,7 @@ PROGRAM cdfconvert
   jvar = jvar+1
   PRINT *, 'Done for QRP'
 
-  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = putvar1d(ncout, DBLE(tim), npt, 'T')
   ierr = closeout(ncout)
   DEALLOCATE ( stypvar, ipk, id_varout )
 
@@ -457,7 +457,7 @@ PROGRAM cdfconvert
      PRINT *, 'Done for UU'
   ENDIF
 
-  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = putvar1d(ncout, DBLE(tim), npt, 'T')
   ierr = closeout(ncout               )
 
   DEALLOCATE ( stypvar, ipk, id_varout )
@@ -544,7 +544,7 @@ PROGRAM cdfconvert
      PRINT *, 'Done for VV'
   ENDIF
 
-  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = putvar1d(ncout, DBLE(tim), npt, 'T')
   ierr = closeout(ncout               )
 
   DEALLOCATE ( stypvar, ipk, id_varout )
@@ -579,7 +579,7 @@ PROGRAM cdfconvert
   ierr = putvar(ncout, id_varout(jvar),v2d, 1, npiglo, npjglo)
   PRINT *, 'Done for PSI'
 
-  ierr = putvar1d(ncout, tim, npt, 'T')
+  ierr = putvar1d(ncout, DBLE(tim), npt, 'T')
   ierr = closeout(ncout               )
 
   DEALLOCATE ( stypvar, ipk, id_varout )

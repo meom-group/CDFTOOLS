@@ -48,19 +48,22 @@ PROGRAM cdfvsig
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipkw, id_varoutw     ! level and varid's of output vars
 
   REAL(KIND=4)                              :: zdepref              ! reference level for potential density
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: refdep               ! Reference depth table
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp,  zsal         ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv, zw           ! Velocity component
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztempu, zsalu        ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztempv, zsalv        ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztempw, zsalw        ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: umask,  vmask, wmask ! masks
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: refdep               ! Reference depth table
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter of individual files
-  REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
 
+  REAL(KIND=8)                                :: dtotal_time          ! cumulated time
+  REAL(KIND=8), DIMENSION(1)                  :: dtimean              ! mean time
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim                 ! time counter of individual files
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulu, dcumulu2    ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulv, dcumulv2    ! Arrays for cumulated values
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulw, dcumulw2    ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulus             ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulvs             ! Arrays for cumulated values
-
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulws             ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulsu             ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dcumulsv             ! Arrays for cumulated values
@@ -68,10 +71,6 @@ PROGRAM cdfvsig
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dsigu                ! Array for sigmai at u point
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dsigv                ! Array for sigmai at v point
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dsigw                ! Array for sigmai at w point
-  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulu, dcumulu2    ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulv, dcumulv2    ! Arrays for cumulated values
-  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dcumulw, dcumulw2    ! Arrays for cumulated values
-  REAL(KIND=8)                              :: dtotal_time          ! cumulated time
 
   CHARACTER(LEN=256)                        :: cf_tfil              ! TS file name
   CHARACTER(LEN=256)                        :: cf_ufil              ! zonal velocity file
@@ -268,10 +267,10 @@ PROGRAM cdfvsig
 
         npt = getdim (cf_tfil, cn_t)
         IF ( lcaltmean ) THEN
-           ALLOCATE ( tim(npt) )
-           tim = getvar1d(cf_tfil, cn_vtimec, npt)
-           dtotal_time = dtotal_time + SUM(tim(1:npt) )
-           DEALLOCATE( tim )
+           ALLOCATE ( dtim(npt) )
+           dtim        = getvar1d(cf_tfil, cn_vtimec, npt)
+           dtotal_time = dtotal_time + SUM(dtim(1:npt) )
+           DEALLOCATE( dtim )
         END IF
 
         DO jtt = 1, npt  ! loop on time frame in a single file
@@ -410,10 +409,10 @@ PROGRAM cdfvsig
      ENDIF
 
      IF ( lcaltmean )  THEN
-        timean(1) = dtotal_time/ntframe
-        ierr      = putvar1d(ncoutu, timean, 1, 'T')
-        ierr      = putvar1d(ncoutv, timean, 1, 'T')
-        IF ( lwo ) ierr = putvar1d(ncoutw, timean, 1, 'T')
+        dtimean(1)= dtotal_time/ntframe
+        ierr      = putvar1d(ncoutu, dtimean, 1, 'T')
+        ierr      = putvar1d(ncoutv, dtimean, 1, 'T')
+        IF ( lwo ) ierr = putvar1d(ncoutw, dtimean, 1, 'T')
      END IF
 
      lcaltmean = .FALSE. ! tmean already computed

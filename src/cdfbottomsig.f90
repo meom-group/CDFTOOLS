@@ -43,7 +43,8 @@ PROGRAM cdfbottomsig
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: ztemp0, zsal0  ! temporary array to read temp, sal
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zsig           ! potential density 
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zmask          ! 2D mask at surface
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim            ! time counter
+
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim           ! time counter
 
   CHARACTER(LEN=256)                         :: cf_out='botsig.nc' ! Output file name
   CHARACTER(LEN=256)                         :: cf_tfil        ! input filename
@@ -134,7 +135,7 @@ PROGRAM cdfbottomsig
 
   ALLOCATE (ztemp( npiglo,npjglo), zsal( npiglo,npjglo), zsig(npiglo,npjglo) ,zmask(npiglo,npjglo))
   ALLOCATE (ztemp0(npiglo,npjglo), zsal0(npiglo,npjglo) )
-  ALLOCATE ( tim (npt) )
+  ALLOCATE ( dtim (npt) )
 
   CALL CreateOutput
 
@@ -205,8 +206,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 1     , ipk   , id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim      , npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   dtim     , npt, 'T')
 
   END SUBROUTINE CreateOutput
 

@@ -46,7 +46,7 @@ PROGRAM cdfvFWov
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: de3v                ! vertical metrics
   REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: de1v                ! horizontal metrics
   REAL(KIND=8), DIMENSION (:),   ALLOCATABLE :: dnetvFW, dtotvFW    ! transport array
-  REAL(KIND=8), DIMENSION (:),   ALLOCATABLE :: dovFW, dtime        ! overturning array, time
+  REAL(KIND=8), DIMENSION (:),   ALLOCATABLE :: dovFW, dtim         ! overturning array, time
   REAL(KIND=8), DIMENSION (1)                :: dnetv, dnetFW       ! total transport accross section (mass and FW)
   REAL(KIND=8), DIMENSION (1)                :: darea, dareak       ! work space
   REAL(KIND=8), DIMENSION (1)                :: dzonalv, dzonalFW
@@ -156,7 +156,7 @@ PROGRAM cdfvFWov
      STOP 99
   ENDIF
 
-  ALLOCATE ( dnetvFW(npt), dtotvFW(npt), dovFW(npt), dtime(npt) )
+  ALLOCATE ( dnetvFW(npt), dtotvFW(npt), dovFW(npt), dtim(npt) )
   ALLOCATE ( de1v(npiglo,npjglo), de3v(npiglo,npk))
   ALLOCATE ( zFWv(npiglo,npk), zvitv(npiglo,npk) )
   ALLOCATE ( zsals(npiglo,npk), zsaln(npiglo,npk), zsalv(npiglo,npk) )
@@ -294,8 +294,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nboutput, ipk, id_varout, cdglobal=TRIM(cglobal)           )
     ierr  = putheadervar(ncout,  cf_vfil, ikx,      iky, ikz,       pnavlon=rdumlon, pnavlat=rdumlat )
 
-    dtime = getvar1d(cf_vfil, cn_vtimec, npt)
-    ierr  = putvar1d(ncout,   REAL(dtime),      npt, 'T')
+    dtim  = getvar1d(cf_vfil, cn_vtimec, npt)
+    ierr  = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

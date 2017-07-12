@@ -29,7 +29,8 @@ PROGRAM cdfdifmask
   INTEGER(KIND=4), DIMENSION(4)              :: id_varout              ! ncdf varid's
 
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zmask, zmask2          ! 2D mask at current level
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                    ! dummy time variable
+
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                   ! dummy time variable
 
   CHARACTER(LEN=256)                         :: cf_out='mask_diff.nc'  ! Output file name
   CHARACTER(LEN=256)                         :: cf_msk1, cf_msk2       ! name of input files
@@ -91,7 +92,7 @@ PROGRAM cdfdifmask
   npk    = getdim (cf_msk1, 'z' )  ! mask file have a z depth dim instead of depth ...
 
   ALLOCATE (zmask(npiglo,npjglo), zmask2(npiglo,npjglo))
-  ALLOCATE ( tim(1) )
+  ALLOCATE ( dtim(1) )
 
   CALL CreateOutput
 
@@ -141,8 +142,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 4,      ipk,    id_varout                            , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_msk1, npiglo, npjglo, npk,      cdep='nav_lev'                           )
 
-    tim(:) = 0.
-    ierr   = putvar1d(ncout, tim, 1, 'T')
+    dtim(:) = 0.d0
+    ierr   = putvar1d(ncout, dtim, 1, 'T')
 
   END SUBROUTINE CreateOutput
 

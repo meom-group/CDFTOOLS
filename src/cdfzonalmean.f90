@@ -43,17 +43,17 @@ PROGRAM cdfzonalmean
   INTEGER(KIND=4), DIMENSION(2)                 :: ijloc               ! working array for maxloc
 
   REAL(KIND=4)                                  :: zspval=0.           ! missing value 
-  REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: gdep                ! gdept or gdepw
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: e1, e2, gphi, zv    ! metrics, latitude, data value
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zdumlon             ! dummy longitude = 0.
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zdumlat             ! latitude for i = north pole
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: zmaskvar            ! variable mask
-  REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: rzomax              ! zonal maximum
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: rzomin              ! zonal minimum
+  REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
 
   REAL(KIND=8)                                  :: dtmp                ! temporary variable
+  REAL(KIND=8), DIMENSION (:),      ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzomean , darea     !  npjglo x npk
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dl_surf             ! surface of cells
 
@@ -248,7 +248,7 @@ PROGRAM cdfzonalmean
   ALLOCATE ( zmask(npbasins,npiglo,npjglo)              )
   ALLOCATE ( zv(npiglo,npjglo), zmaskvar(npiglo,npjglo) )
   ALLOCATE ( e1(npiglo,npjglo), e2      (npiglo,npjglo) )
-  ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), tim(npt)   )
+  ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), dtim(npt)  )
   ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo)       )
   IF ( lmax ) ALLOCATE ( rzomax(npjglo,npk)             )
   IF ( lmax ) ALLOCATE ( rzomin(npjglo,npk)             )
@@ -279,8 +279,8 @@ PROGRAM cdfzonalmean
 
   CALL CreateOutput
 
-  tim   = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr  = putvar1d(ncout, tim,       npt, 'T')
+  dtim  = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr  = putvar1d(ncout, dtim,      npt, 'T')
 
   ! reading the surface masks
   ! 1 : global ; 2 : Atlantic ; 3 : Indo-Pacif ; 4 : Indian ; 5 : Pacif

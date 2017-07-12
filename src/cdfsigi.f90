@@ -38,7 +38,8 @@ PROGRAM cdfsigi
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsal               ! salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsigi              ! sigma-i
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
   CHARACTER(LEN=256)                        :: cf_out='sigi.nc'   ! output file name
@@ -107,7 +108,7 @@ PROGRAM cdfsigi
 
   ALLOCATE (ztemp(npiglo,npjglo), zsal (npiglo,npjglo) )
   ALLOCATE (zsigi(npiglo,npjglo), zmask(npiglo,npjglo) )
-  ALLOCATE (tim(npt) )
+  ALLOCATE (dtim(npt) )
 
   CALL CreateOutput
   zspval= getatt(cf_tfil, cn_vosaline, cn_missing_value)
@@ -157,8 +158,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk                     )
 
-    tim   = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr  = putvar1d(ncout,   tim,       npt, 'T')
+    dtim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

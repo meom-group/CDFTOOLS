@@ -55,7 +55,6 @@ PROGRAM cdfmhst
   REAL(KIND=4), PARAMETER                      :: ppspval= 9999.99 ! missing value
 
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdep             ! depth array
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim              ! time counter
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d             ! 1D e3t for full step
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zmask            ! mask
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1v, e3v, gphiv  ! metrics and latitude
@@ -64,6 +63,7 @@ PROGRAM cdfmhst
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rdumlon          ! dummy longitude = 0.
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rdumlat          ! latitude for i = north pole
 
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim             ! time counter
   REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_glo  ! zonal integral
   REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_atl  ! zonal integral 
   REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dzonal_heat_pac
@@ -250,7 +250,7 @@ PROGRAM cdfmhst
   ENDIF
 
   ! Allocate arrays
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( dwkh(npiglo,npjglo), zmask(npiglo,npjglo), zvt(npiglo,npjglo) )
   ALLOCATE ( dwks(npiglo,npjglo), zvs(npiglo,npjglo) )
   ALLOCATE ( e1v(npiglo,npjglo), e3v(npiglo,npjglo), gphiv(npiglo,npjglo))
@@ -541,8 +541,8 @@ CONTAINS
     ierr  = createvar   (ncout,    stypvar,  nbasinso*npvar, ipk,    id_varout                                       )
     ierr  = putheadervar(ncout,    cf_vtfil, 1,             npjglo, npko, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep)
 
-    tim   = getvar1d (cf_vtfil, cn_vtimec, npt     ) 
-    ierr  = putvar1d (ncout,    tim,       npt, 'T')
+    dtim  = getvar1d (cf_vtfil, cn_vtimec, npt     ) 
+    ierr  = putvar1d (ncout,    dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

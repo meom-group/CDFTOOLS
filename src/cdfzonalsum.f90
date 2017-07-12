@@ -43,7 +43,6 @@ PROGRAM cdfzonalsum
 
   REAL(KIND=4)                                  :: ra = 6371229.       ! earth radius (m)
   REAL(KIND=4)                                  :: z2pi                ! 2 x 3.14...
-  REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: gdep                ! gdept or gdepw
   REAL(KIND=4), DIMENSION (:),      ALLOCATABLE :: alpha               ! 
   REAL(KIND=4), DIMENSION (:,:),    ALLOCATABLE :: e1, e2, gphi, zv    ! metrics, latitude, data value
@@ -53,6 +52,7 @@ PROGRAM cdfzonalsum
   REAL(KIND=4), DIMENSION (:,:,:),  ALLOCATABLE :: zmask               ! basin mask jpbasins x npiglo x npjglo
 
   REAL(KIND=8)                                  :: dtmp                ! temporary variable
+  REAL(KIND=8), DIMENSION (:),      ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dzosum              ! jpbasins x npjglo x npk
   REAL(KIND=8), DIMENSION (:,:),    ALLOCATABLE :: dl_surf             ! surface of cells
 
@@ -246,7 +246,7 @@ PROGRAM cdfzonalsum
   ALLOCATE ( zmask(npbasins,npiglo,npjglo)              )
   ALLOCATE ( zv(npiglo,npjglo), zmaskvar(npiglo,npjglo) )
   ALLOCATE ( e1(npiglo,npjglo), e2      (npiglo,npjglo) )
-  ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), tim(npt)   )
+  ALLOCATE ( gphi(npiglo,npjglo), gdep(npk), dtim(npt)  )
   ALLOCATE ( zdumlon(1,npjglo), zdumlat(1,npjglo)       )
   ALLOCATE ( dzosum(npjglo,npk), alpha(npjglo)          )
   ALLOCATE ( dl_surf(npiglo,npjglo)                     )
@@ -434,8 +434,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvaro, ivar, ipko,   id_varout                                         )
     ierr  = putheadervar(ncout,  cf_in,    1,    npjglo, npk,  pnavlon=zdumlon, pnavlat=zdumlat, pdep=gdep )
 
-    tim   = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr  = putvar1d(ncout, tim,       npt, 'T')
+    dtim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

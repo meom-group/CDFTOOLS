@@ -57,7 +57,6 @@ PROGRAM cdfpvor
   REAL(KIND=4)                                :: zpi, zomega, rau0sg  ! physical constant
   REAL(KIND=4)                                :: zsps                 ! Missing value for salinity
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw                ! deptht
-  REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: tim                  ! time counter
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: e31d                 ! metric for full step
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zn2                  ! Brunt Vaissala frequency
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: tmask                ! tmask from salinity
@@ -67,6 +66,7 @@ PROGRAM cdfpvor
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphit                ! latitude of t point
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: ztemp, zsal, zwk     ! array to ead 2 layer of data
 
+  REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim                 ! time counter
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dun, dvn             ! velocity component and flx
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: drotn                ! curl of the velocity
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: d2fcor               ! coriolis term at T point
@@ -196,7 +196,7 @@ PROGRAM cdfpvor
   ALLOCATE ( e2v(npiglo,npjglo),   e2t(npiglo,npjglo)     )
   ALLOCATE ( gphit(npiglo,npjglo), d2fcor(npiglo,npjglo)  )
   ALLOCATE ( tmask(npiglo,npjglo)                         )
-  ALLOCATE ( gdepw(npk), tim(npt)                         )
+  ALLOCATE ( gdepw(npk), dtim(npt)                        )
 
   ALLOCATE ( dstretch(npiglo,npjglo)                      )
   IF ( lertel ) THEN
@@ -253,7 +253,7 @@ PROGRAM cdfpvor
      ENDIF
      !  2 levels of T and S are required : iup,idown (with respect to W level)
      !  Compute from bottom to top (for vertical integration)
-     PRINT *,'time=',jt,'(days:',tim(jt)/86400.,')'
+     PRINT *,'time=',jt,'(days:',dtim(jt)/86400.,')'
      ztemp(:,:,idown) = getvar(cf_tfil, cn_votemper, npk-1, npiglo, npjglo, ktime=jt)
      zsal( :,:,idown) = getvar(cf_tfil, cn_vosaline, npk-1, npiglo, npjglo, ktime=jt)
 
@@ -387,8 +387,8 @@ CONTAINS
        ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk, pdep=gdepw            )
     ENDIF
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
-    ierr = putvar1d(ncout,   tim,       npt, 'T' )
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout,   dtim,      npt, 'T' )
 
   END SUBROUTINE CreateOutput
 

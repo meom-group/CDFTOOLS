@@ -68,7 +68,6 @@ PROGRAM cdfmocsig
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: sigma                ! density coordinate 
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: e31d                 ! vertical level (full step)
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: gdep                 ! depth of T layers ( full step)
-  REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: tim                  ! time counter
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: e1v, gphiv           ! horizontal metrics, latitude
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zt, zs               ! temperature, salinity
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zv, zveiv            ! velocity and bolus velocity
@@ -78,6 +77,7 @@ PROGRAM cdfmocsig
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zttmp                ! arrays to call sigmai and mask it
   REAL(KIND=4), DIMENSION (:,:),      ALLOCATABLE :: zarea                ! product e1v * e3v
 
+  REAL(KIND=8), DIMENSION (:),        ALLOCATABLE :: dtim                 ! time counter
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dens                 ! density
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: dmoc_tmp             ! temporary transport array
   REAL(KIND=8), DIMENSION(:,:),       ALLOCATABLE :: depi_tmp             ! temporary cumulated depth array
@@ -295,7 +295,7 @@ PROGRAM cdfmocsig
   ALLOCATE ( rdumlon(1,npjglo) , rdumlat(1,npjglo))
   ALLOCATE ( dens(npiglo,npjglo))
   ALLOCATE ( itmask(npiglo,npjglo), zttmp(npiglo,npjglo))
-  ALLOCATE ( tim(npt), e31d(npk)  )
+  ALLOCATE ( dtim(npt), e31d(npk)  )
 
   IF ( lisodep) THEN 
      ALLOCATE ( depi(nvaro, nbins, npjglo), gdep(npk))
@@ -555,8 +555,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nvaro, ipk ,id_varout, cdglobal=cglobal)
     ierr  = putheadervar(ncout,  cf_vfil, 1,     npjglo, nbins,  pnavlon=rdumlon, pnavlat=rdumlat, pdep=sigma)
 
-    tim  = getvar1d(cf_vfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim,       npt, 'T')
+    dtim = getvar1d(cf_vfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutputFile
 

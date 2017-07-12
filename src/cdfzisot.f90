@@ -37,14 +37,15 @@ PROGRAM cdfzisot
   REAL(KIND=4)                                 :: rmisval        ! Missing value of temperature
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdept          ! depth of T levels
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdepw          ! depth of W levels
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(1)                   :: rdep           ! dummy depth for output
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rtem, rtemxz   ! temperature
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: tmask          ! temperature mask
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: glam,gphi      ! lon/lat
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rzisot         ! depth of the isotherm
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: rzisotup       ! depth of the isotherm above
-  ! in case of inversion
+  !                                                              ! in case of inversion
+
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim           ! time counter
 
   CHARACTER(LEN=256)                           :: cf_tfil        ! input T file
   CHARACTER(LEN=256)                           :: cf_out='zisot.nc'! defaults output file name
@@ -106,7 +107,7 @@ PROGRAM cdfzisot
   npk    = getdim (cf_tfil,cn_z)
   npt    = getdim (cf_tfil,cn_t)
 
-  ALLOCATE (gdept(npk), gdepw(npk), tim(npt) )
+  ALLOCATE (gdept(npk), gdepw(npk), dtim(npt) )
   ALLOCATE (rtem(npiglo,npjglo), rtemxz(npiglo,npk) )
   ALLOCATE (tmask(npiglo,npjglo), glam(npiglo,npjglo), gphi(npiglo,npjglo) )
   ALLOCATE (rzisot(npiglo,npjglo) , rzisotup(npiglo,npjglo) )
@@ -233,8 +234,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, pnvarout,      ipk,    id_varout, ld_nc4=lnc4)
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

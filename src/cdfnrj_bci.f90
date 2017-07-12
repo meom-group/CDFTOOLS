@@ -29,13 +29,14 @@ PROGRAM cdfnrj_bci
   INTEGER(KIND=4)                           :: ncout, ierr              ! netcdf i/o
   INTEGER(KIND=4), DIMENSION(5)             :: ipk, id_varout           ! idem
 
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                      ! time variable
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e2t, e1t                 ! horizontal metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: anout, anovt, un, vn, tn ! working variables
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: utn, vtn                 !  idem
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, umask, vmask      ! mask variable
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: bci                      ! baroclinic energy transfert
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rdtdx, rdtdy             ! horizontal gradients
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                     ! time variable
 
   CHARACTER(LEN=256)                        :: cf_in                    ! input filename
   CHARACTER(LEN=256)                        :: cf_out='bci.nc'          ! output file name
@@ -117,7 +118,7 @@ PROGRAM cdfnrj_bci
   ALLOCATE ( tmask(npiglo,npjglo) )
   ALLOCATE ( rdtdx(npiglo,npjglo)  , rdtdy(npiglo,npjglo)  )
   ALLOCATE ( anout(npiglo,npjglo)  , anovt(npiglo,npjglo)  )
-  ALLOCATE ( bci(npiglo,npjglo), tim(npt) )
+  ALLOCATE ( bci(npiglo,npjglo), dtim(npt) )
 
   CALL CreateOutput
 
@@ -242,8 +243,8 @@ CONTAINS
     ierr  = createvar   (ncout ,   stypvar, 5,      ipk,    id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,    cf_in,   npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_in, cn_vtimec, npt)
-    ierr = putvar1d(ncout, tim, npt, 'T')
+    dtim = getvar1d(cf_in, cn_vtimec, npt)
+    ierr = putvar1d(ncout, dtim, npt, 'T')
 
   END SUBROUTINE CreateOutput
 

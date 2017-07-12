@@ -22,38 +22,38 @@ PROGRAM cdfvhst
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
-  INTEGER(KIND=4)                            :: jk, jt          ! dummy loop index
-  INTEGER(KIND=4)                            :: it              ! time index for vvl
-  INTEGER(KIND=4)                            :: ierr            ! working integer
-  INTEGER(KIND=4)                            :: narg, iargc     ! command line 
-  INTEGER(KIND=4)                            :: ijarg           ! argument counter
-  INTEGER(KIND=4)                            :: npiglo, npjglo  ! size of the domain
-  INTEGER(KIND=4)                            :: npk, npt        ! size of the domain
-  INTEGER(KIND=4)                            :: ncout           ! ncdf id of output file
-  INTEGER(KIND=4), DIMENSION(4)              :: ipk, id_varout  ! output variable levels and id's
+  INTEGER(KIND=4)                           :: jk, jt          ! dummy loop index
+  INTEGER(KIND=4)                           :: it              ! time index for vvl
+  INTEGER(KIND=4)                           :: ierr            ! working integer
+  INTEGER(KIND=4)                           :: narg, iargc     ! command line 
+  INTEGER(KIND=4)                           :: ijarg           ! argument counter
+  INTEGER(KIND=4)                           :: npiglo, npjglo  ! size of the domain
+  INTEGER(KIND=4)                           :: npk, npt        ! size of the domain
+  INTEGER(KIND=4)                           :: ncout           ! ncdf id of output file
+  INTEGER(KIND=4), DIMENSION(4)             :: ipk, id_varout  ! output variable levels and id's
 
-  REAL(KIND=4), PARAMETER                    :: pp_rau0=1000.   ! fresh water density ( kg/m3)
-  REAL(KIND=4), PARAMETER                    :: pp_rcp=4000.    ! heat capacity of water (J/kg/K)
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: e1v, e2u        ! horizontal metrics
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: e3u, e3v        ! vertical metrics
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zut, zus        ! heat and salt zonal copmponents
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zvt, zvs        ! heat and salt meridional components
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim             ! time counter
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: e31d            ! vertical metrics when full step
+  REAL(KIND=4), PARAMETER                   :: pp_rau0=1000.   ! fresh water density ( kg/m3)
+  REAL(KIND=4), PARAMETER                   :: pp_rcp=4000.    ! heat capacity of water (J/kg/K)
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d            ! vertical metrics when full step
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1v, e2u        ! horizontal metrics
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3u, e3v        ! vertical metrics
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zut, zus        ! heat and salt zonal copmponents
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zvt, zvs        ! heat and salt meridional components
 
-  REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: dtrput, dtrpus  ! zonal transport
-  REAL(KIND=8), DIMENSION (:,:), ALLOCATABLE :: dtrpvt, dtrpvs  ! meridional transport
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim            ! time counter
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtrput, dtrpus  ! zonal transport
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtrpvt, dtrpvs  ! meridional transport
 
-  TYPE (variable), DIMENSION(4)              :: stypvar         ! structure output variables
+  TYPE (variable), DIMENSION(4)             :: stypvar         ! structure output variables
 
-  CHARACTER(LEN=256)                         :: cf_vtfil        ! input file name (vt)
-  CHARACTER(LEN=256)                         :: cf_out='trp.nc' ! output file name
-  CHARACTER(LEN=256)                         :: cldum           ! dummy char variable
+  CHARACTER(LEN=256)                        :: cf_vtfil        ! input file name (vt)
+  CHARACTER(LEN=256)                        :: cf_out='trp.nc' ! output file name
+  CHARACTER(LEN=256)                        :: cldum           ! dummy char variable
 
-  LOGICAL                                    :: lfull   =.FALSE.! flag for full step
-  LOGICAL                                    :: lnc4    =.FALSE.! flag for netcdf4
-  LOGICAL                                    :: lchk    =.FALSE.! flag for checking files
-  LOGICAL                                    :: lchkvar =.FALSE.! flag for missing variables
+  LOGICAL                                   :: lfull   =.FALSE.! flag for full step
+  LOGICAL                                   :: lnc4    =.FALSE.! flag for netcdf4
+  LOGICAL                                   :: lchk    =.FALSE.! flag for checking files
+  LOGICAL                                   :: lchkvar =.FALSE.! flag for missing variables
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -132,7 +132,7 @@ PROGRAM cdfvhst
   ALLOCATE ( e2u(npiglo,npjglo), e3u(npiglo,npjglo) )
   ALLOCATE ( dtrpvt(npiglo,npjglo), dtrpvs(npiglo,npjglo))
   ALLOCATE ( dtrput(npiglo,npjglo), dtrpus(npiglo,npjglo))
-  ALLOCATE ( tim(npt), e31d(npk) )
+  ALLOCATE ( dtim(npt), e31d(npk) )
 
   CALL CreateOutput
 
@@ -230,8 +230,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar,  4,      ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_vtfil, npiglo, npjglo, 1         )
 
-    tim   = getvar1d(cf_vtfil, cn_vtimec, npt     )
-    ierr  = putvar1d(ncout,    tim,       npt, 'T')
+    dtim  = getvar1d(cf_vtfil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,    dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

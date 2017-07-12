@@ -46,8 +46,9 @@ PROGRAM cdfchgrid
 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d                    ! array to read a layer of data 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: u2d                    ! array onto ORCA12-grid
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                    ! time counter of the file
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rdep                   ! depth of the file
+
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                   ! time counter of the file
 
   CHARACTER(LEN=256)                            :: cf_out='cdfchgrid.nc'  ! output file name
   CHARACTER(LEN=256)                            :: cf_in                  ! input file name
@@ -174,7 +175,7 @@ PROGRAM cdfchgrid
 
   ALLOCATE ( v2d(npiglo+1,npjglo+1) )
   ALLOCATE ( u2d(npigloout,npjgloout) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
   ALLOCATE ( rdep(npkk) )
 
   ! look for the number of variables in the input file
@@ -376,8 +377,8 @@ CONTAINS
     ierr  = putheadervar(ncout,    cf_ref,  npigloout, npjgloout, npk , cdep=cn_vdeptht, pdep=rdep      )
 
     ! get time and write time and get deptht and write deptht
-    tim=getvar1d(cf_in,cn_t,npt)    ; ierr=putvar1d(ncout,tim,npt,'T')
-    ierr=putvar1d(ncout,rdep,npk,'D')
+    dtim = getvar1d(cf_in,cn_t,npt)    ; ierr=putvar1d(ncout,dtim,npt,'T')
+    ierr = putvar1d(ncout,rdep,npk,'D')
 
   END SUBROUTINE CreateOutput
 

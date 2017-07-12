@@ -37,7 +37,9 @@ PROGRAM cdfokubow
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: un, vn                           ! velocity field
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: okubow, fmask, tmask             ! obuko-weiss and mask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rotn, strsym, strnsy             ! curl, symetric and non symetric strain
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim, gdepu                       ! time counter, depth for output
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepu                            ! depth for output
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                             ! time counter
 
   CHARACTER(LEN=256)                        :: cf_ufil, cf_vfil                 ! file names
   CHARACTER(LEN=256)                        :: cf_out = 'okubow.nc'             ! output file name
@@ -137,7 +139,7 @@ PROGRAM cdfokubow
   ALLOCATE ( strsym(npiglo,npjglo)  )
   ALLOCATE ( strnsy(npiglo,npjglo) , tmask(npiglo,npjglo) )
   ALLOCATE ( okubow(npiglo,npjglo) , fmask(npiglo,npjglo) )
-  ALLOCATE ( rotn(npiglo,npjglo) , tim(npt) , gdepu(npk)  )
+  ALLOCATE ( rotn(npiglo,npjglo) , dtim(npt) , gdepu(npk) )
 
   e1u =  getvar(cn_fhgr, cn_ve1u, 1, npiglo, npjglo)
   e1f =  getvar(cn_fhgr, cn_ve1f, 1, npiglo, npjglo)
@@ -246,8 +248,8 @@ CONTAINS
     ierr  = createvar   (ncout , stypvar, 1,      ipk,    id_varout                   , ld_nc4=lnc4)
     ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, npk, pdep=gdepu,  pnavlon=un, pnavlat=vn )
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt      )
-    ierr = putvar1d(ncout,   tim,       npt,  'T')
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt      )
+    ierr = putvar1d(ncout,   dtim,      npt,  'T')
 
   END SUBROUTINE CreateOutput
 

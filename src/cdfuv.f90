@@ -42,9 +42,9 @@ PROGRAM cdfuv
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zworku, zworkv       ! working arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmean                ! temporary mean value for netcdf write
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlon                 ! longitude of T points to check periodicity
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter of individual files
-  REAL(KIND=4), DIMENSION(1)                :: timean               ! mean time
 
+  REAL(KIND=8), DIMENSION(1)                :: dtimean              ! mean time
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                 ! time counter of individual files
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumuluv             ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulu              ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcumulv              ! Arrays for cumulated values
@@ -166,10 +166,10 @@ PROGRAM cdfuv
         cf_ufil = SetFileName( config, ctag, 'U', ld_stop=.TRUE. )
         npt = getdim (cf_ufil, cn_t)
         IF ( lcaltmean ) THEN
-           ALLOCATE ( tim(npt) )
-           tim = getvar1d(cf_ufil, cn_vtimec, npt)
-           dtotal_time = dtotal_time + SUM(tim(1:npt) )
-           DEALLOCATE( tim )
+           ALLOCATE ( dtim(npt) )
+           dtim        = getvar1d(cf_ufil, cn_vtimec, npt)
+           dtotal_time = dtotal_time + SUM(dtim(1:npt) )
+           DEALLOCATE( dtim )
         END IF
 
         ! assume U and V file have same time span ...
@@ -246,8 +246,8 @@ PROGRAM cdfuv
      ierr = putvar(ncout, id_varout(4), zmean, jk,npiglo, npjglo, kwght=ntframe )
 
      IF (lcaltmean )  THEN
-        timean(1) = dtotal_time/ntframe
-        ierr      = putvar1d(ncout, timean, 1, 'T')
+        dtimean(1) = dtotal_time/ntframe
+        ierr       = putvar1d(ncout, dtimean, 1, 'T')
      END IF
      lcaltmean=.FALSE. ! tmean already computed
 

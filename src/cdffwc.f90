@@ -35,20 +35,20 @@ PROGRAM cdffwc
   INTEGER(KIND=4)                            :: npk, npt             ! size of the domain
   INTEGER(KIND=4)                            :: nvars, ivar          ! variables in input
   INTEGER(KIND=4)                            :: nvaro=1              ! variables for output
-  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout       ! levels and varid's of output vars
   INTEGER(KIND=4)                            :: ncout 
+  INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout       ! levels and varid's of output vars
 
+  REAL(KIND=4), PARAMETER                    :: ppspval= 9999.99     ! missing value
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE  :: e31d                 ! vertical metrics in case of full step
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: e3t, area, ssh       ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: zt                   ! working input variable
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: tmask                ! npiglo x npjglo
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE  :: tim                  ! time counter
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE  :: e31d                 ! vertical metrics in case of full step
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: zmask                ! npiglo x npjglo
-  REAL(KIND=4), PARAMETER                    :: ppspval= 9999.99     ! missing value
 
   REAL(KIND=8)                               :: ds0=34.7d0           ! reference salinity
-  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE:: dfwc                 ! fwc. as 2dim to be consistent with putvar()
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE  :: dtim                 ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE  :: dl_vint1, dl_vol2d   ! verticall int quantity         
+  REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE:: dfwc                 ! fwc. as 2dim to be consistent with putvar()
 
   CHARACTER(LEN=256)                         :: cf_in                ! input file
   CHARACTER(LEN=256)                         :: cf_out='fwc.nc'      ! output file 
@@ -166,7 +166,7 @@ PROGRAM cdffwc
   ENDDO
 
   ! Allocate arrays
-  ALLOCATE (      tim( npt                    ) )
+  ALLOCATE (      dtim( npt                   ) )
   ALLOCATE (    zmask( nvaro,   npiglo,npjglo ) )
   ALLOCATE (    tmask(          npiglo,npjglo ) )
   ALLOCATE (       zt(          npiglo,npjglo ) )
@@ -272,8 +272,8 @@ CONTAINS
     ierr  = createvar   (ncout, stypvar, nvaro, ipk, id_varout                        )
     ierr  = putheadervar(ncout, cf_in,   1, 1, npk,                  ld_xycoo=.FALSE. )
 
-    tim   = getvar1d    (cf_in, cn_vtimec, npt     )
-    ierr  = putvar1d    (ncout, tim,       npt, 'T')
+    dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d    (ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

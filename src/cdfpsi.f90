@@ -49,11 +49,11 @@ PROGRAM cdfpsi
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zu, zv          ! velocity components
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: glamf, gphif    ! longitude/latitude
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsshu, zsshv    ! ssh at u and v point
-  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: ztrpu, ztrpv    ! transport working arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zssh            ! temporary array for ssh
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim             ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d            ! 1d vertical metrics, full step case
 
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim            ! time counter
+  REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dztrpu, dztrpv  ! transport working arrays
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtrpu, dtrpv    ! transport working arrays
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtrpsshu        ! transport working arrays
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtrpsshv        ! transport working arrays
@@ -228,10 +228,10 @@ PROGRAM cdfpsi
   ALLOCATE ( zmask(npiglo,npjglo)                 )
   ALLOCATE ( e1v(npiglo,npjglo),e3v(npiglo,npjglo))
   ALLOCATE ( e2u(npiglo,npjglo),e3u(npiglo,npjglo))
-  ALLOCATE ( zu(npiglo,npjglo),dtrpu(npiglo,npjglo), dpsiu(npiglo,npjglo), ztrpu(npiglo,npjglo) )
-  ALLOCATE ( zv(npiglo,npjglo),dtrpv(npiglo,npjglo), dpsiv(npiglo,npjglo), ztrpv(npiglo,npjglo) )
+  ALLOCATE ( zu(npiglo,npjglo),dtrpu(npiglo,npjglo), dpsiu(npiglo,npjglo), dztrpu(npiglo,npjglo) )
+  ALLOCATE ( zv(npiglo,npjglo),dtrpv(npiglo,npjglo), dpsiv(npiglo,npjglo), dztrpv(npiglo,npjglo) )
   ALLOCATE ( glamf(npiglo,npjglo), gphif(npiglo,npjglo))
-  ALLOCATE ( tim(npt))
+  ALLOCATE ( dtim(npt))
 
   IF ( lfull ) ALLOCATE ( e31d(npk))
   IF ( lssh  ) ALLOCATE ( zssh(npiglo,npjglo), zsshu(npiglo,npjglo), zsshv(npiglo,npjglo))
@@ -274,15 +274,15 @@ PROGRAM cdfpsi
            IF ( lfull ) THEN ; e3v(:,:) = e31d(jk)
            ELSE              ; e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF
-           ztrpv(:,:) = zv(:,:)*e1v(:,:)*e3v(:,:) ! meridional transport of each grid cell
-           dtrpv(:,:) = dtrpv(:,:) + ztrpv(:,:)*1.d0  ! cumul over the depth
+           dztrpv(:,:) = zv(:,:)*e1v(:,:)*e3v(:,:)*1.d0 ! meridional transport of each grid cell
+           dtrpv(:,:) = dtrpv(:,:) + dztrpv(:,:)        ! cumul over the depth
            IF ( lssh .AND. (jk == 1 ) ) THEN
               dtrpsshv(:,:) = dtrpsshv(:,:) + zv(:,:)*e1v(:,:)*zsshv(:,:)*1.d0  ! meridional transport of each grid cell
            ENDIF
            IF ( llev ) THEN  ! compute zonal integral
               dpsiv(npiglo,:)= 0.d0
               DO ji=npiglo-1,1,-1
-                 dpsiv(ji,:) = dpsiv(ji+1,:) - ztrpv(ji,:)*1.d0  ! psi at f point
+                 dpsiv(ji,:) = dpsiv(ji+1,:) - dztrpv(ji,:)  ! psi at f point
               END DO
               ierr = putvar(ncout, id_varout(1), SNGL(dpsiv), jk, npiglo, npjglo, ktime=jt)
            ENDIF
@@ -293,15 +293,15 @@ PROGRAM cdfpsi
            IF ( lfull ) THEN ; e3u(:,:) = e31d(jk)
            ELSE              ; e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF
-           ztrpu(:,:)=  zu(:,:)*e2u(:,:)*e3u(:,:)      !  zonal transport of each grid cell
-           dtrpu(:,:) = dtrpu(:,:) + ztrpu(:,:) *1.d0  ! cumul over the depth
+           dztrpu(:,:)=  zu(:,:)*e2u(:,:)*e3u(:,:)*1.d0  !  zonal transport of each grid cell
+           dtrpu(:,:) = dtrpu(:,:) + dztrpu(:,:)         ! cumul over the depth
            IF ( lssh .AND. (jk == 1 ) ) THEN
               dtrpsshu(:,:) = dtrpsshu(:,:) + zv(:,:)*e2u(:,:)*zsshu(:,:)*1.d0  ! meridional transport of each grid cell
            ENDIF
            IF ( llev ) THEN
               dpsiu(:,:)= 0.d0
               DO jj = 2, npjglo
-                 dpsiu(:,jj) = dpsiu(:,jj-1) - ztrpu(:,jj)*1.d0   ! psi at f point
+                 dpsiu(:,jj) = dpsiu(:,jj-1) - dztrpu(:,jj)   ! psi at f point
               END DO
               ierr = putvar(ncout, id_varout(1), SNGL(dpsiu), jk, npiglo, npjglo, ktime=jt)
            ENDIF
@@ -499,8 +499,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nvout,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_ufil, npiglo, npjglo, 1, glamf, gphif)
 
-    tim  = getvar1d(cf_ufil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim,       npt, 'T')
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

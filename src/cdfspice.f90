@@ -45,11 +45,11 @@ PROGRAM cdfspice
   INTEGER(KIND=4), DIMENSION(1)             :: ipk, id_varout     ! level and  varid's
 
   REAL(KIND=4)                              :: zspval             ! missing value
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp              ! temperature
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsal               ! salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask              ! 2D mask at current level
 
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dtempt             ! temperature
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsalt              ! salinity
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsalref            ! reference salinity
@@ -143,14 +143,14 @@ PROGRAM cdfspice
   ALLOCATE (dspi( npiglo,npjglo), zmask(npiglo,npjglo) )
   ALLOCATE (dtempt(npiglo,npjglo), dsalt(npiglo,npjglo))
   ALLOCATE (dsalref(npiglo,npjglo))
-  ALLOCATE (tim(npt))
+  ALLOCATE (dtim(npt))
 
   CALL CreateOutput
   zspval = getspval( cf_tfil, cn_vosaline )
 
   ! Compute spiciness
   DO jt=1,npt
-     PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
+     PRINT *,' TIME = ', jt, dtim(jt)/86400.,' days'
      DO jk = 1, npkk
         PRINT *, 'Level ', jk
         zmask(:,:) = 1.e0
@@ -195,8 +195,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, ld_nc4=lnc4     )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

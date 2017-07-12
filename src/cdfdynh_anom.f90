@@ -39,7 +39,7 @@ PROGRAM cdfdynh_anom
   INTEGER(KIND=4), DIMENSION(1)             :: id_varout        ! ncdf varid's
 
   REAL(KIND=4)                              :: zsps             ! Missing value for salinity
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim, e3t_1d      ! time counter, vertical level spacing
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e3t_1d           ! time counter, vertical level spacing
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp, zsal       ! Temperature and salinity at current level
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: temp0, zsal0     ! reference temperature and salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask            ! 2D mask at current level
@@ -48,6 +48,7 @@ PROGRAM cdfdynh_anom
 
   REAL(KIND=8)                              :: drau0 = 1000.d0  ! density of fresh water
   REAL(KIND=8)                              :: dgrav = 9.81d0   ! gravity
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim             ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dhdy, dterm      ! dynamic height, working array
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsig0, dsig      ! In situ density (reference, local)
 
@@ -154,7 +155,7 @@ PROGRAM cdfdynh_anom
   ALLOCATE (temp0(npiglo,npjglo), zsal0(npiglo,npjglo), dsig0(npiglo,npjglo) ,tmask(npiglo,npjglo))
   ALLOCATE (temp(npiglo,npjglo), zsal(npiglo,npjglo), dsig(npiglo,npjglo) , dhdy(npiglo,npjglo), dterm(npiglo,npjglo))
   ALLOCATE (rdep(npiglo,npjglo), rdepth(npiglo,npjglo), zssh(npiglo,npjglo), e3t_1d(npk))
-  ALLOCATE (tim(npt))
+  ALLOCATE (dtim(npt))
 
   CALL CreateOutput
 
@@ -170,7 +171,7 @@ PROGRAM cdfdynh_anom
      ELSE               ; it=1
      ENDIF
 
-     PRINT *,' TIME = ', jt, tim(jt)/86400.,' days'
+     PRINT *,' TIME = ', jt, dtim(jt)/86400.,' days'
      dhdy(:,:)   = 0.
      rdepth(:,:) = 0.
 
@@ -262,8 +263,8 @@ CONTAINS
        ierr  = putheadervar(ncout,  cf_tfil,  npiglo, npjglo, npk       )
     ENDIF
 
-    tim   = getvar1d    (cf_tfil, cn_vtimec, npt)
-    ierr  = putvar1d(ncout, tim, npt, 'T')
+    dtim  = getvar1d(cf_tfil, cn_vtimec, npt)
+    ierr  = putvar1d(ncout, dtim,   npt, 'T')
 
   END SUBROUTINE CreateOutput
 

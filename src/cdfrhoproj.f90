@@ -41,14 +41,16 @@ PROGRAM cdfrhoproj
   INTEGER(KIND=4)                               :: ncout, ierr          ! netcdf working variables
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk, id_varout       ! for output variables
   !
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zsig, alpha          ! data and interp coef 3D
-  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2dint, zint, v2d    ! working 2D arrays
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zi, tim, h1d         ! working 1D arrays
   REAL(KIND=4)                                  :: P1, P2               ! values used in the vertical interpolation
   REAL(KIND=4)                                  :: zalpha               ! working real
   REAL(KIND=4)                                  :: zspvalo=999999.      ! output special value
   REAL(KIND=4)                                  :: zspvali=0.           ! input special values
   REAL(KIND=4)                                  :: sigmin, sigstp       ! definition of sigma layers
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zi, h1d              ! working 1D arrays
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2dint, zint, v2d    ! working 2D arrays
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zsig, alpha          ! data and interp coef 3D
+
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                 ! time_counter
 
   CHARACTER(LEN=256)                            :: cf_rholev='rho_lev'  ! default name of rho_lev file
   CHARACTER(LEN=256)                            :: cf_dta               ! working input file
@@ -211,11 +213,11 @@ PROGRAM cdfrhoproj
 
   ALLOCATE( zsig(npiglo,npjglo,npk), alpha(npiglo, npjglo, npsig)            )  ! 3D arrays !!
   ALLOCATE( v2dint(npiglo, npjglo), v2d(npiglo,npjglo), zint(npiglo,npjglo)  )
-  ALLOCATE( tim(npt), h1d(npk)                                               )
-alpha=0.
+  ALLOCATE( dtim(npt), h1d(npk)                                              )
+  alpha=0.d0
 
-  tim(:)=getvar1d(cf_rhofil, cn_vtimec,  npt)
-  h1d(:)=getvar1d(cf_rhofil, cn_vdeptht, npk)
+  dtim(:) = getvar1d(cf_rhofil, cn_vtimec,  npt)
+  h1d(:)  = getvar1d(cf_rhofil, cn_vdeptht, npk)
 
   DO jk=1,npk
      zsig(:,:,jk) = getvar(cf_rhofil, cv_sig, jk, npiglo, npjglo)
@@ -284,7 +286,7 @@ alpha=0.
      PRINT *,' -isodep option in use: only compute depth of isopycnic surfaces.'
      STOP 99 
   ENDIF
-  DEALLOCATE ( tim) 
+  DEALLOCATE ( dtim) 
 
   !! ** Loop on the scalar files to project on choosen isopycnic surfaces
   DO jfich= 1, nfiles
@@ -479,7 +481,7 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar,   nvout,  ipk,    id_varout     , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout , cf_rhofil, npiglo, npjglo, npsig, pdep=zi )
 
-    ierr  = putvar1d(ncout, tim, 1, 'T')
+    ierr  = putvar1d(ncout, dtim, 1, 'T')
 
   END SUBROUTINE CreateOutputIsodep
 
@@ -524,10 +526,10 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar,   nvout,  ipk,    id_varout     , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout , cf_rhofil, npiglo, npjglo, npsig, pdep=zi              )
 
-    ALLOCATE ( tim(npt) )
-    tim(:)=getvar1d(cf_dta, cn_vtimec, npt)
-    ierr = putvar1d(ncout, tim, npt, 'T')
-    DEALLOCATE ( tim )
+    ALLOCATE ( dtim(npt) )
+    dtim = getvar1d(cf_dta, cn_vtimec, npt)
+    ierr = putvar1d(ncout, dtim,  npt, 'T')
+    DEALLOCATE ( dtim )
 
   END SUBROUTINE CreateOutput
 

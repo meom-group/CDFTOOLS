@@ -39,16 +39,16 @@ PROGRAM cdfvertmean
 
   REAL(KIND=4)                                  :: rdep_up             ! upper level of integration
   REAL(KIND=4)                                  :: rdep_down           ! lower level of integration
+  REAL(KIND=4), DIMENSION(1)                    :: rdep                ! dummy depth output
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdep                ! vertical levels
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d                ! vertical metric full
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: e3                  ! metrics
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zv                  ! working variable
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: hdep                ! depth of the levels
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zmask               ! mask
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdep                ! vertical levels
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d                ! vertical metric full
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                 ! time counter
-  REAL(KIND=4), DIMENSION(1)                    :: rdep                ! dummy depth output
 
   REAL(KIND=8)                                  :: dvol                ! total volume
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dvol2d              ! layer volume
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dvertmean           ! value of integral
 
@@ -167,7 +167,7 @@ PROGRAM cdfvertmean
   ALLOCATE ( zmask(npiglo,npjglo), dvertmean(npiglo, npjglo) )
   ALLOCATE ( zv(npiglo,npjglo), hdep(npiglo,npjglo)          )
   ALLOCATE ( e3(npiglo,npjglo), dvol2d(npiglo,npjglo)        )
-  ALLOCATE ( gdep(npk), tim(npt)                             )
+  ALLOCATE ( gdep(npk), dtim(npt)                             )
   IF ( lfull ) ALLOCATE ( e31d(npk) )
 
   CALL CreateOutput
@@ -319,8 +319,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nvaro,  ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4)
     ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, 1, pdep=rdep)
 
-    tim  = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,       npt, 'T')
+    dtim = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

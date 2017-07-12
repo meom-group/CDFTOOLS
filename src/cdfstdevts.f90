@@ -31,8 +31,8 @@ PROGRAM cdfstdevts
   INTEGER(KIND=4), DIMENSION(2)              :: ipko, id_varout   ! output variable
 
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zvbar, zvba2      ! mean and mean2 variable
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim               ! time counter
 
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim              ! time counter
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dsdev             ! standard deviation
 
   CHARACTER(LEN=256)                         :: cf_in             ! input mean file name
@@ -134,7 +134,7 @@ PROGRAM cdfstdevts
   PRINT *, 'npt    = ', npt
 
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
-  ALLOCATE( dsdev(npiglo,npjglo), tim(npt)             )
+  ALLOCATE( dsdev(npiglo,npjglo), dtim(npt)            )
 
   CALL CreateOutput
 
@@ -194,8 +194,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvaro, 2,      ipko,   id_varout , ld_nc4=lnc4)
     ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,       npt, 'T')
+    dtim = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

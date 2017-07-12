@@ -39,7 +39,6 @@ PROGRAM cdfeddyscale
   INTEGER(KIND=4)                           :: ncout, ierr        ! browse command line
   INTEGER(KIND=4), DIMENSION(3)             :: ipk, id_varout     ! output variable properties
 
-  REAL(KIND=4), DIMENSION(1)                :: tim                ! time counter in output file
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zun, zvn           ! working arrays
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rotn2              ! square curl
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zdxrotn2, zdyrotn2 ! square curl gradient components
@@ -51,6 +50,8 @@ PROGRAM cdfeddyscale
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlambda1           ! Taylor or large scale eddy
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zlambda2           ! small scale eddy
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: scar               ! inertial range
+
+  REAL(KIND=8), DIMENSION(1)                :: dtim               ! time counter in output file
 
   CHARACTER(LEN=256)                        :: cf_meanfil   ! file names
   CHARACTER(LEN=256)                        :: cf_out = 'lambda.nc' ! output file name
@@ -240,8 +241,8 @@ CONTAINS
     ierr  = createvar   (ncout , stypvar, 3,      ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_meanfil, npiglo, npjglo, 0 )
 
-    tim  = getvar1d(cf_meanfil, cn_vtimec, 1      )
-    ierr = putvar1d(ncout,      tim,       1,  'T')
+    dtim = getvar1d(cf_meanfil, cn_vtimec, 1      )
+    ierr = putvar1d(ncout,      dtim,      1,  'T')
 
   END SUBROUTINE CreateOutputFile
 

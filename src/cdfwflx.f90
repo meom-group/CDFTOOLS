@@ -41,11 +41,13 @@ PROGRAM cdfwflx
   INTEGER(KIND=4)                            :: ncout, ierr      ! netcdf i/o
   INTEGER(KIND=4), DIMENSION(jpvarout)       :: ipk, id_varout   ! levels and varid of output vars
 
+  REAL(KIND=4)                               :: Lv=2.5e6         ! latent HF <--> evap conversion
+  REAL(KIND=4), DIMENSION(1)                 :: dep              ! dummy depth
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: zmask, zwk       !  work array
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: evap, precip     ! water flux components
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: runoff, wdmp     ! water flux components
-  REAL(KIND=4), DIMENSION(1)                 :: tim, dep         ! time_counter and dummy depth
-  REAL(KIND=4)                               :: Lv=2.5e6         ! latent HF <--> evap conversion
+
+  REAL(KIND=8), DIMENSION(1)                 :: dtim             ! time_counter
 
   CHARACTER(LEN=256)                         :: cf_tfil          ! input gridT file name
   CHARACTER(LEN=256)                         :: cf_ffil          ! input flxT file name
@@ -180,8 +182,8 @@ CONTAINS
     ierr  = putheadervar(ncout,  cf_tfil, npiglo,   npjglo, 1, pdep=dep)
 
 
-    tim   = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr  = putvar1d(ncout,   tim,       npt, 'T')
+    dtim  = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,   dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

@@ -44,26 +44,26 @@ PROGRAM cdftransig_xy3d
   INTEGER(KIND=4), DIMENSION(:),   ALLOCATABLE :: itab               ! look up table for density intervals
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ibinu, ibinv       ! integer value corresponding to density for binning
 
+  REAL(KIND=4)                                 :: zpref              !  reference for density 
+  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdept              ! array for depth of T points  
+  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d               ! vertical metric in case of full step
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zmasku,zmaskv      !  masks x,1,nbins
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e1v,  gphiv        !  2D x,y metrics, velocity
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: e2u                !  metrics, velocity
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zt, zs, zv, e3v    !  x,1,z arrays metrics, velocity
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zu, e3u            !  metrics, velocity
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zdensu, zdensv     ! density on u and v points 
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdept              ! array for depth of T points  
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: e31d               ! vertical metric in case of full step
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim
-  REAL(KIND=4), DIMENSION(1)                   :: timean
-  REAL(KIND=4)                                 :: pref               !  reference for density 
 
-  REAL(KIND=8), DIMENSION(:,:,:),  ALLOCATABLE :: dusigsig,dvsigsig  ! cumulated transports,   
-  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dens2d 
-  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dsigma             ! density coordinate, center of bins
-  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dsig_edge          ! density coordinate, edge of bins.
   REAL(KIND=8)                                 :: dsigtest
   REAL(KIND=8)                                 :: ds1min, ds1scal    !  min sigma and delta_sigma
   REAL(KIND=8)                                 :: ds1zoom = 999., ds1scalmin  !  min sigma for increased resolution
   REAL(KIND=8)                                 :: dtotal_time
+  REAL(KIND=8), DIMENSION(1)                   :: dtimean
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dsigma             ! density coordinate, center of bins
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dsig_edge          ! density coordinate, edge of bins.
+  REAL(KIND=8), DIMENSION(:,:),    ALLOCATABLE :: dens2d 
+  REAL(KIND=8), DIMENSION(:,:,:),  ALLOCATABLE :: dusigsig,dvsigsig  ! cumulated transports,   
 
   CHARACTER(LEN=80 )                           :: cf_out='uvxysig.nc'
   CHARACTER(LEN=80 )                           :: cf_tfil
@@ -157,8 +157,8 @@ PROGRAM cdftransig_xy3d
      CASE ( '-c'       ) ; CALL getarg(ijarg, config    ) ; ijarg=ijarg+1
      CASE ( '-l'       ) ; CALL GetTagList
      CASE ( '-code'    ) ; CALL getarg(ijarg, cldepcode ) ; ijarg=ijarg+1                            
-     CASE ( '-depref'  ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) pref       ; iset = iset+1
-        ;                  WRITE(clsigma,'("sigma_",I1)'), NINT(pref/1000.)
+     CASE ( '-depref'  ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) zpref       ; iset = iset+1
+        ;                  WRITE(clsigma,'("sigma_",I1)'), NINT(zpref/1000.)
      CASE ( '-nbins'   ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; iset = iset+1
      CASE ( '-sigmin'  ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1min
      CASE ( '-sigzoom' ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1zoom    ; iset = iset+1
@@ -175,13 +175,13 @@ PROGRAM cdftransig_xy3d
   ! set parameters for pre-defined depcode
   SELECT CASE ( cldepcode )
   CASE ( '0'                    ) 
-      pref = 0.    ; nbins = 101 ; ds1min = 23.0d0 ; ds1scal = 0.03d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_0'
+      zpref = 0.    ; nbins = 101 ; ds1min = 23.0d0 ; ds1scal = 0.03d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_0'
   CASE ( '1000'                 ) 
-      pref = 1000. ; nbins =  93 ; ds1min = 24.2d0 ; ds1scal = 0.10d0 ; ds1zoom = 32.3d0 ; ds1scalmin = 0.05d0 ; clsigma='sigma_1'
+      zpref = 1000. ; nbins =  93 ; ds1min = 24.2d0 ; ds1scal = 0.10d0 ; ds1zoom = 32.3d0 ; ds1scalmin = 0.05d0 ; clsigma='sigma_1'
   CASE ( '1000-acc', '1000-ACC' ) 
-      pref = 1000. ; nbins =  88 ; ds1min = 24.5d0 ; ds1scal = 0.10d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_1'
+      zpref = 1000. ; nbins =  88 ; ds1min = 24.5d0 ; ds1scal = 0.10d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_1'
   CASE ( '2000'                 ) 
-      pref = 2000. ; nbins = 174 ; ds1min = 29.0d0 ; ds1scal = 0.05d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_2'
+      zpref = 2000. ; nbins = 174 ; ds1min = 29.0d0 ; ds1scal = 0.05d0 ; ds1zoom = 999.d0 ; ds1scalmin = 999.d0 ; clsigma='sigma_2'
   CASE ( 'none'                 ) 
       ! in this case check that all parameters are set individually
       IF ( iset /= 3  ) THEN  ; PRINT *, ' You must set depref, nbins, sigmin  individually'    ; STOP 99 
@@ -195,7 +195,7 @@ PROGRAM cdftransig_xy3d
 
   ds1scalmin = MIN ( ds1scalmin, ds1scal )
   IF ( lprint ) THEN
-     PRINT *,' DEP REF  : ', pref, ' m'
+     PRINT *,' DEP REF  : ', zpref, ' m'
      PRINT *,' NBINS    : ', nbins
      PRINT *,' SIGMIN   : ', ds1min
      PRINT *,' SIGSTP   : ', ds1scal
@@ -321,10 +321,10 @@ PROGRAM cdftransig_xy3d
         
         IF (jk== 1 ) THEN
            npt = getdim (cf_tfil, cn_t)  ! assuming all files (U V ) contains same number of time frame
-           ALLOCATE ( tim(npt) )
-           tim         = getvar1d(cf_tfil, cn_vtimec, npt )
-           dtotal_time = dtotal_time + SUM( DBLE(tim) )
-           DEALLOCATE ( tim )
+           ALLOCATE ( dtim(npt) )
+           dtim        = getvar1d(cf_tfil, cn_vtimec, npt )
+           dtotal_time = dtotal_time + SUM(dtim )
+           DEALLOCATE ( dtim )
         ENDIF
 
         DO jt = 1, npt
@@ -354,10 +354,10 @@ PROGRAM cdftransig_xy3d
            zt(:,:)= getvar ( cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt )
            zs(:,:)= getvar ( cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt )
 
-           IF ( pref == 0. ) THEN
+           IF ( zpref == 0. ) THEN
               dens2d = sigma0(zt, zs,       npiglo, npjglo)
            ELSE
-              dens2d = sigmai(zt, zs, pref, npiglo, npjglo)
+              dens2d = sigmai(zt, zs, zpref, npiglo, npjglo)
            ENDIF
 
            !  density on u points masked by u  , single precision 
@@ -402,8 +402,8 @@ PROGRAM cdftransig_xy3d
      ! -----------------  end of loop on jk
   END DO
 
-  timean(1) = dtotal_time/nframes
-  ierr      = putvar1d(ncout, timean, 1, 'T')
+  dtimean(1) = dtotal_time/nframes
+  ierr      = putvar1d(ncout, dtimean, 1, 'T')
   DO jk=1, nbins
      zt   = dusigsig(:,:,jk) / nframes
      ierr = putvar (ncout, id_varout(1), zt, jk, npiglo, npjglo, kwght=nframes)

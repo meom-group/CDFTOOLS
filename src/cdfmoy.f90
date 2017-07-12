@@ -67,10 +67,10 @@ PROGRAM cdfmoy
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmean              ! average
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmean2             ! squared average
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rmean3             ! cubic average
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: zspval_in          ! time counter
-  REAL(KIND=4), DIMENSION(1)                    :: timean             ! mean time
 
+  REAL(KIND=8), DIMENSION(1)                    :: dtimean            ! mean time
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab, dtab2        ! arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab3              ! arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: de3s               ! arrays for cumulated e3 (vvl)
@@ -307,10 +307,10 @@ PROGRAM cdfmoy
 
               npt = getdim (cf_in, cn_t)
               IF ( lcaltmean )  THEN
-                 ALLOCATE ( tim(npt) )
-                 tim         = getvar1d(cf_in, cn_vtimec, npt)
-                 dtotal_time = dtotal_time + SUM(DBLE(tim(:)))
-                 DEALLOCATE (tim )
+                 ALLOCATE ( dtim(npt) )
+                 dtim        = getvar1d(cf_in, cn_vtimec, npt)
+                 dtotal_time = dtotal_time + SUM(dtim(:))
+                 DEALLOCATE (dtim )
               END IF
               DO jt=1,npt
                  ntframe = ntframe + 1
@@ -375,11 +375,11 @@ PROGRAM cdfmoy
            ENDIF
 
            IF (lcaltmean )  THEN
-              timean(1) = dtotal_time/ntframe
-              ierr = putvar1d(ncout,  timean, 1, 'T')
-              ierr = putvar1d(ncout2, timean, 1, 'T')
-              IF (lcubic) ierr = putvar1d(ncout3, timean, 1, 'T')
-              IF (lmax  ) ierr = putvar1d(ncout4, timean, 1, 'T')
+              dtimean(1) = dtotal_time/ntframe
+              ierr = putvar1d(ncout,  dtimean, 1, 'T')
+              ierr = putvar1d(ncout2, dtimean, 1, 'T')
+              IF (lcubic) ierr = putvar1d(ncout3, dtimean, 1, 'T')
+              IF (lmax  ) ierr = putvar1d(ncout4, dtimean, 1, 'T')
            END IF
 
            lcaltmean=.FALSE. ! tmean already computed

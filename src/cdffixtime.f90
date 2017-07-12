@@ -52,7 +52,8 @@ PROGRAM cdffixtime
   REAL(KIND=4)               :: rday0           ! CNES julian day corresponding to tag of initial date
   REAL(KIND=4)               :: rday_origin     ! CNES julian day corresponding to origin date
   REAL(KIND=4), DIMENSION(1) :: rdaycnes        ! CNES julian day corresponding to current tag
-  REAL(KIND=4), DIMENSION(1) :: rseconds        ! seconds since rday0
+
+  REAL(KIND=8), DIMENSION(1) :: dseconds        ! seconds since rday0
 
   CHARACTER(LEN=80)          :: cf_in           ! input file 
   CHARACTER(LEN=80)          :: cldum           ! dummy character variable
@@ -199,11 +200,11 @@ PROGRAM cdffixtime
 
   ! Compute corresponding jcnes
   rdaycnes=jcnes(ctag)
-  rseconds=(rdaycnes - rday0 +1 ) * 86400. 
+  dseconds=(rdaycnes - rday0 +1 ) * 86400.d0 
 
   ! Modify cdfile !! CAUTION : Original file will be modified  !!
   IF ( .NOT. lkeep )  THEN
-     ierr = putvar1d( cf_in, cn_vtimec, rseconds, 1 )
+     ierr = putvar1d( cf_in, cn_vtimec, dseconds, 1 )
   ENDIF
   ierr = atted   ( cf_in, cn_vtimec, 'units',       ctim_unit  )
   ierr = atted   ( cf_in, cn_vtimec, 'time_origin', ctim_origin)

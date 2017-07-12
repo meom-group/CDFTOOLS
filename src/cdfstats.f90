@@ -33,8 +33,8 @@ PROGRAM cdfstats
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: u, v                   ! input variables from file 1 and 2
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, e1t, e2t        ! mask and metrics
-  REAL(KIND=4), DIMENSION(1)                :: timean                 ! time for output (dummy)
 
+  REAL(KIND=8), DIMENSION(1)                :: dtim                   ! time for output (dummy)
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_er, dl_uv           ! rms, correlation
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_sn, dl_sg           ! signal/noise signal ratios
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_du, dl_dv           !  variable anomaly
@@ -318,8 +318,8 @@ CONTAINS
   ierr  = createvar(ncout,  stypvar, jpvar,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4)
   ierr  = putheadervar(ncout,  cf_in, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
 
-  timean(1) = 1.e0
-  ierr      = putvar1d(ncout,timean,1,'T')
+  dtim = 1.d0
+  ierr = putvar1d(ncout,dtim,1,'T')
 
   END SUBROUTINE CreateOutput
 

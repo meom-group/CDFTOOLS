@@ -58,20 +58,20 @@ PROGRAM cdfsmooth
   INTEGER(KIND=4)                               :: ncout             ! ncid of output file
   INTEGER(KIND=4)                               :: ilev              ! level to process if not 0
   INTEGER(KIND=4)                               :: ijk               ! indirect level addressing
-  INTEGER(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: iw                ! flag for bad values (or land masked )
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var            ! arrays of var id's
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk               ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_varout         ! id of output variables
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: iklist            ! list of k-level to process
+  INTEGER(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: iw                ! flag for bad values (or land masked )
 
-  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, w2d          ! raw data,  filtered result
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim               ! time array
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdep, gdeptmp     ! depth array 
   REAL(KIND=4)                                  :: fn, rspval        ! cutoff freq/wavelength, spval
   REAL(KIND=4)                                  :: ranis             ! anistropy
+  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdep, gdeptmp     ! depth array 
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, w2d          ! raw data,  filtered result
 
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dec2d             ! working array
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim              ! time array
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dec, de           ! weight in r8, starting index 0:nband
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dec2d             ! working array
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar           ! struture for attribute
 
@@ -208,7 +208,7 @@ PROGRAM cdfsmooth
   PRINT *, 'npk    = ',npk
   PRINT *, 'npt    = ',npt
 
-  ALLOCATE ( v2d(npiglo,npjglo),iw(npiglo,npjglo), w2d(npiglo,npjglo), tim(npt) )
+  ALLOCATE ( v2d(npiglo,npjglo),iw(npiglo,npjglo), w2d(npiglo,npjglo), dtim(npt) )
   nvars = getnvar(cf_in)
   PRINT *, 'nvars = ', nvars
   ALLOCATE (cv_names(nvars) )
@@ -250,7 +250,7 @@ PROGRAM cdfsmooth
   ncout = create      (cf_out, cf_in,   npiglo, npjglo, npkf, cdep=cv_dep, ld_nc4=lnc4)
   ierr  = createvar   (ncout , stypvar, nvars,  ipk,    id_varout        , ld_nc4=lnc4)
   ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npkf, pdep=gdep, cdep=cv_dep)
-  tim   = getvar1d(cf_in, cv_tim, npt)
+  dtim  = getvar1d(cf_in, cv_tim, npt)
   !
   DO jvar = 1,nvars
      IF ( cv_names(jvar) == cn_vlon2d .OR.                     &
@@ -274,8 +274,8 @@ PROGRAM cdfsmooth
         END DO
      ENDIF
   END DO
-  ierr = putvar1d(ncout, tim, npt, 'T')
-  ierr = closeout(ncout               )
+  ierr = putvar1d(ncout, dtim, npt, 'T')
+  ierr = closeout(ncout                )
 
 CONTAINS
 

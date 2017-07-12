@@ -39,7 +39,8 @@ PROGRAM cdfbottom
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zfield                   ! Array to read a layer of data
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zbot                     ! array to store the bottom value
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zmask                    ! 2D mask at current level
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                      ! time counter of the file
+
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                     ! time counter of the file
 
   CHARACTER(LEN=256)                         :: cf_out='bottom.nc'       ! output file name
   CHARACTER(LEN=256)                         :: cf_in, cldum             ! working strings
@@ -135,7 +136,7 @@ PROGRAM cdfbottom
   npt   = getdim (cf_in,cn_t)
 
   ALLOCATE (zfield(npiglo,npjglo), zbot(npiglo,npjglo), zmask(npiglo,npjglo))
-  ALLOCATE (tim(npt) )
+  ALLOCATE (dtim(npt) )
 
   ! look for the number of variables in the input file
   nvars = getnvar(cf_in)
@@ -207,8 +208,8 @@ CONTAINS
     ncout = create      (cf_out,   cf_in  , npiglo, npjglo, 1         , ld_nc4=lnc4 ) ! 1 level file
     ierr  = createvar   (ncout   , stypvar, nvars , ipko  , id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout   , cf_in  , npiglo, npjglo, 1         )
-    tim     = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr    = putvar1d(ncout, tim,       npt, 'T')
+    dtim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 

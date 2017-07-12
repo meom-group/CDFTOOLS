@@ -34,7 +34,8 @@ PROGRAM cdfnrj_components
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: tn, t2n, anotsqrt
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: umask, vmask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: anousqrt, anovsqrt 
-  REAL(KIND=4), DIMENSION(1)                 :: tim                   ! time counter
+
+  REAL(KIND=8), DIMENSION(1)                 :: dtim                  ! time counter
 
   CHARACTER(LEN=256)                         :: cf_in                 ! input filename
   CHARACTER(LEN=256)                         :: cf_out='nrjcomp.nc'   ! output file name
@@ -227,8 +228,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 6,      ipk,    id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, npk       )
 
-    tim  = getvar1d(cf_in,cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,      npt, 'T')
+    dtim = getvar1d(cf_in,cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,     npt, 'T')
 
   END SUBROUTINE CreateOutput
 

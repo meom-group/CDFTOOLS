@@ -67,7 +67,7 @@ PROGRAM cdfbuoyflx
   REAL(KIND=4)                              :: Grav = 9.81                       ! Gravity
 
   REAL(KIND=4)                              :: zsps                              ! Missing value for salinity
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim, zdep                         ! time counter, deptht
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: zdep                         ! deptht
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask, zcoefq, zcoefw             ! work array
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zalbet, zbeta                     ! work array
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: evap, precip, runoff, wdmp, wnet  ! water flux components
@@ -78,6 +78,8 @@ PROGRAM cdfbuoyflx
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: b_qlat, b_qsb, b_qlw              ! BF heat flux components
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: b_qsw , bh_net                    ! BF heat flux components
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsst, zsss, buoyancy_fl           ! Total buoyancy flux
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                              ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil ,cf_flxfil, cf_rnfil      ! input file gridT, flx and runoff
   CHARACTER(LEN=256)                        :: cf_out='buoyflx.nc'               ! output file
@@ -301,8 +303,8 @@ PROGRAM cdfbuoyflx
      ENDIF
   END DO  ! time loop
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
+  dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,   dtim,      npt, 'T')
 
   ierr=closeout(ncout)
 
@@ -320,7 +322,7 @@ CONTAINS
     INTEGER(KIND=4) :: jv   ! dummy loop index
     !!----------------------------------------------------------------------
     ! prepare output variables
-    ALLOCATE (zdep(1), tim(npt) )
+    ALLOCATE (zdep(1), dtim(npt) )
     zdep(1) = 0.
     ALLOCATE (ipk(np_varout), id_varout(np_varout), stypvar(np_varout) )
     ipk(:)  = 1  ! all variables ( output are 2D)

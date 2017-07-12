@@ -34,7 +34,8 @@ PROGRAM cdfpendep
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: trcinv, trcsurf      ! inventory, surface concentration
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rpendep              ! penetration depth
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                  ! time counter
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                 ! time counter
 
   CHARACTER(LEN=256)                        :: cf_trcfil            ! tracer file name
   CHARACTER(LEN=256)                        :: cf_inv               ! inventory file name
@@ -113,7 +114,7 @@ PROGRAM cdfpendep
   PRINT *, 'npt    = ', npt
 
   ALLOCATE( trcinv(npiglo,npjglo), trcsurf(npiglo,npjglo), rpendep(npiglo,npjglo) )
-  ALLOCATE( tim(npt) )
+  ALLOCATE( dtim(npt) )
 
   WRITE(cglobal,9000) TRIM(cf_trcfil), TRIM(cf_inv), TRIM(cv_inv), TRIM(cv_trc)
 9000 FORMAT('cdfpendep ',a,' ',a,' -inv ',a,' -trc ',a )
@@ -158,8 +159,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar,   1,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_trcfil, npiglo, npjglo, 1                                        )
 
-    tim  = getvar1d(cf_trcfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,     tim,       npt, 'T')
+    dtim = getvar1d(cf_trcfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,    dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

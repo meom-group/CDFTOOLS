@@ -46,12 +46,12 @@ PROGRAM cdflinreg
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE    :: id_varout                 ! id of output variable
 
   REAL(KIND=4)                                  :: zspval = -99999.          ! special value/ missing value
-  REAL(KIND=4), DIMENSION(2)                    :: timean                    ! trick : timean(1) hold moy(t) (days)
-  !                                                                          !         timean(2) hold moy(t2) (days)**2
-  REAL(KIND=4), DIMENSION(:), ALLOCATABLE       :: tim                       ! time counter
 
   REAL(KIND=8)                                  :: dt, dt2                   ! variables for cumulated time values
   REAL(KIND=8)                                  :: dtotal_time               ! cumulated time
+  REAL(KIND=8), DIMENSION(2)                    :: dtimean                   ! trick : timean(1) hold moy(t) (days)
+  !                                                                          !         timean(2) hold moy(t2) (days)**2
+  REAL(KIND=8), DIMENSION(:), ALLOCATABLE       :: dtim                      ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE     :: dy, dyy, dyt              ! Arrays for cumulated values
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE     :: dv2d                      ! Array to read a layer of data
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE     :: dmean, dmean2, dmean3     ! 
@@ -142,7 +142,7 @@ PROGRAM cdflinreg
   ALLOCATE( dy   (npiglo,npjglo), dyt   (npiglo,npjglo), dyy   (npiglo,npjglo), dv2d(npiglo,npjglo) )
   ALLOCATE( dmean(npiglo,npjglo), dmean2(npiglo,npjglo), dmean3(npiglo,npjglo)                      )
   ALLOCATE( dareg(npiglo,npjglo), dbreg (npiglo,npjglo) ,dpear (npiglo,npjglo)                      )
-  ALLOCATE( tim  (jptmax) )
+  ALLOCATE( dtim  (jptmax) )
 
   nvars = getnvar(cf_in)
   PRINT *,' nvars =', nvars
@@ -176,7 +176,7 @@ PROGRAM cdflinreg
               ntframe=ntframe+npt
               IF ( lcaltmean )  THEN
                  ! read time and convert seconds to years
-                 tim(ntframe-npt+1:ntframe)=getvar1d(cf_in,cn_vtimec,npt)/86400.d0/365.
+                 dtim(ntframe-npt+1:ntframe)=getvar1d(cf_in,cn_vtimec,npt)/86400.d0/365.d0
               END IF
 
               DO jt=1,npt
@@ -184,27 +184,27 @@ PROGRAM cdflinreg
                  dv2d(:,:) = getvar(cf_in, cv_namesi(jvar), jk ,npiglo, npjglo, ktime=jt )
                  dy(:,:)   = dy(:,:)  + dv2d(:,:)
                  dyy(:,:)  = dyy(:,:) + dv2d(:,:)*dv2d(:,:)
-                 dyt(:,:)  = dyt(:,:) + dv2d(:,:)*tim(ntframe-npt+jt)
+                 dyt(:,:)  = dyt(:,:) + dv2d(:,:)*dtim(ntframe-npt+jt)
               ENDDO
            END DO
            ! finish with level jk ; compute mean (assume zspval is 0 )
-           dt          = SUM(tim(1:ntframe)                )
-           dt2         = SUM(tim(1:ntframe)*tim(1:ntframe) )
+           dt          = SUM(dtim(1:ntframe)                )
+           dt2         = SUM(dtim(1:ntframe)*dtim(1:ntframe) )
            dmean(:,:)  = dy (:,:) / ntframe
            dmean2(:,:) = dyt(:,:) / ntframe
            dmean3(:,:) = dyy(:,:) / ntframe
 
            IF (lcaltmean )  THEN
-              timean(1)= dt/ntframe
-              timean(2)= dt2/ntframe
-              ierr=putvar1d(ncout,timean,1,'T')
+              dtimean(1)= dt/ntframe
+              dtimean(2)= dt2/ntframe
+              ierr=putvar1d(ncout,dtimean,1,'T')
            END IF
 
            !compute dareg, dbreg, dpear
            WHERE (dmean /= 0 ) 
-              dareg(:,:) = ( dmean2(:,:) - dmean(:,:) *timean(1) ) / ( timean(2) -timean(1)*timean(1) )
-              dbreg(:,:) = dmean(:,:) - dareg(:,:)*timean(1) 
-              dpear(:,:) = dareg(:,:)*dareg(:,:)*( timean(2) -timean(1)*timean(1))/( dmean3(:,:) -dmean(:,:)*dmean(:,:) )
+              dareg(:,:) = ( dmean2(:,:) - dmean(:,:) *dtimean(1) ) / ( dtimean(2) -dtimean(1)*dtimean(1) )
+              dbreg(:,:) = dmean(:,:) - dareg(:,:)*dtimean(1) 
+              dpear(:,:) = dareg(:,:)*dareg(:,:)*( dtimean(2) -dtimean(1)*dtimean(1))/( dmean3(:,:) -dmean(:,:)*dmean(:,:) )
               WHERE (dpear < 0 ) dpear=0 ; WHERE (dpear > 1 ) dpear=1
            ELSEWHERE
               dareg=zspval ; dbreg=zspval ; dpear=zspval

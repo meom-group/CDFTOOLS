@@ -47,10 +47,10 @@ PROGRAM cdfmoy_freq
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, rmean
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d
   REAL(KIND=4), DIMENSION(:,:,:,:), ALLOCATABLE :: v4d
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: time, time_mean
 
-  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab         ! Arrays for cumulated values
   REAL(KIND=8)                                  :: dtotal_time
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim, dtimean
+  REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtab         ! Arrays for cumulated values
 
   CHARACTER(LEN=256)                            :: cf_in               !
   CHARACTER(LEN=256)                            :: cf_out='cdfmoy_'    ! file name
@@ -288,14 +288,14 @@ PROGRAM cdfmoy_freq
   ALLOCATE (cv_names(nvars)                            )
   ALLOCATE (stypvar(nvars)                             )
   ALLOCATE (id_var(nvars), ipk(nvars), id_varout(nvars))
-  ALLOCATE( time( npt), time_mean(nframes)             )
+  ALLOCATE( dtim( npt), dtimean(nframes)             )
 
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:)=getvarname(cf_in, nvars, stypvar)
 
   CALL CreateOutput
 
-  time(:)=getvar1d(cf_in, cn_vtimec, npt)
+  dtim(:)=getvar1d(cf_in, cn_vtimec, npt)
   DO jvar = 1,nvars
      IF ( cv_names(jvar) == cn_vlon2d .OR.                            &
           cv_names(jvar) == cn_vlat2d .OR. cv_names(jvar) == 'none') THEN
@@ -326,13 +326,13 @@ PROGRAM cdfmoy_freq
                   ENDIF
                  dtab(:,:) = dtab(:,:) + v2d(:,:)*1.d0
                  IF ( lcaltmean ) THEN
-                    dtotal_time = dtotal_time + time(jtt) 
+                    dtotal_time = dtotal_time + dtim(jtt) 
                  ENDIF
               ENDDO
               rmean(:,:) = dtab(:,:)/ibox(jframe)
               ierr = putvar(ncout, id_varout(jvar) ,rmean, jk, npiglo, npjglo, ktime=jframe)
               IF ( lcaltmean ) THEN
-                 time_mean(jframe) = dtotal_time/ibox(jframe)
+                 dtimean(jframe) = dtotal_time/ibox(jframe)
               ENDIF
               dtab(:,:) = 0.d0 ; dtotal_time = 0.d0
               it1 = it2 + 1
@@ -345,7 +345,7 @@ PROGRAM cdfmoy_freq
      END IF
   END DO ! loop to next var in file
 
-  ierr = putvar1d(ncout,   time_mean,  nframes  , 'T')
+  ierr = putvar1d(ncout,   dtimean,  nframes  , 'T')
   ierr = closeout(ncout)
 
 CONTAINS

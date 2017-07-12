@@ -41,16 +41,16 @@ PROGRAM cdfsum
   INTEGER(KIND=4), DIMENSION(2)             :: ipk, id_varout
 
   REAL(KIND=4)                              :: zspval             ! missing value
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdep                ! depth 
+  REAL(KIND=4), DIMENSION(1,1)              :: rdummy              ! dummy 2d variable for result
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1, e2, e3,  zv     ! metrics, velocity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zmask               ! npiglo x npjglo
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdep                ! depth 
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time
-  REAL(KIND=4), DIMENSION(1,1)              :: rdummy              ! dummy 2d variable for result
 
   REAL(KIND=8)                              :: dvol, dvol2d        ! volume of the ocean/ layer
   REAL(KIND=8)                              :: dsurf               ! surface of the ocean
   REAL(KIND=8)                              :: dsum, dsum2d        ! global sum /layer sum
   REAL(KIND=8)                              :: dsumt               ! global sum over time
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                ! time
 
   CHARACTER(LEN=256)                        :: cldum               ! dummy string
   CHARACTER(LEN=256)                        :: cf_in               ! file name 
@@ -207,7 +207,7 @@ PROGRAM cdfsum
   ALLOCATE ( zmask(npiglo,npjglo) )
   ALLOCATE ( zv   (npiglo,npjglo) )
   ALLOCATE ( e1   (npiglo,npjglo), e2(npiglo,npjglo), e3(npiglo,npjglo) )
-  ALLOCATE ( gdep (npk), tim(npt) )
+  ALLOCATE ( gdep (npk), dtim(npt) )
 
   SELECT CASE (TRIM(cvartype))
   CASE ( 'T' )
@@ -369,8 +369,8 @@ PROGRAM cdfsum
                     &  pnavlon=zdumlon, pnavlat=zdumlat,                   &
                     &  pdep=gdep(ikmin:ikmax),                             &
                     &  cdep=cdep                                           )
-    tim   = getvar1d(cf_in, cn_vtimec, npt)
-    ierr  = putvar1d(ncout,  tim,      npt, 'T')
+    dtim  = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d(ncout,  dtim,     npt, 'T')
   
   END SUBROUTINE CreateOutput
 

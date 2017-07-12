@@ -49,29 +49,28 @@ PROGRAM cdfmean
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: n_sum,n_sum3d      ! index of sum, sum3d in id_varout
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: n_mean,n_mean3d    ! index of mean, mean3d in id_varout
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: n_var,n_var3d      ! index of var, var3d in id_varout
-
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout
   INTEGER(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: ibmask         ! nbasin x npiglo x npjglo
 
   REAL(KIND=4)                               :: zspval             ! missing value
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdep               ! depth 
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: zdep               ! depth of the whole vertical levels
+  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: e31d               ! 1d vertical spacing
   REAL(KIND=4), DIMENSION(1,1)               :: rdummy             ! dummy variable
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: e1, e2, e3, zv     ! metrics, velocity
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: zmask, zvzm        ! npiglo x npjglo
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: rdumlon, rdumlat   ! dummy lon/lat for output file
   REAL(KIND=4), DIMENSION(:,:),  ALLOCATABLE :: rdummymean         ! array for mean value on output file
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: gdep               ! depth 
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: zdep               ! depth of the whole vertical levels
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: e31d               ! 1d vertical spacing
-  REAL(KIND=4), DIMENSION(:),    ALLOCATABLE :: tim                ! time counter
 
   REAL(KIND=8)                               :: dsurf              ! cumulated values
   REAL(KIND=8)                               :: dvol2d,  dsum2d    !
   REAL(KIND=8)                               :: dvar2d             ! for variance computing
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim               ! time counter
   REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvmeanout          ! spatial mean
   REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvariance          ! spatial variance
+  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvol, dsum, dvar   ! cumulated values
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dvmeanout3d        ! global 3D mean value
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dvariance3d        ! global 3D mean variance
-  REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dvol, dsum, dvar   ! cumulated values
 
   CHARACTER(LEN=256)                         :: cv_nam             ! current variable name
   CHARACTER(LEN=256)                         :: cv_dep             ! deptht name
@@ -295,7 +294,7 @@ PROGRAM cdfmean
   ALLOCATE ( zv   (npiglo,npjglo) )
   ALLOCATE ( e1   (npiglo,npjglo), e2(npiglo,npjglo), e3(npiglo,npjglo) )
   ALLOCATE ( dvariance3d(nbasin,npt), dvmeanout3d(nbasin,npt) )
-  ALLOCATE ( gdep (npk), e31d(npk), tim(npt)  )
+  ALLOCATE ( gdep (npk), e31d(npk), dtim(npt)  )
   ALLOCATE ( dvol(nbasin), dsum(nbasin), dvar(nbasin) )
   ALLOCATE ( zdep(npk_fi) )
   ALLOCATE ( n_mean(nbasin), n_mean3d(nbasin), n_var(nbasin), n_var3d(nbasin) )
@@ -613,8 +612,8 @@ CONTAINS
     ncout = create      (cf_ncout,   'none',  ikx,   iky,   nvpk, cdep=cv_dep)
     ierr  = createvar   (ncout,      stypvar, nvars, ipk,   id_varout, cdglobal=TRIM(cglobal) )
     ierr  = putheadervar(ncout,      cf_in,  ikx, iky, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep(1:nvpk), cdep=cv_dep)
-    tim   = getvar1d(cf_in, cn_vtimec, npt)
-    ierr  = putvar1d(ncout,  tim,       npt, 'T')
+    dtim  = getvar1d(cf_in, cn_vtimec, npt  )
+    ierr  = putvar1d(ncout,  dtim,  npt, 'T')
 
 
   END SUBROUTINE CreateOutput
@@ -658,8 +657,8 @@ CONTAINS
     ncout = create      (cf_zerom, cf_in,        npiglo, npjglo, ik            )
     ierr  = createvar   (ncout ,   stypvarzero , nbasin, ipk,    id_varout     )
     ierr  = putheadervar(ncout,    cf_in,        npiglo, npjglo, ik , pdep=zdep)
-    tim   = getvar1d(cf_in, cn_vtimec, npt)
-    ierr=putvar1d(ncout, tim, npt,'T')
+    dtim  = getvar1d(cf_in, cn_vtimec, npt)
+    ierr  = putvar1d(ncout, dtim,  npt,'T')
 
   END SUBROUTINE CreateOutputZeromean
 

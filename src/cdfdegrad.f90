@@ -49,7 +49,6 @@ PROGRAM cdfdegrad
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1, e2, e3, zv     ! metrics, variable
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rdumlon, rdumlat   ! dummy lon/lat for output file
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rdummymean         ! array for mean value on output file
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdep               ! depth 
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: zdep               ! depth of the whole vertical levels
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d               ! 1d vertical spacing
@@ -57,6 +56,7 @@ PROGRAM cdfdegrad
 
   REAL(KIND=8)                              :: dvol, dsum, dsurf  ! cumulated values
   REAL(KIND=8)                              :: dvol2d, dsum2d     !
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
 
   CHARACTER(LEN=256)                        :: cf_in              ! input filename
   CHARACTER(LEN=256)                        :: cf_e3              ! vertical metrics filename
@@ -67,7 +67,7 @@ PROGRAM cdfdegrad
   CHARACTER(LEN=20)                         :: cv_e3, cv_e31d     ! vertical metrics names
   CHARACTER(LEN=20)                         :: cv_msk             ! mask variable name
   CHARACTER(LEN=256)                        :: cv_dep             ! deptht name
-  CHARACTER(LEN=256), DIMENSION(:),ALLOCATABLE :: clv_dep             ! deptht name
+  CHARACTER(LEN=256), DIMENSION(:),ALLOCATABLE :: clv_dep         ! deptht name
   !
   CHARACTER(LEN=256)                        :: clunits            ! attribute of output file : units
   CHARACTER(LEN=256)                        :: cldum              ! dummy char variable
@@ -266,7 +266,7 @@ PROGRAM cdfdegrad
   ! Allocate arrays
   ALLOCATE (zmask(npiglo,npjglo) )
   ALLOCATE (zv(npiglo,npjglo) )
-  ALLOCATE (gdep (npk), e31d(npk), tim(npt) )
+  ALLOCATE (gdep (npk), e31d(npk), dtim(npt) )
   ALLOCATE (zdep(npk) )
 
   IF ( ll_pt .OR. ll_pw .OR. ll_pv )  e1(:,:) = getvar  (cn_fhgr, cv_e1,  1,  npiglo, npjglo, kimin=iimin, kjmin=ijmin)
@@ -496,8 +496,8 @@ CONTAINS
     ncout = create      (cf_out ,     'none',  ikx,   iky,   npk, cdep=cv_dep)
     ierr  = createvar   (ncout ,      stypvar , 2 , ipk,   id_varout  , cdglobal=TRIM(cglobal) ) 
     ierr  = putheadervar(ncout ,      cf_in  ,  ikx, iky, npk, pnavlon=rdumlon, pnavlat=rdumlat, pdep=gdep, cdep=cv_dep)
-    tim   = getvar1d(cf_in  , cn_vtimec, npt)
-    ierr  = putvar1d(ncout,  tim,       npt, 'T')
+    dtim  = getvar1d(cf_in, cn_vtimec, npt )
+    ierr  = putvar1d(ncout,  dtim, npt, 'T')
 
   END SUBROUTINE CreateOutput
 

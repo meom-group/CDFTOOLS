@@ -60,17 +60,17 @@ PROGRAM cdfcensus
   INTEGER(KIND=4), DIMENSION(2)             :: ijloc
   INTEGER(KIND=4), DIMENSION(4)             :: ipk, id_varout
 
+  REAL(KIND=4)                              :: ztmin, ztmax, zdt, ztm
+  REAL(KIND=4)                              :: zsmin, zsmax, zds, zsm
+  REAL(KIND=4)                              :: ztpoint, zspoint, rcmax
+  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt, zs, rsigma0, rsigma2, rsigma4
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1t, e2t
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsx, zty
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d
-  REAL(KIND=4)                              :: ztmin, ztmax, zdt, ztm
-  REAL(KIND=4)                              :: zsmin, zsmax, zds, zsm
-  REAL(KIND=4)                              :: ztpoint, zspoint, rcmax
 
   REAL(KIND=8)                              :: dvoltotal, dvolpoint
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcensus, ddump
 
   CHARACTER(LEN=256)                        :: cf_tfil
@@ -225,7 +225,7 @@ PROGRAM cdfcensus
   ! Allocate arrays
   ALLOCATE ( dcensus (ns,nt), ddump(ns,nt) )
   ALLOCATE ( rsigma0(ns,nt), rsigma2(ns,nt), rsigma4(ns,nt) )
-  ALLOCATE ( zsx (ns,nt), zty(ns,nt), tim(npt))
+  ALLOCATE ( zsx (ns,nt), zty(ns,nt), dtim(npt))
 
   ! fill up rsigma0 array with theoretical density
   DO ji=1,ns
@@ -306,8 +306,8 @@ PROGRAM cdfcensus
      ierr = putvar(ncout, id_varout(4), rsigma4,     1, ns, nt, ktime=jt)
   ENDDO  ! time loop
 
-  tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-  ierr = putvar1d(ncout,   tim,       npt, 'T')
+  dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+  ierr = putvar1d(ncout,   dtim,      npt, 'T')
   ierr = closeout(ncout)
 
   PRINT *,' Done.'

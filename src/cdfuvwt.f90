@@ -39,15 +39,15 @@ PROGRAM cdfuvwt
   INTEGER(KIND=4)                               :: ierr
   INTEGER(KIND=4), DIMENSION(jp_var)            :: ipk, id_varout         ! 
 
-  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: w2d
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: u2d, v2d, t2d
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim
+  REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: w2d
 
+  REAL(KIND=8)                                  :: dcoef
+  REAL(KIND=8)                                  :: dtotal_time
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabu, dtabv, dtabu2, dtabv2, dtabuv
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabw, dtabt, dtabut, dtabvt, dtabt2
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dtabwt
-  REAL(KIND=8)                                  :: dcoef
-  REAL(KIND=8)                                  :: dtotal_time
 
   CHARACTER(LEN=256)                            :: cf_ufil, cf_vfil
   CHARACTER(LEN=256)                            :: cf_wfil, cf_tfil
@@ -173,10 +173,10 @@ PROGRAM cdfuvwt
         
         IF ( jk == 1 ) THEN
            npt = getdim(cf_ufil, cn_t)
-           ALLOCATE ( tim(npt) )
-           tim=getvar1d(cf_ufil, cn_vtimec, npt)
-           dtotal_time = dtotal_time + SUM(DBLE(tim))
-           DEALLOCATE ( tim )
+           ALLOCATE ( dtim(npt) )
+           dtim=getvar1d(cf_ufil, cn_vtimec, npt)
+           dtotal_time = dtotal_time + SUM(dtim)
+           DEALLOCATE ( dtim )
         ENDIF
 
         DO jtt = 1, npt
@@ -238,8 +238,7 @@ PROGRAM cdfuvwt
      ierr  = putvar(ncout, id_varout(jk), REAL(dtabu), npk, npiglo, npjglo )
   END DO
 
-  ierr = putvar1d(ncout, (/REAL(dtotal_time*dcoef)/), 1, 'T')
-
+  ierr = putvar1d(ncout, (/dtotal_time*dcoef/), 1, 'T')
   ierr = closeout(ncout)
 
 CONTAINS

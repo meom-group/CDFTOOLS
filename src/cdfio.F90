@@ -155,7 +155,7 @@
   END INTERFACE
 
   INTERFACE putvar1d   
-     MODULE PROCEDURE putvar1d4, reputvar1d4
+     MODULE PROCEDURE putvar1d4, putvar1d8, reputvar1d4, reputvar1d8
   END INTERFACE
 
   INTERFACE putvar0d   
@@ -347,7 +347,7 @@ CONTAINS
        istatus = copyatt(TRIM(cldepvar), nid_dep,incid,icout)
     ENDIF
 
-    istatus = NF90_DEF_VAR(icout,cn_vtimec,NF90_FLOAT,(/nid_t/), nid_tim)
+    istatus = NF90_DEF_VAR(icout,cn_vtimec,NF90_DOUBLE,(/nid_t/), nid_tim)
     istatus = copyatt(cn_vtimec, nid_tim,incid,icout)
 
     ! Add Global General attribute at first call
@@ -1936,7 +1936,8 @@ CONTAINS
     CHARACTER(LEN=*),           INTENT(in) :: cdvar    ! variable name to work with
     INTEGER(KIND=4),            INTENT(in) :: kk       ! size of 1D vector to be returned
     INTEGER(KIND=4), OPTIONAL, INTENT(out) :: kstatus  ! return status concerning the variable existence
-    REAL(KIND=4), DIMENSION(kk)            :: getvar1d ! real returned vector
+    REAL(KIND=8), DIMENSION(kk)            :: getvar1d ! returned vector (double precision --for time --)
+                                                       ! 
 
     INTEGER(KIND=4), DIMENSION(1) :: istart, icount
     INTEGER(KIND=4) :: incid, id_var
@@ -1952,7 +1953,7 @@ CONTAINS
        istatus=NF90_GET_VAR(incid,id_var,getvar1d,start=istart,count=icount)
     ELSE
        IF ( PRESENT(kstatus) ) kstatus= istatus
-       getvar1d=99999999999.
+       getvar1d=99999999999.d0
     ENDIF
 
     istatus=NF90_CLOSE(incid)
@@ -2490,6 +2491,43 @@ CONTAINS
 
   END FUNCTION putvar1d4
 
+  INTEGER(KIND=4) FUNCTION putvar1d8(kout, ddtab, kk, cdtype)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION putvar1d8  ***
+    !!
+    !! ** Purpose :  Copy 1D variable (size kk) hold in ptab,  with id 
+    !!               kid, into file id kout (double precision)
+    !!
+    !! ** Method  : cdtype is either T (time_counter) or D (depth.)
+    !!                         LON (1D longitude) or LAT (1D latitude)
+    !!
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4),            INTENT(in) :: kout   ! ncid of output file
+    REAL(KIND=8), DIMENSION(kk),INTENT(in) :: ddtab  ! 1D array to write in file
+    INTEGER(KIND=4),            INTENT(in) :: kk     ! number of elements in ptab
+    CHARACTER(LEN=1),           INTENT(in) :: cdtype ! either T or D LON or LAT
+
+    INTEGER(KIND=4)               :: istatus, iid
+    INTEGER(KIND=4), DIMENSION(1) :: istart, icount
+    !!----------------------------------------------------------------------
+    SELECT CASE ( cdtype )
+    CASE ('T', 't' ) 
+       iid = nid_tim
+    CASE ('D', 'd' )
+       iid = nid_dep
+    CASE ('X', 'x' )
+       iid = nid_lon1d
+    CASE ('Y', 'y' )
+       iid = nid_lat1d
+    END SELECT
+
+    istart(:) = 1
+    icount(:) = kk
+    istatus=NF90_PUT_VAR(kout,iid, ddtab, start=istart,count=icount)
+    putvar1d8=istatus
+
+  END FUNCTION putvar1d8
+
   INTEGER(KIND=4) FUNCTION reputvar1d4(cdfile, cdvar, ptab, kk )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION reputvar1d4  ***
@@ -2514,6 +2552,32 @@ CONTAINS
     istatus = NF90_CLOSE(incid)
 
   END FUNCTION reputvar1d4
+
+  INTEGER(KIND=4) FUNCTION reputvar1d8(cdfile, cdvar, ddtab, kk )
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION reputvar1d8  ***
+    !!
+    !! ** Purpose : Copy 1d variable cdfvar in cdfile, an already existing file
+    !!              tab is the 1d array to write and kk the size of ptab
+    !!
+    !! ** Method  :   double precision
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*),            INTENT(in) :: cdfile      ! filename
+    CHARACTER(LEN=*),            INTENT(in) :: cdvar       ! variable name
+    REAL(KIND=8), DIMENSION(kk), INTENT(in) :: ddtab       ! 1D array to write in file
+    INTEGER(KIND=4),             INTENT(in) :: kk          ! number of elements in ptab
+
+    INTEGER                                 :: istatus, incid, id
+    !!-----------------------------------------------------------
+    istatus = NF90_OPEN(cdfile, NF90_WRITE, incid)
+    istatus = NF90_INQ_VARID(incid, cdvar, id )
+    istatus = NF90_PUT_VAR(incid, id, ddtab, start=(/1/), count=(/kk/) )
+    reputvar1d8 = istatus
+    istatus = NF90_CLOSE(incid)
+
+  END FUNCTION reputvar1d8
+
 
   INTEGER(KIND=4) FUNCTION putvar0dt(kout, kid, pvalue, ktime)
     !!---------------------------------------------------------------------

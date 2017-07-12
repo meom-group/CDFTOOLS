@@ -45,7 +45,6 @@ PROGRAM cdfheatc
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! tmask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rmxldep             ! mixed layer depth
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdepw               ! depth
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                 ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
 
   REAL(KIND=8)                              :: dvol                ! 3D volume of the ocean
@@ -53,6 +52,7 @@ PROGRAM cdfheatc
   REAL(KIND=8)                              :: dvol2d              ! volume of a layer
   REAL(KIND=8)                              :: dsum2d              ! weigthed sum per layer
   REAL(KIND=8)                              :: dsurf               ! surface of a layer
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                ! time counter
   REAL(KIND=8), DIMENSION(1,1)              :: dl_dum              ! working pseudo array for nc output
 
   TYPE(variable), DIMENSION(:),    ALLOCATABLE :: stypvar          ! structure for attributes
@@ -182,7 +182,7 @@ PROGRAM cdfheatc
      ALLOCATE ( rmxldep(npiglo,npjglo))
   ENDIF
 
-  ALLOCATE ( gdepw(npk), tim(npt))
+  ALLOCATE ( gdepw(npk), dtim(npt))
   IF ( lfull ) ALLOCATE ( e31d(npk))
 
   e1t(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
@@ -199,7 +199,7 @@ PROGRAM cdfheatc
      ENDIF
      dvol = 0.d0
      dsum = 0.d0
-     PRINT * ,'TIME : ', tim(jt)
+     PRINT * ,'TIME : ', dtim(jt)
      IF (mxloption /= 0) rmxldep(:,:) = getvar(cf_mfil, cn_somxl010, 1, npiglo, npjglo, ktime=jt)
 
      DO jk = 1,nvpk
@@ -298,8 +298,8 @@ CONTAINS
           &                 pdep=gdepw(ikmin:ikmax),                       &
           &                 cdep='depthw'                                  )
 
-    tim  (:) = getvare3(cf_tfil, cn_vtimec, npt)
-    tim(:)= putvar1d(ncout,  tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt)
+    ierr = putvar1d(ncout,  dtim,  npt, 'T')
 
     DEALLOCATE( zdumlon, zdumlat)
 

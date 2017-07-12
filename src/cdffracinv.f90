@@ -31,7 +31,8 @@ PROGRAM cdffracinv
 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: trcinvij              ! tracer inventory
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: fracinv               ! fraction of inventory
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim                   ! time counter
+
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                  ! time counter
 
   CHARACTER(LEN=256)                        :: cf_trc                ! tracer file (for inventory)
   CHARACTER(LEN=256)                        :: cf_out='fracinv.nc'   ! output file name
@@ -99,7 +100,7 @@ PROGRAM cdffracinv
   PRINT *, 'npk    = ', npk
 
   ALLOCATE( trcinvij(npiglo,npjglo), fracinv(npiglo,npjglo) )
-  ALLOCATE( tim(npt) )
+  ALLOCATE( dtim(npt) )
 
   WRITE(cglobal,9000) TRIM(cf_trc), TRIM(cv_inv)
 9000 FORMAT('cdffracinv ',a,' -inv ',a )
@@ -144,8 +145,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, 1,      ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
     ierr  = putheadervar(ncout,  cf_trc,  npiglo, npjglo, 1                                         )
 
-    tim  = getvar1d(cf_trc, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,  tim,       npt, 'T')
+    dtim = getvar1d(cf_trc, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

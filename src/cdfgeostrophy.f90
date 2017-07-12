@@ -97,7 +97,6 @@ PROGRAM cdfgeostrophy
   REAL(KIND=4)                              :: zohr0          ! reference density in geos balance
   REAL(KIND=4)                              :: zffu, zffv     ! local coriolis parameter
   REAL(KIND=4)                              :: zumask, zvmask ! dummy for mask 
-  REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: deptht, depthw
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1u, e2v, ff   ! horiz metrics, coriolis (f-point)
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e1v, e2u       ! horiz metrics
@@ -109,6 +108,7 @@ PROGRAM cdfgeostrophy
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt, zsal       ! temporary arrays for temperature and salinity
 
   REAL(KIND=8)                              :: dp1, dp2, dp3  ! dummy for pressure interp
+  REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim           ! time counter
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: dsigsurf       ! density at first level (used for dpsurf)
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: dsiglevel      ! density at current level (used for dplevel/dphalflevel)
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dun, dvn       ! velocity components
@@ -220,7 +220,7 @@ PROGRAM cdfgeostrophy
   ALLOCATE ( deptht(npk), depthw(npk) )
   ALLOCATE ( dsigsurf(npiglo,npjglo) , dsiglevel(npiglo,npjglo) )
   ALLOCATE ( e3(npiglo,npjglo) )
-  ALLOCATE ( tim(npt) )
+  ALLOCATE ( dtim(npt) )
 
   ! Read the metrics from the mesh_hgr file
   e2u   = getvar(cn_fhgr, cn_ve2u,  1, npiglo, npjglo)
@@ -366,16 +366,16 @@ CONTAINS
     ierr   = createvar   (ncoutu,  stypvaru, 1,      ipk,    id_varoutu , ld_nc4=lnc4         )
     ierr   = putheadervar(ncoutu,  cf_tfil,  npiglo, npjglo, npk, pnavlon=glamu, pnavlat=gphiu)
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncoutu,  tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncoutu,  dtim,      npt, 'T')
 
     ! V geo 
     ncoutv = create      (cf_vout, cf_tfil,  npiglo, npjglo, npk        , ld_nc4=lnc4         )
     ierr   = createvar   (ncoutv,  stypvarv, 1,      ipk,    id_varoutv , ld_nc4=lnc4         )
     ierr   = putheadervar(ncoutv,  cf_tfil,  npiglo, npjglo, npk, pnavlon=glamv, pnavlat=gphiv)
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncoutv,  tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncoutv, dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutputUV
 

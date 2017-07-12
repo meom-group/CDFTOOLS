@@ -74,8 +74,9 @@ PROGRAM cdfmxl
   REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: hmlt3          ! mxl depth based on temperature criterion 2 and 10m
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdepw          ! depth of w levels
   REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: gdept          ! depth of T levels 
-  REAL(KIND=4), DIMENSION(:),      ALLOCATABLE :: tim            ! time counter
   REAL(KIND=4), DIMENSION(1)                   :: rdep           ! dummy depth for output
+
+  REAL(KIND=8), DIMENSION(:),      ALLOCATABLE :: dtim           ! time counter
 
   CHARACTER(LEN=256)                           :: cf_tfil        ! input T file
   CHARACTER(LEN=256)                           :: cf_sfil        ! input S file (F.Hernandez)
@@ -175,7 +176,7 @@ PROGRAM cdfmxl
   ALLOCATE (tmask(npiglo,npjglo), tmask_surf(npiglo,npjglo), tmask_10(npiglo,npjglo))
   ALLOCATE (rho_surf(npiglo,npjglo), tem_surf(npiglo,npjglo)                )
   ALLOCATE (mbathy(npiglo,npjglo)                                           )
-  ALLOCATE (gdepw(0:npk), gdept(npk), tim(npt)                              )
+  ALLOCATE (gdepw(0:npk), gdept(npk), dtim(npt)                              )
 
   ! read mbathy and gdepw use real rtem(:,:) as template (getvar is used for real only)
   IF ( chkfile( cn_fbathylev,ld_verbose=.FALSE.)  ) THEN
@@ -366,8 +367,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, jp_varout,      ipk, id_varout, ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
 
-    tim  = getvar1d(cf_tfil, cn_vtimec, npt     )
-    ierr = putvar1d(ncout,   tim,       npt, 'T')
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
   END SUBROUTINE CreateOutput
 

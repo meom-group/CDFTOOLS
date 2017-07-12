@@ -43,7 +43,8 @@ PROGRAM cdfclip
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, rlon, rlat         !
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2dxz, v2dyz, zxz, zyz  !
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rdepg, rdep             !
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: tim                     !
+
+  REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                     !
 
   CHARACTER(LEN=256)                            :: cf_in                   ! input file name
   CHARACTER(LEN=256)                            :: cf_out='cdfclip.nc'     ! output file name
@@ -188,7 +189,7 @@ PROGRAM cdfclip
 
   ALLOCATE( v2d(npiglo,npjglo),rlon(npiglo,npjglo), rlat(npiglo,npjglo), rdepg(npk) , rdep(npkk))
   ALLOCATE( zxz(npiglo,1), zyz(1,npjglo) )
-  ALLOCATE( tim(npt) )
+  ALLOCATE( dtim(npt) )
 
   nvars = getnvar(cf_in)
   PRINT *,' nvars =', nvars
@@ -294,8 +295,8 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvar, nvars,  ipkk,   id_varout, cdglobal=cglobal,   ld_nc4=lnc4)
     ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, npkk, pnavlon=rlon, pnavlat=rlat, pdep=rdep, cdep=cv_dep)
 
-    tim  = getvar1d(cf_in, cn_vtimec, npt     )
-    ierr = putvar1d(ncout, tim,       npt, 'T')
+    dtim = getvar1d(cf_in, cn_vtimec, npt     )
+    ierr = putvar1d(ncout, dtim,      npt, 'T')
   END SUBROUTINE CreateOutput
 
 END PROGRAM cdfclip
