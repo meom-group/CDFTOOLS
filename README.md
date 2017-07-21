@@ -25,6 +25,10 @@ in the make.macro file, otherwise set
 
 ```NC4= ```
 
+If you need to use CMIP6 naming convention for input files, you must set the CPP key key_CMIP6 in the `make.macro` file :
+
+```CMIP6 = -Dkey_CMIP6```
+
 Then using `make` (or even `make -j n` if you can compile on n cores), you will have the cdftools programs executable available in the bin/ sub directory. The executable files are ignore by git.
 
 
