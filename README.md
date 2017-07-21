@@ -117,5 +117,5 @@ Example:
  * The man pages are automaticaly translated to an html document that can be vizualized from any browser.
 
 #### Back to release 3:
- * The last version 3's release has been tagged as v3.0.1. Use this tag if you want to stay at version 3.
+ * The last version 3's release has been tagged as v3.0.2. Use this tag if you want to stay at version 3.
 
