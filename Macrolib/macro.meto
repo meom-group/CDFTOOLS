@@ -1,0 +1,21 @@
+# Makefile for CDFTOOLS
+#    $Rev: 173 $
+#    $Date: 2008-03-17 11:42:21 +0100 (Mon, 17 Mar 2008) $
+# --------------------------------------------------------------
+#
+
+NCDF =  -Wl,-rpath,/project/ukmo/rhel6/netcdf4/ifort_composerxe/lib/ -I/project/ukmo/rhel6/netcdf4/ifort_composerxe/include/ -L/project/ukmo/rhel6/netcdf4/ifort_composerxe/lib -lnetcdff
+
+F90=ifort
+MPF90=mpif90
+
+#Use first set of FFLAGS for testing code
+#FFLAGS= -ip -mp1 -fpe0 $(NCDF) -assume byterecl -convert big_endian -parallel -traceback -C
+NC4 = -D key_netcdf4
+FFLAGS= -O3 -fpe0 $(NCDF) $(NC4) -assume byterecl -convert big_endian -g -traceback
+
+#-heap-arrays
+LMPI=-lmpich
+OMP=-openmp
+
+INSTALL = /project/ujcc/CDFTOOLS_3.0/bin
