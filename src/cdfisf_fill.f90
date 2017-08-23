@@ -82,7 +82,7 @@ PROGRAM cdfisf_fill
      PRINT *,'     OPTIONS : '
      PRINT *,'          -nc4 : use NetCDF4 chunking and deflation for the output'
      PRINT *,'          -o OUT-file : specify the name of the output file instead of ',TRIM(cf_out)
-     PRINT *,'                 This file will be one of the input file for cdfmkforcingisf '
+     PRINT *,'                 This file will be one of the input file for cdfisf_forcing '
      PRINT *,'                 as the ISF-fill_file '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
@@ -95,7 +95,7 @@ PROGRAM cdfisf_fill
      PRINT *,'                        each shelf.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO : '
-     PRINT *,'           cdfisf_forcing,  cdfisf_rnf , cdfisf_poolchk'
+     PRINT *,'           cdfisf_forcing,  cdfisf_rnf , cdfisf_poolchk, cdfisf_diags'
      PRINT *,'      '
      STOP 
   ENDIF

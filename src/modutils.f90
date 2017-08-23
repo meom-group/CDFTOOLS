@@ -312,7 +312,7 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE FillPool2D  ***
     !!  
-    !! ** Purpose :  Replace all area surrounding by mask value by mask value
+    !! ** Purpose :  Replace all area surrounding by mask value by kifill value
     !!  
     !! ** Method  :  flood fill algorithm
     !!  
@@ -328,7 +328,7 @@ CONTAINS
     INTEGER :: ipiglo, ipjglo           ! size of the domain, infered from kdta size
 
     INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
-    INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: idata   ! new bathymetry
+    INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: idata    ! new data
     !!----------------------------------------------------------------------
     ! infer domain size from input array
     ipiglo = SIZE(kdta,1)
@@ -383,7 +383,7 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE FillPool3D  ***
     !!
-    !! ** Purpose :  Replace all area surrounding by mask value by mask value
+    !! ** Purpose :  Replace all area surrounding by mask value by kifill value
     !!
     !! ** Method  :  flood fill algorithm
     !!
@@ -399,7 +399,7 @@ CONTAINS
     INTEGER :: iip1, iim1, ii, ij       ! working integer
     INTEGER :: ijp1, ijm1, ikp1, ikm1
     INTEGER(KIND=2), DIMENSION(:,:),   ALLOCATABLE :: ipile    ! pile variable
-    INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: idata   ! new bathymetry
+    INTEGER(KIND=2), DIMENSION(:,:,:), ALLOCATABLE :: idata    ! new data
     !!----------------------------------------------------------------------
     ! infer domain size from input array
     ipiglo = SIZE(kdta,1)

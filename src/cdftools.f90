@@ -279,7 +279,7 @@ CONTAINS
     INTEGER(KIND=4),            INTENT(in ) :: kimin, kimax, kjmin, kjmax
     INTEGER(KIND=4),            INTENT(out) :: knn
     INTEGER(KIND=4),            INTENT(in ) :: kpi, kpj
-    INTEGER(KIND=4),            INTENT(out) :: knormu, knormv
+    INTEGER(KIND=4), OPTIONAL,  INTENT(out) :: knormu, knormv
     REAL(KIND=4), DIMENSION(kpi+kpj), INTENT(out) :: pxx, pyy
 
     INTEGER(KIND=4) :: ji, jj, jk   ! dummy loop index
@@ -316,8 +316,8 @@ CONTAINS
     !This will produce the following sign convention:
     !    West-to-est line (dx>0, dy=0)=> -My*dx (-ve for a northward flow)
     !    South-to-north   (dy>0, dx=0)=>  Mx*dy (+ve for an eastward flow)
-    knormu =  idiry
-    knormv = -idirx
+    IF ( PRESENT (knormu) ) knormu =  idiry
+    IF ( PRESENT (knormv) ) knormv = -idirx
 
     ! .. Compute equation:  ryj = zaj rxi + zbj [valid in the (i,j) plane]
     IF ( (zxi1 -zxi0) /=  0 ) THEN

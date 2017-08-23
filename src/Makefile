@@ -31,7 +31,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfpendep cdfzonalsum cdficediags cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfconvert cdfclip  cdfbathy cdfvar \
-       cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk \
+       cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk cdfisf_diags \
        cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask cdfmeshmask\
        cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
@@ -156,8 +156,8 @@ cdfokubow: cdfio.o  cdfokubow.f90
 cdfmsk: cdfio.o  cdfmsk.f90
 	$(F90) cdfmsk.f90 -o $(BINDIR)/cdfmsk cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfmkmask: cdfio.o  cdfmkmask.f90
-	$(F90) cdfmkmask.f90 -o $(BINDIR)/cdfmkmask cdfio.o modcdfnames.o $(FFLAGS)
+cdfmkmask: cdfio.o modutils.o cdftools.o cdfmkmask.f90
+	$(F90) cdfmkmask.f90 -o $(BINDIR)/cdfmkmask cdfio.o modutils.o cdftools.o modcdfnames.o $(FFLAGS)
 
 cdfmeshmask: cdfio.o  cdfmeshmask.f90
 	$(F90) cdfmeshmask.f90 -o $(BINDIR)/cdfmeshmask cdfio.o modcdfnames.o $(FFLAGS)
@@ -464,6 +464,9 @@ cdfisf_rnf: cdfio.o  cdfisf_rnf.f90
 
 cdfisf_poolchk: cdfio.o  modutils.o cdfisf_poolchk.f90
 	$(F90)   cdfisf_poolchk.f90  -o $(BINDIR)/cdfisf_poolchk cdfio.o modutils.o modcdfnames.o $(FFLAGS)
+
+cdfisf_diags: cdfio.o  modutils.o cdfisf_diags.f90
+	$(F90)   cdfisf_diags.f90  -o $(BINDIR)/cdfisf_diags cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
 cdficb_clim: cdfio.o  cdficb_clim.f90
 	$(F90) cdficb_clim.f90 -o $(BINDIR)/cdficb_clim cdfio.o modcdfnames.o $(FFLAGS)
