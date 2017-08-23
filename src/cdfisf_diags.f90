@@ -107,7 +107,7 @@ PROGRAM cdfisf_diags
   ! setting up the building command in global attribute
   CALL SetGlobalAtt (cglobal)  ! append command name to global attribute
 
-  ijarg = 1  ; iw = 0
+  ijarg = 1  
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE (cldum )
