@@ -162,6 +162,7 @@ PROGRAM cdfbn2
      !  Compute from bottom to top (for vertical integration)
      ztemp(:,:,idown) = getvar(cf_tfil, cn_votemper,  npk-1, npiglo, npjglo, ktime=jt)
      zsal( :,:,idown) = getvar(cf_tfil, cn_vosaline,  npk-1, npiglo, npjglo, ktime=jt)
+     zwk(:,:,idown)   = 0.0
 
      DO jk = npk-1, 2, -1 
         PRINT *,'level ',jk
