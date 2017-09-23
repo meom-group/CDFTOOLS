@@ -9,7 +9,7 @@ PROGRAM cdfthic
   !!               Handle full step configuration using the -full option.
   !!
   !!  ** Method  : Compute the vertical sum of e3[tuv]*[tuv]mask 
-  !!                 (+ssh with the -ssh option)
+  !!                 (+ssh if used with the -ssh option)
   !!
   !!               Based on cdfvertmean routine
   !!
@@ -48,7 +48,6 @@ PROGRAM cdfthic
   CHARACTER(LEN=256)                         :: cf_in, cn_fe3, cn_ve3! input file and variable
   CHARACTER(LEN=256)                         :: cf_out='thic.nc'     ! output file 
   CHARACTER(LEN=256)                         :: cldum                ! dummy string for command line browsing
-  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_in             ! name of output variables
 
   LOGICAL                                    :: lfull  =.FALSE.      ! flag for full step computation
   LOGICAL                                    :: lchk   =.FALSE.      ! flag for missing files
@@ -80,11 +79,11 @@ PROGRAM cdfthic
      PRINT *,'        -o OUT-file      : use specified output file instead of ', TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
-     PRINT *,'       ', TRIM(cn_fzgr),', and ',TRIM(cn_fmsk)
+     PRINT *,'      ', TRIM(cn_fzgr),', and ',TRIM(cn_fmsk)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file :  thic.nc (or specified with -o option)'
-     PRINT *,'         variables :  thic (at either T, U, or V point)'
+     PRINT *,'         variables :  thic_T, thic_U, or thic_V (according to grid)'
      PRINT *,'      '
      STOP 
   ENDIF
@@ -178,8 +177,18 @@ PROGRAM cdfthic
      END DO
 
      IF ( lssh ) THEN
-       ssh(:,:) = 0.e0
-       ssh(:,:) = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
+       e3(:,:) = 0.e0
+       e3(:,:) = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt) ! e3 <= ssh (to save memory)
+       SELECT CASE (cgrid)
+         CASE ('T')
+           ssh(:,:) = e3(:,:)
+         CASE ('U')
+           ssh(npiglo,:) = e3(npiglo,:) ! to improve if periodic domain
+           ssh(1:npiglo-1,:) = 0.5 * ( e3(1:npiglo-1,:) + e3(2:npiglo,:) )  ! ssh at U points
+         CASE ('V')
+           ssh(:,npjglo) = e3(:,npjglo)
+           ssh(:,1:npjglo-1) = 0.5 * ( e3(:,1:npjglo-1) + e3(:,2:npjglo) )  ! ssh at V points
+       END SELECT
        dl_vint1(:,:) = dl_vint1(:,:) + ssh(:,:) * 1.d0
      ENDIF
 
@@ -205,7 +214,7 @@ CONTAINS
     ! prepare output variable
     ipk(:)                       = npk
 
-    stypvar(1)%cname             = 'thic_'//TRIM(cv_in(1))
+    stypvar(1)%cname             = 'thic_'//TRIM(cgrid)
     stypvar(1)%cunits            = 'm'
     stypvar(1)%rmissing_value    = ppspval
     stypvar(1)%valid_min         = 0.0
