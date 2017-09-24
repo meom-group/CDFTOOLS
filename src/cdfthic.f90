@@ -47,7 +47,7 @@ PROGRAM cdfthic
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE  :: dtim                 ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE  :: dl_vint1             ! verticall int quantity         
 
-  CHARACTER(LEN=1)                           :: cgrid='T'            ! grod used for thickness computation
+  CHARACTER(LEN=1)                           :: cgrid='x'            ! grid used for thickness computation
   CHARACTER(LEN=256)                         :: cf_in, cn_fe3, cn_ve3! input file and variable
   CHARACTER(LEN=256)                         :: cf_out='thic.nc'     ! output file 
   CHARACTER(LEN=256)                         :: cldum                ! dummy string for command line browsing
@@ -63,19 +63,17 @@ PROGRAM cdfthic
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfthic [-vvl <file>] [-ssh <file>] [-full]'
-     PRINT *,'                 [-U] [-V] [-o <OUT-file>]'
+     PRINT *,'                 [-T] [-U] [-V] [-o <OUT-file>]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the water column thickness at T, U, or V points.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        (default)        : partial step computation (constant grid metrics)'
-     PRINT *,'                           on T points'
      PRINT *,'        -full            : full step computation (constant grid metrics)' 
      PRINT *,'        -vvl INPUT-file  : directly use time-varying vertical metrics in INPUT-file'
      PRINT *,'        -ssh INPUT-file  : use time-varying ssh and initial grid properties' 
-     PRINT *,'        -U               : computation on U points instead of default T points'
-     PRINT *,'        -V               : computation on V points instead of default T points'
+     PRINT *,'        -T -U -V         : grid computation (specify one of them)'
      PRINT *,'        -o OUT-file      : use specified output file instead of ', TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -97,10 +95,11 @@ PROGRAM cdfthic
      CASE ( '-vvl'  ) ; CALL getarg (ijarg, cf_in    ) ; lg_vvl = .TRUE. ; ijarg = ijarg + 1
      CASE ( '-ssh'  ) ; CALL getarg (ijarg, cf_in    ) ; lssh   = .TRUE. ; ijarg = ijarg + 1
      CASE ( '-full' ) ; lfull  = .TRUE. 
+     CASE ( '-T'    ) ; cgrid  = 'T'
      CASE ( '-U'    ) ; cgrid  = 'U'
      CASE ( '-V'    ) ; cgrid  = 'V'
      CASE ( '-o'    ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown options.' ; STOP 99
+     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown options.' ; STOP 90
      END SELECT
   END DO
 
@@ -108,20 +107,25 @@ PROGRAM cdfthic
   IF ( lg_vvl ) ijarg = ijarg + 1
   IF ( lssh   ) ijarg = ijarg + 1
   IF ( lfull  ) ijarg = ijarg + 1
-  IF ( ijarg .GT. 1 ) PRINT *,' ERROR : choose no more than one option among -vvl -ssh -full' ; STOP 99
+  IF ( ijarg .GT. 1 ) THEN
+   PRINT *,' ERROR : choose no more than one option among -vvl -ssh -full'
+   STOP 91
+  ENDIF
 
   IF ( lg_vvl ) THEN
     cn_fe3 = cf_in
     SELECT CASE (cgrid)
-      CASE ('T') cn_ve3 = cn_ve3tvvl
-      CASE ('U') cn_ve3 = cn_ve3uvvl
-      CASE ('V') cn_ve3 = cn_ve3vvvl
+      CASE ('T')   ; cn_ve3 = cn_ve3tvvl
+      CASE ('U')   ; cn_ve3 = cn_ve3uvvl
+      CASE ('V')   ; cn_ve3 = cn_ve3vvvl
+      CASE DEFAULT ; PRINT *,' ERROR : You need to choose one option among -T, -U and -V' ; STOP 92
     END SELECT
   ELSE
     SELECT CASE (cgrid)
-      CASE ('T') cn_fe3 = cn_fe3t ; cn_ve3 = cn_ve3t
-      CASE ('U') cn_fe3 = cn_fe3u ; cn_ve3 = cn_ve3u
-      CASE ('V') cn_fe3 = cn_fe3v ; cn_ve3 = cn_ve3v
+      CASE ('T')   ; cn_fe3 = cn_fe3t ; cn_ve3 = cn_ve3t
+      CASE ('U')   ; cn_fe3 = cn_fe3u ; cn_ve3 = cn_ve3u
+      CASE ('V')   ; cn_fe3 = cn_fe3v ; cn_ve3 = cn_ve3v
+      CASE DEFAULT ; PRINT *,' ERROR : You need to choose one option among -T, -U and -V' ; STOP 93
     END SELECT
   ENDIF
 
@@ -130,7 +134,7 @@ PROGRAM cdfthic
   lchk = chkfile ( cn_fzgr ) .OR. lchk
   lchk = chkfile ( cn_fhgr ) .OR. lchk
   lchk = chkfile ( cn_fmsk ) .OR. lchk
-  IF ( lchk ) STOP 99 ! missing files
+  IF ( lchk ) STOP 94 ! missing files
 
   IF ( lssh .AND. cgrid .NE. 'T' ) nvout=2
   ALLOCATE (stypvar(nvout), ipk(nvout), id_varout(nvout))
@@ -222,9 +226,9 @@ PROGRAM cdfthic
      ENDIF
 
      ! Output to netcdf file 
-     ierr = putvar(ncout, id_varout(1), REAL(dl_vint1), jk, 1, 1, ktime=jt)
+     ierr = putvar(ncout, id_varout(1), REAL(dl_vint1), 1, npiglo, npjglo, ktime=jt)
      IF ( lssh .AND. cgrid .NE. 'T' ) THEN
-       ierr = putvar(ncout, id_varout(2), ssh, jk, 1, 1, ktime=jt)
+       ierr = putvar(ncout, id_varout(2), REAL(ssh), 1, npiglo, npjglo, ktime=jt)
      ENDIF
 
   END DO  ! loop on time
@@ -243,8 +247,8 @@ CONTAINS
     !!
     !!----------------------------------------------------------------------
 
-    ! prepare output variable
-    ipk(:)                       = npk
+    ! prepare output variable(s)
+    ipk(:)                       = 1
 
     stypvar(1)%cname             = 'thic_'//TRIM(cgrid)
     stypvar(1)%cunits            = 'm'
@@ -269,16 +273,16 @@ CONTAINS
     ENDIF
 
     ! Initialize output file
-    ncout = create      (cf_out, 'none', npiglo, npjglo, 1  )
-    ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout  )
-    SELECT CASE (cgrid)
-      CASE( 'T' ) ierr  = putheadervar(ncout, 'none', npiglo, npjglo, 1, glamt, gphit)
-      CASE( 'U' ) ierr  = putheadervar(ncout, 'none', npiglo, npjglo, 1, glamu, gphiu)
-      CASE( 'V' ) ierr  = putheadervar(ncout, 'none', npiglo, npjglo, 1, glamv, gphiv)
-    END SELECT
+    ncout = create    (cf_out, 'none', npiglo, npjglo, 1  )
+    ierr  = createvar (ncout, stypvar, nvout, ipk, id_varout  )
+    !SELECT CASE (cgrid)
+    !  CASE( 'T' ) ; ierr = putheadervar(ncout, 'none', npiglo, npjglo, 1, glamt, gphit)
+    !  CASE( 'U' ) ; ierr = putheadervar(ncout, 'none', npiglo, npjglo, 1, glamu, gphiu)
+    !  CASE( 'V' ) ; ierr = putheadervar(ncout, 'none', npiglo, npjglo, 1, glamv, gphiv)
+    !END SELECT
 
-    dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
-    ierr  = putvar1d    (ncout, dtim,      npt, 'T')
+    dtim  = getvar1d (cf_in, cn_vtimec, npt     )
+    ierr  = putvar1d (ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 
