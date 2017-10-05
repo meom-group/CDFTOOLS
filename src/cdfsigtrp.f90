@@ -524,7 +524,7 @@ PROGRAM cdfsigtrp
      IF ( lntr ) THEN 
         dsig(:,1:nk)=sigmantr( zt, zs,         npts, nk)*zmask(:,:)
      ELSE
-        IF     ( refdep == -10.) THEN  ; dsig(:,1:nk)= -zt(:,:)  ! change sign 
+        IF     ( refdep == -10.) THEN  ; dsig(:,1:nk)= -zt(:,:)*zmask(:,:)  ! change sign 
         ELSEIF ( refdep ==   0.) THEN  ; dsig(:,1:nk)=sigma0( zt, zs,         npts, nk)*zmask(:,:)
         ELSE                           ; dsig(:,1:nk)=sigmai( zt, zs, refdep, npts, nk)*zmask(:,:)
         ENDIF
