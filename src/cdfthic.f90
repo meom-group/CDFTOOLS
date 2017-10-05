@@ -38,7 +38,7 @@ PROGRAM cdfthic
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: ipk, id_varout       ! levels and varid's of output vars
 
   REAL(KIND=4), PARAMETER                    :: ppspval= 9999.99     ! missing value
-  REAL(KIND=4), PARAMETER                    :: eps=1.e-9            ! epsilon
+  REAL(KIND=4), PARAMETER                    :: pp_eps=1.e-9         ! epsilon
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE  :: e3_1d                ! vertical metrics in case of full step
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: e3, ssh              ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: area1, area2, ztmp   ! used to interpolate ssh
@@ -69,12 +69,12 @@ PROGRAM cdfthic
      PRINT *,'       Compute the water column thickness at T, U, or V points.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        (default)        : partial step computation (constant grid metrics)'
-     PRINT *,'        -full            : full step computation (constant grid metrics)' 
-     PRINT *,'        -vvl INPUT-file  : directly use time-varying vertical metrics in INPUT-file'
-     PRINT *,'        -ssh INPUT-file  : use time-varying ssh and initial grid properties' 
-     PRINT *,'        -T -U -V         : grid computation (specify one of them)'
-     PRINT *,'        -o OUT-file      : use specified output file instead of ', TRIM(cf_out)
+     PRINT *,'        (default)    : partial step computation (constant grid metrics)'
+     PRINT *,'        -full        : full step computation (constant grid metrics)' 
+     PRINT *,'        -vvl <file>  : directly use time-varying vertical metrics in <file>'
+     PRINT *,'        -ssh <file>  : use time-varying ssh and initial grid properties' 
+     PRINT *,'        -T -U -V     : grid computation (specify one of them)'
+     PRINT *,'        -o OUT-file  : use specified output file instead of ', TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'      ', TRIM(cn_fzgr),', and ',TRIM(cn_fhgr),', and ',TRIM(cn_fmsk)
@@ -216,11 +216,11 @@ PROGRAM cdfthic
          CASE ('U') ! ssh at U points
            ssh(npiglo,:) = e3(npiglo,:) ! to improve if periodic domain
            ssh(1:npiglo-1,:) = 0.5 * (  e3(1:npiglo-1,:) * area1(1:npiglo-1,:) &
-           &                          + e3(2:npiglo  ,:) * area1(2:npiglo  ,:) ) / ( eps + area2(1:npiglo-1,:) )
+           &                          + e3(2:npiglo  ,:) * area1(2:npiglo  ,:) ) / ( pp_eps + area2(1:npiglo-1,:) )
          CASE ('V') ! ssh at V points
            ssh(:,npjglo) = e3(:,npjglo)
            ssh(:,1:npjglo-1) = 0.5 * (  e3(:,1:npjglo-1) * area1(:,1:npjglo-1) &
-           &                          + e3(:,2:npjglo  ) * area1(:,2:npjglo  ) ) / ( eps + area2(:,1:npjglo-1) )
+           &                          + e3(:,2:npjglo  ) * area1(:,2:npjglo  ) ) / ( pp_eps + area2(:,1:npjglo-1) )
        END SELECT
        dl_vint1(:,:) = dl_vint1(:,:) + ssh(:,:) * 1.d0
      ENDIF
