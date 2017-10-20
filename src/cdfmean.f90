@@ -678,7 +678,7 @@ CONTAINS
     DO WHILE ( cldum(1:1) /= '-' .AND. iiarg <= narg )
        CALL getarg( iiarg, cldum) ; iiarg=iiarg+1
     END DO
-    nbasin=iiarg-ijarg
+    nbasin=iiarg-ijarg-1
     ALLOCATE(cbasins(nbasin) )
     DO jbasin=1,nbasin
        CALL getarg( ijarg, cbasins(jbasin)) ; ijarg=ijarg+1
