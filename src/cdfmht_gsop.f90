@@ -151,6 +151,13 @@ PROGRAM cdfmht_gsop
   npiglo= getdim (cf_vfil,cn_x)
   npjglo= getdim (cf_vfil,cn_y)
   npk   = getdim (cf_vfil,cn_z)
+  npt   = getdim (cf_vfil,cn_t)
+
+  ! sanity check on npt
+  IF (npt > 1) THEN
+     PRINT *, 'E R R O R npt > 1 not yet coded, STOP'
+     STOP 99
+  END IF
 
   ! Detects newmaskglo file modif Alb 29/11/08 pour MERA
   INQUIRE( FILE=cn_fbasins, EXIST=llglo )
@@ -507,8 +514,8 @@ CONTAINS
     ncout = create(cf_out, cf_vfil,1,npjglo,1,cdep=cn_vdepthw)
     ierr  = createvar(ncout ,stypvar,jpgsop, ipk_gsop,id_varout_gsop )
     ierr  = putheadervar(ncout, cf_vfil,1, npjglo,1,pnavlon=rlon,pnavlat=rlat,pdep=gdepw)
-    dtim  = getvar1d(cf_vfil,cn_vtimec,1)
-    ierr  = putvar1d(ncout,dtim,1,'T')
+    dtim  = getvar1d(cf_vfil,cn_vtimec,npt)
+    ierr  = putvar1d(ncout,dtim,npt,'T')
 
   END SUBROUTINE CreateOutput
 
