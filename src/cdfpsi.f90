@@ -212,17 +212,17 @@ PROGRAM cdfpsi
   PRINT *, 'npk    = ', npk
   PRINT *, 'npt    = ', npt
   PRINT *, ' Option is use :'
-  PRINT *, '    -full :', lfull
-  PRINT *, '    -mask :', lmask
-  PRINT *, '    -mean :', lmean
-  PRINT *, '    -ssh  :', lssh
-  PRINT *, '    -open :', lopen
-  PRINT *, '    -ref  :', iiref, ijref
-  PRINT *, '  U-comp  :', ll_u
-  PRINT *, '  V-comp  :', ll_v
-  PRINT *, '      -o  :', TRIM(cf_out)
-  PRINT *, '    -lnc4 :', lnc4
-  PRINT *, '    -vvl  :', lg_vvl
+  PRINT *, '    -full : ', lfull
+  PRINT *, '    -mask : ', lmask
+  PRINT *, '    -mean : ', lmean
+  PRINT *, '    -ssh  : ', lssh
+  PRINT *, '    -open : ', lopen
+  PRINT *, '    -ref  : ', iiref, ijref
+  PRINT *, '  U-comp  : ', ll_u
+  PRINT *, '  V-comp  : ', ll_v
+  PRINT *, '      -o  : ', TRIM(cf_out)
+  PRINT *, '    -lnc4 : ', lnc4
+  PRINT *, '    -vvl  : ', lg_vvl
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo)                 )
