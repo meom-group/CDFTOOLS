@@ -369,10 +369,6 @@ CONTAINS
     ! and the other 
     dec2d(0,1) = 1.d0 ;  dec2d(2,1) = 1.d0
 
-    ! normalize
-    dl_sum     = SUM(dec2d)
-    dec2d(:,:) = dec2d(:,:) / dl_sum
-
   END SUBROUTINE inithann
 
   SUBROUTINE initshap(pfn, knj)
@@ -524,7 +520,8 @@ CONTAINS
 
              ! we don't compute in land
              IF ( kiw(ji,jj) == 1 ) THEN
-                py(ji,jj) = SUM( dec2d(:,:) * ztmp(iiminus1:iiplus1,ijminus1:ijplus1) )
+                py(ji,jj) = SUM( dec2d(:,:) * ztmp(iiminus1:iiplus1,ijminus1:ijplus1) * kiw(iiminus1:iiplus1,ijminus1:ijplus1) )
+                py(ji,jj) = py(ji,jj) / SUM( dec2d(:,:) * kiw(iiminus1:iiplus1,ijminus1:ijplus1) )   ! normalisation
              ENDIF
           ENDDO
        ENDDO
