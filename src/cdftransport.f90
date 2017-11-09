@@ -333,6 +333,7 @@ PROGRAM cdftransport
      cn_fe3v  = cf_vfil
      cf_vtfil = cf_vfil
      cf_tfil  = cf_vfil
+     cf_ufil  = cf_vfil
   ENDIF
 
   ! checking if all required files are available
