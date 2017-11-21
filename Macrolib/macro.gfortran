@@ -20,5 +20,5 @@ OMP=
 FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6)  -fno-second-underscore -ffree-line-length-256 $(OMP)
 LMPI=-lmpich
 
-INSTALL=$(HOME)/bin
-INSTALL_MAN=$(HOME)/man
+INSTALL=$(WORKDIR)/bin
+INSTALL_MAN=$(WORKDIR)/man
