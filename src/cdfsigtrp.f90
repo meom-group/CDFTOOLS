@@ -294,7 +294,7 @@ PROGRAM cdfsigtrp
   CALL SetGlobalAtt( cglobal)
 
   ! get the attribute iweight from vomecrty
-  iweight = getatt(cf_ufil, cn_vomecrty, 'iweight')
+  iweight = getatt(cf_vfil, cn_vomecrty, 'iweight')
   IF ( iweight == 0 ) iweight = 1  ! if 0 means that it is not defined.
 
   ALLOCATE ( stypvar(nboutput), ipk(nboutput), id_varout(nboutput) )
