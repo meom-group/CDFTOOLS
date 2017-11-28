@@ -421,8 +421,7 @@ PROGRAM cdfsigtrp
         zt( :,:) = getvaryz(cf_tfil, cn_vosaline, iimin+1, npts, npk, kjmin=ijmin+1 )
         zmask = 1.
         WHERE ( zs == zsps .OR. zt == zsps ) zmask = 0.
-
-        zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
+        zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )*zmask
 
         ! limitation to 'wet' points
         DO jk = 1, npk
@@ -435,7 +434,7 @@ PROGRAM cdfsigtrp
         ! temperature
         zt(:,:) = getvaryz(cf_tfil, cn_votemper, iimin  , npts, npk, kjmin=ijmin+1 )
         zz(:,:) = getvaryz(cf_tfil, cn_votemper, iimin+1, npts, npk, kjmin=ijmin+1 )
-        zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) )
+        zt(:,:) = 0.5 * ( zt(:,:) + zz(:,:) ) *zmask
 
      ELSE                   ! zonal section at j=ijmin=ijmax ( include BRK-line sections)
 
@@ -531,6 +530,15 @@ PROGRAM cdfsigtrp
      ENDIF
 
      dsig(:,0)=dsig(:,1)-1.e-4   ! dummy layer for easy interpolation
+
+! on each vertical column of water set density of land point to be the bottom most wet density
+     DO ji = 1, npts
+        DO jk = 1, nk
+            IF ( zmask (ji,jk) == 0 ) THEN
+               dsig(ji,jk)= dsig(ji,jk-1) +1.e-5  ! in order to have an increase
+            ENDIF
+        ENDDO
+     ENDDO
 
      ! compute depth of isopynals (nbins+1 )
      DO  jiso =1, nbins+1
