@@ -124,9 +124,6 @@ PROGRAM cdftransport
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e3u, e3v       ! vertical metric
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: glamf          ! longitudes of F points
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphif          ! latitudes of F points
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zu, zut, zus   ! Zonal velocities and uT uS
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zv, zvt, zvs   ! Meridional velocities and uT uS
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zt, zs         ! temperature and salinity
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdum           ! dummy (1x1) array for ncdf output
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zuobc, zvobc   ! arrays for OBC files (vertical slice)
 
@@ -138,6 +135,9 @@ PROGRAM cdftransport
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwkus, dwkvs   ! salt   transport at each cell boundary
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwkup, dwkvp   ! volume transport in the positive direction
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dwkum, dwkvm   !  volume transport in the negatibe direction
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dlu, dlut, dlus   ! Zonal velocities and uT uS
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dlv, dlvt, dlvs   ! Meridional velocities and uT uS
+  REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dlt, dls         ! temperature and salinity
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dtrpu,  dtrpv  ! volume transport integrated in depth class
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dtrput, dtrpvt ! heat transport integrated in depth class
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dtrpus, dtrpvs ! salt transport integrated in depth class
@@ -409,7 +409,7 @@ PROGRAM cdftransport
   rdum(:,:)=0.e0
 
   ! Allocate arrays
-  ALLOCATE (   zu(npiglo,npjglo),   zv(npiglo,npjglo) )
+  ALLOCATE (   dlu(npiglo,npjglo),   dlv(npiglo,npjglo) )
   ALLOCATE ( dwku(npiglo,npjglo), dwkv(npiglo,npjglo) )
   ALLOCATE ( dtrpu(npiglo,npjglo,nclass), dtrpv(npiglo,npjglo,nclass))
   ALLOCATE ( dvoltrpsum(nclass), dvolallegcl(nclass) )
@@ -424,8 +424,8 @@ PROGRAM cdftransport
   ENDIF
 
   IF ( lheat ) THEN
-     ALLOCATE (   zut(npiglo,npjglo),   zus(npiglo,npjglo) )
-     ALLOCATE (   zvt(npiglo,npjglo),   zvs(npiglo,npjglo) )
+     ALLOCATE (   dlut(npiglo,npjglo),   dlus(npiglo,npjglo) )
+     ALLOCATE (   dlvt(npiglo,npjglo),   dlvs(npiglo,npjglo) )
      ALLOCATE ( dwkut(npiglo,npjglo), dwkus(npiglo,npjglo) )
      ALLOCATE ( dwkvt(npiglo,npjglo), dwkvs(npiglo,npjglo) )
      ALLOCATE ( dtrput(npiglo,npjglo,nclass), dtrpvt(npiglo,npjglo,nclass))
@@ -433,7 +433,7 @@ PROGRAM cdftransport
      ALLOCATE ( dheatrpsum(nclass), dsaltrpsum(nclass)     )
      ALLOCATE ( dheatallegcl(nclass), dsaltallegcl(nclass) )
      IF ( l_tsfil ) THEN
-        ALLOCATE (zt(npiglo+1,npjglo+1), zs(npiglo+1, npjglo+1) )
+        ALLOCATE (dlt(npiglo+1,npjglo+1), dls(npiglo+1, npjglo+1) )
      ENDIF
   ENDIF
   !
@@ -520,52 +520,52 @@ PROGRAM cdftransport
         PRINT *,'level ',jk
         ! Get velocities, temperature and salinity fluxes at jk
         IF ( ltest ) THEN
-           zu (:,:) = udum ; zv (:,:) = vdum
+           dlu (:,:) = udum ; dlv (:,:) = vdum
            IF (lheat) THEN
-              zut(:,:) = udum ; zvt(:,:) = vdum
-              zus(:,:) = udum ; zvs(:,:) = vdum
+              dlut(:,:) = udum ; dlvt(:,:) = vdum
+              dlus(:,:) = udum ; dlvs(:,:) = vdum
            ENDIF
         ELSEIF ( lobc ) THEN
-           IF      ( l_zonal ) THEN ; zu(:,1)=zuobc(:,jk) ; zv(:,1)=zvobc(:,jk) 
-           ELSE IF ( l_merid ) THEN ; zu(1,:)=zuobc(:,jk) ; zv(1,:)=zvobc(:,jk) 
+           IF      ( l_zonal ) THEN ; dlu(:,1)=zuobc(:,jk) ; dlv(:,1)=zvobc(:,jk) 
+           ELSE IF ( l_merid ) THEN ; dlu(1,:)=zuobc(:,jk) ; dlv(1,:)=zvobc(:,jk) 
            ENDIF
-           IF ( lspu ) WHERE ( zu == zspu ) zu = 0.
-           IF ( lspv ) WHERE ( zv == zspv ) zv = 0.
+           IF ( lspu ) WHERE ( dlu == zspu ) dlu = 0.d0
+           IF ( lspv ) WHERE ( dlv == zspv ) dlv = 0.d0
         ELSE
            IF ( l_self ) THEN
-              zu(:,:) = 0.
+              dlu(:,:) = 0.d0
            ELSE
-              zu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
+              dlu (:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=itime)
            ENDIF
-           zv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
-           IF ( lspu ) WHERE ( zu == zspu ) zu = 0.
-           IF ( lspv ) WHERE ( zv == zspv ) zv = 0.
+           dlv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
+           IF ( lspu ) WHERE ( dlu == zspu ) dlu = 0.d0
+           IF ( lspv ) WHERE ( dlv == zspv ) dlv = 0.d0
            IF (lheat) THEN
               IF ( l_tsfil ) THEN
-                 zt(:,:) = 0. ; zs(:,:) = 0.
-                 zt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
-                 zs(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
+                 dlt(:,:) = 0.d0 ; dls(:,:) = 0.d0
+                 dlt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
+                 dls(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
                  IF  (l_self ) THEN
-                    zut(:,:) = 0.
-                    zus(:,:) = 0.
-                    zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zt(1:npiglo,1:npjglo)
-                    zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) *  zs(1:npiglo,1:npjglo)
+                    dlut(:,:) = 0.d0
+                    dlus(:,:) = 0.d0
+                    dlvt(1:npiglo,1:npjglo) = dlv(1:npiglo,1:npjglo) *  dlt(1:npiglo,1:npjglo)
+                    dlvs(1:npiglo,1:npjglo) = dlv(1:npiglo,1:npjglo) *  dls(1:npiglo,1:npjglo)
                  ELSE
-                    zut(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(2:npiglo+1,1:npjglo  ))
-                    zus(1:npiglo,1:npjglo) = zu(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(2:npiglo+1,1:npjglo  ))
-                    zvt(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zt(1:npiglo,1:npjglo) + zt(1:npiglo,  2:npjglo+1))
-                    zvs(1:npiglo,1:npjglo) = zv(1:npiglo,1:npjglo) * 0.5* ( zs(1:npiglo,1:npjglo) + zs(1:npiglo,  2:npjglo+1))
+                    dlut(1:npiglo,1:npjglo) = dlu(1:npiglo,1:npjglo) * 0.5d0* ( dlt(1:npiglo,1:npjglo) + dlt(2:npiglo+1,1:npjglo  ))
+                    dlus(1:npiglo,1:npjglo) = dlu(1:npiglo,1:npjglo) * 0.5d0* ( dls(1:npiglo,1:npjglo) + dls(2:npiglo+1,1:npjglo  ))
+                    dlvt(1:npiglo,1:npjglo) = dlv(1:npiglo,1:npjglo) * 0.5d0* ( dlt(1:npiglo,1:npjglo) + dlt(1:npiglo,  2:npjglo+1))
+                    dlvs(1:npiglo,1:npjglo) = dlv(1:npiglo,1:npjglo) * 0.5d0* ( dls(1:npiglo,1:npjglo) + dls(1:npiglo,  2:npjglo+1))
                  ENDIF
               ELSE
                  IF ( l_self ) THEN
-                    zut(:,:) = 0.
-                    zus(:,:) = 0.
+                    dlut(:,:) = 0.d0
+                    dlus(:,:) = 0.d0
                  ELSE
-                    zut(:,:) = getvar(cf_vtfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
-                    zus(:,:) = getvar(cf_vtfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
+                    dlut(:,:) = getvar(cf_vtfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
+                    dlus(:,:) = getvar(cf_vtfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
                  ENDIF
-                 zvt(:,:) = getvar(cf_vtfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
-                 zvs(:,:) = getvar(cf_vtfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
+                 dlvt(:,:) = getvar(cf_vtfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
+                 dlvs(:,:) = getvar(cf_vtfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
               ENDIF
            ENDIF
         ENDIF
@@ -584,30 +584,30 @@ PROGRAM cdftransport
            ENDIF
         ENDIF
 
-        dwku (:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
-        dwkv (:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
+        dwku (:,:) = dlu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
+        dwkv (:,:) = dlv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
 
         IF ( lpm ) THEN 
            dwkup = 0.d0 ; dwkum = 0.d0
-           WHERE ( zu >= 0. ) 
-              dwkup(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
+           WHERE ( dlu >= 0.d0 ) 
+              dwkup(:,:) = dlu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
            ELSEWHERE         
-              dwkum(:,:) = zu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
+              dwkum(:,:) = dlu (:,:)*e2u(:,:)*e3u(:,:)*1.d0
            END WHERE
 
            dwkvp = 0.d0 ; dwkvm = 0.d0
-           WHERE ( zv >= 0. ) 
-              dwkvp(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
+           WHERE ( dlv >= 0.d0 ) 
+              dwkvp(:,:) = dlv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
            ELSEWHERE         ;
-              dwkvm(:,:) = zv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
+              dwkvm(:,:) = dlv (:,:)*e1v(:,:)*e3v(:,:)*1.d0
            END WHERE
         ENDIF
 
         IF ( lheat ) THEN
-           dwkut(:,:) = zut(:,:)*e2u(:,:)*e3u(:,:)*1.d0
-           dwkvt(:,:) = zvt(:,:)*e1v(:,:)*e3v(:,:)*1.d0
-           dwkus(:,:) = zus(:,:)*e2u(:,:)*e3u(:,:)*1.d0
-           dwkvs(:,:) = zvs(:,:)*e1v(:,:)*e3v(:,:)*1.d0
+           dwkut(:,:) = dlut(:,:)*e2u(:,:)*e3u(:,:)*1.d0
+           dwkvt(:,:) = dlvt(:,:)*e1v(:,:)*e3v(:,:)*1.d0
+           dwkus(:,:) = dlus(:,:)*e2u(:,:)*e3u(:,:)*1.d0
+           dwkvs(:,:) = dlvs(:,:)*e1v(:,:)*e3v(:,:)*1.d0
         ENDIF
 
         ! integrates vertically 
