@@ -430,6 +430,7 @@ PROGRAM cdfsigtrp
               EXIT
            ENDIF
         ENDDO
+        PRINT *, ' NK = ',nk
 
         ! temperature
         zt(:,:) = getvaryz(cf_tfil, cn_votemper, iimin  , npts, npk, kjmin=ijmin+1 )
@@ -438,10 +439,6 @@ PROGRAM cdfsigtrp
 
      ELSE                   ! zonal section at j=ijmin=ijmax ( include BRK-line sections)
 
-        tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
-        eu(:)        = tmpz(:,1)
-        tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin, kjmin=ijmin)
-        rlonlat(:,1) = tmpz(:,1)  ! longitude in this case
 
         IF (lbrk ) THEN
            ! need to fix de3, ddepu, zu, zs, zt, nk , zmask
@@ -450,7 +447,11 @@ PROGRAM cdfsigtrp
                  de3(ji,:) = e3t1d(:)
               ENDDO
            ELSE
-              de3(  :,:    ) = getvarxz(cn_fe3v, cn_ve3v,     ijmin,   npts, npk, kimin=iimin+1 )
+              tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin+1, kjmin=ijmin)
+              eu(:)        = tmpz(:,1)
+              tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin+1, kjmin=ijmin)
+              rlonlat(:,1) = tmpz(:,1)  ! longitude in this case
+              de3(  :,:    ) = getvarxz(cf_brk,  cn_ve3v,     ijmin,   npts, npk, kimin=iimin+1 )
               ddepu(:,1:npk) = getvarxz(cf_brk,  cn_depu3d,   ijmin,   npts, npk, kimin=iimin+1 )
               ddepw(:,1:npk) = getvarxz(cf_brk,  cn_depw3d,   ijmin,   npts, npk, kimin=iimin+1 )
            ENDIF
@@ -459,15 +460,22 @@ PROGRAM cdfsigtrp
            zs(   :,:) = getvarxz(cf_vfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
            zmask(:,:) = getvarxz(cf_vfil, cn_vmask,    ijmin,   npts, npk, kimin=iimin+1 )
            ! limitation to 'wet' points
+           ! JMM Broken line mask have a 9999 fil value (to be improved)
+           WHERE(zmask == 9999.) zmask=0.
+
+           nk = npk
            DO jk = 1, npk
-              IF ( SUM(zmask(:,jk)) /= 0 ) THEN
+              IF ( SUM(zmask(:,jk)) == 0 ) THEN
                  nk=jk
-              ELSE
                  EXIT
               ENDIF
            ENDDO
            
         ELSE
+        tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
+        eu(:)        = tmpz(:,1)
+        tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin, kjmin=ijmin)
+        rlonlat(:,1) = tmpz(:,1)  ! longitude in this case
 
            ! use zt and zs as temporary variable for e3w
            IF ( lfull ) THEN
@@ -502,7 +510,7 @@ PROGRAM cdfsigtrp
 
            zmask = 1.
            WHERE ( zs == zsps .OR. zt == zsps ) zmask = 0.
-           zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )
+           zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )* zmask
 
            ! limitation to 'wet' points
            DO jk = 1, npk
@@ -511,6 +519,7 @@ PROGRAM cdfsigtrp
                  EXIT
               ENDIF
            ENDDO
+          PRINT *,'JMM nk  ', nk
 
            ! temperature
            zt(:,:) = getvarxz(cf_tfil, cn_votemper, ijmin  , npts, npk, kimin=iimin+1 )
@@ -531,7 +540,7 @@ PROGRAM cdfsigtrp
 
      dsig(:,0)=dsig(:,1)-1.e-4   ! dummy layer for easy interpolation
 
-! on each vertical column of water set density of land point to be the bottom most wet density
+!! on each vertical column of water set density of land point to be the bottom most wet density
      DO ji = 1, npts
         DO jk = 1, nk
             IF ( zmask (ji,jk) == 0 ) THEN
@@ -613,7 +622,7 @@ PROGRAM cdfsigtrp
   cv_dep='levels'
   ! need to call section_init again in order to reset cvarname, clongname if they where modified 
   ! previously in cdf_writ(  case lxtra=true )
-  IF (lxtra) THEN
+  IF (lxtra .AND. .NOT. lbrk) THEN
      CALL section_init(cf_section, csection,cvarname,clongname, iimina,iimaxa,ijmina,ijmaxa, nsection)
   ENDIF
 
