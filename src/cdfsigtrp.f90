@@ -447,18 +447,18 @@ PROGRAM cdfsigtrp
                  de3(ji,:) = e3t1d(:)
               ENDDO
            ELSE
-              tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin+1, kjmin=ijmin)
+              tmpz(:,:)    = getvar(cn_fhgr, cn_ve1v,   1, npts, 1, kimin=iimin, kjmin=ijmin)
               eu(:)        = tmpz(:,1)
-              tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin+1, kjmin=ijmin)
+              tmpz(:,:)    = getvar(cn_fhgr, cn_vlon2d, 1, npts, 1, kimin=iimin, kjmin=ijmin)
               rlonlat(:,1) = tmpz(:,1)  ! longitude in this case
-              de3(  :,:    ) = getvarxz(cf_brk,  cn_ve3v,     ijmin,   npts, npk, kimin=iimin+1 )
-              ddepu(:,1:npk) = getvarxz(cf_brk,  cn_depu3d,   ijmin,   npts, npk, kimin=iimin+1 )
-              ddepw(:,1:npk) = getvarxz(cf_brk,  cn_depw3d,   ijmin,   npts, npk, kimin=iimin+1 )
+              de3(  :,:    ) = getvarxz(cf_brk,  cn_ve3v,     ijmin,   npts, npk, kimin=iimin )
+              ddepu(:,1:npk) = getvarxz(cf_brk,  cn_depu3d,   ijmin,   npts, npk, kimin=iimin )
+              ddepw(:,1:npk) = getvarxz(cf_brk,  cn_depw3d,   ijmin,   npts, npk, kimin=iimin )
            ENDIF
-           zu(   :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin+1 )
-           zt(   :,:) = getvarxz(cf_vfil, cn_votemper, ijmin,   npts, npk, kimin=iimin+1 )
-           zs(   :,:) = getvarxz(cf_vfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
-           zmask(:,:) = getvarxz(cf_vfil, cn_vmask,    ijmin,   npts, npk, kimin=iimin+1 )
+           zu(   :,:) = getvarxz(cf_vfil, cn_vomecrty, ijmin,   npts, npk, kimin=iimin )
+           zt(   :,:) = getvarxz(cf_vfil, cn_votemper, ijmin,   npts, npk, kimin=iimin )
+           zs(   :,:) = getvarxz(cf_vfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin )
+           zmask(:,:) = getvarxz(cf_vfil, cn_vmask,    ijmin,   npts, npk, kimin=iimin )
            ! limitation to 'wet' points
            ! JMM Broken line mask have a 9999 fil value (to be improved)
            WHERE(zmask == 9999.) zmask=0.
