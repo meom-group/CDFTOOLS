@@ -122,7 +122,7 @@ PROGRAM cdfstdevw
   CALL CreateOutput
 
   ALLOCATE( zvbar(npiglo,npjglo), zvba2(npiglo,npjglo) )
-  ALLOCATE( dsdev(npiglo,npjglo), dtim(npt)            )
+  ALLOCATE( dsdev(npiglo,npjglo)                       )
 
   ierr = getvaratt(cf_in, cv_in, cl_units, rmiss, cl_longname, cl_shortname )
 
@@ -166,6 +166,7 @@ CONTAINS
     ierr  = createvar   (ncout,  stypvaro, 1,      ipko,   id_varout , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
 
+    ALLOCATE( dtim(npt) )
     dtim = getvar1d(cf_in, cn_vtimec, npt     )
     ierr = putvar1d(ncout, dtim,      npt, 'T')
 
