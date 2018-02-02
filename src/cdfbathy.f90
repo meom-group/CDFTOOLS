@@ -80,6 +80,7 @@ PROGRAM cdfbathy
   LOGICAL :: lmodif     = .FALSE., loverwrite = .FALSE.       ! all required flags for options
   LOGICAL :: lraz       = .FALSE., ldumpn     = .FALSE.       ! all required flags for options
   LOGICAL :: lrazb      = .FALSE., lsetb      = .FALSE.       ! all required flags for options
+  LOGICAL :: lsetz      = .FALSE.       ! all required flags for options
   LOGICAL :: lchk       = .FALSE., lfillpool  = .FALSE.       ! all required flags for options
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -112,6 +113,8 @@ PROGRAM cdfbathy
      PRINT 9999, '      (or -rb depmin )  '
      PRINT 9999, '   -set_below depmin    : any depth less than depmin in subarea will be replaced by depmin '
      PRINT 9999, '      (or -sb depmin ) '
+     PRINT 9999, '   -set_zone value      : all value in area will be set to value'
+     PRINT 9999, '      (or -sz value ) '
      PRINT 9999, '   -fullstep depmin     : sub area will be reshaped as full-step, below depmin'
      PRINT 9999, '      (or -fs depmin )    requires the presence of the file zgr_bat.txt (from ocean.output, eg )'
      PRINT 9999, '   -dumpzone (or -d )   : sub area will be output to an ascii file, which can be used by -replace'
@@ -161,6 +164,8 @@ PROGRAM cdfbathy
         ; lrazb =.TRUE. ; lmodif =.TRUE.
      CASE ('-set_below','-sb') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
         ; lsetb =.TRUE. ; lmodif =.TRUE.
+     CASE ('-set_zone','-sz') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
+        ; lsetz =.TRUE. ; lmodif =.TRUE.
      CASE ('-fullstep','-fs' ) ; lfullstep =.TRUE. ; lmodif=.TRUE.
         ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepmin
      CASE ('-append' , '-a'  ) ; lappend=.TRUE.
@@ -241,6 +246,7 @@ PROGRAM cdfbathy
      IF (lraz      )       CALL raz_zone  (iimin, iimax, ijmin, ijmax)
      IF (lrazb     )       CALL raz_below (iimin, iimax, ijmin, ijmax, rdepfill)
      IF (lsetb     )       CALL set_below (iimin, iimax, ijmin, ijmax, rdepfill)
+     IF (lsetz     )       CALL set_zone (iimin, iimax, ijmin, ijmax, rdepfill)
      IF (ldump     )       CALL dumpzone     (cf_dump, iimin, iimax, ijmin, ijmax)
      IF (ldumpn    )       CALL nicedumpzone (cf_dump, iimin, iimax, ijmin, ijmax)
      IF (lreplace  )       CALL replacezone  (cf_replace)
@@ -471,6 +477,21 @@ PROGRAM cdfbathy
             &                 bathy(kimin:kimax, kjmin:kjmax) = pdepmin
 
      END SUBROUTINE set_below
+
+     SUBROUTINE set_zone(kimin, kimax, kjmin, kjmax, pdepmin)
+       !!---------------------------------------------------------------------
+       !!                  ***  ROUTINE set_zone  ***
+       !!
+       !! ** Purpose : Set bathy points to pdepmin 
+       !!
+       !!----------------------------------------------------------------------
+       INTEGER(KIND=4), INTENT(in) :: kimin, kimax, kjmin, kjmax ! position of the data windows
+       REAL(KIND=4),    INTENT(in) :: pdepmin                    ! threshold bathy value
+       !!----------------------------------------------------------------------
+        bathy(kimin:kimax, kjmin:kjmax) =pdepmin
+
+     END SUBROUTINE set_zone
+
 
 
      SUBROUTINE dumpzone(cdumpf, kimin, kimax, kjmin, kjmax)
