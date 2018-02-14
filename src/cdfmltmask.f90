@@ -160,7 +160,17 @@ PROGRAM cdfmltmask
        ENDIF
   ENDIF
 
-  npt   = getdim (cf_in, cn_t    )
+  npt   = getdim (cf_in, cn_t, cdtrue=cn_vtimec, kstatus=ierr)
+  IF (ierr /= 0 ) THEN
+     npt  = getdim (cf_msk, 't', cdtrue=cn_vtimec, kstatus=ierr)
+       IF ( ierr /= 0 ) THEN
+            npt = getdim (cf_msk, 'time', cdtrue=cn_vtimec, kstatus=ierr)
+            IF ( ierr /= 0 ) THEN
+              PRINT *,' assume file with no time dimension'
+              npt=1
+            ENDIF
+       ENDIF
+  ENDIF
   ALLOCATE( nvpk(nvar) )
 
   DO jvar = 1, nvar
