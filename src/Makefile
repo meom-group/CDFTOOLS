@@ -28,7 +28,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfpsi cdfmoc  cdfmocsig cdfmean cdfdegrad \
        cdfheatc cdfzonalmean cdfzonalmeanvT cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfthic cdfvint cdffwc\
-       cdfpendep cdfzonalsum cdficediags cdfzonalout\
+       cdfpendep cdfzonalsum cdficediags cdficetrp cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfconvert cdfclip  cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk cdfisf_diags \
@@ -312,6 +312,9 @@ cdfmxlhcsc: cdfio.o  eos.o cdfmxlhcsc.f90
 
 cdficediags: cdfio.o  cdficediags.f90
 	$(F90) cdficediags.f90 -o $(BINDIR)/cdficediags cdfio.o modcdfnames.o $(FFLAGS)
+
+cdficetrp: cdfio.o  cdficetrp.f90
+	$(F90) cdficetrp.f90 -o $(BINDIR)/cdficetrp cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfzonalmean: cdfio.o  cdfzonalmean.f90
 	$(F90)  cdfzonalmean.f90 -o $(BINDIR)/cdfzonalmean cdfio.o modcdfnames.o $(FFLAGS) 

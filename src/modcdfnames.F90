@@ -155,8 +155,12 @@ MODULE modCdfNames
   ! ice variable names
   CHARACTER(LEN=256) :: cn_iicethic='iicethic' !: ice thickness
   CHARACTER(LEN=256) :: cn_ileadfra='ileadfra' !: ice concentration
-  CHARACTER(LEN=256) :: cn_iicethic3='sithic'  !: ice thickness (LIM3)
+  CHARACTER(LEN=256) :: cn_iicevelu='iicevelu' !: ice velocity U
+  CHARACTER(LEN=256) :: cn_iicevelv='iicevelv' !: ice velocity V
+  CHARACTER(LEN=256) :: cn_iicethic3='sivolu'  !: ice thickness (LIM3)
   CHARACTER(LEN=256) :: cn_ileadfra3='siconc'  !: ice concentration (LIM3)
+  CHARACTER(LEN=256) :: cn_iicevelu3='sivelu' !: ice velocity U (LIM3)
+  CHARACTER(LEN=256) :: cn_iicevelv3='sivelv' !: ice velocity V (LIM3)
   
   ! Bathymetry
   CHARACTER(LEN=256) :: cn_fbathymet='bathy_meter.nc' !: file Bathymetry in meters
@@ -231,7 +235,7 @@ MODULE modCdfNames
     NAMELIST/namvars/ cn_sozoutrp, cn_somevtrp
     NAMELIST/namvars/ cn_soicecov
     NAMELIST/namvars/ cn_vosigma0, cn_vosigmai, cn_vosigntr, cn_vodepiso, cn_isothick
-    NAMELIST/namvars/ cn_iicethic, cn_ileadfra
+    NAMELIST/namvars/ cn_iicethic, cn_ileadfra, cn_iicevelu, cn_iicevelv
     NAMELIST/namvars/ cn_invcfc,   cn_cfc11,    cn_pendep
 
     ! list of variable to be squared by cdfmoy
