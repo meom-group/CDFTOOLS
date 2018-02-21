@@ -177,6 +177,7 @@ PROGRAM cdftransport
 
   CHARACTER(LEN=256)                          :: cf_vtfil       ! VT file  (in)
   CHARACTER(LEN=256)                          :: cf_tfil        ! T file  (in)
+  CHARACTER(LEN=256)                          :: cf_sfil        ! S file  (in) optional
   CHARACTER(LEN=256)                          :: cf_ufil        ! U file   (in)
   CHARACTER(LEN=256)                          :: cf_vfil        ! V file   (in)
   CHARACTER(LEN=256)                          :: cf_out='section_trp.dat'  ! output file name (ASCII)
@@ -211,7 +212,7 @@ PROGRAM cdftransport
   narg= iargc()
   ! Print usage if no argument
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdftransport -u U-file -v V-file [-t T-file] [-vt VT-file] ...'
+     PRINT *,' usage : cdftransport -u U-file -v V-file [-t T-file] [-s S-file] [-vt VT-file]'
      PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... '
      PRINT *,'                  ... [-full] [-time jt] [-vvl] [-self] ...'
      PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix]'
@@ -237,6 +238,7 @@ PROGRAM cdftransport
      PRINT *,'                    and salt transport. This option is mandatory unless '
      PRINT *,'                    -noheat option is used.'
      PRINT *,'      [-t T-file]: Temperature and Salinity file used with -TS option.'
+     PRINT *,'      [-s S-file]: Salinity file (-TS option), if salinity not in T-file.'
      PRINT *,'      [-test u v]: use constant the u and v velocity components for sign '
      PRINT *,'                    test purpose.'
      PRINT *,'      [-noheat ] : use when heat and salt transport are not requested.'
@@ -288,6 +290,7 @@ PROGRAM cdftransport
   nclass = 1
   ijarg  = 1
   CALL SetGlobalAtt(cglobal)
+  cf_sfil='none'
 
   ! Browse command line for arguments and/or options
   DO WHILE (ijarg <= narg )
@@ -297,6 +300,7 @@ PROGRAM cdftransport
      CASE ('-u'     ) ; CALL getarg (ijarg, cf_ufil ) ; ijarg=ijarg+1 
      CASE ('-v'     ) ; CALL getarg (ijarg, cf_vfil ) ; ijarg=ijarg+1 
      CASE ('-t'     ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg=ijarg+1 
+     CASE ('-s'     ) ; CALL getarg (ijarg, cf_sfil ) ; ijarg=ijarg+1 
      CASE ('-test ' ) ; CALL getarg (ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) udum
         ;               CALL getarg (ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) vdum
         ;               ltest = .TRUE. 
@@ -315,6 +319,7 @@ PROGRAM cdftransport
      CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+  
 
   it = 1
   IF ( lg_vvl ) THEN
@@ -345,7 +350,9 @@ PROGRAM cdftransport
      lchk = lchk .OR. chkfile(cf_ufil)
      lchk = lchk .OR. chkfile(cf_vfil)
      IF (l_tsfil)  THEN 
+        IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
         lchk = lchk .OR. chkfile(cf_tfil )
+        lchk = lchk .OR. chkfile(cf_sfil )
      ELSE IF (lheat  ) THEN 
         lchk = lchk .OR. chkfile(cf_vtfil)
      ENDIF
@@ -544,7 +551,7 @@ PROGRAM cdftransport
               IF ( l_tsfil ) THEN
                  dlt(:,:) = 0.d0 ; dls(:,:) = 0.d0
                  dlt(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=itime)
-                 dls(1:npiglo,1:npjglo) =  getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
+                 dls(1:npiglo,1:npjglo) =  getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=itime)
                  IF  (l_self ) THEN
                     dlut(:,:) = 0.d0
                     dlus(:,:) = 0.d0
