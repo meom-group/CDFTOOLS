@@ -34,7 +34,7 @@ PROGRAM cdfeke
   INTEGER(KIND=4)                            :: ierr                ! Error status
   INTEGER(KIND=4)                            :: ivar                ! variable counter
   INTEGER(KIND=4)                            :: ip_eke, ip_mke, ip_tke  ! variable index
-  INTEGER(KIND=4), DIMENSION(2)              :: ipk, id_varout      ! 
+  INTEGER(KIND=4), DIMENSION(3)              :: ipk, id_varout      ! 
 
   REAL(KIND=4)                               :: ua, va              ! working arrays
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: uc, vc, u2, v2      ! velocities etc...
