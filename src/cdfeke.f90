@@ -33,14 +33,14 @@ PROGRAM cdfeke
   INTEGER(KIND=4)                            :: ncout               ! ncid of output file
   INTEGER(KIND=4)                            :: ierr                ! Error status
   INTEGER(KIND=4)                            :: ivar                ! variable counter
-  INTEGER(KIND=4)                            :: ip_eke, ip_mke      ! variable index
-  INTEGER(KIND=4), DIMENSION(2)              :: ipk, id_varout      ! 
+  INTEGER(KIND=4)                            :: ip_eke, ip_mke, ip_tke  ! variable index
+  INTEGER(KIND=4), DIMENSION(3)              :: ipk, id_varout      ! 
 
   REAL(KIND=4)                               :: ua, va              ! working arrays
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: uc, vc, u2, v2      ! velocities etc...
   REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: eke                 ! velocities etc...
-  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: rmke                ! Mean Kinetic energy
-
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: tke                 ! Mean Kinetic energy
+  REAL(KIND=4), DIMENSION (:,:), ALLOCATABLE :: rmke                ! Kinetic energy of the mean flow
   REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim                ! time variable
 
   CHARACTER(LEN=256)                         :: cf_out='eke.nc'     ! file name
@@ -53,12 +53,13 @@ PROGRAM cdfeke
   CHARACTER(LEN=256)                         :: cl_vomecrty         ! local name of V component
   CHARACTER(LEN=256)                         :: cl_vomecrty2        ! local name of V2 component
 
-  TYPE(variable), DIMENSION(2)               :: stypvar             !
+  TYPE(variable), DIMENSION(3)               :: stypvar             !
 
   LOGICAL                                    :: lchk                ! checking files existence
   LOGICAL                                    :: lperio = .FALSE.    ! checking E-W periodicity
   LOGICAL                                    :: leke   = .TRUE.     ! compute EKE
   LOGICAL                                    :: lmke   = .FALSE.    ! compute MKE
+  LOGICAL                                    :: ltke   = .FALSE.    ! compute TKE
   LOGICAL                                    :: lnc4   = .FALSE.    ! netcdf4 output (chunking and deflation)
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -67,7 +68,7 @@ PROGRAM cdfeke
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfeke -u U-file [-u2 U2-file]  -v V-file [-v2 V2-file] -t T-file ...'
-     PRINT *,'            ... [-mke] [-o OUT-file] [-nc4] [-var VAR-u VAR-v VAR-u2 VAR-v2]'
+     PRINT *,'           [-mke] [-tke] [-o OUT-file] [-nc4][-var VAR-u VAR-v VAR-u2 VAR-v2] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the Eddy Kinetic Energy from previously computed mean values'
@@ -87,7 +88,8 @@ PROGRAM cdfeke
      PRINT *,'       -t T-file  : any gridT or gridT2 (smaller) file, used for MKE header.'
      PRINT *,'             '
      PRINT *,'     OPTION :'
-     PRINT *,'       [-mke]  : output MKE field together with EKE. '
+     PRINT *,'       [-mke]  : output MKE (KE of mean flow) field together with EKE. '
+     PRINT *,'       [-tke]  : output TKE (Mean KE of flow) field together with EKE. '
      PRINT *,'       [-nc4]  : allow netcdf4 output with compression and chunking.'
      PRINT *,'       [-o output file]: specify output file name instead of ', TRIM(cf_out)
      PRINT *,'       [-var VAR-u VAR-v VAR-u2 VAR-v2]: specify the name of the mean and '
@@ -102,8 +104,9 @@ PROGRAM cdfeke
      PRINT *,'       netcdf file : ', TRIM(cf_out) , ' unless -o option in use.'
      PRINT *,'         variables : voeke (m2/s)'
      PRINT *,'         variables : vomke (m2/s) if required'
+     PRINT *,'         variables : votke (m2/s) if required'
      PRINT *,'      '
-     STOP 
+     STOP
   ENDIF
   !!
   !! Initialisation from 1st file (all file are assume to have the same geometry)
@@ -123,6 +126,7 @@ PROGRAM cdfeke
      CASE ( '-v2'  ) ; CALL getarg(ijarg, cf_v2fil ) ; ijarg = ijarg + 1
      CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil  ) ; ijarg = ijarg + 1
      CASE ( '-mke' ) ; lmke = .TRUE.
+     CASE ( '-tke' ) ; ltke = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ( '-var' ) ; CALL getarg(ijarg, cl_vozocrtx  ) ; ijarg = ijarg + 1
@@ -138,6 +142,7 @@ PROGRAM cdfeke
   IF ( cf_u2fil == 'none' .OR.  cf_v2fil == 'none' ) THEN 
      lmke = .TRUE.
      leke = .FALSE.
+     ltke = .FALSE.
   ENDIF
 
   lchk =           chkfile (cf_ufil )
@@ -173,6 +178,12 @@ PROGRAM cdfeke
      ALLOCATE( rmke(npiglo,npjglo)  )
      rmke(:,:) = 0.e0
   ENDIF
+  IF (ltke ) THEN
+     ALLOCATE( tke(npiglo,npjglo)  )
+     tke(:,:) = 0.e0
+  ENDIF
+
+
   ALLOCATE( dtim(npt) )
 
   CALL CreateOutput
@@ -203,6 +214,16 @@ PROGRAM cdfeke
            END DO
         ENDIF
 
+        IF ( ltke ) THEN
+           DO ji=2, npiglo
+              DO jj=2,npjglo
+                 ua = 0.5* (u2(ji,jj)+ u2(ji-1,jj))
+                 va = 0.5* (v2(ji,jj)+ v2(ji,jj-1))
+                 tke(ji,jj) = 0.5 * ( ua + va )
+              END DO
+           END DO
+        ENDIF
+
         IF ( lmke ) THEN
            DO ji=2, npiglo
               DO jj=2,npjglo
@@ -220,6 +241,10 @@ PROGRAM cdfeke
         IF ( lmke ) THEN 
            IF ( lperio ) rmke(1,:) = rmke(npiglo-1,:)
            ierr=putvar(ncout,id_varout(ip_mke), rmke, jk ,npiglo, npjglo, ktime=jt )
+        ENDIF
+        IF ( ltke ) THEN 
+           IF ( lperio ) tke(1,:) = tke(npiglo-1,:)
+           ierr=putvar(ncout,id_varout(ip_tke), tke, jk ,npiglo, npjglo, ktime=jt )
         ENDIF
      END DO
   END DO ! time loop
@@ -240,6 +265,7 @@ CONTAINS
     !!----------------------------------------------------------------------
     stypvar(1)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
     stypvar(2)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
+    stypvar(3)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
 
     ivar = 1
     IF ( leke ) THEN 
@@ -269,9 +295,26 @@ CONTAINS
        stypvar(ip_mke)%cshort_name       = 'vomke'
        stypvar(ip_mke)%conline_operation = 'N/A'
        stypvar(ip_mke)%caxis             = 'TZYX'
+       ivar = ivar + 1
     ENDIF
 
-    ivar = MAX( ip_mke, ip_eke) ! set ivar to the effective number of variables to be output
+    IF ( ltke ) THEN
+       ip_tke=ivar
+       ipk(ip_tke)                       = npk
+       stypvar(ip_tke)%cname             = 'votke'
+       stypvar(ip_tke)%cunits            = 'm2/s2'
+       stypvar(ip_tke)%rmissing_value    = 0.
+       stypvar(ip_tke)%valid_min         = 0.
+       stypvar(ip_tke)%valid_max         = 10000.
+       stypvar(ip_tke)%clong_name        = 'Total_Kinetic_Energy'
+       stypvar(ip_tke)%cshort_name       = 'votke'
+       stypvar(ip_tke)%conline_operation = 'N/A'
+       stypvar(ip_tke)%caxis             = 'TZYX'
+       ivar = ivar + 1
+    ENDIF
+
+
+    ivar = MAX( ip_mke, ip_eke, ip_tke) ! set ivar to the effective number of variables to be output
 
     ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       , ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar, ivar,   ipk,    id_varout , ld_nc4=lnc4 )
