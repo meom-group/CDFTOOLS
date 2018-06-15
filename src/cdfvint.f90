@@ -29,6 +29,8 @@ PROGRAM cdfvint
   INTEGER(KIND=4)                           :: ierr,  iko, it   ! working integer
   INTEGER(KIND=4)                           :: narg, iargc, ijarg  ! command line 
   INTEGER(KIND=4)                           :: npiglo, npjglo      ! size of the domain
+  INTEGER(KIND=4)                           :: iimin=0, iimax=0    !
+  INTEGER(KIND=4)                           :: ijmin=0, ijmax=0    !
   INTEGER(KIND=4)                           :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                           :: npko                ! size of the domain
   INTEGER(KIND=4),             DIMENSION(1) :: ipk, id_varout      ! only one output variable
@@ -44,6 +46,7 @@ PROGRAM cdfvint
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: e31d                ! vertical metrics in case of full step
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zt                  ! working input variable
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat          ! output longitude, latitude
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask               ! npiglo x npjglo
 
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                ! time counter
@@ -71,6 +74,7 @@ PROGRAM cdfvint
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfvint -f T-file [-v IN-var] [-GSOP] [-OCCI] [-full] [-vvl] ...'
+     PRINT *,'              ... [-w imin imax jmin jmax ] ...'
      PRINT *,'              ... [-tmean] [-smean] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -93,6 +97,8 @@ PROGRAM cdfvint
      PRINT *,'        [-vvl]   : use time-varying metrics for vertical integration'
      PRINT *,'               (still some details to fix for the last cell including the'
      PRINT *,'                target deptht).'
+     PRINT *,'        [-w imin imax jmin jmax ] : limit the vertical integral to a subdomain'
+     PRINT *,'               specified by imin, imax, jmin, jmax.'
      PRINT *,'        [-tmean] : output mean temperature instead of heat content'
      PRINT *,'        [-smean] : output mean salinity instead of PSU.m'
      PRINT *,'        [-o OUT-file] : use specified output file instead of <IN-var>.nc'
@@ -130,6 +136,11 @@ PROGRAM cdfvint
      CASE ( '-tmean') ; ltmean= .TRUE. 
      CASE ( '-smean') ; lsmean= .TRUE. 
      CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
+     CASE ('-w'     ) ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) iimin
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) iimax
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ijmin
+        ;               CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ijmax
+     
      CASE ( '-nc4'  ) ; lnc4  = .TRUE. 
      CASE ( '-o'    ) ; lfout = .TRUE. ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
      CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
@@ -198,6 +209,12 @@ PROGRAM cdfvint
   npk    = getdim (cf_in, cn_z )
   npt    = getdim (cf_in, cn_t )
 
+  IF ( iimin /= 0 ) THEN ; npiglo = iimax -iimin + 1;  ELSE ; iimin=1 ;
+  ENDIF
+
+  IF ( ijmin /= 0 ) THEN ; npjglo = ijmax -ijmin + 1;  ELSE ; ijmin=1 ;
+  ENDIF
+
   IF ( lgsop ) THEN ; PRINT *,' using GSOP depths' ; npko = 7 ! SL: commented out
   ENDIF
 
@@ -216,6 +233,7 @@ PROGRAM cdfvint
   ! Allocate arrays
   ALLOCATE ( dtim(npt) )
   ALLOCATE ( tmask(npiglo,npjglo) )
+  ALLOCATE ( rlon(npiglo,npjglo), rlat(npiglo,npjglo)  )
   ALLOCATE ( zt(npiglo,npjglo)  )
   ALLOCATE ( e3t(npiglo,npjglo) )
   ALLOCATE ( e31d(npk)   )
@@ -240,6 +258,9 @@ PROGRAM cdfvint
      gdepo(npk)     = 6000.
   ENDIF
 
+  rlon =getvar(cf_in, cn_vlon2d, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)  ! nav_lon
+  rlat =getvar(cf_in, cn_vlat2d, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)  ! nav_lat
+
   CALL CreateOutput
 
   PRINT*,'OUTPUT DEPTHS ARE : ',gdepo
@@ -257,10 +278,12 @@ PROGRAM cdfvint
         rdep1          = rdep2
         dl_vint2(:,:) = dl_vint1 (:,:)
 
-        tmask(:,:)= getvar(cn_fmsk, cn_tmask, jk, npiglo, npjglo           )
-        zt(:,:)   = getvar(cf_in,   cv_in,    jk, npiglo, npjglo, ktime=jt )
+        tmask(:,:)= getvar(cn_fmsk, cn_tmask, jk, npiglo, npjglo, kimin=iimin, kjmin=ijmin           )
+        zt(:,:)   = getvar(cf_in,   cv_in,    jk, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt )
         IF ( lfull ) THEN ; e3t(:,:) = e31d(jk)
-        ELSE ; e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+        ELSE ; e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, kimin=iimin, kjmin=ijmin,     &
+                             &                                        ktime=it, ldiom=.NOT.lg_vvl    )
+
         ENDIF
 
         rdep2 = rdep1 + e31d(jk)
@@ -321,7 +344,8 @@ CONTAINS
     ncout = create      (cf_out, 'none', npiglo, npjglo, npko, cdep=cn_vdepthw, ld_xycoo=.FALSE. &
          , ld_nc4=lnc4)
     ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout , ld_nc4=lnc4)
-    ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, npko, pdep=gdepo,     ld_xycoo=.FALSE.)
+    ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, npko,  pnavlon=rlon, pnavlat=rlat,  &
+          &                             pdep=gdepo,     ld_xycoo=.FALSE.)
 
     dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
     ierr  = putvar1d    (ncout, dtim,      npt, 'T')

@@ -30,6 +30,8 @@ PROGRAM cdfvertmean
   INTEGER(KIND=4)                               :: ik1, ik2            ! vertical limit of integration
   INTEGER(KIND=4)                               :: narg, iargc         ! command line 
   INTEGER(KIND=4)                               :: ijarg               ! command line 
+  INTEGER(KIND=4)                               :: iimin=0, iimax=0    ! horizontal window
+  INTEGER(KIND=4)                               :: ijmin=0, ijmax=0    ! horizontal window
   INTEGER(KIND=4)                               :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                               :: npk, npt            ! size of the domain,
   INTEGER(KIND=4)                               :: nvars, ivar         ! variables in input
@@ -46,6 +48,8 @@ PROGRAM cdfvertmean
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zv                  ! working variable
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: hdep                ! depth of the levels
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zmask               ! mask
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rlon                ! output longitude
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: rlat                ! output latitude
 
   REAL(KIND=8)                                  :: dvol                ! total volume
   REAL(KIND=8), DIMENSION(:),       ALLOCATABLE :: dtim                ! time counter
@@ -80,6 +84,7 @@ PROGRAM cdfvertmean
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfvertmean -f IN-file -l LST-var -p C-type -zlim dep1 dep2'
+     PRINT *,'              ... [-w imin imax jmin jmax ] '
      PRINT *,'              ... [-full] [-o OUT-file] [-nc4] [-vvl] [-debug]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -94,6 +99,8 @@ PROGRAM cdfvertmean
      PRINT *,'           from top to bottom, positive depths.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [ -w imin imax jmin jmax ] : Define a subarea of the input domain where'
+     PRINT *,'            the vertical mean will be applied.'
      PRINT *,'       [-full  ] : for full step configurations. Default is partial step.'
      PRINT *,'       [-debug ] : print some extra informations.'
      PRINT *,'       [-vvl ] : use time-varying vertical metrics.'
@@ -122,6 +129,10 @@ PROGRAM cdfvertmean
      CASE ( '-zlim'  ) ; CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) rdep_up
         ;                CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) rdep_down
         ! options
+     CASE ('-w'      ) ; CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) iimin
+        ;                CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) iimax
+        ;                CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ijmin
+        ;                CALL getarg(ijarg, cldum   ) ; ijarg = ijarg + 1 ;  READ(cldum,*) ijmax
      CASE ( '-full'  ) ; lfull  = .TRUE.
      CASE ( '-debug' ) ; ldebug = .TRUE.
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
@@ -148,6 +159,11 @@ PROGRAM cdfvertmean
   npk    = getdim (cf_in,cn_z)
   npt    = getdim (cf_in,cn_t)
 
+  IF ( iimin /= 0 ) THEN ; npiglo = iimax -iimin + 1;  ELSE ; iimin=1 ;
+  ENDIF
+  IF ( ijmin /= 0 ) THEN ; npjglo = ijmax -ijmin + 1;  ELSE ; ijmin=1 ;
+  ENDIF
+
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
   PRINT *, 'npk    = ', npk
@@ -165,10 +181,15 @@ PROGRAM cdfvertmean
 
   ! Allocate arrays
   ALLOCATE ( zmask(npiglo,npjglo), dvertmean(npiglo, npjglo) )
+  ALLOCATE ( rlon(npiglo,npjglo), rlat(npiglo, npjglo)       )
   ALLOCATE ( zv(npiglo,npjglo), hdep(npiglo,npjglo)          )
   ALLOCATE ( e3(npiglo,npjglo), dvol2d(npiglo,npjglo)        )
-  ALLOCATE ( gdep(npk), dtim(npt)                             )
+  ALLOCATE ( gdep(npk), dtim(npt)                            )
   IF ( lfull ) ALLOCATE ( e31d(npk) )
+
+  rlon =getvar(cf_in, cn_vlon2d, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)  ! nav_lon
+  rlat =getvar(cf_in, cn_vlat2d, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)  ! nav_lat
+
 
   CALL CreateOutput
 
@@ -213,12 +234,13 @@ PROGRAM cdfvertmean
 
         DO jk = ik1, ik2
            ! Get values at jk
-           zv(   :,:) = getvar(cf_in,   cv_cur, jk, npiglo, npjglo, ktime=jt)
-           zmask(:,:) = getvar(cn_fmsk, cv_msk, jk, npiglo, npjglo          )
+           zv(   :,:) = getvar(cf_in,   cv_cur, jk, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt )
+           zmask(:,:) = getvar(cn_fmsk, cv_msk, jk, npiglo, npjglo, kimin=iimin, kjmin=ijmin           )
 
            ! get e3 at level jk ( ps...)
            IF ( lfull ) THEN ; e3(:,:) = e31d(jk)
-           ELSE              ; e3(:,:) = getvar(cf_e3, cv_e3, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
+           ELSE              ; e3(:,:) = getvar(cf_e3, cv_e3, jk, npiglo, npjglo, kimin=iimin, kjmin=ijmin,  &
+                             &                                                    ktime=it, ldiom=.NOT.lg_vvl )
            ENDIF
 
            IF ( jk == ik1 ) THEN
@@ -317,7 +339,7 @@ CONTAINS
     ! Initialize output file
     ncout = create      (cf_out, cf_in,   npiglo, npjglo, 1                          , ld_nc4=lnc4)
     ierr  = createvar   (ncout,  stypvar, nvaro,  ipk,    id_varout, cdglobal=cglobal, ld_nc4=lnc4)
-    ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, 1, pdep=rdep)
+    ierr  = putheadervar(ncout,  cf_in,   npiglo, npjglo, 1, pnavlon=rlon, pnavlat=rlat, pdep=rdep)
 
     dtim = getvar1d(cf_in, cn_vtimec, npt     )
     ierr = putvar1d(ncout, dtim,      npt, 'T')
