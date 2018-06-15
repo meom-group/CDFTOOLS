@@ -398,6 +398,11 @@ PROGRAM cdfsigtrp
               zs( ji,:) = e3w1d(:)
            ENDDO
         ELSE
+            SELECT CASE ( cg_zgr_ver )
+            CASE ( 'v2.0' ) ; cn_ve3u = 'e3u_ps' ; cn_ve3w='e3w_ps'
+            CASE ( 'v3.0' ) ; cn_ve3u = 'e3u'    ; cn_ve3w='e3w'
+            CASE ( 'v3.6' ) ; cn_ve3u = 'e3u_0'  ; cn_ve3w='e3w_0'
+            END SELECT
            de3(:,:) = getvaryz(cn_fe3u, cn_ve3u, iimin,   npts, npk, kjmin=ijmin+1 )
            zt( :,:) = getvaryz(cn_fe3w, cn_ve3w, iimin,   npts, npk, kjmin=ijmin+1 )
            zs( :,:) = getvaryz(cn_fe3w, cn_ve3w, iimin+1, npts, npk, kjmin=ijmin+1 )
@@ -485,6 +490,12 @@ PROGRAM cdfsigtrp
                  zs( ji,:) = e3w1d(:)
               ENDDO
            ELSE
+              SELECT CASE ( cg_zgr_ver )
+              CASE ( 'v2.0' ) ; cn_ve3v = 'e3v_ps' ; cn_ve3w='e3w_ps'
+              CASE ( 'v3.0' ) ; cn_ve3v = 'e3v'    ; cn_ve3w='e3w'
+              CASE ( 'v3.6' ) ; cn_ve3v = 'e3v_0'  ; cn_ve3w='e3w_0'
+              END SELECT
+
               de3(:,:) = getvarxz(cn_fe3v, cn_ve3v, ijmin,   npts, npk, kimin=iimin+1 )
               zt( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin,   npts, npk, kimin=iimin+1 )
               zs( :,:) = getvarxz(cn_fe3w, cn_ve3w, ijmin+1, npts, npk, kimin=iimin+1 )
