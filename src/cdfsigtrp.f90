@@ -48,7 +48,7 @@ PROGRAM cdfsigtrp
   IMPLICIT NONE
 
   INTEGER(KIND=4)                               :: ji, jk, jclass, jsec ! dummy loop index
-  INTEGER(KIND=4)                               :: jiso, jbin, jarg     ! dummy loop index
+  INTEGER(KIND=4)                               :: jiso, jbin           ! dummy loop index
   INTEGER(KIND=4)                               :: nbins                ! number of density classes
   INTEGER(KIND=4)                               :: ipos                 ! working variable
   INTEGER(KIND=4)                               :: narg, iargc          ! command line 
