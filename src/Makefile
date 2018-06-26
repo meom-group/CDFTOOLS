@@ -28,7 +28,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfpsi cdfmoc  cdfmocsig cdfmean cdfdegrad \
        cdfheatc cdfzonalmean cdfzonalmeanvT cdfhflx cdfwflx cdfbuoyflx\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfthic cdfvint cdffwc\
-       cdfpendep cdfzonalsum cdficediags cdficetrp cdfzonalout\
+       cdfpendep cdfzonalsum cdficediags  cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
        cdf16bit cdfvita cdfconvert cdfclip  cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk cdfisf_diags \
