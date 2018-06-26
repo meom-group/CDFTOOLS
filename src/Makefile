@@ -34,7 +34,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk cdfisf_diags \
        cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask cdfmeshmask\
-       cdfgradT cdfhgradb cdfeddyscale_pass1 cdfeddyscale \
+       cdfgradT cdfhgradb cdfhgradv cdfeddyscale_pass1 cdfeddyscale \
        cdfnrj_transfert cdfnrj_bci cdfnrj_bti cdfnrj_components cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfnamelist \
@@ -215,6 +215,9 @@ cdfgradT: cdfio.o  cdfgradT.f90
 
 cdfhgradb: cdfio.o  eos.o cdfhgradb.f90
 	$(F90) cdfhgradb.f90 -o $(BINDIR)/cdfhgradb cdfio.o  eos.o modcdfnames.o  $(FFLAGS) 
+
+cdfhgradv: cdfio.o  cdfhgradv.f90
+	$(F90) cdfhgradv.f90 -o $(BINDIR)/cdfhgradv cdfio.o  modcdfnames.o  $(FFLAGS) 
 
 cdfnrj_transfert: cdfio.o  cdfnrj_transfert.f90
 	$(F90) cdfnrj_transfert.f90 -o $(BINDIR)/cdfnrj_transfert cdfio.o  modcdfnames.o $(FFLAGS) 
