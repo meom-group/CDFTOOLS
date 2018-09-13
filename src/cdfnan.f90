@@ -92,7 +92,7 @@ PROGRAM cdfnan
      SELECT CASE (cldum)
      CASE ('-l'      ) ; CALL GetFileList
         ! options
-     CASE ('-value'  ) ; CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; READ(cldum,*) replace ; l_replace=.TRUE.
+     CASE ('-r'      ) ; CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; READ(cldum,*) replace ; l_replace=.TRUE.
      CASE ('-absmax' ) ; CALL getarg( ijarg, cldum) ; ijarg = ijarg+1 ; READ(cldum,*) rabsmax 
      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
