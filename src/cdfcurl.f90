@@ -26,7 +26,7 @@ PROGRAM cdfcurl
   INTEGER(KIND=4)                           :: ji, jj, jk, jt     ! dummy loop index
   INTEGER(KIND=4)                           :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt           ! size of the domain
-  INTEGER(KIND=4)                           :: nlev               ! number of output levels
+  INTEGER(KIND=4)                           :: nlev=0             ! number of output levels
   INTEGER(KIND=4)                           :: narg, iargc        ! browse command line
   INTEGER(KIND=4)                           :: ijarg              !
   INTEGER(KIND=4)                           :: ncout, ierr        ! browse command line
