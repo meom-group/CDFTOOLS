@@ -61,14 +61,16 @@ PROGRAM cdfeke
   LOGICAL                                    :: lmke   = .FALSE.    ! compute MKE
   LOGICAL                                    :: ltke   = .FALSE.    ! compute TKE
   LOGICAL                                    :: lnc4   = .FALSE.    ! netcdf4 output (chunking and deflation)
+  LOGICAL                                    :: lsurf  = .FALSE.    ! flag to set for file w/o vertical dims
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfeke -u U-file [-u2 U2-file]  -v V-file [-v2 V2-file] -t T-file ...'
-     PRINT *,'           [-mke] [-tke] [-o OUT-file] [-nc4][-var VAR-u VAR-v VAR-u2 VAR-v2] '
+     PRINT *,' usage : cdfeke -u U-file [-u2 U2-file] -v V-file [-v2 V2-file] -t T-file ...'
+     PRINT *,'               [-surf] [-mke] [-tke] ...'
+     PRINT *,'               [-o OUT-file] [-nc4][-var VAR-u VAR-v VAR-u2 VAR-v2] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the Eddy Kinetic Energy from previously computed mean values'
@@ -88,6 +90,7 @@ PROGRAM cdfeke
      PRINT *,'       -t T-file  : any gridT or gridT2 (smaller) file, used for MKE header.'
      PRINT *,'             '
      PRINT *,'     OPTION :'
+     PRINT *,'       [-surf] : Use this option if the T-file has no vertical dimension.'
      PRINT *,'       [-mke]  : output MKE (KE of mean flow) field together with EKE. '
      PRINT *,'       [-tke]  : output TKE (Mean KE of flow) field together with EKE. '
      PRINT *,'       [-nc4]  : allow netcdf4 output with compression and chunking.'
@@ -126,6 +129,7 @@ PROGRAM cdfeke
      CASE ( '-v2'  ) ; CALL getarg(ijarg, cf_v2fil ) ; ijarg = ijarg + 1
      CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil  ) ; ijarg = ijarg + 1
      CASE ( '-mke' ) ; lmke = .TRUE.
+     CASE ( '-surf') ; lsurf= .TRUE.
      CASE ( '-tke' ) ; ltke = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out   ) ; ijarg = ijarg + 1
@@ -318,7 +322,11 @@ CONTAINS
 
     ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       , ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar, ivar,   ipk,    id_varout , ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk                     )
+    IF ( lsurf ) THEN
+      ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk ,pdep=(/0./)        )
+    ELSE
+      ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk                     )
+    ENDIF
 
     dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
     ierr = putvar1d(ncout,  dtim,       npt, 'T')
