@@ -70,6 +70,7 @@ PROGRAM cdf_xtract_brokenline
   INTEGER(KIND=4), DIMENSION(:,:,:), ALLOCATABLE :: iilegs, ijlegs   ! F-index of points on the broken line per leg
 
   REAL(KIND=4)                              :: ztmp
+  REAL(KIND=4)                              :: zspvalt, zspvals, zspvalu, zspvalv
   REAL(KIND=4)                              :: xmin, xmax, ymin, ymax !
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdept               ! Model deptht levels
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rxx, ryy            ! leg i j index of F points
@@ -106,6 +107,7 @@ PROGRAM cdf_xtract_brokenline
   REAL(KIND=8), DIMENSION(:), ALLOCATABLE   :: dbarot  ! for barotropic transport computation
 
   CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
+  CHARACTER(LEN=255) :: cf_sfil                      ! input S-file if necessary
   CHARACTER(LEN=255) :: cf_wfil                      ! input W file (vvl case)
   CHARACTER(LEN=255) :: cf_bath                      ! bathy file 
   CHARACTER(LEN=255) :: cf_ifil                      ! input ice file
@@ -150,7 +152,7 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,' usage :  cdf_xtrac_brokenline -t T-file -u U-file -v V-file [-i ICE-file] ...'
      PRINT *,'         ... [-b BAT-file] [-mxl MXL-file] [-f section_filei,sec_file2,..] ...'
      PRINT *,'         ... [-l LST-sections] [-ssh] [-mld] [-vt] [-vecrot] [-vvl W-file] ...'
-     PRINT *,'         ... [-o ROOT_name] [-ice] [-verbose]'
+     PRINT *,'         ... [-s S-file ] [-o ROOT_name] [-ice] [-verbose]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'      This tool extracts model variables from model files for a geographical' 
@@ -181,7 +183,8 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'      should be very small.'
      PRINT *,'      ' 
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -t T-file :  model gridT file '
+     PRINT *,'       -t T-file :  model gridT file. If salinity is not in T-file, '
+     PRINT *,'                    use -s option'
      PRINT *,'       -u U-file :  model gridU file '
      PRINT *,'       -v V-file :  model gridV file '
      PRINT *,'      ' 
@@ -199,6 +202,7 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'              files for section definition. This option will be deprecated in'
      PRINT *,'              favor of ''-l'' option, which passes the same file names, but'
      PRINT *,'              easier to parse when using a big number of files.'
+     PRINT *,'      [-S S-file] : Specify a salinity file if salinity not in T-file.'
      PRINT *,'      [-b BAT-file] : Specify a bathymetric file in case the ocean bathymetry'
      PRINT *,'              is not in ',TRIM(cn_fzgr),' (variable ',TRIM(cn_hdepw),').'
      PRINT *,'      [-mxl MXL-file] : Give the name of the file containing the MLD if it is'
@@ -239,6 +243,7 @@ PROGRAM cdf_xtract_brokenline
   ! Parse command line
   cf_bath='none'
   cf_mfil='none'
+  cf_sfil='none'
   ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
@@ -247,6 +252,7 @@ PROGRAM cdf_xtract_brokenline
      CASE ( '-u'       ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1
      CASE ( '-v'       ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
         ! options
+     CASE ( '-s'       ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1
      CASE ( '-i'       ) ; CALL getarg(ijarg, cf_ifil ) ; ijarg=ijarg+1 ; lice = .TRUE. ;  nvar=nvar+2
      CASE ( '-o '      ) ; CALL getarg(ijarg, cf_root ) ; ijarg=ijarg+1
      CASE ( '-b '      ) ; CALL getarg(ijarg, cf_bath ) ; ijarg=ijarg+1
@@ -269,11 +275,14 @@ PROGRAM cdf_xtract_brokenline
   ENDIF
   IF ( cf_mfil == 'none') THEN ; cf_mfil = cf_tfil
   ENDIF
+  IF ( cf_sfil == 'none') THEN ; cf_sfil = cf_tfil
+  ENDIF
   ! check file existence
   lchk = chkfile(cn_fhgr )
   lchk = chkfile(cf_bath ) .OR. lchk 
   lchk = chkfile(cn_fzgr ) .OR. lchk
   lchk = chkfile(cf_tfil ) .OR. lchk
+  lchk = chkfile(cf_sfil ) .OR. lchk
   lchk = chkfile(cf_ufil ) .OR. lchk
   lchk = chkfile(cf_vfil ) .OR. lchk
   IF ( lsecfile ) THEN 
@@ -596,6 +605,10 @@ PROGRAM cdf_xtract_brokenline
   END DO  ! section for non depth dependent
 
   ! Temperature and salinity are interpolated on the respective U or V  point for better flux computation
+  zspvalt = getatt(cf_tfil, cn_votemper, cn_missing_value)
+  zspvals = getatt(cf_sfil, cn_vosaline, cn_missing_value)
+  zspvalu = getatt(cf_ufil, cn_vozocrtx, cn_missing_value)
+  zspvalv = getatt(cf_vfil, cn_vomecrty, cn_missing_value)
   DO jt=1, npt  ! time loop
      IF ( lg_vvl ) THEN ;  it=jt
      ELSE ;                it=1
@@ -608,9 +621,13 @@ PROGRAM cdf_xtract_brokenline
 
      DO jk=1,npk   ! level loop , read only once the horizontal slab
         temper(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
-        saline(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
+        WHERE(temper == zspvalt ) temper=0.
+        saline(:,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
+        WHERE(saline == zspvals ) saline=0.
         uzonal(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime = jt)
+        WHERE(uzonal == zspvalu ) uzonal=0.
         vmerid(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime = jt)
+        WHERE(vmerid == zspvalv ) vmerid=0.
 
         IF ( lvecrot ) THEN
            !We put the velocities in point a
