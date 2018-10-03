@@ -202,7 +202,7 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'              files for section definition. This option will be deprecated in'
      PRINT *,'              favor of ''-l'' option, which passes the same file names, but'
      PRINT *,'              easier to parse when using a big number of files.'
-     PRINT *,'      [-S S-file] : Specify a salinity file if salinity not in T-file.'
+     PRINT *,'      [-s S-file] : Specify a salinity file if salinity not in T-file.'
      PRINT *,'      [-b BAT-file] : Specify a bathymetric file in case the ocean bathymetry'
      PRINT *,'              is not in ',TRIM(cn_fzgr),' (variable ',TRIM(cn_hdepw),').'
      PRINT *,'      [-mxl MXL-file] : Give the name of the file containing the MLD if it is'
