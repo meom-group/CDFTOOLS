@@ -439,7 +439,7 @@ cdfconvert: cdfio.o cdfconvert.f90
 	$(F90)  cdfconvert.f90  -o $(BINDIR)/cdfconvert cdfio.o modcdfnames.o $(FFLAGS)
 
 cdf_conv_zgr:  cdf_conv_zgr.F90
-	$(F90)  cdf_conv_zgr.F90  -o $(BINDIR)/cdf_conf_zgr  $(FFLAGS)
+	$(F90)  cdf_conv_zgr.F90  -o $(BINDIR)/cdf_conv_zgr  $(FFLAGS)
 
 cdfbathy: cdfio.o cdfbathy.f90
 	$_conf_zgr(F90)   cdfbathy.f90  -o $(BINDIR)/cdfbathy cdfio.o modcdfnames.o $(FFLAGS)
