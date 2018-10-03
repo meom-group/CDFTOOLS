@@ -431,7 +431,6 @@ PROGRAM cdf_xtract_brokenline
 
 
         ! return ending points of a leg in I J model coordinates
-        PRINT *,TRIM(csection(jsec)),' leg ',jleg
         CALL cdf_findij ( xmin, xmax, ymin, ymax, iimin, iimax, ijmin, ijmax, &
              &            cd_coord=cn_fhgr, cd_point='F', cd_verbose=cverb)
 
@@ -479,8 +478,22 @@ PROGRAM cdf_xtract_brokenline
            END DO
         ENDIF
      END DO !! loop on the legs
+     ! Check that legs are at least 2 points long 
+     
+     lchk=.FALSE.
+     DO jleg = 1, nsta(jsec) -1
+       IF ( ikeepn(jleg,jsec) < 2 ) THEN 
+          lchk=.TRUE.
+          PRINT *, 'Section ', TRIM(csection(jsec)),': Stations ',jleg,' and ',jleg+1,' are the same in the model !'
+       ENDIF
+     ENDDO
      npsecmax = MAX(npsecmax, npsec(jsec))  ! maximum number of point in any section
   END DO !! loop on the sections
+  IF ( lchk ) THEN
+       PRINT *,' Please edit your section file, and erase duplicate stations (model sense) '
+       STOP 101
+  ENDIF
+     
   IF ( lverbose)  PRINT *,' NPSECMAX = ', npsecmax
 
   ! Now can allocate the section arrays 
