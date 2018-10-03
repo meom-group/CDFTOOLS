@@ -30,7 +30,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfthic cdfvint cdffwc\
        cdfpendep cdfzonalsum cdficediags  cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
-       cdf16bit cdfvita cdfconvert cdfclip  cdfbathy cdfvar \
+       cdf16bit cdfvita cdfconvert cdf_conv_zgr cdfclip  cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk cdfisf_diags \
        cdficb_clim cdficb_diags \
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask cdfmeshmask\
@@ -438,8 +438,11 @@ cdfvita: cdfio.o cdfvita.f90
 cdfconvert: cdfio.o cdfconvert.f90
 	$(F90)  cdfconvert.f90  -o $(BINDIR)/cdfconvert cdfio.o modcdfnames.o $(FFLAGS)
 
+cdf_conv_zgr:  cdf_conv_zgr.F90
+	$(F90)  cdf_conv_zgr.F90  -o $(BINDIR)/cdf_conf_zgr  $(FFLAGS)
+
 cdfbathy: cdfio.o cdfbathy.f90
-	$(F90)   cdfbathy.f90  -o $(BINDIR)/cdfbathy cdfio.o modcdfnames.o $(FFLAGS)
+	$_conf_zgr(F90)   cdfbathy.f90  -o $(BINDIR)/cdfbathy cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfcofdis: cdfio.o cdfcofdis.f90
 	$(F90)    cdfcofdis.f90  -o $(BINDIR)/cdfcofdis cdfio.o modcdfnames.o $(FFLAGS)
