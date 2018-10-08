@@ -74,6 +74,7 @@ PROGRAM cdfcensus
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dcensus, ddump
 
   CHARACTER(LEN=256)                        :: cf_tfil
+  CHARACTER(LEN=256)                        :: cf_sfil
   CHARACTER(LEN=256)                        :: cf_out='census.nc'
   CHARACTER(LEN=256)                        :: cglobal
   CHARACTER(LEN=256)                        :: cline1, cline2, cline3, cline4
@@ -93,11 +94,12 @@ PROGRAM cdfcensus
   ii1=-1 ; ii2=-1
   ij1=-1 ; ij2=-1
   ik1=-1 ; ik2=-1
+  cf_sfil='none'
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfcensus -t T-file [-log nlog] [-zoom imin imax jmin jmax] ...'
-     PRINT *,'              ... [-klim kmin kmax] [-srange smin smax ds] ... '
+     PRINT *,'              ... [-klim kmin kmax] [-s S-file] [-srange smin smax ds] ... '
      PRINT *,'              ... [-trange tmin tmax dt] [-full] [-vvl] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -111,8 +113,10 @@ PROGRAM cdfcensus
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file  : netcdf file name for temperature and salinity' 
+     PRINT *,'             If salinity is not in T-file, use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file] : Specify salinity file if not T-file.'
      PRINT *,'       [-log nlog] : number of log10 filter to perform. 0 by default.'
      PRINT *,'       [-zoom imin imax jmin jmax] : define a model sub-area, in model '
      PRINT *,'              coordinates' 
@@ -145,6 +149,7 @@ PROGRAM cdfcensus
      CALL getarg(ijarg,cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
      CASE ( '-t'     ) ; CALL getarg(ijarg,cf_tfil) ; ijarg = ijarg+1
+     CASE ( '-s'     ) ; CALL getarg(ijarg,cf_sfil) ; ijarg = ijarg+1
      CASE ( '-zoom'  ) ; CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii1
         ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ii2
         ;                CALL getarg(ijarg,cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) ij1
@@ -165,11 +170,13 @@ PROGRAM cdfcensus
      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+  IF ( cf_sfil == 'none') cf_sfil=cf_tfil
   cglobal = 'Census computed from '//TRIM(cf_tfil)
 
   lchk =           chkfile ( cn_fzgr )
   lchk = lchk .OR. chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cf_tfil  )
+  lchk = lchk .OR. chkfile ( cf_sfil  )
   IF ( lchk ) STOP 99  ! some compulsory files are missing
 
   PRINT *,' TS_FILE = ',TRIM(cf_tfil)
@@ -251,7 +258,7 @@ PROGRAM cdfcensus
      ! Enter main loop
      DO jk=ik1,ik2
         zt(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
-        zs(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
+        zs(:,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
 
         IF ( lfull ) THEN
            e3t(:,:) = e31d(jk)
