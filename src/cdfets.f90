@@ -66,8 +66,9 @@ PROGRAM cdfets
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dbuoy, dbu, dbv           ! Double precision
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dlda, dM2, dets           ! Double precision
 
-  CHARACTER(LEN=256)                          :: cf_tfil                   ! out file names
-  CHARACTER(LEN=256)                          :: cf_out = 'ets.nc'         ! in file names
+  CHARACTER(LEN=256)                          :: cf_tfil                   ! temperture file
+  CHARACTER(LEN=256)                          :: cf_sfil                   ! salinity file (option)
+  CHARACTER(LEN=256)                          :: cf_out = 'ets.nc'         ! output filename
   CHARACTER(LEN=256)                          :: cldum                     ! working variable
 
   TYPE (variable), DIMENSION(2)               :: stypvar                   ! structure for attribute
@@ -79,7 +80,7 @@ PROGRAM cdfets
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfets -f T-file [-o OUT-file] [-nc4] [-vvl W-file]'
+     PRINT *,' usage : cdfets -t T-file [-s S-file ][-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the eddy time scale, and a proxy for rossby radius. The Rossby' 
@@ -90,9 +91,11 @@ PROGRAM cdfets
      PRINT *,'       B is the buoyancy computed as B=-g rho/rho0.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f T-file : netcdf input file for temperature and salinity (gridT).'
+     PRINT *,'       -t T-file : netcdf input file for temperature and salinity (gridT).'
+     PRINT *,'           If salinity not in T-file,  use -s option.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file ] : specify salinity file if not T-file.' 
      PRINT *,'       [-o OUT-file] : specifiy the name of output file instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
@@ -109,12 +112,14 @@ PROGRAM cdfets
      STOP 
   ENDIF
 
+  cf_sfil = 'none'
   ijarg = 1
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-f'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ('-t','-f') ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
         ! options
+     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
@@ -123,11 +128,17 @@ PROGRAM cdfets
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
-  lchk = ( chkfile (cf_tfil) .OR. chkfile( cn_fhgr ) .OR. chkfile( cn_fzgr) )
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil 
+
+  lchk = chkfile (cf_tfil) 
+  lchk = chkfile (cf_sfil) .OR. lchk 
+  lchk = chkfile (cn_fhgr) .OR. lchk 
+  lchk = chkfile (cn_fzgr) .OR. lchk 
+
   IF ( lchk )  STOP 99 ! missing file
 
   ! Look for missing value for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -183,7 +194,7 @@ PROGRAM cdfets
      !  2 levels of T and S are required : iup,idown (with respect to W level)
      !  Compute from bottom to top (for vertical integration)
      ztemp(:,:,idown) = getvar(cf_tfil, cn_votemper,  npk-1 ,npiglo,npjglo, ktime=jt )
-     zsal (:,:,idown) = getvar(cf_tfil, cn_vosaline,  npk-1 ,npiglo,npjglo, ktime=jt )
+     zsal (:,:,idown) = getvar(cf_sfil, cn_vosaline,  npk-1 ,npiglo,npjglo, ktime=jt )
      zwk  (:,:,idown) = spval
 
      ! Set to 0 dlda
@@ -192,7 +203,7 @@ PROGRAM cdfets
         PRINT *,'level ',jk
         ! Get temperature and salinity at jk -1 (up )
         ztemp(:,:,iup) = getvar(cf_tfil, cn_votemper,  jk-1 ,npiglo,npjglo, ktime = jt)
-        zsal (:,:,iup) = getvar(cf_tfil, cn_vosaline,  jk-1 ,npiglo,npjglo, ktime = jt)
+        zsal (:,:,iup) = getvar(cf_sfil, cn_vosaline,  jk-1 ,npiglo,npjglo, ktime = jt)
 
         ! build tmask at level jk
         zmask(:,:)=1.
