@@ -98,6 +98,7 @@ PROGRAM cdfsigtrp
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar              ! structure of output
 
   CHARACTER(LEN=256)                            :: cf_tfil              ! temperature salinity file
+  CHARACTER(LEN=256)                            :: cf_sfil              ! salinity file (option)
   CHARACTER(LEN=256)                            :: cf_ufil              ! zonal velocity file
   CHARACTER(LEN=256)                            :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                            :: cf_wfil              ! W file for vvl e3w
@@ -134,7 +135,7 @@ PROGRAM cdfsigtrp
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file [-brk BRK-file] ...'
+     PRINT *,' usage :  cdfsigtrp -t T-file -u U-file -v V-file [-s S-file] [-brk BRK-file] .'
      PRINT *,'              ... -smin sigma_min -smax sigma_max -nbins nbins [-print] ...'
      PRINT *,'              ... [-xtra] [-full ] [-vvl W-file] [-refdep ref_depth] ...'
      PRINT *,'              ... [-neutral ] [-section file ] [-temp] [-help]'
@@ -167,6 +168,7 @@ PROGRAM cdfsigtrp
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       Input data file can be specified either using the 3 following switches:'
      PRINT *,'       -t T-file : netcdf file with temperature and salinity' 
+     PRINT *,'          If salinity not in T-file use -s option.'
      PRINT *,'       -u U-file : netcdf file with zonal velocity component'
      PRINT *,'       -v V-file : netcdf file with meridional velocity component'
      PRINT *,'       Or, using the ''-brk'' switch.'
@@ -179,6 +181,7 @@ PROGRAM cdfsigtrp
      PRINT *,'       -nbins nbins : number of bins. This will fix the bin ''width'' '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file ]: specify salinity file if not T-file.'
      PRINT *,'       [-full] : for full step configuration' 
      PRINT *,'       [-vvl W-file]: use time varying vertical metrics. Need a W-file for e3w.'
      PRINT *,'       [-xtra] : produce extra netcdf output file which shows the details'
@@ -219,6 +222,7 @@ PROGRAM cdfsigtrp
 
   ! browse command line
   ijarg = 1 ; ireq = 0 ; nreq=6
+  cf_sfil='none'
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
@@ -231,6 +235,7 @@ PROGRAM cdfsigtrp
      CASE ( '-smax'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) dsigma_max ; ireq=ireq+1
      CASE ( '-nbins'  ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; ireq=ireq+1
         ! options
+     CASE ( '-s'      ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
      CASE ( '-full'   ) ; lfull  = .TRUE.
      CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
         ;                 CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
@@ -245,6 +250,8 @@ PROGRAM cdfsigtrp
      END SELECT
   END DO
 
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
   IF ( ireq /= nreq ) THEN
      PRINT *,' ERROR :  not enough input arguments. See the usage message and correct.' 
      STOP 99
@@ -254,6 +261,7 @@ PROGRAM cdfsigtrp
      cn_fzgr = cf_brk
      cn_fhgr = cf_brk
      cf_tfil = cf_brk
+     cf_sfil = cf_brk
      cf_ufil = cf_brk
      cf_vfil = cf_brk 
      cf_section = cf_brk  ! never used in this case, just for check
@@ -264,12 +272,13 @@ PROGRAM cdfsigtrp
   lchk = lchk .OR. chkfile( cn_fhgr    )
   lchk = lchk .OR. chkfile( cf_section )
   lchk = lchk .OR. chkfile( cf_tfil    )
+  lchk = lchk .OR. chkfile( cf_sfil    )
   lchk = lchk .OR. chkfile( cf_ufil    )
   lchk = lchk .OR. chkfile( cf_vfil    )
   IF ( lchk ) STOP 99 ! missing file
 
    ! Look for missing value for salinity, U and V
-   zsps = getspval(cf_tfil, cn_vosaline )
+   zsps = getspval(cf_sfil, cn_vosaline )
    zspu = getspval(cf_ufil, cn_vozocrtx )
    zspv = getspval(cf_vfil, cn_vomecrty )
 
@@ -422,8 +431,8 @@ PROGRAM cdfsigtrp
         WHERE( zu == zspu ) zu = 0.0
 
         ! salinity and deduce umask for the section
-        zs( :,:) = getvaryz(cf_tfil, cn_vosaline, iimin,   npts, npk, kjmin=ijmin+1 )
-        zt( :,:) = getvaryz(cf_tfil, cn_vosaline, iimin+1, npts, npk, kjmin=ijmin+1 )
+        zs( :,:) = getvaryz(cf_sfil, cn_vosaline, iimin,   npts, npk, kjmin=ijmin+1 )
+        zt( :,:) = getvaryz(cf_sfil, cn_vosaline, iimin+1, npts, npk, kjmin=ijmin+1 )
         zmask = 1.
         WHERE ( zs == zsps .OR. zt == zsps ) zmask = 0.
         zs (:,:) = 0.5 * ( zs(:,:) + zt(:,:) )*zmask
@@ -516,8 +525,8 @@ PROGRAM cdfsigtrp
            WHERE( zu == zspv ) zu = 0.0
 
            ! salinity and deduce umask for the section
-           zs( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
-           zt( :,:) = getvarxz(cf_tfil, cn_vosaline, ijmin+1, npts, npk, kimin=iimin+1 )
+           zs( :,:) = getvarxz(cf_sfil, cn_vosaline, ijmin,   npts, npk, kimin=iimin+1 )
+           zt( :,:) = getvarxz(cf_sfil, cn_vosaline, ijmin+1, npts, npk, kimin=iimin+1 )
 
            zmask = 1.
            WHERE ( zs == zsps .OR. zt == zsps ) zmask = 0.
