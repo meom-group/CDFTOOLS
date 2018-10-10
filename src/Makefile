@@ -442,7 +442,7 @@ cdf_conv_zgr:  cdf_conv_zgr.F90
 	$(F90)  cdf_conv_zgr.F90  -o $(BINDIR)/cdf_conv_zgr  $(FFLAGS)
 
 cdfbathy: cdfio.o cdfbathy.f90
-	$_conf_zgr(F90)   cdfbathy.f90  -o $(BINDIR)/cdfbathy cdfio.o modcdfnames.o $(FFLAGS)
+	$(F90)   cdfbathy.f90  -o $(BINDIR)/cdfbathy cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfcofdis: cdfio.o cdfcofdis.f90
 	$(F90)    cdfcofdis.f90  -o $(BINDIR)/cdfcofdis cdfio.o modcdfnames.o $(FFLAGS)
