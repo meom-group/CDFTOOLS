@@ -39,6 +39,7 @@ PROGRAM cdfsigntr
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
+  CHARACTER(LEN=256)                        :: cf_sfil            ! salinity file (option)
   CHARACTER(LEN=256)                        :: cldum              ! working variable
   CHARACTER(LEN=256)                        :: cf_out='signtr.nc' ! output file name
 
@@ -50,15 +51,17 @@ PROGRAM cdfsigntr
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsigntr -t T-file [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfsigntr -t T-file [-s S-file] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute neutral volumic mass (kg/m3) from temperature and salinity.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file  : netcdf file with temperature and salinity.' 
+     PRINT *,'           If salinity not in T-file, use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file   ] : Specify salinity file if not T-file.'
      PRINT *,'       [-o OUT-file ] : Specify output file name instead of ', TRIM(cf_out)
      PRINT *,'       [-nc4 ]      : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
@@ -79,18 +82,22 @@ PROGRAM cdfsigntr
   ENDIF
 
   ijarg=1
+  cf_sfil='none'
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg=ijarg+1
         ! options
+     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil ) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF (chkfile(cf_tfil) ) STOP 99 ! missing file
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
+  IF (chkfile(cf_tfil) .OR. chkfile(cf_sfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -107,7 +114,7 @@ PROGRAM cdfsigntr
   ALLOCATE (dtim(npt) )
 
   CALL CreateOutput
-  zsps = getspval( cf_tfil, cn_vosaline )
+  zsps = getspval( cf_sfil, cn_vosaline )
 
   DO jt=1,npt
      PRINT *,' TIME = ', jt, dtim(jt)/86400.,' days'
@@ -116,7 +123,7 @@ PROGRAM cdfsigntr
         zmask(:,:)=1.
 
         ztemp(:,:)= getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-        zsal(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        zsal(:,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
         WHERE( zsal == zsps ) zmask = 0.0
 
