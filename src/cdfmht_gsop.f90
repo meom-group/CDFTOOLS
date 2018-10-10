@@ -77,6 +77,7 @@ PROGRAM cdfmht_gsop
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dzomhtfull                ! nbasins x npjglo x npk
 
   CHARACTER(LEN=256)                          :: cf_tfil
+  CHARACTER(LEN=256)                          :: cf_sfil
   CHARACTER(LEN=256)                          :: cf_vfil 
   CHARACTER(LEN=256)                          :: cf_out='gsopmht.nc'
   CHARACTER(LEN=256)                          :: cldum
@@ -91,7 +92,7 @@ PROGRAM cdfmht_gsop
   narg= iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfmht_gsop -v V-file -t T-file [-o OUT-file]'
+     PRINT *,' usage :  cdfmht_gsop -v V-file -t T-file [-s S-file] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the meridional heat transport(MHT) for the Atlantic basin.'
@@ -107,9 +108,11 @@ PROGRAM cdfmht_gsop
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -v V-file : name of the meridional velocity file.' 
-     PRINT *,'       -t T-file : name of the temperatture file.'
+     PRINT *,'       -t T-file : name of the temperature file.'
+     PRINT *,'          If salinity not in T-file use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file]   : specify salinity file if not T-file.'
      PRINT *,'       [-o OUT-file] : output file name instead of ',TRIM(cf_out)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -128,17 +131,20 @@ PROGRAM cdfmht_gsop
      STOP 
   ENDIF
 
-  ijarg = 1 
+  ijarg   = 1 
+  cf_sfil = 'none'
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
      CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
         ! option
+     CASE ( '-s'   ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
      CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99 
      END SELECT
   ENDDO
+  IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil
 
   lchk = lchk .OR. chkfile(cn_fzgr)
   lchk = lchk .OR. chkfile(cn_fhgr)
@@ -146,6 +152,7 @@ PROGRAM cdfmht_gsop
   lchk = lchk .OR. chkfile(cn_fbasins)
   lchk = lchk .OR. chkfile(cf_vfil )
   lchk = lchk .OR. chkfile(cf_tfil )
+  lchk = lchk .OR. chkfile(cf_sfil )
   IF ( lchk ) STOP 99 
 
   npiglo= getdim (cf_vfil,cn_x)
@@ -330,7 +337,7 @@ PROGRAM cdfmht_gsop
   zt(:,:)=0.0
   DO jk = 1,npk-1 
      ! Calculate density !! attention, density est au point U, il faut la mettre au point V
-     zsal(:,:) = getvar(cf_tfil, cn_vosaline,  jk ,npiglo, npjglo)
+     zsal(:,:) = getvar(cf_sfil, cn_vosaline,  jk ,npiglo, npjglo)
      zt(:,:)= getvar(cf_tfil, cn_votemper, jk,npiglo,npjglo)    ! au point T
 
      zzmask=1
