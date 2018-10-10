@@ -35,8 +35,10 @@ PROGRAM cdfstdevts
   REAL(KIND=8), DIMENSION(:),    ALLOCATABLE :: dtim              ! time counter
   REAL(KIND=8), DIMENSION(:,:),  ALLOCATABLE :: dsdev             ! standard deviation
 
-  CHARACTER(LEN=256)                         :: cf_in             ! input mean file name
-  CHARACTER(LEN=256)                         :: cf_in2            ! input mean2 file name
+  CHARACTER(LEN=256)                         :: cf_tfil           ! input mean file name
+  CHARACTER(LEN=256)                         :: cf_tfil2          ! input mean2 file name
+  CHARACTER(LEN=256)                         :: cf_sfil           ! input mean file name
+  CHARACTER(LEN=256)                         :: cf_sfil2          ! input mean2 file name
   CHARACTER(LEN=256)                         :: cf_out = 'stdevts.nc'! output file name
   CHARACTER(LEN=256)                         :: cv_in, cv_in2     ! input variable names
   CHARACTER(LEN=256)                         :: cldum             ! dummy character variable
@@ -45,6 +47,7 @@ PROGRAM cdfstdevts
   CHARACTER(LEN=256)                         :: cl_votemper2      ! local name for T2
   CHARACTER(LEN=256)                         :: cl_vosaline2      ! local name for S2
   CHARACTER(LEN=256), DIMENSION(4)           :: cv_namesi         ! input variable names
+  CHARACTER(LEN=256), DIMENSION(4)           :: cl_fil            ! input variable names
 
   TYPE(variable), DIMENSION(2)               :: stypvaro          ! output data structure
 
@@ -56,6 +59,7 @@ PROGRAM cdfstdevts
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfstdevts -t T-file -t2 T2-file [-o OUT-file] [-nc4] ...'
+     PRINT *,'                   [-s S-file] [-s2 S2-file ] ...'
      PRINT *,'           [-var VAR-temp VAR-sal VAR-temp2 VAR-sal2 ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -70,6 +74,8 @@ PROGRAM cdfstdevts
      PRINT *,'       -t T2-file : netcdf file with mean squared values for T,S' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-t S-file ]  : salinity file if not in T-file.'
+     PRINT *,'       [-t S2-file]  : salinity sqd file if not in T2-file.'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
@@ -96,14 +102,19 @@ PROGRAM cdfstdevts
   cl_votemper2 = TRIM(cn_votemper)//'_sqd'
   cl_vosaline2 = TRIM(cn_vosaline)//'_sqd'
 
+  cf_sfil ='none'
+  cf_sfil2='none'
+
   ijarg = 1  
   DO WHILE ( ijarg <= narg) 
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( 't'  ) ; CALL getarg(ijarg, cf_in ) ; ijarg=ijarg+1
-     CASE ( 't2' ) ; CALL getarg(ijarg, cf_in2) ; ijarg=ijarg+1
+     CASE ( '-t' ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-t2') ; CALL getarg(ijarg, cf_tfil2) ; ijarg=ijarg+1
         ! option
-     CASE ( '-o' ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
+     CASE ( '-s' ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1
+     CASE ( '-s2') ; CALL getarg(ijarg, cf_sfil2) ; ijarg=ijarg+1
+     CASE ( '-o' ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ('-nc4') ; lnc4 = .TRUE.
      CASE ('-var') ; CALL getarg(ijarg, cl_votemper ) ; ijarg=ijarg+1
        ;           ; CALL getarg(ijarg, cl_vosaline ) ; ijarg=ijarg+1
@@ -113,20 +124,25 @@ PROGRAM cdfstdevts
      END SELECT
   ENDDO
 
-  cv_namesi(1) = cl_votemper
-  cv_namesi(2) = cl_vosaline
-  cv_namesi(3) = cl_votemper2
-  cv_namesi(4) = cl_vosaline2
+  IF ( cf_sfil  == 'none' ) cf_sfil  = cf_tfil
+  IF ( cf_sfil2 == 'none' ) cf_sfil2 = cf_tfil2
+
+  cv_namesi(1) = cl_votemper  ; cl_fil(1)=cf_tfil
+  cv_namesi(2) = cl_vosaline  ; cl_fil(2)=cf_sfil
+  cv_namesi(3) = cl_votemper2 ; cl_fil(3)=cf_tfil2
+  cv_namesi(4) = cl_vosaline2 ; cl_fil(4)=cf_sfil2
 
   ! check existence of files
-  lchk = lchk .OR. chkfile(cf_in )
-  lchk = lchk .OR. chkfile(cf_in2)
+  lchk = lchk .OR. chkfile(cf_tfil )
+  lchk = lchk .OR. chkfile(cf_tfil2)
+  lchk = lchk .OR. chkfile(cf_sfil )
+  lchk = lchk .OR. chkfile(cf_sfil2)
   IF (lchk ) STOP 99 ! missing file
 
-  npiglo = getdim (cf_in, cn_x)
-  npjglo = getdim (cf_in, cn_y)
-  npk    = getdim (cf_in, cn_z)
-  npt    = getdim (cf_in, cn_t)
+  npiglo = getdim (cf_tfil, cn_x)
+  npjglo = getdim (cf_tfil, cn_y)
+  npk    = getdim (cf_tfil, cn_z)
+  npt    = getdim (cf_tfil, cn_t)
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
@@ -143,8 +159,8 @@ PROGRAM cdfstdevts
      cv_in2 = cv_namesi(jvar+2)
      DO jt = 1, npt
         DO jk = 1, npk
-           zvbar(:,:) = getvar(cf_in,  cv_in,  jk, npiglo, npjglo, ktime=jt)
-           zvba2(:,:) = getvar(cf_in2, cv_in2, jk, npiglo, npjglo, ktime=jt)
+           zvbar(:,:) = getvar(cl_fil(jvar)  , cv_in,  jk, npiglo, npjglo, ktime=jt)
+           zvba2(:,:) = getvar(cl_fil(jvar+2), cv_in2, jk, npiglo, npjglo, ktime=jt)
 
            dsdev(:,:) = SQRT ( DBLE(zvba2(:,:) - zvbar(:,:)*zvbar(:,:)) )
 
@@ -190,11 +206,11 @@ CONTAINS
     stypvaro(2)%conline_operation = 'N/A'
     stypvaro(2)%caxis             = 'TZYX'
 
-    ncout = create      (cf_out, cf_in,    npiglo, npjglo, npk       , ld_nc4=lnc4)
+    ncout = create      (cf_out, cf_tfil,    npiglo, npjglo, npk       , ld_nc4=lnc4)
     ierr  = createvar   (ncout,  stypvaro, 2,      ipko,   id_varout , ld_nc4=lnc4)
-    ierr  = putheadervar(ncout,  cf_in,    npiglo, npjglo, npk       )
+    ierr  = putheadervar(ncout,  cf_tfil,    npiglo, npjglo, npk       )
 
-    dtim = getvar1d(cf_in, cn_vtimec, npt     )
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
     ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
