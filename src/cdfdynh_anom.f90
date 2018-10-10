@@ -53,6 +53,7 @@ PROGRAM cdfdynh_anom
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsig0, dsig      ! In situ density (reference, local)
 
   CHARACTER(LEN=256)                        :: cf_tfil           ! input file name
+  CHARACTER(LEN=256)                        :: cf_sfil           ! input file name
   CHARACTER(LEN=256)                        :: cf_out='cdfhdy3d.nc' ! output file name
   CHARACTER(LEN=256)                        :: cv_out='vohdy'   ! output file name
   CHARACTER(LEN=256)                        :: cf_out2d='cdfhdy2d.nc' ! output file name
@@ -64,12 +65,14 @@ PROGRAM cdfdynh_anom
   LOGICAL                                   :: lout  = .FALSE.   ! flag to use non standard output name
   LOGICAL                                   :: lnc4  = .FALSE.   ! Use nc4 with chunking and deflation
   LOGICAL                                   :: limit = .FALSE.   ! flag set if limit are used (2D case)
+  LOGICAL                                   :: lchk  = .FALSE.   ! flag for file existence checking
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfdynh_anom -f T-file [-limit lev1 lev2] [-vvl] [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfdynh_anom -t T-file [-s S-file] [-limit lev1 lev2] [-vvl] ...'
+     PRINT *,'             ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute dynamic height anomaly from T-file given as argument.'
@@ -81,9 +84,11 @@ PROGRAM cdfdynh_anom
      PRINT *,'        in the standard case.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f T-file : netcdf file with temperature and salinity.' 
-     PRINT *,'      '
+     PRINT *,'       -t T-file : netcdf file with temperature and salinity.' 
+     PRINT *,'             If salinity is not in T-file, use -s option.'
+     PRINT *,'     '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file ] : Specify salinity file if not T-file.' 
      PRINT *,'       [-limit lev1 lev2] : if specified, the program will only output the'
      PRINT *,'              dynamic height anomaly at lev1 with reference at lev2.'
      PRINT *,'       [-vvl] : use time-varying vertical metrics.'
@@ -110,12 +115,14 @@ PROGRAM cdfdynh_anom
      STOP 
   ENDIF
 
+  cf_sfil = 'none'
   ijarg = 1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-f'     ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ( '-t','-f') ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
         ! options
+     CASE ( '-s'     ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
      CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1 
         ;                lout  = .TRUE.
      CASE ( '-nc4'   ) ; lnc4  = .TRUE.
@@ -126,16 +133,24 @@ PROGRAM cdfdynh_anom
      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
   IF ( lout ) cf_out2d = cf_out  !  name of 2D file if -limit is used
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fmsk) .OR. chkfile(cn_fzgr) ) STOP 99 ! missing files
+  lchk = chkfile(cf_tfil)
+  lchk = lchk .OR. chkfile(cf_sfil)
+  lchk = lchk .OR. chkfile(cn_fmsk)
+  lchk = lchk .OR. chkfile(cn_fzgr)
+
+  IF ( lchk ) STOP 99 ! missing files
+
   IF ( lg_vvl ) THEN 
     cn_fe3t = cf_tfil
     cn_ve3t = cn_ve3tvvl
   ENDIF
 
   ! Look for Missing value for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -191,7 +206,7 @@ PROGRAM cdfdynh_anom
         rdepth(:,:) = rdepth(:,:) + rdep(:,:)
 
         temp(:,:) = getvar(cf_tfil, cn_votemper,  jk ,npiglo, npjglo, ktime=jt)
-        zsal(:,:) = getvar(cf_tfil, cn_vosaline,  jk ,npiglo, npjglo, ktime=jt)
+        zsal(:,:) = getvar(cf_sfil, cn_vosaline,  jk ,npiglo, npjglo, ktime=jt)
 
         dsig0 = sigmai(temp0, zsal0, rdepth, npiglo, npjglo) 
         dsig  = sigmai(temp , zsal , rdepth, npiglo, npjglo) 
