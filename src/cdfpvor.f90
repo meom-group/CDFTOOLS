@@ -74,6 +74,7 @@ PROGRAM cdfpvor
   REAL(KIND=8), DIMENSION(:,:),   ALLOCATABLE :: dareat               ! area of T cells
 
   CHARACTER(LEN=256)                          :: cf_tfil              ! input T file
+  CHARACTER(LEN=256)                          :: cf_sfil              ! salinity file (option)
   CHARACTER(LEN=256)                          :: cf_ufil              ! input U file
   CHARACTER(LEN=256)                          :: cf_vfil              ! input V file
   CHARACTER(LEN=256)                          :: cf_out='pvor.nc'     ! output file
@@ -92,7 +93,7 @@ PROGRAM cdfpvor
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfpvor -t T-file  -u U-file -v V-file [-full] [-lspv] ...'
+     PRINT *,' usage : cdfpvor -t T-file  -u U-file -v V-file [-s S-file] [-full] [-lspv] ...'
      PRINT *,'           ... [-nometric] [-o OUT-file] [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -103,10 +104,12 @@ PROGRAM cdfpvor
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf file for temperature and salinity.           ' 
+     PRINT *,'            If salinity not in T-file use -s option.'
      PRINT *,'       -u U-file : netcdf file for zonal component of the velocity.    '
      PRINT *,'       -v V-file : netcdf file for meridional component of the velocity.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file] : specify salinity file if not T-file.'
      PRINT *,'       [-full ] : indicate a full step configuration.                ' 
      PRINT *,'       [-lspv ] : calculate only the large scale potential vorticity.'
      PRINT *,'                  ( replace the old cdflspv tool).'
@@ -140,6 +143,7 @@ PROGRAM cdfpvor
   ENDIF
 
   ijarg = 1 
+  cf_sfil = 'none'
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
@@ -147,6 +151,7 @@ PROGRAM cdfpvor
      CASE ( '-u'      ) ; CALL getarg( ijarg, cf_ufil) ; ijarg = ijarg + 1
      CASE ( '-v'      ) ; CALL getarg( ijarg, cf_vfil) ; ijarg = ijarg + 1
       ! options
+     CASE ( '-s'      ) ; CALL getarg( ijarg, cf_sfil) ; ijarg = ijarg + 1
      CASE ( '-full'   ) ; lfull  = .TRUE.
      CASE ( '-lspv'   ) ; lertel = .FALSE. ; nvar = 1  ; cf_out = 'lspv.nc'
      CASE ( '-nc4'    ) ; lnc4   = .TRUE.
@@ -159,12 +164,15 @@ PROGRAM cdfpvor
      END SELECT
   END DO
 
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
   IF ( l_metric ) THEN
     lchk = lchk .OR. chkfile( cn_fzgr)
     lchk = lchk .OR. chkfile( cn_fhgr)
   ENDIF
 
   lchk = lchk .OR. chkfile( cf_tfil)
+  lchk = lchk .OR. chkfile( cf_sfil)
   IF ( lertel ) THEN
      lchk = lchk .OR. chkfile( cf_ufil)
      lchk = lchk .OR. chkfile( cf_vfil)
@@ -175,7 +183,7 @@ PROGRAM cdfpvor
   IF ( lchk   ) STOP 99 ! missing file
 
   ! Look for MissingValue for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
   IF ( lg_vvl ) THEN
      cn_fe3w = cf_e3w
@@ -255,7 +263,7 @@ PROGRAM cdfpvor
      !  Compute from bottom to top (for vertical integration)
      PRINT *,'time=',jt,'(days:',dtim(jt)/86400.,')'
      ztemp(:,:,idown) = getvar(cf_tfil, cn_votemper, npk-1, npiglo, npjglo, ktime=jt)
-     zsal( :,:,idown) = getvar(cf_tfil, cn_vosaline, npk-1, npiglo, npjglo, ktime=jt)
+     zsal( :,:,idown) = getvar(cf_sfil, cn_vosaline, npk-1, npiglo, npjglo, ktime=jt)
 
      ! -------------------------------- LOOP OVER LEVELS
      DO jk = npk-1, 1, -1 
@@ -283,7 +291,7 @@ PROGRAM cdfpvor
         IF ( jk > 1) THEN 
            tmask(:,:)=1.
            ztemp(:,:,iup) = getvar(cf_tfil, cn_votemper, jk-1 ,npiglo, npjglo, ktime=jt)
-           zsal(:,:,iup)  = getvar(cf_tfil, cn_vosaline, jk-1 ,npiglo, npjglo, ktime=jt)
+           zsal(:,:,iup)  = getvar(cf_sfil, cn_vosaline, jk-1 ,npiglo, npjglo, ktime=jt)
            WHERE(zsal(:,:,idown) == zsps ) tmask = 0
 
            IF ( l_metric ) THEN
