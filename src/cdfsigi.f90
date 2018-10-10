@@ -42,6 +42,7 @@ PROGRAM cdfsigi
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
+  CHARACTER(LEN=256)                        :: cf_sfil            ! salinity file (option)
   CHARACTER(LEN=256)                        :: cf_out='sigi.nc'   ! output file name
   CHARACTER(LEN=256)                        :: cldum              ! dummy string
 
@@ -53,16 +54,18 @@ PROGRAM cdfsigi
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsigi -t T-file -r REF-dep(m) [-o OUT-file] [-nc4] '
+     PRINT *,' usage : cdfsigi -t T-file -r REF-dep(m) [-s S-file] [-o OUT-file] [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute potential density referred to the depth given in arguments.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file  : netcdf file with temperature and salinity.' 
+     PRINT *,'          If salinity not in T-file, use -s option.'
      PRINT *,'       -r REF-dep : reference depth in meter.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'      [-s S-file   ] : Specify salinity file if not T-file.'
      PRINT *,'      [-o OUT-file ] : Specify output file name instead of ',TRIM(cf_out)
      PRINT *,'      [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'           This option is effective only if cdftools are compiled with'
@@ -82,19 +85,23 @@ PROGRAM cdfsigi
   ENDIF
 
   ijarg=1
+  cf_sfil='none'
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
      CASE ( '-r'   ) ; CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ref_dep
         ! options
+     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
+  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) ) STOP 99 ! missing file
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -111,14 +118,14 @@ PROGRAM cdfsigi
   ALLOCATE (dtim(npt) )
 
   CALL CreateOutput
-  zspval= getatt(cf_tfil, cn_vosaline, cn_missing_value)
+  zspval= getatt(cf_sfil, cn_vosaline, cn_missing_value)
   DO jt = 1, npt
      PRINT *,'time: ',jt
      DO jk = 1, npk
         zmask(:,:) = 1.
 
         ztemp(:,:) = getvar(cf_tfil, cn_votemper,  jk, npiglo, npjglo, ktime=jt)
-        zsal( :,:) = getvar(cf_tfil, cn_vosaline,  jk, npiglo, npjglo, ktime=jt)
+        zsal( :,:) = getvar(cf_sfil, cn_vosaline,  jk, npiglo, npjglo, ktime=jt)
 
         WHERE( zsal == zspval ) zmask = 0
 
