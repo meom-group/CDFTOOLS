@@ -106,7 +106,7 @@ PROGRAM cdfsig0
   IF (chkfile(cf_tfil) .OR. chkfile(cf_sfil) ) STOP 99 ! missing file
 
   ! Look for missing value for salinity
-  zsps = getspval(cf_sfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cv_sal)
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -126,7 +126,7 @@ PROGRAM cdfsig0
   ALLOCATE (dtim(npt) )
 
   CALL CreateOutput
-  zsps = getspval( cf_sfil, cn_vosaline )
+  zsps = getspval( cf_sfil, cv_sal )
 
   DO jt=1,npt
      PRINT *,' TIME = ', jt, dtim(jt)/86400.,' days'
