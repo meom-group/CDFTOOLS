@@ -50,7 +50,8 @@ PROGRAM cdffwc
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE  :: dl_vint1, dl_vol2d   ! verticall int quantity         
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE:: dfwc                 ! fwc. as 2dim to be consistent with putvar()
 
-  CHARACTER(LEN=256)                         :: cf_in                ! input file
+  CHARACTER(LEN=256)                         :: cf_tfil              ! input file
+  CHARACTER(LEN=256)                         :: cf_sfil              ! input file
   CHARACTER(LEN=256)                         :: cf_out='fwc.nc'      ! output file 
   CHARACTER(LEN=256)                         :: cldum                ! dummy string for command line browsing
   CHARACTER(LEN=256)                         :: cdefault             ! dummy string for default salinity value
@@ -71,8 +72,8 @@ PROGRAM cdffwc
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdffwc -t T-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]'
-     PRINT *,'                [-full] [-accum] [-ssh] [-vvl]'
+     PRINT *,' usage : cdffwc -s S-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]'
+     PRINT *,'                [-t SSH-file ] [-full] [-accum] [-ssh] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the freshwater content in a given basin from top to bottom'
@@ -80,14 +81,16 @@ PROGRAM cdffwc
      PRINT *,'       can be changed with -sref option.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'        -t T-file   : netcdf input file holding salinity (in general a gridT).' 
+     PRINT *,'        -s S-file   : netcdf input file holding salinity (in general a gridT).' 
      PRINT *,'        -bv BASIN-var1,var2,.. : Comma separated list of sub-basin variables'
      PRINT *,'                to process. E.g.: -bv tmaskatl,tmaskind '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'        -t SSH-file : specify the name of SSH-file if not in S-file.'
      PRINT *,'        -full  : for full step computation ' 
      PRINT *,'        -accum : compute accumulated content from top to bottom' 
      PRINT *,'        -ssh   : take ssh into account for surface layer' 
+     PRINT *,'            If ssh is not in S-file, use -t option to specify the file with ssh.'
      PRINT *,'        -sref REFSAL : reference salinity (',TRIM(cdefault),' by default)'
      PRINT *,'        -vvl   : use time-varying vertical metrics'
      PRINT *,'        -o OUT-file :  use specified output file instead of ', TRIM(cf_out)
@@ -106,12 +109,14 @@ PROGRAM cdffwc
 
   ! browse command line
   ijarg = 1   
+  cf_tfil = 'none'
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
-     CASE ( '-t'    ) ; CALL getarg (ijarg, cf_in    ) ; ijarg = ijarg + 1
+     CASE ( '-s'    ) ; CALL getarg (ijarg, cf_sfil  ) ; ijarg = ijarg + 1
      CASE ( '-bv'   ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; CALL ParseVars(cldum)
         ! options
+     CASE ( '-t'    ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1
      CASE ( '-full' ) ; lfull  = .TRUE. 
      CASE ( '-o'    ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1
      CASE ( '-sref' ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; READ(cldum,*) ds0
@@ -123,8 +128,11 @@ PROGRAM cdffwc
      END SELECT
   END DO
 
+  IF ( cf_tfil == 'none' ) cf_tfil=cf_sfil
+
   ! Security check
-  lchk = chkfile ( cf_in   )
+  lchk = chkfile ( cf_sfil )
+  lchk = chkfile ( cf_tfil ) .OR. lchk
   lchk = chkfile ( cn_fmsk ) .OR. lchk
   lchk = chkfile ( cn_fhgr ) .OR. lchk
   lchk = chkfile ( cn_fzgr ) .OR. lchk
@@ -132,17 +140,17 @@ PROGRAM cdffwc
   IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) THEN
-    cn_fe3t = cf_in
+    cn_fe3t = cf_sfil
     cn_ve3t = cn_ve3tvvl
   ENDIF
 
   ! log information so far
   PRINT *,' OUTPUT FILE     : ' , TRIM(cf_out)
 
-  npiglo = getdim (cf_in, cn_x )
-  npjglo = getdim (cf_in, cn_y )
-  npk    = getdim (cf_in, cn_z )
-  npt    = getdim (cf_in, cn_t )
+  npiglo = getdim (cf_sfil, cn_x )
+  npjglo = getdim (cf_sfil, cn_y )
+  npk    = getdim (cf_sfil, cn_z )
+  npt    = getdim (cf_sfil, cn_t )
 
   PRINT *, ' NPIGLO = ', npiglo
   PRINT *, ' NPJGLO = ', npjglo
@@ -204,7 +212,7 @@ PROGRAM cdffwc
 
      DO jk = 1, npk
         ! Get values at jk
-        zt(   :,:) = getvar(cf_in,   cn_vosaline, jk, npiglo, npjglo, ktime=jt)     ! Read Salinity(2D) at level jk and time step jt
+        zt(   :,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)     ! Read Salinity(2D) at level jk and time step jt
         tmask(:,:) = getvar(cn_fmsk, cn_tmask,    jk, npiglo, npjglo          )
 
         ! get e3t at level jk ( ps...)
@@ -213,7 +221,7 @@ PROGRAM cdffwc
         ENDIF
 
         IF ( jk == 1 .AND. lssh ) THEN
-           ssh(:,:) = getvar(cf_in,     cn_sossheig, 1, npiglo, npjglo, ktime=jt)
+           ssh(:,:) = getvar(cf_tfil,     cn_sossheig, 1, npiglo, npjglo, ktime=jt)
            e3t(:,:) = e3t(:,:) + ssh(:,:)
         ENDIF
 
@@ -270,10 +278,10 @@ CONTAINS
     ! Initialize output file
     ncout = create      (cf_out, 'none', 1, 1, npk, cdep=cn_vdepthw, ld_xycoo=.FALSE. )
     ierr  = createvar   (ncout, stypvar, nvaro, ipk, id_varout                        )
-    ierr  = putheadervar(ncout, cf_in,   1, 1, npk,                  ld_xycoo=.FALSE. )
+    ierr  = putheadervar(ncout, cf_sfil, 1, 1, npk,                  ld_xycoo=.FALSE. )
 
-    dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
-    ierr  = putvar1d    (ncout, dtim,      npt, 'T')
+    dtim  = getvar1d    (cf_sfil, cn_vtimec, npt     )
+    ierr  = putvar1d    (ncout  , dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 
