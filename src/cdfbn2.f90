@@ -46,6 +46,7 @@ PROGRAM cdfbn2
   REAL(KIND=8), DIMENSION (:),     ALLOCATABLE :: dtim                     ! depth and time
 
   CHARACTER(LEN=256)                           :: cf_tfil, cldum, cv_dep   ! input file name, ...
+  CHARACTER(LEN=256)                           :: cf_sfil                  !
   CHARACTER(LEN=256)                           :: cf_out = 'bn2.nc'        ! output file name
   CHARACTER(LEN=256)                           :: cglobal                  ! global attribute
   CHARACTER(LEN=80)                            :: cf_e3w                   ! file with e3w in case of vvl
@@ -60,9 +61,11 @@ PROGRAM cdfbn2
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
+  cf_sfil='none'
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbn2  -t T-file [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file]'
+     PRINT *,' usage : cdfbn2  -t T-file [-s S-file] [-W] [-full] [-o OUT-file]...'
+     PRINT *,'               ... [-nc4] [-vvl W-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Brunt-Vaissala frequency (N2) according to temperature and' 
@@ -70,8 +73,10 @@ PROGRAM cdfbn2
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf input gridT file for temperature and salinity.' 
+     PRINT *,'             If salinity is not in T-file, use -s option...' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file ] : specify salinity file name if not T-file' 
      PRINT *,'       [-W ] : keep N2 at W points. Default is to interpolate N2 at T point on' 
      PRINT *,'             the vertical.'
      PRINT *,'       [-full ] : indicate a full step configuration instead of the default'
@@ -105,6 +110,7 @@ PROGRAM cdfbn2
      SELECT CASE (cldum)
      CASE ( '-t'    ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
         ! options
+     CASE ( '-s'    ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg + 1
      CASE ( '-W'    ) ; l_w     = .TRUE.
      CASE ( '-full' ) ; lfull   = .TRUE. ; cglobal = 'full step computation'
      CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
@@ -114,13 +120,15 @@ PROGRAM cdfbn2
      CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
   lchk = chkfile (cn_fzgr )
   lchk = lchk .OR. chkfile (cf_tfil  )
+  lchk = lchk .OR. chkfile (cf_sfil  )
   IF (lg_vvl ) lchk = lchk .OR. chkfile (cf_e3w) 
   IF ( lchk  ) STOP 99  ! missing files 
   ! Look for missing value for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
   IF ( lg_vvl ) THEN
     cn_fe3w = cf_e3w
@@ -161,14 +169,14 @@ PROGRAM cdfbn2
      !  2 levels of T and S are required : iup,idown (with respect to W level)
      !  Compute from bottom to top (for vertical integration)
      ztemp(:,:,idown) = getvar(cf_tfil, cn_votemper,  npk-1, npiglo, npjglo, ktime=jt)
-     zsal( :,:,idown) = getvar(cf_tfil, cn_vosaline,  npk-1, npiglo, npjglo, ktime=jt)
+     zsal( :,:,idown) = getvar(cf_sfil, cn_vosaline,  npk-1, npiglo, npjglo, ktime=jt)
      zwk(:,:,idown)   = 0.0
 
      DO jk = npk-1, 2, -1 
         PRINT *,'level ',jk
         zmask(:,:)=1.
         ztemp(:,:,iup)= getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jt)
-        zsal(:,:,iup) = getvar(cf_tfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
+        zsal(:,:,iup) = getvar(cf_sfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
         WHERE(zsal(:,:,idown) == zsps ) zmask = 0
 
         IF ( lfull ) THEN ; e3w(:,:) = e3w1d(jk)
