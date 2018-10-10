@@ -74,6 +74,7 @@ PROGRAM cdfmxlhcsc
   TYPE(variable), DIMENSION(3)                 :: stypvar         ! output attributes
 
   CHARACTER(LEN=256)                           :: cf_tfil         ! input file
+  CHARACTER(LEN=256)                           :: cf_sfil         ! salinity file (option)
   CHARACTER(LEN=256)                           :: cf_mld          ! mld input file (option)
   CHARACTER(LEN=256)                           :: cf_out='mxlhcsc.nc' ! output file
   CHARACTER(LEN=256)                           :: cv_mld          ! mld imput variable (option)
@@ -89,21 +90,25 @@ PROGRAM cdfmxlhcsc
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmxlhcsc -f T-file -C criteria -t THRESH-value [-hmin hmin] ...'
-     PRINT *,'             ... [-o OUT-file] [-nc4] [-vvl] [-mld MLD-file MLD-var]'
+     PRINT *,' usage : cdfmxlhcsc -t T-file -C criteria -th THRESH-value [-hmin hmin] ...'
+     PRINT *,'            ... [-s S-file] [-o OUT-file] [-nc4] [-vvl] [-mld MLD-file MLD-var]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the MiXed Layer depth, the Heat Content and Salt Content.' 
+     PRINT *,'       Compute the MiXed Layer depth, the Heat Content and Salt Content in the'
+     PRINT *,'       mixed layer. Various criteria can be used and (-C argument) with any '
+     PRINT *,'       threshold values (-th argument).' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f T-file : netcdf input file for temperature and salinity (gridT).' 
+     PRINT *,'       -t T-file : netcdf input file for temperature and salinity (gridT).' 
+     PRINT *,'           If salinity is not in T-file, use -s option.'
      PRINT *,'       -C criteria : Specify the type of criteria to use for MXL computation'
      PRINT *,'                can be one of temperature, t,  T for temperature criteria.'
      PRINT *,'                    or one of density, d,  D  for density criteria.'
-     PRINT *,'       -t THRESH-value : threshold value for the criteria.'
+     PRINT *,'       -th THRESH-value : threshold value for the criteria.'
      PRINT *,'                (eg: 0.2 for temp, 0.01 or 0.03 for dens)'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file  ] : specify salinity file if not T-file.'
      PRINT *,'       [-hmin hmin ] : limit the vertical integral from hmin to mld. By default,' 
      PRINT *,'                 hmin is set to 0 so that the integral is performed on the'
      PRINT *,'                 whole mixed layer.'
@@ -138,13 +143,15 @@ PROGRAM cdfmxlhcsc
 
 
   ijarg = 1 
+  cf_sfil = 'none'
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum ) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f '    ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1 
+     CASE ( '-t '    ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1 
      CASE ( '-C '    ) ; CALL getarg (ijarg, criteria ) ; ijarg = ijarg + 1 
-     CASE ( '-t '    ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1  ; READ(cldum,*) val
+     CASE ( '-th'    ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1  ; READ(cldum,*) val
         ! options
+     CASE ( '-s '    ) ; CALL getarg (ijarg, cf_sfil  ) ; ijarg = ijarg + 1 
      CASE ( '-hmin ' ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1  ; READ(cldum,*) hmin
      CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1  
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
@@ -156,10 +163,13 @@ PROGRAM cdfmxlhcsc
      END SELECT
   ENDDO
 
+ IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
   lchk = chkfile (cn_fhgr)
   lchk = chkfile (cn_fzgr) .OR. lchk
   lchk = chkfile (cn_fmsk) .OR. lchk
   lchk = chkfile (cf_tfil) .OR. lchk
+  lchk = chkfile (cf_sfil) .OR. lchk
   IF ( .NOT. lmld ) lchk = chkfile (cf_mld) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
   IF ( lg_vvl ) THEN
@@ -235,14 +245,14 @@ PROGRAM cdfmxlhcsc
            IF ( .NOT. ALLOCATED( rho_surf ) ) ALLOCATE (rho_surf(npiglo,npjglo) )
            IF ( .NOT. ALLOCATED( rho      ) ) ALLOCATE (rho     (npiglo,npjglo) )
            rtem(:,:) = getvar(cf_tfil, cn_votemper, 1, npiglo, npjglo, ktime=jt)
-           rsal(:,:) = getvar(cf_tfil, cn_vosaline, 1, npiglo, npjglo, ktime=jt)
+           rsal(:,:) = getvar(cf_sfil, cn_vosaline, 1, npiglo, npjglo, ktime=jt)
            rho_surf(:,:) = sigma0 (rtem, rsal, npiglo, npjglo )* tmask_surf(:,:)
 
            ! Last w-level at which rhop>=rho surf+rho_c (starting from jpk-1)
            ! (rhop defined at t-point, thus jk-1 for w-level just above)
            DO jk = npk-1, 2, -1
               rtem( :,:) = getvar(cf_tfil, cn_votemper,  jk ,npiglo, npjglo, ktime=jt)
-              rsal( :,:) = getvar(cf_tfil, cn_vosaline,  jk ,npiglo, npjglo, ktime=jt)
+              rsal( :,:) = getvar(cf_sfil, cn_vosaline,  jk ,npiglo, npjglo, ktime=jt)
               tmask(:,:) = getvar(cn_fmsk, cn_tmask,     jk, npiglo, npjglo          )
               rho(  :,:) = sigma0 (rtem, rsal, npiglo, npjglo ) * tmask(:,:)
               WHERE ( rho > rho_surf + val ) nmln = jk
@@ -269,7 +279,7 @@ PROGRAM cdfmxlhcsc
      DO jk = 1,npk
         ! Get temperature and salinity at jk
         rtem(:,:)  = getvar(cf_tfil,  cn_votemper, jk, npiglo, npjglo, ktime=jt)
-        rsal(:,:)  = getvar(cf_tfil,  cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        rsal(:,:)  = getvar(cf_sfil,  cn_vosaline, jk, npiglo, npjglo, ktime=jt)
         tmask(:,:) = getvar(cn_fmsk,  cn_tmask ,   jk, npiglo, npjglo          )
 
         IF ( lfull ) THEN
