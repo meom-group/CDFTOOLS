@@ -54,7 +54,7 @@ PROGRAM cdfmkmask
 
   REAL(KIND=8), DIMENSION(:)  , ALLOCATABLE :: dtim                     ! time counter
 
-  CHARACTER(LEN=256)                        :: cf_tfil                  ! file name
+  CHARACTER(LEN=256)                        :: cf_sfil                  ! file name
   CHARACTER(LEN=256)                        :: cf_out = 'mask_sal.nc'   ! output file
   CHARACTER(LEN=256)                        :: cf_boundary = 'boundary.txt' ! default boundary input file
   CHARACTER(LEN=256)                        :: cv_mask                  ! variable name
@@ -79,7 +79,7 @@ PROGRAM cdfmkmask
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmkmask -f T-file [-zoom lonmin lonmax latmin latmax] ...'
+     PRINT *,' usage : cdfmkmask -s S-file [-zoom lonmin lonmax latmin latmax] ...'
      PRINT *,'                   ... [-zoomij iimin iimax ijmin ijmax] ...'
      PRINT *,'                   ... [-zoombat bathymin bathymax]  ...'
      PRINT *,'                   ... [-zoomvar varname varmin varmax]  ...'
@@ -100,12 +100,12 @@ PROGRAM cdfmkmask
      PRINT *,'       '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f T-file : netcdf file with salinity.' 
-     PRINT *,'               * if T-file = -maskfile, we assume a reference file named ',TRIM(cn_fmsk)
+     PRINT *,'       -s S-file : netcdf file with salinity.' 
+     PRINT *,'               * if S-file = -maskfile, we assume a reference file named ',TRIM(cn_fmsk)
      PRINT *,'                   with tmask variable.' 
-     PRINT *,'               * if T-file = -2dmaskfile, we assume a reference file named '
+     PRINT *,'               * if S-file = -2dmaskfile, we assume a reference file named '
      PRINT *,'                  ',TRIM(cn_fmsk),' with tmaskutil variable.' 
-     PRINT *,'               * if T-file = -mbathy, we assume a reference file named '
+     PRINT *,'               * if S-file = -mbathy, we assume a reference file named '
      PRINT *,'                   bathylevel.nc with mbathy variable, giving the number of '
      PRINT *,'                   levels in the ocean.' 
      PRINT *,'      '
@@ -177,7 +177,7 @@ PROGRAM cdfmkmask
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f'    ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ('-s','-f') ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
      CASE ( '-zoom' )  ! read a zoom lat/lon area
         lzoom = .TRUE.
         CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rlonmin
@@ -235,32 +235,32 @@ PROGRAM cdfmkmask
   IF ( lzoom .AND. lzoomij ) PRINT *, 'WARNING 2 spatial condition for mask'
 
   IF (.NOT. lzoomvar) cv_mask = cn_vosaline
-  IF (TRIM(cf_tfil)=='-maskfile') THEN
+  IF (TRIM(cf_sfil)=='-maskfile') THEN
      cv_mask = cn_tmask
-     cf_tfil = cn_fmsk
+     cf_sfil = cn_fmsk
      cn_z    = 'z'
   END IF
 
-  IF (TRIM(cf_tfil)=='-2dmaskfile') THEN
+  IF (TRIM(cf_sfil)=='-2dmaskfile') THEN
      cv_mask = 'tmaskutil'
-     cf_tfil = cn_fmsk
+     cf_sfil = cn_fmsk
      cn_z    = 'z'
      l2dmask=.TRUE.
   END IF
 
-  IF (TRIM(cf_tfil)=='-mbathy') THEN
+  IF (TRIM(cf_sfil)=='-mbathy') THEN
      cv_mask = cn_mbathy
      cv_dep  = 'nav_lev'
-     cf_tfil = 'bathylevel.nc'
+     cf_sfil = 'bathylevel.nc'
      cn_z    = 'z'
      lmbathy = .TRUE.
      IF ( chkfile(cn_fzgr) ) STOP 99 ! missing file
   END IF
 
-  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
+  IF ( chkfile(cf_sfil) ) STOP 99 ! missing file
 
-  npiglo = getdim (cf_tfil,cn_x)
-  npjglo = getdim (cf_tfil,cn_y)
+  npiglo = getdim (cf_sfil,cn_x)
+  npjglo = getdim (cf_sfil,cn_y)
   IF ( lmbathy ) THEN
      npk  = getdim (cn_fzgr,cn_z)
      ALLOCATE ( rdep(npk) )
@@ -268,9 +268,9 @@ PROGRAM cdfmkmask
      PRINT *,' npk is forced to 1'
      npk  = 0
   ELSE
-     npk  = getdim (cf_tfil,cn_z)
+     npk  = getdim (cf_sfil,cn_z)
   ENDIF
-  npt    = getdim (cf_tfil,cn_t)
+  npt    = getdim (cf_sfil,cn_t)
 
   PRINT *,' npiglo = ', npiglo
   PRINT *,' npjglo = ', npjglo
@@ -303,7 +303,7 @@ PROGRAM cdfmkmask
   !! mbathy constrain
   IF ( lmbathy ) THEN
      ALLOCATE (mbathy(npiglo,npjglo))
-     mbathy(:,:) = getvar(cf_tfil, cv_mask, 1, npiglo, npjglo)
+     mbathy(:,:) = getvar(cf_sfil, cv_mask, 1, npiglo, npjglo)
      WHERE (mbathy < jk ) ssmask = 0.
   ENDIF
 
@@ -318,8 +318,8 @@ PROGRAM cdfmkmask
   !! lat/lon constrain
   IF ( lzoom ) THEN
      ALLOCATE (rlon(npiglo,npjglo), rlat(npiglo,npjglo))
-     rlon(:,:) = getvar(cf_tfil, cn_vlon2d, 1, npiglo, npjglo)
-     rlat(:,:) = getvar(cf_tfil, cn_vlat2d, 1, npiglo, npjglo)
+     rlon(:,:) = getvar(cf_sfil, cn_vlon2d, 1, npiglo, npjglo)
+     rlat(:,:) = getvar(cf_sfil, cn_vlat2d, 1, npiglo, npjglo)
      IF (rlonmax > rlonmin) THEN
         WHERE (rlon > rlonmax ) ssmask = 0
         WHERE (rlon < rlonmin ) ssmask = 0
@@ -345,7 +345,7 @@ PROGRAM cdfmkmask
      DO jk=1, npkk
         PRINT *, jk,'/',npkk
 
-        tmask(:,:) = getvar(cf_tfil, cv_mask,  jk, npiglo, npjglo, ktime=jt)
+        tmask(:,:) = getvar(cf_sfil, cv_mask,  jk, npiglo, npjglo, ktime=jt)
         tmask(:,:) = tmask(:,:) * ssmask(:,:)
 
         !! variable constrain
@@ -544,12 +544,12 @@ CONTAINS
     stypvar(1:4)%caxis             = 'TZYX'
     stypvar(1:4)%cprecision        = 'i2'
 
-    ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk)
+    ncout = create      (cf_out, cf_sfil,  npiglo, npjglo, npk)
     ierr  = createvar   (ncout,    stypvar, 4,      ipk,    id_varout )
 
     IF ( lmbathy ) THEN ; rdep(:) = getvare3(cn_fzgr, cv_dep ,npk)
-       ; ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=rdep, cdep='nav_lev')
-    ELSE                ; ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk)
+       ; ierr  = putheadervar(ncout,    cf_sfil,  npiglo, npjglo, npk, pdep=rdep, cdep='nav_lev')
+    ELSE                ; ierr  = putheadervar(ncout,    cf_sfil,  npiglo, npjglo, npk)
     ENDIF
     dtim = 0.d0
     ierr = putvar1d(ncout, dtim, npt,'T')
