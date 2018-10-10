@@ -67,6 +67,7 @@ PROGRAM cdftransig_xy3d
 
   CHARACTER(LEN=80 )                           :: cf_out='uvxysig.nc'
   CHARACTER(LEN=80 )                           :: cf_tfil
+  CHARACTER(LEN=80 )                           :: cf_sfil
   CHARACTER(LEN=80 )                           :: cf_ufil
   CHARACTER(LEN=80 )                           :: cf_vfil
   CHARACTER(LEN=80 )                           :: cv_outu='vouxysig'
@@ -85,13 +86,14 @@ PROGRAM cdftransig_xy3d
   LOGICAL                                      :: lfull   = .FALSE.
   LOGICAL                                      :: lnotset = .FALSE.
   LOGICAL                                      :: lchk    = .FALSE.  ! flag for missing files
-  LOGICAL                                      :: lperio  = .FALSE.  ! flag for missing files
-  LOGICAL                                      :: lnc4    = .FALSE.  ! flag for missing files
+  LOGICAL                                      :: lperio  = .FALSE.  ! flag for periodicity
+  LOGICAL                                      :: lnc4    = .FALSE.  ! flag for nc4 output
+  LOGICAL                                      :: lsal    = .FALSE.  ! flag for salinity file
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdftransig_xy3d -c CONFIG-CASE -l LST-tags [-code code ] ...'
+     PRINT *,' usage : cdftransig_xy3d -c CONFIG-CASE -l LST-tags [-code code ] [-S] ...'
      PRINT *,'                    ... [-depref depref ] [ -nbins nbins ] ... ' 
      PRINT *,'                    ... [-sigmin smin s-scal] [-sigzoom sminr s-scalr ] ...'
      PRINT *,'                    ... [-full ] [-v ] [-vvl ] [-o OUT-file] [-nc4]'
@@ -104,8 +106,10 @@ PROGRAM cdftransig_xy3d
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -c CONFCASE  : a DRAKKAR CONFIG-CASE name '
      PRINT *,'       -l LST-tags : a blank-separated list of time tags to be processed.'
+     PRINT *,'         If temperature and salinity not in same file use option -S '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-S         ] : indicate that salinity file is to be taken in gridS files.'
      PRINT *,'       [-code code ] : code corresponds to pre-defined parameters settings '
      PRINT *,'              in term of reference depths, density limits for  binning, number'
      PRINT *,'               of bins, deeper layer refinement.'
@@ -163,6 +167,7 @@ PROGRAM cdftransig_xy3d
      CASE ( '-sigmin'  ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1min
      CASE ( '-sigzoom' ) ; CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1zoom    ; iset = iset+1
         ;                  CALL getarg(ijarg, cldum     ) ; ijarg=ijarg+1 ; READ(cldum,*) ds1scalmin
+     CASE ( '-S'       ) ; lsal   = .TRUE.
      CASE ( '-full'    ) ; lfull  = .TRUE.
      CASE ( '-v'       ) ; lprint = .TRUE.
      CASE ( '-vvl'     ) ; lg_vvl = .TRUE. 
@@ -302,6 +307,11 @@ PROGRAM cdftransig_xy3d
         ctag = ctag_lst(jtag)
         IF (lprint   ) PRINT *, ' working on  ctag=',TRIM(ctag)
         cf_tfil = SetFileName(config, ctag, 'T') 
+        IF ( lsal ) THEN 
+           cf_sfil = SetFileName(config, ctag, 'S')
+        ELSE
+           cf_sfil = cf_tfil
+        ENDIF
         cf_ufil = SetFileName(config, ctag, 'U')
         cf_vfil = SetFileName(config, ctag, 'V')
 
@@ -314,6 +324,7 @@ PROGRAM cdftransig_xy3d
 
         ! check existence of files
         lchk =           chkfile ( cf_tfil) 
+        lchk = lchk .OR. chkfile ( cf_sfil) 
         lchk = lchk .OR. chkfile ( cf_ufil) 
         lchk = lchk .OR. chkfile ( cf_vfil) 
         IF ( lg_vvl ) lchk = lchk .OR. chkfile ( cf_vfil) 
@@ -352,7 +363,7 @@ PROGRAM cdftransig_xy3d
            ENDIF
            !                     density  
            zt(:,:)= getvar ( cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt )
-           zs(:,:)= getvar ( cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt )
+           zs(:,:)= getvar ( cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt )
 
            IF ( zpref == 0. ) THEN
               dens2d = sigma0(zt, zs,       npiglo, npjglo)
