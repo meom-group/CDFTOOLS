@@ -88,6 +88,7 @@ PROGRAM cdfmocsig
 
   CHARACTER(LEN=256)                              :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                              :: cf_tfil              ! temperature/salinity file
+  CHARACTER(LEN=256)                              :: cf_sfil              ! salinity file (option)
   CHARACTER(LEN=256)                              :: cf_moc='mocsig.nc'   ! output file
   CHARACTER(LEN=255)                              :: cglobal              ! Global attribute
   CHARACTER(LEN=256)                              :: cldum                ! dummy char variable
@@ -109,7 +110,7 @@ PROGRAM cdfmocsig
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmocsig  -v V-file -t T-file -r REF-depth | -ntr [-eiv] [-full] ...'
      PRINT *,'        ... [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] ...'
-     PRINT *,'        ... [-o OUT-file] [-vvl] [-verbose]'
+     PRINT *,'        ... [-s S-file ] [-o OUT-file] [-vvl] [-verbose]'
      PRINT *,'      '
      PRINT *,'     PURPOSE : '
      PRINT *,'       Compute the MOC in density-latitude coordinates. The global value is '
@@ -124,7 +125,8 @@ PROGRAM cdfmocsig
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        -v V-file  : Netcdf gridV file.'
-     PRINT *,'        -t T-file  : Netcdf gridT file.'
+     PRINT *,'        -t T-file  : Netcdf gridT file with temperature and salinity.'
+     PRINT *,'             If salinity not in T-file use -s option.'
      PRINT *,'        -r ref-depth : reference depth for density. '
      PRINT *,'            For depth values of 0 1000 or 2000 m, pre-defined limits for '
      PRINT *,'            minimum density, number of density bins and width of density '
@@ -134,6 +136,7 @@ PROGRAM cdfmocsig
      PRINT *,'        -ntr : uses neutral density (no default bin defined so far), no ''-r'''
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file   ] : Specify salinity file if not T-file.'
      PRINT *,'       [-eiv ] : takes into account VEIV Meridional eddy induced velocity.'
      PRINT *,'                 -> To be used only if Gent and McWilliams parameterization '
      PRINT *,'                    has been used. '
@@ -174,6 +177,7 @@ PROGRAM cdfmocsig
   cglobal = 'Partial step computation'
   lbin=(/.TRUE.,.TRUE.,.TRUE./)
   ijarg = 1 ; ii = 0 ! ii is used to count mandatory arguments
+  cf_sfil = 'none'
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
@@ -182,6 +186,7 @@ PROGRAM cdfmocsig
      CASE ( '-r'     ) ;  CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; ii=ii+1 ; READ(cldum,*) pref
      CASE ( '-ntr'   ) ;  lntr = .TRUE. ; ii=ii+1
         ! options
+     CASE ( '-s'     ) ;  CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1 ; ii=ii+1
      CASE ('-full'   ) ; lfull   = .TRUE. ; cglobal = 'Full step computation'
      CASE ('-eiv'    ) ; leiv    = .TRUE.
      CASE ('-sigmin' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigmin ; lbin(1) = .FALSE.
@@ -198,16 +203,19 @@ PROGRAM cdfmocsig
   IF ( ii /= 3 ) THEN ; PRINT *,' ERROR : mandatory arguments missing, see usage please !'  ; STOP 99
   ENDIF
 
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
   ! check file existence
   lchk = lchk .OR. chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cn_fzgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
   lchk = lchk .OR. chkfile ( cf_vfil )
   lchk = lchk .OR. chkfile ( cf_tfil )
+  lchk = lchk .OR. chkfile ( cf_sfil )
   IF ( lchk ) STOP 99  ! missing file(s)
 
   ! Look for salinity spval
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
   IF ( lg_vvl )  THEN
      cn_fe3v = cf_vfil
@@ -359,7 +367,7 @@ PROGRAM cdfmocsig
         END IF
         ! JMM remark : should be more correct to use t and s a V point ?
         zt(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
-        zs(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
+        zs(:,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
 
         ! get e3v at latitude jj
         IF ( lfull ) THEN ; e3v(:,:) = e31d(jk)
