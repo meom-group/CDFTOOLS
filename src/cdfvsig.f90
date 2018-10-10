@@ -73,6 +73,7 @@ PROGRAM cdfvsig
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE :: dsigw                ! Array for sigmai at w point
 
   CHARACTER(LEN=256)                        :: cf_tfil              ! TS file name
+  CHARACTER(LEN=256)                        :: cf_sfil              ! salinity file (option)
   CHARACTER(LEN=256)                        :: cf_ufil              ! zonal velocity file
   CHARACTER(LEN=256)                        :: cf_vfil              ! meridional velocity file
   CHARACTER(LEN=256)                        :: cf_wfil              ! vertical velocity file
@@ -97,6 +98,7 @@ PROGRAM cdfvsig
   LOGICAL                                   :: lpref = .FALSE.       ! flag for -pref option
   LOGICAL                                   :: lperio= .FALSE.       ! checking E-W periodicity
   LOGICAL                                   :: lnc4  = .FALSE.       ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: lsal  = .FALSE.       ! flag for gridS file
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -105,7 +107,7 @@ PROGRAM cdfvsig
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfvsig -c CONFIG-CASE -l LST-tags [-o OUT-root] [-nc4] [-no-w] ...'
-     PRINT *,'              ... [-no-sig]  [-no-uv] [-T ] [-depref LST-depht] '
+     PRINT *,'              ... [-S] [-no-sig]  [-no-uv] [-T ] [-depref LST-depht] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order moments U.sig, V.sig' 
@@ -117,6 +119,8 @@ PROGRAM cdfvsig
      PRINT *,'       at velocity points, as well as mean velocity components are also saved.'
      PRINT *,'       Various options allows the modulation of the output.'
      PRINT *,'      '
+     PRINT *,'       If salinity is not in gridT file use -S option.'
+     PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -c CONFIG-CASE is the config name of a given experiment (eg ORCA025-G70)'
      PRINT *,'            The program will look for gridT, gridU, gridV  and gridW files for' 
@@ -125,6 +129,7 @@ PROGRAM cdfvsig
      PRINT *,'            time averaging, e.g. y2000m01d05 y2000m01d10.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'        [-S ] : indicate that salinity is in gridS file.'
      PRINT *,'        [-o OUT-root]: specify the file name root used for the output.'
      PRINT *,'            Output file names will be <ROOT>usig.nc, <ROOT>vsig and <ROOT>wsig.'
      PRINT *,'            Default <ROOT> is empty. Consider then to add an ''_'' in the root'
@@ -162,6 +167,7 @@ PROGRAM cdfvsig
      CASE ( '-c'     ) ; CALL getarg(ijarg, config ) ; ijarg=ijarg+1 
      CASE ( '-l'     ) ; CALL GetTagList
         ! options
+     CASE ( '-S'     ) ; lsal = .TRUE.
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_root) ; ijarg=ijarg+1 
      CASE ( '-nc4'   ) ; lnc4 = .TRUE.
      CASE ( '-no-w'  ) ; lwo   =.FALSE. 
@@ -189,6 +195,12 @@ PROGRAM cdfvsig
 
   ctag = ctag_lst(1)
   cf_tfil = SetFileName ( config, ctag, 'T')
+  IF ( lsal ) THEN
+     cf_sfil = SetFileName(config, ctag, 'S')
+  ELSE
+     cf_sfil = cf_tfil
+  ENDIF
+
   cf_ufil = SetFileName ( config, ctag, 'U')
   cf_vfil = SetFileName ( config, ctag, 'V')
   IF ( lwo ) cf_wfil = SetFileName ( config, ctag, 'W')
@@ -278,7 +290,7 @@ PROGRAM cdfvsig
            zu(:,:)    = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jtt )
            zv(:,:)    = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jtt )
            ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jtt )
-           zsal(:,:)  = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
+           zsal(:,:)  = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jtt )
            IF ( lwo ) zw(:,:)    = getvar(cf_wfil, cn_vovecrtz, jk, npiglo, npjglo, ktime=jtt )
 
            dsigu(:,:,:) = 0.d0  ; dsigv(:,:,:) = 0.d0
@@ -342,7 +354,7 @@ PROGRAM cdfvsig
                  IF ( lwo ) THEN
                     IF ( jk > 1 ) THEN ! now wsig
                        ztempw(:,:)   = 0.5 * ( ztemp(:,:) + getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jtt ))
-                       zsalw(:,:)    = 0.5 * ( zsal(:,:)  + getvar(cf_tfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jtt ))
+                       zsalw(:,:)    = 0.5 * ( zsal(:,:)  + getvar(cf_sfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jtt ))
                        dsigw(:,:,jsig)    = sigmai(ztempw, zsalw, zdepref, npiglo, npjglo) * wmask(:,:)
                        dcumulws(:,:,jsig) = dcumulws(:,:,jsig) + dsigw(:,:,jsig) * zw(:,:) * 1.d0
                        IF ( lsigo ) dcumulsw(:,:,jsig) = dcumulsw(:,:,jsig) + dsigw(:,:,jsig) * 1.d0
