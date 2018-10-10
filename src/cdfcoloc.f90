@@ -73,6 +73,7 @@ PROGRAM cdfcoloc
   CHARACTER(LEN=256)                             :: cf_weight 
   CHARACTER(LEN=256)                             :: cf_weight_root
   CHARACTER(LEN=256)                             :: cf_gridt   = 'none'
+  CHARACTER(LEN=256)                             :: cf_grids   = 'none'
   CHARACTER(LEN=256)                             :: cf_gridtrc = 'none'
   CHARACTER(LEN=256)                             :: cf_diag    = 'none'
   CHARACTER(LEN=256)                             :: cf_gridu   = 'none'
@@ -101,8 +102,8 @@ PROGRAM cdfcoloc
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfcoloc -w ROOT-weight -t T-file -u U-file -v V-file [-h] ...'
-     PRINT *,'            ... [-l LST-fields] [-trc TRC-file] [-d DIAG-file] [-b ETOPO-file]'
+     PRINT *,' usage : cdfcoloc -w ROOT-weight -t T-file -u U-file -v V-file [-s S-file]...'
+     PRINT *,'        ... [-h] [-l LST-fields] [-trc TRC-file] [-d DIAG-file] [-b ETOPO-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       This program produces 3D colocalized model values for selected fields.' 
@@ -120,10 +121,12 @@ PROGRAM cdfcoloc
      PRINT *,'                files), to which the suffixes ''_T.bin'', ''_U.bin'' or ''_V.bin'''
      PRINT *,'                are appended if necessary.'
      PRINT *,'       -t T-file : name of gridT model file, used for default fields.'
+     PRINT *,'              If salinity not in T-file use -s option.'
      PRINT *,'       -u U-file : name of gridU model file, used for default fields.'
      PRINT *,'       -v V-file : name of gridV model file, used for default fields.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file ] : Give salinity file oif not T-file.'
      PRINT *,'       [-h ] : Gives details on the available fields.'
      PRINT *,'       [-l LST-fields ] : Gives a comma-separated list of selected fields to be'
      PRINT *,'              colocalized, from a whole set of fields which are fully described'
@@ -163,6 +166,7 @@ PROGRAM cdfcoloc
      CASE ('-u'   ) ; CALL getarg ( iarg, cf_gridu       ) ; iarg = iarg + 1
      CASE ('-v'   ) ; CALL getarg ( iarg, cf_gridv       ) ; iarg = iarg + 1
         ! options
+     CASE ('-s'   ) ; CALL getarg ( iarg, cf_grids       ) ; iarg = iarg + 1
      CASE ('-l'   ) ; CALL getarg ( iarg, ctmplst0       ) ; iarg = iarg + 1
      CASE ('-trc' ) ; CALL getarg ( iarg, cf_gridtrc     ) ; iarg = iarg + 1
      CASE ('-d'   ) ; CALL getarg ( iarg, cf_diag        ) ; iarg = iarg + 1
@@ -171,6 +175,7 @@ PROGRAM cdfcoloc
      CASE DEFAULT   ; PRINT *,TRIM(cldum),' : option not available.' ; STOP 99
      END SELECT
   ENDDO
+  IF ( cf_grids == 'none' ) cf_grids = cf_gridt
 
   ! intepret ctmplst0 to set up cltype list, ntype and build cf_out file name
   CALL getfld( ) 
@@ -222,7 +227,7 @@ PROGRAM cdfcoloc
         dscale    = 1.d0
      CASE ('S')          ! salinity, not used for Greg Holloway output
         cf_weight = cf_weight_t
-        cf_in     = cf_gridt
+        cf_in     = cf_grids
         cvar      = cn_vosaline 
         cvmask    = cn_tmask
         npkv      = npk
