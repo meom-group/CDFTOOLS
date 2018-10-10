@@ -48,6 +48,7 @@ PROGRAM cdfbottomsig
 
   CHARACTER(LEN=256)                         :: cf_out='botsig.nc' ! Output file name
   CHARACTER(LEN=256)                         :: cf_tfil        ! input filename
+  CHARACTER(LEN=256)                         :: cf_sfil        ! input filename
   CHARACTER(LEN=256)                         :: cv_sig         ! output variable name
   CHARACTER(LEN=256)                         :: cref           ! message for depth reference
   CHARACTER(LEN=256)                         :: cldum          ! dummy char variable
@@ -63,7 +64,8 @@ PROGRAM cdfbottomsig
   !!  Read command line
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbottomsig  -t T-file [-r REF-depth ] [-ntr] [-o OUT-file] [-nc4]' 
+     PRINT *,' usage : cdfbottomsig  -t T-file [-s S-file] [-r REF-depth ] [-ntr] ...'
+     PRINT *,'               ... [-o OUT-file] [-nc4]' 
      PRINT *,'      '
      PRINT *,'     PURPOSE :' 
      PRINT *,'       Create a 2D file with bottom density. In case a depth reference is ' 
@@ -73,8 +75,10 @@ PROGRAM cdfbottomsig
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : input file with temperature and salinity.'
+     PRINT *,'               If salinity is not in T-file use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file ] : specify salinity file if not T-file.' 
      PRINT *,'       [-r REF-depth] : depth reference for potential density.'
      PRINT *,'             Without -r nor -ntr options sigma-0 is assumed.'
      PRINT *,'       [-ntr ]: Will use neutral density.'
@@ -98,6 +102,7 @@ PROGRAM cdfbottomsig
   ENDIF
 
   cv_sig = 'sobotsig0'
+  cf_sfil='none'
   cref=''
   ijarg=1
   DO WHILE ( ijarg <= narg )
@@ -105,6 +110,7 @@ PROGRAM cdfbottomsig
      SELECT CASE ( cldum )
      CASE ( '-t'  ) ; CALL getarg(ijarg, cf_tfil) ;  ijarg=ijarg+1
         ! options
+     CASE ( '-s'  ) ; CALL getarg(ijarg, cf_sfil) ;  ijarg=ijarg+1
      CASE ( '-r'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) zref
         ;             lsigi  = .TRUE. 
         ;             cv_sig = 'sobotsigi'
@@ -117,10 +123,11 @@ PROGRAM cdfbottomsig
      CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+  IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil
 
-  IF ( chkfile(cf_tfil) ) STOP 99 ! missing file
+  IF ( chkfile(cf_tfil) .OR.  chkfile(cf_sfil) ) STOP 99 ! missing file
   ! look for MissingValue for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
 
   npiglo = getdim (cf_tfil,cn_x)
@@ -146,7 +153,7 @@ PROGRAM cdfbottomsig
   DO jt = 1, npt
      DO jk = 1, npk
         PRINT *,'level ',jk
-        zsal0(:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        zsal0(:,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
         ztemp0(:,:)= getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
         IF (jk == 1  )  THEN
            WHERE( zsal0 == zsps ) zmask=0.
