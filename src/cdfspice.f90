@@ -56,6 +56,7 @@ PROGRAM cdfspice
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dspi               ! spiceness
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
+  CHARACTER(LEN=256)                        :: cf_sfil            ! salinty file (option)
   CHARACTER(LEN=256)                        :: cf_out='spice.nc'  ! output file name
   CHARACTER(LEN=256)                        :: cldum              ! dummy characte variable variable
   CHARACTER(LEN=256)                        :: cv_sal             ! salinity name in netcdf
@@ -69,7 +70,7 @@ PROGRAM cdfspice
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfspice -t T-file [-sal SAL-name] [-tem TEM-name] ...'
+     PRINT *,' usage : cdfspice -t T-file [-s S-file] [-sal SAL-name] [-tem TEM-name] ...'
      PRINT *,'        ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -83,8 +84,10 @@ PROGRAM cdfspice
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf file with temperature and salinity (gridT)' 
+     PRINT *,'            If salinity not in T-file use -s option.'
      PRINT *,'     '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file]      : specify salinity file if not T-file.'
      PRINT *,'       [-sal SAL-name]  : name of salinity variable'
      PRINT *,'       [-tem TEM-name]  : name of temperature variable'
      PRINT *,'       [-o OUT-file]    : specify output filename instead of ',TRIM(cf_out)
@@ -108,14 +111,17 @@ PROGRAM cdfspice
   ENDIF
 
   ! default name for salinity and temperature
-  cv_sal=cn_vosaline
-  cv_tem=cn_votemper
+  cv_sal =cn_vosaline
+  cv_tem =cn_votemper
+  cf_sfil='none'
 
   ijarg=1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
+     ! options
+     CASE ( '-s'   ) ; CALL getarg(ijarg, cf_sfil) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
      CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
@@ -124,7 +130,9 @@ PROGRAM cdfspice
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) ) STOP 99 ! missing files
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
+  IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) ) STOP 99 ! missing files
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
@@ -146,7 +154,7 @@ PROGRAM cdfspice
   ALLOCATE (dtim(npt))
 
   CALL CreateOutput
-  zspval = getspval( cf_tfil, cn_vosaline )
+  zspval = getspval( cf_sfil, cv_sal )
 
   ! Compute spiciness
   DO jt=1,npt
@@ -156,7 +164,7 @@ PROGRAM cdfspice
         zmask(:,:) = 1.e0
 
         ztemp(:,:) = getvar(cf_tfil, cv_tem, jk, npiglo, npjglo, ktime=jt)
-        zsal( :,:) = getvar(cf_tfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
+        zsal( :,:) = getvar(cf_sfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
 
         WHERE(zsal == zspval ) zmask = 0.e0
 
