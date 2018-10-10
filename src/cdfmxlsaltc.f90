@@ -47,7 +47,8 @@ PROGRAM cdfmxlsaltc
   REAL(KIND=8), DIMENSION(:,:),     ALLOCATABLE :: dmxlsaltc           ! heat content
 
   CHARACTER(LEN=256)                            :: cf_tfil             ! input file name
-  CHARACTER(LEN=256)                            :: cf_mfil             ! input file name with mld
+  CHARACTER(LEN=256)                            :: cf_sfil             ! input file name with salinity (option)
+  CHARACTER(LEN=256)                            :: cf_mfil             ! input file name with mld (option)
   CHARACTER(LEN=256)                            :: cf_out='mxlsaltc.nc'! output file
   CHARACTER(LEN=256)                            :: cv_out='somxlsaltc' ! input file name
   CHARACTER(LEN=256)                            :: cglobal             ! global attribute
@@ -63,16 +64,18 @@ PROGRAM cdfmxlsaltc
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmxlsaltc -f T-file [-mxlf MXL-file] [-full] [-vvl] ...'
+     PRINT *,' usage : cdfmxlsaltc -t T-file [-s S-file] [-mxlf MXL-file] [-full] [-vvl] ...'
      PRINT *,'                 ...   [-o OUT-file] [-nc4] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the salt content in the mixed layer.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -f T-file : netcdf input file with salinity and mld (gridT).' 
+     PRINT *,'       -t T-file : netcdf input file with salinity and mld (gridT).' 
+     PRINT *,'         If salinity not in T-file use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file     ]: specify salinity file if not T-file.'
      PRINT *,'       [-mxlf MXL-file]: netcdf input file with mld if not in T-file.' 
      PRINT *,'       [-full ] : for full step configurations, default is partial step.' 
      PRINT *,'       [-o OUT-file ] : specify output file instead of ',TRIM(cf_out) 
@@ -96,12 +99,14 @@ PROGRAM cdfmxlsaltc
   ENDIF
 
   cf_mfil='none'
+  cf_sfil='none'
   ijarg = 1
   DO WHILE ( ijarg <= narg )
     CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 
     SELECT CASE ( cldum )
-    CASE ( '-f'       ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1
+    CASE ( '-t','-f'  ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1
     ! options
+    CASE ( '-s'       ) ; CALL getarg (ijarg, cf_sfil  ) ; ijarg = ijarg + 1
     CASE ( '-mxlf'    ) ; CALL getarg (ijarg, cf_mfil  ) ; ijarg = ijarg + 1
     CASE ( '-full'    ) ; lfull  = .TRUE.
     CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out ) ; ijarg = ijarg + 1
@@ -112,9 +117,12 @@ PROGRAM cdfmxlsaltc
   END DO
 
   IF ( cf_mfil == 'none' ) cf_mfil = cf_tfil 
+  IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil 
+
   lchk = chkfile (cn_fzgr  )
   lchk = chkfile (cn_fmsk  ) .OR. lchk
   lchk = chkfile (cf_tfil  ) .OR. lchk
+  lchk = chkfile (cf_sfil  ) .OR. lchk
   lchk = chkfile (cf_mfil  ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
   IF ( lg_vvl ) THEN 
@@ -156,7 +164,7 @@ PROGRAM cdfmxlsaltc
      zmxl( :,:) = getvar(cf_mfil, cn_somxl010, 1,  npiglo, npjglo, ktime=jt)
 
      DO jk = 1, npk
-        zs(   :,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        zs(   :,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
         zmask(:,:) = getvar(cn_fmsk, cn_tmask,    jk, npiglo, npjglo          )
 
         ! get e3 at level jk ( ps...)
