@@ -40,6 +40,7 @@ PROGRAM cdfsig0
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim               ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil            ! input filename
+  CHARACTER(LEN=256)                        :: cf_sfil            ! salinity file (option)
   CHARACTER(LEN=256)                        :: cf_out='sig0.nc'   ! output file name
   CHARACTER(LEN=256)                        :: cldum              ! dummy characte variable variable
   CHARACTER(LEN=256)                        :: cv_sal             ! salinity name in netcdf
@@ -52,15 +53,18 @@ PROGRAM cdfsig0
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsig0 -t T-file [-sal SAL-name] [-tem TEM-name] [-nc4] [-o OUT-file]'
+     PRINT *,' usage : cdfsig0 -t T-file [-s S-file] [-sal SAL-name] [-tem TEM-name] ...'
+     PRINT *,'            ... [-nc4] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute potential density (sigma-0) refered to the surface.' 
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file  : netcdf file with temperature and salinity.' 
+     PRINT *,'           If salinity not in T-file, use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file]    : specify salinity file if not T-file.'
      PRINT *,'       [-sal SAL-name]  : name of salinity variable'
      PRINT *,'       [-tem TEM-name]  : name of temperature variable'
      PRINT *,'       [-nc4]  : enable chunking and compression'
@@ -82,11 +86,14 @@ PROGRAM cdfsig0
 
   cv_sal=cn_vosaline
   cv_tem=cn_votemper
+  cf_sfil='none'
   ijarg=1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
+!    options
+     CASE ( '-s'   ) ; CALL getarg(ijarg, cf_sfil) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
      CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
@@ -94,11 +101,12 @@ PROGRAM cdfsig0
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
-  IF (chkfile(cf_tfil) ) STOP 99 ! missing file
+  IF (chkfile(cf_tfil) .OR. chkfile(cf_sfil) ) STOP 99 ! missing file
 
   ! Look for missing value for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil, cn_x)
   npjglo = getdim (cf_tfil, cn_y)
@@ -118,7 +126,7 @@ PROGRAM cdfsig0
   ALLOCATE (dtim(npt) )
 
   CALL CreateOutput
-  zsps = getspval( cf_tfil, cn_vosaline )
+  zsps = getspval( cf_sfil, cn_vosaline )
 
   DO jt=1,npt
      PRINT *,' TIME = ', jt, dtim(jt)/86400.,' days'
@@ -126,7 +134,7 @@ PROGRAM cdfsig0
         zmask(:,:)=1.
 
         ztemp(:,:)= getvar(cf_tfil, cv_tem, jk, npiglo, npjglo, ktime=jt)
-        zsal(:,:) = getvar(cf_tfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
+        zsal(:,:) = getvar(cf_sfil, cv_sal, jk, npiglo, npjglo, ktime=jt)
 
         ! assuming spval is 0
         WHERE( zsal == zsps ) zmask = 0
