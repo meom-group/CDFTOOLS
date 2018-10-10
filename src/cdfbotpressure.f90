@@ -47,7 +47,8 @@ PROGRAM cdfbotpressure
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_bpres            ! Bottom pressure
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_sigi             ! insitu density
 
-  CHARACTER(LEN=256)                        :: cf_in               ! input/output file
+  CHARACTER(LEN=256)                        :: cf_tfil             ! input/output file
+  CHARACTER(LEN=256)                        :: cf_sfil             ! input/output file
   CHARACTER(LEN=256)                        :: cf_out='botpressure.nc'   ! output file
   CHARACTER(LEN=256)                        :: cldum               ! dummy string for command line browsing
   CHARACTER(LEN=256)                        :: cglobal             ! Global attribute
@@ -65,16 +66,18 @@ PROGRAM cdfbotpressure
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbotpressure -f T-file [-full] [-ssh] [-ssh2 ] [-xtra ] [-vvl ]'
-     PRINT *,'              ...   [ -o OUT-file ] [-nc4]'
+     PRINT *,' usage : cdfbotpressure -t T-file [-s S-file] [-full] [-ssh] [-ssh2 ]...'
+     PRINT *,'                    ... [-xtra ] [-vvl ] [ -o OUT-file ] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'          Compute the bottom pressure (pa) from in situ density.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'         -f T-file : gridT file holding both temperature and salinity.'
+     PRINT *,'         -t T-file : gridT file holding both temperature and salinity.'
+     PRINT *,'               If salinity is not in T-file, use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'        [-s S-file ]: specify salinity file, if not T-file.'
      PRINT *,'        [-full] : for full step computation ' 
      PRINT *,'        [-ssh]  : Also take SSH into account in the computation'
      PRINT *,'                In this case, use rau0=',pp_rau0,' kg/m3 for '
@@ -108,11 +111,13 @@ PROGRAM cdfbotpressure
      STOP 
   ENDIF
   ! browse command line
+  cf_sfil='none'
   ijarg = 1   ; nvar = 1
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
-     CASE ( '-f'    ) ; CALL getarg (ijarg, cf_in) ; ijarg = ijarg + 1
+     CASE ('-t','-f') ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-s'    ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
      CASE ( '-ssh'  ) ; lssh  = .TRUE. 
      CASE ( '-ssh2' ) ; lssh2 = .TRUE. 
      CASE ( '-xtra' ) ; lxtra = .TRUE.  ; nvar = 3  ! more outputs
@@ -123,25 +128,27 @@ PROGRAM cdfbotpressure
      CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.'  ; STOP 99
      END SELECT
   END DO
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
   CALL SetGlobalAtt(cglobal)
   ALLOCATE ( ipk(nvar), id_varout(nvar), stypvar(nvar) )
 
   ! Security check
-  lchk = chkfile ( cf_in   )
+  lchk = chkfile ( cf_tfil   )
+  lchk = chkfile ( cf_sfil ) .OR. lchk
   lchk = chkfile ( cn_fmsk ) .OR. lchk
   lchk = chkfile ( cn_fzgr ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) THEN 
-     cn_fe3t = cf_in
+     cn_fe3t = cf_tfil
      cn_ve3t = cn_ve3tvvl
   ENDIF
 
-  npiglo = getdim (cf_in, cn_x )
-  npjglo = getdim (cf_in, cn_y )
-  npk    = getdim (cf_in, cn_z )
-  npt    = getdim (cf_in, cn_t )
+  npiglo = getdim (cf_tfil, cn_x )
+  npjglo = getdim (cf_tfil, cn_y )
+  npk    = getdim (cf_tfil, cn_z )
+  npt    = getdim (cf_tfil, cn_t )
 
   PRINT *, ' NPIGLO = ', npiglo
   PRINT *, ' NPJGLO = ', npjglo
@@ -170,20 +177,20 @@ PROGRAM cdfbotpressure
      ENDIF
 
      IF ( lssh ) THEN
-        zt(:,:)       = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
+        zt(:,:)       = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * pp_rau0 * zt(:,:)
         IF (lxtra ) THEN
            ierr = putvar(ncout, id_varout(2) ,zt      ,       1, npiglo, npjglo, ktime=jt)
            ierr = putvar(ncout, id_varout(3) ,dl_psurf,       1, npiglo, npjglo, ktime=jt)
         ENDIF
      ELSE IF ( lssh2 ) THEN 
-        zt(:,:)    = getvar(cf_in,   cn_votemper, 1, npiglo, npjglo, ktime=jt )
-        zs(:,:)    = getvar(cf_in,   cn_vosaline, 1, npiglo, npjglo, ktime=jt )
+        zt(:,:)    = getvar(cf_tfil,   cn_votemper, 1, npiglo, npjglo, ktime=jt )
+        zs(:,:)    = getvar(cf_sfil,   cn_vosaline, 1, npiglo, npjglo, ktime=jt )
 
         dl_sigi(:,:) = 1000.d0 + sigmai(zt, zs, 0., npiglo, npjglo)
 
         !  CAUTION : hdept is used for reading SSH in the next line
-        hdept(:,:)   = getvar(cf_in, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
+        hdept(:,:)   = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * dl_sigi * hdept(:,:)
         IF (lxtra ) THEN
            ierr = putvar(ncout, id_varout(2) ,hdept   ,       1, npiglo, npjglo, ktime=jt)
@@ -198,8 +205,8 @@ PROGRAM cdfbotpressure
      DO jk = 1, npk
         tmask(:,:) = getvar(cn_fmsk, cn_tmask,      jk, npiglo, npjglo          )
         hdept(:,:) = getvar(cn_fzgr, cn_hdept,     jk, npiglo, npjglo           )
-        zt(:,:)    = getvar(cf_in,   cn_votemper,  jk, npiglo, npjglo, ktime=jt )
-        zs(:,:)    = getvar(cf_in,   cn_vosaline,  jk, npiglo, npjglo, ktime=jt )
+        zt(:,:)    = getvar(cf_tfil,   cn_votemper,  jk, npiglo, npjglo, ktime=jt )
+        zs(:,:)    = getvar(cf_sfil,   cn_vosaline,  jk, npiglo, npjglo, ktime=jt )
 
         dl_sigi(:,:) = 1000.d0 + sigmai(zt, zs, hdept, npiglo, npjglo)
         IF ( lfull ) THEN ; e3t(:,:) = e31d(jk)
@@ -265,11 +272,11 @@ CONTAINS
     gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk )
     e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d,  npk )
 
-    ncout = create      (cf_out, cf_in, npiglo, npjglo, 1                      , ld_nc4=lnc4  )
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1                      , ld_nc4=lnc4  )
     ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
-    ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, 1                                    )
+    ierr  = putheadervar(ncout, cf_tfil,   npiglo, npjglo, 1                                    )
 
-    dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
+    dtim  = getvar1d    (cf_tfil, cn_vtimec, npt     )
     ierr  = putvar1d    (ncout, dtim,      npt, 'T')
 
     PRINT *, 'Output files initialised ...'
