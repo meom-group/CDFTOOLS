@@ -50,6 +50,7 @@ PROGRAM cdfrichardson
 
   CHARACTER(LEN=256)                           :: cldum                    ! dummy char variable
   CHARACTER(LEN=256)                           :: cf_tfil                  ! input T file name
+  CHARACTER(LEN=256)                           :: cf_sfil                  ! input S file name (option)
   CHARACTER(LEN=256)                           :: cf_ufil                  ! input U file name
   CHARACTER(LEN=256)                           :: cf_vfil                  ! input V file name
   CHARACTER(LEN=256)                           :: cf_out = 'richardson.nc' ! output file name
@@ -69,8 +70,8 @@ PROGRAM cdfrichardson
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfrichardson  -t gridT -u gridU -v gridV [-W] [-full] ...'
-     PRINT *,'          ... [-o OUT-file] [-nc4] [-vvl W-file] '
+     PRINT *,' usage : cdfrichardson  -t T-file -u U-file -v V-file [-s S-file]...'
+     PRINT *,'          ...  [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Richardson Number (Ri) according to temperature,' 
@@ -80,11 +81,13 @@ PROGRAM cdfrichardson
      PRINT *,'       the Brunt-Vaissala frequency.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
-     PRINT *,'       -t gridT : input gridT file for temperature and salinity' 
-     PRINT *,'       -u gridU : input gridU file for zonal velocity component'
-     PRINT *,'       -v gridV : input gridV file for meridional velocity component'
+     PRINT *,'       -t T-file : input gridT file for temperature and salinity' 
+     PRINT *,'           If salinity not in T-file use -s option.'
+     PRINT *,'       -u U-file : input gridU file for zonal velocity component'
+     PRINT *,'       -v V-file : input gridV file for meridional velocity component'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file ]: specify salinity file if not T-file.'
      PRINT *,'       [-W ] : keep N2 at W points. Default is to interpolate N2 at T points' 
      PRINT *,'             on the vertical'
      PRINT *,'       [-full ] : indicate a full step configuration instead of the default'
@@ -109,6 +112,7 @@ PROGRAM cdfrichardson
   cglobal = 'Partial step computation'
 
   ijarg = 1
+  cf_sfil='none'
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
@@ -116,6 +120,7 @@ PROGRAM cdfrichardson
      CASE ( '-u'   ) ; CALL getarg (ijarg, cf_ufil) ; ijarg = ijarg + 1
      CASE ( '-v'   ) ; CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1
         ! options
+     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
      CASE ('-W'    ) ; l_w   = .TRUE.
      CASE ('-full' ) ; lfull = .TRUE. ; cglobal = 'full step computation'
      CASE ( '-nc4' ) ; lnc4  = .TRUE.
@@ -126,8 +131,11 @@ PROGRAM cdfrichardson
      END SELECT
   END DO
 
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+
   lchk = chkfile (cn_fzgr )
   lchk = lchk .OR. chkfile (cf_tfil  )
+  lchk = lchk .OR. chkfile (cf_sfil  )
   lchk = lchk .OR. chkfile (cf_ufil  )
   lchk = lchk .OR. chkfile (cf_vfil  )
   IF ( lg_vvl ) THEN
@@ -136,7 +144,7 @@ PROGRAM cdfrichardson
   IF ( lchk   ) STOP 99  ! missing files  
 
   ! Look for Missing value for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
 
   IF ( lg_vvl ) THEN
@@ -183,7 +191,7 @@ PROGRAM cdfrichardson
      !  2 levels of T and S are required : iup,idown (with respect to W level)
      !  Compute from bottom to top (for vertical integration)
      ztemp(:,:,idown) = getvar(cf_tfil, cn_votemper,  npk-1, npiglo, npjglo, ktime=jt)
-     zsal( :,:,idown) = getvar(cf_tfil, cn_vosaline,  npk-1, npiglo, npjglo, ktime=jt)
+     zsal( :,:,idown) = getvar(cf_sfil, cn_vosaline,  npk-1, npiglo, npjglo, ktime=jt)
      zu( :,:,idown)   = getvar(cf_ufil, cn_vozocrtx,  npk-1, npiglo, npjglo, ktime=jt)
      zv( :,:,idown)   = getvar(cf_vfil, cn_vomecrty,  npk-1, npiglo, npjglo, ktime=jt)
 
@@ -192,7 +200,7 @@ PROGRAM cdfrichardson
         zmask(:,:)=1.0
         WHERE(zsal(:,:,idown) == zsps ) zmask = 0.0
         ztemp(:,:,iup)= getvar(cf_tfil, cn_votemper, jk-1, npiglo, npjglo, ktime=jt)
-        zsal(:,:,iup) = getvar(cf_tfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
+        zsal(:,:,iup) = getvar(cf_sfil, cn_vosaline, jk-1, npiglo, npjglo, ktime=jt)
         zu( :,:,iup)  = getvar(cf_ufil, cn_vozocrtx, jk-1, npiglo, npjglo, ktime=jt)
         zv( :,:,iup)  = getvar(cf_vfil, cn_vomecrty, jk-1, npiglo, npjglo, ktime=jt)
 
