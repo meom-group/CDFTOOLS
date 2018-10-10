@@ -68,11 +68,13 @@ PROGRAM cdfisopsi
   REAL(KIND=8), DIMENSION(:),     ALLOCATABLE :: dtim                ! time (sec)
 
   CHARACTER(LEN=256) :: cf_tfil                              ! input gridT file
+  CHARACTER(LEN=256) :: cf_sfil                              ! input salinity file (option)
   CHARACTER(LEN=256) :: cf_out='isopsi.nc'                   ! output file name
   CHARACTER(LEN=256) :: cv_out='soisopsi'                    ! output variable name
   CHARACTER(LEN=256) :: cldum                                ! dummy character variable for reading
 
   LOGICAL            :: lnc4 = .FALSE.                       ! flag for netcdf4 output
+  LOGICAL            :: lchk = .FALSE.                       ! flag for existence of files
 
   TYPE(variable) , DIMENSION(jp_vars) :: stypvar         ! structure for attributes
   !!----------------------------------------------------------------------
@@ -81,8 +83,8 @@ PROGRAM cdfisopsi
   narg= iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfisopsi -ref REF-level -sig TGT-sigma -f T-file [-o OUT-file]...'
-     PRINT *,'          ... [-nc4] [-vvl] '
+     PRINT *,' usage :  cdfisopsi -ref REF-level -sig TGT-sigma -t T-file [-o OUT-file]...'
+     PRINT *,'          ... [-s S-file] [-nc4] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute a ''geostrophic streamfunction'', projected on an isopycn.'
@@ -95,9 +97,11 @@ PROGRAM cdfisopsi
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        -ref REF-level: reference level for pot. density.'
      PRINT *,'        -sig TGT-sigma: target density level to project on.'
-     PRINT *,'        -f T-file : input file for temperature and salinity.'
+     PRINT *,'        -t T-file : input file for temperature and salinity.'
+     PRINT *,'          If salinity not in T-file, use -s option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'        [-s S-file ]: specify the name of salinity file if not T-file.'
      PRINT *,'        [-o OUT-file ]: specify output filename instead of ',TRIM(cf_out)
      PRINT *,'        [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
@@ -126,21 +130,31 @@ PROGRAM cdfisopsi
      STOP 
   ENDIF
 
-  ijarg = 1
+  ijarg  = 1
+  cf_sfil='none'
+
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-ref' ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) refdepth
-     CASE ( '-sig' ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsigmaref
-     CASE ( '-f'   ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg+1 
+     CASE ( '-ref'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) refdepth
+     CASE ( '-sig'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsigmaref
+     CASE ('-t','-f') ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg+1 
      ! options
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg+1 
-     CASE ( '-nc4' ) ; lnc4   = .TRUE.
-     CASE ( '-vvl' ) ; lg_vvl = .TRUE.
+     CASE ( '-s'    ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg+1 
+     CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg+1 
+     CASE ( '-nc4'  ) ; lnc4   = .TRUE.
+     CASE ( '-vvl'  ) ; lg_vvl = .TRUE.
      END SELECT
   ENDDO
 
-  IF ( chkfile(cf_tfil) .OR. chkfile(cn_fzgr) .OR. chkfile(cn_fhgr) ) STOP 99  ! missing file
+  IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil
+ 
+  lchk =  chkfile(cf_tfil)
+  lchk =  chkfile(cf_sfil) .OR. lchk
+  lchk =  chkfile(cn_fhgr) .OR. lchk
+  lchk =  chkfile(cn_fzgr) .OR. lchk
+
+  IF ( lchk ) STOP 99  ! missing file
 
   IF ( lg_vvl ) THEN
      cn_fe3t = cf_tfil
@@ -168,7 +182,7 @@ PROGRAM cdfisopsi
 
   !--------------------------------------------------------------------
   CALL CreateOutput
-  zspval   = getatt(cf_tfil, cn_vosaline, cn_missing_value )
+  zspval   = getatt(cf_sfil, cn_vosaline, cn_missing_value )
   !---------------------------------------------------------------------------
   DO jt=1,npt
      PRINT *,'time ',jt, dtim(jt)/86400.,' days'
@@ -185,7 +199,7 @@ PROGRAM cdfisopsi
         zmask(:,:) = 1.
 
         ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-        zsal(:,:)  = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        zsal(:,:)  = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
         WHERE(zsal == zspval ) zmask = 0.
 
@@ -244,7 +258,7 @@ PROGRAM cdfisopsi
      ALLOCATE( zsal3(npiglo, npjglo,npk) )
 
      DO jk=1,npk
-        zsal3(:,:,jk) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        zsal3(:,:,jk) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
      ENDDO
      
      CALL ProjectOverIso (zsal3, zsalint)
@@ -273,7 +287,7 @@ PROGRAM cdfisopsi
 
      DO jk=1,npk
         ztemp(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime=jt)
-        zsal (:,:) = getvar(cf_tfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
+        zsal (:,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime=jt)
 
         ztemp0(:,:) = ztmean
         zsal0 (:,:) = zsmean
@@ -324,7 +338,7 @@ PROGRAM cdfisopsi
      ALLOCATE(zssh(npiglo,npjglo) , zsigsurf(npiglo,npjglo), psi0(npiglo,npjglo) )
 
      ztemp   (:,:) = getvar(cf_tfil, cn_votemper, 1, npiglo, npjglo, ktime=jt)
-     zsal    (:,:) = getvar(cf_tfil, cn_vosaline, 1, npiglo, npjglo, ktime=jt)
+     zsal    (:,:) = getvar(cf_sfil, cn_vosaline, 1, npiglo, npjglo, ktime=jt)
      zssh    (:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
 
      ! land/sea mask at surface
