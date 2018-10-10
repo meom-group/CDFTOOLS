@@ -82,6 +82,7 @@ PROGRAM cdfbuoyflx
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim                              ! time counter
 
   CHARACTER(LEN=256)                        :: cf_tfil ,cf_flxfil, cf_rnfil      ! input file gridT, flx and runoff
+  CHARACTER(LEN=256)                        :: cf_sfil                           ! input salinity file (option)
   CHARACTER(LEN=256)                        :: cf_out='buoyflx.nc'               ! output file
   CHARACTER(LEN=256)                        :: cldum                             ! dummy character variable
   CHARACTER(LEN=256)                        :: cv_sss                            ! Actual name for SSS
@@ -99,7 +100,7 @@ PROGRAM cdfbuoyflx
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfbuoyflx  -t T-file [-r RNF-file] [-f FLX-file ] [-sss SSS-name]'
-     PRINT *,'     ... [-sst SST-name] [-nc4] [-o OUT-file] [-short ]'
+     PRINT *,'     ... [-s S-file] [-sst SST-name] [-nc4] [-o OUT-file] [-short ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute (or read) the heat and water fluxes components.'
@@ -110,9 +111,11 @@ PROGRAM cdfbuoyflx
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file   : netcdf file with temperature and salinity '
+     PRINT *,'                 If salinity not in T-file, use -s option.'
      PRINT *,'      '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-s S-file   ] : Specify salinity file if not T-file.' 
      PRINT *,'       [-r RNF-file ] : Specify a run-off file if runoff not in T-file '
      PRINT *,'                         nor in FLX-file'
      PRINT *,'       [-f FLX-file ] : Use this option if fluxes are not saved in gridT files'
@@ -139,6 +142,7 @@ PROGRAM cdfbuoyflx
      STOP 
   ENDIF
   ijarg   = 1
+  cf_sfil = 'none'
   cf_flxfil='none'
   cf_rnfil='none'
   cv_sss=cn_vosaline
@@ -151,6 +155,8 @@ PROGRAM cdfbuoyflx
         ;              lchk = lchk .OR. chkfile (cf_flxfil)
      CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
         ;              lchk = lchk .OR. chkfile (cf_tfil  )
+     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
+        ;              lchk = lchk .OR. chkfile (cf_sfil  )
      CASE ( '-r'   ) ; CALL getarg (ijarg, cf_rnfil) ; ijarg = ijarg + 1
         ;              lchk = lchk .OR. chkfile (cf_rnfil )
      CASE ( '-sss' ) ; CALL getarg (ijarg, cv_sss) ; ijarg = ijarg + 1
@@ -161,6 +167,8 @@ PROGRAM cdfbuoyflx
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
   IF (lchk ) STOP 99 ! missing files
 
   IF ( cf_flxfil == 'none' ) THEN
@@ -172,7 +180,7 @@ PROGRAM cdfbuoyflx
   ENDIF
 
   ! Look for Missing value for salinity
-  zsps = getspval(cf_tfil, cn_vosaline)
+  zsps = getspval(cf_sfil, cn_vosaline)
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
