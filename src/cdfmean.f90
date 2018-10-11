@@ -405,6 +405,7 @@ PROGRAM cdfmean
         ! Get velocities v at ik
         zv   (:,:) = getvar(cf_in,   cv_nam, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=jt)
         zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin          )
+        zv = zv * zmask  ! do the masking now in case you have funny-like FillValues ( Thx Mercator :) )
         IF ( lfull ) THEN
            e3(:,:) = e31d(jk)
         ELSE
@@ -416,8 +417,8 @@ PROGRAM cdfmean
            dsurf        = SUM(DBLE(          e1 * e2      * zmask * ibmask(jbasin,:,:)))
            dvol2d       = SUM(DBLE(          e1 * e2 * e3 * zmask * ibmask(jbasin,:,:)))
            dvol(jbasin) = dvol(jbasin) + dvol2d
-           dsum2d       = SUM(DBLE(zv      * e1 * e2 * e3 * zmask * ibmask(jbasin,:,:)))
-           dvar2d       = SUM(DBLE(zv * zv * e1 * e2 * e3 * zmask * ibmask(jbasin,:,:)))
+           dsum2d       = SUM(DBLE(zv      * e1 * e2 * e3         * ibmask(jbasin,:,:)))  ! zv is already x by zmask
+           dvar2d       = SUM(DBLE(zv * zv * e1 * e2 * e3         * ibmask(jbasin,:,:)))
            dsum(jbasin) = dsum(jbasin) + dsum2d
            dvar(jbasin) = dvar(jbasin) + dvar2d
 
