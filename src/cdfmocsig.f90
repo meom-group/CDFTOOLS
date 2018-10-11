@@ -65,6 +65,8 @@ PROGRAM cdfmocsig
   REAL(KIND=4)                                    :: sigmin               ! minimum density for bining
   REAL(KIND=4)                                    :: sigstp               ! density step for bining
   REAL(KIND=4)                                    :: zsps                 ! Salinity Missing value
+  REAL(KIND=4)                                    :: zspt                 ! Temperature Missing value
+  REAL(KIND=4)                                    :: zspv                 ! Merid. Vel.  Missing value
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: sigma                ! density coordinate 
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: e31d                 ! vertical level (full step)
   REAL(KIND=4), DIMENSION (:),        ALLOCATABLE :: gdep                 ! depth of T layers ( full step)
@@ -186,7 +188,7 @@ PROGRAM cdfmocsig
      CASE ( '-r'     ) ;  CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; ii=ii+1 ; READ(cldum,*) pref
      CASE ( '-ntr'   ) ;  lntr = .TRUE. ; ii=ii+1
         ! options
-     CASE ( '-s'     ) ;  CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1 ; ii=ii+1
+     CASE ( '-s'     ) ;  CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1 
      CASE ('-full'   ) ; lfull   = .TRUE. ; cglobal = 'Full step computation'
      CASE ('-eiv'    ) ; leiv    = .TRUE.
      CASE ('-sigmin' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigmin ; lbin(1) = .FALSE.
@@ -200,7 +202,7 @@ PROGRAM cdfmocsig
      END SELECT
   END DO
 
-  IF ( ii /= 3 ) THEN ; PRINT *,' ERROR : mandatory arguments missing, see usage please !'  ; STOP 99
+  IF ( ii /= 3  ) THEN ; PRINT *,' ERROR : mandatory arguments missing, see usage please !'  ; STOP 99
   ENDIF
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
@@ -216,6 +218,8 @@ PROGRAM cdfmocsig
 
   ! Look for salinity spval
   zsps = getspval(cf_sfil, cn_vosaline)
+  zspt = getspval(cf_tfil, cn_votemper)
+  zspv = getspval(cf_vfil, cn_vomecrty)
 
   IF ( lg_vvl )  THEN
      cn_fe3v = cf_vfil
@@ -361,6 +365,7 @@ PROGRAM cdfmocsig
         IF (lprint) PRINT *,' working at depth ',jk
         ! Get velocities v at jj
         zv(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime = jt)
+        WHERE( zv == zspv ) zv = 0.
         IF ( leiv ) THEN
            zveiv(:,:) = getvar(cf_vfil, cn_vomeeivv, jk, npiglo,npjglo, ktime = jt)
            zv(:,:)    = zv(:,:) + zveiv(:,:)
@@ -368,6 +373,8 @@ PROGRAM cdfmocsig
         ! JMM remark : should be more correct to use t and s a V point ?
         zt(:,:) = getvar(cf_tfil, cn_votemper, jk, npiglo, npjglo, ktime = jt)
         zs(:,:) = getvar(cf_sfil, cn_vosaline, jk, npiglo, npjglo, ktime = jt)
+        WHERE( zt == zspt ) zt = 0.
+        WHERE( zs == zsps ) zs = 0.
 
         ! get e3v at latitude jj
         IF ( lfull ) THEN ; e3v(:,:) = e31d(jk)
