@@ -285,6 +285,7 @@ PROGRAM cdfsum
         zv   (:,:) = getvar(cf_in,   cv_in,  ik, npiglo, npjglo, ktime=jt,   kimin=iimin, kjmin=ijmin)
         zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo,             kimin=iimin, kjmin=ijmin)
         !    zmask(:,npjglo)=0.
+        zv = zv * zmask
 
         ! get e3 at level ik ( ps...)
         e3(:,:) = getvar(cf_e3, cv_e3, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl)      
@@ -293,7 +294,7 @@ PROGRAM cdfsum
            dsurf  = SUM(DBLE(e1 * e2      * zmask))
            dvol2d = SUM(DBLE(e1 * e2 * e3 * zmask))
            dvol   = dvol + dvol2d
-           dsum2d = SUM(DBLE(zv * e1 * e2 * zmask))
+           dsum2d = SUM(DBLE(zv * e1 * e2 ))
            dsum   = dsum + dsum2d
            IF (dvol2d /= 0 )THEN
               PRINT *, ' Sum value at level ', ik, '(',gdep(ik),' m) ', dsum2d
