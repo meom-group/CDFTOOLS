@@ -284,13 +284,14 @@ PROGRAM cdf_xtract_brokenline
   IF ( cf_sshfil == 'none') THEN ; cf_sshfil = cf_tfil
   ENDIF
   ! check file existence
-  lchk = chkfile(cn_fhgr )
-  lchk = chkfile(cf_bath ) .OR. lchk 
-  lchk = chkfile(cn_fzgr ) .OR. lchk
-  lchk = chkfile(cf_tfil ) .OR. lchk
-  lchk = chkfile(cf_sfil ) .OR. lchk
-  lchk = chkfile(cf_ufil ) .OR. lchk
-  lchk = chkfile(cf_vfil ) .OR. lchk
+  lchk = chkfile(cn_fhgr   )
+  lchk = chkfile(cf_bath   ) .OR. lchk 
+  lchk = chkfile(cn_fzgr   ) .OR. lchk
+  lchk = chkfile(cf_tfil   ) .OR. lchk
+  lchk = chkfile(cf_sfil   ) .OR. lchk
+  lchk = chkfile(cf_sshfil ) .OR. lchk
+  lchk = chkfile(cf_ufil   ) .OR. lchk
+  lchk = chkfile(cf_vfil   ) .OR. lchk
   IF ( lsecfile ) THEN 
      DO jsec = 1, nfiles
         lchk = chkfile(cf_lst(jsec) ) .OR. lchk
