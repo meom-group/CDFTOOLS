@@ -69,6 +69,7 @@ PROGRAM cdfisopsi
 
   CHARACTER(LEN=256) :: cf_tfil                              ! input gridT file
   CHARACTER(LEN=256) :: cf_sfil                              ! input salinity file (option)
+  CHARACTER(LEN=255) :: cf_sshfil                            ! input SSH file (option)
   CHARACTER(LEN=256) :: cf_out='isopsi.nc'                   ! output file name
   CHARACTER(LEN=256) :: cv_out='soisopsi'                    ! output variable name
   CHARACTER(LEN=256) :: cldum                                ! dummy character variable for reading
@@ -84,7 +85,7 @@ PROGRAM cdfisopsi
 
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfisopsi -ref REF-level -sig TGT-sigma -t T-file [-o OUT-file]...'
-     PRINT *,'          ... [-s S-file] [-nc4] [-vvl] '
+     PRINT *,'          ... [-s S-file]  [--ssh-file SSH-file] [-nc4] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute a ''geostrophic streamfunction'', projected on an isopycn.'
@@ -99,9 +100,11 @@ PROGRAM cdfisopsi
      PRINT *,'        -sig TGT-sigma: target density level to project on.'
      PRINT *,'        -t T-file : input file for temperature and salinity.'
      PRINT *,'          If salinity not in T-file, use -s option.'
+     PRINT *,'          If ssh not in T-file use --ssh-file option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        [-s S-file ]: specify the name of salinity file if not T-file.'
+     PRINT *,'        [--ssh-file SSH-file] : specify the ssh file if not in T-file.'
      PRINT *,'        [-o OUT-file ]: specify output filename instead of ',TRIM(cf_out)
      PRINT *,'        [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
@@ -131,28 +134,32 @@ PROGRAM cdfisopsi
   ENDIF
 
   ijarg  = 1
-  cf_sfil='none'
+  cf_sfil   = 'none'
+  cf_sshfil = 'none'
 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-ref'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) refdepth
-     CASE ( '-sig'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsigmaref
-     CASE ('-t','-f') ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg+1 
+     CASE ( '-ref'     ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) refdepth
+     CASE ( '-sig'     ) ; CALL getarg(ijarg, cldum  ) ; ijarg = ijarg+1 ; READ(cldum,*) zsigmaref
+     CASE ('-t','-f'   ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg+1 
      ! options
-     CASE ( '-s'    ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg+1 
-     CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg+1 
-     CASE ( '-nc4'  ) ; lnc4   = .TRUE.
-     CASE ( '-vvl'  ) ; lg_vvl = .TRUE.
+     CASE ( '-s'       ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg+1 
+     CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg= ijarg+1
+     CASE ( '-o'       ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg+1 
+     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
+     CASE ( '-vvl'     ) ; lg_vvl = .TRUE.
      END SELECT
   ENDDO
 
-  IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil
+  IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
+  IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil
  
-  lchk =  chkfile(cf_tfil)
-  lchk =  chkfile(cf_sfil) .OR. lchk
-  lchk =  chkfile(cn_fhgr) .OR. lchk
-  lchk =  chkfile(cn_fzgr) .OR. lchk
+  lchk =  chkfile(cf_tfil  )
+  lchk =  chkfile(cf_sfil  ) .OR. lchk
+  lchk =  chkfile(cf_sshfil) .OR. lchk
+  lchk =  chkfile(cn_fhgr  ) .OR. lchk
+  lchk =  chkfile(cn_fzgr  ) .OR. lchk
 
   IF ( lchk ) STOP 99  ! missing file
 
@@ -337,9 +344,9 @@ PROGRAM cdfisopsi
      ! 7. Finally we compute the surface streamfunction
      ALLOCATE(zssh(npiglo,npjglo) , zsigsurf(npiglo,npjglo), psi0(npiglo,npjglo) )
 
-     ztemp   (:,:) = getvar(cf_tfil, cn_votemper, 1, npiglo, npjglo, ktime=jt)
-     zsal    (:,:) = getvar(cf_sfil, cn_vosaline, 1, npiglo, npjglo, ktime=jt)
-     zssh    (:,:) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
+     ztemp   (:,:) = getvar(cf_tfil,   cn_votemper, 1, npiglo, npjglo, ktime=jt)
+     zsal    (:,:) = getvar(cf_sfil,   cn_vosaline, 1, npiglo, npjglo, ktime=jt)
+     zssh    (:,:) = getvar(cf_sshfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)
 
      ! land/sea mask at surface
      zmask (:,:) = 1.
