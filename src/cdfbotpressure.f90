@@ -47,8 +47,9 @@ PROGRAM cdfbotpressure
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_bpres            ! Bottom pressure
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dl_sigi             ! insitu density
 
-  CHARACTER(LEN=256)                        :: cf_tfil             ! input/output file
-  CHARACTER(LEN=256)                        :: cf_sfil             ! input/output file
+  CHARACTER(LEN=256)                        :: cf_tfil             ! input gridT file
+  CHARACTER(LEN=256)                        :: cf_sfil             ! salinity file (option)
+  CHARACTER(LEN=256)                        :: cf_sshfil           ! ssh file (option)
   CHARACTER(LEN=256)                        :: cf_out='botpressure.nc'   ! output file
   CHARACTER(LEN=256)                        :: cldum               ! dummy string for command line browsing
   CHARACTER(LEN=256)                        :: cglobal             ! Global attribute
@@ -67,7 +68,7 @@ PROGRAM cdfbotpressure
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfbotpressure -t T-file [-s S-file] [-full] [-ssh] [-ssh2 ]...'
-     PRINT *,'                    ... [-xtra ] [-vvl ] [ -o OUT-file ] [-nc4]'
+     PRINT *,'             ... [--ssh-file SSH-file] [-xtra ] [-vvl ] [ -o OUT-file ] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'          Compute the bottom pressure (pa) from in situ density.'
@@ -78,6 +79,7 @@ PROGRAM cdfbotpressure
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'        [-s S-file ]: specify salinity file, if not T-file.'
+     PRINT *,'      [--ssh-file SSH-file] : specify the ssh file if not in T-file.'
      PRINT *,'        [-full] : for full step computation ' 
      PRINT *,'        [-ssh]  : Also take SSH into account in the computation'
      PRINT *,'                In this case, use rau0=',pp_rau0,' kg/m3 for '
@@ -112,23 +114,27 @@ PROGRAM cdfbotpressure
   ENDIF
   ! browse command line
   cf_sfil='none'
+  cf_sshfil='none'
   ijarg = 1   ; nvar = 1
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
-     CASE ('-t','-f') ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
-     CASE ( '-s'    ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
-     CASE ( '-ssh'  ) ; lssh  = .TRUE. 
-     CASE ( '-ssh2' ) ; lssh2 = .TRUE. 
-     CASE ( '-xtra' ) ; lxtra = .TRUE.  ; nvar = 3  ! more outputs
-     CASE ( '-full' ) ; lfull = .TRUE. 
-     CASE ( '-vvl'  ) ; lg_vvl= .TRUE. 
-     CASE ( '-o'    ) ; CALL getarg( ijarg,cf_out) ; ijarg = ijarg + 1
-     CASE ( '-nc4'  ) ; lnc4  = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.'  ; STOP 99
+     CASE ('-t','-f'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+     ! options
+     CASE ( '-s'       ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
+     CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg = ijarg + 1
+     CASE ( '-ssh'     ) ; lssh  = .TRUE. 
+     CASE ( '-ssh2'    ) ; lssh2 = .TRUE. 
+     CASE ( '-xtra'    ) ; lxtra = .TRUE.  ; nvar = 3  ! more outputs
+     CASE ( '-full'    ) ; lfull = .TRUE. 
+     CASE ( '-vvl'     ) ; lg_vvl= .TRUE. 
+     CASE ( '-o'       ) ; CALL getarg( ijarg,cf_out) ; ijarg = ijarg + 1
+     CASE ( '-nc4'     ) ; lnc4  = .TRUE.
+     CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.'  ; STOP 99
      END SELECT
   END DO
-  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+  IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
+  IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil
 
   CALL SetGlobalAtt(cglobal)
   ALLOCATE ( ipk(nvar), id_varout(nvar), stypvar(nvar) )
@@ -177,7 +183,7 @@ PROGRAM cdfbotpressure
      ENDIF
 
      IF ( lssh ) THEN
-        zt(:,:)       = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
+        zt(:,:)       = getvar(cf_sshfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * pp_rau0 * zt(:,:)
         IF (lxtra ) THEN
            ierr = putvar(ncout, id_varout(2) ,zt      ,       1, npiglo, npjglo, ktime=jt)
