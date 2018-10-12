@@ -144,9 +144,10 @@ PROGRAM cdfdynh_anom
   IF ( lout ) cf_out2d = cf_out  !  name of 2D file if -limit is used
 
   lchk = chkfile(cf_tfil)
-  lchk = lchk .OR. chkfile(cf_sfil)
-  lchk = lchk .OR. chkfile(cn_fmsk)
-  lchk = lchk .OR. chkfile(cn_fzgr)
+  lchk = lchk .OR. chkfile(cf_sfil  )
+  lchk = lchk .OR. chkfile(cf_sshfil)
+  lchk = lchk .OR. chkfile(cn_fmsk  )
+  lchk = lchk .OR. chkfile(cn_fzgr  )
 
   IF ( lchk ) STOP 99 ! missing files
 
