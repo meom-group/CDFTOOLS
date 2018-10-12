@@ -66,7 +66,7 @@ PROGRAM cdfpsi
 
   CHARACTER(LEN=256)                        :: cf_ufil         ! gridU netcdf file name
   CHARACTER(LEN=256)                        :: cf_vfil         ! gridV netcdf file name
-  CHARACTER(LEN=256)                        :: cf_tfil         ! gridT netcdf file name (-ssh option)
+  CHARACTER(LEN=255)                        :: cf_sshfil       ! input SSH file (option)
   CHARACTER(LEN=256)                        :: cf_out='psi.nc' ! output file name
   CHARACTER(LEN=256)                        :: cv_out='sobarstf' ! output variable name
   CHARACTER(LEN=256)                        :: cv_outssh='sobarstfssh'    ! output variable name
@@ -91,9 +91,9 @@ PROGRAM cdfpsi
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfpsi -u U-file -v V-file [-V] [-full] [-mask] [-mean] [-nc4] ...'
-     PRINT *,'          ... [-ssh T-file] [-open] [-ref iref jref] [-o OUT-file] [-vvl] ...'
-     PRINT *,'          ... [-lev]'
+     PRINT *,' usage : cdfpsi -u U-file -v V-file [-V] [-full] [-mask] [-mean] [-nc4]    ...'
+     PRINT *,'          ... [--ssh-file SSH-file] [-open] [-ref iref jref] [-o OUT-file] ...'
+     PRINT *,'          ... [-vvl] [-lev]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the barotropic stream function (a proxy) as the integral of '
@@ -110,7 +110,7 @@ PROGRAM cdfpsi
      PRINT *,'       [-mask ] : mask output fields. Note that the land value is significant.'
      PRINT *,'              It correspond to the potential on this continent.'
      PRINT *,'       [-mean ] : save the average of the computations done with U and V.'
-     PRINT *,'       [-ssh T-file ] : compute the transport in the ''ssh'' layer, using '
+     PRINT *,'       [--ssh-file SSH-file] : compute the transport in the ''ssh'' layer, using '
      PRINT *,'              surface velocities. Take the ssh from T-file specified in this'
      PRINT *,'              option. This is an experimental option, not certified ...'
      PRINT *,'       [-open ] : for open domain configuration. See also -ref to set  '
@@ -147,30 +147,30 @@ PROGRAM cdfpsi
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-u'   ) ; CALL getarg( ijarg, cf_ufil ) ; ijarg=ijarg+1 
-     CASE ('-v'   ) ; CALL getarg( ijarg, cf_vfil ) ; ijarg=ijarg+1 
+     CASE ('-u'        ) ; CALL getarg( ijarg, cf_ufil ) ; ijarg=ijarg+1 
+     CASE ('-v'        ) ; CALL getarg( ijarg, cf_vfil ) ; ijarg=ijarg+1 
         ! options 
-     CASE ('-V'   ) ; ll_v  = .TRUE. ;  ll_u = .FALSE.
-     CASE ('-full') ; lfull = .TRUE.
-     CASE ('-mask') ; lmask = .TRUE.
-     CASE ('-mean') ; lmean = .TRUE.  ; ll_v = .TRUE. ; ll_u = .TRUE.
-     CASE ('-ssh' ) ; lssh  = .TRUE.  ; nvout=3
-        ;             CALL getarg( ijarg, cf_tfil ) ; ijarg=ijarg+1 
-     CASE ('-open') ; lopen = .TRUE.  ; ll_v = .TRUE. ; ll_u = .TRUE.
-     CASE ('-o'   ) ; CALL getarg( ijarg, cf_out ) ; ijarg=ijarg + 1 
-     CASE ('-nc4' ) ; lnc4  = .TRUE. 
-     CASE ('-ref')  ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) iiref
-        ;             CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ijref
-     CASE ('-vvl')  ; lg_vvl = .TRUE.
-     CASE ('-lev')  ; llev   = .TRUE. ; cv_out='vobarstf'
-     CASE DEFAULT   ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP 99
+     CASE ('-V'        ) ; ll_v  = .TRUE. ;  ll_u = .FALSE.
+     CASE ('-full'     ) ; lfull = .TRUE.
+     CASE ('-mask'     ) ; lmask = .TRUE.
+     CASE ('-mean'     ) ; lmean = .TRUE.  ; ll_v = .TRUE. ; ll_u = .TRUE.
+     CASE ('--ssh-file') ; lssh  = .TRUE.  ; nvout=3
+        ;                  CALL getarg( ijarg, cf_sshfil ) ; ijarg=ijarg+1 
+     CASE ('-open'     ) ; lopen = .TRUE.  ; ll_v = .TRUE. ; ll_u = .TRUE.
+     CASE ('-o'        ) ; CALL getarg( ijarg, cf_out ) ; ijarg=ijarg + 1 
+     CASE ('-nc4'      ) ; lnc4  = .TRUE. 
+     CASE ('-ref'      ) ; CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) iiref
+        ;                  CALL getarg( ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) ijref
+     CASE ('-vvl'      ) ; lg_vvl = .TRUE.
+     CASE ('-lev'      ) ; llev   = .TRUE. ; cv_out='vobarstf'
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
   lchk = lchk .OR. chkfile( cn_fhgr )
   lchk = lchk .OR. chkfile( cn_fzgr )
   IF ( lmask) lchk = lchk .OR. chkfile( cn_fmsk )
-  IF ( lssh ) lchk = lchk .OR. chkfile( cf_tfil )
+  IF ( lssh ) lchk = lchk .OR. chkfile( cf_sshfil )
   lchk = lchk .OR. chkfile( cf_ufil )
   lchk = lchk .OR. chkfile( cf_vfil )
 
@@ -262,7 +262,7 @@ PROGRAM cdfpsi
         zsshu(:,:) = 0.0 ; zsshv(:,:) = 0.0
         dpsisshu(:,:) = 0.d0 ; dpsisshv(:,:) = 0.d0 ; dtrpsshu(:,:) = 0.d0 ; dtrpsshv(:,:) = 0.d0
 
-        zssh(:          ,    :     ) = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt   )
+        zssh(:          ,    :     ) = getvar(cf_sshfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         zsshu(1:npiglo-1,    :     ) = 0.5*( zssh(2:npiglo,:       ) + zssh(1:npiglo-1,:         ))
         zsshv(   :      ,1:npjglo-1) = 0.5*( zssh(:       ,2:npjglo) + zssh(:         ,1:npjglo-1))
      ENDIF
