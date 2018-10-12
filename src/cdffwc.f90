@@ -90,7 +90,8 @@ PROGRAM cdffwc
      PRINT *,'        -full  : for full step computation ' 
      PRINT *,'        -accum : compute accumulated content from top to bottom' 
      PRINT *,'        -ssh   : take ssh into account for surface layer' 
-     PRINT *,'            If ssh is not in S-file, use -t option to specify the file with ssh.'
+     PRINT *,'            If ssh is not in S-file, use --ssh-file option to specify the file'
+     PRINT *,'            with ssh.'
      PRINT *,'        -sref REFSAL : reference salinity (',TRIM(cdefault),' by default)'
      PRINT *,'        -vvl   : use time-varying vertical metrics'
      PRINT *,'        -o OUT-file :  use specified output file instead of ', TRIM(cf_out)
