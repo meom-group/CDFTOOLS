@@ -74,6 +74,7 @@ PROGRAM cdfcoloc
   CHARACTER(LEN=256)                             :: cf_weight_root
   CHARACTER(LEN=256)                             :: cf_gridt   = 'none'
   CHARACTER(LEN=256)                             :: cf_grids   = 'none'
+  CHARACTER(LEN=256)                             :: cf_grid2d  = 'none'
   CHARACTER(LEN=256)                             :: cf_gridtrc = 'none'
   CHARACTER(LEN=256)                             :: cf_diag    = 'none'
   CHARACTER(LEN=256)                             :: cf_gridu   = 'none'
@@ -103,7 +104,8 @@ PROGRAM cdfcoloc
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfcoloc -w ROOT-weight -t T-file -u U-file -v V-file [-s S-file]...'
-     PRINT *,'        ... [-h] [-l LST-fields] [-trc TRC-file] [-d DIAG-file] [-b ETOPO-file]'
+     PRINT *,'        ...  [--ssh-file SSH-file] [-h] [-l LST-fields] [-trc TRC-file] ...'
+     PRINT *,'        ...  [-d DIAG-file] [-b ETOPO-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       This program produces 3D colocalized model values for selected fields.' 
@@ -122,11 +124,13 @@ PROGRAM cdfcoloc
      PRINT *,'                are appended if necessary.'
      PRINT *,'       -t T-file : name of gridT model file, used for default fields.'
      PRINT *,'              If salinity not in T-file use -s option.'
+     PRINT *,'              If ssh not in T-file use --ssh-file option.'
      PRINT *,'       -u U-file : name of gridU model file, used for default fields.'
      PRINT *,'       -v V-file : name of gridV model file, used for default fields.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'       [-s S-file ] : Give salinity file oif not T-file.'
+     PRINT *,'       [-s S-file ] : Give salinity file if not T-file.'
+     PRINT *,'       [--ssh-file SSH-file] : specify the ssh file if not in T-file.'
      PRINT *,'       [-h ] : Gives details on the available fields.'
      PRINT *,'       [-l LST-fields ] : Gives a comma-separated list of selected fields to be'
      PRINT *,'              colocalized, from a whole set of fields which are fully described'
@@ -161,21 +165,23 @@ PROGRAM cdfcoloc
   DO WHILE ( iarg <= narg ) 
      CALL getarg ( iarg, cldum ) ; iarg = iarg + 1
      SELECT CASE ( cldum )
-     CASE ('-w'   ) ; CALL getarg ( iarg, cf_weight_root ) ; iarg = iarg + 1
-     CASE ('-t'   ) ; CALL getarg ( iarg, cf_gridt       ) ; iarg = iarg + 1
-     CASE ('-u'   ) ; CALL getarg ( iarg, cf_gridu       ) ; iarg = iarg + 1
-     CASE ('-v'   ) ; CALL getarg ( iarg, cf_gridv       ) ; iarg = iarg + 1
+     CASE ('-w'        ) ; CALL getarg ( iarg, cf_weight_root ) ; iarg = iarg + 1
+     CASE ('-t'        ) ; CALL getarg ( iarg, cf_gridt       ) ; iarg = iarg + 1
+     CASE ('-u'        ) ; CALL getarg ( iarg, cf_gridu       ) ; iarg = iarg + 1
+     CASE ('-v'        ) ; CALL getarg ( iarg, cf_gridv       ) ; iarg = iarg + 1
         ! options
-     CASE ('-s'   ) ; CALL getarg ( iarg, cf_grids       ) ; iarg = iarg + 1
-     CASE ('-l'   ) ; CALL getarg ( iarg, ctmplst0       ) ; iarg = iarg + 1
-     CASE ('-trc' ) ; CALL getarg ( iarg, cf_gridtrc     ) ; iarg = iarg + 1
-     CASE ('-d'   ) ; CALL getarg ( iarg, cf_diag        ) ; iarg = iarg + 1
-     CASE ('-b'   ) ; CALL getarg ( iarg, cf_bathy       ) ; iarg = iarg + 1
-     CASE ('-h'   ) ; CALL help_message 
+     CASE ('-s'        ) ; CALL getarg ( iarg, cf_grids       ) ; iarg = iarg + 1
+     CASE ('--ssh-file') ; CALL getarg ( iarg, cf_grid2d      ) ; iarg = iarg + 1
+     CASE ('-l'        ) ; CALL getarg ( iarg, ctmplst0       ) ; iarg = iarg + 1
+     CASE ('-trc'      ) ; CALL getarg ( iarg, cf_gridtrc     ) ; iarg = iarg + 1
+     CASE ('-d'        ) ; CALL getarg ( iarg, cf_diag        ) ; iarg = iarg + 1
+     CASE ('-b'        ) ; CALL getarg ( iarg, cf_bathy       ) ; iarg = iarg + 1
+     CASE ('-h'        ) ; CALL help_message 
      CASE DEFAULT   ; PRINT *,TRIM(cldum),' : option not available.' ; STOP 99
      END SELECT
   ENDDO
-  IF ( cf_grids == 'none' ) cf_grids = cf_gridt
+  IF ( cf_grids  == 'none' ) cf_grids  = cf_gridt
+  IF ( cf_grid2d == 'none' ) cf_grid2d = cf_gridt
 
   ! intepret ctmplst0 to set up cltype list, ntype and build cf_out file name
   CALL getfld( ) 
@@ -234,7 +240,7 @@ PROGRAM cdfcoloc
         dscale    = 1.d0
      CASE ('SSH')        !  SSH, not used for Greg Holloway output
         cf_weight = cf_weight_t
-        cf_in     = cf_gridt
+        cf_in     = cf_grid2d
         cvar      = cn_sossheig 
         cvmask    = cn_tmask
         npkv      = 1
