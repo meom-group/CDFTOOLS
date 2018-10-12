@@ -53,7 +53,8 @@ PROGRAM cdfdynh_anom
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dsig0, dsig      ! In situ density (reference, local)
 
   CHARACTER(LEN=256)                        :: cf_tfil           ! input file name
-  CHARACTER(LEN=256)                        :: cf_sfil           ! input file name
+  CHARACTER(LEN=256)                        :: cf_sfil           ! input salinity file (option)
+  CHARACTER(LEN=255)                        :: cf_sshfil         ! input SSH file (option)
   CHARACTER(LEN=256)                        :: cf_out='cdfhdy3d.nc' ! output file name
   CHARACTER(LEN=256)                        :: cv_out='vohdy'   ! output file name
   CHARACTER(LEN=256)                        :: cf_out2d='cdfhdy2d.nc' ! output file name
@@ -72,7 +73,7 @@ PROGRAM cdfdynh_anom
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfdynh_anom -t T-file [-s S-file] [-limit lev1 lev2] [-vvl] ...'
-     PRINT *,'             ... [-o OUT-file] [-nc4]'
+     PRINT *,'             ... [--ssh-file SSH-file] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute dynamic height anomaly from T-file given as argument.'
@@ -86,9 +87,11 @@ PROGRAM cdfdynh_anom
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf file with temperature and salinity.' 
      PRINT *,'             If salinity is not in T-file, use -s option.'
+     PRINT *,'             If ssh not in T-file use --ssh-file option.'
      PRINT *,'     '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-s S-file ] : Specify salinity file if not T-file.' 
+     PRINT *,'       [--ssh-file SSH-file] : specify the ssh file if not in T-file.'
      PRINT *,'       [-limit lev1 lev2] : if specified, the program will only output the'
      PRINT *,'              dynamic height anomaly at lev1 with reference at lev2.'
      PRINT *,'       [-vvl] : use time-varying vertical metrics.'
@@ -115,26 +118,29 @@ PROGRAM cdfdynh_anom
      STOP 
   ENDIF
 
-  cf_sfil = 'none'
+  cf_sfil   = 'none'
+  cf_sshfil = 'none'
   ijarg = 1
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t','-f') ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ( '-t','-f'  ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
         ! options
-     CASE ( '-s'     ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
-     CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1 
-        ;                lout  = .TRUE.
-     CASE ( '-nc4'   ) ; lnc4  = .TRUE.
-     CASE ( '-vvl'   ) ; lg_vvl= .TRUE.
-     CASE ( '-limit' ) ; limit = .TRUE.
-        ;                CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev1
-        ;                CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev2
-     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
+     CASE ( '-s'       ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg=ijarg+1
+     CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1 
+        ;                  lout  = .TRUE.
+     CASE ( '-nc4'     ) ; lnc4  = .TRUE.
+     CASE ( '-vvl'     ) ; lg_vvl= .TRUE.
+     CASE ( '-limit'   ) ; limit = .TRUE.
+        ;                  CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev1
+        ;                  CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev2
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
 
-  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
+  IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
+  IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil
   IF ( lout ) cf_out2d = cf_out  !  name of 2D file if -limit is used
 
   lchk = chkfile(cf_tfil)
@@ -178,7 +184,7 @@ PROGRAM cdfdynh_anom
   temp0(:,:) =  0.
   zsal0(:,:)  = 35.
 
-  zssh(:,:)  = getvar(cf_tfil,  cn_sossheig, 1,  npiglo, npjglo)
+  zssh(:,:)  = getvar(cf_sshfil,  cn_sossheig, 1,  npiglo, npjglo)
   e3t_1d(:)  = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   DO jt = 1, npt
