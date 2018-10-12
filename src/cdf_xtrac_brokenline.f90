@@ -151,9 +151,9 @@ PROGRAM cdf_xtract_brokenline
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdf_xtrac_brokenline -t T-file -u U-file -v V-file [-i ICE-file] ...'
-     PRINT *,'         ... [-b BAT-file] [-mxl MXL-file] [-f section_filei,sec_file2,..] ...'
-     PRINT *,'         ... [-l LST-sections] [-ssh] [-mld] [-vt] [-vecrot] [-vvl W-file] ...'
-     PRINT *,'         ... [-s S-file ] [-o ROOT_name] [-ice] [-verbose]'
+     PRINT *,'        ... [-b BAT-file] [-mxl MXL-file] [-f section_filei,sec_file2,..] ...'
+     PRINT *,'        ... [-l LST-sections] [-ssh] [-mld] [-vt] [-vecrot] [-vvl W-file] ...'
+     PRINT *,'        ... [--ssh-file SSH-file] [-s S-file ] [-o ROOT_name] [-ice] [-verbose]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'      This tool extracts model variables from model files for a geographical' 
