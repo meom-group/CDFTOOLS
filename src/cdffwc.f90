@@ -50,8 +50,8 @@ PROGRAM cdffwc
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE  :: dl_vint1, dl_vol2d   ! verticall int quantity         
   REAL(KIND=8), DIMENSION(:,:,:), ALLOCATABLE:: dfwc                 ! fwc. as 2dim to be consistent with putvar()
 
-  CHARACTER(LEN=256)                         :: cf_tfil              ! input file
-  CHARACTER(LEN=256)                         :: cf_sfil              ! input file
+  CHARACTER(LEN=256)                         :: cf_sfil              ! input salinity file 
+  CHARACTER(LEN=255)                         :: cf_sshfil            ! input SSH file (option)
   CHARACTER(LEN=256)                         :: cf_out='fwc.nc'      ! output file 
   CHARACTER(LEN=256)                         :: cldum                ! dummy string for command line browsing
   CHARACTER(LEN=256)                         :: cdefault             ! dummy string for default salinity value
@@ -73,7 +73,7 @@ PROGRAM cdffwc
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdffwc -s S-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]'
-     PRINT *,'                [-t SSH-file ] [-full] [-accum] [-ssh] [-vvl]'
+     PRINT *,'                 [--ssh-file SSH-file] [-full] [-accum] [-ssh] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the freshwater content in a given basin from top to bottom'
@@ -86,7 +86,7 @@ PROGRAM cdffwc
      PRINT *,'                to process. E.g.: -bv tmaskatl,tmaskind '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        -t SSH-file : specify the name of SSH-file if not in S-file.'
+     PRINT *,'        --ssh-file SSH-file : specify the ssh file if not in S-file.'
      PRINT *,'        -full  : for full step computation ' 
      PRINT *,'        -accum : compute accumulated content from top to bottom' 
      PRINT *,'        -ssh   : take ssh into account for surface layer' 
@@ -109,34 +109,34 @@ PROGRAM cdffwc
 
   ! browse command line
   ijarg = 1   
-  cf_tfil = 'none'
+  cf_sshfil = 'none'
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum)
-     CASE ( '-s'    ) ; CALL getarg (ijarg, cf_sfil  ) ; ijarg = ijarg + 1
-     CASE ( '-bv'   ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; CALL ParseVars(cldum)
+     CASE ( '-s'       ) ; CALL getarg (ijarg, cf_sfil  ) ; ijarg = ijarg + 1
+     CASE ( '-bv'      ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; CALL ParseVars(cldum)
         ! options
-     CASE ( '-t'    ) ; CALL getarg (ijarg, cf_tfil  ) ; ijarg = ijarg + 1
-     CASE ( '-full' ) ; lfull  = .TRUE. 
-     CASE ( '-o'    ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1
-     CASE ( '-sref' ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; READ(cldum,*) ds0
-     CASE ( '-accum') ; laccum = .TRUE. 
-     CASE ( '-ssh'  ) ; lssh   = .TRUE. 
-     CASE ( '-vvl'  ) ; lg_vvl = .TRUE. 
-     CASE ( '-b'    ) ; CALL getarg (ijarg, cf_subbas) ; ijarg = ijarg + 1
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown options.' ; STOP 99
+     CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg=ijarg+1
+     CASE ( '-full'    ) ; lfull  = .TRUE. 
+     CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1
+     CASE ( '-sref'    ) ; CALL getarg (ijarg, cldum    ) ; ijarg = ijarg + 1 ; READ(cldum,*) ds0
+     CASE ( '-accum'   ) ; laccum = .TRUE. 
+     CASE ( '-ssh'     ) ; lssh   = .TRUE. 
+     CASE ( '-vvl'     ) ; lg_vvl = .TRUE. 
+     CASE ( '-b'       ) ; CALL getarg (ijarg, cf_subbas) ; ijarg = ijarg + 1
+     CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown options.' ; STOP 99
      END SELECT
   END DO
 
-  IF ( cf_tfil == 'none' ) cf_tfil=cf_sfil
+  IF ( cf_sshfil == 'none') cf_sshfil = cf_sfil
 
   ! Security check
-  lchk = chkfile ( cf_sfil )
-  lchk = chkfile ( cf_tfil ) .OR. lchk
-  lchk = chkfile ( cn_fmsk ) .OR. lchk
-  lchk = chkfile ( cn_fhgr ) .OR. lchk
-  lchk = chkfile ( cn_fzgr ) .OR. lchk
-  lchk = chkfile (cf_subbas) .OR. lchk
+  lchk = chkfile ( cf_sfil   )
+  lchk = chkfile ( cf_sshfil ) .OR. lchk
+  lchk = chkfile ( cn_fmsk   ) .OR. lchk
+  lchk = chkfile ( cn_fhgr   ) .OR. lchk
+  lchk = chkfile ( cn_fzgr   ) .OR. lchk
+  lchk = chkfile ( cf_subbas ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) THEN
@@ -221,7 +221,7 @@ PROGRAM cdffwc
         ENDIF
 
         IF ( jk == 1 .AND. lssh ) THEN
-           ssh(:,:) = getvar(cf_tfil,     cn_sossheig, 1, npiglo, npjglo, ktime=jt)
+           ssh(:,:) = getvar(cf_sshfil,     cn_sossheig, 1, npiglo, npjglo, ktime=jt)
            e3t(:,:) = e3t(:,:) + ssh(:,:)
         ENDIF
 
