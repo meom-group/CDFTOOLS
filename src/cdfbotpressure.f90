@@ -141,9 +141,10 @@ PROGRAM cdfbotpressure
 
   ! Security check
   lchk = chkfile ( cf_tfil   )
-  lchk = chkfile ( cf_sfil ) .OR. lchk
-  lchk = chkfile ( cn_fmsk ) .OR. lchk
-  lchk = chkfile ( cn_fzgr ) .OR. lchk
+  lchk = chkfile ( cf_sfil   ) .OR. lchk
+  lchk = chkfile ( cf_sshfil ) .OR. lchk
+  lchk = chkfile ( cn_fmsk   ) .OR. lchk
+  lchk = chkfile ( cn_fzgr   ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) THEN 
