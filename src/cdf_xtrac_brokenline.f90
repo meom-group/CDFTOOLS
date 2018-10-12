@@ -108,6 +108,7 @@ PROGRAM cdf_xtract_brokenline
 
   CHARACTER(LEN=255) :: cf_tfil , cf_ufil, cf_vfil   ! input T U V files
   CHARACTER(LEN=255) :: cf_sfil                      ! input S-file if necessary
+  CHARACTER(LEN=255) :: cf_sshfil                    ! input SSH file (option)
   CHARACTER(LEN=255) :: cf_wfil                      ! input W file (vvl case)
   CHARACTER(LEN=255) :: cf_bath                      ! bathy file 
   CHARACTER(LEN=255) :: cf_ifil                      ! input ice file
@@ -207,6 +208,7 @@ PROGRAM cdf_xtract_brokenline
      PRINT *,'              is not in ',TRIM(cn_fzgr),' (variable ',TRIM(cn_hdepw),').'
      PRINT *,'      [-mxl MXL-file] : Give the name of the file containing the MLD if it is'
      PRINT *,'              not in T-file.'
+     PRINT *,'      [--ssh-file SSH-file] : specify the ssh file if not in T-file.' 
      PRINT *,'      [-verbose] : increase verbosity  ' 
      PRINT *,'      [-ssh]     : also save ssh along the broken line.'
      PRINT *,'      [-mld]     : also save mld along the broken line.'
@@ -244,6 +246,7 @@ PROGRAM cdf_xtract_brokenline
   cf_bath='none'
   cf_mfil='none'
   cf_sfil='none'
+  cf_sshfil='none'
   ijarg = 1 
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
@@ -253,6 +256,7 @@ PROGRAM cdf_xtract_brokenline
      CASE ( '-v'       ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
         ! options
      CASE ( '-s'       ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1
+     CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg=ijarg+1
      CASE ( '-i'       ) ; CALL getarg(ijarg, cf_ifil ) ; ijarg=ijarg+1 ; lice = .TRUE. ;  nvar=nvar+2
      CASE ( '-o '      ) ; CALL getarg(ijarg, cf_root ) ; ijarg=ijarg+1
      CASE ( '-b '      ) ; CALL getarg(ijarg, cf_bath ) ; ijarg=ijarg+1
@@ -276,6 +280,8 @@ PROGRAM cdf_xtract_brokenline
   IF ( cf_mfil == 'none') THEN ; cf_mfil = cf_tfil
   ENDIF
   IF ( cf_sfil == 'none') THEN ; cf_sfil = cf_tfil
+  ENDIF
+  IF ( cf_sshfil == 'none') THEN ; cf_sshfil = cf_tfil
   ENDIF
   ! check file existence
   lchk = chkfile(cn_fhgr )
@@ -627,7 +633,7 @@ PROGRAM cdf_xtract_brokenline
      ELSE ;                it=1
      ENDIF
      dbarot(:) = 0.d0    ! reset barotropic transport  for all sections
-     IF ( lssh ) ssh (:,:)      = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime = jt)
+     IF ( lssh ) ssh (:,:)      = getvar(cf_sshfil,cn_sossheig,1, npiglo, npjglo, ktime = jt)
      IF ( lmld ) rmld(:,:)      = getvar(cf_mfil, cn_somxl010, 1, npiglo, npjglo, ktime = jt)
      IF ( lice ) ricethick(:,:) = getvar(cf_ifil, cv_iicethic, 1, npiglo, npjglo, ktime = jt)
      IF ( lice ) ricefra(:,:)   = getvar(cf_ifil, cv_ileadfra, 1, npiglo, npjglo, ktime = jt)
