@@ -72,7 +72,8 @@ PROGRAM cdfgeo_uv
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [-ssh SSH-var] [-nc4] [-C option]'
+     PRINT *,' usage : cdfgeo-uv -f T-file [-o UOUT-file VOUT-file ] [-ssh SSH-var] ...'
+     PRINT *,'              ...[-nc4] [-C option]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'         Compute the geostrophic velocity components from the gradient of the'
@@ -277,6 +278,11 @@ PROGRAM cdfgeo_uv
      ENDIF
 
      ! write un and vn  ...
+     ! mask a 1 grid point wide rim where geostrophic velocities cannot be computed
+     un(1,:) = 0. ; un(npiglo,:) = 0.
+     vn(1,:) = 0. ; vn(npiglo,:) = 0.
+     un(:,1) = 0. ; un(:,npjglo) = 0.
+     vn(:,1) = 0. ; vn(:,npjglo) = 0.
      ierr = putvar(ncoutu, id_varoutu(1), un(:,:), 1, npiglo, npjglo, ktime=jt)
      ierr = putvar(ncoutv, id_varoutv(1), vn(:,:), 1, npiglo, npjglo, ktime=jt)
 
@@ -301,8 +307,8 @@ CONTAINS
     stypvaru(1)%cname             = TRIM(cn_vozocrtx)
     stypvaru(1)%cunits            = 'm/s'
     stypvaru(1)%rmissing_value    = 0.
-    stypvaru(1)%valid_min         = 0.
-    stypvaru(1)%valid_max         = 20.
+    stypvaru(1)%valid_min         = -10.
+    stypvaru(1)%valid_max         = 10.
     stypvaru(1)%clong_name        = 'Zonal_Geostrophic_Velocity'
     stypvaru(1)%cshort_name       = TRIM(cn_vozocrtx)
     stypvaru(1)%conline_operation = 'N/A'
@@ -312,8 +318,8 @@ CONTAINS
     stypvarv(1)%cname             = TRIM(cn_vomecrty)
     stypvarv(1)%cunits            = 'm/s'
     stypvarv(1)%rmissing_value    = 0.
-    stypvarv(1)%valid_min         = 0.
-    stypvarv(1)%valid_max         = 20.
+    stypvarv(1)%valid_min         = -10.
+    stypvarv(1)%valid_max         = 10.
     stypvarv(1)%clong_name        = 'Meridional_Geostrophic_Velocity'
     stypvarv(1)%cshort_name       = TRIM(cn_vomecrty)
     stypvarv(1)%conline_operation = 'N/A'
