@@ -166,6 +166,10 @@
      MODULE PROCEDURE atted_char, atted_r4
   END INTERFACE
 
+  INTERFACE getatt
+     MODULE PROCEDURE  getattr, getatti, getattc
+  END INTERFACE
+
   PUBLIC :: chkfile, chkvar
   PUBLIC :: copyatt, create, createvar, getvaratt, cvaratt, gettimeatt
   PUBLIC :: putatt, putheadervar, putvar, putvar1d, putvar0d, atted, puttimeatt
@@ -672,7 +676,7 @@ CONTAINS
   END FUNCTION putatt
 
 
-  REAL(KIND=4) FUNCTION getatt (cdfile, cdvar, cdatt)
+  REAL(KIND=4) FUNCTION getattr (cdfile, cdvar, cdatt)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION getatt  ***
     !!
@@ -691,19 +695,90 @@ CONTAINS
 
     IF ( istatus /= NF90_NOERR) PRINT *, TRIM(NF90_STRERROR(istatus)),' when looking for ',TRIM(cdvar),' in getatt.'
 
-    istatus = NF90_GET_ATT(incid, idum, cdatt, getatt)
+    istatus = NF90_GET_ATT(incid, idum, cdatt, getattr)
     IF ( istatus /= NF90_NOERR ) THEN
        PRINT *,' getatt problem :',NF90_STRERROR(istatus)
        PRINT *,' attribute :', TRIM(cdatt)
        PRINT *,' variable  :', TRIM(cdvar)
        PRINT *,' file      :', TRIM(cdfile)
        PRINT *,' return default 0 '
-       getatt=0.
+       getattr=0.
     ENDIF
 
     istatus=NF90_CLOSE(incid)
 
-  END FUNCTION getatt
+  END FUNCTION getattr
+
+  INTEGER(KIND=4) FUNCTION getatti (cdfile, cdvar, cdatt, kidum)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION getatti  ***
+    !!
+    !! ** Purpose : return a INTEGER value with the values of the
+    !!              attribute cdatt for all the variable cdvar in cdfile  
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdfile  ! file name
+    CHARACTER(LEN=*), INTENT(in) :: cdvar   ! var name
+    CHARACTER(LEN=*), INTENT(in) :: cdatt   ! attribute name to look for
+    INTEGER(KIND=4)     :: kidum
+
+    INTEGER(KIND=4) :: istatus, jv, incid, idum
+    !!----------------------------------------------------------------------
+    istatus = NF90_OPEN  (cdfile, NF90_NOWRITE, incid)
+    istatus = NF90_INQ_VARID(incid, cdvar, idum)
+
+    IF ( istatus /= NF90_NOERR) PRINT *, TRIM(NF90_STRERROR(istatus)),' when looking for ',TRIM(cdvar),' in getatt.'
+
+    istatus = NF90_GET_ATT(incid, idum, cdatt, getatti)
+    IF ( istatus /= NF90_NOERR ) THEN
+       PRINT *,' getatt problem :',NF90_STRERROR(istatus)
+       PRINT *,' attribute :', TRIM(cdatt)
+       PRINT *,' variable  :', TRIM(cdvar)
+       PRINT *,' file      :', TRIM(cdfile)
+       PRINT *,' return default 0 '
+       getatti=0
+    ENDIF
+
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION getatti
+
+
+  CHARACTER(LEN=256) FUNCTION getattc (cdfile, cdvar, cdatt, cdum)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION getattr  ***
+    !!
+    !! ** Purpose : return a string value with the values of the
+    !!              attribute cdatt for all the variable cdvar in cdfile  
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdfile  ! file name
+    CHARACTER(LEN=*), INTENT(in) :: cdvar   ! var name
+    CHARACTER(LEN=*), INTENT(in) :: cdatt   ! attribute name to look for
+
+    CHARACTER(LEN=*)   :: cdum
+
+    INTEGER(KIND=4) :: istatus, jv, incid, idum
+    !!----------------------------------------------------------------------
+    istatus = NF90_OPEN  (cdfile, NF90_NOWRITE, incid)
+    istatus = NF90_INQ_VARID(incid, cdvar, idum)
+
+    IF ( istatus /= NF90_NOERR) PRINT *, TRIM(NF90_STRERROR(istatus)),' when looking for ',TRIM(cdvar),' in getatt.'
+
+    istatus = NF90_GET_ATT(incid, idum, cdatt, getattc)
+    IF ( istatus /= NF90_NOERR ) THEN
+       PRINT *,' getatt problem :',NF90_STRERROR(istatus)
+       PRINT *,' attribute :', TRIM(cdatt)
+       PRINT *,' variable  :', TRIM(cdvar)
+       PRINT *,' file      :', TRIM(cdfile)
+       PRINT *,' return default N/A '
+       getattc="N/A"
+    ENDIF
+
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION getattc
+
 
 
   INTEGER(KIND=4) FUNCTION atted_char ( cdfile, cdvar, cdatt, cdvalue )
