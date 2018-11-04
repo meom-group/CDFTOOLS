@@ -77,7 +77,7 @@
   REAL(KIND=4),    DIMENSION(:),   ALLOCATABLE :: e3t_0, e3w_0   !: for readinf e3._ps in nemo3.x
   
   INTEGER(KIND=4)    :: nstart_date  = -1                      !# from global file attribute
-  CHARACTER(LEN=256) :: ctime_units  = 'seconds since 0000-01-01 00:00:00'
+  CHARACTER(LEN=256) :: ctime_units  = 'seconds since 0001-01-01 00:00:00'
   CHARACTER(LEN=256) :: ctime_origin = 'N/A'                   !# 
   CHARACTER(LEN=256) :: calendar     = 'N/A'                   !# gregorian noleap xxxd
   CHARACTER(LEN=256) :: config                                 !# config name associated with file
