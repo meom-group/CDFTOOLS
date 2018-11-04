@@ -130,7 +130,7 @@ PROGRAM cdf_xtract_brokenline
   CHARACTER(LEN=255) :: cldum                        ! can handle a long list of section files ...
   CHARACTER(LEN=255), DIMENSION(:), ALLOCATABLE :: cf_lst    ! input section file dim: nfiles
   CHARACTER(LEN=255), DIMENSION(:), ALLOCATABLE :: csection  ! section name
-  CHARACTER(LEN=255), DIMENSION(jp_xtra)        :: cf_xtra, cv_xtra, cl_point, cu_xtra, cln_xtra,csn_xtra
+  CHARACTER(LEN=255), DIMENSION(jp_xtra)        :: cf_xtra, cv_xtra, cl_point, cu_xtra, cln_xtra, csn_xtra
 
   LOGICAL  :: lchk                                  ! flag for missing files
   LOGICAL  :: lverbose = .FALSE.                    ! flag for verbosity
@@ -1278,13 +1278,16 @@ CONTAINS
     ENDIF
     ! extra fields
     DO jf=1,nxtra
+       cu_xtra(jf)  = getatt(cf_xtra(jf), cv_xtra(jf),'units','yes')
+       cln_xtra(jf) = getatt(cf_xtra(jf), cv_xtra(jf),'long_name','yes')
+       csn_xtra(jf) = getatt(cf_xtra(jf), cv_xtra(jf),'short_name','yes')
        np_xtra(jf) = ivar 
        stypvar(ivar)%cname       = cv_xtra(jf)
        stypvar(ivar)%cunits      = cu_xtra(jf)
-       stypvar(ivar)%valid_min   = -10.
-       stypvar(ivar)%valid_max   = 10.
-       stypvar(ivar)%clong_name  = 'Normal velocity along '//TRIM(csection(ksec))//' section'
-       stypvar(ivar)%cshort_name = 'vnorm'
+       stypvar(ivar)%valid_min   = -100000.    ! dummy value so far
+       stypvar(ivar)%valid_max   = 100000.     !  "      "    "   "
+       stypvar(ivar)%clong_name  = TRIM(cln_xtra(jf))//' along '//TRIM(csection(ksec))//' section'
+       stypvar(ivar)%cshort_name = TRIM(csn_xtra(jf))
        stypvar(ivar)%caxis       = 'TZX'
        ipk(ivar)                 = npkt(jf)
        ivar = ivar + 1
