@@ -71,22 +71,23 @@ PROGRAM cdfsum
   TYPE(variable), DIMENSION(2)              :: stypvar             ! structure of output
 
   LOGICAL                                   :: lforcing            ! forcing flag
-  LOGICAL                                   :: lchk                ! flag for missing files
+  LOGICAL                                   :: lchk  = .FALSE.     ! flag for missing files
   LOGICAL                                   :: lnc4  = .FALSE.     ! flag for netcdf4 
   LOGICAL                                   :: lerror= .FALSE.     ! flag for missing arguments
   LOGICAL                                   :: lfmsk = .FALSE.     ! flag for using non standard mask file
+  LOGICAL                                   :: lnwgh = .FALSE.     ! flag for no weight
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsum -f IN-file -v IN-var -p C-type ... '
+     PRINT *,' usage : cdfsum -f IN-file -v IN-var -p C-type [-nowght]... '
      PRINT *,'          ... [-w imin imax jmin jmax kmin kmax] [-full ] ...'
      PRINT *,'          ... [-o OUT-file] [-nc4] [-M MSK-file VAR-mask ] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the sum value of the field (3D, weighted). This sum can be' 
-     PRINT *,'       optionally limited to a 3D sub-area.'
+     PRINT *,'       Compute the sum value of the field (3D weighted, unless -nowght used).'
+     PRINT *,'       This sum can be optionally limited to a 3D sub-area.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f IN-file : netcdf input file.' 
@@ -99,6 +100,8 @@ PROGRAM cdfsum
      PRINT *,'              if imin=0 all i are taken'
      PRINT *,'              if jmin=0 all j are taken'
      PRINT *,'              if kmin=0 all k are taken'
+     PRINT *,'       [-nowght] : compute the aritmetic sum of the variable over the grid' 
+     PRINT *,'               points, (not the area/volume weighted sum ). ' 
      PRINT *,'       [-full ]:  Use full steps instead of default partial steps'
      PRINT *,'       [-vvl  ]:  use time -varying  vertical metrics'
      PRINT *,'       [-o OUT-file ] : name of the output file instead of', TRIM(cf_out)
@@ -139,6 +142,7 @@ PROGRAM cdfsum
      CASE ( '-o '   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-vvl ' ) ; lg_vvl=.TRUE.
      CASE ( '-nc4 ' ) ; lnc4  =.TRUE.
+     CASE ( '-nowght ' ) ; lnwgh  =.TRUE.
      CASE ( '-w'    ) ; 
         ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimin
         ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimax
@@ -167,8 +171,8 @@ PROGRAM cdfsum
   ENDIF
   IF (lerror ) STOP 99
 
-  lchk = chkfile(cn_fhgr)
-  lchk = chkfile(cn_fzgr) .OR. lchk
+  IF ( .NOT. lnwgh )  lchk = chkfile(cn_fhgr)
+  IF ( .NOT. lnwgh )  lchk = chkfile(cn_fzgr) .OR. lchk
   lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_in  ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing file
@@ -265,8 +269,13 @@ PROGRAM cdfsum
   ! set cv_mask to on-line specified name if -M option used
   IF ( lfmsk ) cv_msk = cl_vmsk
 
-  e1(:,:) = getvar  (cn_fhgr, cv_e1, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
-  e2(:,:) = getvar  (cn_fhgr, cv_e2, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+  IF ( lnwgh)  THEN
+     e1(:,:) = 1
+     e2(:,:) = 1
+  ELSE
+     e1(:,:) = getvar  (cn_fhgr, cv_e1, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+     e2(:,:) = getvar  (cn_fhgr, cv_e2, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
+  ENDIF
   gdep(:) = getvare3(cn_fzgr, cv_dep,   npk                                   )
 
   CALL CreateOutput
@@ -288,7 +297,11 @@ PROGRAM cdfsum
         zv = zv * zmask
 
         ! get e3 at level ik ( ps...)
-        e3(:,:) = getvar(cf_e3, cv_e3, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl)      
+        IF ( lnwgh ) THEN
+           e3(:,:) = 1.
+        ELSE
+           e3(:,:) = getvar(cf_e3, cv_e3, ik, npiglo, npjglo, kimin=iimin, kjmin=ijmin, ktime=it, ldiom=.NOT.lg_vvl)      
+        ENDIF
         ! 
         IF (.NOT. lforcing) THEN
            dsurf  = SUM(DBLE(e1 * e2      * zmask))
@@ -351,7 +364,11 @@ PROGRAM cdfsum
     ipk(1) = nvpk  ! vertical profile
     stypvar(1)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
     stypvar(1)%cname          = 'sum_'//TRIM(cv_in)
-    stypvar(1)%cunits         = TRIM(clunits)//'.m2'
+    IF ( lnwgh ) THEN
+      stypvar(1)%cunits         = TRIM(clunits)
+    ELSE
+      stypvar(1)%cunits         = TRIM(clunits)//'.m2'
+    ENDIF
     stypvar(1)%clong_name     = 'sum'//TRIM(cllong_name)
     stypvar(1)%cshort_name    = 'sum'//TRIM(clshort_name)
     stypvar(1)%caxis          = 'ZT'
