@@ -42,6 +42,7 @@ PROGRAM cdf_xtract_brokenline
   INTEGER(KIND=4) :: npiglo, npjglo, npk, npt        ! size of the domain
   INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax      ! ending points of a leg in model I J
   INTEGER(KIND=4) :: ii, ij, ii1, ij1, ipoint        ! working integer
+  INTEGER(KIND=4) :: idum                            ! working integer
   INTEGER(KIND=4) :: ierr                            ! Netcdf error and ncid
   INTEGER(KIND=4) :: nxtra = 0                       ! number of xtra variables to extract
   INTEGER(KIND=4) :: nvar = 18                       ! number of output variables (modified after if options)
@@ -641,6 +642,14 @@ PROGRAM cdf_xtract_brokenline
      END DO
 
      ! Prepare output file ( here because rlonsec and rlatsec required )
+     DO jf = 1, nxtra
+        idum=getvdim(cf_xtra(jf), cv_xtra(jf))
+        IF (idum == 3 ) THEN 
+         npkt(jf) = npk
+        ELSE
+         npkt(jf) = 1
+        ENDIF
+     ENDDO
      CALL CreateOutputFile (jsec )
 
      ierr = putvar (ncout(jsec), id_varout(np_isec), risec(:,1),                            1,  npsec(jsec)  , 1 )
