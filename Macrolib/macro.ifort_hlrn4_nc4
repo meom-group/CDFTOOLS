@@ -1,0 +1,30 @@
+# Makefile for CDFTOOLS
+#    $Rev: 522 $
+#    $Date: 2011-06-17 12:50:13 +0200 (Fri, 17 Jun 2011) $
+# --------------------------------------------------------------
+#
+# Joakim Kjellsson, GEOMAR, March 2019
+#
+
+#NCDF = -I/usr/local/include -L/usr/local/lib -lnetcdf
+#NCDF = -l netcdf -l netcdff
+NCDF = -I/$(NETCDF_DIR)/include/ -I/$(HDF5_DIR)/include/
+LIBS = -L/$(NETCDF_DIR)/lib/ -L/$(HDF5_DIR)/lib/ -lnetcdf -lnetcdff
+#NC4 = -D 
+NC4 = -D key_netcdf4
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+#F90=gfortran -v
+F90=ifort
+MPF90=
+#OMP=-mp=nonuma
+OMP=
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6)  -fno-second-underscore -ffree-line-length-256
+FFLAGS= -O3  -fpp $(NCDF) $(LIBS) $(NC4) $(CMIP6) $(OMP)
+LMPI=-lmpich
+
+INSTALL=../../../bin/
+INSTALL_MAN=../../../man/
+

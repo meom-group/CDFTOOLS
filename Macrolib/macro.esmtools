@@ -1,0 +1,23 @@
+# Makefile for CDFTOOLS
+#
+# Joakim Kjellsson, GEOMAR, March 2019
+#
+
+NCDF = -I/$(NEMO_NETCDF_DIR)/include/ -I/$(NEMO_HDF5_DIR)/include/
+LIBS = -L/$(NEMO_NETCDF_DIR)/lib/ -L/$(NEMO_HDF5_DIR)/lib/ -lnetcdff -lnetcdf 
+NC4 = -D key_netcdf4
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+F90=$(FC)
+MPF90=
+#OMP=-mp=nonuma
+OMP=
+OPT=-O3
+FFLAGS= $(OPT) -fpp $(NCDF) $(LIBS) $(NC4) $(CMIP6) $(OMP)
+LMPI=-lmpich
+
+INSTALL=../../../bin/
+INSTALL_MAN=../../../man/
+
