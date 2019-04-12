@@ -30,6 +30,7 @@ PROGRAM cdfbotpressure
   INTEGER(KIND=4)                           :: npiglo, npjglo      ! size of the domain
   INTEGER(KIND=4)                           :: npk, npt            ! size of the domain
   INTEGER(KIND=4)                           :: ncout, nvar
+  INTEGER(KIND=4)                           :: nbotpres, nssheig, nsshpre,npre3d
   INTEGER(KIND=4),DIMENSION(:), ALLOCATABLE :: ipk, id_varout      ! only one output variable
 
   REAL(KIND=4), PARAMETER                   :: pp_grav = 9.81      ! Gravity
@@ -59,7 +60,8 @@ PROGRAM cdfbotpressure
   LOGICAL                                   :: lssh2 =.FALSE.      ! Use ssh and variable surf.density in the bot pressure
   LOGICAL                                   :: lxtra =.FALSE.      ! Save ssh and ssh pressure
   LOGICAL                                   :: lchk  =.FALSE.      ! flag for missing files
-  LOGICAL                                   :: lnc4  =.FALSE.     ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: lnc4  =.FALSE.      ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: llev  =.FALSE.      ! Save pressure at each level in the output
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: stypvar             ! extension for attributes
   !!----------------------------------------------------------------------
@@ -67,7 +69,7 @@ PROGRAM cdfbotpressure
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfbotpressure -t T-file [-s S-file] [-full] [-ssh] [-ssh2 ]...'
+     PRINT *,' usage : cdfbotpressure -t T-file [-s S-file] [-full] [-ssh] [-ssh2 ] [-lev] ...'
      PRINT *,'             ... [--ssh-file SSH-file] [-xtra ] [-vvl ] [ -o OUT-file ] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
@@ -81,6 +83,7 @@ PROGRAM cdfbotpressure
      PRINT *,'        [-s S-file ]: specify salinity file, if not T-file.'
      PRINT *,'      [--ssh-file SSH-file] : specify the ssh file if not in T-file.'
      PRINT *,'        [-full] : for full step computation ' 
+     PRINT *,'        [-lev ] : save the 3D pressure in the output file.'
      PRINT *,'        [-ssh]  : Also take SSH into account in the computation'
      PRINT *,'                In this case, use rau0=',pp_rau0,' kg/m3 for '
      PRINT *,'                surface density (as in NEMO)'
@@ -106,6 +109,7 @@ PROGRAM cdfbotpressure
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ',TRIM(cf_out),' unless -o option is used.'
      PRINT *,'         variables :  sobotpres, [',TRIM(cn_sossheig),' sosshpre ]'
+     PRINT *,'                   :  vopressure [ in case of -lev option ]'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'        cdfvint'
@@ -125,7 +129,8 @@ PROGRAM cdfbotpressure
      CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg = ijarg + 1
      CASE ( '-ssh'     ) ; lssh  = .TRUE. 
      CASE ( '-ssh2'    ) ; lssh2 = .TRUE. 
-     CASE ( '-xtra'    ) ; lxtra = .TRUE.  ; nvar = 3  ! more outputs
+     CASE ( '-lev'     ) ; llev  = .TRUE.  ; nvar = nvar+1  ! more outputs
+     CASE ( '-xtra'    ) ; lxtra = .TRUE.  ; nvar = nvar+2  ! more outputs
      CASE ( '-full'    ) ; lfull = .TRUE. 
      CASE ( '-vvl'     ) ; lg_vvl= .TRUE. 
      CASE ( '-o'       ) ; CALL getarg( ijarg,cf_out) ; ijarg = ijarg + 1
@@ -220,6 +225,9 @@ PROGRAM cdfbotpressure
         ELSE ; e3t(:,:) = getvar(cn_fe3t, cn_ve3t, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
         ENDIF
         dl_bpres(:,:) = dl_bpres(:,:) + dl_sigi(:,:) * e3t(:,:) * pp_grav * 1.d0 * tmask(:,:) 
+        IF ( llev) THEN
+           ierr= putvar(ncout,id_varout(npre3d), REAL(dl_bpres),jk, npiglo, npjglo, ktime=jt)
+        ENDIF
 
      END DO  ! loop to next level
      ierr = putvar(ncout, id_varout(1) ,REAL(dl_bpres), 1, npiglo, npjglo, ktime=jt)
@@ -236,55 +244,89 @@ CONTAINS
     !!
     !! ** Method  : Use Global information to create the file
     !!----------------------------------------------------------------------
+    INTEGER(KIND=4) ::  ivar
 
-    ipk(:)                       = 1
-    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-    stypvar(1)%cname             = 'sobotpres'
-    stypvar(1)%cunits            = 'Pascal'
-    stypvar(1)%rmissing_value    = 0.
-    stypvar(1)%valid_min         = 0
-    stypvar(1)%valid_max         =  1.e15
-    stypvar(1)%clong_name        = 'Bottom Pressure'
-    stypvar(1)%cshort_name       = 'sobotpres'
-    stypvar(1)%cprecision        = 'r8'
-    stypvar(1)%conline_operation = 'N/A'
-    stypvar(1)%caxis             = 'TYX'
+    ivar=0
+
+    ivar=ivar+1
+    nbotpres=ivar
+    ipk(nbotpres)                       = 1
+    stypvar(nbotpres)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(nbotpres)%cname             = 'sobotpres'
+    stypvar(nbotpres)%cunits            = 'Pascal'
+    stypvar(nbotpres)%rmissing_value    = 0.
+    stypvar(nbotpres)%valid_min         = 0
+    stypvar(nbotpres)%valid_max         =  1.e15
+    stypvar(nbotpres)%clong_name        = 'Bottom Pressure'
+    stypvar(nbotpres)%cshort_name       = 'sobotpres'
+    stypvar(nbotpres)%cprecision        = 'r8'
+    stypvar(nbotpres)%conline_operation = 'N/A'
+    stypvar(nbotpres)%caxis             = 'TYX'
 
     IF ( lxtra ) THEN
-       stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-       stypvar(2)%cname             = TRIM(cn_sossheig)
-       stypvar(2)%cunits            = 'm'
-       stypvar(2)%rmissing_value    =  0.
-       stypvar(2)%valid_min         = -10.
-       stypvar(2)%valid_max         =  10.
-       stypvar(2)%clong_name        = 'Sea Surface Height'
-       stypvar(2)%cshort_name       = TRIM(cn_sossheig)
-       stypvar(2)%conline_operation = 'N/A'
-       stypvar(2)%caxis             = 'TYX'
+       ivar=ivar+1
+       nssheig=ivar
+       ipk(nssheig)                       = 1
+       stypvar(nssheig)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(nssheig)%cname             = TRIM(cn_sossheig)
+       stypvar(nssheig)%cunits            = 'm'
+       stypvar(nssheig)%rmissing_value    =  0.
+       stypvar(nssheig)%valid_min         = -10.
+       stypvar(nssheig)%valid_max         =  10.
+       stypvar(nssheig)%clong_name        = 'Sea Surface Height'
+       stypvar(nssheig)%cshort_name       = TRIM(cn_sossheig)
+       stypvar(nssheig)%conline_operation = 'N/A'
+       stypvar(nssheig)%caxis             = 'TYX'
 
-       stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-       stypvar(3)%cname             = 'sosshpre'
-       stypvar(3)%cunits            = 'Pascal'
-       stypvar(3)%rmissing_value    =  0.
-       stypvar(3)%valid_min         = -100000.
-       stypvar(3)%valid_max         =  100000.
-       stypvar(3)%clong_name        = 'Pressure due to SSH'
-       stypvar(3)%cshort_name       = 'sosshpre'
-       stypvar(3)%cprecision        = 'r8'
-       stypvar(3)%conline_operation = 'N/A'
-       stypvar(3)%caxis             = 'TYX'
+       ivar=ivar+1
+       nsshpre=ivar
+       ipk(nsshpre)                       = 1
+       stypvar(nsshpre)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(nsshpre)%cname             = 'sosshpre'
+       stypvar(nsshpre)%cunits            = 'Pascal'
+       stypvar(nsshpre)%rmissing_value    =  0.
+       stypvar(nsshpre)%valid_min         = -100000.
+       stypvar(nsshpre)%valid_max         =  100000.
+       stypvar(nsshpre)%clong_name        = 'Pressure due to SSH'
+       stypvar(nsshpre)%cshort_name       = 'sosshpre'
+       stypvar(nsshpre)%cprecision        = 'r8'
+       stypvar(nsshpre)%conline_operation = 'N/A'
+       stypvar(nsshpre)%caxis             = 'TYX'
+    ENDIF
+   
+    IF ( llev ) THEN
+       ivar=ivar+1
+       npre3d=ivar
+       ipk(npre3d)                       = npk
+       stypvar(npre3d)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+       stypvar(npre3d)%cname             = 'vopressure'
+       stypvar(npre3d)%cunits            = 'Pascal'
+       stypvar(npre3d)%rmissing_value    =  0.
+       stypvar(npre3d)%valid_min         = -100000.
+       stypvar(npre3d)%valid_max         =  100000.
+       stypvar(npre3d)%clong_name        = '3D Pressure'
+       stypvar(npre3d)%cshort_name       = 'vopressure'
+       stypvar(npre3d)%cprecision        = 'r8'
+       stypvar(npre3d)%conline_operation = 'N/A'
+       stypvar(npre3d)%caxis             = 'TYX'
     ENDIF
 
     ! Initialize output file
     gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk )
     e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d,  npk )
 
-    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1                      , ld_nc4=lnc4  )
-    ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
-    ierr  = putheadervar(ncout, cf_tfil,   npiglo, npjglo, 1                                    )
+    IF (llev) THEN
+      ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk, cdep=cn_vdepthw , ld_nc4=lnc4  )
+      ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
+      ierr  = putheadervar(ncout, cf_tfil,   npiglo, npjglo, npk, pdep=gdepw,  cdep=cn_vdepthw  ) 
+    ELSE
+      ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1                    , ld_nc4=lnc4  )
+      ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
+      ierr  = putheadervar(ncout, cf_tfil,   npiglo, npjglo, 1                                  ) 
+    ENDIF
 
     dtim  = getvar1d    (cf_tfil, cn_vtimec, npt     )
-    ierr  = putvar1d    (ncout, dtim,      npt, 'T')
+    ierr  = putvar1d    (ncout, dtim,        npt, 'T')
 
     PRINT *, 'Output files initialised ...'
 
