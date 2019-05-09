@@ -267,6 +267,7 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
+    ip_eke = -1 ; ip_mke=-1 ;  ip_tke=-1
     stypvar(1)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
     stypvar(2)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
     stypvar(3)%ichunk = (/ npiglo, MAX(1, npjglo/30), 1, 1 /) 
@@ -320,12 +321,14 @@ CONTAINS
 
     ivar = MAX( ip_mke, ip_eke, ip_tke) ! set ivar to the effective number of variables to be output
 
-    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       , ld_nc4=lnc4 )
-    ierr  = createvar   (ncout,  stypvar, ivar,   ipk,    id_varout , ld_nc4=lnc4 )
     IF ( lsurf ) THEN
-      ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk ,pdep=(/0./)        )
+       ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 0         , ld_nc4=lnc4 )
+       ierr  = createvar   (ncout,  stypvar, ivar,   ipk,    id_varout , ld_nc4=lnc4 )
+       ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 0                       )
     ELSE
-      ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk                     )
+       ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk       , ld_nc4=lnc4 )
+       ierr  = createvar   (ncout,  stypvar, ivar,   ipk,    id_varout , ld_nc4=lnc4 )
+       ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk                     )
     ENDIF
 
     dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
