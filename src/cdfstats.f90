@@ -270,56 +270,56 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-  ! prepare output file 
-  !   common features to all variables
-  ipk    (:)                   = 1
-  stypvar(:)%conline_operation = 'N/A'
-  stypvar(:)%caxis             = 'TYX'
+    ! prepare output file 
+    !   common features to all variables
+    ipk    (:)                   = 1
+    stypvar(:)%conline_operation = 'N/A'
+    stypvar(:)%caxis             = 'TYX'
 
-  !   specific features
-  stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(1)%cname             = 'rms'
-  stypvar(1)%cunits            = 'm'
-  stypvar(1)%rmissing_value    = 0.
-  stypvar(1)%valid_min         = 0.
-  stypvar(1)%valid_max         = 100.
-  stypvar(1)%clong_name        = 'RMS_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(1)%cshort_name       = 'rms'
+    !   specific features
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = 'rms'
+    stypvar(1)%cunits            = 'm'
+    stypvar(1)%rmissing_value    = 0.
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 100.
+    stypvar(1)%clong_name        = 'RMS_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+    stypvar(1)%cshort_name       = 'rms'
 
-  stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(2)%cname             = 'correl'
-  stypvar(2)%cunits            = 'ndim'
-  stypvar(2)%rmissing_value    = 0.
-  stypvar(2)%valid_min         = -1.
-  stypvar(2)%valid_max         = 1.
-  stypvar(2)%clong_name        = 'CORREL_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(2)%cshort_name       = 'correl'
+    stypvar(2)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(2)%cname             = 'correl'
+    stypvar(2)%cunits            = 'ndim'
+    stypvar(2)%rmissing_value    = 0.
+    stypvar(2)%valid_min         = -1.
+    stypvar(2)%valid_max         = 1.
+    stypvar(2)%clong_name        = 'CORREL_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+    stypvar(2)%cshort_name       = 'correl'
 
-  stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(3)%cname             = 'rrat'
-  stypvar(3)%cunits            = 'N/A'
-  stypvar(3)%rmissing_value    = 0.
-  stypvar(3)%valid_min         = 0.
-  stypvar(3)%valid_max         = 100.
-  stypvar(3)%clong_name        = 'RMS/signal_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(3)%cshort_name       = 'rrat'
+    stypvar(3)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(3)%cname             = 'rrat'
+    stypvar(3)%cunits            = 'N/A'
+    stypvar(3)%rmissing_value    = 0.
+    stypvar(3)%valid_min         = 0.
+    stypvar(3)%valid_max         = 100.
+    stypvar(3)%clong_name        = 'RMS/signal_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+    stypvar(3)%cshort_name       = 'rrat'
 
-  stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
-  stypvar(4)%cname             = 'srat'
-  stypvar(4)%cunits            = 'N/A'
-  stypvar(4)%rmissing_value    = 0.
-  stypvar(4)%valid_min         = 0.
-  stypvar(4)%valid_max         = 100.
-  stypvar(4)%clong_name        = 'sdvm/sdvo_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
-  stypvar(4)%cshort_name       = 'srat'
+    stypvar(4)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(4)%cname             = 'srat'
+    stypvar(4)%cunits            = 'N/A'
+    stypvar(4)%rmissing_value    = 0.
+    stypvar(4)%valid_min         = 0.
+    stypvar(4)%valid_max         = 100.
+    stypvar(4)%clong_name        = 'sdvm/sdvo_'//TRIM(cv_name1)//'_'//TRIM(cv_name2)//'_'//cy
+    stypvar(4)%cshort_name       = 'srat'
 
-  PRINT *,' creating output file'
-  ncout = create   (cf_out, cf_in,   npiglo, npjglo, npk                              , ld_nc4=lnc4)
-  ierr  = createvar(ncout,  stypvar, jpvar,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4)
-  ierr  = putheadervar(ncout,  cf_in, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
+    PRINT *,' creating output file'
+    ncout = create   (cf_out, cf_in,   npiglo, npjglo, npk                              , ld_nc4=lnc4)
+    ierr  = createvar(ncout,  stypvar, jpvar,  ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4)
+    ierr  = putheadervar(ncout,  cf_in, npiglo, npjglo, npk, ld_xycoo=.TRUE. )
 
-  dtim = 1.d0
-  ierr = putvar1d(ncout,dtim,1,'T')
+    dtim = 1.d0
+    ierr = putvar1d(ncout,dtim,1,'T')
 
   END SUBROUTINE CreateOutput
 
