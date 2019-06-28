@@ -345,7 +345,7 @@ PROGRAM cdftransport
      CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
-  
+
 
   it = 1
   IF ( lg_vvl ) THEN
@@ -753,7 +753,7 @@ PROGRAM cdftransport
      dtim     = getvar1d    (cf_ufil,  cn_vtimec, npt                )
      ierr     = putvar1d    (ncout,    dtim(itime:itime),      1, 'T')
 
-     
+
      PRINT *, ' Give iimin, iimax, ijmin, ijmax '
      READ(*,*) iimin, iimax, ijmin, ijmax
      !! Find the broken line between P1 (iimin,ijmin) and P2 (iimax, ijmax)
@@ -878,10 +878,10 @@ PROGRAM cdftransport
      gphi(1) = gphif( INT(rxx(1)),  INT(ryy(1))  ) 
      gla (2) = glamf( INT(rxx(nn)), INT(ryy(nn)) ) 
      gphi(2) = gphif( INT(rxx(nn)), INT(ryy(nn)) ) 
-     
+
      IF (l_cumul) THEN
-      ALLOCATE ( rlonsec(nn-1,1), rlatsec(nn-1,1) )
-      DO jseg = 1, nn-1
+        ALLOCATE ( rlonsec(nn-1,1), rlatsec(nn-1,1) )
+        DO jseg = 1, nn-1
            ii0=rxx(jseg)
            ij0=ryy(jseg)
            IF ( rxx(jseg) ==  rxx(jseg+1) ) THEN    ! meridional segment, use U velocity
@@ -893,15 +893,15 @@ PROGRAM cdftransport
            ELSE
               PRINT *, 'ERROR : neither meridional, nor zonal! Where we are? '
            ENDIF
-      END DO
-           
-     CALL set_typvarc( stypvarc, csection, cvarname, clongname )
-     cf_cumul = TRIM(csection)//'_'//TRIM(csfx)//'_cumul.nc'
-     ncoutc   = create      (cf_cumul, 'none',    nn-1,     1, nclass, cdep='depth_class')
-     ierr     = createvar   (ncoutc,    stypvarc,   nvaroutc,  ipkc, id_varoutc, cdglobal=TRIM(cglobal) )
-     ierr     = putheadervar(ncoutc,    cf_ufil,   nn-1, 1, nclass, pnavlon=rlonsec, pnavlat=rlatsec, pdep=rclass )
-     dtim     = getvar1d    (cf_ufil,  cn_vtimec, npt                )
-     ierr     = putvar1d    (ncoutc,    dtim(itime:itime),      1, 'T')
+        END DO
+
+        CALL set_typvarc( stypvarc, csection, cvarname, clongname )
+        cf_cumul = TRIM(csection)//'_'//TRIM(csfx)//'_cumul.nc'
+        ncoutc   = create      (cf_cumul, 'none',    nn-1,     1, nclass, cdep='depth_class')
+        ierr     = createvar   (ncoutc,    stypvarc,   nvaroutc,  ipkc, id_varoutc, cdglobal=TRIM(cglobal) )
+        ierr     = putheadervar(ncoutc,    cf_ufil,   nn-1, 1, nclass, pnavlon=rlonsec, pnavlat=rlatsec, pdep=rclass )
+        dtim     = getvar1d    (cf_ufil,  cn_vtimec, npt                )
+        ierr     = putvar1d    (ncoutc,    dtim(itime:itime),      1, 'T')
      END IF
 
      ! Now extract the transport through a section 
@@ -923,7 +923,7 @@ PROGRAM cdftransport
      dvoltrpcbtp(:) = 0.d0
      dheatrpcbtp(:) = 0.d0
      dsaltrpcbtp(:) = 0.d0
-     
+
      DO jclass=1,nclass
         dvoltrpsum(jclass) = 0.d0
         IF ( lpm   ) THEN
@@ -1048,7 +1048,7 @@ PROGRAM cdftransport
                  ierr = putvar(ncoutc,id_varoutc(istrpclc), rdumseg(1:nn-1,:), jclass, nn-1, 1, 1 )
               ENDIF
            ENDIF
-              
+
         ENDIF
         rdum(1,1) = REAL(gdepw(ilev0(jclass)))
         ierr = putvar(ncout,id_varout(itop), rdum, jclass, 1, 1, 1 )
@@ -1114,18 +1114,18 @@ PROGRAM cdftransport
      ierr = closeout(ncout)
 
      IF ( l_cumul ) THEN
-         rdumseg(1:nn-1,1) = REAL(dvoltrpcbtp(1:nn-1)/1.e6)
-         ierr = putvar(ncoutc,id_varoutc(ivtrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
-         IF ( lheat ) THEN
-            rdumseg(1:nn-1,1) = REAL(dheatrpcbtp(1:nn-1)/1.e15)
-            ierr = putvar(ncoutc,id_varoutc(ihtrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
-            rdumseg(1:nn-1,1) = REAL(dsaltrpcbtp(1:nn-1)/1.e6)
-            ierr = putvar(ncoutc,id_varoutc(istrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
-         ENDIF
-       ierr = closeout(ncoutc)
-       DEALLOCATE (rlonsec, rlatsec)
+        rdumseg(1:nn-1,1) = REAL(dvoltrpcbtp(1:nn-1)/1.e6)
+        ierr = putvar(ncoutc,id_varoutc(ivtrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
+        IF ( lheat ) THEN
+           rdumseg(1:nn-1,1) = REAL(dheatrpcbtp(1:nn-1)/1.e15)
+           ierr = putvar(ncoutc,id_varoutc(ihtrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
+           rdumseg(1:nn-1,1) = REAL(dsaltrpcbtp(1:nn-1)/1.e6)
+           ierr = putvar(ncoutc,id_varoutc(istrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
+        ENDIF
+        ierr = closeout(ncoutc)
+        DEALLOCATE (rlonsec, rlatsec)
      ENDIF
-      
+
   END DO ! infinite loop : gets out when input is EOF 
 
 
@@ -1307,8 +1307,8 @@ CONTAINS
     ENDIF
 
   END SUBROUTINE set_typvar
-  
-SUBROUTINE set_typvarc ( sd_typvar, cdsection, cdvarname, cdlongname ) 
+
+  SUBROUTINE set_typvarc ( sd_typvar, cdsection, cdvarname, cdlongname ) 
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE set_typvarc  ***
     !!
@@ -1359,7 +1359,7 @@ SUBROUTINE set_typvarc ( sd_typvar, cdsection, cdvarname, cdlongname )
     sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Volume_Transport'
     sd_typvar(ivar)%cshort_name = 'vtrp'
 
-      IF ( lheat ) THEN
+    IF ( lheat ) THEN
        ivar = ivar + 1 ; ihtrpc = ivar                                                 ;  istrpc = ivar+1
        ipkc(ivar) = 1                                                                  ;  ipkc(ivar+1) = 1
        sd_typvar(ivar)%cname       = 'htrpcumul'//TRIM(csuffixvarnam)                  ;  sd_typvar(ivar+1)%cname       = 'strpcumul'//TRIM(csuffixvarnam)
