@@ -397,6 +397,7 @@ PROGRAM cdf_xtract_brokenline
      nsta(1) = 5
      csection(1) = 'ovide'
      ALLOCATE ( iista(nstamax,nfiles), ijsta(nstamax,nfiles), ikeepn(nstamax -1,nfiles )  )
+     ALLOCATE ( npsec(nfiles) )
      ALLOCATE ( rlonsta(nstamax,nfiles), rlatsta(nstamax,nfiles) )
 
      ! D. Desbruyeres : Location of leg points that define the 4 legs of the OVIDE section
