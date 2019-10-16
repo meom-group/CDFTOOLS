@@ -78,10 +78,12 @@ PROGRAM cdfocape
   
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfocape -dep REF-dep -t T-file [-s S-file] [-w imin imax jmin jmax] [-nc4] [-o OUT-file] '  
+     PRINT *,' usage : cdfocape -dep REF-dep -t T-file [-s S-file] [-w imin imax jmin jmax]'
+     PRINT *,'                   [-nc4] [-o OUT-file] '  
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'        Compute OCAPE from TS and vertical integration '
+     PRINT *,'        Compute OCAPE (Ocean Convective Available Potential Energy) from TS '
+     PRINT *,'        and vertical integration. '
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'        -dep REF-dep : reference depth to which you want to ventilate the ocean '
