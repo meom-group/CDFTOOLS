@@ -38,7 +38,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfnrj_transfert cdfnrj_bci cdfnrj_bti cdfnrj_components cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfnamelist \
-       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk
+       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdf_compress
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
 
@@ -503,6 +503,9 @@ cdfchgrid: cdfio.o modutils.o cdfchgrid.f90
 
 cdfcmp: cdfio.o cdfcmp.f90
 	$(F90) cdfcmp.f90  -o $(BINDIR)/cdfcmp cdfio.o modcdfnames.o $(FFLAGS)
+
+cdf_compress:  cdf_compress.f90
+	$(F90) cdf_compress.f90  -o $(BINDIR)/cdf_compress  $(FFLAGS)
 
 ## Modules
 
