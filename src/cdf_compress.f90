@@ -30,10 +30,15 @@ PROGRAM cdf_compress
   INTEGER(KIND=4)    :: idef_lev, nvertdim, ilen, ndim, ierr
   INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE :: icnk_dmn
 
+  REAL(KIND=4) , DIMENSION(:,:,:), ALLOCATABLE :: r3d
+
   REAL(KIND=8) , DIMENSION(:), ALLOCATABLE    ::  d1d
   REAL(KIND=8) , DIMENSION(:,:), ALLOCATABLE  ::  d2d
+
   CHARACTER(LEN=255) :: cf_in, cf_ou, cdum
   CHARACTER(LEN=80), DIMENSION(:), ALLOCATABLE :: c_vertdim
+  
+  LOGICAL :: l_3d=.FALSE.
 
   TYPE :: ncfile
      INTEGER(KIND=4)                              :: ncid   ! file id
@@ -66,13 +71,14 @@ PROGRAM cdf_compress
   narg=iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdf_compress -f FILE-in [-v LIST-vertical_Dimensions ] [-d DEF-lev ]'
-     PRINT *,'                     [-o FILE-out]'
+     PRINT *,'                     [-o FILE-out] [-3D]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compress input file using netcdf4/HDF5 with deflation level <DEF_lev>.'
      PRINT *,'       Need to specify vertical dimension names if any. Note that this tool'
      PRINT *,'       is designed to work with any netcdf file, not only NEMO. It is a low'
-     PRINT *,'       memory alternative of ncks for huge big files.'
+     PRINT *,'       memory alternative of ncks for huge big files. Sizes of chunks are '
+     PRINT *,'       predermined, but always 1 for vertical and time axis.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -f FILE-in : name of netcdfile to be compressed.' 
@@ -80,14 +86,16 @@ PROGRAM cdf_compress
      PRINT *,'     OPTIONS :'
      PRINT *,'       -v LIST-vertical_dimensions : comma separated list of the names of'
      PRINT *,'             the vertical dimensions (in order to set chunk size of 1). '
-     PRINT *,'       -d DEF-lev : Specify deflation level ( default is 1).'
-     PRINT *,'       -o FILE-out : specify output file instead of default <FILE-in>4 '
+     PRINT *,'       -d DEF-lev  : Specify deflation level ( default is 1).'
+     PRINT *,'       -o FILE-out : Specify output file instead of default <FILE-in>4 '
+     PRINT *,'       -3D : use 3D arrays for eventual increased performances (not sure)'
+     PRINT *,'            Use more in core memory.' 
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : <FILE_in>4 '
+     PRINT *,'       netcdf file : <FILE_in>4 or file specified with -o option.'
      PRINT *,'         variables : same as input ( with same attributes).'
      PRINT *,'      '
      STOP
@@ -98,16 +106,17 @@ PROGRAM cdf_compress
      CALL getarg(ijarg,cdum) ; ijarg=ijarg+1
      SELECT CASE ( cdum)
      CASE ( '-f' ) ; CALL getarg(ijarg,cf_in) ; ijarg=ijarg+1
-     ! options
-     CASE ( '-d' ) ; CALL getarg(ijarg,cdum ) ; ijarg=ijarg+1 ; READ(cdum,*) idef_lev
-     CASE ( '-v' ) ; CALL getarg(ijarg,cdum ) ; ijarg=ijarg+1 ; CALL getlist(cdum)
-     CASE ( '-o' ) ; CALL getarg(ijarg,cf_ou) ; ijarg=ijarg+1
+        ! options
+     CASE ( '-d'  ) ; CALL getarg(ijarg,cdum ) ; ijarg=ijarg+1 ; READ(cdum,*) idef_lev
+     CASE ( '-v'  ) ; CALL getarg(ijarg,cdum ) ; ijarg=ijarg+1 ; CALL getlist(cdum)
+     CASE ( '-o'  ) ; CALL getarg(ijarg,cf_ou) ; ijarg=ijarg+1
+     CASE ( '-3D' ) ; l_3d = .TRUE.
      CASE DEFAULT  ; PRINT *,'  E R R O R : Unknown option :', TRIM(cdum) ; STOP 99
      END SELECT
   END DO
 
   IF ( cf_ou == 'none') THEN
-    cf_ou=TRIM(cf_in)//'4'
+     cf_ou=TRIM(cf_in)//'4'
   ENDIF
 
   scdf_in%c_fnam = cf_in
@@ -139,9 +148,13 @@ PROGRAM cdf_compress
      IF ( jd == scdf_ou%iunlim ) THEN
         icnk_dmn(jd) = 1
      ENDIF
+     IF ( INDEX( scdf_ou%c_dnam(jd),'x') /= 0 ) THEN
+        ilen=scdf_ou%nlen(jd)
+        icnk_dmn(jd)=ilen !! 
+     ENDIF
      IF ( icnk_dmn(jd) == 0 ) THEN  ! not treated above
         ilen=scdf_ou%nlen(jd)
-        icnk_dmn(jd)=MIN(ilen, 500) !!  500 hard coded !! 
+        icnk_dmn(jd)=MIN(ilen, 200) !!  500 hard coded !! 
      ENDIF
   ENDDO
 
@@ -187,15 +200,24 @@ PROGRAM cdf_compress
         n2 = scdf_in%nlen(scdf_in%idimids(jv,2))
         n3 = scdf_in%nlen(scdf_in%idimids(jv,3))
         n4 = scdf_in%nlen(scdf_in%idimids(jv,4))
-        ALLOCATE ( d2d (n1,n2) )
-        DO j4 =   1, n4
-           DO j3 = 1, n3
-              ierr = NF90_GET_VAR(ncin,jv,d2d, start=(/1,1,j3,j4/),count=(/n1,n2,1,1/) )
-              ierr = NF90_PUT_VAR(ncou,jv,d2d, start=(/1,1,j3,j4/),count=(/n1,n2,1,1/) )
-           ENDDO
-        ENDDO
+        IF ( l_3d ) THEN
+          ALLOCATE ( r3d (n1,n2,n3) )
+          DO j4 =   1, n4
+             ierr = NF90_GET_VAR(ncin,jv,r3d, start=(/1,1,1,j4/),count=(/n1,n2,n3,1/) )
+             ierr = NF90_PUT_VAR(ncou,jv,r3d, start=(/1,1,1,j4/),count=(/n1,n2,n3,1/) )
+          ENDDO
+          DEALLOCATE ( r3d)
+        ELSE
+          ALLOCATE ( d2d (n1,n2) )
+          DO j4 =   1, n4
+             DO j3 = 1, n3
+                ierr = NF90_GET_VAR(ncin,jv,d2d, start=(/1,1,j3,j4/),count=(/n1,n2,1,1/) )
+                ierr = NF90_PUT_VAR(ncou,jv,d2d, start=(/1,1,j3,j4/),count=(/n1,n2,1,1/) )
+             ENDDO
+          ENDDO
+          DEALLOCATE ( d2d)
+        ENDIF
         ierr = NF90_SYNC(ncou)
-        DEALLOCATE ( d2d)
 
      CASE DEFAULT
         PRINT *, 'WARNING : found variable with ', ndim,' dimension : not yet supported : skip it !'
