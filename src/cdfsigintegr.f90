@@ -426,7 +426,7 @@ CONTAINS
     stypvar(4)%cunits            = TRIM(cluni)
     stypvar(4)%rmissing_value    = zspval
     stypvar(4)%valid_min         = stypvar(1)%valid_min
-    stypvar(4)%valid_max         = stypvar(1)%valid_min
+    stypvar(4)%valid_max         = stypvar(1)%valid_max
     stypvar(4)%clong_name        = TRIM(cldum)//' mean value in sigma layer'
     stypvar(4)%cshort_name       = stypvar(4)%cname
     stypvar(4)%conline_operation = 'N/A'
