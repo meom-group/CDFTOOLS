@@ -1,17 +1,11 @@
-# macro.jade for jade at CINES
+# macro.jade for jean-zay @ IDRIS
 #  $Rev: 539 $
 #  $Date: 2011-07-11 12:33:35 +0200 (Mon, 11 Jul 2011) $
-#  $Id: macro.jade 539 2011-07-11 10:33:35Z molines $
+#  $Id: macro.jean-zay 539 2011-07-11 10:33:35Z molines $
 # -------------------------------------------------------------
-NETCDF=/gpfslocalsup/spack_soft/netcdf/4.7.2/intel-19.0.4-cqo7jj3yxaprhm23gr2tfq2f4epw7k3r/
-NETCDF=/gpfslocalsup/spack_soft/netcdf-fortran/4.5.2/intel-19.0.4-knfz4zgnj6ohnfqulsg2z55orygeb7we
-
-NETCDF_INCDIR = $(NETCDF)/include
-NETCDF_LIBDIR = $(NETCDF)/lib
-NETCDFF_INCDIR = $(NETCDFF)/include
-NETCDFF_LIBDIR = $(NETCDFF)/lib
-NETCDF_LDFLAGS = -L$(NETCDF_LIBDIR) -lnetcdf -L$(NETCDFF_LIBDIR) -lnetcdff
-NCDF = -I$(NETCDF_INCDIR) -I$(NETCDFF_INCDIR) $(NETCDF_LDFLAGS) $(NETCDFF_LDFLAGS)
+# On Jean-Zay if netcdf module are properly loaded, you only need to specify
+#  -lnecdf -l netcdff as FFLAGS.
+NCDF = -lnetcdf -lnetcdff
 
 #NC4=
 NC4=-Dkey_netcdf4
