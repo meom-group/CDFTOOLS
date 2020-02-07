@@ -3,8 +3,8 @@
 #  $Date: 2011-07-11 12:33:35 +0200 (Mon, 11 Jul 2011) $
 #  $Id: macro.jade 539 2011-07-11 10:33:35Z molines $
 # -------------------------------------------------------------
-NETCDF=/gpfslocalsup/spack_soft/netcdf/4.7.0/intel-19.0.4-vtvxqookplcvgsso4wqgy4neczdipgfg/
-NETCDFF=/gpfslocalsup/spack_soft/netcdf-fortran/4.4.5/intel-19.0.4-nm7vlsr6edc7yqkb2v7l4p6mu4dcgkoy/
+NETCDF=/gpfslocalsup/spack_soft/netcdf/4.7.2/intel-19.0.4-cqo7jj3yxaprhm23gr2tfq2f4epw7k3r/
+NETCDF=/gpfslocalsup/spack_soft/netcdf-fortran/4.5.2/intel-19.0.4-knfz4zgnj6ohnfqulsg2z55orygeb7we
 
 NETCDF_INCDIR = $(NETCDF)/include
 NETCDF_LIBDIR = $(NETCDF)/lib
