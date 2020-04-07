@@ -21,7 +21,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
        cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
-       cdfbottom cdfets cdfokubow cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
+       cdfbottom cdfets cdfokubow cdfstrain cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfmht_gsop cdfvhst cdfvtrp cdftransport cdfvFWov \
        cdfsigtrp cdfsigtrp_broken cdftransig_xy3d\
@@ -152,6 +152,9 @@ cdfets: cdfio.o  eos.o  cdfets.f90
 
 cdfokubow: cdfio.o  cdfokubow.f90
 	$(F90) cdfokubow.f90 -o $(BINDIR)/cdfokubow cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfstrain: cdfio.o  cdfstrain.f90
+	$(F90) cdfstrain.f90 -o $(BINDIR)/cdfstrain cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfmsk: cdfio.o  cdfmsk.f90
 	$(F90) cdfmsk.f90 -o $(BINDIR)/cdfmsk cdfio.o modcdfnames.o $(FFLAGS)
