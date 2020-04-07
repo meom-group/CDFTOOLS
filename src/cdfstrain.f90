@@ -89,8 +89,10 @@ PROGRAM cdfstrain
      PRINT *,'        ', TRIM(cn_fhgr),' and ', TRIM(cn_fmsk)
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
-     PRINT *,'       netcdf file : ', TRIM(cf_out) 
-     PRINT *,'         variables : sokubow (s^-2)'
+     PRINT *,'       netcdf file : ', TRIM(cf_out),' or the name given in the -o option.'
+     PRINT *,'         variables :  strsym_<PT>, strnsy_<PT> (s^-2), where <PT> can be'
+     PRINT *,'                      either T or F according to the C-grid position of'
+     PRINT *,'                      the variables.'
      STOP 
   ENDIF
 
