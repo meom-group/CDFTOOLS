@@ -1,9 +1,11 @@
 # Makefile for CDFTOOLS : nesh-fe.rz.uni-kiel.de
 #
-# $ module load intel netcdf_intel hfd5_intel
+# Note that at compile and at runtime you need an intel compiler, and compatible 
+# netcdf and hdf5. At the time of writing this (April 2020), you could run the
+# following to have everything in place:
 #
-# (Linked dynamically!)
-
+# $ module load intel17.0.4 netcdf4.4.1intel hdf5-1.8.19intel
+#
 
 # libs
 LIBS = \
