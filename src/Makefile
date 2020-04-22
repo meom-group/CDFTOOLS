@@ -30,6 +30,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfthic cdfvint cdffwc\
        cdfpendep cdfzonalsum cdficediags  cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
+       cdffixanom \
        cdf16bit cdfvita cdfconvert cdf_conv_zgr cdfclip  cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk cdfisf_diags \
        cdficb_clim cdficb_diags \
@@ -409,6 +410,9 @@ cdfzoom: cdfio.o  cdfzoom.f90
 
 cdfmax: cdfio.o  cdfmax.f90
 	$(F90) cdfmax.f90  -o $(BINDIR)/cdfmax cdfio.o modcdfnames.o $(FFLAGS)
+
+cdffixanom: cdfio.o  cdffixanom.f90
+	$(F90) cdffixanom.f90  -o $(BINDIR)/cdffixanom cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfprobe: cdfio.o  cdfprobe.f90
 	$(F90) cdfprobe.f90  -o $(BINDIR)/cdfprobe cdfio.o modcdfnames.o $(FFLAGS)
