@@ -47,6 +47,7 @@ PROGRAM cdffixanom
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdffixanom -f IN-file -v IN-var -reflev kref  ...'
      PRINT *,'      ... [-w imin imax jmin jmax] [-time tmin tmax ] ...'
+     PRINT *,'      ... [-o OUT-file ]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        In the subdomain, replace the variable value by values at kref,'
