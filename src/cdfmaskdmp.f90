@@ -67,7 +67,7 @@ PROGRAM cdfmaskdmp
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmaskdmp -t T-file [-s S-file] [-refdep REF-depth] ...'
      PRINT *,'             ... [-dens smin width] [-dep hmin width] [-lat latmax width] ...'
-     PRINT *,'             ... [-o OUT-file] [-nc4]'
+     PRINT *,'             ... [-o OUT-file] [-nc4] [-zdim zdimnm]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute a damping mask with smooth transition according to density,'
@@ -91,6 +91,7 @@ PROGRAM cdfmaskdmp
      PRINT *,'       [-dens smin width] : set minimum density and width for density tapering'
      PRINT *,'       [-dep  hmin width] : set minimum depth and width for depth tapering'
      PRINT *,'       [-lat  latmax width]: set max latitude and width for latitude tapering'
+     PRINT *,'       [-zdim zdimnm ] : give the name of the z dimension if not ',TRIM(cn_z)
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
@@ -125,6 +126,7 @@ PROGRAM cdfmaskdmp
         ;                CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) hwidth
      CASE ( '-lat'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatmax
         ;                CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatwidth
+     CASE ( '-zdim'  ) ; CALL getarg(ijarg, cn_z    ) ; ijarg=ijarg+1
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ; lnc4 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
