@@ -44,6 +44,7 @@ PROGRAM cdfbathy
   INTEGER(KIND=4)                              :: narg, iargc, ijarg  ! browse command line
   INTEGER(KIND=4)                              :: iimin, iimax        ! selected area
   INTEGER(KIND=4)                              :: ijmin, ijmax        ! selected area
+  INTEGER(KIND=4)                              :: iiref, ijref        ! reference point coordinates for _ij options
   INTEGER(KIND=4)                              :: ierr                ! error status
   INTEGER(KIND=4)                              :: icrit               ! maximal size of pool 
   INTEGER(KIND=4)                              :: iklev               ! selected level
@@ -83,6 +84,8 @@ PROGRAM cdfbathy
   LOGICAL :: lraz       = .FALSE., ldumpn     = .FALSE.       ! all required flags for options
   LOGICAL :: lrazb      = .FALSE., lsetb      = .FALSE.       ! all required flags for options
   LOGICAL :: lsetz      = .FALSE., lseta      = .FALSE.       ! all required flags for options
+  LOGICAL :: lrazb_ij   = .FALSE., lsetb_ij   = .FALSE.       ! all required flags for options
+  LOGICAL :: lsetz_ij   = .FALSE., lseta_ij   = .FALSE.       ! all required flags for options
   LOGICAL :: lchk       = .FALSE., lfillpool  = .FALSE.       ! all required flags for options
   LOGICAL :: ll_lev     = .FALSE., ll_time    = .FALSE.       ! all level, all time ==> true
   !!----------------------------------------------------------------------
@@ -120,6 +123,16 @@ PROGRAM cdfbathy
      PRINT 9999, '      (or -sa depmax ) '
      PRINT 9999, '   -set_zone value      : all value in area will be set to value'
      PRINT 9999, '      (or -sz value ) '
+
+     PRINT 9999, '   -raz_below_ij IREF JREF    : any depth less than v(IREF,JREF) in subarea will be replaced by 0 '
+     PRINT 9999, '      (or -rb_ij IREF JREF )  '
+     PRINT 9999, '   -set_below_ij IREF JREF    : any depth less than v(IREF,JREF) in subarea will be replaced by depmin '
+     PRINT 9999, '      (or -sb_ij IREF JREF ) '
+     PRINT 9999, '   -set_above_ij IREF JREF    : any depth larger than v(IREF,JREF) in subarea will be replaced by depmax '
+     PRINT 9999, '      (or -sa_ij IREF JREF ) '
+     PRINT 9999, '   -set_zone_ij IREF JREF      : all value in area will be set to v(IREF,JREF)'
+     PRINT 9999, '      (or -sz_ij IREF JREF ) '
+
      PRINT 9999, '   -fullstep depmin     : sub area will be reshaped as full-step, below depmin'
      PRINT 9999, '      (or -fs depmin )    requires the presence of the file zgr_bat.txt (from ocean.output, eg )'
      PRINT 9999, '   -dumpzone (or -d )   : sub area will be output to an ascii file, which can be used by -replace'
@@ -173,6 +186,21 @@ PROGRAM cdfbathy
         ; lseta =.TRUE. ; lmodif =.TRUE.
      CASE ('-set_zone','-sz') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepfill
         ; lsetz =.TRUE. ; lmodif =.TRUE.
+
+     CASE ('-raz_below_ij','-rb_ij') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iiref
+        ;                              CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijref
+        ; lrazb_ij =.TRUE. ; lmodif =.TRUE.
+     CASE ('-set_below_ij','-sb_ij') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iiref
+        ;                              CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijref
+        ; lsetb_ij =.TRUE. ; lmodif =.TRUE.
+     CASE ('-set_above_ij','-sa_ij') ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iiref
+        ;                              CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijref
+        ; lseta_ij =.TRUE. ; lmodif =.TRUE.
+     CASE ('-set_zone_ij','-sz_ij')  ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iiref
+        ;                              CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijref
+        ; lsetz_ij =.TRUE. ; lmodif =.TRUE.
+
+
      CASE ('-fullstep','-fs' ) ; lfullstep =.TRUE. ; lmodif=.TRUE.
         ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rdepmin
      CASE ('-append' , '-a'  ) ; lappend=.TRUE.
@@ -281,7 +309,13 @@ PROGRAM cdfbathy
         IF (lrazb     )       CALL raz_below (iimin, iimax, ijmin, ijmax, rdepfill)
         IF (lsetb     )       CALL set_below (iimin, iimax, ijmin, ijmax, rdepfill)
         IF (lseta     )       CALL set_above (iimin, iimax, ijmin, ijmax, rdepfill)
-        IF (lsetz     )       CALL set_zone (iimin, iimax, ijmin, ijmax, rdepfill)
+        IF (lsetz     )       CALL set_zone  (iimin, iimax, ijmin, ijmax, rdepfill)
+
+        IF (lrazb_ij  )       CALL raz_below (iimin, iimax, ijmin, ijmax, bathy(iiref,ijref))
+        IF (lsetb_ij  )       CALL set_below (iimin, iimax, ijmin, ijmax, bathy(iiref,ijref))
+        IF (lseta_ij  )       CALL set_above (iimin, iimax, ijmin, ijmax, bathy(iiref,ijref))
+        IF (lsetz_ij  )       CALL set_zone  (iimin, iimax, ijmin, ijmax, bathy(iiref,ijref))
+        
         IF (ldump     )       CALL dumpzone     (cf_dump, iimin, iimax, ijmin, ijmax)
         IF (ldumpn    )       CALL nicedumpzone (cf_dump, iimin, iimax, ijmin, ijmax)
         IF (lreplace  )       CALL replacezone  (cf_replace)
