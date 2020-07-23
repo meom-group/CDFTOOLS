@@ -218,7 +218,10 @@ PROGRAM cdfbathy
 
   npiglo = getdim(cwkc,cn_x)
   npjglo = getdim(cwkc,cn_y)
-  npk    = getdim(cwkc,cn_z)
+  npk    = getdim(cwkc,cn_z,kstatus=ierr)
+  IF ( ierr /= 0 ) THEN
+    npk    = getdim(cwkc,'z')
+  ENDIF
   npt    = getdim(cwkc,cn_t)
   IF (npk == 0 ) npk = 1
   IF (npt == 0 ) npt = 1
@@ -230,6 +233,11 @@ PROGRAM cdfbathy
      ll_lev=.true.
      nnpk = npk
   ENDIF
+
+  PRINT *,'CN_Z = ', TRIM(cn_z)
+  PRINT *,'LL_LEV = ', ll_lev
+  PRINT *,'NPK = ', npk
+  PRINT *,'NNPK = ', nnpk
 
 
   IF ( iklev > npk ) THEN
