@@ -21,7 +21,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
        cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
-       cdfbottom cdfets cdfokubow cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
+       cdfbottom cdfets cdfokubow cdfstrain cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfmht_gsop cdfvhst cdfvtrp cdftransport cdfvFWov \
        cdfsigtrp cdfsigtrp_broken cdftransig_xy3d\
@@ -30,6 +30,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfmxlheatc cdfmxlsaltc cdfmxlhcsc cdfvertmean cdfthic cdfvint cdffwc\
        cdfpendep cdfzonalsum cdficediags  cdfzonalout\
        cdfprofile  cdfwhereij cdffindij cdfweight cdfmaxmoc cdfcensus cdfzoom cdfmax cdfprobe cdfinfo \
+       cdffixanom \
        cdf16bit cdfvita cdfconvert cdf_conv_zgr cdfclip  cdfbathy cdfvar \
        cdfisf_fill cdfisf_forcing cdfisf_rnf cdfisf_poolchk cdfisf_diags \
        cdficb_clim cdficb_diags \
@@ -38,7 +39,8 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfnrj_transfert cdfnrj_bci cdfnrj_bti cdfnrj_components cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfnamelist \
-       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk
+       cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdfocape cdf_compress \
+       cdf_domain_modif
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
 
@@ -153,6 +155,9 @@ cdfets: cdfio.o  eos.o  cdfets.f90
 cdfokubow: cdfio.o  cdfokubow.f90
 	$(F90) cdfokubow.f90 -o $(BINDIR)/cdfokubow cdfio.o modcdfnames.o $(FFLAGS)
 
+cdfstrain: cdfio.o  cdfstrain.f90
+	$(F90) cdfstrain.f90 -o $(BINDIR)/cdfstrain cdfio.o modcdfnames.o $(FFLAGS)
+
 cdfmsk: cdfio.o  cdfmsk.f90
 	$(F90) cdfmsk.f90 -o $(BINDIR)/cdfmsk cdfio.o modcdfnames.o $(FFLAGS)
 
@@ -209,6 +214,9 @@ cdfisopsi: cdfio.o eos.o cdfisopsi.f90
 
 cdfpvor: eos.o cdfio.o  cdfpvor.f90
 	$(F90)  cdfpvor.f90 -o $(BINDIR)/cdfpvor cdfio.o eos.o modcdfnames.o  $(FFLAGS) 
+
+cdfocape: eos.o cdfio.o  cdfocape.f90
+	$(F90)  cdfocape.f90 -o $(BINDIR)/cdfocape cdfio.o eos.o modcdfnames.o  $(FFLAGS) 
 
 cdfgradT: cdfio.o  cdfgradT.f90
 	$(F90) cdfgradT.f90 -o $(BINDIR)/cdfgradT cdfio.o  modcdfnames.o  $(FFLAGS) 
@@ -404,6 +412,9 @@ cdfzoom: cdfio.o  cdfzoom.f90
 cdfmax: cdfio.o  cdfmax.f90
 	$(F90) cdfmax.f90  -o $(BINDIR)/cdfmax cdfio.o modcdfnames.o $(FFLAGS)
 
+cdffixanom: cdfio.o  cdffixanom.f90
+	$(F90) cdffixanom.f90  -o $(BINDIR)/cdffixanom cdfio.o modcdfnames.o $(FFLAGS)
+
 cdfprobe: cdfio.o  cdfprobe.f90
 	$(F90) cdfprobe.f90  -o $(BINDIR)/cdfprobe cdfio.o modcdfnames.o $(FFLAGS)
 
@@ -503,6 +514,12 @@ cdfchgrid: cdfio.o modutils.o cdfchgrid.f90
 
 cdfcmp: cdfio.o cdfcmp.f90
 	$(F90) cdfcmp.f90  -o $(BINDIR)/cdfcmp cdfio.o modcdfnames.o $(FFLAGS)
+
+cdf_compress:  cdf_compress.f90
+	$(F90) cdf_compress.f90  -o $(BINDIR)/cdf_compress  $(FFLAGS)
+
+cdf_domain_modif:  cdf_domain_modif.f90
+	$(F90) cdf_domain_modif.f90  -o $(BINDIR)/cdf_domain_modif  $(FFLAGS)
 
 ## Modules
 

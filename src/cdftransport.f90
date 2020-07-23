@@ -64,7 +64,9 @@ PROGRAM cdftransport
   INTEGER(KIND=4)                             :: it             ! time index
   INTEGER(KIND=4)                             :: ipos           ! working integer (position of ' ' in strings)
   INTEGER(KIND=4)                             :: ncout, ierr    ! for netcdf output
+  INTEGER(KIND=4)                             :: ncoutc         ! for netcdf output
   INTEGER(KIND=4)                             :: nvarout=12     ! number of values to write in cdf output
+  INTEGER(KIND=4)                             :: nvaroutc=6     ! number of values to write in cumulative output
   INTEGER(KIND=4)                             :: ivtrp          ! var index of volume transport (barotrope)
   INTEGER(KIND=4)                             :: iptrp          ! var index of volume transport (barotrope)
   INTEGER(KIND=4)                             :: imtrp          ! var index of volume transport (barotrope)
@@ -75,6 +77,12 @@ PROGRAM cdftransport
   INTEGER(KIND=4)                             :: imtrpcl        ! var index of volume transport (p. class)
   INTEGER(KIND=4)                             :: ihtrpcl        ! var index of heat transport (p. class)
   INTEGER(KIND=4)                             :: istrpcl        ! var index of sal transport (p. class)
+  INTEGER(KIND=4)                             :: ivtrpc         ! var index of volume cumulated transport (p. class)
+  INTEGER(KIND=4)                             :: ihtrpc         ! var index of heat cumulated transport (p. class)
+  INTEGER(KIND=4)                             :: istrpc         ! var index of sal cumulated transport (p. class)
+  INTEGER(KIND=4)                             :: ivtrpclc       ! var index of volume cumulated transport (p. class)
+  INTEGER(KIND=4)                             :: ihtrpclc       ! var index of heat cumulated transport (p. class)
+  INTEGER(KIND=4)                             :: istrpclc       ! var index of sal cumulated transport (p. class)
   INTEGER(KIND=4)                             :: ilonmin        ! var index of starting section longitude
   INTEGER(KIND=4)                             :: ilonmax        ! var index of ending section longitude
   INTEGER(KIND=4)                             :: ilatmin        ! var index of starting section latitude
@@ -104,6 +112,7 @@ PROGRAM cdftransport
   INTEGER(KIND=4)                             :: idirx, idiry   ! sense of description of the section
   INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ilev0, ilev1   ! limit in levels  (nclass)
   INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipk, id_varout ! Netcdf output
+  INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipkc, id_varoutc ! Netcdf output
 
   REAL(KIND=4)                                :: rxi0, ryj0     ! working variables
   REAL(KIND=4)                                :: rxi1, ryj1     ! working variables
@@ -116,6 +125,7 @@ PROGRAM cdftransport
   REAL(KIND=4)                                :: zspu, zspv     ! missing values for u and v
   REAL(KIND=4), DIMENSION(2)                  :: gla, gphi      ! lon/lat of the begining/end of section (f point)
   REAL(KIND=4), DIMENSION(jpseg)              :: rxx, ryy       ! working variables
+  REAL(KIND=4), DIMENSION(jpseg,1)            :: rdumseg        ! working variables
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: gdepw          ! depth at layer interface
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: e31d           ! vertical metric in case of full step
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE :: rclass         ! vertical metric in case of full step
@@ -123,7 +133,13 @@ PROGRAM cdftransport
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1v, e2u       ! horizontal metric
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e3u, e3v       ! vertical metric
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: glamf          ! longitudes of F points
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: glamu          ! longitudes of U points
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: glamv          ! longitudes of V points
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphif          ! latitudes of F points
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphiu          ! latitudes of U points
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: gphiv          ! latitudes of V points
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rlonsec        ! longitudes in case of section read
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rlatsec        ! latitudes in case of section read
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdum           ! dummy (1x1) array for ncdf output
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zuobc, zvobc   ! arrays for OBC files (vertical slice)
 
@@ -159,6 +175,9 @@ PROGRAM cdftransport
   REAL(KIND=8), DIMENSION(jpseg)              :: dvoltrpm       ! volume transport across each segment of a section
   REAL(KIND=8), DIMENSION(jpseg)              :: dheatrp        ! heat transport across each segment of a section
   REAL(KIND=8), DIMENSION(jpseg)              :: dsaltrp        ! salt transport across each segment of a section
+  REAL(KIND=8), DIMENSION(jpseg)              :: dvoltrpcbtp    ! cumulative volume transportin  section integrated over the classes
+  REAL(KIND=8), DIMENSION(jpseg)              :: dheatrpcbtp    ! cumulative heat transportin  section integrated over the classes
+  REAL(KIND=8), DIMENSION(jpseg)              :: dsaltrpcbtp    ! cumulative salt transportin  section integrated over the classes
   REAL(KIND=8)                                :: dvoltrpbrtp    ! volume transport integrated over the whole depth
   REAL(KIND=8)                                :: dvoltrpbrtpp   ! volume transport integrated over the whole depth
   REAL(KIND=8)                                :: dvoltrpbrtpm   ! volume transport integrated over the whole depth
@@ -174,12 +193,14 @@ PROGRAM cdftransport
   COMPLEX                                     :: yypti          ! working point
 
   TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar        ! structure of output
+  TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvarc       ! structure of output
 
   CHARACTER(LEN=256)                          :: cf_vtfil       ! VT file  (in)
   CHARACTER(LEN=256)                          :: cf_tfil        ! T file  (in)
   CHARACTER(LEN=256)                          :: cf_sfil        ! S file  (in) optional
   CHARACTER(LEN=256)                          :: cf_ufil        ! U file   (in)
   CHARACTER(LEN=256)                          :: cf_vfil        ! V file   (in)
+  CHARACTER(LEN=256)                          :: cf_cumul       ! cumulated transpot file   (out)
   CHARACTER(LEN=256)                          :: cf_out='section_trp.dat'  ! output file name (ASCII)
   CHARACTER(LEN=256)                          :: cf_outnc            ! output netcdf file
   CHARACTER(LEN=256)                          :: cf_vtrp='vtrp.txt'  ! output volume transport file
@@ -206,6 +227,7 @@ PROGRAM cdftransport
   LOGICAL                                     :: l_zonal = .FALSE.   ! flag for zonal obc
   LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
   LOGICAL                                     :: l_self  = .FALSE.   ! flag for self mesh/mask files in the input
+  LOGICAL                                     :: l_cumul = .FALSE.   ! flag for cumulated transport output
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -215,7 +237,7 @@ PROGRAM cdftransport
      PRINT *,' usage : cdftransport -u U-file -v V-file [-t T-file] [-s S-file] [-vt VT-file]'
      PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... '
      PRINT *,'                  ... [-full] [-time jt] [-vvl] [-self] ...'
-     PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix]'
+     PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix][-cumul]'
      PRINT *,'      '
      PRINT *,'    PURPOSE :'
      PRINT *,'      Compute the transports (volume, heat and salt) accross a section.'
@@ -267,6 +289,8 @@ PROGRAM cdftransport
      PRINT *,'                  specified with -v option.'
      PRINT *,'      [-sfx suffix] : use suffix instead of ',TRIM(csfx), ' in the netcdf'
      PRINT *,'                  output file. '
+     PRINT *,'      [-cumul]   : Save cumulative transports along the section in a separate'
+     PRINT *,'                   file. '
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'      Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' must be in the current directory.'
@@ -279,6 +303,7 @@ PROGRAM cdftransport
      PRINT *,'          h<SUFFIX>.txt and s<SUFFIX>.txt.'
      PRINT *,'      - Netcdf files for each section. <SECTION>_<SUFFIX>.nc. '
      PRINT *,'        Default <SUFFIX> is ',TRIM(csfx),' and can be changed with -sfx option.'
+     PRINT *,'      - In case of -cumul option extra .nc file will be named <SECTION>_<SUFFIX>_cumul.nc.'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'       cdfsigtrp cdf_xtrac_brokenline'
@@ -316,10 +341,11 @@ PROGRAM cdftransport
      CASE ( '-self' ) ; l_self = .TRUE.
      CASE ('-zlimit') ; CALL GetZlimit  ! Parse arguments of -zlimit to build rz_lst array
      CASE ('-sfx'   ) ; CALL getarg (ijarg, csfx   ) ; ijarg = ijarg + 1
+     CASE ('-cumul' ) ; l_cumul = .TRUE.
      CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
-  
+
 
   it = 1
   IF ( lg_vvl ) THEN
@@ -379,7 +405,17 @@ PROGRAM cdftransport
      ENDIF
      IF ( lpm   ) nvarout=nvarout+2
   ENDIF
-
+  IF ( l_cumul ) THEN
+     IF ( nclass > 1 ) THEN
+        IF ( lheat ) THEN ; nvaroutc = 6
+        ELSE              ; nvaroutc = 2
+        ENDIF
+     ELSE
+        IF ( lheat ) THEN ; nvaroutc = 3
+        ELSE              ; nvaroutc = 1 
+        ENDIF
+     ENDIF
+  ENDIF
   ALLOCATE ( ilev0(nclass), ilev1(nclass), rclass(nclass) )
   rclass=(/(jclass, jclass=1,nclass)/)
 
@@ -411,12 +447,15 @@ PROGRAM cdftransport
 
   ! define new variables for output 
   ALLOCATE ( stypvar(nvarout), ipk(nvarout), id_varout(nvarout) )
+  IF ( l_cumul ) THEN
+     ALLOCATE ( stypvarc(nvaroutc), ipkc(nvaroutc), id_varoutc(nvaroutc) )
+  ENDIF
   ALLOCATE ( rdum(1,1) )
 
   rdum(:,:)=0.e0
 
   ! Allocate arrays
-  ALLOCATE (   dlu(npiglo,npjglo),   dlv(npiglo,npjglo) )
+  ALLOCATE ( dlu(npiglo,npjglo),   dlv(npiglo,npjglo) )
   ALLOCATE ( dwku(npiglo,npjglo), dwkv(npiglo,npjglo) )
   ALLOCATE ( dtrpu(npiglo,npjglo,nclass), dtrpv(npiglo,npjglo,nclass))
   ALLOCATE ( dvoltrpsum(nclass), dvolallegcl(nclass) )
@@ -449,6 +488,12 @@ PROGRAM cdftransport
   !
   ALLOCATE ( gphif(npiglo,npjglo) )
   ALLOCATE ( glamf(npiglo,npjglo) )
+  IF ( l_cumul ) THEN
+     ALLOCATE  ( gphiu(npiglo,npjglo) )
+     ALLOCATE  ( gphiv(npiglo,npjglo) )
+     ALLOCATE  ( glamu(npiglo,npjglo) )
+     ALLOCATE  ( glamv(npiglo,npjglo) )
+  ENDIF
   ALLOCATE ( gdepw(npk) , dtim(npt)                      )
   !
   ! read metrics and grid position
@@ -457,6 +502,13 @@ PROGRAM cdftransport
      e2u(:,:)   = 1.  ! dummy value, not used
      glamf(:,:) = 1.
      gphif(:,:) = 1.
+     IF ( l_cumul ) THEN
+        glamu(:,:) = 1.
+        gphiu(:,:) = 1.
+        glamv(:,:) = getvar(cf_vtfil, cn_vlon2d, 1, npiglo, npjglo)
+        gphiv(:,:) = getvar(cf_vtfil, cn_vlat2d, 1, npiglo, npjglo)
+     ENDIF
+
      ! use e31d for temporary calculation
      e31d(:)    =  getvar1d(cf_vtfil, cn_vdeptht, npk)
      gdepw(1)   = 0.
@@ -468,7 +520,12 @@ PROGRAM cdftransport
 
      glamf(:,:) = getvar(cn_fhgr, cn_glamf, 1,npiglo, npjglo)
      gphif(:,:) = getvar(cn_fhgr, cn_gphif, 1,npiglo, npjglo)
-
+     IF ( l_cumul ) THEN
+        glamu(:,:) = getvar(cn_fhgr, cn_glamu, 1,npiglo, npjglo)
+        glamv(:,:) = getvar(cn_fhgr, cn_glamv, 1,npiglo, npjglo)
+        gphiu(:,:) = getvar(cn_fhgr, cn_gphiu, 1,npiglo, npjglo)
+        gphiv(:,:) = getvar(cn_fhgr, cn_gphiv, 1,npiglo, npjglo)
+     ENDIF
      gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
      e31d(:)  = getvare3(cn_fzgr, cn_ve3t1d,  npk) ! used only for full step
   ENDIF
@@ -696,6 +753,7 @@ PROGRAM cdftransport
      dtim     = getvar1d    (cf_ufil,  cn_vtimec, npt                )
      ierr     = putvar1d    (ncout,    dtim(itime:itime),      1, 'T')
 
+
      PRINT *, ' Give iimin, iimax, ijmin, ijmax '
      READ(*,*) iimin, iimax, ijmin, ijmax
      !! Find the broken line between P1 (iimin,ijmin) and P2 (iimax, ijmax)
@@ -821,6 +879,31 @@ PROGRAM cdftransport
      gla (2) = glamf( INT(rxx(nn)), INT(ryy(nn)) ) 
      gphi(2) = gphif( INT(rxx(nn)), INT(ryy(nn)) ) 
 
+     IF (l_cumul) THEN
+        ALLOCATE ( rlonsec(nn-1,1), rlatsec(nn-1,1) )
+        DO jseg = 1, nn-1
+           ii0=rxx(jseg)
+           ij0=ryy(jseg)
+           IF ( rxx(jseg) ==  rxx(jseg+1) ) THEN    ! meridional segment, use U velocity
+              rlonsec(jseg,1) = glamu(ii0,ij0+ijst)
+              rlatsec(jseg,1) = gphiu(ii0,ij0+ijst)
+           ELSE IF ( ryy(jseg) == ryy(jseg+1) ) THEN
+              rlonsec(jseg,1) = glamv(ii0+iist,ij0)
+              rlatsec(jseg,1) = gphiv(ii0+iist,ij0)
+           ELSE
+              PRINT *, 'ERROR : neither meridional, nor zonal! Where we are? '
+           ENDIF
+        END DO
+
+        CALL set_typvarc( stypvarc, csection, cvarname, clongname )
+        cf_cumul = TRIM(csection)//'_'//TRIM(csfx)//'_cumul.nc'
+        ncoutc   = create      (cf_cumul, 'none',    nn-1,     1, nclass, cdep='depth_class')
+        ierr     = createvar   (ncoutc,    stypvarc,   nvaroutc,  ipkc, id_varoutc, cdglobal=TRIM(cglobal) )
+        ierr     = putheadervar(ncoutc,    cf_ufil,   nn-1, 1, nclass, pnavlon=rlonsec, pnavlat=rlatsec, pdep=rclass )
+        dtim     = getvar1d    (cf_ufil,  cn_vtimec, npt                )
+        ierr     = putvar1d    (ncoutc,    dtim(itime:itime),      1, 'T')
+     END IF
+
      ! Now extract the transport through a section 
      ! ... Check whether we need a u velocity or a v velocity
      !   Think that the points are f-points and delimit either a U segment
@@ -836,6 +919,11 @@ PROGRAM cdftransport
      dvoltrpbrtpm = 0.d0
      dheatrpbrtp  = 0.d0
      dsaltrpbrtp  = 0.d0
+     ! cumulative barotropuic transport
+     dvoltrpcbtp(:) = 0.d0
+     dheatrpcbtp(:) = 0.d0
+     dsaltrpcbtp(:) = 0.d0
+
      DO jclass=1,nclass
         dvoltrpsum(jclass) = 0.d0
         IF ( lpm   ) THEN
@@ -889,6 +977,7 @@ PROGRAM cdftransport
               PRINT *,' ERROR :',  rxx(jseg),ryy(jseg),rxx(jseg+1),ryy(jseg+1) ! likely to never happen !
            END IF
            dvoltrpsum(jclass) = dvoltrpsum(jclass) + dvoltrp(jseg)
+           dvoltrpcbtp(jseg) = dvoltrpcbtp(jseg) + dvoltrp(jseg)
            IF ( lpm   ) THEN 
               dvoltrpsump(jclass) = dvoltrpsump(jclass) + dvoltrpp(jseg)
               dvoltrpsumm(jclass) = dvoltrpsumm(jclass) + dvoltrpm(jseg)
@@ -896,6 +985,8 @@ PROGRAM cdftransport
            IF ( lheat ) THEN
               dheatrpsum(jclass) = dheatrpsum(jclass) + dheatrp(jseg)
               dsaltrpsum(jclass) = dsaltrpsum(jclass) + dsaltrp(jseg)
+              dheatrpcbtp(jseg)  = dheatrpcbtp(jseg) + dheatrp(jseg)
+              dsaltrpcbtp(jseg)  = dsaltrpcbtp(jseg) + dsaltrp(jseg)
            ENDIF
         END DO   ! next segment
 
@@ -947,6 +1038,17 @@ PROGRAM cdftransport
               rdum(1,1) =  REAL(dsaltrpsum(jclass)/1.e6)
               ierr = putvar(ncout,id_varout(istrpcl), rdum, jclass, 1, 1, 1 )
            ENDIF
+           IF ( l_cumul ) THEN
+              rdumseg(1:nn-1,1) = REAL(dvoltrp(1:nn-1)/1.e6)
+              ierr = putvar(ncoutc,id_varoutc(ivtrpclc), rdumseg(1:nn-1,:), jclass, nn-1, 1, 1 )
+              IF ( lheat ) THEN
+                 rdumseg(1:nn-1,1) = REAL(dheatrp(1:nn-1)/1.e15)
+                 ierr = putvar(ncoutc,id_varoutc(ihtrpclc), rdumseg(1:nn-1,:), jclass, nn-1, 1, 1 )
+                 rdumseg(1:nn-1,1) = REAL(dsaltrp(1:nn-1)/1.e6)
+                 ierr = putvar(ncoutc,id_varoutc(istrpclc), rdumseg(1:nn-1,:), jclass, nn-1, 1, 1 )
+              ENDIF
+           ENDIF
+
         ENDIF
         rdum(1,1) = REAL(gdepw(ilev0(jclass)))
         ierr = putvar(ncout,id_varout(itop), rdum, jclass, 1, 1, 1 )
@@ -1010,6 +1112,20 @@ PROGRAM cdftransport
      ierr = putvar0d(ncout,id_varout(ilatmin), REAL(gphi(1)) )
      ierr = putvar0d(ncout,id_varout(ilatmax), REAL(gphi(2)) )
      ierr = closeout(ncout)
+
+     IF ( l_cumul ) THEN
+        rdumseg(1:nn-1,1) = REAL(dvoltrpcbtp(1:nn-1)/1.e6)
+        ierr = putvar(ncoutc,id_varoutc(ivtrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
+        IF ( lheat ) THEN
+           rdumseg(1:nn-1,1) = REAL(dheatrpcbtp(1:nn-1)/1.e15)
+           ierr = putvar(ncoutc,id_varoutc(ihtrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
+           rdumseg(1:nn-1,1) = REAL(dsaltrpcbtp(1:nn-1)/1.e6)
+           ierr = putvar(ncoutc,id_varoutc(istrpc), rdumseg(1:nn-1,:), 1, nn-1, 1, 1 )
+        ENDIF
+        ierr = closeout(ncoutc)
+        DEALLOCATE (rlonsec, rlatsec)
+     ENDIF
+
   END DO ! infinite loop : gets out when input is EOF 
 
 
@@ -1191,6 +1307,96 @@ CONTAINS
     ENDIF
 
   END SUBROUTINE set_typvar
+
+  SUBROUTINE set_typvarc ( sd_typvar, cdsection, cdvarname, cdlongname ) 
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE set_typvarc  ***
+    !!
+    !! ** Purpose : Initialize typvar structure for netcdfoutput at a given section
+    !!
+    !! ** Method  : use varname longname to suffix variable name and attributes
+    !!              If varname and/or logname are not given (ie 'none') take
+    !!              standard default names
+    !!              Netcdf id for variables are passed as global variables
+    !!----------------------------------------------------------------------
+    TYPE(variable), DIMENSION(:), INTENT(out) :: sd_typvar        ! structure of output
+    CHARACTER(LEN=*),             INTENT(in ) :: cdsection
+    CHARACTER(LEN=*),             INTENT(in ) :: cdvarname
+    CHARACTER(LEN=*),             INTENT(in ) :: cdlongname
+    !!
+    INTEGER(KIND=4)                           :: ivar
+    CHARACTER(LEN=255)                        :: csuffixvarnam
+    CHARACTER(LEN=255)                        :: cprefixlongnam
+    !!----------------------------------------------------------------------
+    ! set suffixes according to variable/longname 
+    IF ( cdvarname /= 'none' ) THEN
+       csuffixvarnam = '_'//TRIM(cdvarname)
+    ELSE
+       csuffixvarnam = ''
+    ENDIF
+
+    IF ( cdlongname /= 'none' ) THEN
+       cprefixlongnam = TRIM(cdlongname)//'_'
+    ELSE
+       cprefixlongnam = ''
+    ENDIF
+
+    ! set common values
+    sd_typvar%rmissing_value=99999.
+    sd_typvar%scale_factor= 1.
+    sd_typvar%add_offset= 0.
+    sd_typvar%savelog10= 0.
+    sd_typvar%conline_operation='N/A'
+    sd_typvar%caxis='T'
+
+    ! set particular values for individual variables
+    ivar = 1  ; ivtrpc = ivar
+    ipkc(ivar) = 1
+    sd_typvar(ivar)%cname       = 'vtrpcumul'//TRIM(csuffixvarnam)
+    sd_typvar(ivar)%cunits      = 'Sverdrup'
+    sd_typvar(ivar)%valid_min   = -500.
+    sd_typvar(ivar)%valid_max   =  500.
+    sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Volume_Transport'
+    sd_typvar(ivar)%cshort_name = 'vtrp'
+
+    IF ( lheat ) THEN
+       ivar = ivar + 1 ; ihtrpc = ivar                                                 ;  istrpc = ivar+1
+       ipkc(ivar) = 1                                                                  ;  ipkc(ivar+1) = 1
+       sd_typvar(ivar)%cname       = 'htrpcumul'//TRIM(csuffixvarnam)                  ;  sd_typvar(ivar+1)%cname       = 'strpcumul'//TRIM(csuffixvarnam)
+       sd_typvar(ivar)%cunits      = 'PW'                                              ;  sd_typvar(ivar+1)%cunits      = 'kt/s'
+       sd_typvar(ivar)%valid_min   = -1000.                                            ;  sd_typvar(ivar+1)%valid_min   = -1000.
+       sd_typvar(ivar)%valid_max   =  1000.                                            ;  sd_typvar(ivar+1)%valid_max   =  1000.
+       sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Heat_Transport'            ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Salt_Transport'
+       sd_typvar(ivar)%cshort_name = 'htrp'                                            ;  sd_typvar(ivar+1)%cshort_name = 'strp'
+       ivar = ivar + 1
+    ENDIF
+
+
+    ivtrpclc = -1  ; ihtrpclc = -1 ; istrpclc = -1
+    IF ( nclass > 1 ) THEN  ! define additional variable for vertical profile of transport (per class)
+       ivar = ivar + 1  ; ivtrpclc = ivar
+       ipkc(ivar) = nclass                      
+       sd_typvar(ivar)%cname       = 'vtrp_dep_cumul'//TRIM(csuffixvarnam) 
+       sd_typvar(ivar)%cunits      = 'SV'  
+       sd_typvar(ivar)%valid_min   = 0.       
+       sd_typvar(ivar)%valid_max   = 10000.  
+       sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Volume_Transport_per_class' 
+       sd_typvar(ivar)%cshort_name = 'vtrp_dep'            
+
+       IF ( lheat ) THEN
+          ivar = ivar + 1  ; ihtrpclc = ivar                                             ;  istrpclc = ivar+1
+          ipkc(ivar) = nclass                                                            ;  ipkc(ivar+1) = nclass
+          sd_typvar(ivar)%cname       = 'htrp_dep_cumul'//TRIM(csuffixvarnam)            ;  sd_typvar(ivar+1)%cname       = 'strp_dep_cumul'//TRIM(csuffixvarnam)
+          sd_typvar(ivar)%cunits      = 'PW'                                             ;  sd_typvar(ivar+1)%cunits      = 'kt/s'
+          sd_typvar(ivar)%valid_min   = -1000.                                           ;  sd_typvar(ivar+1)%valid_min   = -1000.
+          sd_typvar(ivar)%valid_max   =  1000.                                           ;  sd_typvar(ivar+1)%valid_max   =  1000.
+          sd_typvar(ivar)%clong_name  = TRIM(cprefixlongnam)//'Heat_Transport_per_class' ;  sd_typvar(ivar+1)%clong_name  = TRIM(cprefixlongnam)//'Salt_Transport_per_class'
+          sd_typvar(ivar)%cshort_name = 'htrp_dep'                                       ;  sd_typvar(ivar+1)%cshort_name = 'strp_dep'
+          ivar = ivar + 1
+       ENDIF
+    ENDIF
+
+  END SUBROUTINE set_typvarc
 
   SUBROUTINE interm_pt (ydpt, kk, pai, pbi, paj, pbj, ydpti)
     !!---------------------------------------------------------------------

@@ -56,18 +56,20 @@ PROGRAM cdfmaskdmp
   CHARACTER(LEN=256)                        :: cf_out='mask_dmp.nc' ! output file name
   CHARACTER(LEN=256)                        :: cldum              ! dummy string
   CHARACTER(LEN=256)                        :: cglobal            ! Global attribute with command name
+  CHARACTER(LEN=256)                        :: cl_z               !  name of z dimension
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
 
   LOGICAL                                   :: lnc4 = .FALSE.     ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
+  cl_z=cn_z
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmaskdmp -t T-file [-s S-file] [-refdep REF-depth] ...'
      PRINT *,'             ... [-dens smin width] [-dep hmin width] [-lat latmax width] ...'
-     PRINT *,'             ... [-o OUT-file] [-nc4]'
+     PRINT *,'             ... [-o OUT-file] [-nc4] [-zdim zdimnm]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute a damping mask with smooth transition according to density,'
@@ -91,6 +93,7 @@ PROGRAM cdfmaskdmp
      PRINT *,'       [-dens smin width] : set minimum density and width for density tapering'
      PRINT *,'       [-dep  hmin width] : set minimum depth and width for depth tapering'
      PRINT *,'       [-lat  latmax width]: set max latitude and width for latitude tapering'
+     PRINT *,'       [-zdim zdimnm ] : give the name of the z dimension if not ',TRIM(cn_z)
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
@@ -125,6 +128,7 @@ PROGRAM cdfmaskdmp
         ;                CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) hwidth
      CASE ( '-lat'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatmax
         ;                CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatwidth
+     CASE ( '-zdim'  ) ; CALL getarg(ijarg, cl_z    ) ; ijarg=ijarg+1
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ; lnc4 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
@@ -139,7 +143,7 @@ PROGRAM cdfmaskdmp
 
   npiglo = getdim (cf_tfil,cn_x)
   npjglo = getdim (cf_tfil,cn_y)
-  npk    = getdim (cf_tfil,cn_z)
+  npk    = getdim (cf_tfil,cl_z)
   npt    = getdim (cf_tfil,cn_t)
 
   PRINT *, 'npiglo = ', npiglo
