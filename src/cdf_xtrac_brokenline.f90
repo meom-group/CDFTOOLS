@@ -711,7 +711,7 @@ PROGRAM cdf_xtract_brokenline
            END DO
 
            !Get alfa for the current section
-           angle= heading (dl_xmin,  dl_xmax,  dl_ymin, dl_ymax )
+           angled= heading (dl_xmin,  dl_xmax,  dl_ymin, dl_ymax )
            pi      = ACOS(-1.)
            angle = angled*pi/180.
            alfa  = angle - pi/2.
