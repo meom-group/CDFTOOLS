@@ -279,7 +279,11 @@ PROGRAM cdfsum
      e1(:,:) = getvar  (cn_fhgr, cv_e1, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
      e2(:,:) = getvar  (cn_fhgr, cv_e2, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   ENDIF
+  IF (lnwgh) THEN
+  gdep(:) = getvare3(cf_in, cv_dep,   npk                                   )
+  ELSE
   gdep(:) = getvare3(cn_fzgr, cv_dep,   npk                                   )
+  ENDIF
 
   CALL CreateOutput
 
