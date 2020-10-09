@@ -76,12 +76,13 @@ PROGRAM cdfsum
   LOGICAL                                   :: lerror= .FALSE.     ! flag for missing arguments
   LOGICAL                                   :: lfmsk = .FALSE.     ! flag for using non standard mask file
   LOGICAL                                   :: lnwgh = .FALSE.     ! flag for no weight
+  LOGICAL                                   :: lnmsk = .FALSE.     ! flag for no mask
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsum -f IN-file -v IN-var -p C-type [-nowght]... '
+     PRINT *,' usage : cdfsum -f IN-file -v IN-var -p C-type [-nowght] [-nomsk]... '
      PRINT *,'          ... [-w imin imax jmin jmax kmin kmax] [-full ] ...'
      PRINT *,'          ... [-o OUT-file] [-nc4] [-M MSK-file VAR-mask ] [-vvl] '
      PRINT *,'      '
@@ -102,6 +103,7 @@ PROGRAM cdfsum
      PRINT *,'              if kmin=0 all k are taken'
      PRINT *,'       [-nowght] : compute the aritmetic sum of the variable over the grid' 
      PRINT *,'               points, (not the area/volume weighted sum ). ' 
+     PRINT *,'       [-nomsk] : wont use mask file '
      PRINT *,'       [-full ]:  Use full steps instead of default partial steps'
      PRINT *,'       [-vvl  ]:  use time -varying  vertical metrics'
      PRINT *,'       [-o OUT-file ] : name of the output file instead of', TRIM(cf_out)
@@ -143,6 +145,7 @@ PROGRAM cdfsum
      CASE ( '-vvl ' ) ; lg_vvl=.TRUE.
      CASE ( '-nc4 ' ) ; lnc4  =.TRUE.
      CASE ( '-nowght ' ) ; lnwgh  =.TRUE.
+     CASE ( '-nomsk '  ) ; lnmsk  =.TRUE.
      CASE ( '-w'    ) ; 
         ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimin
         ;               CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*)  iimax
@@ -173,7 +176,7 @@ PROGRAM cdfsum
 
   IF ( .NOT. lnwgh )  lchk = chkfile(cn_fhgr)
   IF ( .NOT. lnwgh )  lchk = chkfile(cn_fzgr) .OR. lchk
-  lchk = chkfile(cn_fmsk) .OR. lchk
+  IF ( .NOT. lnmsk )  lchk = chkfile(cn_fmsk) .OR. lchk
   lchk = chkfile(cf_in  ) .OR. lchk
   IF ( lchk ) STOP 99 ! missing file
 
@@ -292,7 +295,11 @@ PROGRAM cdfsum
         ik = jk + ikmin -1
         ! Get field  at ik
         zv   (:,:) = getvar(cf_in,   cv_in,  ik, npiglo, npjglo, ktime=jt,   kimin=iimin, kjmin=ijmin)
-        zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo,             kimin=iimin, kjmin=ijmin)
+        IF ( lnmsk ) THEN
+          zmask=1
+        ELSE
+          zmask(:,:) = getvar(cn_fmsk, cv_msk, ik, npiglo, npjglo,             kimin=iimin, kjmin=ijmin)
+        ENDIF
         !    zmask(:,npjglo)=0.
         zv = zv * zmask
 
