@@ -38,7 +38,7 @@ PROGRAM cdfsum
   INTEGER(KIND=4)                           :: nvpk                ! vertical levels in working variable
   INTEGER(KIND=4)                           :: numout=10           ! logical unit
   INTEGER(KIND=4)                           :: ncout               ! for netcdf output
-  INTEGER(KIND=4), DIMENSION(2)             :: ipk, id_varout
+  INTEGER(KIND=4), DIMENSION(3)             :: ipk, id_varout
 
   REAL(KIND=4)                              :: zspval             ! missing value
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE :: gdep                ! depth 
@@ -68,7 +68,7 @@ PROGRAM cdfsum
   CHARACTER(LEN=256)                        :: clshort_name       !     "      short name
   CHARACTER(LEN=256)                        :: cglobal            !     "      global 
 
-  TYPE(variable), DIMENSION(2)              :: stypvar             ! structure of output
+  TYPE(variable), DIMENSION(3)              :: stypvar             ! structure of output
 
   LOGICAL                                   :: lforcing            ! forcing flag
   LOGICAL                                   :: lchk  = .FALSE.     ! flag for missing files
@@ -340,9 +340,12 @@ PROGRAM cdfsum
         ierr = putvar( ncout, id_varout(1), rdummy, jk, 1,1, ktime=jt)
      END DO
      dsumt = dsumt + dsum
-     IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: ', dsumt
+     IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: (cumulated in time)', dsumt
+     IF (.NOT. lforcing) PRINT * ,' Sum value over the ocean: (function of  time)', dsum
      rdummy(1,1) = REAL(dsumt)
      ierr = putvar( ncout, id_varout(2), rdummy, 1, 1, 1, ktime=jt)
+     rdummy(1,1) = REAL(dsum)
+     ierr = putvar( ncout, id_varout(3), rdummy, 1, 1, 1, ktime=jt)
   END DO  ! time loop
   
   PRINT *, ' mean Sum over time ', dsumt/npt
@@ -392,8 +395,17 @@ PROGRAM cdfsum
     stypvar(2)%cshort_name    = 'sum_3D'//TRIM(clshort_name)
     stypvar(2)%caxis          = 'T'
 
+    ipk(3) = 1     ! 3D sum function of time (not cumulated)
+    stypvar(3)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(3)%cname          = 'sum_3D_t'//TRIM(cv_in)
+    stypvar(3)%cunits         = TRIM(clunits)//'.m3'
+    stypvar(3)%clong_name     = 'sum_3D_t'//TRIM(cllong_name)
+    stypvar(3)%cshort_name    = 'sum_3D_t'//TRIM(clshort_name)
+    stypvar(3)%caxis          = 'T'
+
+
     ncout = create      (cf_out,     'none',  1,     1  ,   nvpk, cdep=cdep , ld_nc4=lnc4 )
-    ierr  = createvar   (ncout,      stypvar, 2    , ipk,   id_varout       , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout,      stypvar, 3    , ipk,   id_varout       , ld_nc4=lnc4 )
     ierr  = putheadervar(ncout,      cf_in,   1,     1, npkk,              &
                     &  pnavlon=zdumlon, pnavlat=zdumlat,                   &
                     &  pdep=gdep(ikmin:ikmax),                             &
