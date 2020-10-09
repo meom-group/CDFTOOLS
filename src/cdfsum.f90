@@ -280,7 +280,7 @@ PROGRAM cdfsum
      e2(:,:) = getvar  (cn_fhgr, cv_e2, 1, npiglo, npjglo, kimin=iimin, kjmin=ijmin)
   ENDIF
   IF (lnwgh) THEN
-  gdep(:) = getvare3(cf_in, cv_dep,   npk                                   )
+  gdep(:) = (/ (jt, jt=1,npk) /)
   ELSE
   gdep(:) = getvare3(cn_fzgr, cv_dep,   npk                                   )
   ENDIF
