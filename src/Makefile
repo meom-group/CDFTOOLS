@@ -40,7 +40,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdfocape cdf_compress \
-       cdf_domain_modif, cdf_domain2bathy
+       cdf_domain_modif  cdf_domain2bathy
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
 
