@@ -141,7 +141,7 @@ CONTAINS
     ! choose chunk size for output ... not easy not used if lnc4=.false. but
     ! anyway ..
     stypvar(1)%ichunk=(/npiglo,MAX(1,npjglo/30),1,1 /)
-    cv_out = 'Bathy_meter' 
+    cv_out = cn_bathymet
 
     stypvar(1)%cname             = cv_out
     stypvar(1)%cunits            = 'm'
