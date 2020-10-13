@@ -40,7 +40,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdfocape cdf_compress \
-       cdf_domain_modif
+       cdf_domain_modif, cdf_domain2bathy
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
 
@@ -520,6 +520,9 @@ cdf_compress:  cdf_compress.f90
 
 cdf_domain_modif:  cdf_domain_modif.f90
 	$(F90) cdf_domain_modif.f90  -o $(BINDIR)/cdf_domain_modif  $(FFLAGS)
+
+cdf_domain2bathy:  cdfio.o modutils.o cdf_domain2bathy.f90
+	$(F90) cdf_domain2bathy.f90  -o $(BINDIR)/cdf_domain2bathy cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
 ## Modules
 
