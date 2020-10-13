@@ -34,7 +34,7 @@ PROGRAM cdf_domain_modif
   !! $Id$
   !! Copyright (c) 2020, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
-  !! @class file_operations
+  !! @class domain_file
   !!----------------------------------------------------------------------
   narg = iargc()
 

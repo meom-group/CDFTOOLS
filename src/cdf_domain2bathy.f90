@@ -21,6 +21,7 @@ PROGRAM cdf_domain2bathy
   !! $Id$
   !! Copyright (c) 2012, J.-M. Molines
   !! Software governed by the CeCILL licence (Licence/CDFTOOLSCeCILL.txt)
+  !! @class domain_file
   !!----------------------------------------------------------------------
   IMPLICIT NONE
 
