@@ -261,7 +261,7 @@ CONTAINS
           IF ( cv_in(jvar) == stypvarin(jvarin)%cname ) EXIT  ! cv_in match cv_varin.
        END DO
        stypvar(jvar)%cname             = 'fwc_'//TRIM(cv_in(jvar))
-       stypvar(jvar)%cunits            = 'km3'
+       stypvar(jvar)%cunits            = 'm3'
        stypvar(jvar)%rmissing_value    = ppspval
        stypvar(jvar)%valid_min         = 0.0
        stypvar(jvar)%valid_max         = 0.0
