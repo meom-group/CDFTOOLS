@@ -1,0 +1,28 @@
+# macro.jade for jade at CINES
+#  $Rev: 539 $
+#  $Date: 2011-07-11 12:33:35 +0200 (Mon, 11 Jul 2011) $
+#  $Id: macro.jade 539 2011-07-11 10:33:35Z molines $
+# -------------------------------------------------------------
+#
+#NCDF=-I/usr/local/netcdf-4.2_hdf5_parallel/include  -L/usr/local/netcdf-4.2_hdf5_parallel/lib -lnetcdff -lnetcdf -L/usr/local/hdf5-1.8.9_parallel/lib -lhdf5_hl -lhdf5 -lhdf5
+NCDF = -I$(NETCDFFORTRAN_INCDIR) $(NETCDFFORTRAN_LDFLAGS) 
+
+#NC4 =
+NC4 = -D key_netcdf4  # define this key in order to compile cdftools with netcdf4 lib allowing for chunking and deflation
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+ 
+F90=ifort
+MPF90=mpif90
+OMP=
+#OMP=-openmp
+# flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
+#FFLAGS= -static -O  $(NCDF) $(NC4) $(CMIP6)-assume byterecl -convert big_endian $(OMP)
+#FFLAGS= -O  $(NCDF) -fpe0 -traceback -ftrapuv -g -CB  $(NC4) $(CMIP6) -fp-model precise $(OMP)
+#FFLAGS= -O  $(NCDF) -fpe0 -traceback -ftrapuv -g   $(NC4) $(CMIP6) -fp-model precise $(OMP)
+FFLAGS= -O2  $(NCDF)  $(NC4) $(CMIP6) -fp-model precise $(OMP)
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian $(NC4) $(CMIP6) $(OMP)
+LMPI=-lmpich
+
+INSTALL=$(WORKDIR)/bin
+INSTALL_MAN=$(WORKDIR)/man
