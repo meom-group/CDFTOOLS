@@ -51,12 +51,12 @@ PROGRAM cdfsigintegr
   REAL(KIND=4)                                  :: spvalz          ! missing value from rho file      
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: rho_lev          ! value of isopycnals
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: h1d              ! depth of rho points
-  REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdepw            ! depth of W points
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: e31d             ! vertical metrics in full step
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d              ! 2D working array
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: e3               ! vertical metrics
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tmask            ! mask of t points from rho
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: zdum             ! dummy array for I/O
+  REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: gdepw2d          ! depth of W points
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: v3d              ! 3D working array (npk)
   REAL(KIND=4), DIMENSION(:,:,:),   ALLOCATABLE :: zint             ! pseudo 3D working array (2)
 
@@ -246,14 +246,15 @@ PROGRAM cdfsigintegr
 
   ALLOCATE( v3d(npiglo,npjglo,npk), dalpha(npiglo,npjglo,npiso), e3(npiglo,npjglo) )
   ALLOCATE( dv2dint(npiglo,npjglo,2), v2d(npiglo,npjglo), zint(npiglo,npjglo,2)  )
-  ALLOCATE( h1d(npk) ,gdepw(npk) ,tmask(npiglo,npjglo), zdum(npiglo,npjglo) )
+  ALLOCATE( gdepw2d(npiglo,npjglo) )
+  ALLOCATE( h1d(npk) ,tmask(npiglo,npjglo), zdum(npiglo,npjglo) )
   IF ( lfull ) ALLOCATE ( e31d(npk) )
 
-  gdepw(:) = getvare3(cn_fzgr, cn_gdepw, npk)
 
   IF (lfull ) e31d(:) = getvare3(cn_fzgr, cn_ve3t1d, npk)
 
   h1d(:) = getvar1d(cf_rho, cn_vdeptht, npk)
+
 
   ! Note, if working with vertical slabs, one may avoid 3D array, but may be slow ...
   IF ( lscli ) THEN
@@ -349,27 +350,28 @@ PROGRAM cdfsigintegr
            END DO
            ! integrate from jk=1 to zint
            dv2dint(:,:,1) = 0.d0
-
+           ! gdepw is recomputef from e3t as it is not coherent in some mesh_zgr files
+           gdepw2d(:,:)=0.
            DO jk=1,npk-1
               ! get metrixs at level jk
               IF ( lfull ) THEN  ; e3(:,:) = e31d(jk)
               ELSE               ; e3(:,:) = getvar(cn_fe3t, cn_ve3t, jk,npiglo,npjglo, ktime=it, ldiom=.NOT.lg_vvl )
               ENDIF
-
               DO ji=1,npiglo
                  DO jj=1,npjglo
-                    IF ( gdepw(jk)+e3(ji,jj) < zint(ji,jj,1) ) THEN  ! full cell
+                    IF ( gdepw2d(ji,jj)+e3(ji,jj) < zint(ji,jj,1) ) THEN  ! full cell
                        dv2dint(ji,jj,1)=dv2dint(ji,jj,1) + e3(ji,jj)* v3d(ji,jj,jk)
-                    ELSE IF (( zint(ji,jj,1) <= gdepw(jk)+e3(ji,jj) ) .AND. (zint(ji,jj,1) > gdepw(jk)) ) THEN
-                       dv2dint(ji,jj,1)=dv2dint(ji,jj,1)+ (zint(ji,jj,1) - gdepw(jk) )* v3d(ji,jj,jk)
+                    ELSE IF (( zint(ji,jj,1) <= gdepw2d(ji,jj)+e3(ji,jj) ) .AND. (zint(ji,jj,1) > gdepw2d(ji,jj)) ) THEN
+                       dv2dint(ji,jj,1)=dv2dint(ji,jj,1)+ (zint(ji,jj,1) - gdepw2d(ji,jj) )* v3d(ji,jj,jk)
                     ELSE   ! below the isopycnal 
                        ! do nothing for this i j point
                     ENDIF
                  END DO
               END DO
+              gdepw2d(:,:)=gdepw2d(:,:)+e3(:,:)
            END DO   ! end on vertical integral for isopynal jiso
 
-           zdum=zint(:,:,1)
+           zdum(:,:)=zint(:,:,1)
 
            WHERE (tmask == 0. ) zdum=zspval
            ierr = putvar(ncout,id_varout(3), zdum, jiso, npiglo, npjglo, ktime=jt )
