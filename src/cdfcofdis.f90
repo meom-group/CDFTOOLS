@@ -380,7 +380,7 @@ CONTAINS
     stypvar(1)%cunits            = 'm'
     stypvar(1)%rmissing_value    = 0
     stypvar(1)%valid_min         = 0.
-    stypvar(1)%valid_max         = 1.
+    stypvar(1)%valid_max         = 10000000.
     stypvar(1)%clong_name        = cv_out
     stypvar(1)%cshort_name       = cv_out
     stypvar(1)%conline_operation = 'N/A'
