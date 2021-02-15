@@ -1,0 +1,35 @@
+# Makefile for CDFTOOLS : nesh-fe.rz.uni-kiel.de
+#
+# $ update 20210112 - fschwarzkopf@geomar.de
+#
+# module purge
+# module load intel/20.0.4
+# module load netcdf-c-intel/4.7.4
+# module load netcdf-cxx4-intel/4.3.1
+# module load netcdf-fortran-intel/4.5.3
+# module load hdf5-intel/1.10.7
+#
+# (Linked dynamically!)
+
+export HDF5_LIB=/gxfs_work1/gxfs_home_interim/sw/spack/spack0.16.0/usr/opt/spack/linux-rhel8-x86_64/intel-20.0.4/hdf5-1.10.7-lcktuaan4d3qee3fickmxh3fmzazahxe/lib
+export NETCDF_LIB=/gxfs_work1/gxfs_home_interim/sw/spack/spack0.16.0/usr/opt/spack/linux-rhel8-x86_64/intel-20.0.4/hdf5-1.10.7-lcktuaan4d3qee3fickmxh3fmzazahxe/lib
+export NETCDF_INC=/gxfs_work1/gxfs_home_interim/sw/spack/spack0.16.0/usr/opt/spack/linux-rhel8-x86_64/intel-20.0.4/netcdf-fortran-4.5.3-ebr6xnqufaqypadqtpvg7sp33wdg67ha/include
+
+# libs
+LIBS = \
+  -L$(HDF5_LIB) -L$(NETCDF_LIB) -I$(NETCDF_INC) \
+  -lhdf5 -lnetcdf -lnetcdff -lhdf5_hl -L/lib64 -limf -lm -lz
+
+F90 = ifort
+OMP=
+#OMP=-openmp
+NC4 = -D key_netcdf4
+#NC4 =
+
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+FFLAGS = -O $(NC4) $(CMIP6) -assume byterecl -convert big_endian $(LIBS)  $(OMP)
+
+INSTALL = ../bin
+INSTALL_MAN =  ../man
