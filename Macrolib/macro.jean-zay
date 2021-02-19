@@ -15,8 +15,8 @@ CMIP6 =
 F90=ifort
 MPF90=mpif90
 
-OMP=
-#OMP=-openmp
+#OMP=
+OMP=-qopenmp
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian $(OMP)
 
