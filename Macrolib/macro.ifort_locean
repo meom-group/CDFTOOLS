@@ -1,0 +1,22 @@
+# Makefile for CDFTOOLS
+#    $Rev$
+#    $Date$
+# --------------------------------------------------------------
+#
+
+NCDF = -I/opt/netcdf43/intel15/include  -L /opt/netcdf43/ifort15/lib -lnetcdf
+
+NC4= -D key_netcdf4
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+ 
+F90=ifort
+MPF90=mpif90
+OMP=
+#OMP=-openmp
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6)  -CB -fpe0 -g -traceback -ftrapuv
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6)   $(OMP)
+LMPI=-lmpich
+
+INSTALL=$(HOME)/bin
+INSTALL_MAN=$(HOME)/man
