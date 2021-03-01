@@ -4,7 +4,7 @@
 # --------------------------------------------------------------
 #
 
-NCDF = -I/opt/netcdf43/intel15/include  -L /opt/netcdf43/ifort15/lib -lnetcdf
+NCDF = -I/opt/netcdf43/ifort15/include  -L /opt/netcdf43/ifort15/lib -lnetcdf
 
 NC4= -D key_netcdf4
 #CMIP6 = -D key_CMIP6
