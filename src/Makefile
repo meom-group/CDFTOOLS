@@ -38,7 +38,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfgradT cdfhgradb cdfhgradv cdfeddyscale_pass1 cdfeddyscale \
        cdfnrj_transfert cdfnrj_bci cdfnrj_bti cdfnrj_components cdfcofdis cdfnorth_unfold cdfmppini\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
-       cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfnamelist \
+       cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfshift05 cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdfocape cdf_compress \
        cdf_domain_modif  cdf_domain2bathy
 
@@ -469,6 +469,9 @@ cdfnan: cdfio.o cdfnan.f90
 
 cdfscale: cdfio.o cdfscale.f90
 	$(F90)   cdfscale.f90  -o $(BINDIR)/cdfscale cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfshift05:  cdfshift05.f90
+	$(F90)   cdfshift05.f90  -o $(BINDIR)/cdfshift05  $(FFLAGS)
 
 cdfnorth_unfold: cdfio.o cdfnorth_unfold.f90
 	$(F90)   cdfnorth_unfold.f90  -o $(BINDIR)/cdfnorth_unfold cdfio.o modcdfnames.o $(FFLAGS)

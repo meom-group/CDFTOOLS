@@ -59,6 +59,7 @@ PROGRAM cdfcofdis
 
   LOGICAL                                   :: lchk
   LOGICAL                                   :: lsurf = .FALSE.
+  LOGICAL                                   :: lrnf  = .FALSE.
   LOGICAL                                   :: lnc4  = .FALSE.     ! Use nc4 with chunking and deflation
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -66,7 +67,7 @@ PROGRAM cdfcofdis
   narg=iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfcofdis -H HGR-file -M MSK-file -T gridT.nc [-jperio jperio ]...'
-     PRINT *,'               ... [-surf] [-o OUT-file[ [-nc4] '
+     PRINT *,'               ... [-rnf] [-surf] [-o OUT-file[ [-nc4] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the distance to the coast and create a file with the ',TRIM(cv_out)
@@ -83,6 +84,9 @@ PROGRAM cdfcofdis
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-jperio jperio ] : define the NEMO jperio variable for north fold '
      PRINT *,'           condition. Default is  4.'
+     PRINT *,'       [-rnf ]  : use a runoff file instead of mask file '
+     PRINT *,'             In this case the computed distance is the distance to runoff points'
+     PRINT *,'             defined in the file by the variable socoefr. Force -surf option.'
      PRINT *,'       [-surf ] : only compute  distance at the surface.'
      PRINT *,'       [-o OUT-file ] : specify name of the output file instead of ', TRIM(cf_out)
      PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
@@ -109,11 +113,20 @@ PROGRAM cdfcofdis
         ! options
      CASE ( '-jperio') ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum, * ) nperio
      CASE ( '-surf'  ) ; lsurf = .TRUE.
+     CASE ( '-rnf'   ) ; lrnf  = .TRUE. ; lsurf =.TRUE. ; cn_tmask='socoefr'
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1 
      CASE ( '-nc4'   ) ; lnc4  = .TRUE.
      CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  IF ( lrnf ) THEN
+     PRINT *, ' WORKING WITH RUNOFF FILE :'
+     PRINT *, '      RUNOFF FILE : ', TRIM(cn_fmsk)
+     PRINT *, '      VARIABLE    : ', TRIM(cn_tmask)
+     PRINT *, '  '
+     PRINT *, ' -surf OPTION forced !'
+  ENDIF
 
   lchk =           chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
@@ -218,6 +231,7 @@ CONTAINS
        PRINT *,'WORKING for level ', jk, nperio
        pdct(:,:) = 0.e0
        tmask(:,:)=getvar(cn_fmsk,cn_tmask,jk,jpi,jpj)
+       WHERE (tmask /= 0 ) tmask=1
        DO jj = 1, jpjm1
           DO ji = 1, jpim1   ! vector loop
              umask(ji,jj) = tmask(ji,jj ) * tmask(ji+1,jj  )
@@ -341,15 +355,24 @@ CONTAINS
        DO jj = 1, jpj
           PRINT *, jj
           DO ji = 1, jpi
-             IF( tmask(ji,jj) == 0. ) THEN
-                pdct(ji,jj) = 0.
-             ELSE
+             IF ( lrnf ) THEN  ! we compute distance even where socoefr =0
                 DO jl = 1, icoast
                    zdis(jl) = ( zxt(ji,jj) - zxc(jl) )**2   &
                         &     + ( zyt(ji,jj) - zyc(jl) )**2 &
                         &     + ( zzt(ji,jj) - zzc(jl) )**2
                 END DO
                 pdct(ji,jj) = ra * SQRT( MINVAL( zdis(1:icoast) ) )
+             ELSE              ! Distance is computed only for non masked cells.
+              IF( tmask(ji,jj) == 0. ) THEN
+                pdct(ji,jj) = 0.
+              ELSE
+                DO jl = 1, icoast
+                   zdis(jl) = ( zxt(ji,jj) - zxc(jl) )**2   &
+                        &     + ( zyt(ji,jj) - zyc(jl) )**2 &
+                        &     + ( zzt(ji,jj) - zzc(jl) )**2
+                END DO
+                pdct(ji,jj) = ra * SQRT( MINVAL( zdis(1:icoast) ) )
+              ENDIF
              ENDIF
           END DO
        END DO
