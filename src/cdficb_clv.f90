@@ -54,7 +54,7 @@ PROGRAM cdficb_clv
   CHARACTER(LEN=256)                            :: cf_icblist         ! input file names
   CHARACTER(LEN=256)                            :: cf_bathy='bathy.nc'! bathymetry file name
   CHARACTER(LEN=256)                            :: cf_isfdr='isf_draft.nc'! ice_draft file name
-  CHARACTER(LEN=256)                            :: cf_out='rnficb.nc' ! output file for average
+  CHARACTER(LEN=256)                            :: cf_out='icbcalv.nc'! output file for average
   !                                                VARIABLES
   CHARACTER(LEN=256)                            :: cv_fill            ! fill var name
   CHARACTER(LEN=256)                            :: cv_bathy='Bathymetry' ! bathymetry name
