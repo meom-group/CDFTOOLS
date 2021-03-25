@@ -1815,6 +1815,7 @@ CONTAINS
     REAL(KIND=4)                  :: sf=1., ao=0.       !  Scale factor and add_offset
     REAL(KIND=4)                  :: spval              !  Missing values
     LOGICAL                       :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
+    CHARACTER(LEN=256)            :: clvar   ! local name for cdf var (modified)
     !!-------------------------------------------------------------------------
 
     IF (PRESENT(kimin) ) THEN
@@ -1840,11 +1841,19 @@ CONTAINS
     lsf=.FALSE.
     lao=.FALSE.
 
+    clvar=cdvar
+    IF ( clvar == cn_ve3v) THEN
+    SELECT CASE ( cg_zgr_ver )
+    CASE ( 'v2.0' ) ; clvar = 'e3v_ps'
+    CASE ( 'v3.0' ) ; clvar = 'e3v'
+    CASE ( 'v3.6' ) ; clvar = 'e3v_0'
+    END SELECT
+    ENDIF
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
-    CALL ERR_HDL(NF90_INQ_VARID ( incid,cdvar,id_var))
+    CALL ERR_HDL(NF90_INQ_VARID ( incid,clvar,id_var))
 
-    spval = getspval ( cdfile, cdvar )
+    spval = getspval ( cdfile, clvar )
 
     istatus=NF90_INQUIRE_ATTRIBUTE(incid,id_var,'savelog10')
     IF (istatus == NF90_NOERR ) THEN
@@ -1880,7 +1889,7 @@ CONTAINS
 
     istatus=NF90_GET_VAR(incid,id_var,getvarxz, start=istart,count=icount)
     IF ( istatus /= 0 ) THEN
-       PRINT *,' Problem in getvarxz for ', TRIM(cdvar)
+       PRINT *,' Problem in getvarxz for ', TRIM(clvar)
        CALL ERR_HDL(istatus)
        STOP 98
     ENDIF
