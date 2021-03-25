@@ -320,11 +320,11 @@ PROGRAM cdfmoc
      ibmask(npinp,:,:) = ibmask(nppac,:,:) + ibmask(npind,:,:)  ! indo pacific mask
      ! ensure that there are no overlapping on the masks
      WHERE(ibmask(npinp,:,:) > 0 ) ibmask(npinp,:,:) = 1
-     ! change global mask for GLOBAL periodic condition
-     ibmask(1,1,     :) = 0.
-     ibmask(1,npiglo,:) = 0.
   ENDIF
-
+  ! change global mask for GLOBAL periodic condition
+  ibmask(1,1,     :) = 0.
+  ibmask(1,npiglo,:) = 0.
+     
   DO jt = 1, npt
      IF ( lg_vvl ) THEN  ; it=jt
      ELSE                ; it=1
