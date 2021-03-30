@@ -41,6 +41,7 @@ PROGRAM cdfmaskdmp
   REAL(KIND=4)                              :: rlatmax=-20.       ! max latitude
   REAL(KIND=4)                              :: rlatwidth=2.       ! latitude tapering width
   REAL(KIND=4)                              :: wdep, wsig, wlat   ! tapering function dep, sigma and lat
+  REAL(KIND=4)                              :: tau=-1.            ! restoring time scale (days) (negative mean not used)
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ztemp              ! temperature
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsal               ! salinity
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zsigi              ! sigma-i
@@ -67,7 +68,7 @@ PROGRAM cdfmaskdmp
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmaskdmp -t T-file [-s S-file] [-refdep REF-depth] ...'
+     PRINT *,' usage : cdfmaskdmp -t T-file [-s S-file] [-refdep REF-depth] [-tau TIME-scale]'
      PRINT *,'             ... [-dens smin width] [-dep hmin width] [-lat latmax width] ...'
      PRINT *,'             ... [-o OUT-file] [-nc4] [-zdim zdimnm]'
      PRINT *,'      '
@@ -83,6 +84,9 @@ PROGRAM cdfmaskdmp
      PRINT *,'       depth and density, but a maximum latitude. It needs some adjustments for'
      PRINT *,'       other situations.'
      PRINT *,'       '
+     PRINT *,'       With -tau option, a time scale can be specified and the resulting file '
+     PRINT *,'       can be used directly as a restoring file in NEMO (tradmp).'
+     PRINT *,'       '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : temperature/salinity file used to compute the potential ' 
      PRINT *,'             density relative to the reference depth.'
@@ -94,6 +98,9 @@ PROGRAM cdfmaskdmp
      PRINT *,'       [-dep  hmin width] : set minimum depth and width for depth tapering'
      PRINT *,'       [-lat  latmax width]: set max latitude and width for latitude tapering'
      PRINT *,'       [-zdim zdimnm ] : give the name of the z dimension if not ',TRIM(cn_z)
+     PRINT *,'       [-tau TIME-scale] : indicate a time scale for restoring (days). In this'
+     PRINT *,'             case, the resulting file can be used as a ''resto'' file in '
+     PRINT *,'             NEMO (tradmp).'
      PRINT *,'       [-o OUT-file] : specify output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
@@ -129,6 +136,7 @@ PROGRAM cdfmaskdmp
      CASE ( '-lat'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatmax
         ;                CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) rlatwidth
      CASE ( '-zdim'  ) ; CALL getarg(ijarg, cl_z    ) ; ijarg=ijarg+1
+     CASE ( '-tau'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) tau
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ; lnc4 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
@@ -136,8 +144,8 @@ PROGRAM cdfmaskdmp
   ENDDO
   IF ( cf_sfil == 'none' ) cf_sfil =cf_tfil
 
-  WRITE(cglobal,'(" cdfmaskdmp -t ",a," -s ",a," -refdep ",f6.0," -dens ",2f8.3," -dep ",2f5.0," -lat ",2f5.0," -o ",a)')  &
-       & TRIM(cf_tfil), TRIM(cf_sfil), ref_dep, zsnmin,zswidth, hmin, hwidth, rlatmax, rlatwidth,TRIM(cf_out)
+  WRITE(cglobal,'(" cdfmaskdmp -t ",a," -s ",a," -refdep ",f6.0," -dens ",2f8.3," -dep ",2f5.0," -lat ",2f5.0," -o ",a," -tau ",f5.0)')  &
+       & TRIM(cf_tfil), TRIM(cf_sfil), ref_dep, zsnmin,zswidth, hmin, hwidth, rlatmax, rlatwidth,TRIM(cf_out), tau
 
   IF ( chkfile(cf_tfil) .OR. chkfile(cf_sfil) .OR. chkfile(cn_fmsk) ) STOP 99 ! missing files
 
@@ -184,6 +192,9 @@ PROGRAM cdfmaskdmp
         ENDDO
 
         zwdmp(:,:) = zwdmp(:,:) * zmask(:,:)
+        IF ( tau > 0 ) THEN
+          zwdmp(:,:) = zwdmp(:,:)/tau/86400.
+        ENDIF
 
         ierr = putvar(ncout, id_varout(1), zwdmp, jk,npiglo, npjglo, ktime=jt)
 
@@ -206,14 +217,24 @@ CONTAINS
 
     ipk(:)                    = npk  
     stypvar(1)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
-    stypvar(1)%cname          = 'wdmp'
-    stypvar(1)%cunits         = '[0-1]'
+    IF ( tau > 0 ) THEN
+      stypvar(1)%cname          = 'resto'
+      stypvar(1)%cunits         = '[s^-1]'
+    ELSE
+      stypvar(1)%cname          = 'wdmp'
+      stypvar(1)%cunits         = '[0-1]'
+    ENDIF
     stypvar(1)%rmissing_value = 1.e+20
     stypvar(1)%caxis          = 'TZYX'
     stypvar(1)%valid_min      = 0.
     stypvar(1)%valid_max      = 1.
-    stypvar(1)%clong_name     = 'Damping mask build on density criteria'
-    stypvar(1)%cshort_name    = 'wdmp'
+    IF ( tau > 0 ) THEN
+      stypvar(1)%clong_name     = 'restoring time scale  build on density criteria'
+      stypvar(1)%cshort_name    = 'resto'
+    ELSE
+      stypvar(1)%clong_name     = 'Damping mask build on density criteria'
+      stypvar(1)%cshort_name    = 'wdmp'
+    ENDIF
 
     ! create output fileset
     ncout = create      (cf_out, cf_tfil,  npiglo, npjglo, npk      , ld_nc4=lnc4                  )

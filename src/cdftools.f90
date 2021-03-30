@@ -23,9 +23,9 @@ MODULE cdftools
   ! list of public subroutines that can be called
   PUBLIC  :: cdf_findij 
   PUBLIC  :: broken_line
+  PUBLIC  :: dist
 
   PRIVATE :: NearestPoint
-  PRIVATE :: dist 
   PRIVATE :: interm_pt
 
   !!----------------------------------------------------------------------

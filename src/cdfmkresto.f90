@@ -18,6 +18,7 @@ PROGRAM cdfmkresto
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
+  USE cdftools
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017
   !! $Id$
@@ -38,10 +39,12 @@ PROGRAM cdfmkresto
 
   REAL(KIND=4)                               :: ra    = 6371229.   !: earth radius
   REAL(KIND=4)                               :: rad = 3.141592653589793 / 180.
+  REAL(KIND=4)                               :: rvalue
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE:: gdept_1d
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE:: gphit, glamt
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: resto
 
+  REAL(KIND=8)                               :: dlon1, dlon2, dlat1, dlat2
   REAL(KIND=8), DIMENSION(:),     ALLOCATABLE:: dtim
 
   CHARACTER(LEN=255)                         :: cf_coord  ! coordinate file
@@ -72,6 +75,8 @@ PROGRAM cdfmkresto
   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
   LOGICAL                                    :: lfdep     = .TRUE.      ! flag for ascii depth file
   LOGICAL                                    :: lprev     = .FALSE.     ! flag for previous restoring file
+  LOGICAL                                    :: ltime     = .TRUE.      ! flag for previous restoring file
+  LOGICAL                                    :: l2d       = .FALSE.     ! flag for previous restoring file
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -79,16 +84,20 @@ PROGRAM cdfmkresto
 
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfmkresto -c COORD-file -i CFG-file [-d DEP-file] [-o DMP-file]...'
-     PRINT *,'                  ... [-prev RESTO-file RESTO-var ]  [-nc4] [-h]'
+     PRINT *,'                     ...[-ov VAR-out] [-2d] [-prev RESTO-file RESTO-var ] ...'
+     PRINT *,'                     ...[-val VALUE] [-nc4] [-h]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create a file with a 3D damping coefficient suitable for the NEMO'
      PRINT *,'       TS restoring performed by tradmp. Units for the damping_coefficient '
-     PRINT *,'       is days^-1.' 
+     PRINT *,'       are s^-1.' 
      PRINT *,'      '
      PRINT *,'       The restoring zone is defined by a series of patches defined in the'
      PRINT *,'       configuration file, and that can have either a rectangular or a circular'
      PRINT *,'       shape. Overlapping patches are not added.'
+     PRINT *,'       '
+     PRINT *,'       This tool has been improved with new options (-val, -2d) so that it can'
+     PRINT *,'       be used for building ''bfr2d_coef'' as well as ''shlat2d''.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -c COORD-file : pass the name of the file with horizontal coordinates.'
@@ -101,10 +110,14 @@ PROGRAM cdfmkresto
      PRINT *,'       [-d DEP-file]: name on an ASCII file with gdept_1d, if ',TRIM(cn_fzgr)
      PRINT *,'                is not available. This file is just a list of the deptht, in'
      PRINT *,'                one column.'
-     PRINT *,'       [ -prev RESTO-file RESTO-var] : Use RESTO-file and RESTO-var for the'
+     PRINT *,'       [-prev RESTO-file RESTO-var] : Use RESTO-file and RESTO-var for the'
      PRINT *,'                initialization of the restoring coefficient. Units MUST be'
-     PRINT *,'                days^-1 !!! '
+     PRINT *,'                s^-1 !!! '
+     PRINT *,'       [-val VALUE ] : with this option, the ''restoring'' coefficient is'
+     PRINT *,'                  set to VALUE , instead of a time scale.'
+     PRINT *,'       [-2d ] : Create a 2D file instead of a default 3D file.'
      PRINT *,'       [-o DMP-file]: name of the output file instead of ',TRIM(cf_out),'.'
+     PRINT *,'       [-ov VAR-out]: name of the output variable instead of ',TRIM(cv_out),'.'
      PRINT *,'       [-nc4]  : Use netcdf4 output with chunking and deflation level 1'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
@@ -114,7 +127,7 @@ PROGRAM cdfmkresto
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out) ,' unless -o option is used.'
-     PRINT *,'         variables : ', TRIM(cv_out),' (days^-1 )'
+     PRINT *,'         variables : ', TRIM(cv_out),' (s^-1 ) (unless -ov option used)'
      PRINT *,'      '
      PRINT *,'     SEE ALSO :'
      PRINT *,'         cdfmkdmp'
@@ -132,9 +145,13 @@ PROGRAM cdfmkresto
      CASE ( '-h'   ) ; CALL PrintCfgInfo             ; STOP 0
      CASE ( '-d'   ) ; CALL getarg(ijarg, cf_dep   ) ; ijarg=ijarg+1
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out   ) ; ijarg=ijarg+1
+     CASE ( '-ov'  ) ; CALL getarg(ijarg, cv_out   ) ; ijarg=ijarg+1
      CASE ( '-prev') ; CALL getarg(ijarg, cf_resto ) ; ijarg=ijarg+1
         ;            ; CALL getarg(ijarg, cv_resto ) ; ijarg=ijarg+1
-        ;            ; lprev= .TRUE.
+        ;            ; lprev = .TRUE.
+     CASE ( '-val' ) ; CALL getarg(ijarg, cldum    ) ; ijarg=ijarg+1 ; READ(cldum,*) rvalue
+        ;            ; ltime = .FALSE.
+     CASE ( '-2d'  ) ; l2d  = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99 
      END SELECT
@@ -190,17 +207,17 @@ CONTAINS
     PRINT *,'       '
     PRINT *,'## CONTEXT:      '
     PRINT *,'      The restoring zone is defined by a series of patches described in the'
-    PRINT *,'    configuration file, and that can have either a rectangular or a circular'
-    PRINT *,'    shape. Overlapping patches uses the maximum between the patches.'
+    PRINT *,'    configuration file, and that can have either a rectangular, a circular'
+    PRINT *,'    or a disk shape. Overlapping patches uses the maximum between the patches.'
     PRINT *,'       '
     PRINT *,'    The configuration file is used to describe the series of patches.'
     PRINT *,'       '
     PRINT *,'## FILE FORMAT:   '
     PRINT *,'      There are as many lines as patches in the configuration files. No blank'
     PRINT *,'    lines are allowed but lines starting with a # are skipped.'
-    PRINT *,'      Each line starts with either R or C to indicate either a Rectangular'
-    PRINT *,'    patch or a Circular patch. Remaining fields on the line depend on the type'
-    PRINT *,'    of patch:'
+    PRINT *,'      Each line starts with either R, C or D to indicate either a Rectangular'
+    PRINT *,'    patch, a Circular patch or a Disk patch. Remaining fields on the line '
+    PRINT *,'    depend on the type of patch:'
     PRINT *,'###   Case of rectangular patches: the line looks like:'
     PRINT *,'       R lon1 lon2 lat1 lat2 band_width tresto z1 z2'
     PRINT *,'     In the rectangular case, the rectangle is defined by its geographical '
@@ -208,7 +225,7 @@ CONTAINS
     PRINT *,'     tresto represents the restoring time scale for the maximum restoring.'
     PRINT *,'     The restoring coefficient decay to zero outside the patch. The decay is'
     PRINT *,'     applied across a rim which width is given by the rim_width parameter'
-    PRINT *,'     given in kilometers.'
+    PRINT *,'     given in degrees.'
     PRINT *,'     Additionaly, z1 and z2 indicates a depth range (m) limiting the restoring.'
     PRINT *,'     If z1=z2, the restoring will be applied on the full water column.'
     PRINT *,'       '
@@ -220,6 +237,13 @@ CONTAINS
     PRINT *,'     outside the defined circle. As in the rectangular case, z1 and z2 define a'
     PRINT *,'     depth range for  limiting the restoring. If z1=z2, the restoring is '
     PRINT *,'     applied to the full water column.'
+    PRINT *,'       '
+    PRINT *,'###   Case of disk patches: the line looks like:'
+    PRINT *,'       D lon1 lat1 radius rim tresto z1 z2'
+    PRINT *,'      In the disk case, a circle is defined with its center (lon1, lat1) in '
+    PRINT *,'      degrees, and its radius in km.  In the disk case, the damping coefficient'
+    PRINT *,'      is constant over the disk, and a there is a linear decay in a ring '
+    PRINT *,'      around the disk, which width is the rim value (in km).'
     PRINT *,'       '
     PRINT *,'##  EXAMPLE:  '
     PRINT *,'       The standard DRAKKAR restoring procedure corresponds to the following '
@@ -241,12 +265,18 @@ CONTAINS
     PRINT *,'    C  44.75 11.5 100.      6.  0.   0.'
     PRINT *,'# Arabian Gulf  (Ormuz Strait  overflow)'
     PRINT *,'    C  57.75 25.0 100.      6.  0.   0.'
+    PRINT *,'# Disk example ( not used in drakkar so far)'
+    PRINT *,'# type lon1  lat1 radius  rim tresto  z1    z2'
+    PRINT *,'   D    -30  -50   200    10   720    0     500'
     PRINT *,'    '
-    PRINT *,'       This file defines 6 patches, (3 rectangular and 3 circular).'
+    PRINT *,'       This file defines 7 patches, (3 rectangular, 3 circular and 1 disk).'
     PRINT *,'     Lines starting by # are helpfull comment for documenting the'
     PRINT *,'     restoring strategy. Note that as far as the position of the patches are '
     PRINT *,'     given in geographical coordinates, the same file can be used for different'
     PRINT *,'     model configuration (and resolution) !'
+    PRINT *,'       Note that the time scale is not used if a value is passed with the '
+    PRINT *,'     -val option. This latter option, combined with -2d option can be used'
+    PRINT *,'     for producing 2D bottom friction enhancement, of 2D shlat coefficient.'
     PRINT *,'    '
 
 
@@ -264,18 +294,37 @@ CONTAINS
     ipk(1)                    = npk
     stypvar(1)%ichunk         = (/npiglo,MAX(1,npjglo/30),1,1 /)
     stypvar(1)%cname          = cv_out
-    stypvar(1)%cunits         = '[days^1]'
+    IF ( ltime ) THEN
+      stypvar(1)%cunits         = '[s^1]'
+    ELSE
+      stypvar(1)%cunits         = '[ ]'
+    ENDIF
     stypvar(1)%rmissing_value = 1.e+20
-    stypvar(1)%caxis          = 'TZYX'
+    IF ( l2d ) THEN
+      stypvar(1)%caxis          = 'TYX'
+    ELSE
+      stypvar(1)%caxis          = 'TZYX'
+    ENDIF
     stypvar(1)%valid_min      = 0.
     stypvar(1)%valid_max      = 500.
-    stypvar(1)%clong_name     = 'Restoring coefficent'
+    IF ( ltime )  THEN
+      stypvar(1)%clong_name     = 'Restoring coefficent'
+    ELSE
+      stypvar(1)%clong_name     = 'Mask coefficent'
+    ENDIF
     stypvar(1)%cshort_name    = cv_out
 
-    ncout = create      (cf_out, 'none',  npiglo, npjglo, npk  ,cdep='deptht', ld_nc4=lnc4 )
-    ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, npk ,  &
-         pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
+    IF ( l2d ) THEN
+      ncout = create      (cf_out, 'none',  npiglo, npjglo, 0, ld_nc4=lnc4 )
+      ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
+      ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, 0 ,  &
+           pnavlon=glamt, pnavlat=gphit)
+    ELSE
+      ncout = create      (cf_out, 'none',  npiglo, npjglo, npk  ,cdep='deptht', ld_nc4=lnc4 )
+      ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
+      ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, npk ,  &
+           pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
+    ENDIF
 
     ALLOCATE (dtim(1) )
     dtim = 0.d0
@@ -323,14 +372,19 @@ CONTAINS
              PRINT *,'   Patch ',npatch,' :  ',TRIM(cline)
              READ(cline,*) cltyp
              SELECT CASE (cltyp)
-             CASE ( 'R', 'r' ) ; READ(cline,*) spatch(npatch)%ctyp, &
+             CASE ( 'R', 'r' ) ; READ(cline,*) spatch(npatch)%ctyp, &  ! Rectangle
                   & spatch(npatch)%rlon1, spatch(npatch)%rlon2,     &
                   & spatch(npatch)%rlat1, spatch(npatch)%rlat2,     &
                   & spatch(npatch)%rim, spatch(npatch)%tresto,      &
                   & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
-             CASE ( 'C', 'c' ) ; READ(cline,*) spatch(npatch)%ctyp, &
+             CASE ( 'C', 'c' ) ; READ(cline,*) spatch(npatch)%ctyp, &   ! Circle
                   & spatch(npatch)%rlon1, spatch(npatch)%rlat1,     &
                   & spatch(npatch)%radius, spatch(npatch)%tresto,   &
+                  & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
+             CASE ( 'D', 'd' ) ; READ(cline,*) spatch(npatch)%ctyp, &   ! Disque
+                  & spatch(npatch)%rlon1, spatch(npatch)%rlat1,     &
+                  & spatch(npatch)%radius,     &
+                  & spatch(npatch)%rim, spatch(npatch)%tresto,   &
                   & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
              END SELECT
           ENDIF
@@ -360,24 +414,34 @@ CONTAINS
     glamt(:,:)=getvar(cf_coord,cn_glamt, 1,npiglo,npjglo)
     gphit(:,:)=getvar(cf_coord,cn_gphit, 1,npiglo,npjglo)
     ! now deal with vertical levels ( suppose z or zps ! )
-    IF ( lfdep ) THEN
-       OPEN(inum, FILE=cf_dep)
-       ! first read to look for number of levels
-       DO WHILE ( ieof == 0 )
-          READ(inum,*,iostat=ieof)
-          ilev=ilev+1
-       ENDDO
-       npk=ilev - 1
+    IF ( l2d ) THEN
+       npk=1
        ALLOCATE(gdept_1d(npk))
-       REWIND(inum)
-       DO jk=1,npk
-          READ(inum,*) gdept_1d(jk)
-       ENDDO
-       CLOSE(inum)
+       gdept_1d(1) = 0.
     ELSE
-       npk = getdim(cn_fzgr,'z')   ! depth dimension in mesh_zgr is 'z' 
-       ALLOCATE( gdept_1d(npk) )
-       gdept_1d(:) =  getvare3(cn_fzgr, cn_gdept, npk)
+      IF ( lfdep ) THEN
+         OPEN(inum, FILE=cf_dep)
+         ! first read to look for number of levels
+         DO WHILE ( ieof == 0 )
+            READ(inum,*,iostat=ieof)
+            ilev=ilev+1
+         ENDDO
+         npk=ilev - 1
+         ALLOCATE(gdept_1d(npk))
+         REWIND(inum)
+         DO jk=1,npk
+            READ(inum,*) gdept_1d(jk)
+         ENDDO
+         CLOSE(inum)
+      ELSE
+         npk = getdim(cn_fzgr,'z', kstatus=ierr)   ! depth dimension in mesh_zgr is 'z' 
+         IF ( ierr /= 0 ) THEN
+            npk   = getdim (cn_fzgr,'nav_lev', kstatus=ierr)
+         ENDIF
+  
+         ALLOCATE( gdept_1d(npk) )
+         gdept_1d(:) =  getvare3(cn_fzgr, cn_gdept, npk)
+      ENDIF
     ENDIF
 
   END SUBROUTINE GetCoord
@@ -403,10 +467,9 @@ CONTAINS
     !!
     INTEGER :: ji,jj, jk    ! dummy loop index
     INTEGER :: ik1, ik2     ! limiting vertical index corresponding to zz1,zz2
-    INTEGER :: ij0, ij1, iiO, ii1
     INTEGER, DIMENSION(1)           :: iloc 
 
-    REAL(wp) :: zv1, zv2, zv3, zv4, zcoef, ztmp, zdist, zradius2, zcoef2
+    REAL(wp) :: zv1, zv2, zv3, zv4, zcoef, ztmp, zdist, zradius, zradius2, zcoef2
     REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zpatch
     REAL(wp), DIMENSION(:)  , ALLOCATABLE :: zmask
 
@@ -420,13 +483,18 @@ CONTAINS
     zlat1    = sd_patch%rlat1
     zlat2    = sd_patch%rlat2
     zbw      = sd_patch%rim
-    zradius2 = sd_patch%radius*sd_patch%radius
+    zradius  = sd_patch%radius
+    zradius2 = zradius * zradius
     ztmax    = sd_patch%tresto
     zz1      = sd_patch%rdep1
     zz2      = sd_patch%rdep2
 
     zpatch = 0._wp
-    zcoef  = 1._wp/ztmax/86400._wp
+    IF ( ltime ) THEN
+       zcoef  = 1._wp/ztmax/86400._wp
+    ELSE
+       zcoef  = rvalue
+    ENDIF
 
     SELECT CASE ( cl_typ )
     CASE ( 'C', 'c' )   ! Circular patch 
@@ -451,7 +519,31 @@ CONTAINS
        ! clean cut off
        WHERE (ABS(zpatch) < 0.01 ) zpatch = 0.
 
+    CASE ( 'D', 'd' )   ! Circular patch 
+       !  mask for horizontal extent
+       DO jj = 1, npjglo
+          DO ji = 1 , npiglo
+            dlon1=zlon1*1.d0         ; dlat1=zlat1*1.d0
+            dlon2=glamt(ji,jj)*1.d0  ; dlat2=gphit(ji,jj)*1.d0
+            zpatch(ji,jj) =  dist( dlon1, dlon2, dlat1, dlat2 )
+          ENDDO
+       ENDDO
+
+       WHERE ( ABS (zpatch ) < zradius     ) zpatch = 1.
+       WHERE ( ABS (zpatch ) > zradius+zbw ) zpatch = 0.
+       ! applying spatial horizontal variation
+       DO jj = 1, npjglo
+          DO ji= 1, npiglo
+           IF (zpatch(ji,jj) >= zradius ) THEN
+              zpatch(ji,jj) = (zradius+zbw - zpatch(ji,jj) )/ zbw
+           ENDIF
+          ENDDO
+       ENDDO
+       ! clean cut off
+       WHERE (ABS(zpatch) < 0.01 ) zpatch = 0.
+
        ! JMM : eventually add some checking to avoid locally large resto.
+
 
     CASE ( 'R','r' )
        ! horizontal extent
