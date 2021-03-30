@@ -245,8 +245,8 @@ cdfdynh_anom: cdfio.o  eos.o  cdfdynh_anom.f90
 cdfmaskdmp: cdfio.o  eos.o  cdfmaskdmp.f90
 	$(F90)  cdfmaskdmp.f90 -o $(BINDIR)/cdfmaskdmp cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
-cdfmkresto: cdfio.o   cdfmkresto.f90
-	$(F90)  cdfmkresto.f90 -o $(BINDIR)/cdfmkresto cdfio.o  modcdfnames.o  $(FFLAGS)
+cdfmkresto: cdfio.o   cdftools.o cdfmkresto.f90
+	$(F90)  cdfmkresto.f90 -o $(BINDIR)/cdfmkresto cdfio.o  modcdfnames.o cdftools.o  $(FFLAGS)
 
 ## Transport programs
 cdfmhst: cdfio.o  cdfmhst.f90
