@@ -80,13 +80,14 @@ PROGRAM cdfcofdis
      PRINT *,'       -H HGR-file : name of the mesh_hgr file '
      PRINT *,'       -M MSK-file : name of the mask file '
      PRINT *,'       -T T-file   : netcdf file at T point ( used for looking at jpk)'
+     PRINT *,'             (This argument is not used with -surf option).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-jperio jperio ] : define the NEMO jperio variable for north fold '
      PRINT *,'           condition. Default is  4.'
-     PRINT *,'       [-rnf ]  : use a runoff file instead of mask file '
-     PRINT *,'             In this case the computed distance is the distance to runoff points'
-     PRINT *,'             defined in the file by the variable socoefr. Force -surf option.'
+     PRINT *,'       [-rnf ]  : use a runoff file instead of mask file. In this case the'
+     PRINT *,'             computed distance is the distance to runoff points defined in the'
+     PRINT *,'             file by the variable socoefr. Force -surf option.'
      PRINT *,'       [-surf ] : only compute  distance at the surface.'
      PRINT *,'       [-o OUT-file ] : specify name of the output file instead of ', TRIM(cf_out)
      PRINT *,'       [-nc4 ]     : Use netcdf4 output with chunking and deflation level 1.'
@@ -130,20 +131,25 @@ PROGRAM cdfcofdis
 
   lchk =           chkfile ( cn_fhgr )
   lchk = lchk .OR. chkfile ( cn_fmsk )
-  lchk = lchk .OR. chkfile ( cf_tfil )
+  IF ( .NOT. lsurf) lchk = lchk .OR. chkfile ( cf_tfil )
   IF ( lchk ) STOP 99 ! missing files
 
   ! read domain dimensions in the mask file
-  jpi = getdim(cf_tfil,cn_x)
-  jpj = getdim(cf_tfil,cn_y)
-  jpk = getdim(cf_tfil,cn_z)
+  jpi = getdim(cn_fhgr,cn_x)
+  jpj = getdim(cn_fhgr,cn_y)
 
-  IF (jpk == 0 ) THEN
-     jpk = getdim(cf_tfil,'z')
-     IF ( jpk == 0 ) THEN
-        PRINT *,' ERROR in determining jpk form gridT file ....'
-        STOP 99
-     ENDIF
+  IF ( .NOT. lsurf ) THEN
+    jpk = getdim(cf_tfil,cn_z)
+
+    IF (jpk == 0 ) THEN
+       jpk = getdim(cf_tfil,'z')
+       IF ( jpk == 0 ) THEN
+          PRINT *,' ERROR in determining jpk form gridT file ....'
+          STOP 99
+       ENDIF
+    ENDIF
+  ELSE
+    jpk=1
   ENDIF
 
   PRINT *, ' JPI = ', jpi
@@ -172,9 +178,7 @@ PROGRAM cdfcofdis
   gphif(:,:) = getvar(cn_fhgr,cn_gphif,1,jpi,jpj)
 
   ! prepare file output
-  IF ( lsurf ) THEN ; npk                       = 1
-  ELSE              ; npk = jpk
-  ENDIF
+  npk = jpk
 
   CALL CreateOutput
 
