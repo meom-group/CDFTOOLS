@@ -401,6 +401,7 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
+    INTEGER(KIND=4) :: iipk
     ipk(1)                       = npk
     stypvar(1)%ichunk            = (/jpi,MAX(1,jpj/30),1,1 /)
     stypvar(1)%cname             = cv_out
@@ -414,9 +415,15 @@ CONTAINS
     stypvar(1)%caxis             = 'TZYX'
     stypvar(1)%cprecision        = 'r4'
 
-    ncout = create      (cf_out, cf_tfil, jpi, jpj, npk       , ld_nc4=lnc4 )
+    IF ( lsurf ) THEN
+      iipk = 0
+    ELSE
+      iipk = npk
+    ENDIF
+
+    ncout = create      (cf_out, cf_tfil, jpi, jpj, iipk       , ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar, 1,   ipk, id_varout , ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_tfil, jpi, jpj, npk       )
+    ierr  = putheadervar(ncout,  cf_tfil, jpi, jpj, iipk       )
 
   END SUBROUTINE CreateOutput
 
