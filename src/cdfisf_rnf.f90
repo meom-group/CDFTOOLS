@@ -185,6 +185,8 @@ PROGRAM cdfisf_rnf
   nisf = nisf - 1
 
   PRINT *, '   Number of ISF found in file list : ', nisf
+  zmax2d(:,:)      = 0.
+  zmin2d(:,:)      = 0.
 
   DO jisf=1,nisf
      ! reset working isf index to its initial value
@@ -192,18 +194,18 @@ PROGRAM cdfisf_rnf
 
      ! read ice shelf data for jsf
      READ(iunit,*) ifill,cldum,rlon, rlat, iiseed, ijseed ,rdraftmin, rdraftmax, dfwf
+     IF (ifill == 99 ) EXIT  ! exit on last line 
 
      dl_fwf = dfwf * 1.d9 * 1.d3 / 86400.d0 / 365.d0  ! convert GT/yr to kg/m2/s
      isfmask    (:,:) = 0
      dl_fwfisf2d(:,:) = 0.0d0
      dsumcoef         = 0.0d0
-     zmax2d(:,:)      = rdraftmax
-     zmin2d(:,:)      = rdraftmin
 
      ! only deal with current ice shelf
      WHERE (isfindex_wk /=  -ifill ) isfindex_wk = 0
 
      ! find the j-limits for the current ice shelf 
+     PRINT *,' Ice shelf ', jisf,TRIM(cldum), ifill, rdraftmin,rdraftmax
      isum(:)=SUM(isfindex_wk,dim=1)
      ijmin = npjglo ; ijmax=2
      DO jj=ijseed, 2, -1
@@ -224,6 +226,9 @@ PROGRAM cdfisf_rnf
                    &    bathy(ji,jj) /= 0 .AND.  &    ! but in the ocean
                    &    MINVAL(isfindex_wk(ji-1:ji+1 , jj-1:jj+1)) == -ifill  .AND. &  ! 
                    &    isfindex_wk(ji,jj) == 0 ) THEN
+                 ! save depth for this point
+                 zmax2d(ji,jj)   = rdraftmax
+                 zmin2d(ji,jj)   = rdraftmin
                  ! compute dfwf in mm/s  ???
                  isfmask(ji,jj)  = isfmask(ji,jj) + jw 
                  ! use an empirical ocean ward fading function, in order to distribute the
@@ -237,7 +242,11 @@ PROGRAM cdfisf_rnf
      END DO
 
      dsumcoef=SUM(dl_fwfisf2d)
-     PRINT *, SUM(dl_fwfisf2d), dsumcoef, SUM(dl_fwfisf2d / dsumcoef), dl_fwf, dfwf
+     IF ( dsumcoef /= 0 ) THEN
+       PRINT *, SUM(dl_fwfisf2d), dsumcoef, SUM(dl_fwfisf2d / dsumcoef), dl_fwf, dfwf
+     ELSE 
+       PRINT *,' ISF number ',jisf, ' missing in config ?'
+     ENDIF
      WHERE (isfmask >= 1)
         dl_fwfisf2d = dl_fwfisf2d / dsumcoef * dl_fwf / de12t
      END WHERE
