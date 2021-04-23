@@ -132,6 +132,7 @@ PROGRAM cdfgeostrophy
 
   LOGICAL                                   :: lchk           ! file existence flag
   LOGICAL                                   :: lnc4 = .FALSE. ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: lssh = .TRUE.  ! Use ssh data . If false, assume ssh=0 everywhere
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -154,11 +155,13 @@ PROGRAM cdfgeostrophy
      PRINT *,'     ARGUMENTS :'
      PRINT *,'       -t T-file : netcdf file with SSH, Temperature and Salinity.' 
      PRINT *,'         If salinity not in T-file use -s option.'
-     PRINT *,'         If ssh not in T-file use --ssh-file option.'
+     PRINT *,'         If ssh not in T-file use --ssh-file option. (If ssh file is ''NA'''
+     PRINT *,'         SSH is set to 0).'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-s S-file ] : Specify the salinity file if not T-file.'
-     PRINT *,'       [--ssh-file SSH-file] : specify the ssh file if not in T-file.'
+     PRINT *,'       [--ssh-file SSH-file] : specify the ssh file if not in T-file. If'
+     PRINT *,'                    SSH-file=''NA'' (not available), ssh is set to 0.'
      PRINT *,'       [-o OUT-ufile OUT-vfile] : Specify output files name''s  instead of '
      PRINT *,'            ',TRIM(cf_uout),' and ', TRIM(cf_vout)
      PRINT *,'       [-nc4 ]:  Use netcdf4 output with chunking and deflation level 1.'
@@ -188,6 +191,7 @@ PROGRAM cdfgeostrophy
         ! option
      CASE ( '-s '      ) ; CALL getarg(ijarg, cf_sfil) ; ijarg=ijarg+1
      CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil);ijarg=ijarg+1
+        ;   IF ( cf_sshfil == 'NA' ) lssh=.false.
      CASE ( '-o '      ) ; CALL getarg(ijarg, cf_uout) ; ijarg=ijarg+1
         ;                  CALL getarg(ijarg, cf_vout) ; ijarg=ijarg+1
      CASE ( '-nc4'     ) ; lnc4   = .TRUE.
@@ -204,7 +208,7 @@ PROGRAM cdfgeostrophy
   lchk = chkfile(cn_fmsk  ) .OR. lchk
   lchk = chkfile(cf_tfil  ) .OR. lchk
   lchk = chkfile(cf_sfil  ) .OR. lchk
-  lchk = chkfile(cf_sshfil) .OR. lchk
+  IF ( lssh )   lchk = chkfile(cf_sshfil) .OR. lchk
   IF ( lchk ) STOP 99 ! missing file
 
   IF ( lg_vvl ) THEN
@@ -260,7 +264,11 @@ PROGRAM cdfgeostrophy
      ENDIF
 
      ! Read ssh
-     dsshn = getvar(cf_sshfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)*1.d0
+     IF ( lssh) THEN
+        dsshn = getvar(cf_sshfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt)*1.d0
+     ELSE
+        dsshn = 0.d0
+     ENDIF
      ! Read temperature and salinity
      zt    = getvar(cf_tfil, cn_votemper,   1, npiglo, npjglo, ktime=jt)
      zsal  = getvar(cf_sfil, cn_vosaline,   1, npiglo, npjglo, ktime=jt)

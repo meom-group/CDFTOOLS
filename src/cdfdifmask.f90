@@ -89,7 +89,16 @@ PROGRAM cdfdifmask
 
   npiglo = getdim (cf_msk1, cn_x)
   npjglo = getdim (cf_msk1, cn_y)
-  npk    = getdim (cf_msk1, 'z' )  ! mask file have a z depth dim instead of depth ...
+  npk    = getdim (cf_msk1, 'z' , kstatus=ierr )  ! mask file have a z depth dim instead of depth ...
+  IF (ierr /= 0 ) THEN
+    npk    = getdim (cf_msk1, 'nav_lev' , kstatus=ierr )  ! mask file have a z depth dim instead of depth ...
+    IF (ierr /= 0 ) THEN
+      npk    = getdim (cf_msk1, 'deptht' , kstatus=ierr )  ! mask file have a z depth dim instead of depth ...
+    ENDIF
+  ENDIF
+  IF (ierr /= 0 ) THEN
+     PRINT *,' E R R O R : Vertical dimension name unknown' ; STOP 99
+  ENDIF
 
   ALLOCATE (zmask(npiglo,npjglo), zmask2(npiglo,npjglo))
   ALLOCATE ( dtim(1) )
