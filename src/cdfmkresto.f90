@@ -41,7 +41,7 @@ PROGRAM cdfmkresto
   REAL(KIND=4)                               :: rad = 3.141592653589793 / 180.
   REAL(KIND=4)                               :: rvalue
   REAL(KIND=4), DIMENSION(:),     ALLOCATABLE:: gdept_1d
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE:: gphit, glamt
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE:: gphi, glam
   REAL(KIND=4), DIMENSION(:,:,:), ALLOCATABLE:: resto
 
   REAL(KIND=8)                               :: dlon1, dlon2, dlat1, dlat2
@@ -54,6 +54,7 @@ PROGRAM cdfmkresto
   CHARACTER(LEN=255)                         :: cf_resto  ! Previous resto file for appending new zones
   CHARACTER(LEN=255)                         :: cv_resto  ! Previous resto variable in cf_resto
   CHARACTER(LEN=255)                         :: cv_out = 'resto' ! output variable name
+  CHARACTER(LEN=255)                         :: ctype='T' ! C-point type for the output file
   CHARACTER(LEN=255)                         :: cldum     ! dummy character variable
 
   TYPE                                       :: patch     ! Structure handling a patch
@@ -75,8 +76,8 @@ PROGRAM cdfmkresto
   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
   LOGICAL                                    :: lfdep     = .TRUE.      ! flag for ascii depth file
   LOGICAL                                    :: lprev     = .FALSE.     ! flag for previous restoring file
-  LOGICAL                                    :: ltime     = .TRUE.      ! flag for previous restoring file
-  LOGICAL                                    :: l2d       = .FALSE.     ! flag for previous restoring file
+  LOGICAL                                    :: ltime     = .TRUE.      ! flag for specific value (not time)
+  LOGICAL                                    :: l2d       = .FALSE.     ! flag for 2d fields
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -85,7 +86,7 @@ PROGRAM cdfmkresto
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfmkresto -c COORD-file -i CFG-file [-d DEP-file] [-o DMP-file]...'
      PRINT *,'                     ...[-ov VAR-out] [-2d] [-prev RESTO-file RESTO-var ] ...'
-     PRINT *,'                     ...[-val VALUE] [-nc4] [-h]'
+     PRINT *,'                     ...[-p C-TYPE] [-val VALUE] [-nc4] [-h]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Create a file with a 3D damping coefficient suitable for the NEMO'
@@ -113,6 +114,8 @@ PROGRAM cdfmkresto
      PRINT *,'       [-prev RESTO-file RESTO-var] : Use RESTO-file and RESTO-var for the'
      PRINT *,'                initialization of the restoring coefficient. Units MUST be'
      PRINT *,'                s^-1 !!! '
+     PRINT *,'       [-p C-type] : indicate on which grid point (T or F -so far-) the '
+     PRINT *,'               variable is computed in the output file.'
      PRINT *,'       [-val VALUE ] : with this option, the ''restoring'' coefficient is'
      PRINT *,'                  set to VALUE , instead of a time scale.'
      PRINT *,'       [-2d ] : Create a 2D file instead of a default 3D file.'
@@ -149,6 +152,7 @@ PROGRAM cdfmkresto
      CASE ( '-prev') ; CALL getarg(ijarg, cf_resto ) ; ijarg=ijarg+1
         ;            ; CALL getarg(ijarg, cv_resto ) ; ijarg=ijarg+1
         ;            ; lprev = .TRUE.
+     CASE ( '-p'   ) ; CALL getarg(ijarg, ctype    ) ; ijarg=ijarg+1 
      CASE ( '-val' ) ; CALL getarg(ijarg, cldum    ) ; ijarg=ijarg+1 ; READ(cldum,*) rvalue
         ;            ; ltime = .FALSE.
      CASE ( '-2d'  ) ; l2d  = .TRUE.
@@ -157,6 +161,7 @@ PROGRAM cdfmkresto
      END SELECT
   ENDDO
 
+  ! Sanity check
   IF ( lprev ) THEN
         IF ( chkfile(cf_resto) ) STOP 99
   ENDIF
@@ -166,6 +171,10 @@ PROGRAM cdfmkresto
      IF ( chkfile(cn_fzgr) ) STOP 99
   ENDIF
   IF ( chkfile(cf_coord) .OR. chkfile(cf_cfg) ) STOP 99 ! missing file
+  IF ( ctype /= 'T' .AND. ctype /='F' ) THEN
+     PRINT *,' ERROR : C-TYPE can be only T or F (so far...)'
+     STOP 99
+  ENDIF
 
   CALL ReadCfg  ! read configuration file and set variables
 
@@ -215,9 +224,9 @@ CONTAINS
     PRINT *,'## FILE FORMAT:   '
     PRINT *,'      There are as many lines as patches in the configuration files. No blank'
     PRINT *,'    lines are allowed but lines starting with a # are skipped.'
-    PRINT *,'      Each line starts with either R, C or D to indicate either a Rectangular'
-    PRINT *,'    patch, a Circular patch or a Disk patch. Remaining fields on the line '
-    PRINT *,'    depend on the type of patch:'
+    PRINT *,'      Each line starts with either R, C, D or I to indicate either a Rectangular'
+    PRINT *,'    patch, a Circular patch a Disk patch or IJ patch. Remaining fields on the '
+    PRINT *,'    line  depend on the type of patch:'
     PRINT *,'###   Case of rectangular patches: the line looks like:'
     PRINT *,'       R lon1 lon2 lat1 lat2 band_width tresto z1 z2'
     PRINT *,'     In the rectangular case, the rectangle is defined by its geographical '
@@ -244,6 +253,12 @@ CONTAINS
     PRINT *,'      degrees, and its radius in km.  In the disk case, the damping coefficient'
     PRINT *,'      is constant over the disk, and a there is a linear decay in a ring '
     PRINT *,'      around the disk, which width is the rim value (in km).'
+    PRINT *,'      '
+    PRINT *,'###   Case of a IJ patch : In this case, a rectangular patch is constructed '
+    PRINT *,'      using directly the I,J coordinates (config dependent) passed on the line.'
+    PRINT *,'      line looks like:'
+    PRINT *,'      I  imin  imax  jmin  jmax  tresto  z1 z2 '
+    PRINT *,'      In this case, if -val option is used, the value is exactly tresto'
     PRINT *,'       '
     PRINT *,'##  EXAMPLE:  '
     PRINT *,'       The standard DRAKKAR restoring procedure corresponds to the following '
@@ -268,8 +283,10 @@ CONTAINS
     PRINT *,'# Disk example ( not used in drakkar so far)'
     PRINT *,'# type lon1  lat1 radius  rim tresto  z1    z2'
     PRINT *,'   D    -30  -50   200    10   720    0     500'
+    PRINT *,'# IJ example ( dummy , just an example)'
+    PRINT *,'   I    250  252   300 301  10.  0 500 '
     PRINT *,'    '
-    PRINT *,'       This file defines 7 patches, (3 rectangular, 3 circular and 1 disk).'
+    PRINT *,'       This file defines 8 patches, (3 rectangular, 3 circular,1 disk and 1 IJ).'
     PRINT *,'     Lines starting by # are helpfull comment for documenting the'
     PRINT *,'     restoring strategy. Note that as far as the position of the patches are '
     PRINT *,'     given in geographical coordinates, the same file can be used for different'
@@ -318,12 +335,12 @@ CONTAINS
       ncout = create      (cf_out, 'none',  npiglo, npjglo, 0, ld_nc4=lnc4 )
       ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
       ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, 0 ,  &
-           pnavlon=glamt, pnavlat=gphit)
+           pnavlon=glam, pnavlat=gphi)
     ELSE
       ncout = create      (cf_out, 'none',  npiglo, npjglo, npk  ,cdep='deptht', ld_nc4=lnc4 )
       ierr  = createvar   (ncout,  stypvar,  1,     ipk,        id_varout,       ld_nc4=lnc4 )
       ierr  = putheadervar(ncout,  cf_coord,  npiglo, npjglo, npk ,  &
-           pnavlon=glamt, pnavlat=gphit, pdep=gdept_1d, cdep=cn_vdeptht )
+           pnavlon=glam, pnavlat=gphi, pdep=gdept_1d, cdep=cn_vdeptht )
     ENDIF
 
     ALLOCATE (dtim(1) )
@@ -386,6 +403,13 @@ CONTAINS
                   & spatch(npatch)%radius,     &
                   & spatch(npatch)%rim, spatch(npatch)%tresto,   &
                   & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
+             CASE ( 'I', 'i' ) ; READ(cline,*) spatch(npatch)%ctyp, &   ! I
+                  & spatch(npatch)%rlon1, spatch(npatch)%rlon2,     &
+                  & spatch(npatch)%rlat1, spatch(npatch)%rlat2,     &
+                  & spatch(npatch)%tresto,                          &
+                  & spatch(npatch)%rdep1, spatch(npatch)%rdep2 
+                  PRINT *, ' W A R N I N G : You are using a patch defined with I,J index'
+                  PRINT *, ' =============   It depends on your configuration !'
              END SELECT
           ENDIF
        ENDIF
@@ -398,7 +422,7 @@ CONTAINS
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE GetCoord  ***
     !!
-    !! ** Purpose :  Read glamt, gphit from horizontal grid information
+    !! ** Purpose :  Read glam, gphi from horizontal grid information
     !!               Read vertical grid information  
     !!
     !! ** Method  :  Open cf_coord file for horizontal grid.
@@ -410,9 +434,16 @@ CONTAINS
     !!----------------------------------------------------------------------
     npiglo = getdim(cf_coord,cn_x)
     npjglo = getdim(cf_coord,cn_y)
-    ALLOCATE (glamt(npiglo,npjglo), gphit(npiglo,npjglo) )
-    glamt(:,:)=getvar(cf_coord,cn_glamt, 1,npiglo,npjglo)
-    gphit(:,:)=getvar(cf_coord,cn_gphit, 1,npiglo,npjglo)
+    ALLOCATE (glam(npiglo,npjglo), gphi(npiglo,npjglo) )
+    IF ( ctype == 'T' ) THEN
+      glam(:,:)=getvar(cf_coord,cn_glamt, 1,npiglo,npjglo)
+      gphi(:,:)=getvar(cf_coord,cn_gphit, 1,npiglo,npjglo)
+    ELSE IF  ( ctype == 'F' ) THEN
+      glam(:,:)=getvar(cf_coord,cn_glamf, 1,npiglo,npjglo)
+      gphi(:,:)=getvar(cf_coord,cn_gphif, 1,npiglo,npjglo)
+    ELSE
+      PRINT *, "ERROR : C-Type can be only T or F" ; STOP 99
+    ENDIF
     ! now deal with vertical levels ( suppose z or zps ! )
     IF ( l2d ) THEN
        npk=1
@@ -454,7 +485,7 @@ CONTAINS
     !! ** Purpose :   modify resto array on a geographically defined zone.
     !!                The restoring can be limited on the vertical.
     !!
-    !! ** Method  :  Use glamt, gphit arrays. If the defined zone is outside 
+    !! ** Method  :  Use glam, gphi arrays. If the defined zone is outside 
     !!              the domain, resto is unchanged. Reactangular and Circulat
     !!              patches can be used.
     !!
@@ -465,9 +496,10 @@ CONTAINS
     REAL(wp)          :: zlon1, zlon2, zlat1, zlat2, zbw, ztmax
     REAL(wp)          :: zz1, zz2
     !!
-    INTEGER :: ji,jj, jk    ! dummy loop index
-    INTEGER :: ik1, ik2     ! limiting vertical index corresponding to zz1,zz2
-    INTEGER, DIMENSION(1)           :: iloc 
+    INTEGER :: ji,jj, jk            ! dummy loop index
+    INTEGER :: ii1, ii2, ij1, ij2   ! limiting horizontal index corresponding (I case)
+    INTEGER :: ik1, ik2             ! limiting vertical index corresponding to zz1,zz2
+    INTEGER, DIMENSION(1)  :: iloc 
 
     REAL(wp) :: zv1, zv2, zv3, zv4, zcoef, ztmp, zdist, zradius, zradius2, zcoef2
     REAL(wp), DIMENSION(:,:), ALLOCATABLE :: zpatch
@@ -501,9 +533,9 @@ CONTAINS
        !  mask for horizontal extent
        DO jj = 1, npjglo
           DO ji = 1 , npiglo
-             zpatch(ji,jj) =  SIN(gphit(ji,jj)*rad)* SIN(zlat1*rad)  &
-                  &         + COS(gphit(ji,jj)*rad)* COS(zlat1*rad)  &
-                  &         * COS(rad*(zlon1-glamt(ji,jj)))
+             zpatch(ji,jj) =  SIN(gphi(ji,jj)*rad)* SIN(zlat1*rad)  &
+                  &         + COS(gphi(ji,jj)*rad)* COS(zlat1*rad)  &
+                  &         * COS(rad*(zlon1-glam(ji,jj)))
           ENDDO
        ENDDO
 
@@ -524,7 +556,7 @@ CONTAINS
        DO jj = 1, npjglo
           DO ji = 1 , npiglo
             dlon1=zlon1*1.d0         ; dlat1=zlat1*1.d0
-            dlon2=glamt(ji,jj)*1.d0  ; dlat2=gphit(ji,jj)*1.d0
+            dlon2=glam(ji,jj)*1.d0  ; dlat2=gphi(ji,jj)*1.d0
             zpatch(ji,jj) =  dist( dlon1, dlon2, dlat1, dlat2 )
           ENDDO
        ENDDO
@@ -550,13 +582,24 @@ CONTAINS
        zcoef2=1./(zbw +1.e-20 ) ! to avoid division by 0
        DO jj=1,npjglo
           DO ji=1,npiglo
-             zv1=MAX(0., zcoef2*( glamt(ji,jj) - zlon1)  )
-             zv2=MAX(0., zcoef2*( zlon2 - glamt(ji,jj))  )
-             zv3=MAX(0., zcoef2*( gphit(ji,jj) - zlat1)  )
-             zv4=MAX(0., zcoef2*( zlat2 - gphit(ji,jj))  )
+             zv1=MAX(0., zcoef2*( glam(ji,jj) - zlon1)  )
+             zv2=MAX(0., zcoef2*( zlon2 - glam(ji,jj))  )
+             zv3=MAX(0., zcoef2*( gphi(ji,jj) - zlat1)  )
+             zv4=MAX(0., zcoef2*( zlat2 - gphi(ji,jj))  )
              zpatch(ji,jj)= MIN( 1., MIN( 1., zv1,zv2,zv3,zv4 ) )
           ENDDO
        ENDDO
+     CASE ( 'I','i')
+       ii1=NINT(zlon1)  ; ii2 = NINT(zlon2)
+       ij1=NINT(zlat1)  ; ij2 = NINT(zlat2)
+       DO jj= ij1, ij2
+          DO ji=ii1, ii2
+             PRINT *, ' I-Patch at ',ji,jj, ztmax
+             zpatch(ji,jj) = 1.
+          ENDDO
+       ENDDO
+       ! Alter zcoef 
+       IF ( .NOT. ltime  ) zcoef = ztmax
     END SELECT
 
     ! Vertical limitation same treatment for both types
