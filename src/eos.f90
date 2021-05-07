@@ -31,6 +31,15 @@ MODULE eos
      MODULE PROCEDURE sigmai_dep, sigmai_dep2d
   END INTERFACE
 
+  INTERFACE albet
+     MODULE PROCEDURE  albet_2d, albet_z
+  END INTERFACE
+
+  INTERFACE beta
+     MODULE PROCEDURE  beta_2d, beta_z
+  END INTERFACE
+
+
 
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
@@ -525,7 +534,7 @@ CONTAINS
   END FUNCTION eosbn2
 
 
-  FUNCTION albet(  ptem, psal, pdep, kpi, kpj)
+  FUNCTION albet_2d(  ptem, psal, pdep, kpi, kpj)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  albet  ***
     !!
@@ -538,7 +547,7 @@ CONTAINS
     REAL(KIND=4),                     INTENT(in) :: pdep       ! refererence depth
     INTEGER(KIND=4),                  INTENT(in) :: kpi, kpj   ! size of the arrays
 
-    REAL(KIND=8), DIMENSION(kpi,kpj)             :: albet      ! returned value
+    REAL(KIND=8), DIMENSION(kpi,kpj)             :: albet_2d   ! returned value
 
     INTEGER(KIND=4) :: ji, jj      ! dummy loop index
     REAL(KIND=8)    :: zt, zs, zh  ! working local variables
@@ -550,7 +559,7 @@ CONTAINS
           zt =  ptem(ji,jj)         ! potential temperature
           zs =  psal(ji,jj)- 35.0   ! salinity anomaly (s-35)
 
-          albet(ji,jj) = ( ( ( - 0.255019e-07 * zt + 0.298357e-05 ) * zt   &   ! ratio alpha/beta
+          albet_2d(ji,jj) = ( ( ( - 0.255019e-07 * zt + 0.298357e-05 ) * zt   &   ! ratio alpha/beta
                &                               - 0.203814e-03 ) * zt   &
                &                               + 0.170907e-01 ) * zt   &
                &   + 0.665157e-01                                      &
@@ -566,10 +575,52 @@ CONTAINS
     END DO
     !$OMP END PARALLEL DO
 
-  END FUNCTION albet
+  END FUNCTION albet_2d
 
 
-  FUNCTION beta (  ptem, psal, pdep, kpi, kpj)
+  FUNCTION albet_z(  ptem, psal, pdep, kpk)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION  albet  ***
+    !!
+    !! ** Purpose :  Compute the ratio alpha/beta 
+    !!
+    !! ** Method  :  Follow Mc Dougal et al as in other functions
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(kpk), INTENT(in) :: ptem, psal ! temperature salinity
+    REAL(KIND=4), DIMENSION(kpk), INTENT(in) :: pdep       ! refererence depth
+    INTEGER(KIND=4),              INTENT(in) :: kpk        ! size of the arrays
+
+    REAL(KIND=8), DIMENSION(kpk)             :: albet_z    ! returned value
+
+    INTEGER(KIND=4) :: jk          ! dummy loop index
+    REAL(KIND=8)    :: zt, zs, zh  ! working local variables
+    !!----------------------------------------------------------------------
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
+     DO jk=1,kpk
+          zh = pdep(jk)
+          zt = ptem(jk)         ! potential temperature
+          zs = psal(jk)- 35.0   ! salinity anomaly (s-35)
+
+          albet_z(jk) = (  ( ( - 0.255019e-07 * zt + 0.298357e-05 ) * zt   &   ! ratio alpha/beta
+                   &                               - 0.203814e-03 ) * zt   &
+                   &                               + 0.170907e-01 ) * zt   &
+                   &   + 0.665157e-01                                      &
+                   &   +     ( - 0.678662e-05 * zs                         &
+                   &           - 0.846960e-04 * zt + 0.378110e-02 ) * zs   &
+                   &   +   ( ( - 0.302285e-13 * zh                         &
+                   &           - 0.251520e-11 * zs                         &
+                   &           + 0.512857e-12 * zt * zt           ) * zh   &
+                   &           - 0.164759e-06 * zs                         &
+                   &        +(   0.791325e-08 * zt - 0.933746e-06 ) * zt   &
+                   &                               + 0.380374e-04 ) * zh
+    END DO
+    !$OMP END PARALLEL DO
+
+  END FUNCTION albet_z
+
+
+  FUNCTION beta_2d (  ptem, psal, pdep, kpi, kpj)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION beta  ***
     !!
@@ -581,7 +632,7 @@ CONTAINS
     REAL(KIND=4), DIMENSION(kpi,kpj),INTENT(in) :: ptem, psal ! temperature salinity
     REAL(KIND=4),                    INTENT(in) :: pdep       ! reference depth
     INTEGER(KIND=4),                 INTENT(in) :: kpi, kpj   ! size of the array
-    REAL(KIND=8), DIMENSION(kpi,kpj)            :: beta       ! returned values
+    REAL(KIND=8), DIMENSION(kpi,kpj)            :: beta_2d    ! returned values
 
     INTEGER(KIND=4) :: ji, jj      ! dummy loop index
     REAL(KIND=8)    :: zt, zs, zh  ! working variables
@@ -593,7 +644,7 @@ CONTAINS
           zt =  ptem(ji,jj)         ! potential temperature
           zs =  psal(ji,jj)- 35.0   ! salinity anomaly (s-35)
 
-          beta(ji,jj)  = ( ( -0.415613e-09 * zt + 0.555579e-07 ) * zt      &   ! beta
+          beta_2d(ji,jj) = ( ( -0.415613e-09 * zt + 0.555579e-07 ) * zt      &   ! beta
                &                            - 0.301985e-05 ) * zt      &
                &   + 0.785567e-03                                      &
                &   + (     0.515032e-08 * zs                           &
@@ -608,6 +659,45 @@ CONTAINS
     END DO
     !$OMP END PARALLEL DO
 
-  END FUNCTION beta
+  END FUNCTION beta_2d
+
+  FUNCTION beta_z (  ptem, psal, pdep, kpk)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION beta  ***
+    !!
+    !! ** Purpose :  Compute the beta 
+    !!
+    !! ** Method  :  Follow Mc Dougal et al as in other functions 
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(kpk),INTENT(in) :: ptem, psal ! temperature salinity
+    REAL(KIND=4), DIMENSION(kpk),INTENT(in) :: pdep       ! reference depth
+    INTEGER(KIND=4),             INTENT(in) :: kpk        ! size of the array
+    REAL(KIND=8), DIMENSION(kpk)            :: beta_z     ! returned values
+
+    INTEGER(KIND=4) :: jk          ! dummy loop index
+    REAL(KIND=8)    :: zt, zs, zh  ! working variables
+    !!----------------------------------------------------------------------
+    !$OMP PARALLEL DO SCHEDULE(RUNTIME)
+    DO jk=1,kpk
+          zh = pdep(jk)
+          zt =  ptem(jk)         ! potential temperature
+          zs =  psal(jk)- 35.0   ! salinity anomaly (s-35)
+
+          beta_z(jk) = ( ( -0.415613e-09 * zt + 0.555579e-07 ) * zt        &   ! beta
+                   &                            - 0.301985e-05 ) * zt      &
+                   &   + 0.785567e-03                                      &
+                   &   + (     0.515032e-08 * zs                           &
+                   &         + 0.788212e-08 * zt - 0.356603e-06 ) * zs     &
+                   &   +(  (   0.121551e-17 * zh                           &
+                   &         - 0.602281e-15 * zs                           &
+                   &         - 0.175379e-14 * zt + 0.176621e-12 ) * zh     &
+                   &                             + 0.408195e-10   * zs     &
+                   &     + ( - 0.213127e-11 * zt + 0.192867e-09 ) * zt     &
+                   &                             - 0.121555e-07 ) * zh
+    END DO
+    !$OMP END PARALLEL DO
+
+  END FUNCTION beta_z
 
 END MODULE eos

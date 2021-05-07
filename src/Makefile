@@ -21,6 +21,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
        cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
+       cdfcheckic \
        cdfbottom cdfets cdfokubow cdfstrain cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
        cdfmhst cdfmht_gsop cdfvhst cdfvtrp cdftransport cdfvFWov \
@@ -247,6 +248,9 @@ cdfmaskdmp: cdfio.o  eos.o  cdfmaskdmp.f90
 
 cdfmkresto: cdfio.o   cdftools.o cdfmkresto.f90
 	$(F90)  cdfmkresto.f90 -o $(BINDIR)/cdfmkresto cdfio.o  modcdfnames.o cdftools.o  $(FFLAGS)
+
+cdfcheckic: cdfio.o  eos.o  cdfcheckic.f90
+	$(F90)  cdfcheckic.f90 -o $(BINDIR)/cdfchekic cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 ## Transport programs
 cdfmhst: cdfio.o  cdfmhst.f90
