@@ -250,7 +250,7 @@ cdfmkresto: cdfio.o   cdftools.o cdfmkresto.f90
 	$(F90)  cdfmkresto.f90 -o $(BINDIR)/cdfmkresto cdfio.o  modcdfnames.o cdftools.o  $(FFLAGS)
 
 cdfcheckic: cdfio.o  eos.o  cdfcheckic.f90
-	$(F90)  cdfcheckic.f90 -o $(BINDIR)/cdfchekic cdfio.o eos.o modcdfnames.o  $(FFLAGS)
+	$(F90)  cdfcheckic.f90 -o $(BINDIR)/cdfcheckic cdfio.o eos.o modcdfnames.o  $(FFLAGS)
 
 ## Transport programs
 cdfmhst: cdfio.o  cdfmhst.f90
