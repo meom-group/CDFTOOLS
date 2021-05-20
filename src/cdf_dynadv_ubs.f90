@@ -86,10 +86,8 @@ PROGRAM cdf_dynadv_ubs
   TYPE (variable), DIMENSION(pnvarout)         :: stypvar2                 ! structure for attibutes (v-comp)
   TYPE (variable), DIMENSION(pnvarout)         :: stypvar3                 ! structure for attibutes (ke-comp)
 
-  LOGICAL                                      :: l_w   =.FALSE.           ! flag for vertical location of bn2
-  LOGICAL                                      :: lchk                     ! check missing files
-  LOGICAL                                      :: lfull =.FALSE.           ! full step flag
-  LOGICAL                                      :: lnc4  =.FALSE.           ! full step flag
+  LOGICAL                                      :: lnc4  =.FALSE.           ! flag for netcdf4 output
+  LOGICAL                                      :: lk_vvl =.TRUE.           ! Variable vert. mesh
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -112,11 +110,11 @@ PROGRAM cdf_dynadv_ubs
      PRINT *,'       -mz MESZ-file      : netcdf file for vertical mesh'
      PRINT *,'       -mask MASK-file    : netcdf file for mask'
      PRINT *,'       -bathy BATHY-file  : netcdf file for model bathymetry'
+     PRINT *,'      '
+     PRINT *,'     OPTIONS :'
      PRINT *,'       -o_u OUT-file      : netcdf file for advection term for u-momentum'
      PRINT *,'       -o_v OUT-file      : netcdf file for advection term for v-momentum'
      PRINT *,'       -o_ke OUT-file     : netcdf file for advection term for KE'
-     PRINT *,'      '
-     PRINT *,'     OPTIONS :'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : '
@@ -142,7 +140,6 @@ PROGRAM cdf_dynadv_ubs
      CASE ('-mask'     ) ; CALL getarg( ijarg, cf_mask ) ; ijarg=ijarg+1
      CASE ('-bathy'    ) ; CALL getarg( ijarg, cf_bathy ) ; ijarg=ijarg+1
         ! options
-     CASE ( '-full' ) ; lfull   = .TRUE. ; cglobal = 'full step computation'
      CASE ( '-o_u'    ) ; CALL getarg(ijarg, cf_out_u ) ; ijarg = ijarg + 1
      CASE ( '-o_v'    ) ; CALL getarg(ijarg, cf_out_v ) ; ijarg = ijarg + 1
      CASE ( '-o_ke'   ) ; CALL getarg(ijarg, cf_out_ke) ; ijarg = ijarg + 1
@@ -246,15 +243,13 @@ PROGRAM cdf_dynadv_ubs
 
      !-- recomputed vert. metric due to non-linear free surface (VVL) --
      ! from domvvl.F90 -->> e3t = e3t_0*(1+sshn/ht_0)
-     !IF ( jk == 1 ) THEN
-       !PRINT *, '-- Recompute vert. mesh --'
-     sshn(:,:)     = getvar(cf_sshfil  , cn_sossheig, 1, jpiglo, jpjglo, ktime=jt )
-     !ENDIF
-     e3t(:,:) = e3t_0(:,:) * (1 + sshn/ht_0)
-     !- at u- and v- pts (domvvl.F90) -
+     e3t(:,:) = e3t_0(:,:)
      e3u(:,:) = e3u_0(:,:)
      e3v(:,:) = e3v_0(:,:)
-     !DO jk = 1, jpk
+     IF ( lk_vvl ) THEN 
+        sshn(:,:)     = getvar(cf_sshfil  , cn_sossheig, 1, jpiglo, jpjglo, ktime=jt )
+        e3t(:,:) = e3t_0(:,:) * (1 + sshn/ht_0)
+        !- at u- and v- pts (domvvl.F90) -
         DO jj = 1, jpjm1
            DO ji = 1, jpim1   ! vector opt.
               e3u(ji,jj) = e3u_0(ji,jj) + 0.5_wp * umask(ji,jj) * r1_e12u(ji,jj)                 &
@@ -265,7 +260,7 @@ PROGRAM cdf_dynadv_ubs
                  &                           + e12t(ji,jj+1) * ( e3t(ji,jj+1) - e3t_0(ji,jj+1) ) )
            END DO
         END DO
-     !END DO
+     END IF
 
      !-- Load variables --
      !PRINT *, '-- Load hz. vel --'
