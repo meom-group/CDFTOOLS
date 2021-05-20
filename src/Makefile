@@ -41,7 +41,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
        cdfdynh_anom cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfshift05 cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdfocape cdf_compress \
-       cdf_domain_modif  cdf_domain2bathy cdf_dynadv_ubs \
+       cdf_domain_modif  cdf_domain2bathy cdf_dynadv_ubs cdf_dynhpg \
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
 
@@ -61,6 +61,9 @@ help:
 ## Momentum and KE trends for budget
 cdf_dynadv_ubs: cdfio.o       cdf_dynadv_ubs.f90
 	$(F90) cdf_dynadv_ubs.f90 -o $(BINDIR)/cdf_dynadv_ubs       cdfio.o modcdfnames.o $(FFLAGS)
+
+cdf_dynhpg:     cdfio.o eos.o cdf_dynhpg.f90
+        $(F90) cdf_dynhpg.f90     -o $(BINDIR)/cdf_dynhpg           cdfio.o modcdfnames.o $(FFLAGS)
 
 ## Statistical programs
 cdfmoy: cdfio.o   cdfmoy.f90
