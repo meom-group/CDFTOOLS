@@ -349,6 +349,7 @@ PROGRAM cdfsum
   END DO  ! time loop
   
   PRINT *, ' mean Sum over time ', dsumt/npt
+  PRINT *, ' Sum over time ', dsumt
 
   CLOSE(numout)
   ierr=closeout(ncout)
