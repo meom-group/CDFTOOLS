@@ -1,11 +1,10 @@
-
 PROGRAM cdf_domain2bathy
   !!======================================================================
   !!                     ***  PROGRAM  cdf_domain2bathy  ***
   !!=====================================================================
   !!  ** Purpose : Create a bathy file from domain_cfg file
   !!
-  !!  ** Method  : integrate e3w_0 on the wet points
+  !!  ** Method  : integrate e3t_0 on the wet points
   !!
   !! History :  4.0  : 10/2020  : J.M. Molines : 
   !!----------------------------------------------------------------------
@@ -34,7 +33,7 @@ PROGRAM cdf_domain2bathy
   INTEGER(KIND=4), DIMENSION(1)                :: ipk, id_varout      ! only one output variable
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mbathy           ! working input variable
 
-  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3w                 ! vertical metric
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: e3t                 ! vertical metric
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat          ! output longitude, latitude
 
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dbati               ! bathymetry
@@ -55,9 +54,9 @@ PROGRAM cdf_domain2bathy
      PRINT *,' usage : cdf_domain2bathy -d DOMAINCFG-file [-nc4] [-o BATI-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Compute the batimetry of a configuration, consistent with the'
+     PRINT *,'       Compute the bathymetry of a configuration, consistent with the'
      PRINT *,'       domain_cfg file given in argument. This program compute the bathymetry'
-     PRINT *,'       from the e3w_0 variable and bottom_level variable.'
+     PRINT *,'       from the e3t_0 variable and bottom_level variable.'
      PRINT *,'      '
      PRINT *,'     ARGUMENTS :'
      PRINT *,'         -d DOMAINCFG-file: pass the name of the domain file to work with.'
@@ -111,7 +110,7 @@ PROGRAM cdf_domain2bathy
   ALLOCATE ( rlon(npiglo,npjglo), rlat(npiglo,npjglo)  )
   ALLOCATE ( mbathy(npiglo,npjglo) )
   ALLOCATE ( dbati(npiglo,npjglo)  )
-  ALLOCATE ( e3w(npiglo,npjglo)    )
+  ALLOCATE ( e3t(npiglo,npjglo)    )
   ALLOCATE ( dtim(npt)             )
 
   CALL CreateOutput
@@ -120,8 +119,8 @@ PROGRAM cdf_domain2bathy
   dbati=0.d0
 
   DO jk = 1, npk
-     e3w(:,:) = getvar(cf_in,'e3w_0',jk, npiglo,npjglo)
-     WHERE( mbathy >= jk ) dbati(:,:)=dbati(:,:) + e3w(:,:)
+     e3t(:,:) = getvar(cf_in,'e3t_0',jk, npiglo,npjglo)
+     WHERE( mbathy >= jk ) dbati(:,:)=dbati(:,:) + e3t(:,:)
   ENDDO
   ierr = putvar(ncout, id_varout(1) ,REAL(dbati), 1, npiglo, npjglo)
   ierr = closeout(ncout)
