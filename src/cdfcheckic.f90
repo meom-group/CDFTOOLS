@@ -102,6 +102,7 @@ PROGRAM cdfcheckic
   END DO
   IF ( cf_sfil == 'none') cf_sfil = cf_tfil
 
+
   lchk = chkfile (cn_fzgr )
   lchk = lchk .OR. chkfile (cn_fhgr  )
   lchk = lchk .OR. chkfile (cf_tfil  )
@@ -134,11 +135,20 @@ PROGRAM cdfcheckic
 
   ! load needed static data (wmask used as temporary array here)
   PRINT *, 'load scale factor, depth ...'
-  gdepw(:,:,:) = getvar3d(cn_fzgr, cn_depw3d, npiglo, npjglo, npk)
-  gdept(:,:,:) = getvar3d(cn_fzgr, cn_dept3d, npiglo, npjglo, npk)
-  tmask(:,:,:) = getvar3d(cn_fmsk, cn_tmask , npiglo, npjglo, npk)
+  PRINT *, cg_zgr_ver
+  IF ( cg_zgr_ver == 'v3.6') cn_ve3w = 'e3w_0'
+  IF ( cg_zgr_ver == 'v3.6') cn_ve3t = 'e3t_0'
   e3w(:,:,:)   = getvar3d(cn_fzgr, cn_ve3w  , npiglo, npjglo, npk)
   e3t(:,:,:)   = getvar3d(cn_fzgr, cn_ve3t  , npiglo, npjglo, npk)
+  tmask(:,:,:) = getvar3d(cn_fmsk, cn_tmask , npiglo, npjglo, npk)
+  gdepw(:,:,1) = 0.
+  gdept(:,:,1) = e3t(:,:,1)/2.
+  DO jk = 2, npk
+    gdepw(:,:,jk) = gdepw(:,:,jk-1) + e3t(:,:,jk-1)
+    gdept(:,:,jk) = gdept(:,:,jk-1) + e3w(:,:,jk)
+  ENDDO
+!  gdepw(:,:,:) = getvar3d(cn_fzgr, cn_depw3d, npiglo, npjglo, npk)
+! gdept(:,:,:) = getvar3d(cn_fzgr, cn_dept3d, npiglo, npjglo, npk)
 
   ! wmask is computed from tmask
   DO jk = 2,npk 
