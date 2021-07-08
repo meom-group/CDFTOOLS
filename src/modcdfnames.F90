@@ -48,6 +48,8 @@ MODULE modCdfNames
   ! VVL case
   CHARACTER(LEN=256) :: cn_ve3tvvl='e3t', cn_ve3wvvl='e3w'   !: e3. (3D). 
   CHARACTER(LEN=256) :: cn_ve3uvvl='e3u', cn_ve3vvvl='e3v'   !: e3.
+  CHARACTER(LEN=256) :: cn_ve3t0='e3t_0', cn_ve3w0='e3w_0'   !: e3. (3D). (at rest)
+  CHARACTER(LEN=256) :: cn_ve3u0='e3u_0', cn_ve3v0='e3v_0'   !: e3.
 
   CHARACTER(LEN=256) :: cn_vff='ff'
 

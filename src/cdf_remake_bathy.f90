@@ -4,7 +4,7 @@ PROGRAM cdf_remake_bathy
   !!=====================================================================
   !!  ** Purpose : Recompute bathymetry from e3t vertical intregration
   !!
-  !! History : 4.0  : 09/2019  : Q. Jamet
+  !! History : 4.0  : 09/2019  : Q. Jamet, J.-M. Molines
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames   ! for cdf variable names
@@ -31,7 +31,6 @@ PROGRAM cdf_remake_bathy
   REAL(wp), DIMENSION(:,:)    , ALLOCATABLE    :: e3t_0, e3u_0, e3v_0      ! vet. metrics at rest (without vvl)
   REAL(wp), DIMENSION(:,:)    , ALLOCATABLE    :: ht_0, hu_0, hv_0         ! Reference ocean depth at T-, U-, V-points
   REAL(wp), DIMENSION(:,:)    , ALLOCATABLE    :: tmask, umask, vmask      ! Mask at T-, U-, V-points
-  REAL(wp), DIMENSION(:,:)    , ALLOCATABLE    :: rlon, rlat         ! t-grid horizontal
 
   CHARACTER(LEN=255)                           :: cf_mz                    ! vert. mesh  netcdf file name
   CHARACTER(LEN=255)                           :: cf_mask                  ! mask        netcdf file name
@@ -105,7 +104,6 @@ PROGRAM cdf_remake_bathy
   ALLOCATE( e3t_0(npi, npj), e3u_0(npi, npj), e3v_0(npi, npj) )
   ALLOCATE( ht_0(npi, npj) , hu_0(npi, npj) , hv_0(npi, npj)  )
   ALLOCATE( tmask(npi, npj), umask(npi, npj), vmask(npi, npj) )
-  ALLOCATE( rlon(npi, npj) , rlat(npi, npj)                   )
 
   !-- Creat output netcdf files to fill in --
   CALL CreateOutput
@@ -116,16 +114,16 @@ PROGRAM cdf_remake_bathy
   hv_0(:,:) = 0.0_wp                       ! Reference ocean depth at V-points
   DO jk = 1, npk
      !- T-points -
-     e3t_0(:,:)           = getvar(cf_mz  , 'e3t_0'  , jk, npi, npj )
-     tmask(:,:)           = getvar(cf_mask, 'tmask'  , jk, npi, npj ) 
+     e3t_0(:,:)           = getvar(cf_mz  , cn_ve3t0  , jk, npi, npj )
+     tmask(:,:)           = getvar(cf_mask, cn_tmask  , jk, npi, npj ) 
      ht_0(:,:)            = ht_0(:,:) + e3t_0(:,:) * tmask(:,:)
      !- U-points -
-     e3u_0(:,:)           = getvar(cf_mz  , 'e3t_0'  , jk, npi, npj )
-     umask(:,:)           = getvar(cf_mask, 'umask'  , jk, npi, npj ) 
+     e3u_0(:,:)           = getvar(cf_mz  , cn_ve3u0  , jk, npi, npj )
+     umask(:,:)           = getvar(cf_mask, cn_umask  , jk, npi, npj ) 
      hu_0(:,:)            = hu_0(:,:) + e3u_0(:,:) * umask(:,:)
      !- V-points -
-     e3v_0(:,:)           = getvar(cf_mz  , 'e3t_0'  , jk, npi, npj )
-     vmask(:,:)           = getvar(cf_mask, 'vmask'  , jk, npi, npj ) 
+     e3v_0(:,:)           = getvar(cf_mz  , cn_ve3v0  , jk, npi, npj )
+     vmask(:,:)           = getvar(cf_mask, cn_vmask  , jk, npi, npj ) 
      hv_0(:,:)            = hv_0(:,:) + e3v_0(:,:) * vmask(:,:)
   END DO
 
@@ -185,12 +183,6 @@ CONTAINS
     ! create output fileset
     ncout   = create      (cf_out  , cf_mz ,  npi, npj, 1 , ld_nc4=lnc4   )
     ierr    = createvar   (ncout , stypvar ,  jpvarout, ipk , id_varout   , ld_nc4=lnc4 )
-! JMM remark : rlon and rlat are not initialize....
-!      if variables nav_lon, nav_lat exist in cf_mz, putheaderpar copy them by defaults,
-!      if rlon, rlat not given as arguments... 
-!      The question is to know if those variables exists in the input file...
-!      If yes, then just eliminate references to rlon, rlat (declaration + allocation )
-!   ierr    = putheadervar(ncout , cf_mz   ,  npi, npj, 1, rlon, rlat                   )
     ierr    = putheadervar(ncout , cf_mz   ,  npi, npj, 1              )
 
     dltim = getvar1d(cf_mz, cn_vtimec,      npt     )
