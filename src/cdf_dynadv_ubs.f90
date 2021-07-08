@@ -296,7 +296,7 @@ PROGRAM cdf_dynadv_ubs
   PRINT *, '-- Creat output --'
   CALL CreateOutput
 
-  DO jk = 1, npkm1
+  DO jk = 1, 1
    PRINT *, '-- klayer: ', jk
 
    !-- load vert. mesh (at rest) and masks (dommsk.f90) --
