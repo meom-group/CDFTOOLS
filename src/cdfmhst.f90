@@ -107,8 +107,9 @@ PROGRAM cdfmhst
   !!  Read command line and output usage message if not compliant.
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmhst  -vt VT-file | (-v V-file -t T-file [-s S-file]) [-MST] ...'
-     PRINT *,'              ... [-b BASIN-mask] [-full] [-Zdim] [-o OUT-file] [-vvl] '
+     PRINT *,' usage : cdfmhst  -vt VT-file | (-v V-file -t T-file [-s S-file]) ...'
+     PRINT *,'         ... [-vtvar VT-var VS-var] ...'
+     PRINT *,'         ... [-MST] [-b BASIN-mask] [-full] [-Zdim] [-o OUT-file] [-vvl] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the meridional heat/salt transport as a function of latitude.'
@@ -133,6 +134,7 @@ PROGRAM cdfmhst
      PRINT *,'       If not using ''-vt'' option, both V-file and T-file MUST be specified.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-vtvar VT-var VS-var] : name of VT, VS variables in VT-file.'
      PRINT *,'       [-s S-file] : specify S-file (salinity) if the salinity field is not in'
      PRINT *,'              T-file.'
      PRINT *,'       [-MST ]   : Indicates the the meridional Salt transport will also be '
@@ -178,6 +180,8 @@ PROGRAM cdfmhst
      CALL getarg(ijarg, cldum) ; ijarg = ijarg+1
      SELECT CASE ( cldum)
      CASE ( '-vt'   ) ; CALL getarg(ijarg, cf_vtfil  ) ; ijarg = ijarg+1
+     CASE ( '-vtvar') ; CALL getarg(ijarg, cn_vomevt ) ; ijarg = ijarg+1
+          ;           ; CALL getarg(ijarg, cn_vomevs ) ; ijarg = ijarg+1
      CASE ( '-v'    ) ; CALL getarg(ijarg, cf_vfil   ) ; ijarg = ijarg+1
      CASE ( '-t'    ) ; CALL getarg(ijarg, cf_tfil   ) ; ijarg = ijarg+1
      CASE ( '-s'    ) ; CALL getarg(ijarg, cf_sfil   ) ; ijarg = ijarg+1
@@ -199,7 +203,6 @@ PROGRAM cdfmhst
      lchk = lchk .OR. chkfile( cf_tfil )
      IF ( lchk ) STOP 99   ! Missing files
      IF ( TRIM(cf_sfil) == 'none' ) cf_sfil = cf_tfil
-     
   ENDIF
 
   ! check for missing files

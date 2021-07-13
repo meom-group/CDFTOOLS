@@ -195,6 +195,7 @@ PROGRAM cdftransport
   TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvar        ! structure of output
   TYPE(variable), DIMENSION(:),   ALLOCATABLE :: stypvarc       ! structure of output
 
+  CHARACTER(LEN=256)                          :: cf_utfil       ! UT file  (in)
   CHARACTER(LEN=256)                          :: cf_vtfil       ! VT file  (in)
   CHARACTER(LEN=256)                          :: cf_tfil        ! T file  (in)
   CHARACTER(LEN=256)                          :: cf_sfil        ! S file  (in) optional
@@ -234,7 +235,9 @@ PROGRAM cdftransport
   narg= iargc()
   ! Print usage if no argument
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdftransport -u U-file -v V-file [-t T-file] [-s S-file] [-vt VT-file]'
+     PRINT *,' usage : cdftransport -u U-file -v V-file [-t T-file] [-s S-file] '
+     PRINT *,'                  ... [-vt VT-file] [-vtvar VT-var VS-var ]'
+     PRINT *,'                  ... [-ut UT-file] [-utvar UT-var US-var ]'
      PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... '
      PRINT *,'                  ... [-full] [-time jt] [-vvl] [-self] ...'
      PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix][-cumul]'
@@ -258,7 +261,15 @@ PROGRAM cdftransport
      PRINT *,'     OPTIONS :'
      PRINT *,'      [-vt VT-file]: netcdf file with mean values of vt, vs, ut, us for heat'
      PRINT *,'                    and salt transport. This option is mandatory unless '
-     PRINT *,'                    -noheat option is used.'
+     PRINT *,'                    -noheat option is used. If VT-file only hold V-fields,'
+     PRINT *,'                    use also -ut option for U-fields.'
+     PRINT *,'      [-ut UT-file]: netcdf file with mean values of  ut, us for heat'
+     PRINT *,'                    and salt transport. This option is used when all variables'
+     PRINT *,'                    are not in VT-file.'
+     PRINT *,'      [ -utvar UT-var US-var ] : specify the name of the ut us variables in'
+     PRINT *,'                    UT-file.'
+     PRINT *,'      [ -vtvar VT-var VS-var ] : specify the name of the vt vs variables in'
+     PRINT *,'                    VT-file.'
      PRINT *,'      [-t T-file]: Temperature and Salinity file used with -TS option.'
      PRINT *,'      [-s S-file]: Salinity file (-TS option), if salinity not in T-file.'
      PRINT *,'      [-test u v]: use constant the u and v velocity components for sign '
@@ -316,12 +327,18 @@ PROGRAM cdftransport
   ijarg  = 1
   CALL SetGlobalAtt(cglobal)
   cf_sfil='none'
+  cf_utfil='none'
 
   ! Browse command line for arguments and/or options
   DO WHILE (ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
      CASE ('-vt'    ) ; CALL getarg (ijarg, cf_vtfil) ; ijarg=ijarg+1 
+     CASE ('-ut'    ) ; CALL getarg (ijarg, cf_utfil) ; ijarg=ijarg+1 
+     CASE ('-utvar' ) ; CALL getarg (ijarg, cn_vozout); ijarg=ijarg+1 
+         ;            ; CALL getarg (ijarg, cn_vozous); ijarg=ijarg+1 
+     CASE ('-vtvar' ) ; CALL getarg (ijarg, cn_vomevt); ijarg=ijarg+1 
+         ;            ; CALL getarg (ijarg, cn_vomevs); ijarg=ijarg+1 
      CASE ('-u'     ) ; CALL getarg (ijarg, cf_ufil ) ; ijarg=ijarg+1 
      CASE ('-v'     ) ; CALL getarg (ijarg, cf_vfil ) ; ijarg=ijarg+1 
      CASE ('-t'     ) ; CALL getarg (ijarg, cf_tfil ) ; ijarg=ijarg+1 
@@ -380,6 +397,8 @@ PROGRAM cdftransport
         lchk = lchk .OR. chkfile(cf_tfil )
         lchk = lchk .OR. chkfile(cf_sfil )
      ELSE IF (lheat  ) THEN 
+        IF ( cf_utfil == 'none' ) cf_utfil=cf_vtfil 
+        lchk = lchk .OR. chkfile(cf_utfil)
         lchk = lchk .OR. chkfile(cf_vtfil)
      ENDIF
   ENDIF
@@ -625,8 +644,8 @@ PROGRAM cdftransport
                     dlut(:,:) = 0.d0
                     dlus(:,:) = 0.d0
                  ELSE
-                    dlut(:,:) = getvar(cf_vtfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
-                    dlus(:,:) = getvar(cf_vtfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
+                    dlut(:,:) = getvar(cf_utfil, cn_vozout,   jk, npiglo, npjglo, ktime=itime)
+                    dlus(:,:) = getvar(cf_utfil, cn_vozous,   jk, npiglo, npjglo, ktime=itime)
                  ENDIF
                  dlvt(:,:) = getvar(cf_vtfil, cn_vomevt,   jk, npiglo, npjglo, ktime=itime)
                  dlvs(:,:) = getvar(cf_vtfil, cn_vomevs,   jk, npiglo, npjglo, ktime=itime)
