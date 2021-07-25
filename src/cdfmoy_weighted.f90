@@ -197,7 +197,8 @@
   ENDIF
 
   DO jvar = 1,nvars
-     ll_vvl=lg_vvl .AND.  (ipk(jvar) > 1) ! JMM : assume 2D var are not weigthed averaged !!!
+     ll_vvl=lg_vvl .AND.  (ipk(jvar) > 1 .AND. cv_names(jvar)/= cv_e3) 
+     ! JMM : assume 2D var are not weigthed averaged as well as e3 variable in case of vvl
      IF ( cv_names(jvar) == cn_vlon2d .OR. &
           cv_names(jvar) == cn_vlat2d .OR. &
           cv_names(jvar) == 'none'    .OR. &
@@ -224,7 +225,7 @@
            DEALLOCATE (v1d, dtab1d)
         ELSE
         DO jk = 1, ipk(jvar)
-           PRINT *,'Level ',jk
+           PRINT *,'Level ',jk, TRIM( cv_names(jvar))
            dtab(:,:) = 0.d0 ; dtotal_time = 0.d0 ; dsumw=0.d0
            IF ( ll_vvl ) THEN  ; de3s(:,:)  = 0.d0    ; ENDIF
 
@@ -236,7 +237,9 @@
 
               IF ( ll_vvl ) THEN
                  cf_e3     = cf_in
-                 e3(:,:)   = getvar (cf_e3, cv_e3, jk ,npiglo, npjglo, ktime=jt )
+!
+! in this program we do not support multiple time frame per file ==> ktime = 1
+                 e3(:,:)   = getvar (cf_e3, cv_e3, jk ,npiglo, npjglo, ktime=1 )
                  de3s(:,:) = de3s(:,:) + iweight * e3(:,:)  ! cumulate e3
                  dtab(:,:) = dtab(:,:) + iweight * e3(:,:) * v2d(:,:)
               ELSE
