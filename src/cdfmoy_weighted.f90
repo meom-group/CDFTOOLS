@@ -31,6 +31,7 @@
   INTEGER(KIND=4)                               :: narg, iargc, ijarg  ! command line
   INTEGER(KIND=4)                               :: npiglo, npjglo, npk ! size of the domain
   INTEGER(KIND=4)                               :: nvars               ! number of variables in a file
+  INTEGER(KIND=4)                               :: nvare3              ! number of variables in e3 file
   INTEGER(KIND=4)                               :: nfiles              ! number of tags to process
   INTEGER(KIND=4)                               :: iweight             ! variable weight
   INTEGER(KIND=4)                               :: ncout               ! ncid of output file
@@ -56,16 +57,20 @@
   CHARACTER(LEN=256)                            :: cv_skip             ! name of  variable to skip
   CHARACTER(LEN=256)                            :: cldum               ! dummy character variable
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_lst              ! file name list of input files
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cf_lste3            ! file name list of e3 file (vvl)
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names            ! array of var name
+  CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_namese3          ! array of var name in e3 file
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep             ! array of possible depth name or 3rd dim.
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar             ! structure for output var attributes
+  TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvare3           ! dummy in this case
 
   LOGICAL                                       :: lold5d = .FALSE.      ! flag for old5d output
   LOGICAL                                       :: lmonth = .FALSE.      ! flag for true month output
   LOGICAL                                       :: lleap  = .FALSE.      ! flag for leap years
   LOGICAL                                       :: lnc4   = .FALSE.      ! flag for netcdf4 output with chunking and deflation
   LOGICAL                                       :: ll_vvl                ! working flag for vvl AND 3D fields
+  LOGICAL                                       :: le3fil = .FALSE.      ! use external e3 file (vvl)
   LOGICAL                                       :: lchk                  ! flag for checking file existence
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -73,7 +78,7 @@
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmoy_weighted -l LST-files [-old5d ] [-month] [-leap] ...'
-     PRINT *,'       ... [-skip variable] [-vvl] [-o OUT-file] [-nc4]'
+     PRINT *,'       ... [-skip variable] [-vvl] [-e3 LST-e3] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute weighted average of files. The weight for each file is read from'
@@ -98,6 +103,8 @@
      PRINT *,'             When used set 29 days in february.'
      PRINT *,'       [-skip variable ] : name of variable to skip, in the input file. '
      PRINT *,'       [-vvl ] : Use time-varying vertical metrics for weighted averages.'
+     PRINT *,'       [-e3  LST-e3] : give a list of file where to find the e3 if not in data'
+     PRINT *,'                      file. List must be in the same order as in -l arguments'
      PRINT *,'       [-o OUT-file] : Specify the name for output file instead of'
      PRINT *,'           ', TRIM(cf_out)
      PRINT *,'       [-nc4 ] : Use netcdf4 chunking and deflation in output file.'
@@ -121,12 +128,14 @@
   DO WHILE ( ijarg <= narg ) 
      CALL getarg ( ijarg, cldum ) ; ijarg = ijarg +1
      SELECT CASE ( cldum )
-     CASE ( '-l'     ) ; CALL GetFileList
+     CASE ( '-l'     ) ; CALL GetFileList(cf_lst)
         ! options
      CASE ( '-old5d' ) ; lold5d = .TRUE.
      CASE ( '-month' ) ; lmonth = .TRUE.
      CASE ( '-leap'  ) ; lleap  = .TRUE.
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
+     CASE ( '-e3'    ) ; le3fil = .TRUE.  ; CALL GetFileList(cf_lste3)
+
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
      CASE ( '-o'     ) ; CALL getarg ( ijarg, cf_out ) ; ijarg = ijarg +1
      CASE ( '-skip'  ) ; CALL getarg ( ijarg, cv_skip) ; ijarg = ijarg +1
@@ -140,8 +149,14 @@
   ENDDO
   IF ( lchk ) STOP 99 ! missing files  
  
+  IF ( .NOT. le3fil ) THEN
+     ALLOCATE ( cf_lste3(nfiles) )
+     cf_lste3 = cf_lst
+  ENDIF
+ 
   ! work with 1rst file for dimension lookup
   cf_in=cf_lst(1)
+  
 
   ! additional check in case of old_5d averaged files
   IF ( lold5d .OR. lmonth ) THEN
@@ -187,6 +202,18 @@
   ! for vvl, look for e3x variable in the file
   cv_e3 = 'none'
   IF ( lg_vvl ) THEN
+   IF ( le3fil ) THEN
+    nvare3=getnvar(cf_lste3(1))
+    ALLOCATE(cv_namese3(nvare3))
+    ALLOCATE (stypvare3(nvare3)  )
+    cv_namese3(:) = getvarname(cf_lste3(1), nvare3, stypvare3)
+    DO jvar = 1, nvare3
+      IF ( INDEX(cv_namese3(jvar), 'e3' ) /= 0 .OR. INDEX(cv_namese3(jvar), cn_ve3tvvl ) /= 0 ) THEN
+         cv_e3=cv_namese3(jvar)
+         EXIT
+      ENDIF
+    ENDDO
+   ELSE
     DO jvar = 1, nvars
       ! Caution for CMIP6 if cn_ve3xxx differs from file to files... 
       IF ( INDEX(cv_names(jvar), 'e3' ) /= 0 .OR. INDEX(cv_names(jvar), cn_ve3tvvl ) /= 0 ) THEN
@@ -194,6 +221,7 @@
          EXIT
       ENDIF
     ENDDO
+   ENDIF
   ENDIF
 
   DO jvar = 1,nvars
@@ -236,10 +264,11 @@
               v2d(:,:)  = getvar(cf_in, cv_names(jvar), jk ,npiglo, npjglo )
 
               IF ( ll_vvl ) THEN
-                 cf_e3     = cf_in
+                 cf_e3     = cf_lste3(jt)
 !
 ! in this program we do not support multiple time frame per file ==> ktime = 1
                  e3(:,:)   = getvar (cf_e3, cv_e3, jk ,npiglo, npjglo, ktime=1 )
+                 WHERE (e3 <= 0 ) e3 = 0.1  ! never mind, it is masked
                  de3s(:,:) = de3s(:,:) + iweight * e3(:,:)  ! cumulate e3
                  dtab(:,:) = dtab(:,:) + iweight * e3(:,:) * v2d(:,:)
               ELSE
@@ -334,7 +363,7 @@ CONTAINS
     ierr  = putheadervar(ncout , cf_in,   npiglo, npjglo, npk,      cdep=cv_dep               )
   END SUBROUTINE CreateOutput
 
-  SUBROUTINE GetFileList
+  SUBROUTINE GetFileList (cd_lst )
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE GetFileList  ***
     !!
@@ -343,6 +372,7 @@ CONTAINS
     !!
     !! ** Method  :  Scan the command line until a '-' is found
     !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), DIMENSION(:), ALLOCATABLE, INTENT(inout) :: cd_lst
     INTEGER (KIND=4)  :: ji
     INTEGER (KIND=4)  :: icur
     !!----------------------------------------------------------------------
@@ -357,9 +387,9 @@ CONTAINS
        ELSE                          ; EXIT
        ENDIF
     ENDDO
-    ALLOCATE (cf_lst(nfiles) )
+    ALLOCATE (cd_lst(nfiles) )
     DO ji = icur, icur + nfiles -1
-       CALL getarg(ji, cf_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
+       CALL getarg(ji, cd_lst( ji -icur +1 ) ) ; ijarg=ijarg+1
     END DO
   END SUBROUTINE GetFileList
 
