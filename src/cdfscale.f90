@@ -30,7 +30,8 @@ PROGRAM cdfscale
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk                    ! arrays of vertical level for each var
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var                 ! arrays of var id
 
-  REAL(KIND=4)                                  :: vscale                 ! spval, replace value
+  REAL(KIND=4)                                  :: vscale                 ! multiplicative scaling factor
+  REAL(KIND=4)                                  :: vdivide                ! division factor
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: tab                    ! Arrays for data
 
   CHARACTER(LEN=256)                            :: cldum                  ! dummy string for getarg
@@ -40,16 +41,19 @@ PROGRAM cdfscale
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names               ! array of var name
 
   TYPE(variable), DIMENSION(:),     ALLOCATABLE :: stypvar                ! type for attributes
+  
+  LOGICAL                                       :: ll_scale = .true. 
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfscale -f INOUT-file -v IN-var -s SCAL-factor '
+     PRINT *,' usage : cdfscale -f INOUT-file -v IN-var -s SCAL-factor [-d DIVISION-factor]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
-     PRINT *,'       Replace IN-var in INOUT-file by its values x SCAL-factor.'
+     PRINT *,'       Replace IN-var in INOUT-file by its values x SCAL-factor or divided by'
+     PRINT *,'       DIVISION-factor if option -d is used instead of -s. '
      PRINT *,'      '
      PRINT *,'     CAUTION :'
      PRINT *,'      #############################'
@@ -60,6 +64,8 @@ PROGRAM cdfscale
      PRINT *,'       -f INOUT-file : netcdf input file (!overwritten!).'
      PRINT *,'       -v IN-var : netcdf variable to be scaled.'
      PRINT *,'       -s SCAL-factor : Scale value to be used (multiplication factor).'
+     PRINT *,'       -d DIVISION-factor : Scale value to be used (division factor).'
+     PRINT *,'        ONLY one of -s or -d option must be used.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : input file is rewritten ' 
@@ -74,6 +80,7 @@ PROGRAM cdfscale
       CASE ( '-f'   ) ; CALL getarg(ijarg, cf_inout ) ; ijarg=ijarg+1  ; ireq=ireq+1
       CASE ( '-v'   ) ; CALL getarg(ijarg, cv_inout ) ; ijarg=ijarg+1  ; ireq=ireq+1
       CASE ( '-s'   ) ; CALL getarg(ijarg, cldum    ) ; ijarg=ijarg+1  ; ireq=ireq+1 ;  READ(cldum,*) vscale
+      CASE ( '-d'   ) ; CALL getarg(ijarg, cldum    ) ; ijarg=ijarg+1  ; ireq=ireq+1 ;  READ(cldum,*) vdivide ; ll_scale=.false.
       CASE DEFAULT    ; PRINT *,' ERROR :', TRIM(cldum),' : unknown option.' ; STOP 99
       END SELECT
   ENDDO
@@ -118,13 +125,22 @@ PROGRAM cdfscale
 
   PRINT *,' Working with ',TRIM(cv_inout),' variable number ', ivar
   PRINT *,'    IPK   : ', ipk(ivar)
-  PRINT *,'    scale : ', vscale
+  IF ( ll_scale ) THEN
+    PRINT *,'    scale : ', vscale
+  ELSE
+    PRINT *,'    divide : ', vdivide
+  ENDIF
 
   ! work only for ivar
   DO jt=1,npt
+    PRINT *, '  JT = ', jt
     DO jk = 1, ipk(ivar) 
       tab(:,:) = getvar(cf_inout, cv_names(ivar), jk, npiglo, npjglo, ktime=jt )
-      tab(:,:) = tab(:,:) * vscale
+      IF ( ll_scale ) THEN
+        tab(:,:) = tab(:,:) * vscale
+      ELSE
+        tab(:,:) = tab(:,:) / vdivide
+      ENDIF
       ierr = putvar(ncid, id_var(ivar), tab, jk, npiglo, npjglo, ktime=jt)
     ENDDO
   END DO
