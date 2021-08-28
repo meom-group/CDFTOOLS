@@ -20,7 +20,7 @@ OMP=-qopenmp
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
 #FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian $(OMP)
 
-FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -fp-model precise $(OMP)
+FFLAGS= -O2  $(NCDF) $(NC4) $(CMIP6) -fp-model precise $(OMP)
 #FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g $(OMP)
 
 LMPI=-lmpich
