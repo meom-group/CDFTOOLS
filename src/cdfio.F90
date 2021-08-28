@@ -449,6 +449,10 @@ CONTAINS
        ENDIF
     END DO
     istatus = NF90_ENDDEF(kout)
+    IF ( istatus /= NF90_NOERR)   THEN
+       PRINT *, " Error in CreateVar :", TRIM(NF90_STRERROR(istatus) )
+       STOP 98
+    ENDIF
 
   END FUNCTION createvar
 
