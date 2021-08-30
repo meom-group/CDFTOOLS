@@ -656,6 +656,11 @@ CONTAINS
          &              idum         ,  iigs         , idum,         idum,         &
          &              cd_coord=cn_fhgr, cd_point='F')
 
+  IF ( lg_vvl) THEN
+     cn_fe3v = cf_vfil
+     cn_ve3v = cn_ve3vvvl
+  ENDIF
+
     ! ORCA2 fails to cdf_findij ( Med sea ... )
     !   iiw     = 99
     !   iie     = 138
@@ -702,6 +707,7 @@ CONTAINS
                 e3vrapid(:,jk) = e31d(jk)
              ELSE
                 zwk(:,:) = getvar(cn_fe3v, cn_ve3v,jk,npiglo,1,kimin=iiw,kjmin=ijrapid, ktime=it, ldiom=.NOT.lg_vvl )
+                WHERE (zwk(:,1) == 0.d0 ) zwk(:,1)=0.1 ! arbitrary to avoid /O
                 e3vrapid(:,jk) = zwk(:,1)
              ENDIF
           ENDDO
