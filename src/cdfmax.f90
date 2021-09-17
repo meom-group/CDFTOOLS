@@ -57,7 +57,7 @@ PROGRAM cdfmax
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmax -f IN-file -v IN-var [-lev kmin kmax ] ...'
      PRINT *,'      ... [-zoom imin imax jmin jmax] [-time tmin tmax ] ...'
-     PRINT *,'      ... [-fact multfact] [-xy ]'
+     PRINT *,'      ... [-fact multfact] [-xy ] [-lon LON-name] [-lat LAT-name]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Find minimum and maximum of a file as well as their respective '
@@ -77,6 +77,8 @@ PROGRAM cdfmax
      PRINT *,'       [-fact multfact] : use a multiplicative factor for the output'
      PRINT *,'       [-xy ] : force horizontal slab even in the case of a degenerated'
      PRINT *,'                       zoomed area.'
+     PRINT *,'       [-lon LON-name] : name of the longitude variable in file [',TRIM(cn_vlon2d),']'
+     PRINT *,'       [-lat LAT-name] : name of the latitude  variable in file [',TRIM(cn_vlat2d),']'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -102,6 +104,8 @@ PROGRAM cdfmax
      CASE ( '-time' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
         ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
      CASE ( '-xy'   ) ; lforcexy = .TRUE.
+     CASE ( '-lon'  ) ; CALL getarg(ijarg, cn_vlon2d) ; ijarg = ijarg + 1
+     CASE ( '-lat'  ) ; CALL getarg(ijarg, cn_vlat2d) ; ijarg = ijarg + 1
      CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
