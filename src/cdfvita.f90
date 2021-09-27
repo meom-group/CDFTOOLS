@@ -54,6 +54,7 @@ PROGRAM cdfvita
   CHARACTER(LEN=256)                         :: cf_tfil                 ! GridT file for T position
   CHARACTER(LEN=256)                         :: cf_out='vita.nc'        ! output file name
   CHARACTER(LEN=256)                         :: cldum                   ! dummy char variable
+  
 
   LOGICAL                                    :: lvertical = .FALSE.     ! vertical velocity  flag 
   LOGICAL                                    :: lperio    = .FALSE.     ! E_W periodicity flag 
@@ -66,7 +67,8 @@ PROGRAM cdfvita
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfvita -u U-file -v V-file -t T-file [-w W-file] [-geo] [-cubic]'
-     PRINT *,'               ... [-o OUT-file] [-nc4] [-lev LST-level]'
+     PRINT *,'             ... [-uvar U-var] [-vvar V-var] [-o OUT-file] [-nc4] ...'
+     PRINT *,'             ... [-lev LST-level]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Creates a file with velocity components, module  and direction'
@@ -90,6 +92,8 @@ PROGRAM cdfvita
      PRINT *,'       [-o OUT-file ] : Specify name of output file instead of ',TRIM(cf_out)
      PRINT *,'       [-lev LST-level] : specify a blank-separated list of levels to be used.'
      PRINT *,'              (default option is to use all input levels).'
+     PRINT *,'       [-uvar U-var] : specify name of u-field. Default: ',TRIM(cn_vozocrtx)
+     PRINT *,'       [-vvar V-var] : specify name of v-field. Default: ',TRIM(cn_vomecrty)
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -112,17 +116,19 @@ PROGRAM cdfvita
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-u'   ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1
-     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+     CASE ( '-u'   ) ; CALL getarg(ijarg, cf_ufil )     ; ijarg=ijarg+1
+     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil )     ; ijarg=ijarg+1
         ! options
      CASE ( '-lev' ) ; CALL GetLevList
-     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
-     CASE ( '-w'   ) ; CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1
+     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil )     ; ijarg=ijarg+1
+     CASE ( '-w'   ) ; CALL getarg(ijarg, cf_wfil )     ; ijarg=ijarg+1
         ;              lvertical=.TRUE.
+     CASE ( '-uvar') ; CALL getarg(ijarg, cn_vozocrtx ) ; ijarg=ijarg+1
+     CASE ( '-vvar') ; CALL getarg(ijarg, cn_vomecrty ) ; ijarg=ijarg+1
      CASE ( '-geo' ) ; lgeo = .TRUE.
      CASE ('-cubic') ; lcub = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  )     ; ijarg=ijarg+1
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
