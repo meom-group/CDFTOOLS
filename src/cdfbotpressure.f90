@@ -62,6 +62,7 @@ PROGRAM cdfbotpressure
   LOGICAL                                   :: lchk  =.FALSE.      ! flag for missing files
   LOGICAL                                   :: lnc4  =.FALSE.      ! Use nc4 with chunking and deflation
   LOGICAL                                   :: llev  =.FALSE.      ! Save pressure at each level in the output
+  LOGICAL                                   :: ll_teos10  = .FALSE.! teos10 flag
 
   TYPE(variable), DIMENSION(:), ALLOCATABLE :: stypvar             ! extension for attributes
   !!----------------------------------------------------------------------
@@ -70,7 +71,8 @@ PROGRAM cdfbotpressure
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfbotpressure -t T-file [-s S-file] [-full] [-ssh] [-ssh2 ] [-lev] ...'
-     PRINT *,'             ... [--ssh-file SSH-file] [-xtra ] [-vvl ] [ -o OUT-file ] [-nc4]'
+     PRINT *,'             ... [--ssh-file SSH-file] [-xtra ] [-vvl ] [-teos10] ... '
+     PRINT *,'             ... [ -o OUT-file ] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'          Compute the bottom pressure (pa) from in situ density.'
@@ -100,6 +102,9 @@ PROGRAM cdfbotpressure
      PRINT *,'        [-nc4]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
+     PRINT *,'        [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     print *,'                  Temperature should be conservative temperature (CT) in deg C.'
+     print *,'                  Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '
@@ -135,9 +140,13 @@ PROGRAM cdfbotpressure
      CASE ( '-vvl'     ) ; lg_vvl= .TRUE. 
      CASE ( '-o'       ) ; CALL getarg( ijarg,cf_out) ; ijarg = ijarg + 1
      CASE ( '-nc4'     ) ; lnc4  = .TRUE.
+     CASE ( '-teos10'  ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum) ,' unknown option.'  ; STOP 99
      END SELECT
   END DO
+
+  CALL eos_init( ll_teos10 )
+
   IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
   IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil
 

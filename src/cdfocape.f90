@@ -72,6 +72,7 @@ PROGRAM cdfocape
 
   LOGICAL                                   :: lchk  = .FALSE.    ! flag for missing files
   LOGICAL                                   :: lnc4  = .FALSE.    ! flag for missing files
+  LOGICAL                                   :: ll_teos10  = .FALSE.  ! teos10 flag
   !!--------------------------------------------------------------------------------------
   CALL ReadCdfNames()
   !!  Read command line and output usage message if not compliant.
@@ -79,7 +80,7 @@ PROGRAM cdfocape
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfocape -dep REF-dep -t T-file [-s S-file] [-w imin imax jmin jmax]'
-     PRINT *,'                   [-nc4] [-o OUT-file] '  
+     PRINT *,'                   [-nc4] [-o OUT-file] [-teos10]'  
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute OCAPE (Ocean Convective Available Potential Energy) from TS '
@@ -90,15 +91,18 @@ PROGRAM cdfocape
      PRINT *,'        -t T-file : name of the file holding temperature and salinity '
      PRINT *,'      '
      PRINT *,'     OPTIONS :'  
-     PRINT *,'        -s S-file : Specify salinity file if not T-file. ' 
-     PRINT *,'        -w imin imax jmin jmax : spatial window where mean value'
+     PRINT *,'        [-s S-file ] : Specify salinity file if not T-file. ' 
+     PRINT *,'        [-w imin imax jmin jmax ] : spatial window where mean value'
      PRINT *,'           is computed:'
      PRINT *,'                  if imin = 0 then ALL i are taken'
      PRINT *,'                  if jmin = 0 then ALL j are taken'
-     PRINT *,'        -o : Specify output file name instead of ocape.nc ' 
-     PRINT *,'        -nc4 : Use netcdf4 output with chunking and deflation level 1 ' 
+     PRINT *,'        [-o ] : Specify output file name instead of ocape.nc ' 
+     PRINT *,'        [-nc4 ] : Use netcdf4 output with chunking and deflation level 1 ' 
      PRINT *,'         This option is effective only if cdftools are compiled with' 
      PRINT *,'         a netcdf library supporting chunking and deflation.' 
+     PRINT *,'        [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'     mesh_hgr.nc, mesh_zgr.nc, mask.nc '
@@ -123,19 +127,22 @@ PROGRAM cdfocape
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
-     CASE ( '-dep' ) ; CALL getarg(ijarg, cldum )   ; ijarg=ijarg+1 ; READ(cldum,*) ref_dep
+     CASE ( '-t'      ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-dep'    ) ; CALL getarg(ijarg, cldum )   ; ijarg=ijarg+1 ; READ(cldum,*) ref_dep
         ! option
-     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
-     CASE ( '-w'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) iimin
-                     ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) iimax
-                     ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ijmin
-                     ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ijmax
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_root ) ; ijarg=ijarg+1
-     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE ( '-s'      ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ( '-w'      ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) iimin
+                        ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) iimax
+                        ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ijmin
+                        ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ijmax
+     CASE ( '-o'      ) ; CALL getarg(ijarg, cf_root ) ; ijarg=ijarg+1
+     CASE ( '-nc4'    ) ; lnc4 = .TRUE.
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 1
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
  WRITE(cldum, '(I4.4)') INT(ref_dep)
 

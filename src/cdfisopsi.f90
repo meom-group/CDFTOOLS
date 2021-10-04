@@ -76,6 +76,7 @@ PROGRAM cdfisopsi
 
   LOGICAL            :: lnc4 = .FALSE.                       ! flag for netcdf4 output
   LOGICAL            :: lchk = .FALSE.                       ! flag for existence of files
+  LOGICAL            :: ll_teos10  = .FALSE.                 ! teos10 flag
 
   TYPE(variable) , DIMENSION(jp_vars) :: stypvar         ! structure for attributes
   !!----------------------------------------------------------------------
@@ -85,7 +86,7 @@ PROGRAM cdfisopsi
 
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfisopsi -ref REF-level -sig TGT-sigma -t T-file [-o OUT-file]...'
-     PRINT *,'          ... [-s S-file]  [--ssh-file SSH-file] [-nc4] [-vvl] '
+     PRINT *,'          ... [-s S-file]  [--ssh-file SSH-file] [-nc4] [-vvl] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute a ''geostrophic streamfunction'', projected on an isopycn.'
@@ -110,6 +111,9 @@ PROGRAM cdfisopsi
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'        [-vvl ] : use time varying vertical metrics.'
+     PRINT *,'        [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr) 
@@ -147,10 +151,13 @@ PROGRAM cdfisopsi
      CASE ( '-s'       ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg+1 
      CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg= ijarg+1
      CASE ( '-o'       ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg+1 
-     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
-     CASE ( '-vvl'     ) ; lg_vvl = .TRUE.
+     CASE ( '-nc4'     ) ; lnc4      = .TRUE.
+     CASE ( '-vvl'     ) ; lg_vvl    = .TRUE.
+     CASE ( '-teos10'  ) ; ll_teos10 = .TRUE. 
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
   IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil

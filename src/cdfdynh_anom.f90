@@ -15,7 +15,7 @@ PROGRAM cdfdynh_anom
   !!         : 4.0  : 03/2017  : J.M. Molines  
   !!----------------------------------------------------------------------
   USE cdfio
-  USE eos, ONLY : sigmai
+  USE eos, ONLY : sigmai, eos_init
   USE modcdfnames
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
@@ -67,13 +67,14 @@ PROGRAM cdfdynh_anom
   LOGICAL                                   :: lnc4  = .FALSE.   ! Use nc4 with chunking and deflation
   LOGICAL                                   :: limit = .FALSE.   ! flag set if limit are used (2D case)
   LOGICAL                                   :: lchk  = .FALSE.   ! flag for file existence checking
+  LOGICAL                                   :: ll_teos10  = .FALSE. ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfdynh_anom -t T-file [-s S-file] [-limit lev1 lev2] [-vvl] ...'
-     PRINT *,'             ... [--ssh-file SSH-file] [-o OUT-file] [-nc4]'
+     PRINT *,'             ... [--ssh-file SSH-file] [-o OUT-file] [-nc4] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute dynamic height anomaly from T-file given as argument.'
@@ -99,6 +100,9 @@ PROGRAM cdfdynh_anom
      PRINT *,'       [-nc4] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                This option is effective only if cdftools are compiled with'
      PRINT *,'                a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '
@@ -129,15 +133,19 @@ PROGRAM cdfdynh_anom
      CASE ( '-s'       ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
      CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg=ijarg+1
      CASE ( '-o'       ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1 
-        ;                  lout  = .TRUE.
-     CASE ( '-nc4'     ) ; lnc4  = .TRUE.
-     CASE ( '-vvl'     ) ; lg_vvl= .TRUE.
-     CASE ( '-limit'   ) ; limit = .TRUE.
+        ;                  lout      = .TRUE.
+     CASE ( '-nc4'     ) ; lnc4      = .TRUE.
+     CASE ( '-vvl'     ) ; lg_vvl    = .TRUE.
+     CASE ( '-teos10'  ) ; ll_teos10 = .TRUE. 
+
+     CASE ( '-limit'   ) ; limit     = .TRUE.
         ;                  CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev1
         ;                  CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) nlev2
      CASE DEFAULT        ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
   IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil

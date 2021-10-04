@@ -86,13 +86,15 @@ PROGRAM cdfmht_gsop
 
   LOGICAL                                     :: llglo = .FALSE.            ! indicator for presence of new_maskglo.nc file
   LOGICAL                                     :: lchk  = .FALSE.            ! missing files flag
+  LOGICAL                                     :: ll_teos10  = .FALSE.       ! teos10 flag
+
   !!-----------------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
 
   IF ( narg == 0 ) THEN
-     PRINT *,' usage :  cdfmht_gsop -v V-file -t T-file [-s S-file] [-o OUT-file]'
+     PRINT *,' usage :  cdfmht_gsop -v V-file -t T-file [-s S-file] [-o OUT-file] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the meridional heat transport(MHT) for the Atlantic basin.'
@@ -114,6 +116,9 @@ PROGRAM cdfmht_gsop
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-s S-file]   : specify salinity file if not T-file.'
      PRINT *,'       [-o OUT-file] : output file name instead of ',TRIM(cf_out)
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' and ',TRIM(cn_fbasins) 
@@ -136,14 +141,18 @@ PROGRAM cdfmht_gsop
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
-     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
+     CASE ( '-v'      ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+     CASE ( '-t'      ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
         ! option
-     CASE ( '-s'   ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
+     CASE ( '-s'      ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1
+     CASE ( '-o'      ) ; CALL getarg(ijarg, cf_out     ) ; ijarg=ijarg+1
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT    ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.'; STOP 99 
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
+
   IF ( cf_sfil == 'none' ) cf_sfil = cf_tfil
 
   lchk = lchk .OR. chkfile(cn_fzgr)

@@ -83,8 +83,9 @@ PROGRAM cdfcensus
   TYPE(variable), DIMENSION(4)              :: stypvar
 
   LOGICAL                                   :: lchk
-  LOGICAL                                   :: lfull = .FALSE.   ! flag for full step
-  LOGICAL                                   :: lnc4  = .FALSE.   ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: lfull      = .FALSE.   ! flag for full step
+  LOGICAL                                   :: lnc4       = .FALSE.   ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: ll_teos10  = .FALSE.   ! teos10 flag
 
   ! Initialisations
   DATA ztmin, ztmax, zdt /-2.0, 38.0, 0.05/
@@ -100,7 +101,8 @@ PROGRAM cdfcensus
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfcensus -t T-file [-log nlog] [-zoom imin imax jmin jmax] ...'
      PRINT *,'              ... [-klim kmin kmax] [-s S-file] [-srange smin smax ds] ... '
-     PRINT *,'              ... [-trange tmin tmax dt] [-full] [-vvl] [-o OUT-file] [-nc4]'
+     PRINT *,'              ... [-trange tmin tmax dt] [-full] [-vvl] [-teos10] ...'
+     PRINT *,'              ... [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute the volumetric water mass census: the ocean is divided in'
@@ -131,6 +133,9 @@ PROGRAM cdfcensus
      PRINT *,'       [-nc4 ] : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'            This option is effective only if cdftools are compiled with'
      PRINT *,'            a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),'  and ',TRIM(cn_fzgr) 
@@ -167,9 +172,12 @@ PROGRAM cdfcensus
      CASE ( '-full'  ) ; lfull  = .TRUE.
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
+     CASE ( '-teos10') ; ll_teos10 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+
+  CALL eos_init( ll_teos10 )
   IF ( cf_sfil == 'none') cf_sfil=cf_tfil
   cglobal = 'Census computed from '//TRIM(cf_tfil)
 

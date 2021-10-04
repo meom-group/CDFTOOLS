@@ -74,7 +74,9 @@ PROGRAM cdfets
   TYPE (variable), DIMENSION(2)               :: stypvar                   ! structure for attribute
 
   LOGICAL                                     :: lchk                      ! flag for missing files
-  LOGICAL                                     :: lnc4 = .FALSE.            ! flag for missing files
+  LOGICAL                                     :: lnc4       = .FALSE.      ! flag for missing files
+  LOGICAL                                     :: ll_teos10  = .FALSE.      ! teos10 flag
+
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -102,6 +104,9 @@ PROGRAM cdfets
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file] : use time varying vertical metrics. W-file holds the '
      PRINT *,'                 time-varying e3w vertical metrics.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr)
@@ -117,17 +122,21 @@ PROGRAM cdfets
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ('-t','-f') ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ('-t','-f'  ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
         ! options
-     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
-     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE ( '-nc4' ) ; lnc4   = .TRUE.
-     CASE ( '-vvl' ) ; lg_vvl = .TRUE.
+     CASE ( '-s'      ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ( '-o'      ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-nc4'    ) ; lnc4      = .TRUE.
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
+     CASE ( '-vvl'    ) ; lg_vvl    = .TRUE.
         ;              CALL getarg (ijarg, cn_fe3w) ; ijarg=ijarg+1 ! change default cn_fe3w in this case
         ;              cn_ve3w = cn_ve3wvvl                         ! change default cn_ve3w
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
+
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil 
 
   lchk = chkfile (cf_tfil) 

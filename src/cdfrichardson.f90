@@ -65,13 +65,14 @@ PROGRAM cdfrichardson
   LOGICAL                                      :: lchk                     ! check missing files
   LOGICAL                                      :: lfull  = .FALSE.         ! full step flag
   LOGICAL                                      :: lnc4   = .FALSE.         ! Use nc4 with chunking and deflation
+  LOGICAL                                      :: ll_teos10  = .FALSE.     ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfrichardson  -t T-file -u U-file -v V-file [-s S-file]...'
-     PRINT *,'          ...  [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file] '
+     PRINT *,'          ...  [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Richardson Number (Ri) according to temperature,' 
@@ -98,6 +99,9 @@ PROGRAM cdfrichardson
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file ]: use time-varying vertical metrics. W-file holds the'
      PRINT *,'             time-varying e3w vertical metrics.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fzgr),' is needed for this program.' 
@@ -116,20 +120,23 @@ PROGRAM cdfrichardson
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
-     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
-     CASE ( '-u'   ) ; CALL getarg (ijarg, cf_ufil) ; ijarg = ijarg + 1
-     CASE ( '-v'   ) ; CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1
+     CASE ( '-t'      ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-u'      ) ; CALL getarg (ijarg, cf_ufil) ; ijarg = ijarg + 1
+     CASE ( '-v'      ) ; CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1
         ! options
-     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
-     CASE ('-W'    ) ; l_w   = .TRUE.
-     CASE ('-full' ) ; lfull = .TRUE. ; cglobal = 'full step computation'
-     CASE ( '-nc4' ) ; lnc4  = .TRUE.
-     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-s'      ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
+     CASE ('-W'       ) ; l_w   = .TRUE.
+     CASE ('-full'    ) ; lfull = .TRUE. ; cglobal = 'full step computation'
+     CASE ( '-nc4'    ) ; lnc4  = .TRUE.
+     CASE ( '-o'      ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE ( '-vvl' ) ; lg_vvl= .TRUE.
         ;              CALL getarg (ijarg, cf_e3w) ; ijarg = ijarg + 1
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 

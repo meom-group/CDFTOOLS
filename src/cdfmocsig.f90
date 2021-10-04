@@ -105,6 +105,7 @@ PROGRAM cdfmocsig
   LOGICAL                                         :: leiv   = .FALSE.     ! flag for Eddy Induced Velocity (GM)
   LOGICAL                                         :: lfull  = .FALSE.     ! flag for full step
   LOGICAL                                         :: lchk   = .FALSE.     ! flag for missing file
+  LOGICAL                                         :: ll_teos10  = .FALSE. ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -112,7 +113,7 @@ PROGRAM cdfmocsig
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmocsig  -v V-file -t T-file -r REF-depth | -ntr [-eiv] [-full] ...'
      PRINT *,'        ... [-sigmin sigmin] [-sigstp sigstp] [-nbins nbins] [-isodep] ...'
-     PRINT *,'        ... [-s S-file ] [-o OUT-file] [-vvl] [-verbose]'
+     PRINT *,'        ... [-s S-file ] [-o OUT-file] [-vvl] [-verbose] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE : '
      PRINT *,'       Compute the MOC in density-latitude coordinates. The global value is '
@@ -151,6 +152,9 @@ PROGRAM cdfmocsig
      PRINT *,'       [-o OUT-file ] : Specify output file name instead of ', TRIM(cf_moc)
      PRINT *,'       [-vvl        ] : Use time-varying vertical metrics.'
      PRINT *,'       [-verbose    ] : Verbose option for more info during execution.'
+     PRINT *,'       [-teos10     ] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        Files ', TRIM(cn_fzgr),', ',TRIM(cn_fhgr),', ', TRIM(cn_fmsk)
@@ -196,11 +200,14 @@ PROGRAM cdfmocsig
      CASE ('-sigstp' ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) sigstp ; lbin(3) = .FALSE.
      CASE ('-o'      ) ; CALL getarg (ijarg, cf_moc) ; ijarg=ijarg+1 
      CASE ('-vvl'    ) ; lg_vvl  = .TRUE.
+     CASE ( '-teos10') ; ll_teos10 = .TRUE. 
      CASE ('-isodep' ) ; lisodep = .TRUE.
      CASE ('-verbose') ; lprint  = .TRUE.
-     CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.'  ; STOP 99
+     CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum), ' : unknown option.'  ; STOP 99
      END SELECT
   END DO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( ii /= 3  ) THEN ; PRINT *,' ERROR : mandatory arguments missing, see usage please !'  ; STOP 99
   ENDIF

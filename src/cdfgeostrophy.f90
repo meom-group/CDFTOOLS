@@ -133,6 +133,7 @@ PROGRAM cdfgeostrophy
   LOGICAL                                   :: lchk           ! file existence flag
   LOGICAL                                   :: lnc4 = .FALSE. ! Use nc4 with chunking and deflation
   LOGICAL                                   :: lssh = .TRUE.  ! Use ssh data . If false, assume ssh=0 everywhere
+  LOGICAL                                   :: ll_teos10  = .FALSE.    ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -143,7 +144,7 @@ PROGRAM cdfgeostrophy
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfgeostrophy -t T-file [-s S-file] [--ssh-file SSH-file] ...'
-     PRINT *,'                   ...  [-o OUT-ufile OUT-vfile] [-nc4] [-vvl]'
+     PRINT *,'                   ...  [-o OUT-ufile OUT-vfile] [-nc4] [-vvl] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the geostrophic velocity components from the pressure gradient'
@@ -168,6 +169,9 @@ PROGRAM cdfgeostrophy
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl] : use time varying vertical metrics.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fmsk),' ',TRIM(cn_fhgr),' and ',TRIM(cn_fzgr)
@@ -196,9 +200,13 @@ PROGRAM cdfgeostrophy
         ;                  CALL getarg(ijarg, cf_vout) ; ijarg=ijarg+1
      CASE ( '-nc4'     ) ; lnc4   = .TRUE.
      CASE ( '-vvl'     ) ; lg_vvl = .TRUE.
+     CASE ( '-teos10'  ) ; ll_teos10 = .TRUE. 
+
      CASE DEFAULT        ; PRINT *,' ERROR : ', TRIM(cldum), ' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
   IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil
