@@ -225,7 +225,11 @@ PROGRAM cdfbotpressure
 
      DO jk = 1, npk
         tmask(:,:) = getvar(cn_fmsk, cn_tmask,      jk, npiglo, npjglo          )
-        hdept(:,:) = getvar(cn_fzgr, cn_hdept,     jk, npiglo, npjglo           )
+!    JMM BUG ?  cn_hdept use to be 2D and give the depth of the bottom T point
+!               in this case, hdept is used to compute the in situ density of layer jk
+!               hence, should use gdept_0 ...
+!        hdept(:,:) = getvar(cn_fzgr, cn_hdept,     jk, npiglo, npjglo           )
+        hdept(:,:) = getvar(cn_fzgr,   cn_dept3d,    jk, npiglo, npjglo           )
         zt(:,:)    = getvar(cf_tfil,   cn_votemper,  jk, npiglo, npjglo, ktime=jt )
         zs(:,:)    = getvar(cf_sfil,   cn_vosaline,  jk, npiglo, npjglo, ktime=jt )
 
