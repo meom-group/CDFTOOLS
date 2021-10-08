@@ -119,3 +119,14 @@ Example:
 #### Back to release 3:
  * The last version 3's release has been tagged as v3.0.2. Use this tag if you want to stay at version 3.
 
+#### Introducing TEOS10 in the CDFTOOLS
+ * This introduction is made following the NEMO coding of eosbn2, using a polynomial form (Roquet et Al, Ocean Modelling, 2015) for both 
+EOS80 and TEOS10 equation of state, with a side effect of slightly changing the results (even using EOS80). 
+last commit before the introduction of this change corresponds to tag v4.0.0.   
+Also note that is you decide to use TEOS10, all relevant CDFTOOLS have now an option (-teos10) that switch the 
+force the used EOS to be TEOS10.  Without this option, EOS80 (polynomial form) is used.  
+Last but **important** :    
+When using TEOS10, temperatures should be Conservative Temperature (CT, DegC) and salinity should be Absolute Salinity (SA, g/kg)   
+When using EOS80, temperatures should be Potential Temperature (PT, DegC) and salinity should be Practical Salinity (SP, PSU)   
+As of Oct. 2021, no sanity check is performed for controling this important point.
+
