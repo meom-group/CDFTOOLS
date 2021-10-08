@@ -176,7 +176,11 @@ PROGRAM cdfspice
 
         WHERE(zsal == zspval ) zmask = 0.e0
 
-        dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo )
+        IF ( ll_teos10 )  THEN
+          dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo, ll_teos10 )
+        ELSE
+          dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo )
+        ENDIF
         ierr      = putvar( ncout, id_varout(1), REAL(dspi*zmask), jk, npiglo, npjglo, ktime=jt)
 
      END DO  ! loop to next level

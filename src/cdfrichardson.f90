@@ -234,52 +234,52 @@ PROGRAM cdfrichardson
         IF ( .NOT. l_w ) THEN
            ! now put zri at T level (k )
            WHERE ( zwk(:,:,idown) == 0 )  ; zri(:,:) =  zwk(:,:,iup)
-        ELSEWHERE                      ; zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
-        END WHERE
-     ELSE
-        zri(:,:) = zwk(:,:,iup)
-     ENDIF
+           ELSEWHERE                      ; zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
+           END WHERE
+        ELSE
+           zri(:,:) = zwk(:,:,iup)
+        ENDIF
 
-     WHERE ( zri < 0  .AND. zri /= rspval )  zri = rspval
-     ierr = putvar(ncout, id_varout(1), zri, jk, npiglo, npjglo, ktime=jt )
-     itmp = idown ; idown = iup ; iup = itmp
+        WHERE ( zri < 0  .AND. zri /= rspval )  zri = rspval
+        ierr = putvar(ncout, id_varout(1), zri, jk, npiglo, npjglo, ktime=jt )
+        itmp = idown ; idown = iup ; iup = itmp
 
-  END DO  ! loop to next level
-END DO
+     END DO  ! loop to next level
+  END DO
 
-ierr = closeout(ncout)
-CONTAINS
+  ierr = closeout(ncout)
 
-SUBROUTINE CreateOutput
-  !!---------------------------------------------------------------------
-  !!                  ***  ROUTINE CreateOutput  ***
-  !!
-  !! ** Purpose :  Create netcdf output file(s) 
-  !!
-  !! ** Method  :  Use stypvar global description of variables
-  !!
-  !!----------------------------------------------------------------------
- ipk(1)                       = npk  !  3D
- stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
- stypvar(1)%cname             = cv_ric
- stypvar(1)%cunits            = 'no'
- stypvar(1)%rmissing_value    = rspval
- stypvar(1)%valid_min         = 0.
- stypvar(1)%valid_max         = 50000.
- stypvar(1)%clong_name        = 'Richardson Number'
- stypvar(1)%cshort_name       = cv_ric
- stypvar(1)%conline_operation = 'N/A'
- stypvar(1)%caxis             = 'TZYX'
+  CONTAINS
 
- ! create output fileset
- ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk                             , ld_nc4=lnc4 )
- ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
- ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1)                       = npk  !  3D
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = cv_ric
+    stypvar(1)%cunits            = 'no'
+    stypvar(1)%rmissing_value    = rspval
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 50000.
+    stypvar(1)%clong_name        = 'Richardson Number'
+    stypvar(1)%cshort_name       = cv_ric
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
 
- dtim = getvar1d(cf_tfil, cn_vtimec, npt   )
- ierr = putvar1d(ncout,  dtim,      npt,'T')
+    ! create output fileset
+    ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk                             , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
 
-END SUBROUTINE CreateOutput
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt   )
+    ierr = putvar1d(ncout,  dtim,      npt,'T')
 
+   END SUBROUTINE CreateOutput
 
 END PROGRAM

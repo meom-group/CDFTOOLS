@@ -180,7 +180,7 @@ PROGRAM cdfvsig
      CASE ( '-T'     ) ; lTpt  =.TRUE.  
      CASE ( '-pref'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; CALL ParseRefDep(cldum)
         ;                lpref =.TRUE.  
-    CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO

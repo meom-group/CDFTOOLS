@@ -142,6 +142,59 @@ MODULE eos
    REAL(wp) ::   BPE011
    REAL(wp) ::   BPE002
 
+   ! Spiciness-0 from GSW
+INTEGER(KIND=4), PARAMETER :: r8=8
+real (r8), parameter :: s01 = -9.22982898371678e1_r8
+real (r8), parameter :: s02 = -1.35727873628866e1_r8
+real (r8), parameter :: s03 =  1.87353650994010e1_r8
+real (r8), parameter :: s04 = -1.61360047373455e1_r8
+real (r8), parameter :: s05 =  3.76112762286425e1_r8
+real (r8), parameter :: s06 = -4.27086671461257e1_r8
+real (r8), parameter :: s07 =  2.00820111041594e1_r8
+real (r8), parameter :: s08 =  2.87969717584045e2_r8
+real (r8), parameter :: s09 =  1.13747111959674e1_r8
+real (r8), parameter :: s10 =  6.07377192990680e1_r8
+real (r8), parameter :: s11 = -7.37514033570187e1_r8
+real (r8), parameter :: s12 = -7.51171878953574e1_r8
+real (r8), parameter :: s13 =  1.63310989721504e2_r8
+real (r8), parameter :: s14 = -8.83222751638095e1_r8
+real (r8), parameter :: s15 = -6.41725302237048e2_r8
+real (r8), parameter :: s16 =  2.79732530789261e1_r8
+real (r8), parameter :: s17 = -2.49466901993728e2_r8
+real (r8), parameter :: s18 =  3.26691295035416e2_r8
+real (r8), parameter :: s19 =  2.66389243708181e1_r8
+real (r8), parameter :: s20 = -2.93170905757579e2_r8
+real (r8), parameter :: s21 =  1.76053907144524e2_r8
+real (r8), parameter :: s22 =  8.27634318120224e2_r8
+real (r8), parameter :: s23 = -7.02156220126926e1_r8
+real (r8), parameter :: s24 =  3.82973336590803e2_r8
+real (r8), parameter :: s25 = -5.06206828083959e2_r8
+real (r8), parameter :: s26 =  6.69626565169529e1_r8
+real (r8), parameter :: s27 =  3.02851235050766e2_r8
+real (r8), parameter :: s28 = -1.96345285604621e2_r8
+real (r8), parameter :: s29 = -5.74040806713526e2_r8
+real (r8), parameter :: s30 =  7.03285905478333e1_r8
+real (r8), parameter :: s31 = -2.97870298879716e2_r8
+real (r8), parameter :: s32 =  3.88340373735118e2_r8
+real (r8), parameter :: s33 = -8.29188936089122e1_r8
+real (r8), parameter :: s34 = -1.87602137195354e2_r8
+real (r8), parameter :: s35 =  1.27096944425793e2_r8
+real (r8), parameter :: s36 =  2.11671167892147e2_r8
+real (r8), parameter :: s37 = -3.15140919876285e1_r8
+real (r8), parameter :: s38 =  1.16458864953602e2_r8
+real (r8), parameter :: s39 = -1.50029730802344e2_r8
+real (r8), parameter :: s40 =  3.76293848660589e1_r8
+real (r8), parameter :: s41 =  6.47247424373200e1_r8
+real (r8), parameter :: s42 = -4.47159994408867e1_r8
+real (r8), parameter :: s43 = -3.23533339449055e1_r8
+real (r8), parameter :: s44 =  5.30648562097667_r8
+real (r8), parameter :: s45 = -1.82051249177948e1_r8
+real (r8), parameter :: s46 =  2.33184351090495e1_r8
+real (r8), parameter :: s47 = -6.22909903460368_r8
+real (r8), parameter :: s48 = -9.55975464301446_r8
+real (r8), parameter :: s49 =  6.61877073960113_r8
+
+
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
@@ -166,6 +219,7 @@ CONTAINS
   R05 = -1.7243708991d-03
 
    IF ( ld_teos10 ) THEN ! TEOS10 equation 
+         PRINT *, ' Equation of state for sea-water : TEOS-10 '
          rdeltaS = 32._wp
          r1_S0  = 0.875_wp/35.16504_wp
          r1_T0  = 1._wp/40._wp
@@ -352,6 +406,7 @@ CONTAINS
          BPE002 = 1.7269476440e-04_wp
          !
    ELSE                  ! EOS80 default equation
+         PRINT *, ' Equation of state for sea-water : EOS-80 '
          rdeltaS = 20._wp
          r1_S0  = 1._wp/40._wp
          r1_T0  = 1._wp/40._wp
@@ -631,7 +686,7 @@ CONTAINS
 
   END FUNCTION sigmantr
 
-  FUNCTION spice_80 ( ptem, psal, kpi, kpj, ld_eos80 )
+  FUNCTION spice_80 ( ptem, psal, kpi, kpj )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION spice  ***
     !!
@@ -653,7 +708,6 @@ CONTAINS
     !!----------------------------------------------------------------------
     REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptem, psal ! temperature salinity
     INTEGER(KIND=4),                  INTENT(in) :: kpi,kpj    ! dimension of 2D arrays
-    LOGICAL,                          INTENT(in) :: ld_eos80   ! flag for INTERFACE discrim
 
     REAL(KIND=8), DIMENSION(kpi,kpj)             :: spice_80   ! return value
 
@@ -698,16 +752,13 @@ CONTAINS
 
   END FUNCTION spice_80
 
-  FUNCTION spice_pol ( ptem, psal, kpi, kpj )
+  FUNCTION spice_pol ( ptem, psal, kpi, kpj, ld_teos10 )
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION spice  ***
     !!
     !! ** Purpose :  Compute spiciness from T S fields. 
     !!
-    !! ** Method  :  spiciness = sum(i=0,5)[sum(j=0,4)[b(i,j)*theta^i*(s-35)^j]]
-    !!                   with:  b     -> coefficients
-    !!                          theta -> potential temperature
-    !!                          s     -> salinity
+    !! ** Method  :  use GSW formula from GSW toolbox
     !!
     !!  **  Example:
     !!       spice(15,33)=   0.5445863      0.544586321373410  calcul en double
@@ -716,52 +767,35 @@ CONTAINS
     !!  ** References : Flament (2002) "A state variable for characterizing
     !!              water masses and their diffusive stability: spiciness."
     !!              Progress in Oceanography Volume 54, 2002, Pages 493-501.
+    !!              gsw toolbox
     !!
     !!----------------------------------------------------------------------
     REAL(KIND=4), DIMENSION(kpi,kpj), INTENT(in) :: ptem, psal ! temperature salinity
     INTEGER(KIND=4),                  INTENT(in) :: kpi,kpj    ! dimension of 2D arrays
+    LOGICAL,                          INTENT(in) :: ld_teos10  ! flag for teos10 formula
 
     REAL(KIND=8), DIMENSION(kpi,kpj)             :: spice_pol  ! return value
 
     INTEGER(KIND=4)                        :: ji,jj     ! dummy loop index
-    INTEGER(KIND=4)                        :: jig,jjg     ! dummy loop index
-    REAL(KIND=8), SAVE, DIMENSION(6,5)     :: dl_bet    ! coefficients of spiciness formula
-    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_spi    ! spiciness
-    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_salref ! reference salinity
-    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_tempt  ! working array
-    REAL(KIND=8),       DIMENSION(kpi,kpj) :: dl_salt   ! working array
-
-    LOGICAL, SAVE                        :: lfrst=.TRUE.!
+    REAL(KIND=8) :: xs, ys, offset, sfac
     !!----------------------------------------------------------------------
-    PRINT *, " WORK IN PROGRSS FOR TEOS10 coding ... RESULT not valid for CT,SA input"
-    IF ( lfrst ) THEN
-       lfrst = .false.
-       ! Define coefficients to compute spiciness (R*8)
-       dl_bet(1,:) = (/       0.d0,   7.7442d-01,    -5.85d-03,    -9.84d-04,    -2.06d-04/)
-       dl_bet(2,:) = (/ 5.1655d-02,    2.034d-03,   -2.742d-04,     -8.5d-06,     1.36d-05/)
-       dl_bet(3,:) = (/6.64783d-03,  -2.4681d-04,   -1.428d-05,    3.337d-05,    7.894d-06/)
-       dl_bet(4,:) = (/-5.4023d-05,    7.326d-06,   7.0036d-06,  -3.0412d-06,  -1.0853d-06/)
-       dl_bet(5,:) = (/  3.949d-07,   -3.029d-08,  -3.8209d-07,   1.0012d-07,   4.7133d-08/)
-       dl_bet(6,:) = (/  -6.36d-10,   -1.309d-09,    6.048d-09,  -1.1409d-09,   -6.676d-10/)
-    ENDIF
-    ! spiciness 
-    dl_spi(:,:)    = 0.d0
-    dl_salref(:,:) = psal(:,:) - 35.d0
-    dl_tempt(:,:)  = 1.d0
-!$OMP PARALLEL DO SCHEDULE(RUNTIME)
-    DO jjg=1, kpj
-    DO ji=1,6
-       dl_salt(:,jjg) = 1.d0
-       DO jj=1,5
-           dl_spi( :,jjg) = dl_spi (:,jjg) +   dl_bet (ji,jj) * dl_tempt(:,jjg) * dl_salt(:,jjg)
-           dl_salt(:,jjg) = dl_salt(:,jjg) * dl_salref( :,jjg )
-       END DO
-       dl_tempt(:,jjg) = dl_tempt(:,jjg) * ptem(:,jjg)
-    END DO
-    END DO
-!$OMP END PARALLEL DO
+    sfac= 0.0248826675584615_8
+    offset=5.971840214030754e-1_8
+    DO jj = 1, kpj
+       DO ji=1,kpi
+         xs = sqrt(sfac*psal(ji,jj) + offset)
+         ys = ptem(ji,jj)*0.025
 
-    spice_pol(:,:) = dl_spi( :,:)
+         spice_pol(ji,jj) =  &
+          s01 + ys*(s02 + ys*(s03 + ys*(s04 + ys*(s05 + ys*(s06 + s07*ys))))) &
+    + xs*(s08 + ys*(s09 + ys*(s10 + ys*(s11 + ys*(s12 + ys*(s13 + s14*ys))))) &
+    + xs*(s15 + ys*(s16 + ys*(s17 + ys*(s18 + ys*(s19 + ys*(s20 + s21*ys))))) &
+    + xs*(s22 + ys*(s23 + ys*(s24 + ys*(s25 + ys*(s26 + ys*(s27 + s28*ys))))) &
+    + xs*(s29 + ys*(s30 + ys*(s31 + ys*(s32 + ys*(s33 + ys*(s34 + s35*ys))))) &
+    + xs*(s36 + ys*(s37 + ys*(s38 + ys*(s39 + ys*(s40 + ys*(s41 + s42*ys))))) &
+    + xs*(s43 + ys*(s44 + ys*(s45 + ys*(s46 + ys*(s47 + ys*(s48 + s49*ys)))))))))))
+       ENDDO
+    ENDDO
 
   END FUNCTION spice_pol
 
