@@ -100,6 +100,12 @@ PROGRAM cdfsigntr
      END SELECT
   ENDDO
 
+  IF ( ll_teos10 ) THEN
+    PRINT *," Sorry, cdfsigntr not yet coded for TEOS10 equation of state"
+    PRINT *," Stay tuned .... "
+    STOP
+  ENDIF
+
   CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
