@@ -11,17 +11,22 @@ NCDF = -I$(NETCDFFORTRAN_INCDIR) $(NETCDFFORTRAN_LDFLAGS)
 NC4 = -D key_netcdf4  # define this key in order to compile cdftools with netcdf4 lib allowing for chunking and deflation
 #CMIP6 = -D key_CMIP6
 CMIP6 =
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
  
 F90=ifort
 MPF90=mpif90
 OMP=
 #OMP=-openmp
 # flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
-#FFLAGS= -static -O  $(NCDF) $(NC4) $(CMIP6)-assume byterecl -convert big_endian $(OMP)
-#FFLAGS= -O  $(NCDF) -fpe0 -traceback -ftrapuv -g -CB  $(NC4) $(CMIP6) -fp-model precise $(OMP)
-#FFLAGS= -O  $(NCDF) -fpe0 -traceback -ftrapuv -g   $(NC4) $(CMIP6) -fp-model precise $(OMP)
-FFLAGS= -O2  $(NCDF)  $(NC4) $(CMIP6) -fp-model precise $(OMP)
-#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian $(NC4) $(CMIP6) $(OMP)
+#FFLAGS= -static -O  $(NCDF) $(NC4) $(CMIP6) $(GSW)-assume byterecl -convert big_endian $(OMP)
+#FFLAGS= -O  $(NCDF) -fpe0 -traceback -ftrapuv -g -CB  $(NC4) $(CMIP6) $(GSW) -fp-model precise $(OMP)
+#FFLAGS= -O  $(NCDF) -fpe0 -traceback -ftrapuv -g   $(NC4) $(CMIP6) $(GSW) -fp-model precise $(OMP)
+FFLAGS= -O2  $(NCDF)  $(NC4) $(CMIP6) $(GSW) -fp-model precise $(OMP)
+#FFLAGS= -O  $(NCDF) -assume byterecl -convert big_endian $(NC4) $(CMIP6) $(GSW) $(OMP)
 LMPI=-lmpich
 
 INSTALL=$(WORKDIR)/bin

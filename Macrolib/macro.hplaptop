@@ -17,8 +17,13 @@ NC4 =
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
-FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv $(OMP)
-#FFLAGS= -O  $(NCDF)$(NC4) $(CMIP6)  -assume byterecl -convert big_endian  $(OMP)
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv $(OMP)
+#FFLAGS= -O  $(NCDF)$(NC4) $(CMIP6) $(GSW)  -assume byterecl -convert big_endian  $(OMP)
 LMPI=-lmpich
 
 INSTALL=$(HOME)/bin

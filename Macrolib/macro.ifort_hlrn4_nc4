@@ -16,13 +16,18 @@ NC4 = -D key_netcdf4
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
 #F90=gfortran -v
 F90=ifort
 MPF90=
 #OMP=-mp=nonuma
 OMP=
-#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6)  -fno-second-underscore -ffree-line-length-256
-FFLAGS= -O3  -fpp $(NCDF) $(LIBS) $(NC4) $(CMIP6) $(OMP)
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW)  -fno-second-underscore -ffree-line-length-256
+FFLAGS= -O3  -fpp $(NCDF) $(LIBS) $(NC4) $(CMIP6) $(GSW) $(OMP)
 LMPI=-lmpich
 
 INSTALL=../../../bin/

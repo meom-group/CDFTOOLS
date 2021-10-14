@@ -10,12 +10,17 @@ NC4 = -D key_netcdf4
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
 F90=$(FC)
 MPF90=
 #OMP=-mp=nonuma
 OMP=
 OPT=-O3
-FFLAGS= $(OPT) -fpp $(NCDF) $(LIBS) $(NC4) $(CMIP6) $(OMP)
+FFLAGS= $(OPT) -fpp $(NCDF) $(LIBS) $(NC4) $(CMIP6) $(GSW) $(OMP)
 LMPI=-lmpich
 
 INSTALL=../../../bin/
