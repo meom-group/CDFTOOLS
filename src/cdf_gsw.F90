@@ -72,8 +72,10 @@ PROGRAM cdf_gsw
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdf_gsw GSW-function -arg GSW-arguments [-h] [-l] [-vo VAR-name] '
-     PRINT *,'        [-nc4] [-o OUT-file]'
+     PRINT *,' usage : cdf_gsw GSW-function  [-sa SA-file ] [-sp SP-file] [ -sk SK-file] ' 
+     PRINT *,'      [-ct CT-file ] [-pt PT-file] [-t  Tinsitu-file] ' 
+     PRINT *,'      [-h] [-l] [-vo VAR-name] [-vsal VAR-sal] [ -vtem VAR-temperature]' 
+     PRINT *,'      [-nc4] [-o OUT-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        This tool is somehow different from other CDFTOOLS as it is just a '
