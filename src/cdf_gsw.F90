@@ -10,6 +10,8 @@ PROGRAM cdf_gsw
   !!               relevant argument, to produce the results in a netcdf
   !!               file
   !!
+  !!  ** reference : http://www.teos-10.org/pubs/gsw/html/gsw_contents.html#1
+  !!
   !! History :  4.0  : 10/2021  : J.M. Molines : 
   !!----------------------------------------------------------------------
   !!----------------------------------------------------------------------
