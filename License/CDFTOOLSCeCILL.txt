@@ -6,7 +6,7 @@ Contributors (alphabetic order ) :
 C.Q. Akuetevi, M. Balmaseda, E. Behrens, F. Castruccio, M. Chekki, 
 P. Colombo, J. Deshayes, N. Djath, N. Ducousso, C. Dufour, R. Dussin, 
 N. Ferry, T. Graham, F. Hernandez, Q. Jamet, J. Jouanno, N. Jourdain, M. Juza, 
-A. Lecointre, S. Leroux, C. Lique, G. Mainsant, P. Mathiot, A. Melet,
+A. Lecointre, S. Leroux, C. Lique, W. Llovel, G. Mainsant, P. Mathiot, A. Melet,
 X. Meunier, G. Moreau, N. Merino, W. Rath, J. Regidor, M. Scheinert, 
 F. Schwarzkopf, A.M. Treguier, P. Verezemskaya
 
