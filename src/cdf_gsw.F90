@@ -42,6 +42,8 @@ PROGRAM cdf_gsw
   REAL(KIND=4), DIMENSION(:),   ALLOCATABLE  :: v1_1d, v2_1d
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE  :: v1,v2,v3, tmsk
 
+  !  GSW functions take double precision values as input
+  REAL(KIND=8)                               :: dpref               ! reference depth
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE  :: dv1_1d, dv2_1d
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE  :: dv1,dv2,dv3, dv4, dv5
 
@@ -69,11 +71,12 @@ PROGRAM cdf_gsw
   cv_sal='none'
   cv_tem='none'
   c_gsw_name='none'
+  dpref = -9999
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdf_gsw GSW-function  [-sa SA-file ] [-sp SP-file] [ -sk SK-file] ' 
-     PRINT *,'      [-ct CT-file ] [-pt PT-file] [-t  Tinsitu-file] ' 
+     PRINT *,'      [-ct CT-file ] [-pt PT-file] [-t  TINSITU-file] [-pref REF-depth]' 
      PRINT *,'      [-h] [-l] [-vo VAR-name] [-vsal VAR-sal] [ -vtem VAR-temperature]' 
      PRINT *,'      [-nc4] [-o OUT-file]'
      PRINT *,'      '
@@ -81,18 +84,44 @@ PROGRAM cdf_gsw
      PRINT *,'        This tool is somehow different from other CDFTOOLS as it is just a '
      PRINT *,'       wrapper to Gibbs Sea Water toolbox (GSW). It took as a first argument,'
      PRINT *,'       the name of the GSW function or routine, and input files depends on '
-     PRINT *,'       every particular function or routine.  '
-     PRINT *,'      '
-     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       every particular function or routine. '
+     PRINT *,'       AKNOWLEDGMENTS: http://www.teos-10.org/ '
      PRINT *,'       ' 
+     PRINT *,'     ARGUMENTS :'
+     PRINT *,'       The command cdf_gsw -l give you the list of all GSW functions/routines.'
+     PRINT *,'       while cdf_gsw <GSW FUNCTION> -h give you a short description of the GSW '
+     PRINT *,'       function, (a copy of the original header of the GSW file). In particular'
+     PRINT *,'       the required arguments for the gsw function are given (with their '
+     PRINT *,'       expected unit.'
+     PRINT *,'       The point is that the functions take salinity and/or temperature as'
+     PRINT *,'       input parameters. They can be any of SA SP SK PT CT ... For instance if'
+     PRINT *,'       a function requires sa, ct, then corresponding files are passed to the'
+     PRINT *,'       program using -sa SA-file -ct CT-file. For other types of salinity or'
+     PRINT *,'       temperature, there are -sp, -sk, -pt, -t options.  Important to note '
+     PRINT *,'       that a depth is often required in the functions. It is taken from the '
+     PRINT *,'       salinity or temperature file. In case of needs for a constant reference'
+     PRINT *,'       deptht, it is passed to the code with -pref option.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
-     PRINT *,'        -vo VAR-name : give variable name for output file'
-     PRINT *,'        -vsal VAR-salinity : give variable name for input salinity'
+     PRINT *,'        -sa SA-file : pass the name of a file with Absolute Salinity' 
+     PRINT *,'        -sp SP-file : pass the name of a file with Practical Salinity' 
+     PRINT *,'        -sk SK-file : pass the name of a file with Knudsen Salinity' 
+     PRINT *,'        -vsal VAR-salinity : give variable name for input salinity.'
+     PRINT *,'                 default is ',TRIM(cn_vosaline)
+     PRINT *,'        -ct CT-file : pass the name of a file with Conservative Temperature' 
+     PRINT *,'        -pt PT-file : pass the name of a file with Pot. Temperature (theta-0)'
+     PRINT *,'        -t T-file   : pass the name of a file with in situ temperature.'
      PRINT *,'        -vtem VAR-temperature : give variable name for input temperature'
+     PRINT *,'                 default is ',TRIM(cn_votemper)
+     PRINT *,'        -pref REF-depth : pass a constant reference depth.'
+     PRINT *,'        -o OUT-filename : give the name of the output file.'
+     PRINT *,'                 default is <GSW_FUNCTiON>.nc'
+     PRINT *,'        -vo VAR-name : give variable name for output file'
      PRINT *,'        -h : provide help on the function given as first argument.'
      PRINT *,'             In particular indicates the required imput files and the'
-     PRINT *,'             way to specify them (which key to use).'
+     PRINT *,'             way to specify them (which key to use). Users are encouraged to'
+     PRINT *,'             visit http://www.teos-10.org/pubs/gsw/html/gsw_contents.html for'
+     PRINT *,'             details and science  discussion.'
      PRINT *,'        -l : provide a list of all the GSW functions or routine.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
@@ -127,6 +156,7 @@ PROGRAM cdf_gsw
      CASE ( '-vo'  ) ; CALL getarg(ijarg, cv_out) ; ijarg=ijarg+1
      CASE ( '-vsal') ; CALL getarg(ijarg, cv_sal) ; ijarg=ijarg+1
      CASE ( '-vtem') ; CALL getarg(ijarg, cv_tem) ; ijarg=ijarg+1
+     CASE ( '-pref') ; CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1 ; READ(cldum,*) dpref
      CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
      CASE ( '-h'   ) ; CALL gsw_help(c_gsw_name)  ; STOP
@@ -1154,7 +1184,15 @@ CONTAINS
 
     zdep = getvar1d(cd_fref, cn_vdeptht, npk     )
     ierr = putvar1d(ncout,  zdep,      npk, 'D')
-    IF ( PRESENT(pdep) ) pdep = zdep
+    IF ( PRESENT(pdep) ) THEN 
+      IF ( dpref == -9999 ) THEN
+         ! return depth array from ref file
+         pdep = zdep
+      ELSE
+         ! set pdep array to constant value dpref
+         pdep = dpref
+      ENDIF
+    ENDIF
     DEALLOCATE( dltim, zdep )
 
   END SUBROUTINE CreateOutput
