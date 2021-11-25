@@ -12,9 +12,9 @@ NC4=-Dkey_netcdf4
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
-GSW=
-#GSW=-D key_GSW
-GSWLIB=
+#GSW=
+GSW=-D key_GSW
+GSWLIB= -L$(WORKDIR)/lib -lgsw
 #GSWLIB=-lgsw
  
 F90=ifort
