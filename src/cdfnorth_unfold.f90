@@ -39,6 +39,7 @@ PROGRAM cdfnorth_unfold
   INTEGER(KIND=4)                               :: isig                     ! change sign indicator
   INTEGER(KIND=4)                               :: nipivot                  ! i position of pivot
   INTEGER(KIND=4)                               :: ncout                    ! ncid of output file
+  INTEGER(KIND=4)                               :: nvaro                    ! ncid of output file
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: id_var                   ! arrays of var id's (input)
   INTEGER(KIND=4), DIMENSION(:),    ALLOCATABLE :: ipk, id_varout           ! level and varid of output var
 
@@ -55,20 +56,23 @@ PROGRAM cdfnorth_unfold
   CHARACTER(LEN=256)                            :: ctype                    ! variable position
   CHARACTER(LEN=256)                            :: cglobal                  ! variable position
   CHARACTER(LEN=256)                            :: cldum                    ! dummy string
+  CHARACTER(LEN=80 ), DIMENSION(:), ALLOCATABLE :: cv_in                    ! array of var name
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names                 ! array of var name
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: clv_dep                  ! array of possible depth name (or 3rd dimension)
 
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar                  ! output var attribute
 
+  LOGICAL, DIMENSION(:)           , ALLOCATABLE :: ll_keep
   LOGICAL                                       :: lchk = .false.           ! flag for consistency check
   LOGICAL                                       :: lnc4 = .FALSE.           ! Use nc4 with chunking and deflation
+  LOGICAL                                       :: llst = .FALSE.           ! Use selected list of variable
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfnorth_unfold -f IN-file -jatl jatl -jpacif jpacif -piv pivot ...'
-     PRINT *,'              ... -p C-type [-o OUT-file] [-nc4]'
+     PRINT *,'              ... -p C-type [-v VAR-list] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Unfolds the Artic Ocean in an ORCA configuration. Produce a netcdf' 
@@ -87,6 +91,8 @@ PROGRAM cdfnorth_unfold
      PRINT *,'             a problem ...'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-v VAR-list] : give comma separated list of variable to unfold'
+     PRINT *,'              Default : all variables in file.'
      PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ]       : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
@@ -105,7 +111,6 @@ PROGRAM cdfnorth_unfold
   ijarg=1
   DO WHILE ( ijarg <= narg )
       CALL getarg (ijarg, cldum )  ; ijarg=ijarg+1
-      print *, TRIM(cldum), ijarg, narg
       SELECT CASE ( cldum )
       CASE ( '-f'     ) ; CALL getarg (ijarg, cf_in ) ; ijarg=ijarg+1
       CASE ( '-jatl'  ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ;  READ(cldum,*) ijatl
@@ -113,6 +118,7 @@ PROGRAM cdfnorth_unfold
       CASE ( '-piv'   ) ; CALL getarg (ijarg, cpivot) ; ijarg=ijarg+1
       CASE ( '-p'     ) ; CALL getarg (ijarg, ctype ) ; ijarg=ijarg+1
       ! options
+      CASE ( '-v'     ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; CALL ParseVars(cldum) ; llst = .true.
       CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
       CASE ( '-nc4'   ) ; lnc4 = .TRUE.
       CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
@@ -166,10 +172,24 @@ PROGRAM cdfnorth_unfold
   ALLOCATE (cv_names(nvars) )
   ALLOCATE (stypvar(nvars) )
   ALLOCATE (id_var(nvars), ipk(nvars), id_varout(nvars) )
+  ALLOCATE (ll_keep(nvars) )
 
   ! get list of variable names and collect attributes in stypvar (optional)
   cv_names(:) = getvarname(cf_in, nvars, stypvar)
   id_var(:)  = (/(jv, jv=1,nvars)/)
+  IF ( llst ) THEN
+    ll_keep(:)=.false.
+    ! set cvnames to 'none' if not in cv_in
+    DO jv=1,nvaro
+      DO jvar=1,nvars
+         IF ( cv_names(jvar) == cv_in(jv) ) THEN
+            ll_keep(jvar) = .true.
+         ENDIF
+      ENDDO
+    ENDDO
+    WHERE (.not. ll_keep) cv_names='none'
+  ENDIF
+           
 
   CALL CreateOutput
 
@@ -177,6 +197,7 @@ PROGRAM cdfnorth_unfold
   isig =  1
 
   DO jvar = 1,nvars
+     IF (cv_names(jvar) /= 'none' ) THEN
      PRINT *,' Working with ', TRIM(cv_names(jvar)), ipk(jvar)
      DO jk = 1, ipk(jvar)
         PRINT *,'level ',jk
@@ -193,11 +214,52 @@ PROGRAM cdfnorth_unfold
            ierr = putvar(ncout, id_varout(jvar), tab, jk, npiarctic, npjarctic)
         ENDDO
      END DO  ! loop to next level
+     ENDIF
   END DO ! loop to next var in file
 
   ierr = closeout(ncout)
 
 CONTAINS
+
+  SUBROUTINE ParseVars (cdum)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE ParseVars  ***
+    !!
+    !! ** Purpose :  Decode variable name  option from command line
+    !!
+    !! ** Method  :  look for , in the argument string and set the number of
+    !!         variable (nvaro), allocate cv_in array and fill it with the
+    !!         decoded  names.
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdum
+
+    CHARACTER(LEN=80), DIMENSION(100) :: cl_dum  ! 100 is arbitrary
+    INTEGER  :: ji
+    INTEGER  :: inchar,  i1=1
+    !!----------------------------------------------------------------------
+    PRINT *, "PARSE : ", trim(cdum)
+    inchar= LEN(TRIM(cdum))
+    ! scan the input string and look for ',' as separator
+    nvaro=1
+    DO ji=1,inchar
+       IF ( cdum(ji:ji) == ',' ) THEN
+          cl_dum(nvaro) = cdum(i1:ji-1)
+          i1=ji+1
+          nvaro=nvaro+1
+       ENDIF
+    ENDDO
+
+    ! last name of the list does not have a ','
+    cl_dum(nvaro) = cdum(i1:inchar)
+
+    ALLOCATE ( cv_in(nvaro) )
+    DO ji=1, nvaro
+       cv_in(ji) = cl_dum(ji)
+       PRINT *, ji,TRIM(cv_in(ji))
+    ENDDO
+  END SUBROUTINE ParseVars
+
  
   INTEGER(KIND=4) FUNCTION chkisig (cdpivot, cdtype, ptab, ldchk)
     !!---------------------------------------------------------------------
