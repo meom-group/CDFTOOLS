@@ -1,0 +1,31 @@
+# macro.jade for jade at CINES
+#  $Rev: 539 $
+#  $Date: 2011-07-11 12:33:35 +0200 (Mon, 11 Jul 2011) $
+#  $Id: macro.jade 539 2011-07-11 10:33:35Z molines $
+# -------------------------------------------------------------
+
+NCDF = -I$(NETCDF_INCDIR) -I$(NETCDFF_INCDIR) $(NETCDF_LDFLAGS) $(NETCDFF_LDFLAGS)
+
+#NC4=
+NC4=-Dkey_netcdf4
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+ 
+F90=ifort
+MPF90=mpif90
+
+OMP=
+#OMP=-openmp
+# flag static is used to allow the use of CDFTOOLS in parallel with mpi_metamon
+#FFLAGS= -static -O  $(NCDF) -assume byterecl -convert big_endian $(OMP)
+
+FFLAGS= -O3 $(NCDF) $(NC4) $(CMIP6) -fp-model precise $(OMP)
+#FFLAGS= -O2 $(NCDF) $(NC4) $(CMIP6) -fp-model precise $(OMP)
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g $(OMP)
+
+LMPI=-lmpich
+
+INSTALL=$(WORKDIR)/bin
+INSTALL=/opt/modules/cdftools/bin
+INSTALL_MAN=$(WORKDIR)/man
+INSTALL_MAN=/opt/modules/cdftools/man
