@@ -13,7 +13,12 @@ NC4 =
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
 F90=f90
-FFLAGS=  $(NC4) $(CMIP6) -convert big_endian -assume byterecl $(NCDF) $(OMP)
+FFLAGS=  $(NC4) $(CMIP6) $(GSW) -convert big_endian -assume byterecl $(NCDF) $(OMP)
 
 INSTALL=$(HOME)/bin

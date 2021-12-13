@@ -58,6 +58,8 @@ PROGRAM cdfbn2
   LOGICAL                                      :: lchk                     ! check missing files
   LOGICAL                                      :: lfull =.FALSE.           ! full step flag
   LOGICAL                                      :: lnc4  =.FALSE.           ! full step flag
+  LOGICAL                                      :: ll_teos10  = .FALSE.     ! teos10 flag
+
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -65,7 +67,7 @@ PROGRAM cdfbn2
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfbn2  -t T-file [-s S-file] [-W] [-full] [-o OUT-file]...'
-     PRINT *,'               ... [-nc4] [-vvl W-file]'
+     PRINT *,'               ... [-nc4] [-vvl W-file] [-teos10] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Brunt-Vaissala frequency (N2) according to temperature and' 
@@ -87,6 +89,9 @@ PROGRAM cdfbn2
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file ] : use time-varying vertical metrics, W-file is a file'
      PRINT *,'                 holding e3w(t) for vvl.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '
@@ -108,18 +113,22 @@ PROGRAM cdfbn2
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
-     CASE ( '-t'    ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-t'      ) ; CALL getarg(ijarg, cf_tfil) ; ijarg = ijarg + 1
         ! options
-     CASE ( '-s'    ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg + 1
-     CASE ( '-W'    ) ; l_w     = .TRUE.
-     CASE ( '-full' ) ; lfull   = .TRUE. ; cglobal = 'full step computation'
-     CASE ( '-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
-     CASE ( '-nc4'  ) ; lnc4    = .TRUE.
-     CASE ( '-vvl'  ) ; lg_vvl  = .TRUE. 
+     CASE ( '-s'      ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg + 1
+     CASE ( '-W'      ) ; l_w       = .TRUE.
+     CASE ( '-full'   ) ; lfull     = .TRUE. ; cglobal = 'full step computation'
+     CASE ( '-o'      ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg + 1
+     CASE ( '-nc4'    ) ; lnc4      = .TRUE.
+     CASE ( '-vvl'    ) ; lg_vvl    = .TRUE. 
         ; CALL getarg(ijarg, cf_e3w ) ; ijarg = ijarg + 1
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT     ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+
+  CALL eos_init(ll_teos10)
+
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
   lchk = chkfile (cn_fzgr )
@@ -183,7 +192,7 @@ PROGRAM cdfbn2
         ELSE              ; e3w(:,:) = getvar(cn_fe3w, cn_ve3w , jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
         ENDIF
 
-        zwk(:,:,iup) = eosbn2(ztemp, zsal, gdep(jk), e3w, npiglo, npjglo ,iup, idown)* zmask(:,:)
+        zwk(:,:,iup) = eosbn2(ztemp, zsal, gdep(jk), e3w, npiglo, npjglo ,iup, idown )* zmask(:,:)
 
         IF ( .NOT. l_w ) THEN
            ! now put zn2 at T level (k )

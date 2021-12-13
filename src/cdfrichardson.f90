@@ -65,13 +65,14 @@ PROGRAM cdfrichardson
   LOGICAL                                      :: lchk                     ! check missing files
   LOGICAL                                      :: lfull  = .FALSE.         ! full step flag
   LOGICAL                                      :: lnc4   = .FALSE.         ! Use nc4 with chunking and deflation
+  LOGICAL                                      :: ll_teos10  = .FALSE.     ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfrichardson  -t T-file -u U-file -v V-file [-s S-file]...'
-     PRINT *,'          ...  [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file] '
+     PRINT *,'          ...  [-W] [-full] [-o OUT-file] [-nc4] [-vvl W-file] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the Richardson Number (Ri) according to temperature,' 
@@ -98,6 +99,9 @@ PROGRAM cdfrichardson
      PRINT *,'             a netcdf library supporting chunking and deflation.'
      PRINT *,'       [-vvl W-file ]: use time-varying vertical metrics. W-file holds the'
      PRINT *,'             time-varying e3w vertical metrics.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fzgr),' is needed for this program.' 
@@ -116,20 +120,23 @@ PROGRAM cdfrichardson
   DO WHILE ( ijarg <= narg ) 
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum)
-     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
-     CASE ( '-u'   ) ; CALL getarg (ijarg, cf_ufil) ; ijarg = ijarg + 1
-     CASE ( '-v'   ) ; CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1
+     CASE ( '-t'      ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+     CASE ( '-u'      ) ; CALL getarg (ijarg, cf_ufil) ; ijarg = ijarg + 1
+     CASE ( '-v'      ) ; CALL getarg (ijarg, cf_vfil) ; ijarg = ijarg + 1
         ! options
-     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
-     CASE ('-W'    ) ; l_w   = .TRUE.
-     CASE ('-full' ) ; lfull = .TRUE. ; cglobal = 'full step computation'
-     CASE ( '-nc4' ) ; lnc4  = .TRUE.
-     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-s'      ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
+     CASE ('-W'       ) ; l_w   = .TRUE.
+     CASE ('-full'    ) ; lfull = .TRUE. ; cglobal = 'full step computation'
+     CASE ( '-nc4'    ) ; lnc4  = .TRUE.
+     CASE ( '-o'      ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE ( '-vvl' ) ; lg_vvl= .TRUE.
         ;              CALL getarg (ijarg, cf_e3w) ; ijarg = ijarg + 1
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
@@ -227,52 +234,52 @@ PROGRAM cdfrichardson
         IF ( .NOT. l_w ) THEN
            ! now put zri at T level (k )
            WHERE ( zwk(:,:,idown) == 0 )  ; zri(:,:) =  zwk(:,:,iup)
-        ELSEWHERE                      ; zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
-        END WHERE
-     ELSE
-        zri(:,:) = zwk(:,:,iup)
-     ENDIF
+           ELSEWHERE                      ; zri(:,:) = 0.5 * ( zwk(:,:,iup) + zwk(:,:,idown) ) * zmask(:,:)
+           END WHERE
+        ELSE
+           zri(:,:) = zwk(:,:,iup)
+        ENDIF
 
-     WHERE ( zri < 0  .AND. zri /= rspval )  zri = rspval
-     ierr = putvar(ncout, id_varout(1), zri, jk, npiglo, npjglo, ktime=jt )
-     itmp = idown ; idown = iup ; iup = itmp
+        WHERE ( zri < 0  .AND. zri /= rspval )  zri = rspval
+        ierr = putvar(ncout, id_varout(1), zri, jk, npiglo, npjglo, ktime=jt )
+        itmp = idown ; idown = iup ; iup = itmp
 
-  END DO  ! loop to next level
-END DO
+     END DO  ! loop to next level
+  END DO
 
-ierr = closeout(ncout)
-CONTAINS
+  ierr = closeout(ncout)
 
-SUBROUTINE CreateOutput
-  !!---------------------------------------------------------------------
-  !!                  ***  ROUTINE CreateOutput  ***
-  !!
-  !! ** Purpose :  Create netcdf output file(s) 
-  !!
-  !! ** Method  :  Use stypvar global description of variables
-  !!
-  !!----------------------------------------------------------------------
- ipk(1)                       = npk  !  3D
- stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
- stypvar(1)%cname             = cv_ric
- stypvar(1)%cunits            = 'no'
- stypvar(1)%rmissing_value    = rspval
- stypvar(1)%valid_min         = 0.
- stypvar(1)%valid_max         = 50000.
- stypvar(1)%clong_name        = 'Richardson Number'
- stypvar(1)%cshort_name       = cv_ric
- stypvar(1)%conline_operation = 'N/A'
- stypvar(1)%caxis             = 'TZYX'
+  CONTAINS
 
- ! create output fileset
- ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk                             , ld_nc4=lnc4 )
- ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
- ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
+  SUBROUTINE CreateOutput
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ipk(1)                       = npk  !  3D
+    stypvar(1)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(1)%cname             = cv_ric
+    stypvar(1)%cunits            = 'no'
+    stypvar(1)%rmissing_value    = rspval
+    stypvar(1)%valid_min         = 0.
+    stypvar(1)%valid_max         = 50000.
+    stypvar(1)%clong_name        = 'Richardson Number'
+    stypvar(1)%cshort_name       = cv_ric
+    stypvar(1)%conline_operation = 'N/A'
+    stypvar(1)%caxis             = 'TZYX'
 
- dtim = getvar1d(cf_tfil, cn_vtimec, npt   )
- ierr = putvar1d(ncout,  dtim,      npt,'T')
+    ! create output fileset
+    ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, npk                             , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout ,   stypvar, 1,      ipk,    id_varout, cdglobal=TRIM(cglobal), ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, npk, pdep=gdep)
 
-END SUBROUTINE CreateOutput
+    dtim = getvar1d(cf_tfil, cn_vtimec, npt   )
+    ierr = putvar1d(ncout,  dtim,      npt,'T')
 
+   END SUBROUTINE CreateOutput
 
 END PROGRAM

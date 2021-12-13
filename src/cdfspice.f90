@@ -63,7 +63,9 @@ PROGRAM cdfspice
   CHARACTER(LEN=256)                        :: cv_tem             ! temperature name in netcdf
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
+
   LOGICAL                                   :: lnc4 = .FALSE.     ! flag for missing files
+  LOGICAL                                   :: ll_teos10  = .FALSE. ! teos10 flag
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -71,7 +73,7 @@ PROGRAM cdfspice
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfspice -t T-file [-s S-file] [-sal SAL-name] [-tem TEM-name] ...'
-     PRINT *,'        ... [-o OUT-file] [-nc4]'
+     PRINT *,'        ... [-o OUT-file] [-nc4] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the spiceness corresponding to temperatures and salinities'
@@ -92,6 +94,9 @@ PROGRAM cdfspice
      PRINT *,'       [-tem TEM-name]  : name of temperature variable'
      PRINT *,'       [-o OUT-file]    : specify output filename instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4]  : enable chunking and compression'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '
@@ -119,16 +124,19 @@ PROGRAM cdfspice
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ( '-t'     ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
      ! options
-     CASE ( '-s'   ) ; CALL getarg(ijarg, cf_sfil) ; ijarg=ijarg+1
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
-     CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
-     CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE DEFAULT    ; PRINT *,'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
+     CASE ( '-s'     ) ; CALL getarg(ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-sal'   ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
+     CASE ( '-tem'   ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
+     CASE ( '-nc4'   ) ; lnc4 = .TRUE.
+     CASE ( '-teos10') ; ll_teos10 = .TRUE. 
+     CASE DEFAULT      ; PRINT *,'ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 
@@ -168,7 +176,11 @@ PROGRAM cdfspice
 
         WHERE(zsal == zspval ) zmask = 0.e0
 
-        dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo )
+        IF ( ll_teos10 )  THEN
+          dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo, ll_teos10 )
+        ELSE
+          dspi(:,:) = spice ( ztemp, zsal, npiglo, npjglo )
+        ENDIF
         ierr      = putvar( ncout, id_varout(1), REAL(dspi*zmask), jk, npiglo, npjglo, ktime=jt)
 
      END DO  ! loop to next level

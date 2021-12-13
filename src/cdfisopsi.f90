@@ -55,7 +55,7 @@ PROGRAM cdfisopsi
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zsalint ! 2d working arrays
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zint ! 2d working arrays
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zpint    ! 2d working arrays
-  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: alpha ! 2d working arrays
+  REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: zalpha ! 2d working arrays
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: e1t, e2t
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdeltapsi1
   REAL(KIND=4), DIMENSION(:,:),   ALLOCATABLE :: rdeltapsi2
@@ -76,6 +76,7 @@ PROGRAM cdfisopsi
 
   LOGICAL            :: lnc4 = .FALSE.                       ! flag for netcdf4 output
   LOGICAL            :: lchk = .FALSE.                       ! flag for existence of files
+  LOGICAL            :: ll_teos10  = .FALSE.                 ! teos10 flag
 
   TYPE(variable) , DIMENSION(jp_vars) :: stypvar         ! structure for attributes
   !!----------------------------------------------------------------------
@@ -85,7 +86,7 @@ PROGRAM cdfisopsi
 
   IF ( narg == 0 ) THEN
      PRINT *,' usage :  cdfisopsi -ref REF-level -sig TGT-sigma -t T-file [-o OUT-file]...'
-     PRINT *,'          ... [-s S-file]  [--ssh-file SSH-file] [-nc4] [-vvl] '
+     PRINT *,'          ... [-s S-file]  [--ssh-file SSH-file] [-nc4] [-vvl] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute a ''geostrophic streamfunction'', projected on an isopycn.'
@@ -110,6 +111,9 @@ PROGRAM cdfisopsi
      PRINT *,'                 This option is effective only if cdftools are compiled with'
      PRINT *,'                 a netcdf library supporting chunking and deflation.'
      PRINT *,'        [-vvl ] : use time varying vertical metrics.'
+     PRINT *,'        [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),' and ', TRIM(cn_fzgr) 
@@ -147,10 +151,13 @@ PROGRAM cdfisopsi
      CASE ( '-s'       ) ; CALL getarg(ijarg, cf_sfil) ; ijarg = ijarg+1 
      CASE ('--ssh-file') ; CALL getarg(ijarg, cf_sshfil); ijarg= ijarg+1
      CASE ( '-o'       ) ; CALL getarg(ijarg, cf_out ) ; ijarg = ijarg+1 
-     CASE ( '-nc4'     ) ; lnc4   = .TRUE.
-     CASE ( '-vvl'     ) ; lg_vvl = .TRUE.
+     CASE ( '-nc4'     ) ; lnc4      = .TRUE.
+     CASE ( '-vvl'     ) ; lg_vvl    = .TRUE.
+     CASE ( '-teos10'  ) ; ll_teos10 = .TRUE. 
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil   == 'none' ) cf_sfil   = cf_tfil
   IF ( cf_sshfil == 'none' ) cf_sshfil = cf_tfil
@@ -216,7 +223,7 @@ PROGRAM cdfisopsi
      DEALLOCATE ( ztemp, zsal, zmask )
      !------------------------------------------------------------------------------
      ! 2. Projection of T,S and p on the chosen isopycnal layer (from cdfrhoproj)
-     ALLOCATE ( alpha(npiglo,npjglo) )
+     ALLOCATE ( zalpha(npiglo,npjglo) )
 
      !! Compute  the interpolation coefficients
      DO ji=1,npiglo
@@ -232,13 +239,13 @@ PROGRAM cdfisopsi
            ik0=ik
            IF (ik == 0) THEN
               ik=1
-              alpha(ji,jj) = 0.
+              zalpha(ji,jj) = 0.
            ELSE IF (v3d(ji,jj,ik+1) == zspval ) THEN
               ik0=0
-              alpha(ji,jj) = 0.
+              zalpha(ji,jj) = 0.
            ELSE
-              ! ... alpha is always in [0,1]. Adding ik0 ( >=1 ) for saving space for ik0
-              alpha(ji,jj)= (zsigmaref-v3d(ji,jj,ik))/(v3d(ji,jj,ik+1)-v3d(ji,jj,ik)) + ik0
+              ! ... zalpha is always in [0,1]. Adding ik0 ( >=1 ) for saving space for ik0
+              zalpha(ji,jj)= (zsigmaref-v3d(ji,jj,ik))/(v3d(ji,jj,ik+1)-v3d(ji,jj,ik)) + ik0
            ENDIF
         END DO
      END DO
@@ -339,7 +346,7 @@ PROGRAM cdfisopsi
 
      rdeltapsi2 = ( zpint - zpmean ) * zsva2
      ierr       = putvar(ncout, id_varout(7), rdeltapsi2, 1, npiglo, npjglo, ktime=jt)
-     DEALLOCATE ( zsva3, zsva2, alpha, zint, zpint )
+     DEALLOCATE ( zsva3, zsva2, zalpha, zint, zpint )
 
      ! 7. Finally we compute the surface streamfunction
      ALLOCATE(zssh(npiglo,npjglo) , zsigsurf(npiglo,npjglo), psi0(npiglo,npjglo) )
@@ -490,16 +497,16 @@ CONTAINS
     ENDIF
      DO ji=1,npiglo
         DO jj=1,npjglo
-           ! ik0 is retrieved from alpha, taking the integer part.
-           ! The remnant is alpha. 
-           ik0=INT(alpha(ji,jj))
-           alpha(ji,jj) =  alpha(ji,jj) - ik0
+           ! ik0 is retrieved from zalpha, taking the integer part.
+           ! The remnant is zalpha. 
+           ik0=INT(zalpha(ji,jj))
+           zalpha(ji,jj) =  zalpha(ji,jj) - ik0
            IF (ik0 /= 0) THEN
               P1=ptab3(ji,jj,ik0)
               P2=ptab3(ji,jj,ik0+1)
               ll_good = (P1 /= zspval .AND. P2 /= zspval)
               IF ( ll_good ) THEN
-                 ptabint(ji,jj)  = alpha(ji,jj) * P2          + (1-alpha(ji,jj)) * P1
+                 ptabint(ji,jj)  = zalpha(ji,jj) * P2          + (1-zalpha(ji,jj)) * P1
               ELSE
                  ptabint(ji,jj) = zspval
               ENDIF
@@ -512,7 +519,7 @@ CONTAINS
                 P1=ptab1d(ik0)
                 P2=ptab1d(ik0+1)
                 IF ( ll_good ) THEN
-                   ptabint2(ji,jj)  = alpha(ji,jj) * P2       + (1-alpha(ji,jj)) * P1
+                   ptabint2(ji,jj)  = zalpha(ji,jj) * P2       + (1-zalpha(ji,jj)) * P1
                 ELSE
                    ptabint2(ji,jj)  = zspval
                 ENDIF
@@ -520,8 +527,8 @@ CONTAINS
                 ptabint2(ji,jj) = zspval
              ENDIF
            ENDIF
-           ! re-add ik0 to alpha for the next computation
-           alpha(ji,jj) =  alpha(ji,jj) + ik0
+           ! re-add ik0 to zalpha for the next computation
+           zalpha(ji,jj) =  zalpha(ji,jj) + ik0
         END DO
      END DO
   END SUBROUTINE ProjectOverIso

@@ -87,12 +87,13 @@ PROGRAM cdfmxl
 
   LOGICAL                                      :: lexist         ! flag for existence of bathy_level file
   LOGICAL                                      :: lnc4=.FALSE.   ! flag for netcdf4 output with chunking and deflation
+  LOGICAL                                      :: ll_teos10  = .FALSE.  ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfmxl -t T-file [-s S-file] [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfmxl -t T-file [-s S-file] [-o OUT-file] [-nc4] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute 7 estimates of the mixed layer depth from temperature and '
@@ -115,6 +116,9 @@ PROGRAM cdfmxl
      PRINT *,'       [-s S-file] : input netcdf file (gridS), if vosaline not in T-file' 
      PRINT *,'       [-o OUT-file] : specify the name of output file instead of ', TRIM(cf_out)
      PRINT *,'       [-nc4] : use netcdf4 chunking and deflation on output '
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fzgr)
@@ -138,14 +142,17 @@ PROGRAM cdfmxl
   DO WHILE ( ijarg <= narg )
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum )
-     CASE ( '-t'   ) ; CALL getarg (ijarg,cf_tfil ) ; ijarg = ijarg + 1
-     CASE ( '-s'   ) ; CALL getarg (ijarg,cf_sfil ) ; ijarg = ijarg + 1
+     CASE ( '-t'      ) ; CALL getarg (ijarg,cf_tfil ) ; ijarg = ijarg + 1
+     CASE ( '-s'      ) ; CALL getarg (ijarg,cf_sfil ) ; ijarg = ijarg + 1
         ! options
-     CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE ( '-o'   ) ; CALL getarg (ijarg,cf_out  ) ; ijarg = ijarg + 1
-     CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum) ,' :  unknown option.' ; STOP 99
+     CASE ( '-nc4'    ) ; lnc4 = .TRUE.
+     CASE ( '-o'      ) ; CALL getarg (ijarg,cf_out  ) ; ijarg = ijarg + 1
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
+     CASE DEFAULT       ; PRINT *,' ERROR : ',TRIM(cldum) ,' :  unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 

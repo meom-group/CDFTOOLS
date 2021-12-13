@@ -15,7 +15,12 @@ NC4 =
 
 #CMIP6 = -D key_CMIP6
 CMIP6 =
-FFLAGS= -O2  $(NC4) $(CMIP6) -mips4 -bytereclen $(NCDF) -bytereclen $(OMP)
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+FFLAGS= -O2  $(NC4) $(CMIP6) $(GSW) -mips4 -bytereclen $(NCDF) -bytereclen $(OMP)
 
 INSTALL=$(HOME_BIS)/CDFTOOLS-2.1/
  

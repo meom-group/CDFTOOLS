@@ -17,15 +17,20 @@ NC4 = -Dkey_netcdf4
 
 #CMIP6 = -D key_CMIP6
 CMIP6 =
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
  
 F90=ifort
 MPF90=mpif90
 OMP=
 #OMP=-openmp
-FFLAGS= -O   -fp-model precise $(NCDF) $(NC4) $(CMIP6)   $(HDF5) $(ZLIB)  -fp-model precise $(OMP)
-#FFLAGS= -O   -fpe0 -CB -traceback -g -ftrapuv -fp-model precise $(NCDF) $(NC4) $(CMIP6)  $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
-#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) $(CMIP6)  $(HDF5) $(ZLIB)
-#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) $(CMIP6)  -assume byterecl -convert big_endian 
+FFLAGS= -O   -fp-model precise $(NCDF) $(NC4) $(CMIP6) $(GSW)   $(HDF5) $(ZLIB)  -fp-model precise $(OMP)
+#FFLAGS= -O   -fpe0 -CB -traceback -g -ftrapuv -fp-model precise $(NCDF) $(NC4) $(CMIP6) $(GSW)  $(HDF5) $(ZLIB)  -assume byterecl -convert big_endian 
+#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) $(CMIP6) $(GSW)  $(HDF5) $(ZLIB)
+#FFLAGS= -O  -fpe0 -CB -traceback -g -ftrapuv  $(NCDF) $(NC4) $(CMIP6) $(GSW)  -assume byterecl -convert big_endian 
 LMPI=-lmpich
 
 INSTALL=$(WORKDIR)/bin

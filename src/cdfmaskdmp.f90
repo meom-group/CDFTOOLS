@@ -62,6 +62,8 @@ PROGRAM cdfmaskdmp
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
 
   LOGICAL                                   :: lnc4 = .FALSE.     ! Use nc4 with chunking and deflation
+  LOGICAL                                   :: ll_teos10  = .FALSE. ! teos10 flag
+
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
   cl_z=cn_z
@@ -70,7 +72,7 @@ PROGRAM cdfmaskdmp
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmaskdmp -t T-file [-s S-file] [-refdep REF-depth] [-tau TIME-scale]'
      PRINT *,'             ... [-dens smin width] [-dep hmin width] [-lat latmax width] ...'
-     PRINT *,'             ... [-o OUT-file] [-nc4] [-zdim zdimnm]'
+     PRINT *,'             ... [-o OUT-file] [-nc4] [-zdim zdimnm] [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute a damping mask with smooth transition according to density,'
@@ -105,6 +107,9 @@ PROGRAM cdfmaskdmp
      PRINT *,'       [-nc4 ]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'             This option is effective only if cdftools are compiled with'
      PRINT *,'             a netcdf library supporting chunking and deflation.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'       Actual default values are :'
      PRINT '("             -refdep ", f6.0)', ref_dep
@@ -139,9 +144,13 @@ PROGRAM cdfmaskdmp
      CASE ( '-tau'   ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) tau
      CASE ( '-o'     ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
      CASE ( '-nc4'   ) ; lnc4 = .TRUE. 
+     CASE ( '-teos10') ; ll_teos10 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
+
   IF ( cf_sfil == 'none' ) cf_sfil =cf_tfil
 
   WRITE(cglobal,'(" cdfmaskdmp -t ",a," -s ",a," -refdep ",f6.0," -dens ",2f8.3," -dep ",2f5.0," -lat ",2f5.0," -o ",a," -tau ",f5.0)')  &

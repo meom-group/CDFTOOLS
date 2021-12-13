@@ -271,19 +271,20 @@ PROGRAM cdfmoy
            EXIT
         ENDIF
      ENDDO
+     PRINT *, " -vvl option. Found e3 variable :",TRIM(cv_e3)
   ENDIF
 
   lcaltmean=.TRUE.
   DO jvar = 1,nvars
      ! JMM vvl note : we suppose that 2D fields are not weighted averaged ( Questionable ? )
-     ll_vvl = lg_vvl .AND.  (ipk(jvar) > 1)
+     ll_vvl = lg_vvl .AND.  (ipk(jvar) > 1)  .AND.  (cv_nam(jvar) ) /= cv_e3 
      iwght=0
      IF ( cv_nam(jvar) == cn_vlon2d .OR. &     ! nav_lon
           cv_nam(jvar) == cn_vlat2d .OR. &     ! nav_lon
           cv_nam(jvar) == 'none'    ) THEN     ! nav_lat
         ! skip these variable
      ELSE
-        PRINT *,' Working with ', TRIM(cv_nam(jvar)), ipk(jvar)
+        PRINT *,' Working with ', TRIM(cv_nam(jvar)), ipk(jvar), 'vvl: ',ll_vvl
           DO jk = 1, ipk(jvar)
            PRINT *,'level ',jk
            dtab(:,:) = 0.d0 ; dtab2(:,:) = 0.d0 ; dtotal_time = 0.
@@ -339,8 +340,10 @@ PROGRAM cdfmoy
               ENDDO
            END DO
            ! finish with level jk ; compute mean (assume spval is 0 )
-           IF ( ll_vvl ) THEN ; rmean(:,:) = dtab(:,:)/de3s(:,:)
-           ELSE               ; rmean(:,:) = dtab(:,:)/ntframe
+           IF ( ll_vvl ) THEN 
+              rmean(:,:)=0.
+              WHERE ( de3s (:,:) /= 0.d0 ) rmean(:,:) = dtab(:,:)/de3s(:,:)
+           ELSE                          ; rmean(:,:) = dtab(:,:)/ntframe
            ENDIF
 
            IF ( lmskmiss ) rmean(:,:) = rmean(:,:)*(rmask2d(:,:)*1.d0)

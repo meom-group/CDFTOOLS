@@ -18,7 +18,12 @@ NC4 =
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
-FFLAGS=$(NCDF)  $(NC4) $(CMIP6) -dW -sx8 -C vopt  -Wf"-P nh" -Wf,-pvctl noassume loopcnt=10000 -L transform $(OMP)
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
+FFLAGS=$(NCDF)  $(NC4) $(CMIP6) $(GSW) -dW -sx8 -C vopt  -Wf"-P nh" -Wf,-pvctl noassume loopcnt=10000 -L transform $(OMP)
 
 INSTALL=./
 

@@ -85,13 +85,15 @@ PROGRAM cdfmxlhcsc
   LOGICAL                                      :: lfull=.FALSE.   ! flag for full step
   LOGICAL                                      :: lnc4 =.FALSE.   ! Use nc4 with chunking and deflation
   LOGICAL                                      :: lmld =.TRUE.    ! Flag to compute mld
+  LOGICAL                                      :: ll_teos10  = .FALSE. ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmxlhcsc -t T-file -C criteria -th THRESH-value [-hmin hmin] ...'
-     PRINT *,'            ... [-s S-file] [-o OUT-file] [-nc4] [-vvl] [-mld MLD-file MLD-var]'
+     PRINT *,'            ... [-s S-file] [-o OUT-file] [-nc4] [-vvl] [-teos10] ...'
+     PRINT *,'            ... [-mld MLD-file MLD-var]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the MiXed Layer depth, the Heat Content and Salt Content in the'
@@ -122,6 +124,9 @@ PROGRAM cdfmxlhcsc
      PRINT *,'                 as the variable MLD-var in the MLD-file. With this option, the'
      PRINT *,'                 heat and salt content can be computed from the MLD estimates'
      PRINT *,'                 provided by ''cdfmxl''.' 
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       ',TRIM(cn_fhgr),' ',TRIM(cn_fzgr),' and ',TRIM(cn_fmsk) 
@@ -156,12 +161,15 @@ PROGRAM cdfmxlhcsc
      CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out   ) ; ijarg = ijarg + 1  
      CASE ( '-nc4'   ) ; lnc4   = .TRUE.
      CASE ( '-vvl'   ) ; lg_vvl = .TRUE.
+     CASE ( '-teos10') ; ll_teos10 = .TRUE. 
      CASE ( '-mld'   ) ; CALL getarg (ijarg, cf_mld   ) ; ijarg = ijarg + 1
         ;                CALL getarg (ijarg, cv_mld   ) ; ijarg = ijarg + 1 
         ;                lmld = .FALSE.
      CASE DEFAULT  ; PRINT *, ' ERROR : Option ',TRIM(cldum),' unknown !' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
  IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 

@@ -16,8 +16,13 @@ NC4 =
 
 #CMIP6 = -D key_CMIP6
 CMIP6 =
-#FFLAGS= -O4  $(NC4) $(CMIP6) -qsuffix=f=f90   $(NCDF)  -q64 -qsave $(OMP)
-FFLAGS= -O4  $(NC4) $(CMIP6) -qsuffix=f=f90   $(NCDF)  -q64  $(OMP)
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+#FFLAGS= -O4  $(NC4) $(CMIP6) $(GSW) -qsuffix=f=f90   $(NCDF)  -q64 -qsave $(OMP)
+FFLAGS= -O4  $(NC4) $(CMIP6) $(GSW) -qsuffix=f=f90   $(NCDF)  -q64  $(OMP)
 
 INSTALL=./
  

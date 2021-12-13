@@ -6,7 +6,7 @@ Contributors (alphabetic order ) :
 C.Q. Akuetevi, M. Balmaseda, E. Behrens, F. Castruccio, M. Chekki, 
 P. Colombo, J. Deshayes, N. Djath, N. Ducousso, C. Dufour, R. Dussin, 
 N. Ferry, T. Graham, F. Hernandez, Q. Jamet, J. Jouanno, N. Jourdain, M. Juza, 
-A. Lecointre, S. Leroux, C. Lique, G. Mainsant, P. Mathiot, A. Melet,
+A. Lecointre, S. Leroux, C. Lique, W. Llovel, G. Mainsant, P. Mathiot, A. Melet,
 X. Meunier, G. Moreau, N. Merino, W. Rath, J. Regidor, M. Scheinert, 
 F. Schwarzkopf, A.M. Treguier, P. Verezemskaya
 
@@ -30,7 +30,7 @@ In this respect, the user's attention is drawn to the risks associated
 with loading,  using,  modifying and/or developing or reproducing the
 software by the user in light of its specific status of free software,
 that may mean  that it is complicated to manipulate,  and  that  also
-therefore means  that it is reserved for developers  and  experienced
+therefore means that it is reserved for developers  and  experienced
 professionals having in-depth computer knowledge. Users are therefore
 encouraged to load and test the software's suitability as regards their
 requirements in conditions enabling the security of their systems and/or 

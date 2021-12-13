@@ -99,6 +99,7 @@ PROGRAM cdfvsig
   LOGICAL                                   :: lperio= .FALSE.       ! checking E-W periodicity
   LOGICAL                                   :: lnc4  = .FALSE.       ! Use nc4 with chunking and deflation
   LOGICAL                                   :: lsal  = .FALSE.       ! flag for gridS file
+  LOGICAL                                   :: ll_teos10  = .FALSE.  ! teos10 flag
 
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
@@ -107,7 +108,7 @@ PROGRAM cdfvsig
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfvsig -c CONFIG-CASE -l LST-tags [-o OUT-root] [-nc4] [-no-w] ...'
-     PRINT *,'              ... [-S] [-no-sig]  [-no-uv] [-T ] [-depref LST-depht] '
+     PRINT *,'              ... [-S] [-no-sig]  [-no-uv] [-T ] [-depref LST-depht]  [-teos10]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order moments U.sig, V.sig' 
@@ -145,6 +146,9 @@ PROGRAM cdfvsig
      PRINT *,'        [-depref LST-depht] : give a comma-separated list of reference depths '
      PRINT *,'              for potential density computation. eg : ''-depref  0,2000,3000'' '
      PRINT *,'              If not specified the unique reference depth is  0m (surface).'
+     PRINT *,'        [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ',TRIM(cn_fmsk)
@@ -175,11 +179,14 @@ PROGRAM cdfvsig
      CASE ( '-no-uv' ) ; luvo  =.FALSE. 
      CASE ( '-T'     ) ; lTpt  =.TRUE.  
      CASE ( '-pref'  ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; CALL ParseRefDep(cldum)
-        ;                 lpref =.TRUE.  
+        ;                lpref =.TRUE.  
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
   
+  CALL eos_init ( ll_teos10 )
+
   ! initialize refdep if not done on command line
   IF ( .NOT. lpref ) THEN
      ndep = 1

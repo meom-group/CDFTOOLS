@@ -5,12 +5,17 @@ NC4 = -D key_netcdf4
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
 F90=ftn -e F # force preprocessor irrespective of capitalization of file name
              # extension
 
 #OMP=-mp=nonuma
 OMP=
-FFLAGS= $(NC4) $(CMIP6) -O 2  $(NCDF) $(LIBS) $(OMP)
+FFLAGS= $(NC4) $(CMIP6) $(GSW) -O 2  $(NCDF) $(LIBS) $(OMP)
 LMPI=-lmpich
 
 INSTALL=$(HOME)/local/bin/

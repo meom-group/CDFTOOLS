@@ -54,19 +54,22 @@ PROGRAM cdfvita
   CHARACTER(LEN=256)                         :: cf_tfil                 ! GridT file for T position
   CHARACTER(LEN=256)                         :: cf_out='vita.nc'        ! output file name
   CHARACTER(LEN=256)                         :: cldum                   ! dummy char variable
+  
 
   LOGICAL                                    :: lvertical = .FALSE.     ! vertical velocity  flag 
   LOGICAL                                    :: lperio    = .FALSE.     ! E_W periodicity flag 
   LOGICAL                                    :: lgeo      = .FALSE.     ! input U V files are geostrophic files
   LOGICAL                                    :: lcub      = .FALSE.     ! save U*U*U on  A grid
   LOGICAL                                    :: lnc4      = .FALSE.     ! Use nc4 with chunking and deflation
+  LOGICAL                                    :: lmod      = .FALSE.     ! flag for saving velocoty module only
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfvita -u U-file -v V-file -t T-file [-w W-file] [-geo] [-cubic]'
-     PRINT *,'               ... [-o OUT-file] [-nc4] [-lev LST-level]'
+     PRINT *,'             ... [-uvar U-var] [-vvar V-var] [-o OUT-file] [-nc4] ...'
+     PRINT *,'             ... [-lev LST-level] [-vitmod]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Creates a file with velocity components, module  and direction'
@@ -90,6 +93,9 @@ PROGRAM cdfvita
      PRINT *,'       [-o OUT-file ] : Specify name of output file instead of ',TRIM(cf_out)
      PRINT *,'       [-lev LST-level] : specify a blank-separated list of levels to be used.'
      PRINT *,'              (default option is to use all input levels).'
+     PRINT *,'       [-uvar U-var] : specify name of u-field. Default: ',TRIM(cn_vozocrtx)
+     PRINT *,'       [-vvar V-var] : specify name of v-field. Default: ',TRIM(cn_vomecrty)
+     PRINT *,'       [-vitmod] : only save sovitmod variable (smaller files)'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -112,17 +118,20 @@ PROGRAM cdfvita
   DO WHILE ( ijarg <= narg )
      CALL getarg( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-u'   ) ; CALL getarg(ijarg, cf_ufil ) ; ijarg=ijarg+1
-     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil ) ; ijarg=ijarg+1
+     CASE ( '-u'   ) ; CALL getarg(ijarg, cf_ufil )     ; ijarg=ijarg+1
+     CASE ( '-v'   ) ; CALL getarg(ijarg, cf_vfil )     ; ijarg=ijarg+1
         ! options
      CASE ( '-lev' ) ; CALL GetLevList
-     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil ) ; ijarg=ijarg+1
-     CASE ( '-w'   ) ; CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1
+     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil )     ; ijarg=ijarg+1
+     CASE ( '-w'   ) ; CALL getarg(ijarg, cf_wfil )     ; ijarg=ijarg+1
         ;              lvertical=.TRUE.
+     CASE ( '-uvar') ; CALL getarg(ijarg, cn_vozocrtx ) ; ijarg=ijarg+1
+     CASE ( '-vvar') ; CALL getarg(ijarg, cn_vomecrty ) ; ijarg=ijarg+1
      CASE ( '-geo' ) ; lgeo = .TRUE.
      CASE ('-cubic') ; lcub = .TRUE.
+     CASE ('-vitmod'); lmod = .TRUE.
      CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  ) ; ijarg=ijarg+1
+     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out  )     ; ijarg=ijarg+1
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
@@ -150,9 +159,13 @@ PROGRAM cdfvita
   ENDIF
 
   ! adjust number of variable according to  option
-  nvar=4
-  IF ( lvertical )  nvar = nvar + 1
-  IF ( lcub      )  nvar = nvar + 1
+  IF ( lmod) THEN
+    nvar=1
+  ELSE
+    nvar=4
+    IF ( lvertical )  nvar = nvar + 1
+    IF ( lcub      )  nvar = nvar + 1
+  ENDIF
 
   ALLOCATE ( ipk(nvar), id_varout(nvar), stypvar(nvar) )
   ALLOCATE ( gdept(nlev) )
@@ -181,13 +194,19 @@ PROGRAM cdfvita
      PRINT *,' E-W periodicity detected.'
   ENDIF
 
-  CALL CreateOutput
+  IF ( lmod ) THEN
+    CALL CreateOutput_mod
+  ELSE
+    CALL CreateOutput_full
+  ENDIF
 
   DO jt = 1, npt
      DO jlev = 1, nlev
         ik = nklevel(jlev)
         uc(:,:) = getvar(cf_ufil, cn_vozocrtx, ik ,npiglo, npjglo, ktime=jt )
         vc(:,:) = getvar(cf_vfil, cn_vomecrty, ik ,npiglo, npjglo, ktime=jt )
+        WHERE( uc > 1000 ) uc=0.
+        WHERE( vc > 1000 ) vc=0.
 
         ua = 0. ; va = 0. ; ua(:,:) = 0. ; va(:,:)=0. ; vmod(:,:)=0.
         IF ( lgeo ) THEN  ! geostrophic velocities
@@ -220,12 +239,16 @@ PROGRAM cdfvita
            vdir(1,:) = vdir(npiglo-1,:)
         ENDIF
         ivar = 1
-        ierr=putvar(ncout, id_varout(ivar), ua,   jlev ,npiglo, npjglo, ktime=jt ) ; ivar = ivar +1
-        ierr=putvar(ncout, id_varout(ivar), va,   jlev ,npiglo, npjglo, ktime=jt ) ; ivar = ivar +1
-        ierr=putvar(ncout, id_varout(ivar), vmod, jlev ,npiglo, npjglo, ktime=jt ) ; ivar = ivar +1
-        ierr=putvar(ncout, id_varout(ivar), vdir, jlev ,npiglo, npjglo, ktime=jt ) 
-        IF ( lcub ) THEN
-           ierr=putvar(ncout, id_varout(ivar_cub), vmod*vmod*vmod, jlev ,npiglo, npjglo, ktime=jt ) 
+        IF ( lmod ) THEN
+           ierr=putvar(ncout, id_varout(ivar), vmod, jlev ,npiglo, npjglo, ktime=jt ) ; ivar = ivar +1
+        ELSE
+           ierr=putvar(ncout, id_varout(ivar), ua,   jlev ,npiglo, npjglo, ktime=jt ) ; ivar = ivar +1
+           ierr=putvar(ncout, id_varout(ivar), va,   jlev ,npiglo, npjglo, ktime=jt ) ; ivar = ivar +1
+           ierr=putvar(ncout, id_varout(ivar), vmod, jlev ,npiglo, npjglo, ktime=jt ) ; ivar = ivar +1
+           ierr=putvar(ncout, id_varout(ivar), vdir, jlev ,npiglo, npjglo, ktime=jt ) 
+           IF ( lcub ) THEN
+              ierr=putvar(ncout, id_varout(ivar_cub), vmod*vmod*vmod, jlev ,npiglo, npjglo, ktime=jt ) 
+           ENDIF
         ENDIF
      END DO
   END DO
@@ -236,6 +259,8 @@ PROGRAM cdfvita
         DO jlev=1, nlev - 1
            uc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklevel(jlev),   npiglo, npjglo, ktime=jt )
            vc(:,:) = getvar(cf_wfil, cn_vovecrtz, nklevel(jlev)+1, npiglo, npjglo, ktime=jt )
+           WHERE( uc > 1000 ) uc=0.
+           WHERE( vc > 1000 ) vc=0.
            ua(:,:) = 0.5*(uc(:,:) + vc(:,:))*1000.  ! mm/sec
            ierr    = putvar(ncout, id_varout(ivar_vert), ua, jlev,      npiglo, npjglo, ktime=jt )
            uc(:,:) = vc(:,:)
@@ -255,7 +280,7 @@ PROGRAM cdfvita
 
 CONTAINS
 
-  SUBROUTINE CreateOutput
+  SUBROUTINE CreateOutput_full
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE CreateOutput  ***
     !!
@@ -362,7 +387,40 @@ CONTAINS
     dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
     ierr = putvar1d(ncout,  dtim,       npt, 'T')
 
-  END SUBROUTINE CreateOutput
+  END SUBROUTINE CreateOutput_full
+
+  SUBROUTINE CreateOutput_mod
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE CreateOutput  ***
+    !!
+    !! ** Purpose :  Create netcdf output file(s) 
+    !!
+    !! ** Method  :  Use stypvar global description of variables
+    !!
+    !!----------------------------------------------------------------------
+    ivar=0
+    ! Velocity module T point
+    ivar                            = ivar+1
+    ipk(ivar)                       = nlev
+    stypvar(ivar)%ichunk            = (/npiglo,MAX(1,npjglo/30),1,1 /)
+    stypvar(ivar)%cname             = 'sovitmod'
+    stypvar(ivar)%cunits            = 'm/s'
+    stypvar(ivar)%rmissing_value    = 0.
+    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_max         = 10000.
+    stypvar(ivar)%clong_name        = 'Velocity module T point'
+    stypvar(ivar)%cshort_name       = 'sovitmod'
+    stypvar(ivar)%conline_operation = 'N/A'
+    stypvar(ivar)%caxis             = 'TZYX'
+
+    ncout = create      (cf_out,   cf_tfil,  npiglo, npjglo, nlev     , ld_nc4=lnc4 )
+    ierr  = createvar   (ncout ,   stypvar,  nvar,   ipk,    id_varout, ld_nc4=lnc4 )
+    ierr  = putheadervar(ncout,    cf_tfil,  npiglo, npjglo, nlev,     pdep=gdept )
+
+    dtim = getvar1d(cf_ufil, cn_vtimec, npt     )
+    ierr = putvar1d(ncout,  dtim,       npt, 'T')
+
+  END SUBROUTINE CreateOutput_mod
 
   SUBROUTINE GetLevList
     !!---------------------------------------------------------------------

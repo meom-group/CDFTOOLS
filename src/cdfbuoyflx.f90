@@ -93,6 +93,8 @@ PROGRAM cdfbuoyflx
   LOGICAL                                   :: lchk =.FALSE.                     ! flag for missing files
   LOGICAL                                   :: lnc4 =.FALSE.                     ! flag for netcdf4 output
   LOGICAL                                   :: lsho =.FALSE.                     ! flag for short output
+  LOGICAL                                   :: ll_teos10  = .FALSE.              ! teos10 flag
+
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -129,6 +131,9 @@ PROGRAM cdfbuoyflx
      PRINT *,'       [-o OUT-file ] Default is ', TRIM(cf_out)
      PRINT *,'       [-short ] With this option only save the buoyancy flux without '
      PRINT *,'                  all the components of the flux.'
+     PRINT *,'       [-teos10] : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -151,22 +156,25 @@ PROGRAM cdfbuoyflx
   DO   WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
-     CASE ( '-f'   ) ; CALL getarg (ijarg, cf_flxfil) ; ijarg = ijarg + 1
-        ;              lchk = lchk .OR. chkfile (cf_flxfil)
-     CASE ( '-t'   ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
-        ;              lchk = lchk .OR. chkfile (cf_tfil  )
-     CASE ( '-s'   ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
-        ;              lchk = lchk .OR. chkfile (cf_sfil  )
-     CASE ( '-r'   ) ; CALL getarg (ijarg, cf_rnfil) ; ijarg = ijarg + 1
-        ;              lchk = lchk .OR. chkfile (cf_rnfil )
-     CASE ( '-sss' ) ; CALL getarg (ijarg, cv_sss) ; ijarg = ijarg + 1
-     CASE ( '-sst' ) ; CALL getarg (ijarg, cv_sst) ; ijarg = ijarg + 1
-     CASE ( '-nc4' ) ; lnc4 = .TRUE.
-     CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
-     CASE ('-short') ; lsho = .TRUE. ; np_varout = 1
+     CASE ( '-f'      ) ; CALL getarg (ijarg, cf_flxfil) ; ijarg = ijarg + 1
+        ;               ; lchk = lchk .OR. chkfile (cf_flxfil)
+     CASE ( '-t'      ) ; CALL getarg (ijarg, cf_tfil) ; ijarg = ijarg + 1
+        ;               ; lchk = lchk .OR. chkfile (cf_tfil  )
+     CASE ( '-s'      ) ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
+        ;               ; lchk = lchk .OR. chkfile (cf_sfil  )
+     CASE ( '-r'      ) ; CALL getarg (ijarg, cf_rnfil) ; ijarg = ijarg + 1
+        ;               ; lchk = lchk .OR. chkfile (cf_rnfil )
+     CASE ( '-sss'    ) ; CALL getarg (ijarg, cv_sss) ; ijarg = ijarg + 1
+     CASE ( '-sst'    ) ; CALL getarg (ijarg, cv_sst) ; ijarg = ijarg + 1
+     CASE ( '-nc4'    ) ; lnc4 = .TRUE.
+     CASE ( '-o'      ) ; CALL getarg (ijarg, cf_out) ; ijarg = ijarg + 1
+     CASE ('-short'   ) ; lsho = .TRUE. ; np_varout = 1
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init( ll_teos10 )
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
   IF (lchk ) STOP 99 ! missing files

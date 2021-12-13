@@ -16,7 +16,12 @@ NC4 =
 
 #CMIP6 = -D key_CMIP6
 CMIP6 =
-FFLAGS= -O4   $(NC4) $(CMIP6) -qsuffix=f=f90 -bmaxdata:500000000  $(NCDF)  -q64 -qsave $(OMP)
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+FFLAGS= -O4   $(NC4) $(CMIP6) $(GSW) -qsuffix=f=f90 -bmaxdata:500000000  $(NCDF)  -q64 -qsave $(OMP)
 
 INSTALL=/usr/local/bin
  

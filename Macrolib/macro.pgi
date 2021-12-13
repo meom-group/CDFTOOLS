@@ -17,6 +17,11 @@ NC4 =
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
-FFLAGS = -fast $(NCDF)  $(NC4) $(CMIP6)-byteswapio $(OMP)
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
+FFLAGS = -fast $(NCDF)  $(NC4) $(CMIP6) $(GSW)-byteswapio $(OMP)
 
 INSTALL=/usr/local/bin

@@ -11,6 +11,11 @@ NCDF = -I$(NETCDF_INCDIR) -I$(NETCDFF_INCDIR) $(_NETCDF_LDFLAGS) $(NETCDFF_LDFLA
 NC4=-Dkey_netcdf4
 #CMIP6 = -D key_CMIP6
 CMIP6 =
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
  
 F90=ifort
 MPF90=mpif90
@@ -19,8 +24,8 @@ MPF90=mpif90
 
 OMP=
 #OMP=-openmp
-FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) -fp-model precise $(OMP)
-#FFLAGS= -O  $(NCDF)  $(NC4) $(CMIP6)  -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW) -fp-model precise $(OMP)
+#FFLAGS= -O  $(NCDF)  $(NC4) $(CMIP6) $(GSW)  -assume byterecl -convert big_endian -CB -fpe0 -ftrapuv -traceback -g
 
 LMPI=-lmpich
 

@@ -58,6 +58,7 @@ PROGRAM cdfmkmask
   CHARACTER(LEN=256)                        :: cf_out = 'mask_sal.nc'   ! output file
   CHARACTER(LEN=256)                        :: cf_boundary = 'boundary.txt' ! default boundary input file
   CHARACTER(LEN=256)                        :: cv_mask                  ! variable name
+  CHARACTER(LEN=256)                        :: cv_nam                   ! variable name
   CHARACTER(LEN=256)                        :: cv_dep                   ! variable name
   CHARACTER(LEN=256)                        :: cldum                    ! dummy string
 
@@ -80,6 +81,7 @@ PROGRAM cdfmkmask
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmkmask -s S-file [-zoom lonmin lonmax latmin latmax] ...'
+     PRINT *,'                   ... [-var  VAR-name ] ...'
      PRINT *,'                   ... [-zoomij iimin iimax ijmin ijmax] ...'
      PRINT *,'                   ... [-zoombat bathymin bathymax]  ...'
      PRINT *,'                   ... [-zoomvar varname varmin varmax]  ...'
@@ -110,6 +112,8 @@ PROGRAM cdfmkmask
      PRINT *,'                   levels in the ocean.' 
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-var  VAR-name ] : give the name of the variable to work with, instead'
+     PRINT *,'                         ', TRIM(cn_vosaline),'.'
      PRINT *,'       [-zoom lonmin lonmax latmin latmax] : geographical windows used to'
      PRINT *,'                        limit the area where the mask is builded. Outside'
      PRINT *,'                        this area, the mask is set to 0.'
@@ -174,10 +178,12 @@ PROGRAM cdfmkmask
   ENDIF
 
   ijarg = 1
+  cv_nam = 'none'
   DO WHILE ( ijarg <= narg ) 
      CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE ( cldum )
      CASE ('-s','-f') ; CALL getarg (ijarg, cf_sfil) ; ijarg = ijarg + 1
+     CASE ('-var'   ) ; CALL getarg (ijarg, cv_nam ) ; ijarg = ijarg + 1
      CASE ( '-zoom' )  ! read a zoom lat/lon area
         lzoom = .TRUE.
         CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rlonmin
@@ -235,6 +241,7 @@ PROGRAM cdfmkmask
   IF ( lzoom .AND. lzoomij ) PRINT *, 'WARNING 2 spatial condition for mask'
 
   IF (.NOT. lzoomvar) cv_mask = cn_vosaline
+  IF ( cv_nam /= 'none' ) cv_mask = cv_nam
   IF (TRIM(cf_sfil)=='-maskfile') THEN
      cv_mask = cn_tmask
      cf_sfil = cn_fmsk

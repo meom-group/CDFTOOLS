@@ -12,7 +12,13 @@ NC4 =
 
 #CMIP6 = -D key_CMIP6
 CMIP6=
-FFLAGS= -O $(INCS) $(LIBS)  $(NC4) $(CMIP6) -fno-second-underscore -ffree-line-length-256 $(OMP)
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+
+FFLAGS= -O $(INCS) $(LIBS)  $(NC4) $(CMIP6) $(GSW) -fno-second-underscore -ffree-line-length-256 $(OMP)
 
 INSTALL=$(HOME)/local/bin
 INSTALL_MAN=$(HOME)/local/man

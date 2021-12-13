@@ -49,14 +49,16 @@ PROGRAM cdfsiginsitu
   CHARACTER(LEN=256)                        :: cv_tem             ! temperature name in netcdf
 
   TYPE (variable), DIMENSION(1)             :: stypvar            ! structure for attributes
+
   LOGICAL                                   :: lnc4 = .FALSE.     ! flag for missing files
+  LOGICAL                                   :: ll_teos10  = .FALSE. ! teos10 flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfsiginsitu -t T-file [-s S-file] [-sal SAL-name] [-tem TEM-name ]...'
-     PRINT *,'                [-dep depth] [-o OUT-file ] [-nc4 ] '
+     PRINT *,'                [-dep depth] [-o OUT-file ] [-nc4 ] [-teos10] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute in situ density from temperature and salinity. Depths are taken' 
@@ -73,6 +75,9 @@ PROGRAM cdfsiginsitu
      PRINT *,'       [-dep depth ]   : depth to be used in case of 2D input file (only)'
      PRINT *,'       [-nc4]          : enable chunking and compression'
      PRINT *,'       [-o OUT-file]   : specify output filename instead of ',TRIM(cf_out)
+     PRINT *,'       [-teos10]       : use TEOS10 equation of state instead of default EOS80'
+     PRINT *,'                 Temperature should be conservative temperature (CT) in deg C.'
+     PRINT *,'                 Salinity should be absolute salinity (SA) in g/kg.'
      PRINT *,'      '
      PRINT *,'     OPENMP SUPPORT : yes'
      PRINT *,'      '
@@ -97,17 +102,20 @@ PROGRAM cdfsiginsitu
   DO WHILE ( ijarg <= narg )
      CALL getarg(ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE ( cldum )
-     CASE ( '-t'   ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
+     CASE ( '-t'      ) ; CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1
 !    option
-     CASE ( '-s'   ) ; CALL getarg(ijarg, cf_sfil) ; ijarg=ijarg+1
-     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
-     CASE ( '-sal' ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
-     CASE ( '-tem' ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
-     CASE ( '-dep' ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) dep 
-     CASE ( '-nc4' ) ; lnc4 = .TRUE.
+     CASE ( '-s'      ) ; CALL getarg(ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ( '-o'      ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
+     CASE ( '-sal'    ) ; CALL getarg(ijarg, cv_sal ) ; ijarg=ijarg+1
+     CASE ( '-tem'    ) ; CALL getarg(ijarg, cv_tem ) ; ijarg=ijarg+1
+     CASE ( '-dep'    ) ; CALL getarg(ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) dep 
+     CASE ( '-nc4'    ) ; lnc4 = .TRUE.
+     CASE ( '-teos10' ) ; ll_teos10 = .TRUE. 
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum) ,' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
+
+  CALL eos_init ( ll_teos10 )
 
   IF ( cf_sfil == 'none' ) cf_sfil=cf_tfil
 

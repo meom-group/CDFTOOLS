@@ -20,7 +20,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfuvwt \
        cdfeke cdfrmsssh cdfstdevw cdfstdevts cdflinreg cdfimprovechk\
        cdfstats \
-       cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice\
+       cdfbn2 cdfrichardson cdfsig0 cdfsigntr cdfsigi cdfsiginsitu cdfbottomsig cdfbotpressure cdfspice \
        cdfcheckic \
        cdfbottom cdfets cdfokubow cdfstrain cdfcurl cdfdiv cdflap cdfw cdfgeo-uv cdfmxl \
        cdfrhoproj  cdfzisot cdfsigintegr cdfpvor \
@@ -43,7 +43,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdfocape cdf_compress \
        cdf_domain_modif  cdf_domain2bathy \
        cdf_remake_bathy \
-       cdf_dynadv_ubs 
+       cdf_dynadv_ubs  cdf_gsw
 
 .PHONY: all help clean cleanexe install man installman zclass_list.txt
 
@@ -495,8 +495,14 @@ cdfpolymask: cdfio.o modpoly.o cdfpolymask.f90
 cdfisf_fill: cdfio.o  modutils.o cdfisf_fill.f90
 	$(F90)   cdfisf_fill.f90  -o $(BINDIR)/cdfisf_fill cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
+cdfisf_fill_pm: cdfio.o  cdftools.o modutils.o cdfisf_fill_pm.f90
+	$(F90)   cdfisf_fill_pm.f90  -o $(BINDIR)/cdfisf_fill_pm cdfio.o cdftools.o modutils.o modcdfnames.o $(FFLAGS)
+
 cdfisf_forcing: cdfio.o  cdfisf_forcing.f90
 	$(F90)   cdfisf_forcing.f90  -o $(BINDIR)/cdfisf_forcing cdfio.o modcdfnames.o $(FFLAGS)
+
+cdfisf_forcing_pm: cdfio.o  cdfisf_forcing_pm.f90
+	$(F90)   cdfisf_forcing_pm.f90  -o $(BINDIR)/cdfisf_forcing_pm cdfio.o modcdfnames.o $(FFLAGS)
 
 cdfisf_rnf: cdfio.o  cdfisf_rnf.f90
 	$(F90)   cdfisf_rnf.f90  -o $(BINDIR)/cdfisf_rnf cdfio.o modcdfnames.o $(FFLAGS)
@@ -543,6 +549,9 @@ cdf_domain_modif:  cdf_domain_modif.f90
 cdf_domain2bathy:  cdfio.o modutils.o cdf_domain2bathy.f90
 	$(F90) cdf_domain2bathy.f90  -o $(BINDIR)/cdf_domain2bathy cdfio.o modcdfnames.o modutils.o $(FFLAGS)
 
+cdf_gsw: modgsw.o cdfio.o cdf_gsw.F90
+	$(F90) cdf_gsw.F90  -o $(BINDIR)/cdf_gsw cdfio.o modcdfnames.o modgsw.o $(FFLAGS) $(GSWLIB)
+
 ## Modules
 
 cdfio.o: cdfio.F90 modcdfnames.o
@@ -562,6 +571,9 @@ modcdfnames.o: modcdfnames.F90 modcdfnames_CMIP6.h90
 
 modutils.o: cdfio.o modutils.f90
 	$(F90) -c modutils.f90 $(FFLAGS)
+
+modgsw.o:  modgsw.F90
+	$(F90) -c modgsw.F90 $(FFLAGS)
 
 ## Utilities
 clean:

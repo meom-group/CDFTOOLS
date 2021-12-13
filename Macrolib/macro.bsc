@@ -4,16 +4,17 @@
 #  $Id: macro.jade 539 2011-07-11 10:33:35Z molines $
 # -------------------------------------------------------------
 
-NCDF = -I$(NETCDF_INCDIR) -I$(NETCDFF_INCDIR) $(NETCDF_LDFLAGS) $(NETCDFF_LDFLAGS)
+#NCDF = -I$(NETCDF_INCDIR) -I$(NETCDFF_INCDIR) $(NETCDF_LDFLAGS) $(NETCDFF_LDFLAGS)
+NCDF = -I$(NETCDF_INC) $(LDFLAGS)
 
 #NC4=
 NC4=-Dkey_netcdf4
 #CMIP6 = -D key_CMIP6
 CMIP6 =
 
-GSW=
-#GSW=-D key_GSW
-GSWLIB=
+#GSW=
+GSW=-D key_GSW
+GSWLIB= -L$(WORKDIR)/lib -lgsw
 #GSWLIB=-lgsw
  
 F90=ifort
