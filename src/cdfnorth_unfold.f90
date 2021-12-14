@@ -328,6 +328,8 @@ CONTAINS
           ELSE
              chkisig=zrat
           ENDIF
+       CASE ( 'F','f' ) 
+         PRINT *,' F type case not completly coded in chkisig ...'
        END SELECT
     CASE ( 'F','f')
        PRINT *, 'F pivot not done yet ' ; STOP 99
@@ -388,6 +390,14 @@ CONTAINS
              ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
              DO ji = 1, npiarctic
                 ii = ipivot -ji + 2
+                ptabout(ji,ij) = ksig * ptabin(ii, jj)
+             ENDDO
+          ENDDO
+       CASE ('F','f' )
+          DO jj=npjglo-4,kjpacif-1, -1
+             ij=  ijn + ( npjglo - 4  - jj ) +1 
+             DO ji = 1, npiarctic
+                ii = ipivot - ji + 2
                 ptabout(ji,ij) = ksig * ptabin(ii, jj)
              ENDDO
           ENDDO
