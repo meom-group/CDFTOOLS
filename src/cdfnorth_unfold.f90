@@ -72,7 +72,8 @@ PROGRAM cdfnorth_unfold
   narg = iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfnorth_unfold -f IN-file -jatl jatl -jpacif jpacif -piv pivot ...'
-     PRINT *,'              ... -p C-type [-v VAR-list] [-o OUT-file] [-nc4]'
+     PRINT *,'              ... -p C-type [-v VAR-list] [-tdim TIME-dim] [-zdim Z-dim] ...'
+     PRINT *,'      [-tvar TIME-var] [-zvar Z-var] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Unfolds the Artic Ocean in an ORCA configuration. Produce a netcdf' 
@@ -93,6 +94,14 @@ PROGRAM cdfnorth_unfold
      PRINT *,'     OPTIONS :'
      PRINT *,'       [-v VAR-list] : give comma separated list of variable to unfold'
      PRINT *,'              Default : all variables in file.'
+     PRINT *,'       [-tdim TIME-dim] : give the name of the time dimension if not '
+     PRINT *,'               NEMO standard (time_counter)'
+     PRINT *,'       [-zdim Z-dim] : give the name of the Z  dimension if not '
+     PRINT *,'               NEMO standard (deptht, depthu ... ))'
+     PRINT *,'       [-tvar TIME-var] : give the name of the time variable if not '
+     PRINT *,'               NEMO standard (time_counter)'
+     PRINT *,'       [-zvar TIME-var] : give the name of the Z variable if not '
+     PRINT *,'               NEMO standard (deptht, depthu ...)'
      PRINT *,'       [-o OUT-file] : Specify output file name instead of ',TRIM(cf_out)
      PRINT *,'       [-nc4 ]       : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                 This option is effective only if cdftools are compiled with'
@@ -119,6 +128,10 @@ PROGRAM cdfnorth_unfold
       CASE ( '-p'     ) ; CALL getarg (ijarg, ctype ) ; ijarg=ijarg+1
       ! options
       CASE ( '-v'     ) ; CALL getarg (ijarg, cldum ) ; ijarg=ijarg+1 ; CALL ParseVars(cldum) ; llst = .true.
+      CASE ( '-tdim'  ) ; CALL getarg (ijarg, cn_t  )     ; ijarg=ijarg+1 ;
+      CASE ( '-zdim'  ) ; CALL getarg (ijarg, cn_z  )     ; ijarg=ijarg+1 ;
+      CASE ( '-tvar'  ) ; CALL getarg (ijarg, cn_vtimec ) ; ijarg=ijarg+1 ;
+      CASE ( '-zvar'  ) ; CALL getarg (ijarg, cn_vdeptht) ; ijarg=ijarg+1 ;
       CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
       CASE ( '-nc4'   ) ; lnc4 = .TRUE.
       CASE DEFAULT      ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
@@ -202,6 +215,7 @@ PROGRAM cdfnorth_unfold
      DO jk = 1, ipk(jvar)
         PRINT *,'level ',jk
         tab(:,:) = 0.
+        tab(:,:) = -9999.
         DO jt=1,npt
            v2d(:,:) = getvar(cf_in, cv_names(jvar), jk, npiglo, npjglo, ktime=jt )
 
@@ -285,7 +299,7 @@ CONTAINS
     CASE ( 'T','t')
        SELECT CASE (cdtype )
        CASE ( 'T','t') 
-          ii = 1
+          ii = 10  
           DO WHILE ( ptab(ii,npjglo-1)  == 0 .AND. ii < npiglo ) 
              ii = ii+1
           ENDDO
@@ -329,7 +343,19 @@ CONTAINS
              chkisig=zrat
           ENDIF
        CASE ( 'F','f' ) 
-         PRINT *,' F type case not completly coded in chkisig ...'
+          ii = 1
+          DO WHILE ( ptab(ii,npjglo-1) == 0 .AND. ii < npiglo )
+             ii = ii+1
+          ENDDO
+          ij = 2*nipivot - ii + 1
+          zrat = ptab(ij,npjglo-2) / ptab(ii,npjglo-1)
+          IF ( ABS(zrat) /= 1. ) THEN
+             PRINT *, 'INCOHERENT value in V point ', TRIM(cv_names(jvar)), zrat
+             ierr = closeout(ncout)
+             STOP 99
+          ELSE
+             chkisig=zrat
+          ENDIF
        END SELECT
     CASE ( 'F','f')
        PRINT *, 'F pivot not done yet ' ; STOP 99
@@ -372,7 +398,7 @@ CONTAINS
        CASE ('T','t')
           DO jj=npjglo-3,kjpacif, -1
              ij=  ijn + ( npjglo - 3  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
-             DO ji = 2, npiarctic
+             DO ji = 1, npiarctic
                 ii = ipivot - ji + 3 
                 ptabout(ji,ij) = ksig * ptabin(ii, jj)
              ENDDO
@@ -380,7 +406,7 @@ CONTAINS
        CASE ('V','v')
           DO jj=npjglo-4,kjpacif-1, -1
              ij=  ijn + ( npjglo - 4  - jj ) +1 !  2 *npjglo - kjatl -1 -jj
-             DO ji = 2, npiarctic
+             DO ji = 1, npiarctic
                 ii = ipivot - ji + 3
                 ptabout(ji,ij) = ksig * ptabin(ii, jj)
              ENDDO
@@ -438,8 +464,8 @@ CONTAINS
   ierr  = createvar   (ncout,  stypvar, nvars,     ipk,       id_varout, cdglobal=TRIM(cglobal)               , ld_nc4=lnc4)
   ierr  = putheadervar(ncout,  cf_in,   npiarctic, npjarctic, npk, pnavlon=tablon, pnavlat=tablat, cdep=cv_dep)
 
-  dtim = getvar1d(cf_in, cn_vtimec, npt     )
-  ierr = putvar1d(ncout, dtim,      npt, 'T')
+! dtim = getvar1d(cf_in, cn_vtimec, npt     )
+! ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 
