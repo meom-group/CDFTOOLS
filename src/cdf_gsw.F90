@@ -183,23 +183,163 @@ PROGRAM cdf_gsw
      PRINT *, "This function/subroutine is not yet ready." 
      STOP  
   CASE ( 'gsw_alpha' ) 
-     PRINT *, "This function/subroutine is not yet ready." 
-     STOP  
+     IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
+     CALL SetDims(cf_sa)
+     ALLOCATE( dv1(npiglo,npjglo), dv2(npiglo,npjglo),v3(npiglo,npjglo), tmsk(npiglo,npjglo) )
+     ALLOCATE( dv1_1d(npk) )
+     IF ( cv_out == 'none') cv_out ='alpha'
+     IF ( cv_sal /= 'none') cn_vosaline = cv_sal
+     IF ( cv_tem /= 'none') cn_votemper = cv_tem
+     nvar=1
+     stypvar(1)%cunits     = '1/K'
+     stypvar(1)%valid_min  =  0.
+     stypvar(1)%valid_max  = 30.
+     stypvar(1)%clong_name = 'Thermal Expansion coefficient wrt CT and SA'
+
+     CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
+
+     DO jt = 1, npt
+        DO jk = 1, npk
+           tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
+           dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           dv2(:,:) = getvar(cf_ct, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           DO jj = 1,npjglo
+              DO ji = 1,npiglo
+                 v3(ji,jj)  = gsw_alpha (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+              ENDDO
+           ENDDO
+           ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
+        ENDDO
+     ENDDO
+     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     ierr = closeout(ncout)
   CASE ( 'gsw_alpha_on_beta' ) 
-     PRINT *, "This function/subroutine is not yet ready." 
-     STOP  
+     IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
+     CALL SetDims(cf_sa)
+     ALLOCATE( dv1(npiglo,npjglo), dv2(npiglo,npjglo),v3(npiglo,npjglo), tmsk(npiglo,npjglo) )
+     ALLOCATE( dv1_1d(npk) )
+     IF ( cv_out == 'none') cv_out ='alpha_on_beta'
+     IF ( cv_sal /= 'none') cn_vosaline = cv_sal
+     IF ( cv_tem /= 'none') cn_votemper = cv_tem
+     nvar=1
+     stypvar(1)%cunits     = 'kg g^-1 K^-1'
+     stypvar(1)%valid_min  =  0.
+     stypvar(1)%valid_max  = 30.
+     stypvar(1)%clong_name = 'Thermal Expansion coefficient wrt CT and SA divided by the saline contraction coefficient'
+
+     CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
+
+     DO jt = 1, npt
+        DO jk = 1, npk
+           tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
+           dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           dv2(:,:) = getvar(cf_ct, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           DO jj = 1,npjglo
+              DO ji = 1,npiglo
+                 v3(ji,jj)  = gsw_alpha_on_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+              ENDDO
+           ENDDO
+           ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
+        ENDDO
+     ENDDO
+     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     ierr = closeout(ncout)
   CASE ( 'gsw_alpha_wrt_t_exact' ) 
-     PRINT *, "This function/subroutine is not yet ready." 
-     STOP  
+     IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
+     CALL SetDims(cf_sa)
+     ALLOCATE( dv1(npiglo,npjglo), dv2(npiglo,npjglo),v3(npiglo,npjglo), tmsk(npiglo,npjglo) )
+     ALLOCATE( dv1_1d(npk) )
+     IF ( cv_out == 'none') cv_out ='alpha_wrt_t'
+     IF ( cv_sal /= 'none') cn_vosaline = cv_sal
+     IF ( cv_tem /= 'none') cn_votemper = cv_tem
+     nvar=1
+     stypvar(1)%cunits     = 'K^-1'
+     stypvar(1)%valid_min  =  0.
+     stypvar(1)%valid_max  = 30.
+     stypvar(1)%clong_name = 'thermal expansion coefficient wrt insitu temperature'
+
+     CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
+
+     DO jt = 1, npt
+        DO jk = 1, npk
+           tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
+           dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           dv2(:,:) = getvar(cf_it, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           DO jj = 1,npjglo
+              DO ji = 1,npiglo
+                 v3(ji,jj)  = gsw_alpha_wrt_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+              ENDDO
+           ENDDO
+           ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
+        ENDDO
+     ENDDO
+     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     ierr = closeout(ncout)
   CASE ( 'gsw_alpha_wrt_t_ice' ) 
      PRINT *, "This function/subroutine is not yet ready." 
      STOP  
   CASE ( 'gsw_beta' ) 
-     PRINT *, "This function/subroutine is not yet ready." 
-     STOP  
+     IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
+     CALL SetDims(cf_sa)
+     ALLOCATE( dv1(npiglo,npjglo), dv2(npiglo,npjglo),v3(npiglo,npjglo), tmsk(npiglo,npjglo) )
+     ALLOCATE( dv1_1d(npk) )
+     IF ( cv_out == 'none') cv_out ='beta'
+     IF ( cv_sal /= 'none') cn_vosaline = cv_sal
+     IF ( cv_tem /= 'none') cn_votemper = cv_tem
+     nvar=1
+     stypvar(1)%cunits     = 'kg/g'
+     stypvar(1)%valid_min  =  0.
+     stypvar(1)%valid_max  = 30.
+     stypvar(1)%clong_name = 'Saline contraction coefficient  wrt CT and SA'
+
+     CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
+
+     DO jt = 1, npt
+        DO jk = 1, npk
+           tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
+           dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           dv2(:,:) = getvar(cf_ct, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           DO jj = 1,npjglo
+              DO ji = 1,npiglo
+                 v3(ji,jj)  = gsw_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+              ENDDO
+           ENDDO
+           ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
+        ENDDO
+     ENDDO
+     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     ierr = closeout(ncout)
   CASE ( 'gsw_beta_const_t_exact' ) 
-     PRINT *, "This function/subroutine is not yet ready." 
-     STOP  
+     IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
+     CALL SetDims(cf_sa)
+     ALLOCATE( dv1(npiglo,npjglo), dv2(npiglo,npjglo),v3(npiglo,npjglo), tmsk(npiglo,npjglo) )
+     ALLOCATE( dv1_1d(npk) )
+     IF ( cv_out == 'none') cv_out ='beta_const_t'
+     IF ( cv_sal /= 'none') cn_vosaline = cv_sal
+     IF ( cv_tem /= 'none') cn_votemper = cv_tem
+     nvar=1
+     stypvar(1)%cunits     = 'kg/g'
+     stypvar(1)%valid_min  =  0.
+     stypvar(1)%valid_max  = 30.
+     stypvar(1)%clong_name = 'Saline contraction coefficient  wrt in situ temperature and SA'
+
+     CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
+
+     DO jt = 1, npt
+        DO jk = 1, npk
+           tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
+           dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           dv2(:,:) = getvar(cf_it, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           DO jj = 1,npjglo
+              DO ji = 1,npiglo
+                 v3(ji,jj)  = gsw_beta_const_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+              ENDDO
+           ENDDO
+           ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
+        ENDDO
+     ENDDO
+     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     ierr = closeout(ncout)
   CASE ( 'gsw_c_from_sp' ) 
      PRINT *, "This function/subroutine is not yet ready." 
      STOP  
