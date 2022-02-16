@@ -464,8 +464,8 @@ CONTAINS
   ierr  = createvar   (ncout,  stypvar, nvars,     ipk,       id_varout, cdglobal=TRIM(cglobal)               , ld_nc4=lnc4)
   ierr  = putheadervar(ncout,  cf_in,   npiarctic, npjarctic, npk, pnavlon=tablon, pnavlat=tablat, cdep=cv_dep)
 
-! dtim = getvar1d(cf_in, cn_vtimec, npt     )
-! ierr = putvar1d(ncout, dtim,      npt, 'T')
+  dtim = getvar1d(cf_in, cn_vtimec, npt     )
+  ierr = putvar1d(ncout, dtim,      npt, 'T')
 
   END SUBROUTINE CreateOutput
 
