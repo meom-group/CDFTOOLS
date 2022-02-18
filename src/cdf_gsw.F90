@@ -199,6 +199,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -211,7 +212,7 @@ PROGRAM cdf_gsw
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
         ENDDO
      ENDDO
-     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     DEALLOCATE ( dv1, dv2, v3 ,dv1_1d,tmsk)
      ierr = closeout(ncout)
   CASE ( 'gsw_alpha_on_beta' ) 
      IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
@@ -230,6 +231,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -242,7 +244,7 @@ PROGRAM cdf_gsw
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
         ENDDO
      ENDDO
-     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     DEALLOCATE ( dv1, dv2, v3 ,dv1_1d,tmsk)
      ierr = closeout(ncout)
   CASE ( 'gsw_alpha_wrt_t_exact' ) 
      IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
@@ -261,6 +263,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -273,7 +276,7 @@ PROGRAM cdf_gsw
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
         ENDDO
      ENDDO
-     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     DEALLOCATE ( dv1, dv2, v3 ,dv1_1d,tmsk)
      ierr = closeout(ncout)
   CASE ( 'gsw_alpha_wrt_t_ice' ) 
      PRINT *, "This function/subroutine is not yet ready." 
@@ -295,6 +298,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -307,7 +311,7 @@ PROGRAM cdf_gsw
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
         ENDDO
      ENDDO
-     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     DEALLOCATE ( dv1, dv2, v3 ,dv1_1d,tmsk)
      ierr = closeout(ncout)
   CASE ( 'gsw_beta_const_t_exact' ) 
      IF ( chkfile(cf_sa) .OR. chkfile(cf_ct) .OR. chkfile( cn_fmsk) )  STOP 99
@@ -326,6 +330,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -338,7 +343,7 @@ PROGRAM cdf_gsw
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
         ENDDO
      ENDDO
-     DEALLOCATE ( dv1, dv2, v3 ,v1_1d,tmsk)
+     DEALLOCATE ( dv1, dv2, v3 ,dv1_1d,tmsk)
      ierr = closeout(ncout)
   CASE ( 'gsw_c_from_sp' ) 
      PRINT *, "This function/subroutine is not yet ready." 
@@ -740,6 +745,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -770,6 +776,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -800,6 +807,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -830,6 +838,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar)
   
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -860,6 +869,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar)
   
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -891,6 +901,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar, pdep=dv1_1d)
     
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -925,6 +936,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -961,6 +973,7 @@ PROGRAM cdf_gsw
      dv3 = getvar(cf_sa, cn_vlat2d, 1, npiglo, npjglo)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -989,6 +1002,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sk, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -1025,6 +1039,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -1074,6 +1089,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -1112,6 +1128,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa,nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
@@ -1162,6 +1179,7 @@ PROGRAM cdf_gsw
      CALL CreateOutput(cf_out,cv_out,cf_sa, nvar, pdep=dv1_1d)
 
      DO jt = 1, npt
+        PRINT *, 'JT = ', jt,'/',npt
         DO jk = 1, npk
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
