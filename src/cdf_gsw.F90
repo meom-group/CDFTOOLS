@@ -204,9 +204,13 @@ PROGRAM cdf_gsw
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
            dv2(:,:) = getvar(cf_ct, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           v3=0.
            DO jj = 1,npjglo
               DO ji = 1,npiglo
-                 v3(ji,jj)  = gsw_alpha (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                IF ( tmsk(ji,jj) == 1 ) THEN
+!                v3(ji,jj)  = gsw_alpha (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                  v3(ji,jj)  = gsw_alpha (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))
+                ENDIF
               ENDDO
            ENDDO
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
@@ -236,9 +240,13 @@ PROGRAM cdf_gsw
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
            dv2(:,:) = getvar(cf_ct, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           v3=0.
            DO jj = 1,npjglo
               DO ji = 1,npiglo
-                 v3(ji,jj)  = gsw_alpha_on_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                IF ( tmsk(ji,jj) == 1 ) THEN
+!                v3(ji,jj)  = gsw_alpha_on_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                 v3(ji,jj)  = gsw_alpha_on_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk)) 
+                ENDIF
               ENDDO
            ENDDO
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
@@ -268,9 +276,13 @@ PROGRAM cdf_gsw
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
            dv2(:,:) = getvar(cf_it, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           v3=0. 
            DO jj = 1,npjglo
               DO ji = 1,npiglo
-                 v3(ji,jj)  = gsw_alpha_wrt_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                IF ( tmsk(ji,jj) == 1 ) THEN
+!                v3(ji,jj)  = gsw_alpha_wrt_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                 v3(ji,jj)  = gsw_alpha_wrt_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))
+                ENDIF
               ENDDO
            ENDDO
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
@@ -303,9 +315,13 @@ PROGRAM cdf_gsw
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
            dv2(:,:) = getvar(cf_ct, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           v3=0.
            DO jj = 1,npjglo
               DO ji = 1,npiglo
-                 v3(ji,jj)  = gsw_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                IF ( tmsk(ji,jj) == 1 ) THEN
+!                v3(ji,jj)  = gsw_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                 v3(ji,jj)  = gsw_beta (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))
+                ENDIF
               ENDDO
            ENDDO
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
@@ -335,9 +351,13 @@ PROGRAM cdf_gsw
            tmsk(:,:)= getvar(cn_fmsk,cn_tmask, jk, npiglo, npjglo)
            dv1(:,:) = getvar(cf_sa, cn_vosaline, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
            dv2(:,:) = getvar(cf_it, cn_votemper, jk, npiglo, npjglo, ktime=jt) * tmsk(:,:)
+           v3=0.
            DO jj = 1,npjglo
               DO ji = 1,npiglo
-                 v3(ji,jj)  = gsw_beta_const_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                IF ( tmsk(ji,jj) == 1 ) THEN
+!                v3(ji,jj)  = gsw_beta_const_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))  * tmsk(ji,jj)
+                 v3(ji,jj)  = gsw_beta_const_t_exact (dv1(ji,jj), dv2(ji,jj) , dv1_1d(jk))
+                ENDIF
               ENDDO
            ENDDO
            ierr = putvar(ncout, id_varout(1), v3, jk, npiglo, npjglo, ktime=jt )
