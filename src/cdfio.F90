@@ -179,6 +179,8 @@
   PUBLIC :: closeout, ncopen
   PUBLIC :: ERR_HDL
 
+  PRIVATE :: FindDimName, FindVarName
+
 
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
@@ -1286,6 +1288,139 @@ CONTAINS
     istatus=NF90_CLOSE(incid)
 
   END FUNCTION getvarname
+
+  FUNCTION FindDimName(cdfile,cddim)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION FindDimName  ***
+    !!
+    !! ** Purpose :  Look for a dimension name in the input file, according
+    !!               to its generic name. Return the real name according to
+    !!               the various possibilities indicated in the generic name:
+    !!               example : cn_x='|x|X|lon|x_grid_T|x_grid_U|x_grid_V|x_grid_W|'
+    !!               Generic names are setup in modcdfnames.F90
+    !!
+    !! ** Method  :  Search for choices using | as a limiting chararcter, in the
+    !!               generic name. If found return the name, else return 'unknown' 
+    !!
+    !!    Reference : using adaptation of Pierre Mathiot fork.
+    !!
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*), INTENT(in) :: cdfile       ! file name to search for dimensions
+    CHARACTER(LEN=*), INTENT(in) :: cddim        ! Generic dimension name. May contains a choice
+                                                 ! for various possibilities.
+                                                 ! example : cn_x='|x|X|lon|x_grid_T|x_grid_U|x_grid_V|x_grid_W|'
+    CHARACTER(LEN=256)           :: FindDimName  ! return value of the function
+
+    CHARACTER(LEN=256) :: cl_dimname
+    INTEGER(KIND=4)    :: jd                     ! dummy loop index
+    INTEGER(KIND=4)    :: istatus, idx_dim       ! integer working variable for netcdf
+    INTEGER(KIND=4)    :: indims, incid, id_dim  ! idem...
+    !!----------------------------------------------------------------------
+    FindDimName='unknown'
+    idx_dim = 1
+    istatus = NF90_OPEN(cdfile,NF90_NOWRITE,incid)
+    IF (istatus /= 0) THEN
+       PRINT *, 'ERROR in opening file ',TRIM(cdfile)
+       STOP 98
+    ENDIF
+    istatus=NF90_INQUIRE(incid, ndimensions=indims)
+    istatus=NF90_INQ_DIMID(incid, cddim, id_dim)
+
+    IF (istatus /= NF90_NOERR ) THEN
+       ! cddim not found
+       idx_dim = 0
+       ! loop on existing dimensions
+       DO jd = 1, indims
+          istatus=NF90_INQUIRE_DIMENSION(incid, jd, name=cl_dimname )
+          idx_dim=INDEX('|'//TRIM(cddim)//'|','|'//TRIM(cl_dimname)//'|')
+          IF (idx_dim /= 0) THEN
+             FindDimName = TRIM(cl_dimname)
+             EXIT
+          ENDIF
+       END DO
+    ELSE
+       FindDimName = TRIM(cddim)
+    ENDIF
+
+    IF (idx_dim==0) THEN
+       PRINT *, 'Dimensions ',TRIM(cddim)
+       PRINT *, 'not found in file ',TRIM(cdfile)
+       PRINT *, 'dimension name set to unknown'
+    ELSE
+       PRINT *, 'Dimension name used is ',TRIM(FindDimName)
+    ENDIF
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION FindDimName
+
+  FUNCTION FindVarName(cdfile,cdvar,ld_verbose)
+    !!---------------------------------------------------------------------
+    !!                  ***  FUNCTION FindVarName  ***
+    !!
+    !! ** Purpose :  Look for a variable name in the input file, according
+    !!               to its generic name. Return the real name according to
+    !!               the various possibilities indicated in the generic name:
+    !!               example :  cn_votemper='|thetao|votemper|temp|temperature|t_an|TPOTEN|'
+    !!               Generic names are setup in modcdfnames.F90
+    !!
+    !! ** Method  :  Search for choices using | as a limiting chararcter, in the
+    !!               generic name. If found return the name, else return 'unknown' 
+    !!
+    !!    Reference : using adaptation of Pierre Mathiot fork.
+    !!----------------------------------------------------------------------
+    CHARACTER(LEN=*),  INTENT(in) :: cdfile      ! file name to search for dimension
+    CHARACTER(LEN=*),  INTENT(in) :: cdvar       ! Generic variable name. May contains a choice
+                                                 ! for various possibilities.
+                                                 ! example :  cn_votemper='|thetao|votemper|temp|temperature|t_an|TPOTEN|'
+    LOGICAL, OPTIONAL, INTENT(in) :: ld_verbose  !
+    CHARACTER(LEN=256)            :: FindVarName ! return value of the function
+
+    LOGICAL            :: ll_verbose=.TRUE.      !  fix verbosity ...
+    CHARACTER(LEN=256) :: cl_varname
+    INTEGER(KIND=4)    :: jv                     ! dummy loop index
+    INTEGER(KIND=4)    :: istatus, idx_var       ! working integer for netcdf
+    INTEGER(KIND=4)    :: invars, incid, id_var  ! working integer for netcdf
+    !!----------------------------------------------------------------------
+    ll_verbose = .TRUE.
+    IF ( PRESENT(ld_verbose) ) ll_verbose = ld_verbose
+
+    FindVarName='unknown'
+    idx_var = 1
+    istatus = NF90_OPEN(cdfile,NF90_NOWRITE,incid)
+    IF (istatus /= 0) THEN
+       PRINT *, 'ERROR in opening file ',TRIM(cdfile)
+       STOP 98
+    ENDIF
+
+    istatus = NF90_INQUIRE (incid, nvariables = invars )
+    istatus = NF90_INQ_VARID ( incid,cdvar,id_var)
+    IF (istatus /= NF90_NOERR) THEN
+       ! cdvar not found in file, search for possibilities
+       idx_var = 0
+       DO jv = 1, invars
+          istatus=NF90_INQUIRE_VARIABLE(incid, jv, name=cl_varname )
+          idx_var=INDEX('|'//TRIM(cdvar)//'|','|'//TRIM(cl_varname)//'|')
+          IF (idx_var /= 0) THEN
+             FindVarName=TRIM(cl_varname)
+             EXIT
+          ENDIF
+       END DO
+    ELSE
+       FindVarName=TRIM(cdvar)
+    ENDIF
+
+    IF (ll_verbose) THEN
+       IF (idx_var==0) THEN
+          PRINT *, 'Variable ',TRIM(cdvar)
+          PRINT *, 'not found in file ',TRIM(cdfile)
+          PRINT *, 'variable name set to unknown'
+       ELSE
+          PRINT *, 'Variable used is ',TRIM(FindVarName)
+       ENDIF
+    END IF
+    istatus=NF90_CLOSE(incid)
+
+  END FUNCTION FindVarName
 
   FUNCTION  getvar (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime, ldiom)
     !!---------------------------------------------------------------------
