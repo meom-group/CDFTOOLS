@@ -15,6 +15,7 @@ PROGRAM cdfsteric_rho1035
   !!               rho0 is set to 1035 kg/m3 as recommanded in the NEMO book
   !!
   !! History : 4.2  : 10/2021  :  W. Llovel     : Original code (from cdfdynh_anom.f90)
+  !!                  04/2022  : J.M. Molines   : Add some options 
   !!----------------------------------------------------------------------
   USE cdfio
   USE eos, ONLY : sigmai, eos_init
@@ -50,6 +51,7 @@ PROGRAM cdfsteric_rho1035
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: zssh             ! Sea Surface Heigh
 
   REAL(KIND=8)                              :: drau0 = 1000.d0  ! density of fresh water
+  REAL(KIND=8)                              :: drhoref =1035.d0 ! reference density of sea water
   REAL(KIND=8)                              :: dgrav = 9.81d0   ! gravity
   REAL(KIND=8), DIMENSION(:),   ALLOCATABLE :: dtim             ! time counter
   REAL(KIND=8), DIMENSION(:,:), ALLOCATABLE :: dhdy, dterm      ! dynamic height, working array
@@ -74,8 +76,8 @@ PROGRAM cdfsteric_rho1035
 
   narg= iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsteric_rho1035 -f T-file [-limit lev1 lev2] [-vvl] [-teos10] '
-     PRINT *,'                    [-o OUT-file] [-nc4]'
+     PRINT *,' usage : cdfsteric_rho1035 -f T-file [-s S-file ] [-limit lev1 lev2] [-vvl] '
+     PRINT *,'             [-rhoref RHO-ref] [-teos10] [-o OUT-file] [-nc4]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Compute steric height from T-file given as argument.'
@@ -91,6 +93,8 @@ PROGRAM cdfsteric_rho1035
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
      PRINT *,'       [ -s S-file:] Give salinity file if not the same than T-file.'
+     PRINT *,'       [ -rhoref RHO-ref:] Specify the reference density for SeaWater'
+     PRINT *,'          Default is ',drhoref, ' kg/m3'
      PRINT *,'       [-limit lev1 lev2] : if specified, the program will only output the'
      PRINT *,'              dynamic height anomaly at lev1 with reference at lev2.'
      PRINT *,'       [-vvl] : use time-varying vertical metrics.'
@@ -128,6 +132,7 @@ PROGRAM cdfsteric_rho1035
      CASE ( '-f'     ) ; CALL getarg (ijarg, cf_tfil) ; ijarg=ijarg+1
         ! options
      CASE ( '-s'     ) ; CALL getarg (ijarg, cf_sfil) ; ijarg=ijarg+1
+     CASE ( '-rhoref') ; CALL getarg (ijarg, cldum  ) ; ijarg=ijarg+1 ; READ(cldum,*) drhoref
      CASE ( '-o'     ) ; CALL getarg (ijarg, cf_out ) ; ijarg=ijarg+1
         ;                lout  = .TRUE.
      CASE ( '-nc4'   ) ; lnc4  = .TRUE.
@@ -225,7 +230,8 @@ PROGRAM cdfsteric_rho1035
         ! we compute the term of the integral : (1/rhoref) * sum [ (rho -
         ! rhoref) * dz ]
         !
-        dterm =  -(1.d0 / 1035.) *  ( ( drau0 + dsig(:,:)) - ( drau0 + dsig0(:,:) ) ) * rdep
+!       dterm =  -(1.d0 / drhoref) *  ( ( drau0 + dsig(:,:)) - ( drau0 + dsig0(:,:) ) ) * rdep
+        dterm =  -(1.d0 / drhoref) *  (   dsig(:,:) - dsig0(:,:) )  * rdep
         ! in land, it seems appropriate to stop the computation
         WHERE(zsal == zsps ) dterm = 0
 
