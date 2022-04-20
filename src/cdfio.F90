@@ -2387,7 +2387,9 @@ CONTAINS
           IF ( .NOT. PRESENT(cdep) .OR. idep /= NF90_NOERR ) THEN  ! look for standard dep name
              DO jj = 1,jpdep
                 cldep=cldept(jj)
-                z1d=getvar1d(cdfile,cldep,kpk,idep)
+                IF ( .NOT. chkvar(cdfile,cldep,.FALSE.) ) THEN
+                   z1d=getvar1d(cdfile,cldep,kpk,idep)
+                ENDIF
                 IF ( idep == NF90_NOERR )  EXIT
              END DO
              IF (jj == jpdep +1 ) THEN
