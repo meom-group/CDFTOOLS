@@ -130,3 +130,10 @@ When using TEOS10, temperatures should be Conservative Temperature (CT, DegC) an
 When using EOS80, temperatures should be Potential Temperature (PT, DegC) and salinity should be Practical Salinity (SP, PSU)   
 As of Oct. 2021, no sanity check is performed for controling this important point.
 
+#### Interface with GSW library.
+ * [GSW library](http://www.teos-10.org/pubs/gsw/html/gsw_contents.html#1) provides a collection of functions and routines linked
+ with the TEOS-10 Equation of state for Sea Water, using Conservative Temperature (CT) and Absolute Salinity (SA). 
+ In CDFTOOLS, `cdf_gsw` is an interface with GSW toolbox. For using it, key_GSW must be defined in make.macro and the `libgsw.a` must
+ be precompiled on your system. Up to now, only a subset of the GSW functions is interfaced, but cdf_gsw provides a usefull framework
+ for interfacing other functions.
+
