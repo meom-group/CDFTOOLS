@@ -38,7 +38,7 @@ EXEC = cdfmoy cdfmoyt cdfstd  cdfmoy_weighted cdfmoy_freq cdfvT cdfuv\
        cdfcsp cdfcoloc cdfmltmask cdfstatcoord  cdfpolymask cdfsmooth cdfmkmask cdfdifmask cdfmeshmask\
        cdfgradT cdfhgradb cdfhgradv cdfeddyscale_pass1 cdfeddyscale \
        cdfnrj_transfert cdfnrj_bci cdfnrj_bti cdfnrj_components cdfcofdis cdfnorth_unfold cdfmppini\
-       cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular\
+       cdf_xtrac_brokenline cdf2levitusgrid2d  cdf2regular cdfsteric\
        cdfdynh_anom cdfsteric_rho1035 cdffracinv  cdfmaskdmp cdfmkresto cdfnan cdfscale cdfshift05 cdfnamelist \
        cdfisopsi cdf2matlab cdffixtime cdfgeostrophy cdfchgrid cdfcmp cdfmsk cdfocape cdf_compress \
        cdf_domain_modif  cdf_domain2bathy \
@@ -254,6 +254,9 @@ cdfdynh_anom: cdfio.o  eos.o  cdfdynh_anom.f90
 
 cdfsteric_rho1035: cdfio.o  eos.o  cdfsteric_rho1035.f90
 	$(F90)  cdfsteric_rho1035.f90 -o $(BINDIR)/cdfsteric_rho1035 cdfio.o eos.o  modcdfnames.o $(FFLAGS)
+
+cdfsteric: cdfio.o  eos.o  cdfsteric.f90
+	$(F90)  cdfsteric.f90 -o $(BINDIR)/cdfsteric cdfio.o eos.o  modcdfnames.o $(FFLAGS)
 
 cdfmaskdmp: cdfio.o  eos.o  cdfmaskdmp.f90
 	$(F90)  cdfmaskdmp.f90 -o $(BINDIR)/cdfmaskdmp cdfio.o eos.o modcdfnames.o  $(FFLAGS)
