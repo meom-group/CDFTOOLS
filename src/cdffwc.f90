@@ -73,7 +73,7 @@ PROGRAM cdffwc
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdffwc -s S-file -bv BASIN-var1,var2,.. [-o OUT-file] [-sref REFSAL]'
-     PRINT *,'                 [--ssh-file SSH-file] [-full] [-accum] [-ssh] [-vvl]'
+     PRINT *,'          [-b SUBAS-file] [--ssh-file SSH-file] [-full] [-accum] [-ssh] [-vvl]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the freshwater content in a given basin from top to bottom'
