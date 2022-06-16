@@ -430,9 +430,9 @@ CONTAINS
        stypvar(24)%cshort_name='sss  '               ;   stypvar(25)%cshort_name='sst'
     ENDIF
 
-    ncout = create      (cf_out, cf_tfil, npiglo,    npjglo, 1,          ld_nc4=lnc4 )
+    ncout = create      (cf_out, cf_tfil, npiglo,    npjglo, 0,          ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar, np_varout, ipk,    id_varout , ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_tfil, npiglo,    npjglo, 1,   pdep=zdep )
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo,    npjglo, 0,   pdep=zdep )
   END SUBROUTINE CreateOutput
 
 

@@ -218,9 +218,9 @@ CONTAINS
     stypvar(1)%caxis             = 'TYX'
 
     ! create output fileset
-    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, npk      , ld_nc4=lnc4 )
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 0      , ld_nc4=lnc4 )
     ierr  = createvar   (ncout,  stypvar, 1     , ipk   , id_varout, ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, npk       )
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 0       )
 
     dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
     ierr = putvar1d(ncout,   dtim     , npt, 'T')

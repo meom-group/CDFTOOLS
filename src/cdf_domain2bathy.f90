@@ -156,9 +156,9 @@ CONTAINS
    rlon =getvar(cf_in, cn_glamt, 1, npiglo, npjglo)  ! nav_lon
    rlat =getvar(cf_in, cn_gphit, 1, npiglo, npjglo)  ! nav_lat
 
-    ncout = create      (cf_out, 'none', npiglo, npjglo, 1 , ld_nc4=lnc4)
+    ncout = create      (cf_out, 'none', npiglo, npjglo, 0 , ld_nc4=lnc4)
     ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout , ld_nc4=lnc4)
-    ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, 1,  pnavlon=rlon, pnavlat=rlat )
+    ierr  = putheadervar(ncout, cf_in,   npiglo, npjglo, 0,  pnavlon=rlon, pnavlat=rlat )
 
     dtim  = getvar1d    (cf_in, cn_vtimec, npt     )
     ierr  = putvar1d    (ncout, dtim,      npt, 'T')

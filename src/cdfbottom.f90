@@ -205,9 +205,9 @@ CONTAINS
     ! create output fileset
     ! create output file taking the sizes in cf_in
 
-    ncout = create      (cf_out,   cf_in  , npiglo, npjglo, 1         , ld_nc4=lnc4 ) ! 1 level file
+    ncout = create      (cf_out,   cf_in  , npiglo, npjglo, 0         , ld_nc4=lnc4 ) ! 1 level file
     ierr  = createvar   (ncout   , stypvar, nvars , ipko  , id_varout , ld_nc4=lnc4 )
-    ierr  = putheadervar(ncout   , cf_in  , npiglo, npjglo, 1         )
+    ierr  = putheadervar(ncout   , cf_in  , npiglo, npjglo, 0         )
     dtim  = getvar1d(cf_in, cn_vtimec, npt     )
     ierr  = putvar1d(ncout, dtim,      npt, 'T')
 

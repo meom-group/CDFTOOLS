@@ -333,9 +333,9 @@ CONTAINS
       ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
       ierr  = putheadervar(ncout, cf_tfil,   npiglo, npjglo, npk, pdep=gdepw,  cdep=cn_vdepthw  ) 
     ELSE
-      ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1                    , ld_nc4=lnc4  )
+      ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 0                    , ld_nc4=lnc4  )
       ierr  = createvar   (ncout, stypvar, nvar, ipk, id_varout, cdglobal=cglobal, ld_nc4=lnc4  )
-      ierr  = putheadervar(ncout, cf_tfil,   npiglo, npjglo, 1                                  ) 
+      ierr  = putheadervar(ncout, cf_tfil,   npiglo, npjglo, 0                                  ) 
     ENDIF
 
     dtim  = getvar1d    (cf_tfil, cn_vtimec, npt     )

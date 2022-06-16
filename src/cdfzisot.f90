@@ -248,9 +248,9 @@ CONTAINS
     stypvar%caxis             = 'TYX'
 
     ! Create output file, based on existing input gridT file
-    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 1               , ld_nc4=lnc4)
+    ncout = create      (cf_out, cf_tfil, npiglo, npjglo, 0               , ld_nc4=lnc4)
     ierr  = createvar   (ncout,  stypvar, pnvarout,      ipk,    id_varout, ld_nc4=lnc4)
-    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 1, pdep=rdep)
+    ierr  = putheadervar(ncout,  cf_tfil, npiglo, npjglo, 0, pdep=rdep)
 
     dtim = getvar1d(cf_tfil, cn_vtimec, npt     )
     ierr = putvar1d(ncout,   dtim,      npt, 'T')
