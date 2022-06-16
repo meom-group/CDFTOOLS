@@ -73,7 +73,7 @@ PROGRAM cdfdiv
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfdiv -u U-file U-var -v V-file V-var -l LST-level [-8]...'
      PRINT *,'          ... [-surf] [-overf] [-full] [-o OUT-file ] [-nc4] '
-     PRINT *,'          ... [-vvl T-file]'
+     PRINT *,'          ... [-vvl T-file U-file V-file]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the divergence of the flow from the U and V velocity components.'
@@ -96,7 +96,8 @@ PROGRAM cdfdiv
      PRINT *,'       [-nc4]  : Use netcdf4 output with chunking and deflation level 1.'
      PRINT *,'                This option is effective only if cdftools are compiled with'
      PRINT *,'                a netcdf library supporting chunking and deflation.'
-     PRINT *,'       [-vvl T-file] : use time-varying e3t, specify T-file for e3t.'
+     PRINT *,'       [-vvl T-file U-file V-file] : use time-varying e3t,e3u, e3v, specify '
+     PRINT *,'              files where e3x variables are read (e3t, e3u, e3v).'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        ', TRIM(cn_fhgr),' ',TRIM(cn_fzgr)
@@ -126,7 +127,9 @@ PROGRAM cdfdiv
      CASE ('-nc4'  ) ; lnc4   = .TRUE.
      CASE ('-o'    ) ; CALL getarg(ijarg, cf_out ) ; ijarg=ijarg+1
      CASE ('-vvl'  ) ; lg_vvl = .TRUE.
-        ;              CALL getarg(ijarg, cf_tfil) ; ijarg=ijarg+1 
+        ;              CALL getarg(ijarg, cn_fe3t ) ; ijarg=ijarg+1 
+        ;              CALL getarg(ijarg, cn_fe3u ) ; ijarg=ijarg+1 
+        ;              CALL getarg(ijarg, cn_fe3v ) ; ijarg=ijarg+1 
      CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
@@ -138,10 +141,6 @@ PROGRAM cdfdiv
   IF ( lchk ) STOP 99 ! missing files
 
   IF ( lg_vvl ) THEN
-     cn_fe3u = cf_ufil
-     cn_fe3v = cf_vfil
-     cn_fe3t = cf_tfil
-
      cn_ve3u = cn_ve3uvvl
      cn_ve3v = cn_ve3vvvl
      cn_ve3t = cn_ve3tvvl
