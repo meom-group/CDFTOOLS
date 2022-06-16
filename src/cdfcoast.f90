@@ -18,11 +18,12 @@ PROGRAM cdfcoast
   IMPLICIT NONE
 
   INTEGER(KIND=4)                              :: ierr               ! error status
-  INTEGER(KIND=4)                              :: ji, jj             ! dummy loop index
+  INTEGER(KIND=4)                              :: ji, jj, jw         ! dummy loop index
   INTEGER(KIND=4)                              :: narg, iargc, ijarg ! command line 
   INTEGER(KIND=4)                              :: npiglo, npjglo     ! size of the domain
   INTEGER(KIND=4)                              :: isum               ! sum of the 9 tmask point
   INTEGER(KIND=4)                              :: ncout              ! ncid of output file
+  INTEGER(KIND=4)                              :: iwidth=1           ! width of coastal band
   INTEGER(KIND=4), DIMENSION(1)                :: ipk, id_varout     ! outptut variables : number of levels,
 
   INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: itmask             ! mask at jk level 
@@ -40,7 +41,7 @@ PROGRAM cdfcoast
 
   narg = iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfcoast -f MASK-file [-v MASK-var] [-nc4] [-o OUT-file] '
+     PRINT *,' usage : cdfcoast -f MASK-file [-v MASK-var] [-nc4] [-o OUT-file] [-w width ] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       This program is used to create a coastal mask file, in wich ocean'
@@ -52,6 +53,7 @@ PROGRAM cdfcoast
      PRINT *,'      '
      PRINT *,'      OPTIONS : '
      PRINT *,'       -v MASK-var : input netcdf mask file.' 
+     PRINT *,'       -w width : width (pixel) of the coastal band'
      PRINT *,'       -nc4 : use netcdf4/Hdf5 chunking and deflation.'
      PRINT *,'       -o OUT-file     : name of coastal_mask file.[',TRIM(cf_out),']'
      PRINT *,'      '
@@ -70,6 +72,7 @@ PROGRAM cdfcoast
     SELECT CASE ( cldum)
     CASE ( '-f'   ) ; CALL getarg(ijarg, cf_msk   )  ; ijarg = ijarg + 1
     CASE ( '-v'   ) ; CALL getarg(ijarg, cn_tmask )  ; ijarg = ijarg + 1
+    CASE ( '-w'   ) ; CALL getarg(ijarg, cldum    )  ; ijarg = ijarg + 1 ; READ(cldum,*) iwidth
     CASE ( '-nc4' ) ; lnc4 = .true. 
     CASE ( '-o'   ) ; CALL getarg(ijarg, cf_out   )  ; ijarg = ijarg + 1 
     CASE DEFAULT    ; PRINT *,' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
@@ -93,15 +96,18 @@ PROGRAM cdfcoast
   ALLOCATE( icoast(npiglo,npjglo) )
   itmask(:,:) = getvar(cf_msk, cn_tmask, 1, npiglo, npjglo)
   icoast(:,:) = 0
+  DO jw = 1, iwidth
   DO jj = 2, npjglo-1
     DO ji = 2, npiglo-1
       IF ( itmask(ji,jj)  == 1 ) THEN
          isum=SUM(itmask(ji-1:ji+1, jj)) +  SUM(itmask(ji, jj-1:jj+1))
          ! check against 6 instead of 5 because central point (i,j) is
          ! counted twice
-         IF ( isum /= 6 ) icoast(ji,jj) = 1
+         IF ( isum /= 6 ) icoast(ji,jj) = icoast(ji,jj) + 1
       ENDIF
     ENDDO
+  ENDDO
+  WHERE (icoast == 1 ) itmask = 0
   ENDDO
 
   CALL CreateOutput
@@ -140,10 +146,10 @@ CONTAINS
     stypvar(1)%caxis             = 'TYX'
     stypvar(1)%cprecision        = 'i2'
 
-    ncout = create      (cf_out, cf_msk,  npiglo, npjglo, 1, ld_nc4=lnc4 )
+    ncout = create      (cf_out, cf_msk,  npiglo, npjglo, 0, ld_nc4=lnc4 )
     ierr  = createvar   (ncout, stypvar, 1, ipk, id_varout,  ld_nc4=lnc4 )
 
-    ierr  = putheadervar(ncout,  cf_msk,  npiglo, npjglo, 1)
+    ierr  = putheadervar(ncout,  cf_msk,  npiglo, npjglo, 0)
     dltim = 0.d0
     ierr = putvar1d(ncout, dltim, 1,'T')
 
