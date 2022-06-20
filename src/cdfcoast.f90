@@ -52,7 +52,7 @@ PROGRAM cdfcoast
      PRINT *,'       -f MASK-file  : name of the mask file ' 
      PRINT *,'      '
      PRINT *,'      OPTIONS : '
-     PRINT *,'       -v MASK-var : input netcdf mask file.' 
+     PRINT *,'       -v MASK-var : input netcdf mask variable.' 
      PRINT *,'       -w width : width (pixel) of the coastal band'
      PRINT *,'       -nc4 : use netcdf4/Hdf5 chunking and deflation.'
      PRINT *,'       -o OUT-file     : name of coastal_mask file.[',TRIM(cf_out),']'
@@ -81,15 +81,12 @@ PROGRAM cdfcoast
 
   IF (  chkfile(cf_msk) ) STOP 99 ! missing files
 
-  ! append _masked to input file name and copy initial file to new file, which will be modified
-  !  using dd more efficient than cp for big files
-
+  ! get NEMO grid information
   npiglo = getdim (cf_msk,cn_x)
   npjglo = getdim (cf_msk,cn_y)
 
   PRINT *, 'npiglo = ', npiglo
   PRINT *, 'npjglo = ', npjglo
-
 
   ! Allocate arrays
   ALLOCATE( itmask(npiglo,npjglo) )
