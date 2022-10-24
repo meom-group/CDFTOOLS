@@ -297,7 +297,7 @@ CONTAINS
     stypvar(ivar)%cname             = 'sovitua'
     stypvar(ivar)%cunits            = 'm/s'
     stypvar(ivar)%rmissing_value    = 0.
-    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_min         = -10000.
     stypvar(ivar)%valid_max         = 10000.
     stypvar(ivar)%clong_name        = 'Zonal Velocity T point'
     stypvar(ivar)%cshort_name       = 'sovitua'
@@ -311,7 +311,7 @@ CONTAINS
     stypvar(ivar)%cname             = 'sovitva'
     stypvar(ivar)%cunits            = 'm/s'
     stypvar(ivar)%rmissing_value    = 0.
-    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_min         = -10000.
     stypvar(ivar)%valid_max         = 10000.
     stypvar(ivar)%clong_name        = 'Meridional Velocity T point'
     stypvar(ivar)%cshort_name       = 'sovitva'
@@ -325,7 +325,7 @@ CONTAINS
     stypvar(ivar)%cname             = 'sovitmod'
     stypvar(ivar)%cunits            = 'm/s'
     stypvar(ivar)%rmissing_value    = 0.
-    stypvar(ivar)%valid_min         = 0.
+    stypvar(ivar)%valid_min         = -10000.
     stypvar(ivar)%valid_max         = 10000.
     stypvar(ivar)%clong_name        = 'Velocity module T point'
     stypvar(ivar)%cshort_name       = 'sovitmod'
@@ -355,7 +355,7 @@ CONTAINS
        stypvar(ivar)%cname             = 'sovitwa'
        stypvar(ivar)%cunits            = 'mm/s'
        stypvar(ivar)%rmissing_value    = 0.
-       stypvar(ivar)%valid_min         = 0.
+       stypvar(ivar)%valid_min         = -10000.
        stypvar(ivar)%valid_max         = 10000.
        stypvar(ivar)%clong_name        = 'Vertical Velocity at T point'
        stypvar(ivar)%cshort_name       = 'sovitwa'
@@ -372,7 +372,7 @@ CONTAINS
        stypvar(ivar)%cname             = 'sovitmod3'
        stypvar(ivar)%cunits            = 'm3/s3'
        stypvar(ivar)%rmissing_value    = 0.
-       stypvar(ivar)%valid_min         = 0.
+       stypvar(ivar)%valid_min         = -10000.
        stypvar(ivar)%valid_max         = 10000.
        stypvar(ivar)%clong_name        = 'cube of velocity module'
        stypvar(ivar)%cshort_name       = 'sovitmod3'
