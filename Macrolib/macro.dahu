@@ -5,7 +5,10 @@
 #  $ source /applis/site/nix.sh
 #  $ nix-env -i -A nur.repos.gricad.intel-oneapi
 #  $ source ~/.nix-profile/setvars.sh
-#
+# and the activation of netcdf librairy :
+#  $ . /home/mchekki/LibGlace/versions/modules/modules_rev4401cc7d_gnu6.3.0/init/bash
+#  $ export MODULEPATH="/home/mchekki/LibGlace/modulefiles:$MODULEPATH"
+#  $ module load netcdf/netcdf-4.7.2_intel21_hdf5_MPIO
 # and the path to netcdf librairy :
 #  $ export NETCDF_DIR=/home/chekkim/LibGlace/versions/netcdf/intelmpi/netcdf-4.6.1_intel18
 #
