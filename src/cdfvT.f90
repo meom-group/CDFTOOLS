@@ -71,6 +71,7 @@ PROGRAM cdfvT
   narg= iargc()
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfvT -c CONFIG-CASE -l LST-tags [-o OUT-file ] [-nc4 ] [-vvl]'
+     PRINT *, '        [-namT T-VAR name] [-namU U-VAR name] [-namV V-VAR name]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Compute the time average values for second order moments V.T, V.S, U.T' 
@@ -89,6 +90,9 @@ PROGRAM cdfvT
      PRINT *,'       [-o OUT-file] : specify output file name instead of ', TRIM(cf_out)
      PRINT *,'       [-nc4 ] use netcdf4 output with chunking and deflation 1'
      PRINT *,'       [-vvl ] use time varying vertical metrics.'
+     PRINT *,'       [-namT ] T-VAR name : specify T variable name in netcdf file'
+     PRINT *,'       [-namU ] U-VAR name : specify U variable name in netcdf file'
+     PRINT *,'       [-namV ] V-VAR name : specify V variable name in netcdf file'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'        none'
@@ -114,6 +118,9 @@ PROGRAM cdfvT
      CASE ( '-o'   ) ; CALL getarg (ijarg, cf_out) ; ijarg=ijarg+1
      CASE ( '-nc4' ) ; lnc4   = .TRUE.
      CASE ( '-vvl' ) ; lg_vvl = .TRUE.
+     CASE ( '-namT') ; CALL getarg (ijarg, cn_votemper) ; ijarg=ijarg+1
+     CASE ( '-namU') ; CALL getarg (ijarg, cn_vozocrtx) ; ijarg=ijarg+1
+     CASE ( '-namV') ; CALL getarg (ijarg, cn_vomecrty) ; ijarg=ijarg+1
      CASE DEFAULT    ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   ENDDO
