@@ -217,7 +217,7 @@ PROGRAM cdfbuoyflx
 
   DO jt = 1, npt
      ! read sss for masking purpose and sst
-     zsss(:,:) = getvar(cf_tfil, cv_sss, 1, npiglo, npjglo, ktime=jt)
+     zsss(:,:) = getvar(cf_sfil, cv_sss, 1, npiglo, npjglo, ktime=jt)
      zmask=1. ; WHERE ( zsss == zsps ) zmask=0.
      zsst(:,:) = getvar(cf_tfil, cv_sst, 1, npiglo, npjglo, ktime=jt)
 
