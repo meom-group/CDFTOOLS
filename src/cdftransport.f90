@@ -229,6 +229,7 @@ PROGRAM cdftransport
   LOGICAL                                     :: l_tsfil = .FALSE.   ! flag for using T file instead of VT file
   LOGICAL                                     :: l_self  = .FALSE.   ! flag for self mesh/mask files in the input
   LOGICAL                                     :: l_cumul = .FALSE.   ! flag for cumulated transport output
+  LOGICAL                                     :: l_nan   = .FALSE.   ! flag for NaN replacement
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -240,7 +241,8 @@ PROGRAM cdftransport
      PRINT *,'                  ... [-ut UT-file] [-utvar UT-var US-var ]'
      PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... '
      PRINT *,'                  ... [-full] [-time jt] [-vvl] [-self] ...'
-     PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix][-cumul]'
+     PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix][-cumul]...'
+     PRINT *,'                  ... [-nan]'
      PRINT *,'      '
      PRINT *,'    PURPOSE :'
      PRINT *,'      Compute the transports (volume, heat and salt) accross a section.'
@@ -302,6 +304,8 @@ PROGRAM cdftransport
      PRINT *,'                  output file. '
      PRINT *,'      [-cumul]   : Save cumulative transports along the section in a separate'
      PRINT *,'                   file. '
+     PRINT *,'      [-nan  ]   : Usefull when missing values/Fill_value are NaN : replace'
+     PRINT *,'                   NaN by 0.'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'      Files ',TRIM(cn_fhgr),', ',TRIM(cn_fzgr),' must be in the current directory.'
@@ -359,6 +363,7 @@ PROGRAM cdftransport
      CASE ('-zlimit') ; CALL GetZlimit  ! Parse arguments of -zlimit to build rz_lst array
      CASE ('-sfx'   ) ; CALL getarg (ijarg, csfx   ) ; ijarg = ijarg + 1
      CASE ('-cumul' ) ; l_cumul = .TRUE.
+     CASE ('-nan'   ) ; l_nan = .TRUE.
      CASE DEFAULT     ; PRINT *,' ERROR : ',TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO
@@ -623,6 +628,10 @@ PROGRAM cdftransport
            dlv (:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=itime)
            IF ( lspu ) WHERE ( dlu == zspu ) dlu = 0.d0
            IF ( lspv ) WHERE ( dlv == zspv ) dlv = 0.d0
+           IF ( l_nan) THEN
+               WHERE ( dlu(:,:) /= dlu(:,:) )  dlu = 0.d0
+               WHERE ( dlv(:,:) /= dlv(:,:) )  dlv = 0.d0
+           ENDIF
            IF (lheat) THEN
               IF ( l_tsfil ) THEN
                  dlt(:,:) = 0.d0 ; dls(:,:) = 0.d0
