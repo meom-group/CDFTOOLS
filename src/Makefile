@@ -481,8 +481,8 @@ cdf_conv_zgr:  cdf_conv_zgr.F90
 cdfbathy: cdfio.o cdfbathy.f90
 	$(F90)   cdfbathy.f90  -o $(BINDIR)/cdfbathy cdfio.o modcdfnames.o $(FFLAGS)
 
-cdfcofdis: cdfio.o cdfcofdis.f90
-	$(F90)    cdfcofdis.f90  -o $(BINDIR)/cdfcofdis cdfio.o modcdfnames.o $(FFLAGS)
+cdfcofdis: cdfio.o modutils.o cdfcofdis.f90
+	$(F90)    cdfcofdis.f90  -o $(BINDIR)/cdfcofdis cdfio.o modutils.o modcdfnames.o $(FFLAGS)
 
 cdfvar: cdfbathy
 	ln -sf  cdfbathy $(BINDIR)/cdfvar 
