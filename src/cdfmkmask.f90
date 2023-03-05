@@ -38,6 +38,7 @@ PROGRAM cdfmkmask
   INTEGER(KIND=4)                           :: npkk                     ! handle case without vertical dim
   INTEGER(KIND=4)                           :: iimin, iimax, iipts      ! limit in i
   INTEGER(KIND=4)                           :: ijmin, ijmax, ijpts      ! limit in j
+  INTEGER(KIND=4)                           :: isize                    ! maxsize of cluster to mask
   INTEGER(KIND=4)                           :: ncout                    ! ncid of output file
   INTEGER(KIND=4), DIMENSION(4)             :: ipk, id_varout           ! outptut variables : number of levels,
   INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: mbathy                ! bathymetry  in levels
@@ -47,6 +48,7 @@ PROGRAM cdfmkmask
   REAL(KIND=4)                              :: rbatmin, rbatmax         ! limit in latitude
   REAL(KIND=4)                              :: rlonpts, rlatpts         ! seed point for lfilllonlat
   REAL(KIND=4)                              :: rvarmin, rvarmax         ! limit in variable
+  REAL(KIND=4)                              :: rvalue                   ! not value for sizemax option
   REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: rdep                     ! depth 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, rmask, ssmask     ! 2D masks at current level and non depth and time dependent mask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat               ! latitude and longitude
@@ -75,6 +77,7 @@ PROGRAM cdfmkmask
   LOGICAL                                   :: ltime    = .FALSE.       ! time flag    
   LOGICAL                                   :: lmbathy  = .FALSE.       ! mbathy flag    
   LOGICAL                                   :: l2dmask  = .FALSE.       ! 2d mask flag
+  LOGICAL                                   :: lsizmax  = .FALSE.       ! sizemask flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -86,6 +89,7 @@ PROGRAM cdfmkmask
      PRINT *,'                   ... [-zoombat bathymin bathymax]  ...'
      PRINT *,'                   ... [-zoomvar varname varmin varmax]  ...'
      PRINT *,'                   ... [-fill iiseed jjseed] ...'
+     PRINT *,'                   ... [-sizemax VAR-ref not-value isize ]...'
      PRINT *,'                   ... [-bfij BOUND_IJ-file.txt] ...'
      PRINT *,'                   ... [-bflonlat BOUND_LONLAT-file.txt] ...'
      PRINT *,'                   ... [-time ] [-o OUT-file]'
@@ -127,6 +131,11 @@ PROGRAM cdfmkmask
      PRINT *,'       [-zoomvar varname varmin varmax] : range of varname variable used to'
      PRINT *,'                        limit the area where the mask is builded. Outside'
      PRINT *,'                        this area, the mask is set to 0.'
+     PRINT *,'       [ -sizemax VAR-ref notvalue isize ]: build a mask with 1 everywhere'
+     PRINT *,'                        exept for area less than isize pixels where VAR-ref'
+     PRINT *,'                        is not equal to notvalue. (For instance, this option' 
+     PRINT *,'                        can be used to create a mask of small island or '
+     PRINT *,'                        iceshelf.'
      PRINT *,'       [-fill iiseed jjseed] : mask everything except the cells into the'
      PRINT *,'                        non mask area where the point (iiseed,jjseed) is.'
      PRINT *,'       [-filllonlat lon lat] : mask everything except the cells into the'
@@ -208,6 +217,13 @@ PROGRAM cdfmkmask
         CALL getarg (ijarg, cv_mask) ; ijarg = ijarg + 1 ;
         CALL getarg (ijarg, cldum)   ; ijarg = ijarg + 1 ; READ(cldum,*) rvarmin 
         CALL getarg (ijarg, cldum)   ; ijarg = ijarg + 1 ; READ(cldum,*) rvarmax 
+        !
+     CASE ( '-sizemax' ) ! read variable, notvalue isize
+        lsizmax=.TRUE.
+        CALL getarg (ijarg, cv_nam)  ; ijarg = ijarg + 1 
+        CALL getarg (ijarg, cldum )  ; ijarg = ijarg + 1 ; READ(cldum,*) rvalue
+        CALL getarg (ijarg, cldum )  ; ijarg = ijarg + 1 ; READ(cldum,*) isize
+        !
      CASE ( '-fill' )  ! read a seed point and a boundary file
         lfill = .TRUE.
         CALL getarg (ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iipts
@@ -361,7 +377,9 @@ PROGRAM cdfmkmask
            WHERE ((tmask >= rvarmin) .AND. (tmask <= rvarmax)) rmask = 1
            WHERE ((tmask <  rvarmin) .OR.  (tmask >  rvarmax)) rmask = 0
            tmask=rmask
-        ELSE
+        ELSE IF ( lsizmax ) THEN
+           CALL FillSizMax(tmask,isize, rvalue)
+        ELSE  ! basic function with salinity for instance
            WHERE (tmask > 0 ) tmask = 1
            WHERE (tmask <=0 ) tmask = 0
         ENDIF
@@ -371,32 +389,36 @@ PROGRAM cdfmkmask
            CALL FillMask(tmask,iipts,ijpts,rlonpts,rlatpts)
         ENDIF
 
-        !! write t- u- v- mask
-        ierr       = putvar(ncout, id_varout(1), tmask, jk ,npiglo, npjglo, ktime=jt)
-        ! umask
-        rmask = 0.
-        DO ji=1,npiglo-1
-           DO jj=1,npjglo
-              rmask(ji,jj) = tmask(ji,jj)*tmask(ji+1,jj)
+        IF ( lsizmax ) THEN 
+           ierr       = putvar(ncout, id_varout(1), tmask, jk ,npiglo, npjglo, ktime=jt)
+        ELSE
+           !! write t- u- v- mask
+           ierr       = putvar(ncout, id_varout(1), tmask, jk ,npiglo, npjglo, ktime=jt)
+           ! umask
+           rmask = 0.
+           DO ji=1,npiglo-1
+              DO jj=1,npjglo
+                 rmask(ji,jj) = tmask(ji,jj)*tmask(ji+1,jj)
+              END DO
            END DO
-        END DO
-        ierr       = putvar(ncout, id_varout(2), rmask, jk ,npiglo, npjglo, ktime=jt)
-        ! vmask
-        rmask=0.
-        DO ji=1,npiglo
-           DO jj=1,npjglo-1
-              rmask(ji,jj) = tmask(ji,jj)*tmask(ji,jj+1)
+           ierr       = putvar(ncout, id_varout(2), rmask, jk ,npiglo, npjglo, ktime=jt)
+           ! vmask
+           rmask=0.
+           DO ji=1,npiglo
+              DO jj=1,npjglo-1
+                 rmask(ji,jj) = tmask(ji,jj)*tmask(ji,jj+1)
+              END DO
            END DO
-        END DO
-        ierr       = putvar(ncout, id_varout(3), rmask, jk, npiglo, npjglo, ktime=jt)
-        !fmask
-        rmask=0.
-        DO ji=1,npiglo-1
-           DO jj=1,npjglo-1
-              rmask(ji,jj) = tmask(ji,jj)*tmask(ji,jj+1)*tmask(ji+1,jj)*tmask(ji+1,jj+1)
+           ierr       = putvar(ncout, id_varout(3), rmask, jk, npiglo, npjglo, ktime=jt)
+           !fmask
+           rmask=0.
+           DO ji=1,npiglo-1
+              DO jj=1,npjglo-1
+                 rmask(ji,jj) = tmask(ji,jj)*tmask(ji,jj+1)*tmask(ji+1,jj)*tmask(ji+1,jj+1)
+              END DO
            END DO
-        END DO
-        ierr       = putvar(ncout, id_varout(4), rmask, jk, npiglo, npjglo, ktime=jt)
+           ierr       = putvar(ncout, id_varout(4), rmask, jk, npiglo, npjglo, ktime=jt)
+        ENDIF
      END DO  ! loop to next level
   END DO ! loop to next time
 
@@ -406,6 +428,32 @@ PROGRAM cdfmkmask
   PRINT *,'Mask file ',TRIM(cf_out),' has been created' 
 
 CONTAINS
+  SUBROUTINE FillSizMax(pmask,ksize, pval)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE FillSizMax  ***
+    !!
+    !! ** Purpose :  Return pmask with 0 where cluster of values /= pval are
+    !!               smaller than ksize
+    !!
+    !! ** Method  :  Use flodd filling algo 
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(:,:), INTENT(inout) :: pmask
+    INTEGER(KIND=4),              INTENT(in   ) :: ksize
+    REAL(KIND=4),                 INTENT(in   ) :: pval
+
+    INTEGER(KIND=4)   :: ji, jj
+    LOGICAL           :: lEWperio = .TRUE.
+
+    WHERE (pmask /= pval ) 
+       rmask = 0.
+    ELSEWHERE
+       rmask = 1.
+    ENDWHERE
+    pmask = rmask
+
+    CALL FillPool2D_full(ksize, pmask, 1, npiglo, 1, npjglo, -1, -1, -0.5, 0.5, 1., lEWperio)
+  END SUBROUTINE FillSizMax
 
   SUBROUTINE FillMask(pmask, kipts, kjpts, plonpts, platpts)
     !!---------------------------------------------------------------------
@@ -525,34 +573,51 @@ CONTAINS
     !! ** Method  :  Use stypvar global description of variables
     !!
     !!----------------------------------------------------------------------
-    ipk(1:4)                       = npkk
+    INTEGER(KIND=4) :: ivar = 4
 
-    stypvar(1)%cname               = cn_tmask
-    stypvar(2)%cname               = cn_umask
-    stypvar(3)%cname               = cn_vmask
-    stypvar(4)%cname               = cn_fmask
+    IF ( lsizmax ) THEN
+       ivar = 1
+       ipk(1) = npkk
+       stypvar(1)%cname             = 'sizmaxmask'
+       stypvar(1)%cunits            = '1/0'
+       stypvar(1)%rmissing_value    = 9999.
+       stypvar(1)%valid_min         = 0.
+       stypvar(1)%valid_max         = 1.
+       stypvar(1)%clong_name        = 'sizmaxmask'
+       stypvar(1)%cshort_name       = 'sizmaxmask'
+       stypvar(1)%conline_operation = 'N/A'
+       stypvar(1)%caxis             = 'TYX'
+       stypvar(1)%cprecision        = 'i2'
+    ELSE
+       ipk(1:4)                       = npkk
 
-    stypvar(1:4)%cunits            = '1/0'
-    stypvar(1:4)%rmissing_value    = 9999.
-    stypvar(1:4)%valid_min         = 0.
-    stypvar(1:4)%valid_max         = 1.
+       stypvar(1)%cname               = cn_tmask
+       stypvar(2)%cname               = cn_umask
+       stypvar(3)%cname               = cn_vmask
+       stypvar(4)%cname               = cn_fmask
 
-    stypvar(1)%clong_name          = cn_tmask
-    stypvar(2)%clong_name          = cn_umask
-    stypvar(3)%clong_name          = cn_vmask
-    stypvar(4)%clong_name          = cn_fmask
+       stypvar(1:4)%cunits            = '1/0'
+       stypvar(1:4)%rmissing_value    = 9999.
+       stypvar(1:4)%valid_min         = 0.
+       stypvar(1:4)%valid_max         = 1.
 
-    stypvar(1)%cshort_name         = cn_tmask
-    stypvar(2)%cshort_name         = cn_umask
-    stypvar(3)%cshort_name         = cn_vmask
-    stypvar(4)%cshort_name         = cn_fmask
+       stypvar(1)%clong_name          = cn_tmask
+       stypvar(2)%clong_name          = cn_umask
+       stypvar(3)%clong_name          = cn_vmask
+       stypvar(4)%clong_name          = cn_fmask
 
-    stypvar(1:4)%conline_operation = 'N/A'
-    stypvar(1:4)%caxis             = 'TZYX'
-    stypvar(1:4)%cprecision        = 'i2'
+       stypvar(1)%cshort_name         = cn_tmask
+       stypvar(2)%cshort_name         = cn_umask
+       stypvar(3)%cshort_name         = cn_vmask
+       stypvar(4)%cshort_name         = cn_fmask
+
+       stypvar(1:4)%conline_operation = 'N/A'
+       stypvar(1:4)%caxis             = 'TZYX'
+       stypvar(1:4)%cprecision        = 'i2'
+    ENDIF
 
     ncout = create      (cf_out, cf_sfil,  npiglo, npjglo, npk)
-    ierr  = createvar   (ncout,    stypvar, 4,      ipk,    id_varout )
+    ierr  = createvar   (ncout,    stypvar, ivar,      ipk,    id_varout )
 
     IF ( lmbathy ) THEN ; rdep(:) = getvare3(cn_fzgr, cv_dep ,npk)
        ; ierr  = putheadervar(ncout,    cf_sfil,  npiglo, npjglo, npk, pdep=rdep, cdep='nav_lev')
