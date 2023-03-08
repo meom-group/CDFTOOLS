@@ -452,7 +452,14 @@ CONTAINS
     ENDWHERE
     pmask = rmask
 
-    CALL FillPool2D_full(ksize, pmask, 1, npiglo, 1, npjglo, -1, -1, -0.5, 0.5, 1., lEWperio)
+    CALL FillPool2D_full(ksize, pmask, 1, npiglo, 1, npjglo, -1, -1, -0.5, 0.5, 9999., lEWperio)
+    WHERE (pmask == 9999. ) 
+       rmask=0
+    ELSEWHERE
+       rmask=1
+    ENDWHERE
+    pmask = rmask
+    
   END SUBROUTINE FillSizMax
 
   SUBROUTINE FillMask(pmask, kipts, kjpts, plonpts, platpts)
