@@ -49,10 +49,12 @@ PROGRAM cdfmkmask
   REAL(KIND=4)                              :: rlonpts, rlatpts         ! seed point for lfilllonlat
   REAL(KIND=4)                              :: rvarmin, rvarmax         ! limit in variable
   REAL(KIND=4)                              :: rvalue                   ! not value for sizemax option
+  REAL(KIND=4)                              :: rsurfmax                 ! maximum area for areamax option (km2)
   REAL(KIND=4), DIMENSION(:)  , ALLOCATABLE :: rdep                     ! depth 
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: tmask, rmask, ssmask     ! 2D masks at current level and non depth and time dependent mask
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rlon, rlat               ! latitude and longitude
   REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: rbat                     ! bathymetry 
+  REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE :: area                     ! grid cell surface
 
   REAL(KIND=8), DIMENSION(:)  , ALLOCATABLE :: dtim                     ! time counter
 
@@ -77,7 +79,8 @@ PROGRAM cdfmkmask
   LOGICAL                                   :: ltime    = .FALSE.       ! time flag    
   LOGICAL                                   :: lmbathy  = .FALSE.       ! mbathy flag    
   LOGICAL                                   :: l2dmask  = .FALSE.       ! 2d mask flag
-  LOGICAL                                   :: lsizmax  = .FALSE.       ! sizemask flag
+  LOGICAL                                   :: lsizmax  = .FALSE.       ! sizemax flag
+  LOGICAL                                   :: lareamax = .FALSE.       ! areamax flag
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -90,6 +93,7 @@ PROGRAM cdfmkmask
      PRINT *,'                   ... [-zoomvar varname varmin varmax]  ...'
      PRINT *,'                   ... [-fill iiseed jjseed] ...'
      PRINT *,'                   ... [-sizemax VAR-ref not-value isize ]...'
+     PRINT *,'                   ... [-areamax VAR-ref not-value surfkm2 ]...'
      PRINT *,'                   ... [-bfij BOUND_IJ-file.txt] ...'
      PRINT *,'                   ... [-bflonlat BOUND_LONLAT-file.txt] ...'
      PRINT *,'                   ... [-time ] [-o OUT-file]'
@@ -136,6 +140,11 @@ PROGRAM cdfmkmask
      PRINT *,'                        is not equal to notvalue. (For instance, this option' 
      PRINT *,'                        can be used to create a mask of small island or '
      PRINT *,'                        iceshelf.'
+     PRINT *,'       [ -areamax VAR-ref notvalue surfkm2 ]: build a mask with 1 everywhere'
+     PRINT *,'                        exept for area less than surfkm2  where VAR-ref'
+     PRINT *,'                        is not equal to notvalue. (For instance, this option' 
+     PRINT *,'                        can be used to create a mask of small island or '
+     PRINT *,'                        iceshelf.'
      PRINT *,'       [-fill iiseed jjseed] : mask everything except the cells into the'
      PRINT *,'                        non mask area where the point (iiseed,jjseed) is.'
      PRINT *,'       [-filllonlat lon lat] : mask everything except the cells into the'
@@ -177,6 +186,7 @@ PROGRAM cdfmkmask
      PRINT *,'       If option T-file is -maskfile then ', TRIM(cn_fmsk), ' is required.'
      PRINT *,'       If option T-file is -mbathy then bathylevel.nc and ', TRIM(cn_fzgr) 
      PRINT *,'        are required.'
+     PRINT *,'       If option -areamax is used, ',TRIM(cn_fhgr),' is required.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       netcdf file : ', TRIM(cf_out), ' or OUT-file.'
@@ -223,6 +233,12 @@ PROGRAM cdfmkmask
         CALL getarg (ijarg, cv_nam)  ; ijarg = ijarg + 1 
         CALL getarg (ijarg, cldum )  ; ijarg = ijarg + 1 ; READ(cldum,*) rvalue
         CALL getarg (ijarg, cldum )  ; ijarg = ijarg + 1 ; READ(cldum,*) isize
+        !
+     CASE ( '-areamax' ) ! read variable, notvalue isize
+        lareamax=.TRUE.
+        CALL getarg (ijarg, cv_nam)  ; ijarg = ijarg + 1 
+        CALL getarg (ijarg, cldum )  ; ijarg = ijarg + 1 ; READ(cldum,*) rvalue
+        CALL getarg (ijarg, cldum )  ; ijarg = ijarg + 1 ; READ(cldum,*) rsurfmax
         !
      CASE ( '-fill' )  ! read a seed point and a boundary file
         lfill = .TRUE.
@@ -284,6 +300,14 @@ PROGRAM cdfmkmask
 
   npiglo = getdim (cf_sfil,cn_x)
   npjglo = getdim (cf_sfil,cn_y)
+
+  IF ( lareamax ) THEN
+    IF ( chkfile(cn_fhgr) ) STOP 99 ! missing file
+    ALLOCATE( area(npiglo, npjglo) )
+    area(:,:) = getvar(cn_fhgr, cn_ve1t, 1, npiglo, npjglo)
+    area(:,:) = area(:,:) * getvar(cn_fhgr, cn_ve2t, 1, npiglo, npjglo) / 1.e6  ! area in km2
+  ENDIF
+
   IF ( lmbathy ) THEN
      npk  = getdim (cn_fzgr,cn_z)
      ALLOCATE ( rdep(npk) )
@@ -379,6 +403,8 @@ PROGRAM cdfmkmask
            tmask=rmask
         ELSE IF ( lsizmax ) THEN
            CALL FillSizMax(tmask,isize, rvalue)
+        ELSE IF ( lareamax ) THEN
+           CALL FillAreaMax(tmask,rsurfmax, rvalue)
         ELSE  ! basic function with salinity for instance
            WHERE (tmask > 0 ) tmask = 1
            WHERE (tmask <=0 ) tmask = 0
@@ -389,7 +415,7 @@ PROGRAM cdfmkmask
            CALL FillMask(tmask,iipts,ijpts,rlonpts,rlatpts)
         ENDIF
 
-        IF ( lsizmax ) THEN 
+        IF ( lsizmax .OR. lareamax ) THEN 
            ierr       = putvar(ncout, id_varout(1), tmask, jk ,npiglo, npjglo, ktime=jt)
         ELSE
            !! write t- u- v- mask
@@ -461,6 +487,41 @@ CONTAINS
     pmask = rmask
     
   END SUBROUTINE FillSizMax
+
+  SUBROUTINE FillAreaMax(pmask,psurf, pval)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE FillAreaMax  ***
+    !!
+    !! ** Purpose :  Return pmask with 0 where cluster of values /= pval are
+    !!               smaller than psurf km2
+    !!
+    !! ** Method  :  Use flodd filling algo 
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=4), DIMENSION(:,:), INTENT(inout) :: pmask
+    REAL(KIND=4),                 INTENT(in   ) :: psurf
+    REAL(KIND=4),                 INTENT(in   ) :: pval
+
+    INTEGER(KIND=4)   :: ji, jj
+    LOGICAL           :: lEWperio = .TRUE.
+
+    WHERE (pmask /= pval )
+       rmask = 0.
+    ELSEWHERE
+       rmask = 1.
+    ENDWHERE
+    pmask = rmask
+
+    CALL FillPool2D_full_area(psurf, area, pmask, 1, npiglo, 1, npjglo, -1, -1, -0.5, 0.5, 9999., lEWperio)
+    WHERE (pmask == 9999. )
+       rmask=0
+    ELSEWHERE
+       rmask=1
+    ENDWHERE
+    pmask = rmask
+
+  END SUBROUTINE FillAreaMax
+
 
   SUBROUTINE FillMask(pmask, kipts, kjpts, plonpts, platpts)
     !!---------------------------------------------------------------------

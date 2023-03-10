@@ -30,6 +30,7 @@ MODULE modutils
   PUBLIC GetList
   PUBLIC shapiro_fill_smooth
   PUBLIC FillPool2D_full
+  PUBLIC FillPool2D_full_area
   PUBLIC FillPool2D
   PUBLIC FillPool3D
   PUBLIC heading         ! compute true heading between point A and B
@@ -457,6 +458,159 @@ CONTAINS
     DEALLOCATE(ipile); DEALLOCATE(zdata, ioptm)
 
   END SUBROUTINE FillPool2D_full
+
+  SUBROUTINE FillPool2D_full_area(psurf,parea, pdta, kiimin, kiimax, kijmin, kijmax, &
+     &           kiseed, kjseed, pfillmin, pfillmax, pfillval, ld_perio)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE FillPool2d_full_area ***
+    !!
+    !! ** Purpose :  Replace all area surrounding by mask value by mask value
+    !!
+    !! ** Method  :  flood fill algorithm
+    !!
+    !!----------------------------------------------------------------------
+    REAL(KIND=4),                 INTENT(in   ) :: psurf                         ! critical surface 
+    REAL(KIND=4), DIMENSION(:,:), INTENT(in   ) :: parea                         ! area of each grid cell in km2
+    REAL(KIND=4), DIMENSION(:,:), INTENT(inout) :: pdta                          ! mask
+    INTEGER(KIND=4),              INTENT(in   ) :: kiimin, kiimax, kijmin, kijmax    ! position of the data windows
+    INTEGER(KIND=4),              INTENT(in   ) :: kiseed, kjseed                ! seeds
+    REAL(KIND=4),                 INTENT(in   ) :: pfillmax, pfillmin, pfillval  ! pool def criterium
+    LOGICAL,                      INTENT(in   ) :: ld_perio                      ! EW periodicity flag
+
+    INTEGER(KIND=4) :: ik                       ! number of point change
+    INTEGER(KIND=4) :: ip                       ! size of the pile
+    INTEGER(KIND=4) :: ji, jj, ii, ij           ! loop index
+    INTEGER(KIND=4) :: iip1, iim1, ijp1, ijm1   ! working integer
+    INTEGER(KIND=4) :: iimin, iimax, ijmin, ijmax   ! position of the data windows
+    INTEGER(KIND=4) :: ipiglo, ipjglo           ! size of the domain, infered from pdta size
+    INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ipile         ! pile variable
+    INTEGER(KIND=4), DIMENSION(:,:), ALLOCATABLE :: ioptm, ifill  ! matrix to check already tested value 
+
+    REAL(KIND=4)                                 :: zsurf
+    REAL(KIND=4), DIMENSION(:,:),    ALLOCATABLE :: zdata         ! new data
+    !!----------------------------------------------------------------------
+    ! WARNING
+    IF (ld_perio) PRINT *, 'W A R N I N G: north fold not treated properly ...'
+
+    ! allocate variable
+
+    ! infer domain size from input array
+    ipiglo = SIZE(pdta,1)
+    ipjglo = SIZE(pdta,2)
+
+    ! allocate variable
+    ALLOCATE(ipile(ipiglo*ipjglo,2))
+    ALLOCATE(zdata(ipiglo,ipjglo))
+    ALLOCATE(ioptm(ipiglo,ipjglo),ifill(ipiglo,ipjglo))
+
+    ! define initial seeds
+    ioptm(:,:) = 0
+    WHERE ( pdta  > pfillmin .AND. pdta < pfillmax)
+      ioptm = 1
+    END WHERE
+
+    IF (kiseed > 0 .AND. kjseed > 0 ) THEN
+       iimin=kiseed
+       iimax=kiseed
+       ijmin=kjseed
+       ijmax=kjseed
+       IF (ioptm(kiseed,kjseed) == 0) THEN
+          PRINT *, 'seed not in a suitable location (ioptm(kiseed,kjseed) == 0)'
+          STOP 97
+       END IF
+    ELSEIF (kiseed < 0 .AND. kjseed < 0 ) THEN
+       iimin=kiimin ; ijmin=kijmin
+       iimax=kiimax ; ijmax=kijmax
+    ELSE
+       PRINT *, 'case kiseed > 0 and kjseed < 0 not treated'
+       STOP 97
+    END IF
+
+    PRINT *, 'Filling area in progress ... (it can take a while)'    
+
+    ! initialise variables
+    zdata=pdta
+    ipile(:,:)=0
+
+    DO ji=iimin,iimax
+       IF (MOD(ji,100) == 0) PRINT *, ji,'/',iimax
+       DO jj=ijmin,ijmax
+
+          ip=0
+
+          ! initialised pile
+          IF (ioptm(ji,jj) == 1) THEN
+             ifill(:,:) = 0
+             zdata(:,:) = pdta(:,:)
+             ipile(1,:) = [ji,jj]
+             ip = 1
+          END IF
+          ik = 0
+          zsurf = 0.
+
+          ! loop until the pile size is 0 or if the pool is larger than the critical size
+          DO WHILE ( ip /= 0 );
+             ! 
+             ! update size of the pool
+             ik = ik+1
+             zsurf=zsurf+parea(ji,jj)
+
+             ! next point
+             ii=ipile(ip,1); ij=ipile(ip,2)
+
+             ! update pile size
+             ipile(ip,:)  =[0,0]; ip=ip-1
+
+             ! check neighbour cells and update pile ( assume E-W periodicity )
+             IF ( ld_perio ) THEN
+                IF ( ii == ipiglo+1 ) ii=3
+                IF ( ii == 0        ) ii=ipiglo-2
+                iip1=ii+1; IF ( iip1 == ipiglo+1) iip1=3
+                iim1=ii-1; IF ( iim1 == 0       ) iim1=ipiglo-2
+             ELSE
+                IF ( ii == ipiglo+1 ) ii=ipiglo
+                IF ( ii == 0        ) ii=1
+                iip1=ii+1; IF ( iip1 == ipiglo+1) iip1=ipiglo
+                iim1=ii-1; IF ( iim1 == 0       ) iim1=1
+             END IF
+             ijp1=MIN(ij+1,ipjglo)  ! north fold not treated
+             ijm1=MAX(ij-1,1)
+
+             ! update ifill
+             ifill(ii,ij) = 1
+
+             ! check neighbour cells and update pile
+             IF (zdata(ii, ijp1) > pfillmin .AND. zdata(ii, ijp1) < pfillmax .AND. ioptm(ii, ijp1) == 1) THEN
+                ip=ip+1; ipile(ip,:)=[ii  ,ijp1]
+                ioptm (ii,ijp1) = 0
+             END IF
+             IF (zdata(ii, ijm1) > pfillmin .AND. zdata(ii, ijm1) < pfillmax .AND. ioptm(ii, ijm1) == 1) THEN
+                ip=ip+1; ipile(ip,:)=[ii  ,ijm1]
+                ioptm (ii,ijm1) = 0
+             END IF
+             IF (zdata(iip1, ij) > pfillmin .AND. zdata(iip1, ij) < pfillmax .AND. ioptm(iip1, ij) == 1) THEN
+                ip=ip+1; ipile(ip,:)=[iip1,ij  ]
+                ioptm (iip1,ij) = 0
+             END IF
+             IF (zdata(iim1, ij) > pfillmin .AND. zdata(iim1, ij) < pfillmax .AND. ioptm(iim1, ij) == 1) THEN
+                ip=ip+1; ipile(ip,:)=[iim1,ij  ]
+                ioptm (iim1,ij) = 0
+             END IF
+          END DO
+          !
+          ! check size to fill only small pool
+          IF ( 0 < ik .AND. zsurf < psurf) THEN
+             PRINT *, 'Fill area size : ',ik,' seed : ',ji, jj,' surf: ', zsurf
+             WHERE (ifill(:,:) == 1)
+               pdta(:,:)=pfillval;
+             END WHERE
+          END IF
+       END DO
+    END DO
+
+    DEALLOCATE(ipile); DEALLOCATE(zdata, ioptm)
+
+  END SUBROUTINE FillPool2D_full_area
 
   SUBROUTINE FillPool2D(kiseed, kjseed, kdta, kifill, ld_perio, ld_diagonal)
     !!---------------------------------------------------------------------
