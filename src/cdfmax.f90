@@ -57,7 +57,8 @@ PROGRAM cdfmax
   IF ( narg == 0 ) THEN
      PRINT *,' usage : cdfmax -f IN-file -v IN-var [-lev kmin kmax ] ...'
      PRINT *,'      ... [-zoom imin imax jmin jmax] [-time tmin tmax ] ...'
-     PRINT *,'      ... [-fact multfact] [-xy ] [-lon LON-name] [-lat LAT-name]'
+     PRINT *,'      ... [-fact multfact] [-xy ] [-lon LON-name] [-lat LAT-name]...'
+     PRINT *,'      ... [-missnam Miss_Val name]'
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'        Find minimum and maximum of a file as well as their respective '
@@ -79,6 +80,8 @@ PROGRAM cdfmax
      PRINT *,'                       zoomed area.'
      PRINT *,'       [-lon LON-name] : name of the longitude variable in file [',TRIM(cn_vlon2d),']'
      PRINT *,'       [-lat LAT-name] : name of the latitude  variable in file [',TRIM(cn_vlat2d),']'
+     PRINT *,'       [-missname Miss_Val name] : name used for the attribute ''missing_value'' '
+     PRINT *,'                    default : [',TRIM(cn_missing_value),']'
      PRINT *,'      '
      PRINT *,'     REQUIRED FILES :'
      PRINT *,'       none' 
@@ -92,20 +95,21 @@ PROGRAM cdfmax
   DO  WHILE (ijarg <=  narg)
      CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1
      SELECT CASE (cldum )
-     CASE ( '-f'    ) ; CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
-     CASE ( '-v'    ) ; CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
-     CASE ( '-lev'  ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
-        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
-     CASE ( '-fact' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rfact
-     CASE ( '-zoom' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
-        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
-        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
-        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
-     CASE ( '-time' ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
-        ;               CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
-     CASE ( '-xy'   ) ; lforcexy = .TRUE.
-     CASE ( '-lon'  ) ; CALL getarg(ijarg, cn_vlon2d) ; ijarg = ijarg + 1
-     CASE ( '-lat'  ) ; CALL getarg(ijarg, cn_vlat2d) ; ijarg = ijarg + 1
+     CASE ( '-f'       ) ; CALL getarg(ijarg, cf_in) ; ijarg = ijarg + 1
+     CASE ( '-v'       ) ; CALL getarg(ijarg, cv_in) ; ijarg = ijarg + 1 
+     CASE ( '-lev'     ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmin
+        ;                  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ikmax
+     CASE ( '-fact'    ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) rfact
+     CASE ( '-zoom'    ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimin
+        ;                  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) iimax
+        ;                  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmin
+        ;                  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) ijmax
+     CASE ( '-time'    ) ; CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmin
+        ;                  CALL getarg(ijarg, cldum) ; ijarg = ijarg + 1 ; READ(cldum,*) itmax
+     CASE ( '-xy'      ) ; lforcexy = .TRUE.
+     CASE ( '-lon'     ) ; CALL getarg(ijarg, cn_vlon2d)        ; ijarg = ijarg + 1
+     CASE ( '-lat'     ) ; CALL getarg(ijarg, cn_vlat2d)        ; ijarg = ijarg + 1
+     CASE ( '-missnam' ) ; CALL getarg(ijarg, cn_missing_value) ; ijarg = ijarg + 1
      CASE DEFAULT     ; PRINT *, ' ERROR : ', TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
   END DO

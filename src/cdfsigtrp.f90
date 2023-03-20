@@ -240,9 +240,10 @@ PROGRAM cdfsigtrp
      CASE ( '-nbins'  ) ; CALL getarg(ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) nbins      ; ireq=ireq+1
         ! options
      CASE ( '-s'      ) ; CALL getarg(ijarg, cf_sfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
+                          nreq = 7
      CASE ( '-full'   ) ; lfull  = .TRUE.
      CASE ( '-vvl'    ) ; lg_vvl = .TRUE.
-        ;                 CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1 ; ireq=ireq+1
+        ;                 CALL getarg(ijarg, cf_wfil ) ; ijarg=ijarg+1 
      CASE ( '-xtra'   ) ; lxtra  = .TRUE.
      CASE ( '-print'  ) ; lprint = .TRUE.
      CASE ( '-temp'   ) ; ltemp  = .TRUE. 
