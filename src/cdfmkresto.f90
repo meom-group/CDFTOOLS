@@ -165,10 +165,12 @@ PROGRAM cdfmkresto
   IF ( lprev ) THEN
         IF ( chkfile(cf_resto) ) STOP 99
   ENDIF
-  IF ( chkfile(cf_dep, ld_verbose=.FALSE.) ) THEN
-     ! look for cn_fzgr file
-     lfdep=.FALSE.
-     IF ( chkfile(cn_fzgr) ) STOP 99
+  IF ( .NOT. l2d ) THEN
+     IF ( chkfile(cf_dep, ld_verbose=.FALSE.) ) THEN
+        ! look for cn_fzgr file
+        lfdep=.FALSE.
+        IF ( chkfile(cn_fzgr) ) STOP 99
+     ENDIF
   ENDIF
   IF ( chkfile(cf_coord) .OR. chkfile(cf_cfg) ) STOP 99 ! missing file
   IF ( ctype /= 'T' .AND. ctype /='F' ) THEN
