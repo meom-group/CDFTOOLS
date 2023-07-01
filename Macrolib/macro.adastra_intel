@@ -1,0 +1,28 @@
+# macro.adastra for adastra at CINES
+#  $Date: 2023-03-08 
+#  $Id: macro.jade 539 2011-07-11 10:33:35Z molines $
+# load cray environment :
+#   module load cpe/22.11
+#   module load cray-hdf5-parallel/1.12.2.1
+#   module load cray-netcdf-hdf5parallel/4.9.0.1
+# -------------------------------------------------------------
+
+NCDF= -I$(NETCDF_DIR)/include/ -L$(NETCDF_DIR)/lib -lnetcdf -lnetcdff
+
+NC4=-Dkey_netcdf4
+CMIP6 =
+
+GSW=
+GSWLIB=
+ 
+F90=ifort
+MPF90=mpif90
+
+OMP=
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW) -fp-model precise $(OMP)
+
+LMPI=-lmpich
+
+INSTALL=$(WORKDIR)/bin
+INSTALL_MAN=$(WORKDIR)/man
+
