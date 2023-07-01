@@ -1,0 +1,28 @@
+# Makefile for CDFTOOLS
+#    $Rev$
+#    $Date$
+# --------------------------------------------------------------
+#
+NCDF = -I/usr/local/netcdf/include -L /usr/local/netcdf/lib -lnetcdf -lnetcdff
+
+#NCDF = -I/opt/netcdf-4.1/include -I /opt/hdf5-1.8.4/include -L /opt/hdf5-1.8.4/lib -L/opt/netcdf-4.1/lib -lnetcdf -lhdf5_hl -lhdf5 -lz
+
+NC4= -D key_netcdf4
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+GSW=
+#GSW=-D key_GSW
+GSWLIB=
+#GSWLIB=-lgsw
+ 
+F90=ifort
+MPF90=mpif90
+OMP=
+#OMP=-openmp
+FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW) -assume byterecl -convert big_endian -CB -fpe0 -g -traceback -ftrapuv
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW)  -assume byterecl -convert big_endian  $(OMP)
+LMPI=-lmpich
+
+INSTALL=$(HOME)/bin
+INSTALL_MAN=$(HOME)/man
