@@ -35,6 +35,12 @@ MODULE modutils
   PUBLIC FillPool3D
   PUBLIC heading         ! compute true heading between point A and B
 
+  INTERFACE FillPool2D
+     MODULE PROCEDURE FillPool2D_i, FillPool2D_r
+  END INTERFACE
+
+
+
 CONTAINS
   SUBROUTINE SetGlobalAtt(cdglobal, cd_append)
     !!---------------------------------------------------------------------
@@ -612,7 +618,7 @@ CONTAINS
 
   END SUBROUTINE FillPool2D_full_area
 
-  SUBROUTINE FillPool2D(kiseed, kjseed, kdta, kifill, ld_perio, ld_diagonal)
+  SUBROUTINE FillPool2D_i(kiseed, kjseed, kdta, kifill, ld_perio, ld_diagonal)
     !!---------------------------------------------------------------------
     !!                  ***  ROUTINE FillPool2D  ***
     !!  
@@ -715,8 +721,114 @@ CONTAINS
 
     DEALLOCATE(ipile); DEALLOCATE(idata)
 
-  END SUBROUTINE FillPool2D
+  END SUBROUTINE FillPool2D_i
 
+
+  SUBROUTINE FillPool2D_r(kiseed, kjseed, pdta, kifill, ld_perio, ld_diagonal)
+    !!---------------------------------------------------------------------
+    !!                  ***  ROUTINE FillPool2D  ***
+    !!  
+    !! ** Purpose :  Replace all area surrounding by mask value by kifill value
+    !!  
+    !! ** Method  :  flood fill algorithm
+    !!  
+    !!----------------------------------------------------------------------
+    INTEGER(KIND=4),                 INTENT(in)    :: kiseed, kjseed
+    INTEGER(KIND=4),                 INTENT(in)    :: kifill         ! pool value
+    REAL(KIND=4), DIMENSION(:,:),    INTENT(inout) :: pdta           ! data
+    LOGICAL, OPTIONAL              , INTENT(in)    :: ld_perio       ! treat EW peridocity
+    LOGICAL, OPTIONAL              , INTENT(in)    :: ld_diagonal    ! extend search on diagonal
+
+    INTEGER :: ik                              ! number of point change
+    INTEGER :: ip                              ! size of the pile
+    INTEGER :: ji, jj                          ! loop index
+    INTEGER :: iip1, iim1, ii, ij, ijp1, ijm1  ! working integer
+    INTEGER :: ipiglo, ipjglo           ! size of the domain, infered from pdta size
+    LOGICAL :: lperio = .TRUE.
+    LOGICAL :: ldiag  = .FALSE.
+
+    INTEGER(KIND=2), DIMENSION(:,:), ALLOCATABLE :: ipile    ! pile variable
+    REAL(KIND=4),    DIMENSION(:,:), ALLOCATABLE :: zdata    ! new data
+    !!----------------------------------------------------------------------
+    IF ( PRESENT(ld_perio   )) lperio = ld_perio
+    IF ( PRESENT(ld_diagonal)) ldiag  = ld_diagonal
+    ! WARNING
+    IF (lperio) PRINT *, 'W A R N I N G: north fold not treated properly ...'
+
+    ! infer domain size from input array
+    ipiglo = SIZE(pdta,1)
+    ipjglo = SIZE(pdta,2)
+
+    ! allocate variable
+    ALLOCATE(ipile(2*ipiglo*ipjglo,2))
+    ALLOCATE(zdata(ipiglo,ipjglo))
+
+    ! initialise variables
+    zdata=pdta
+    ipile(:,:)=0
+    ipile(1,:)=[kiseed,kjseed]
+    ip=1; ik=0
+
+    ! loop until the pile size is 0 or if the pool is larger than the critical size
+    DO WHILE ( ip /= 0 ) ! .AND. ik < 600000);
+       ik=ik+1
+       ii=ipile(ip,1); ij=ipile(ip,2)
+       IF ( MOD(ik, 10000) == 0 ) PRINT *, 'IP =', ip, ik, ii,ij
+
+       ! update bathy and update pile size
+       zdata(ii,ij) =kifill
+       ipile(ip,:)  =[0,0]; ip=ip-1
+
+       ! check neighbour cells and update pile ( assume E-W periodicity )
+       IF ( lperio ) THEN
+          IF ( ii == ipiglo+1 ) ii=3
+          IF ( ii == 0        ) ii=ipiglo-2
+          iip1=ii+1; IF ( iip1 == ipiglo+1) iip1=3
+          iim1=ii-1; IF ( iim1 == 0       ) iim1=ipiglo-2
+       ELSE
+          IF ( ii == ipiglo+1 ) ii=ipiglo
+          IF ( ii == 0        ) ii=1
+          iip1=ii+1; IF ( iip1 == ipiglo+1) iip1=ipiglo
+          iim1=ii-1; IF ( iim1 == 0       ) iim1=1
+       END IF
+       ijp1=MIN(ij+1,ipjglo)  ! north fold not treated
+       ijm1=MAX(ij-1,1)
+
+       IF (zdata(ii, ijp1) > 0 ) THEN
+          ip=ip+1; ipile(ip,:)=[ii  ,ijp1]
+       END IF
+       IF (zdata(ii, ijm1) > 0 ) THEN
+          ip=ip+1; ipile(ip,:)=[ii  ,ijm1]
+       END IF
+       IF (zdata(iip1, ij) > 0 ) THEN
+          ip=ip+1; ipile(ip,:)=[iip1,ij  ]
+       END IF
+       IF (zdata(iim1, ij) > 0 ) THEN
+          ip=ip+1; ipile(ip,:)=[iim1,ij  ]
+       END IF
+
+       IF ( ldiag ) THEN
+          IF (zdata(iim1, ijp1) > 0 ) THEN
+             ip=ip+1; ipile(ip,:)=[iim1,ijp1]
+          END IF
+          IF (zdata(iim1, ijm1) > 0 ) THEN
+             ip=ip+1; ipile(ip,:)=[iim1,ijm1]
+          END IF
+          IF (zdata(iip1, ijp1) > 0 ) THEN
+             ip=ip+1; ipile(ip,:)=[iip1,ijp1]
+          END IF
+          IF (zdata(iip1, ijm1) > 0 ) THEN
+             ip=ip+1; ipile(ip,:)=[iip1,ijm1]
+          END IF
+       END IF
+
+    END DO
+!   pdta = zdata
+    WHERE (zdata /= kifill )  pdta=0.
+
+    DEALLOCATE(ipile); DEALLOCATE(zdata)
+
+  END SUBROUTINE FillPool2D_r
 
   SUBROUTINE FillPool3D(kiseed, kjseed, kkseed, kdta, kifill, ld_perio)
     !!---------------------------------------------------------------------

@@ -22,6 +22,7 @@ F90=gfortran
 MPF90=
 #OMP=-fopenmp
 OMP=
+#FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW)  -fno-second-underscore -ffree-line-length-256 $(OMP) -fbounds-check -g 
 FFLAGS= -O  $(NCDF) $(NC4) $(CMIP6) $(GSW)  -fno-second-underscore -ffree-line-length-256 $(OMP)
 LMPI=-lmpich
 

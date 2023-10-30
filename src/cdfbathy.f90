@@ -31,6 +31,7 @@ PROGRAM cdfbathy
   !!----------------------------------------------------------------------
   USE cdfio
   USE modcdfnames
+  USE modutils
   !!----------------------------------------------------------------------
   !! CDFTOOLS_4.0 , MEOM 2017 
   !! $Id$
@@ -45,6 +46,7 @@ PROGRAM cdfbathy
   INTEGER(KIND=4)                              :: iimin, iimax        ! selected area
   INTEGER(KIND=4)                              :: ijmin, ijmax        ! selected area
   INTEGER(KIND=4)                              :: iiref, ijref        ! reference point coordinates for _ij options
+  INTEGER(KIND=4)                              :: niseed, njseed      ! Position of seed for fill2D
   INTEGER(KIND=4)                              :: ierr                ! error status
   INTEGER(KIND=4)                              :: icrit               ! maximal size of pool 
   INTEGER(KIND=4)                              :: iklev               ! selected level
@@ -88,6 +90,7 @@ PROGRAM cdfbathy
   LOGICAL :: lsetz_ij   = .FALSE., lseta_ij   = .FALSE.       ! all required flags for options
   LOGICAL :: lchk       = .FALSE., lfillpool  = .FALSE.       ! all required flags for options
   LOGICAL :: ll_lev     = .FALSE., ll_time    = .FALSE.       ! all level, all time ==> true
+  LOGICAL :: lfill2D    = .FALSE., llog       = .TRUE.
   !!----------------------------------------------------------------------
   CALL ReadCdfNames()
 
@@ -114,6 +117,7 @@ PROGRAM cdfbathy
      PRINT 9999, '   -zoom (or -z )       : sub area of the bathy file to work with (imin imax jmin jmax)'
      PRINT 9999, '   -fillzone (or -fz )  : sub area will be filled with 0 up to the first coast line '
      PRINT 9999, '   -fillpool (or -fp ) [ icrit ] : the whole file is check and fill all the pool smaller than (icrit) cell by 0'
+     PRINT 9999, '   -fill2D (or -f2d ) [ iseed jseed ] : all cells not connected to iseed, jseed are set to 0 '
      PRINT 9999, '   -raz_zone (or -raz ) : sub area will be filled with 0 up '
      PRINT 9999, '   -raz_below depmin    : any depth less than depmin in subarea will be replaced by 0 '
      PRINT 9999, '      (or -rb depmin )  '
@@ -146,6 +150,7 @@ PROGRAM cdfbathy
      PRINT 9999, '                          Standard behaviour is to use a work copy of the original file'
      PRINT 9999, '                          (indexed from 01 to 99 if necessary ) '
      PRINT 9999, '   -log logfile         : log file for change (default is log.f90) '
+     PRINT 9999, '   -nolog               : NO log file will be created. '
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT 9999, '      netcdf file : according to used options, if the original file is to be modified'
@@ -207,10 +212,14 @@ PROGRAM cdfbathy
      CASE ('-overwrite' ,'-o') ; loverwrite=.TRUE.
      CASE ('-fillpool','-fp' ) ; lfillpool =.TRUE. ; lmodif =.TRUE.
         ; CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) icrit
+     CASE ('-fill2D','-f2d' ) ; lfill2D =.TRUE. ; lmodif =.TRUE.
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) niseed
+        ; CALL getarg(ijarg, cldum) ; ijarg = ijarg +1 ; READ(cldum,*) njseed
      CASE ('-replace','-r'   ) ; lreplace =.TRUE. ; lmodif =.TRUE.
         ; CALL getarg(ijarg, cf_replace) ; ijarg = ijarg +1
         ; lchk = ( lchk .OR. chkfile (cf_replace) )
      CASE ( '-log'           ) ; CALL getarg(ijarg, cf_log) ; ijarg = ijarg +1
+     CASE ( '-nolog'         ) ; llog = .FALSE.
      CASE ( '-dumpzone','-d' ) ; ldump =.TRUE.
         ; CALL getarg(ijarg, cf_dump) ; ijarg = ijarg +1
      CASE ('-nicedumpzone','-nd'); ldumpn =.TRUE.
@@ -320,9 +329,11 @@ PROGRAM cdfbathy
         IF (ldumpn    )       CALL nicedumpzone (cf_dump, iimin, iimax, ijmin, ijmax)
         IF (lreplace  )       CALL replacezone  (cf_replace)
         IF (lfillpool )       CALL fillpool  (icrit, iimin, iimax, ijmin, ijmax)
+        !  periodicity is assumed (.true. below... ) take care  with local config or 4.2
+        IF (lfill2D   )       CALL FillPool2D( niseed, njseed, bathy, -99999, .true., .false.)
 
         IF (lmodif ) THEN   ! save log 
-           CALL prlog(bathyin, bathy, npiglo, npjglo, lappend)
+          IF (llog ) CALL prlog(bathyin, bathy, npiglo, npjglo, lappend)
            ierr = putvar(cwkc, cv_in, iklev, iimax-iimin+1, ijmax-ijmin+1, kimin=iimin, kjmin=ijmin, &
                 &            ptab=bathy(iimin:iimax,ijmin:ijmax)*scale_factor, ktime=itime)
         ENDIF
