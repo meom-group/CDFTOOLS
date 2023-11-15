@@ -311,7 +311,11 @@ PROGRAM cdfpvor
 
            WHERE (e3w == 0 ) e3w = 1.
 
-           zwk(:,:,iup) = eosbn2 ( ztemp, zsal, gdepw(jk), e3w, npiglo, npjglo ,iup, idown)* tmask(:,:)
+           IF ( ll_teos10 ) THEN
+              zwk(:,:,iup) = eosbn2(ztemp, zsal, gdepw(jk), e3w, npiglo, npjglo ,iup, idown)* tmask(:,:)
+           ELSE
+              zwk(:,:,iup) = eosbn2(ztemp, zsal, gdepw(jk), e3w, npiglo, npjglo ,iup, idown, .TRUE. )* tmask(:,:)
+           ENDIF
            !
            IF ( lertel ) THEN ! put zn2 at T level (k )
               WHERE ( zwk(:,:,idown) == 0 ) 
