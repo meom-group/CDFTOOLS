@@ -192,7 +192,11 @@ PROGRAM cdfbn2
         ELSE              ; e3w(:,:) = getvar(cn_fe3w, cn_ve3w , jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl )
         ENDIF
 
-        zwk(:,:,iup) = eosbn2(ztemp, zsal, gdep(jk), e3w, npiglo, npjglo ,iup, idown )* zmask(:,:)
+        IF ( ll_teos10 ) THEN
+           zwk(:,:,iup) = eosbn2(ztemp, zsal, gdep(jk), e3w, npiglo, npjglo ,iup, idown )* zmask(:,:)
+        ELSE
+           zwk(:,:,iup) = eosbn2(ztemp, zsal, gdep(jk), e3w, npiglo, npjglo ,iup, idown, .TRUE. )* zmask(:,:)
+        ENDIF
 
         IF ( .NOT. l_w ) THEN
            ! now put zn2 at T level (k )
