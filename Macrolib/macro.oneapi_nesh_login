@@ -1,0 +1,37 @@
+# Makefile for CDFTOOLS : nesh-login.rz.uni-kiel.de
+#
+# $ update 20240117 - fschwarzkopf@geomar.de
+#
+# module purge
+# module load oneapi2023-env/2023.2.0
+# module load oneapi/2023.2.0
+# module load netcdf-c/4.9.2-with-oneapi-mpi-2021.10.0
+# module load netcdf-cxx4/4.3.1-with-oneapi-mpi-2021.10.0
+# module load netcdf-fortran/4.6.0-with-oneapi-mpi-2021.10.0
+# module load hdf5/1.14.1-2-with-with-oneapi-mpi-2021.10.0
+#
+# (Linked dynamically!)
+
+export HDF5_LIB=/gxfs_home/sw/spack/spack0.20.1/usr/opt/spack/linux-rocky8-x86_64/oneapi-2023.2.0/hdf5-1.14.1-2-gniprdhdkijaxy6i3khsln6lrqjucyjw/lib
+export NETCDF_LIB=/gxfs_home/sw/spack/spack0.20.1/usr/opt/spack/linux-rocky8-x86_64/oneapi-2023.2.0/netcdf-fortran-4.6.0-dq6omuhdb5wvodcyxzgh4p54jqclsp6q/lib
+export NETCDF_INC=/gxfs_home/sw/spack/spack0.20.1/usr/opt/spack/linux-rocky8-x86_64/oneapi-2023.2.0/netcdf-fortran-4.6.0-dq6omuhdb5wvodcyxzgh4p54jqclsp6q/include
+
+
+# libs
+LIBS = \
+  -L$(HDF5_LIB) -L$(NETCDF_LIB) -I$(NETCDF_INC) \
+  -lhdf5 -lnetcdf -lnetcdff -lhdf5_hl -L/lib64 -limf -lm -lz
+
+F90 = ifx
+OMP=
+NC4 = -D key_netcdf4
+
+CMIP6 =
+
+GSW=
+GSWLIB=
+
+FFLAGS = -O $(NC4) $(CMIP6) -assume byterecl -convert big_endian $(LIBS)  $(OMP)
+
+INSTALL = ../bin
+INSTALL_MAN =  ../man
