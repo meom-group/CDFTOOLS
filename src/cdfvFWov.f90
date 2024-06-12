@@ -174,8 +174,8 @@ PROGRAM cdfvFWov
   rmaskn(:,:) = getvarxz(cf_mask, cn_tmask, kj=2,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
   rmaskv(:,:) = getvarxz(cf_mask, cn_vmask, kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
   de1v(:,:)   = getvar  (cf_hgr,  cn_ve1v,  klev=1, kpi=npiglo, kpj=npjglo, kimin=1, kjmin=1)
-  de3v(:,:)   = getvarxz(cn_fe3v, cn_ve3v,  kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
-
+  de3v(:,:)   = getvarxz(cf_zgr, cn_ve3v,  kj=1,   kpi=npiglo, kpz=npk,    kimin=1, kkmin=1)
+  
   WHERE ( rmasks /= 0. ) rmasks = 1.
   WHERE ( rmaskn /= 0. ) rmaskn = 1.
   WHERE ( rmaskv /= 0. ) rmaskv = 1.
