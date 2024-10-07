@@ -202,7 +202,7 @@ PROGRAM cdfbotpressure
         dl_sigi(:,:) = 1000.d0 + sigmai(zt, zs, 0., npiglo, npjglo)
 
         !  CAUTION : hdept is used for reading SSH in the next line
-        hdept(:,:)   = getvar(cf_tfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
+        hdept(:,:)   = getvar(cf_sshfil, cn_sossheig, 1, npiglo, npjglo, ktime=jt )
         dl_psurf(:,:) = pp_grav * dl_sigi * hdept(:,:)
         IF (lxtra ) THEN
            ierr = putvar(ncout, id_varout(2) ,hdept   ,       1, npiglo, npjglo, ktime=jt)
