@@ -1,0 +1,15 @@
+# module load netcdf-fortran/4.6.1-gcc-12.2.0-43finqs gcc/13.2.0-gcc-12.2.0-lx4jx7u
+
+NCDF = -I${NETCDFF_ROOT}/include -L${NETCDFF_ROOT}/lib -lnetcdff
+
+NC4 = -D key_netcdf4
+#CMIP6 = -D key_CMIP6
+CMIP6 =
+
+F90=gfortran
+#OMP=-fopenmp
+OMP=
+FFLAGS= -O $(NCDF) $(NC4) -Wl,-rpath=${NETCDFF_ROOT}/lib -fno-second-underscore -ffree-line-length-256 $(OMP)
+
+#INSTALL=$(HOME)/local/bin
+#INSTALL_MAN=$(HOME)/local/man

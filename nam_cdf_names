@@ -1,0 +1,104 @@
+! ================================
+! cdftools namelist
+! ================================
+
+!---------------------------------------
+&namdim             ! Dimension names
+!---------------------------------------
+    cn_x = 'x'                  !: longitude
+    cn_y = 'y'                  !: latitude
+    cn_z = 'depth'              !: depth
+    cn_t = 'time_counter'       !: time
+/
+
+!---------------------------------------
+&namdimvar          ! Dimension variable names      
+!---------------------------------------
+    cn_vlon2d  = 'nav_lon'          !: longitude
+    cn_vlat2d  = 'nav_lat'          !: latitude
+
+    cn_vdeptht = 'deptht'
+    cn_vdepthu = 'depthu'
+    cn_vdepthv = 'depthv'
+    cn_vdepthw = 'depthw'                  !: depth
+
+    cn_vtimec  = 'time_centered'           !: time
+/
+
+!---------------------------------------
+&nammetrics         ! Mesh mask variable names
+!---------------------------------------
+    cn_ve1t = 'e1t'
+    cn_ve1u = 'e1u'
+    cn_ve1v = 'e1v'
+    cn_ve1f = 'e1f'      !: e1
+
+    cn_ve2t = 'e2t'
+    cn_ve2u = 'e2u'
+    cn_ve2v = 'e2v'
+    cn_ve2f = 'e2f'      !: e2
+
+    cn_ve3t1d = 'e3t'    !: e3 (1D)
+    cn_ve3w1d = 'e3w'    !: e3 (1D)
+    cn_ve3t = 'e3t_0'    !: e3 (3D)
+    cn_ve3u = 'e3u_0'    !: e3 (3D)
+    cn_ve3v = 'e3v_0'    !: e3 (3D)
+    cn_ve3w = 'e3w_0'    !: e3 (3D)
+
+    cn_vff  = 'ff_f'     !: f^2
+
+    cn_glamt = 'glamt'
+    cn_glamu = 'glamu'
+    cn_glamv = 'glamv'
+    cn_glamf = 'glamf'   !: longitude
+
+    cn_gphit = 'gphit'
+    cn_gphiu = 'gphiu'
+    cn_gphiv = 'gphiv'
+    cn_gphif = 'gphif'   !: latitude
+
+    cn_gdept = 'gdept'                              
+    cn_gdepw = 'gdepw'   !: 1d dep variable         
+
+    cn_hdept = 'hdept'
+    cn_hdepw = 'hdepw'   !: 2d dep variable
+/
+
+!---------------------------------------
+&namvars            ! Variable names                
+!---------------------------------------
+    cn_votemper  = 'thetao_con' !: conservative temperature
+    cn_vosaline  = 'so_abs'     !: absolute salinity
+    cn_vozocrtx  = 'uo'         !: zonal velocity
+    cn_vomecrty  = 'vo'         !: meridional velocity
+    cn_sozotaux  = 'tauuo'      !: zonal wind stress 
+/
+
+!---------------------------------------
+&nambathy           ! Bathymetry file and variable names
+!---------------------------------------
+   cn_bathymet  = 'bathy_metry'
+/
+
+!---------------------------------------
+&namsqdvar          ! Squared variable names
+!---------------------------------------
+/
+
+!---------------------------------------
+&namcubvar          ! Cubed variable names
+!---------------------------------------
+/
+
+!---------------------------------------
+&nammeshmask        ! Mesh mask file names          
+!---------------------------------------
+    cn_fzgr    = 'mesh_mask.nc'    !: vertical mesh file
+    cn_fhgr    = 'mesh_mask.nc'    !: horizontal mesh file
+    cn_fmsk    = 'mesh_mask.nc'    !: mesh mask file
+/
+
+!---------------------------------------
+&nammeshmask_var    ! Basin mask names
+!---------------------------------------
+/

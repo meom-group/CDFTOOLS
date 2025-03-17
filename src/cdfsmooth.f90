@@ -17,9 +17,9 @@ PROGRAM cdfsmooth
   !!           3.0  : 01/2011  : J.M. Molines : Doctor norm + Lic.
   !!           3.0  : 07/2011  : R. Dussin    : Add anisotropic box 
   !!         : 4.0  : 03/2017  : J.M. Molines  
+  !!                     2024  : M.J. Bell    : Shapiro filter routine rewritten
   !!----------------------------------------------------------------------
-  !!----------------------------------------------------------------------
-  !!   routines      : description
+   !!   routines      : description
   !!  filterinit   : initialise weight
   !!  filter       : main routine for filter computation
   !!  initlanc     : initialise lanczos weights
@@ -28,7 +28,7 @@ PROGRAM cdfsmooth
   !!  initbox      : initialize weight for box car average
   !!  lislanczos2d : Lanczos filter
   !!  lishan2d     : hanning 2d filter
-  !!  lisshapiro1d : shapiro filter
+  !!  lisshapiro2d : shapiro filter
   !!  lisbox       : box car filter
   !!----------------------------------------------------------------------
   USE cdfio
@@ -53,6 +53,7 @@ PROGRAM cdfsmooth
   INTEGER(KIND=4)                               :: narg, iargc       ! browse arguments
   INTEGER(KIND=4)                               :: ijarg             ! argument index for browsing line
   INTEGER(KIND=4)                               :: ncut, nband       ! cut period/ length, bandwidth
+  INTEGER(KIND=4)                               :: npass             ! number of passes of Shapiro filter
   INTEGER(KIND=4)                               :: nfilter = jp_lanc ! default value
   INTEGER(KIND=4)                               :: nvars, ierr       ! number of vars
   INTEGER(KIND=4)                               :: ncout             ! ncid of output file
@@ -66,6 +67,8 @@ PROGRAM cdfsmooth
 
   REAL(KIND=4)                                  :: fn, rspval        ! cutoff freq/wavelength, spval
   REAL(KIND=4)                                  :: ranis             ! anistropy
+  LOGICAL                                       :: lap               ! choice 1D or 2D (Laplacian) for Shapiro filter 
+  LOGICAL                                       :: lsm               ! T => land points not used (for Shapiro filter only)  
   REAL(KIND=4), DIMENSION(:),       ALLOCATABLE :: gdep, gdeptmp     ! depth array 
   REAL(KIND=4), DIMENSION(:,:),     ALLOCATABLE :: v2d, w2d          ! raw data,  filtered result
 
@@ -76,7 +79,8 @@ PROGRAM cdfsmooth
   TYPE (variable), DIMENSION(:),    ALLOCATABLE :: stypvar           ! struture for attribute
 
   CHARACTER(LEN=256), DIMENSION(:), ALLOCATABLE :: cv_names          ! array of var name
-  CHARACTER(LEN=256)                            :: cf_in, cf_out     ! file names
+  CHARACTER(LEN=256)                            :: cf_in, cf_out, cf_nam   ! file names
+  CHARACTER(LEN=256)                            :: cf_in_stem, cf_suffix   ! file name parts
   CHARACTER(LEN=256)                            :: cv_dep, cv_tim    ! variable name for depth and time
   CHARACTER(LEN=256)                            :: ctyp              ! filter type
   CHARACTER(LEN=256)                            :: cldum             ! dummy character variable
@@ -89,8 +93,8 @@ PROGRAM cdfsmooth
 
   narg=iargc()
   IF ( narg == 0 ) THEN
-     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t FLT-type] [-k LST-level] ...'
-     PRINT *,'       [-anis ratio ] [-nc4 ] '
+     PRINT *,' usage : cdfsmooth -f IN-file -c ncut [-t FLT-type] [-npass npass] [-k LST-level] ...'
+     PRINT *,'       [-anis ratio ] [-lap lap] [-lsm lsm] [-nc4 ] '
      PRINT *,'      '
      PRINT *,'     PURPOSE :'
      PRINT *,'       Perform a spatial smoothing on the file using a particular filter as'
@@ -103,41 +107,53 @@ PROGRAM cdfsmooth
      PRINT *,'                    of iteration of the Shapiro filter.'
      PRINT *,'      '
      PRINT *,'     OPTIONS :'
+     PRINT *,'       [-n NAM-file] : namelist file. Only required for Shapiro filter.'
      PRINT *,'       [-t FLT-type] : Lanczos      , L, l  (default)'
      PRINT *,'                       Hanning      , H, h'
      PRINT *,'                       Shapiro      , S, s'
      PRINT *,'                       Box          , B, b'
-     PRINT *,'       [-anis ratio ] : Specify an anisotropic ratio in case of Box-car filter.'
-     PRINT *,'               With ratio=1, the box is a square 2.ncut x 2.ncut grid points.'
-     PRINT *,'               In general, the box is then a rectangle 2.ncut*ratio x 2.ncut.'
+     PRINT *,'       [-npass npass ] : Number of passes of filter; only used for Shapiro filter'
      PRINT *,'       [-k LST-level ] : levels to be filtered (default = all levels)'
      PRINT *,'               LST-level is a comma-separated list of levels. For example,'
      PRINT *,'               the syntax 1-3,6,9-12 will select 1 2 3 6 9 10 11 12'
+     PRINT *,'       [-anis ratio ] : Specify an anisotropic ratio in case of Box-car filter.'
+     PRINT *,'               With ratio=1, the box is a square 2.ncut x 2.ncut grid points.'
+     PRINT *,'               In general, the box is then a rectangle 2.ncut*ratio x 2.ncut.'
+     PRINT *,'       [-lap lap ] : .TRUE. implies Laplacian; .FALSE. implies 1D lines; only used for Shapiro filter'
+     PRINT *,'       [-lsm lsm ] : .TRUE. implies land pts not used; .FALSE. implies full 2D field (no land/sea mask); only used for Shapiro filter'
      PRINT *,'       [-nc4] : produce netcdf4 output file with chunking and deflation.'
      PRINT *,'      '
      PRINT *,'     OUTPUT : '
      PRINT *,'       Output file name is build from input file name with indication'
-     PRINT *,'       of the filter type (1 letter) and of ncut.'
+     PRINT *,'       of the filter type (1 letter) and of ncut .'
      PRINT *,'       netcdf file :   IN-file[LHSB]ncut'
      PRINT *,'         variables : same as input variables.'
      PRINT *,'      '
      STOP 
   ENDIF
   !
+  cf_nam = ""
   ijarg = 1
   ilev  = 0
   ranis = 1   ! anisotropic ratio for Box car filter
+  lap = .TRUE.
+  lsm = .TRUE.
   ctyp  = 'L'
   ncut  = 0   ! hence program exit if none specified on command line
+  npass = 1   ! just one pass
   DO WHILE (ijarg <= narg )
      CALL getarg ( ijarg, cldum ) ; ijarg=ijarg+1
      SELECT CASE (cldum)
      CASE ( '-f'  ) ; CALL getarg ( ijarg, cf_in   ) ; ijarg=ijarg+1
+     CASE ( '-n'  ) ; CALL getarg ( ijarg, cf_nam  ) ; ijarg=ijarg+1
      CASE ( '-c'  ) ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ncut
      CASE ( '-t'  ) ; CALL getarg ( ijarg, ctyp    ) ; ijarg=ijarg+1 
+     CASE ( '-npass') ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) npass
      CASE ( '-k'  ) ; CALL getarg ( ijarg, clklist ) ; ijarg=ijarg+1 
                     ; CALL GetList (clklist, iklist, ilev )
      CASE ('-anis') ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) ranis
+     CASE ('-lap') ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) lap
+     CASE ('-lsm') ; CALL getarg ( ijarg, cldum   ) ; ijarg=ijarg+1 ; READ(cldum,*) lsm
      CASE ( '-nc4') ; lnc4 = .TRUE.
      CASE DEFAULT   ; PRINT *,' ERROR :' ,TRIM(cldum),' : unknown option.' ; STOP 99
      END SELECT
@@ -147,6 +163,13 @@ PROGRAM cdfsmooth
   ENDIF
 
   IF ( chkfile(cf_in) ) STOP 99 ! missing file
+  IF ( index( cf_in, ".nc" ) > 0 ) THEN
+     cf_in_stem = cf_in(1:len(trim(cf_in))-3)
+     cf_suffix = ".nc"
+  ELSE
+     cf_in_stem = cf_in
+     cf_suffix = ""
+  ENDIF
 
   !  remark: for a spatial filter, fn=dx/lambda where dx is spatial step, lamda is cutting wavelength
   fn    = 1./ncut
@@ -154,25 +177,25 @@ PROGRAM cdfsmooth
 
   ALLOCATE ( dec(0:nband) , de(0:nband) )
 
-  WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'L',ncut   ! default name
+  WRITE(cf_out,'(a,a,i3.3,a)') TRIM(cf_in_stem),'_L',ncut,TRIM(cf_suffix)   ! default name
 
   SELECT CASE ( ctyp)
   CASE ( 'Lanczos','L','l') 
      nfilter=jp_lanc
-     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'L',ncut
+     WRITE(cf_out,'(a,a,i3.3,a)') TRIM(cf_in_stem),'_L',ncut,TRIM(cf_suffix)
      PRINT *,' Working with Lanczos filter'
   CASE ( 'Hanning','H','h')
      nfilter=jp_hann
      ALLOCATE ( dec2d(0:2,0:2) )
-     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'H',ncut
+     WRITE(cf_out,'(a,a,i3.3,a)') TRIM(cf_in_stem),'_H',ncut,TRIM(cf_suffix)
      PRINT *,' Working with Hanning filter'
   CASE ( 'Shapiro','S','s')
      nfilter=jp_shap
-     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'S',ncut
+     WRITE(cf_out,'(a,a,2i1.1,2l1,a)') TRIM(cf_in_stem),'_S',ncut,npass,lap,lsm,TRIM(cf_suffix)
      PRINT *,' Working with Shapiro filter'
   CASE ( 'Box','B','b')
      nfilter=jp_boxc
-     WRITE(cf_out,'(a,a,i3.3)') TRIM(cf_in),'B',ncut
+     WRITE(cf_out,'(a,a,i3.3,a)') TRIM(cf_in_stem),'_B',ncut,TRIM(cf_suffix)
      IF ( ranis /=1. ) THEN
         PRINT *, 'Anisotropic box car with ratio Lx = ', ranis, 'x Ly'
      ELSE
@@ -267,7 +290,6 @@ PROGRAM cdfsmooth
               WHERE ( v2d == rspval ) iw =0
               IF ( ncut /= 0 ) CALL filter( nfilter, v2d, iw, w2d)
               IF ( ncut == 0 ) w2d = v2d
-              w2d  = w2d *iw  ! mask filtered data
               ierr = putvar(ncout, id_varout(jvar), w2d, jk, npiglo, npjglo, ktime=jt)
               !
            END DO
@@ -314,7 +336,7 @@ CONTAINS
     SELECT CASE ( kfilter)
     CASE ( jp_lanc ) ; CALL lislanczos2d (px, kpx, py, npiglo, npjglo, fn, nband)
     CASE ( jp_hann ) ; CALL lishan2d     (px, kpx, py, ncut, npiglo, npjglo)
-    CASE ( jp_shap ) ; CALL lisshapiro1d (px, kpx, py, ncut, npiglo, npjglo)
+    CASE ( jp_shap ) ; CALL lisshapiro2d (px, kpx, py, ncut, npass, lap, lsm, npiglo, npjglo)
     CASE ( jp_boxc ) ; CALL lisbox       (px, kpx, py, npiglo, npjglo, fn, nband, ranis)
     END SELECT
 
@@ -531,86 +553,303 @@ CONTAINS
 
   END SUBROUTINE lishan2d
 
-  SUBROUTINE lisshapiro1d(px, kiw, py, korder, kpi, kpj)
+  SUBROUTINE lisshapiro2d(px, kiw, py, korder, kpass, lap, lsm, kpi, kpj)   
     !!---------------------------------------------------------------------
-    !!                  ***  ROUTINE lisshapiro1d  ***
+    !!                  ***  ROUTINE lisshapiro2d  ***
     !!
-    !! ** Purpose :  compute shapiro filter 
+    !! ** Purpose :  apply a korder 2D shapiro filter kpass times. The land/sea mask and 
+    !!               values at selected points may be forced to their initial values.  
     !!
-    !! References :  adapted from Mercator code
+    !! References :  Originally adapted from Mercator code.
+    !!               This version rewritten by Mike Bell to implement the algorithm from
+    !!               Francis, P.E., Quart. J. Roy. Met. Soc 101, pp 567-582 (1975)
     !!----------------------------------------------------------------------
     REAL(KIND=4),    DIMENSION(:,:), INTENT(in ) :: px      ! input data
     INTEGER(KIND=4), DIMENSION(:,:), INTENT(in ) :: kiw     ! validity flags
     REAL(KIND=4),    DIMENSION(:,:), INTENT(out) :: py      ! output data
     INTEGER(KIND=4),                 INTENT(in ) :: korder  ! order of the filter
+    INTEGER(KIND=4),                 INTENT(in ) :: kpass   ! number of passes of the filter 
+    LOGICAL,                         INTENT(in ) :: lap     ! True => Laplacian; False => lines
+    LOGICAL,                         INTENT(in ) :: lsm     ! True => land points not used; False => no land/sea mask used (full 2D field) 
     INTEGER(KIND=4),                 INTENT(in ) :: kpi, kpj ! size of the data
 
-    INTEGER(KIND=4)                              :: jj, ji, jorder  ! loop indexes
-    INTEGER(KIND=4)                              :: imin, imax, ihalo=0
-    REAL(KIND=4), PARAMETER                      :: rp_aniso_diff_XY = 2.25 !  anisotrope case
-    REAL(KIND=4)                                 :: zalphax, zalphay, znum
-    REAL(KIND=4), DIMENSION(:,:), ALLOCATABLE    :: ztmp , zpx , zpy, zkiw
-    LOGICAL                                      :: ll_cycl = .TRUE.
-    !!----------------------------------------------------------------------
+    INTEGER(KIND=4)                              :: max_iterations = 10   ! max number of iterations allowed to enforce original land/sea mask and original values at selected points
 
-    IF(ll_cycl) ihalo=1
-    ! we allocate with an ihalo
-    ALLOCATE( ztmp(0:kpi+ihalo,kpj) , zkiw(0:kpi+ihalo,kpj) )
-    ALLOCATE( zpx (0:kpi+ihalo,kpj) , zpy (0:kpi+ihalo,kpj) )
+    INTEGER(KIND=4)                              :: jn_fix_pts ! number of points where bathymetry is to remain fixed
+    INTEGER(KIND=4)                              :: jj, ji, jorder, jpass, jiteration, jpt  ! loop indexes
+    INTEGER(KIND=4)                              :: ijt     ! transposed ji index used for north pole fold
+    INTEGER(KIND=4)                              :: ji_min, jj_min ! indices of min field values
+    INTEGER(KIND=4)                              :: jcount_shallow, jcount_fixed  ! temporary indices for print out 
+    REAL(KIND=4)                                 :: znum
+    REAL(KIND=4)                                 :: rms_int, znpts
+    REAL(KIND=4),  DIMENSION(:,:), ALLOCATABLE   :: ztmp , zpx , zpx_iteration, zpy, zkiw, zones
+    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE   :: ji_fix     ! i indices of bathymetry pts to hold fixed
+    INTEGER(KIND=4), DIMENSION(:), ALLOCATABLE   :: jj_fix     ! j indices of bathymetry pts to hold fixed
+    LOGICAL                                      :: l_test_shallow, l_test_fixed ! temporary logicals 
 
-    IF(ll_cycl) THEN
-       zpx(1:kpi,:) = px(:  ,:) ;  zkiw(1:kpi,:) = kiw(:  ,:)
-       zpx(0    ,:) = px(kpi,:) ;  zkiw(0    ,:) = kiw(kpi,:)
-       zpx(kpi+1,:) = px(1  ,:) ;  zkiw(kpi+1,:) = kiw(1  ,:)
-    ELSE
-       zpx(:    ,:) = px(:  ,:)
-    ENDIF
+!-----------------------------------------------------------------------------------------------
+!! Variables that can be set through the namelist 
 
-    zpy (:,:) = zpx(:,:)  ! init?
-    ztmp(:,:) = zpx(:,:)  ! init
+    LOGICAL                     :: ln_npol_fold      ! north pole fold in grid? 
+    LOGICAL                     :: ln_ew_cycl        ! this filter has only been tested for EW cyclic grids 
+!! MJB: for limited area models the bathymetry should be smoothed over a wider domain than that of the model; the margin should be at least korder*kpass
+!! points and preferably 2*korder*kpass points (the bathymetry in nested models needs to match that of the outer domain in the nesting zone; that 
+!! might be done by including the nesting zone in the list of fixed points - but simpler solutions might be adequate) 
+  
+    LOGICAL                     :: ln_single_point_response ! => study response to single non-zero value
+    LOGICAL                     :: ln_pass_shallow_updates  ! => update values where bathy < zmin_val between passes
+    LOGICAL                     :: ln_pass_fixed_pt_updates ! => update values where bathymetry should remain fixed
 
-    zalphax=1./2.
-    zalphay=1./2.
+    CHARACTER(LEN=256)          :: cn_fixed_points          ! file containing list of fixed points
+                                                            ! for ln_pass_fixed_pt_updates = T
 
-    !  Dx/Dy=rp_aniso_diff_XY  , D_ = vitesse de diffusion
-    !  140 passes du fitre, Lx/Ly=1.5, le rp_aniso_diff_XY correspondant est:
+    REAL(KIND=4)                :: rn_min_val, rn_factor_shallow, rn_tol_fixed, rn_tol_shallow ! see below
 
-    IF ( rp_aniso_diff_XY >=  1. ) zalphay=zalphay/rp_aniso_diff_XY
-    IF ( rp_aniso_diff_XY <   1. ) zalphax=zalphax*rp_aniso_diff_XY
+    INTEGER (KIND=4)            :: ji_single_pt, jj_single_pt ! indices of single point (see ln_single_point_response)
+    INTEGER(KIND=4)             :: jst_prt, jend_prt ! 
+ 
+!! The points that are printed out are set by ji_min_prt, jj_min_prt, ji_max_prt, jj_max_prt - these are local to prt_summary 
 
-    DO jorder=1,korder
-       imin = 2     - ihalo
-       imax = kpi-1 + ihalo
-       DO ji = imin,imax
-          DO jj = 2,kpj-1
-             ! We crop on the coast
-             znum =    ztmp(ji,jj)                                                  &
-                  &    + 0.25*zalphax*(ztmp(ji-1,jj  )-ztmp(ji,jj))*zkiw(ji-1,jj  ) &
-                  &    + 0.25*zalphax*(ztmp(ji+1,jj  )-ztmp(ji,jj))*zkiw(ji+1,jj  ) &
-                  &    + 0.25*zalphay*(ztmp(ji  ,jj-1)-ztmp(ji,jj))*zkiw(ji  ,jj-1) &
-                  &    + 0.25*zalphay*(ztmp(ji  ,jj+1)-ztmp(ji,jj))*zkiw(ji  ,jj+1)
-             zpy(ji,jj) = znum*zkiw(ji,jj)+zpx(ji,jj)*(1.-zkiw(ji,jj))
-          ENDDO  ! end loop ji
-       ENDDO  ! end loop jj
+!-----------------------------------------------------------------------------------------------
 
-       IF ( ll_cycl ) THEN
-          zpy(0    ,:) = zpy(kpi,:) 
-          zpy(kpi+1,:) = zpy(1  ,:) 
-       ENDIF
+    NAMELIST / nam_shapiro / ln_npol_fold, ln_ew_cycl, ln_single_point_response, ln_pass_shallow_updates, &
+   &                         ln_pass_fixed_pt_updates, cn_fixed_points, ji_single_pt, jj_single_pt, jst_prt, jend_prt, &
+   &                         rn_min_val, rn_tol_shallow, rn_tol_fixed, rn_factor_shallow 
+!! Namelist default values 
+    ln_npol_fold = .FALSE.
+    ln_ew_cycl = .FALSE. 
+    ln_single_point_response = .FALSE.
+    ln_pass_shallow_updates = .FALSE.
+    ln_pass_fixed_pt_updates = .FALSE.
+    cn_fixed_points   = ""
+    rn_min_val        = 5.0    ! minimum depth (e.g. 10.0 metres) 
+    rn_tol_shallow    = 1.0    ! tolerance in metres of minimum shallow values (rn_min_val - rn_tol_shallow) 
+    rn_tol_fixed      = 1.0    ! tolerance in metres for fit to bathymetry at point specified to be fixed  
+    rn_factor_shallow = 1.5    ! rn_factor_shallow needs to be slightly greater than 1.0   ! 1.1 to 1.5 are reasonable values
 
-       ! update the tmp array
-       ztmp(:,:) = zpy(:,:)
+    ji_single_pt = 622 ; jj_single_pt = 779
+    jst_prt = 400 ;      jend_prt = 405
 
-    ENDDO
+    IF( len(trim(cf_nam)) == 0 ) cf_nam='namelist_shapiro.txt'
+    OPEN(UNIT=20, file = trim(cf_nam), form='formatted', status='old' )
+    READ(NML=nam_shapiro, UNIT = 20) 
+    WRITE(NML=nam_shapiro, UNIT=6)
+    CLOSE(20)
 
-    ! return this array
-    IF( ll_cycl ) THEN
-       py(:,:) = zpy(1:kpi,:)
-    ELSE
-       py(:,:) = zpy(:    ,:)
-    ENDIF
+    PRINT*, 'korder, kpass, lap, lsm = ', korder, kpass, lap, lsm
+    
+!-----------------------------------------------------------------------------------------------
 
-  END SUBROUTINE lisshapiro1d
+! MJB 2021/02/10: This code has been re-written for files in which column 1 is the same as column kpi - 1; col 2 is same as col kpi.
+!                 In other words the halo columns are included in the input file. 
+!                 px  
+
+    ! we do NOT allocate with an additional ihalo
+    ALLOCATE( ztmp(kpi,kpj) , zkiw(kpi,kpj) )
+    ALLOCATE( zpx (kpi,kpj) , zpy (kpi,kpj) )
+    ALLOCATE( zones(kpi,kpj), zpx_iteration(kpi,kpj)  )
+       
+ ! print values from top and bottom rows to check they are OK 
+    PRINT *, ' col 1 = ', (px(1,jj), jj = jst_prt, jend_prt)  
+    PRINT *, ' col 2 = ', (px(2,jj), jj = jst_prt, jend_prt)  
+    PRINT *, ' col kpi-1 = ', (px(kpi-1,jj), jj = jst_prt, jend_prt)  
+    PRINT *, ' col kpi = ', (px(kpi,jj), jj = jst_prt, jend_prt)  
+
+! option for testing out response to a single non-zero value 
+    IF ( ln_single_point_response ) THEN 
+       zpx(:,:) = 0.0 
+       zpx(ji_single_pt,jj_single_pt) = 1.0     ! choose a point somewhere in the domain  
+    END IF 
+
+! read the indices of points to remain fixed 
+    IF ( ln_pass_fixed_pt_updates ) THEN 
+       OPEN (unit=20, file = trim(cn_fixed_points), form='formatted', status='old' ) 
+       READ (20, *) jn_fix_pts
+
+       ALLOCATE( ji_fix(jn_fix_pts), jj_fix(jn_fix_pts) )
+
+       DO jpt = 1, jn_fix_pts
+          READ (20, *) ji_fix(jpt), jj_fix(jpt)
+       ENDDO 
+       CLOSE (20)        
+    END IF 
+
+! write out land/sea mask and initial bathymetry values
+
+    zpx(:,:)  = px(:  ,:)     ! px is only used at interior points and kiw is not used hereafter
+    zkiw(:,:) = kiw(:,:)      ! halos could be inserted in zpx and zkiw here if not present in px and kiw 
+
+    IF ( .NOT. lsm ) zkiw(:,:) = 1.0    !  used to test whether filter is stable when all points are included in the filter    
+    
+    zones(:,:) = 1.0                       
+    PRINT *, ' point 1 zkiw' 
+    CALL prt_summary( zkiw, zones, kpi, kpj) 
+
+    IF ( rn_min_val > 0.0 ) THEN 
+       DO jj = 2, kpj-1
+         DO ji = 2,kpi-1
+           IF ( zkiw(ji,jj) > 0.0 .AND. zpx(ji,jj) < rn_min_val ) zpx(ji,jj) = rn_min_val        
+         ENDDO
+       ENDDO 
+    ENDIF 
+
+    PRINT *, ' point 1 zpx' 
+    CALL prt_summary( zpx, zkiw, kpi, kpj) 
+
+! main calculations start 
+
+! enforce cyclic conditions and north pole fold (southern boundary is assumed to be land) on zpx and zkiw
+    CALL impose_bcs( zpx,  kpi, kpj, ln_ew_cycl, ln_npol_fold)
+    CALL impose_bcs( zkiw, kpi, kpj, ln_ew_cycl, ln_npol_fold) 
+
+    zpy (:,:) = zpx(:,:)  ! initialisation of zpy is necessary for row 1 (and other outer rows/columns if non-periodic)
+
+    zpx_iteration(:,:) = zpx(:,:)    ! zpx_iteration  is only updated outside the jpass and jorder loops 
+                                     ! zpx is a working array updated within the jpass loop    
+
+    jiterationloop: DO jiteration=1,max_iterations
+
+       zpx(:,:) = zpx_iteration(:,:)  ! initial values for zpx for this value of jiteration  
+
+       jpassloop: DO jpass=1,kpass    
+     
+          ztmp(:,:) = zpx(:,:)  ! initialision of jorder loop 
+
+          CALL impose_bcs( ztmp,  kpi, kpj, ln_ew_cycl, ln_npol_fold) 
+
+          DO jorder=1,korder
+
+             IF ( lap ) THEN 
+                DO jj = 2,kpj-1
+                   DO ji = 2,kpi-1
+                      znum =      0.25*(ztmp(ji-1,jj  )-ztmp(ji,jj))*zkiw(ji-1,jj  ) &
+                           &    + 0.25*(ztmp(ji+1,jj  )-ztmp(ji,jj))*zkiw(ji+1,jj  ) &
+                           &    + 0.25*(ztmp(ji  ,jj-1)-ztmp(ji,jj))*zkiw(ji  ,jj-1) &
+                           &    + 0.25*(ztmp(ji  ,jj+1)-ztmp(ji,jj))*zkiw(ji  ,jj+1)
+
+                      zpy(ji,jj) = - 0.5*znum*zkiw(ji,jj)
+
+                   ENDDO  ! end loop ji
+                ENDDO  ! end loop jj
+             ELSE 
+                DO jj = 1,kpj
+                   DO ji = 2,kpi-1
+                      znum =      0.25*(ztmp(ji-1,jj  )-ztmp(ji,jj))*zkiw(ji-1,jj  ) &
+                           &    + 0.25*(ztmp(ji+1,jj  )-ztmp(ji,jj))*zkiw(ji+1,jj  ) 
+
+                      zpy(ji,jj) = - znum*zkiw(ji,jj)
+
+                   ENDDO  ! end loop ji
+                ENDDO  ! end loop jj
+
+                ztmp(:,:) = zpy(:,:)
+
+                DO jj = 2,kpj-1
+                   DO ji = 2,kpi-1
+                      znum =    + 0.25*(ztmp(ji  ,jj-1)-ztmp(ji,jj))*zkiw(ji  ,jj-1) &
+                           &    + 0.25*(ztmp(ji  ,jj+1)-ztmp(ji,jj))*zkiw(ji  ,jj+1)
+
+                      zpy(ji,jj) = - znum*zkiw(ji,jj)
+ 
+                   ENDDO  ! end loop ji
+                ENDDO  ! end loop jj
+             ENDIF
+
+             CALL impose_bcs( zpy, kpi, kpj, ln_ew_cycl, ln_npol_fold) 
+       
+             PRINT *, 'jorder, point 2 zpy = ', jorder 
+             CALL prt_summary( zpy, zkiw, kpi, kpj) 
+
+             ztmp(:,:) = zpy(:,:)  ! update ztmp for use with the next value of jorder
+
+          ENDDO  ! jorder 
+
+          zpy(:,:) = zpx(:,:) -  zpy(:,:)    !  zpy stores k-order filter after jpass iterations   
+          zpx(:,:) = zpy(:,:)                !  update zpx for use with the next value of jpass
+
+          PRINT *, 'jpass, point 3 zpx = ', jpass 
+          CALL prt_summary( zpx, zkiw, kpi, kpj) 
+
+       END DO jpassloop 
+
+       IF ( .NOT. ( ln_pass_fixed_pt_updates .OR. ln_pass_shallow_updates ) ) EXIT jiterationloop  
+
+! Find the number of points where the filtered bathymetry (zpy) is less than rn_min_val (to within tolerance rn_tol_shallow)  
+     
+       IF ( ln_pass_shallow_updates ) THEN 
+          jcount_shallow = 0
+          rms_int = 0.0 
+          PRINT *, ' zpy(ji,jj), ji, jj, jcount where zpy < rn_min_val - rn_tol_shallow'  
+          DO jj = 2, kpj-1
+             DO ji = 2,kpi-1
+                IF ( zkiw(ji,jj) > 0.0 .AND. zpy(ji,jj) < rn_min_val - rn_tol_shallow ) THEN  
+                   jcount_shallow = jcount_shallow + 1
+                   IF ( jcount_shallow < 50 ) PRINT *, zpy(ji,jj), ji, jj, jcount_shallow 
+                ENDIF
+                rms_int = rms_int + ( zpy(ji,jj) - px(ji,jj) )*( zpy(ji,jj) - px(ji,jj) ) 
+             ENDDO
+          ENDDO
+          znpts = (kpj-2)*(kpi-2)
+          rms_int = SQRT( rms_int / znpts ) 
+          PRINT *, 'jcount_shallow = ', jcount_shallow
+          PRINT *, 'rms_int = ', rms_int
+       ENDIF ! ln_pass_shallow_updates
+
+       IF ( ln_pass_fixed_pt_updates ) THEN 
+          jcount_fixed = 0 
+          PRINT *, ' px(ji,jj), zpy(ji,jj), ji, jj, jcount where ABS( zpy(ji,jj) - px(ji,jj) ) > rn_tol_fixed '  
+          DO jpt = 1, jn_fix_pts 
+             ji = ji_fix(jpt)
+             jj = jj_fix(jpt)
+             IF ( zkiw(ji,jj) > 0.0 .AND.  ABS( zpy(ji,jj) - px(ji,jj) ) > rn_tol_fixed ) THEN     ! zpy is updated value; px is original value 
+                jcount_fixed = jcount_fixed + 1
+                IF ( jcount_fixed < 50 ) PRINT *, px(ji,jj), zpy(ji,jj), ji, jj, jcount_fixed 
+             ENDIF
+          ENDDO
+          PRINT *, 'jcount_fixed = ', jcount_fixed
+       ENDIF ! ln_pass_fixed_pt_updates
+
+! If output bathymetry is too small at some sea points or not close enough to the original at the selected points, increment zpx 
+
+       l_test_shallow = jcount_shallow == 0 .OR. .NOT. ln_pass_shallow_updates 
+       l_test_fixed   = jcount_fixed == 0   .OR. .NOT. ln_pass_fixed_pt_updates 
+       IF ( l_test_shallow .AND. l_test_fixed  ) EXIT jiterationloop  
+
+       IF ( ln_pass_shallow_updates ) THEN ! increment zpx before next pass at points where zpy < rn_min_val
+          DO jj = 2, kpj-1
+            DO ji = 2,kpi-1
+              IF ( zkiw(ji,jj) > 0.0 .AND. zpy(ji,jj) < rn_min_val) THEN  
+                zpx_iteration(ji,jj) = zpx_iteration(ji,jj) + MAX(px(ji,jj), rn_factor_shallow*rn_min_val) -  zpy(ji,jj)        
+              ENDIF 
+            ENDDO
+          ENDDO 
+       END IF 
+       
+       IF ( ln_pass_fixed_pt_updates ) THEN 
+          DO jpt = 1, jn_fix_pts
+             ji = ji_fix(jpt)
+             jj = jj_fix(jpt)
+             IF ( zkiw(ji,jj) > 0.0 ) zpx_iteration(ji,jj) = zpx_iteration(ji,jj) +  px(ji,jj) - zpy(ji,jj)  
+          ENDDO 
+       END IF 
+       
+    END DO jiterationloop 
+
+    IF ( ln_pass_shallow_updates .AND. jcount_shallow == 0) THEN 
+      DO jj = 1, kpj
+        DO ji = 1,kpi
+          IF ( zkiw(ji,jj) > 0.0 ) zpy(ji,jj) = MAX( zpy(ji,jj), rn_min_val )         
+        ENDDO
+      ENDDO
+    ENDIF 
+    
+    py(:,:) = zpy(:    ,:)    ! first use of py (halos could easily be removed here) 
+    
+    DEALLOCATE( ztmp, zkiw )
+    DEALLOCATE( zpx, zpy )
+    DEALLOCATE( zones  )
+
+  END SUBROUTINE lisshapiro2d
 
   SUBROUTINE lisbox(px, kiw, py, kpi, kpj, pfn, knj,panis)
     !!---------------------------------------------------------------------
@@ -650,5 +889,74 @@ CONTAINS
     END DO
 
   END SUBROUTINE lisbox
+
+  SUBROUTINE prt_summary( pa, pkiw, kpi, kpj) 
+
+  REAL(KIND=4),         DIMENSION(:,:), INTENT(in ) :: pa, pkiw   
+  INTEGER(KIND=4),                      INTENT(in ) :: kpi,kpj
+
+  INTEGER(KIND=4)    ::  ji, jj
+  INTEGER(KIND=4)    ::  ji_min_prt, jj_min_prt
+  INTEGER(KIND=4)    ::  ji_max_prt, jj_max_prt
+  REAL(KIND=4)       ::  zmin, zmax
+
+! User sets these values 
+  ji_min_prt =  620 ;  jj_min_prt = 777 
+  ji_max_prt =  624 ;  jj_max_prt = 781
+
+
+  IF ( ji_max_prt > kpi )  ji_max_prt = kpi 
+  IF ( jj_max_prt > kpj )  jj_max_prt = kpj 
+
+  DO jj = jj_min_prt, jj_max_prt
+    PRINT*, jj, (ji, pa(ji,jj), ji = ji_min_prt, ji_max_prt)     
+  END DO 
+  
+  zmin = 1.E20  ; zmax = -1.E20 
+  DO jj = 1, kpj
+    DO ji = 1, kpi
+       IF ( pkiw(ji,jj) .NE. 0 .AND. pa(ji,jj) < zmin ) THEN 
+          ji_min_prt =  ji  ; jj_min_prt =  jj ; zmin = pa(ji,jj)  
+       END IF 
+       IF ( pkiw(ji,jj) .NE. 0 .AND. pa(ji,jj) > zmax ) THEN 
+          ji_max_prt =  ji  ; jj_max_prt =  jj ; zmax = pa(ji,jj)  
+       END IF 
+    ENDDO 
+  ENDDO
+
+  PRINT*, 'ji, jj, min value = ', ji_min_prt, jj_min_prt, zmin 
+  PRINT*, 'ji, jj, max value = ', ji_max_prt, jj_max_prt, zmax 
+
+  RETURN
+  END SUBROUTINE prt_summary
+  
+  SUBROUTINE impose_bcs( pfld, kpi, kpj, ln_ew_cycl, ln_npol_fold) 
+  REAL(KIND=4),    DIMENSION(:,:), INTENT(inout) :: pfld      
+  INTEGER,                         INTENT(in   ) :: kpi, kpj
+  LOGICAL,                         INTENT(in   ) :: ln_ew_cycl, ln_npol_fold
+
+  INTEGER ji, ijt 
+    
+! cyclic points in ji 
+  IF ( ln_ew_cycl ) THEN
+     pfld(1  ,:) = pfld(kpi-1,:) 
+     pfld(kpi,:) = pfld(2    ,:) 
+  ENDIF
+
+! north pole fold;  (southern boundary is assumed to be land) 
+  IF ( ln_npol_fold ) THEN 
+     DO ji = 2, kpi 
+        ijt = kpi-ji+2
+        pfld(ji,kpj) = pfld(ijt,kpj-2)
+     END DO 
+     pfld(1,kpj) = pfld(3,kpj-2)
+     DO ji = kpi/2+1, kpi
+        ijt = kpi-ji+2
+        pfld(ji,kpj-1) = pfld(ijt,kpj-1)
+     END DO
+  END IF 
+
+  RETURN
+  END SUBROUTINE impose_bcs
 
 END PROGRAM cdfsmooth

@@ -243,6 +243,7 @@ PROGRAM cdfpsi
 
   CALL CreateOutput
 
+  PRINT *, 'Getting ',TRIM(cn_ve1v), TRIM(cn_ve2u)
   e1v(:,:)   = getvar(cn_fhgr, cn_ve1v, 1, npiglo, npjglo)
   e2u(:,:)   = getvar(cn_fhgr, cn_ve2u, 1, npiglo, npjglo)
   IF ( lmask) THEN
@@ -270,7 +271,7 @@ PROGRAM cdfpsi
 
      DO jk = 1,npk
         IF ( ll_v ) THEN
-           zv(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jt )
+           zv(:,:) = getvar(cf_vfil, cn_vomecrty, jk, npiglo, npjglo, ktime=jt, ld_zeromask=.true. )
            IF ( lfull ) THEN ; e3v(:,:) = e31d(jk)
            ELSE              ; e3v(:,:) = getvar(cn_fe3v, cn_ve3v, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF
@@ -289,7 +290,8 @@ PROGRAM cdfpsi
         ENDIF
 
         IF ( ll_u) THEN
-           zu(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jt )
+           zu(:,:) = getvar(cf_ufil, cn_vozocrtx, jk, npiglo, npjglo, ktime=jt, ld_zeromask=.true. )
+           PRINT *, 'Getting ',TRIM(cn_ve3u)
            IF ( lfull ) THEN ; e3u(:,:) = e31d(jk)
            ELSE              ; e3u(:,:) = getvar(cn_fe3u, cn_ve3u, jk, npiglo, npjglo, ktime=it, ldiom=.NOT.lg_vvl)
            ENDIF

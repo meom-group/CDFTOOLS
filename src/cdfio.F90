@@ -1422,7 +1422,7 @@ CONTAINS
 
   END FUNCTION FindVarName
 
-  FUNCTION  getvar (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime, ldiom)
+  FUNCTION  getvar (cdfile,cdvar,klev,kpi,kpj,kimin,kjmin, ktime, ldiom, ld_zeromask)
     !!---------------------------------------------------------------------
     !!                  ***  FUNCTION  getvar  ***
     !!
@@ -1443,6 +1443,7 @@ CONTAINS
     INTEGER(KIND=4), OPTIONAL, INTENT(in) :: kimin, kjmin ! Optional variable. If missing 1 is assumed
     INTEGER(KIND=4), OPTIONAL, INTENT(in) :: ktime        ! Optional variable. If missing 1 is assumed
     LOGICAL,         OPTIONAL, INTENT(in) :: ldiom        ! Optional variable. If missing false is assumed
+    LOGICAL,         OPTIONAL, INTENT(in) :: ld_zeromask   ! Optional variable. Reset field to zero at missing value points. If missing false is assumed
     REAL(KIND=4), DIMENSION(kpi,kpj) :: getvar            ! 2D REAL 4 holding variable field at klev
 
     INTEGER(KIND=4), DIMENSION(4)               :: istart, icount, inldim
@@ -1454,7 +1455,7 @@ CONTAINS
     REAL(KIND=4)                                :: spval  !: missing value
     REAL(KIND=4) , DIMENSION (:,:), ALLOCATABLE :: zend, zstart
     CHARACTER(LEN=256)                          :: clvar
-    LOGICAL                                     :: lliom=.false., llperio=.false.
+    LOGICAL                                     :: lliom=.false., llperio=.false., ll_zeromask=.false.
     LOGICAL                                     :: llog=.FALSE. , lsf=.FALSE. , lao=.FALSE.
     !!
     INTEGER(KIND=4)                :: ityp
@@ -1497,6 +1498,12 @@ CONTAINS
        lliom=ldiom
     ELSE
        lliom=.false.
+    ENDIF
+
+    IF (PRESENT(ld_zeromask) ) THEN
+       ll_zeromask=ld_zeromask
+    ELSE
+       ll_zeromask=.false.
     ENDIF
 
     ! Must reset the flags to false for every call to getvar
@@ -1603,7 +1610,8 @@ CONTAINS
     IF (lsf )  WHERE (getvar /= spval )  getvar=getvar*sf
     IF (lao )  WHERE (getvar /= spval )  getvar=getvar + ao
     IF (llog)  WHERE (getvar /= spval )  getvar=10**getvar
-
+    IF (ll_zeromask) WHERE (getvar == spval ) getvar=0.0
+    
     istatus=NF90_CLOSE(incid)
 
   END FUNCTION getvar
@@ -1981,13 +1989,13 @@ CONTAINS
     lao=.FALSE.
 
     clvar=cdvar
-    IF ( clvar == cn_ve3v) THEN
-    SELECT CASE ( cg_zgr_ver )
-    CASE ( 'v2.0' ) ; clvar = 'e3v_ps'
-    CASE ( 'v3.0' ) ; clvar = 'e3v'
-    CASE ( 'v3.6' ) ; clvar = 'e3v_0'
-    END SELECT
-    ENDIF
+    !IF ( clvar == cn_ve3v) THEN
+    !SELECT CASE ( cg_zgr_ver )
+    !CASE ( 'v2.0' ) ; clvar = 'e3v_ps'
+    !CASE ( 'v3.0' ) ; clvar = 'e3v'
+    !CASE ( 'v3.6' ) ; clvar = 'e3v_0'
+    !END SELECT
+    !ENDIF
 
     CALL ERR_HDL(NF90_OPEN(cdfile,NF90_NOWRITE,incid) )
     CALL ERR_HDL(NF90_INQ_VARID ( incid,clvar,id_var))

@@ -1,16 +1,12 @@
-# CDFTOOLS
-  CDFTOOLS is a diagnostic package written in fortran 90 for the analysis of NEMO model output, initialized in  the frame of the DRAKKAR project (<https://www.drakkar-ocean.eu/>). It is now available on GitHub under the CeCILL license (<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>).
-
-  CDFTOOLS is an open source package and contributions from other group are welcomed. The Git workflow policy is still to be defined.
-
-  Actual version of CDFTOOLS is known as version 4. (See changes in paragraph *New features in version 4*, below).
-
+# CDFTOOLS - JMMP development branch
+   This is the main development branch of the JMMP FORK of [CDFTOOLS](https://github.com/meom-group/CDFTOOLS), a diagnostic package written in fortran 90 for the analysis of NEMO model output, initialized in the frame of the DRAKKAR project (<https://www.drakkar-ocean.eu/>). The main repository of CDFTOOLS is available on GitHub (<https://github.com/meom-group/CDFTOOLS>) under the CeCILL license (<http://www.cecill.info/licences/Licence_CeCILL_V2-en.html>). The current supported version of CDFTOOLS is version 4.
+ 
 ## Using CDFTOOLS
 
-#### Cloning the git repository
-To retrieve a copy of the CDFTOOLS source code and create a working directory, run the following on the command line: 
+#### Cloning the git JMMP development branch
+To retrieve a local copy of the CDFTOOLS `dev_jmmp` development branch run the following on the command line: 
 
-```> git clone https://github.com/meom-group/CDFTOOLS ```
+```> git clone -b dev_jmmp --single-branch https://github.com/JMMP-Group/CDFTOOLS.git CDFTOOLS_jmmp```
 
 #### Compiling CDFTOOLS
 All the fortran source are in src/ subdirectory. In src/ there is a Makefile for compiling the sources. The compiler/machines related definitions are supposed to be collected in a `make.macro` file. Some examples of `make.macro` are given in the Macrolib directory and can be used as template for a new compiler or new machine. Then the good practice is to make a link 

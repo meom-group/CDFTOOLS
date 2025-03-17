@@ -285,11 +285,10 @@ PROGRAM cdfsigtrp
   lchk = lchk .OR. chkfile( cf_vfil    )
   IF ( lchk ) STOP 99 ! missing file
 
-   ! Look for missing value for salinity, U and V
-   zsps = getspval(cf_sfil, cn_vosaline )
-   zspu = getspval(cf_ufil, cn_vozocrtx )
-   zspv = getspval(cf_vfil, cn_vomecrty )
-
+  ! Look for missing value for salinity, U and V
+  zsps = getspval(cf_sfil, cn_vosaline )
+  zspu = getspval(cf_ufil, cn_vozocrtx )
+  zspv = getspval(cf_vfil, cn_vomecrty )
 
   IF ( lg_vvl )  THEN
      cn_fe3u = cf_ufil
@@ -327,8 +326,9 @@ PROGRAM cdfsigtrp
   ! Initialise sections from file 
   ! first call to get nsection and allocate arrays 
   IF ( lbrk ) THEN 
-     npiglo = getdim (cf_brk, cn_x)
-     nsection = 1 ; iimina=1 ; iimaxa=npiglo ; ijmina=1 ; ijmaxa=1
+     !npiglo = getdim (cf_brk, cn_x)
+     !nsection = 1 ; iimina=1 ; iimaxa=npiglo ; ijmina=1 ; ijmaxa=1
+     nsection = 1
   ELSE             
      nsection = 0 
      CALL section_init(cf_section, csection,cvarname,clongname,iimina, iimaxa, ijmina, ijmaxa, nsection)

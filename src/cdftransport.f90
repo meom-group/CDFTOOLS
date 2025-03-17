@@ -47,6 +47,7 @@ PROGRAM cdftransport
   !!  interm_pt  : choose intermediate points on a broken line.
   !!----------------------------------------------------------------------
   USE cdfio
+  USE cdftools       ! for cdf_findij
   USE modcdfnames
   USE modutils       ! for global attribute
   !!----------------------------------------------------------------------
@@ -114,11 +115,14 @@ PROGRAM cdftransport
   INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipk, id_varout ! Netcdf output
   INTEGER(KIND=4), DIMENSION(:),  ALLOCATABLE :: ipkc, id_varoutc ! Netcdf output
 
-  REAL(KIND=4)                                :: rxi0, ryj0     ! working variables
-  REAL(KIND=4)                                :: rxi1, ryj1     ! working variables
-  REAL(KIND=4)                                :: ai, bi         ! equation of line (y=ai.x +bi)
-  REAL(KIND=4)                                :: aj, bj         ! equation of line (x=aj.y +bj
-  REAL(KIND=4)                                :: rd, rd1, rd2   ! distance between point, between vertical layers
+  REAL(KIND=4)                                :: lon_min, lon_max ! longitude-limit of the section
+  REAL(KIND=4)                                :: lat_min, lat_max ! latitude-limit of the section
+  REAL(KIND=4)                                :: rxi0, ryj0       ! working variables
+  REAL(KIND=4)                                :: rxi1, ryj1       ! working variables
+  REAL(KIND=4)                                :: ai, bi           ! equation of line (y=ai.x +bi)
+  REAL(KIND=4)                                :: aj, bj           ! equation of line (x=aj.y +bj
+  REAL(KIND=4)                                :: rd, rd1, rd2     ! distance between point, between 
+                                                                  ! vertical layers
   REAL(KIND=4)                                :: udum, vdum     ! dummy velocity components for tests
   REAL(KIND=4)                                :: rau0=1000      ! density of pure water (kg/m3)
   REAL(KIND=4)                                :: rcp=4000.      ! heat capacity (J/kg/K)
@@ -218,6 +222,7 @@ PROGRAM cdftransport
 
   LOGICAL                                     :: ltest   = .FALSE.   ! flag for test case
   LOGICAL                                     :: lfull   = .FALSE.   ! flag for full step case
+  LOGICAL                                     :: l_lonlat = .FALSE.  ! flag for input lon/lat instead of i,j
   LOGICAL                                     :: lheat   = .TRUE.    ! flag for skipping heat/salt transport computation
   LOGICAL                                     :: lchk    = .FALSE.   ! flag for missing files
   LOGICAL                                     :: lpm     = .FALSE.   ! flag for plus/minus transport
@@ -240,7 +245,7 @@ PROGRAM cdftransport
      PRINT *,'                  ... [-vt VT-file] [-vtvar VT-var VS-var ]'
      PRINT *,'                  ... [-ut UT-file] [-utvar UT-var US-var ]'
      PRINT *,'                  ... [-test  u v ] [-noheat ] [-pm ] [-obc] [-TS] ... '
-     PRINT *,'                  ... [-full] [-time jt] [-vvl] [-self] ...'
+     PRINT *,'                  ... [-full] [-time jt] [-lonlat] [-vvl] [-self] ...'
      PRINT *,'                  ... [-zlimit dep_list] [-sfx suffix][-cumul]...'
      PRINT *,'                  ... [-nan]'
      PRINT *,'      '
@@ -288,6 +293,7 @@ PROGRAM cdftransport
      PRINT *,'                   files. In this case use -t T-file option.'
      PRINT *,'      [-full ]   : use for full step configurations.'
      PRINT *,'      [-time jt ]: compute transports for time index jt. Default is 1.'
+     PRINT *,'      [-lonlat  ]: Input section limits in longitude and latitude instead of (i,j).'
      PRINT *,'      [-vvl  ]   : use time varying  vertical metrics e3 read in the data file'
      PRINT *,'      [-zlimit dep_list] : Specify a list of depth (meters) defining the '
      PRINT *,'                   limits of classes for which transports will be computed.'
@@ -353,6 +359,7 @@ PROGRAM cdftransport
      CASE ('-full'  ) ; lfull = .TRUE.
      CASE ('-noheat') ; lheat = .FALSE.
      CASE ('-time'  ) ; CALL getarg (ijarg, cldum   ) ; ijarg = ijarg + 1 ; READ(cldum,*) itime
+     CASE ('-lonlat') ; l_lonlat = .TRUE.
      CASE ('-pm'    ) ; lpm   = .TRUE.
         ;               lheat = .FALSE.
      CASE ('-obc'   ) ; lobc  = .TRUE.
@@ -781,9 +788,18 @@ PROGRAM cdftransport
      dtim     = getvar1d    (cf_ufil,  cn_vtimec, npt                )
      ierr     = putvar1d    (ncout,    dtim(itime:itime),      1, 'T')
 
-
-     PRINT *, ' Give iimin, iimax, ijmin, ijmax '
-     READ(*,*) iimin, iimax, ijmin, ijmax
+     IF( l_lonlat ) THEN
+        PRINT *, ' Give lon_min, lon_max, lat_min, lat_max '
+        READ(*,*) lon_min, lon_max, lat_min, lat_max
+        !! use cdf_findij to convert to model indices
+        CALL cdf_findij ( lon_min, lon_min, lat_min, lat_min, iimin, iimin, ijmin, ijmin, cd_coord=cn_fhgr, &
+             &            cd_point="F", cd_verbose='n')
+        CALL cdf_findij ( lon_max, lon_max, lat_max, lat_max, iimax, iimax, ijmax, ijmax, cd_coord=cn_fhgr, &
+             &            cd_point="F", cd_verbose='n')
+     ELSE
+        PRINT *, ' Give iimin, iimax, ijmin, ijmax '
+        READ(*,*) iimin, iimax, ijmin, ijmax
+     ENDIF
      !! Find the broken line between P1 (iimin,ijmin) and P2 (iimax, ijmax)
      ! ... Initialization
      ii0  = iimin ; ij0  = ijmin ; ii1  = iimax ;  ij1 = ijmax
